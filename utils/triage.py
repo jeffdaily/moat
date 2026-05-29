@@ -36,10 +36,19 @@ def load_candidates():
 def cmd_review(args):
     disp = moatlib.load_dispositions()
     skips = {k for k, v in disp.items() if v.get("disposition") == "skip"}
+    adopted = set()
+    if moatlib.PROJECTS.exists():
+        adopted = {p.name for p in moatlib.PROJECTS.iterdir() if (p / "status.json").exists()}
     cands = load_candidates()
-    shownable = [c for c in cands if c["full_name"].lower() not in skips]
-    shown = shownable if args.all else shownable[:args.top]
-    print(f"# {len(shownable)} not skipped ({len(cands) - len(shownable)} skipped of {len(cands)}); showing {len(shown)}")
+
+    def is_adopted(fn):
+        return fn.split("/")[-1] in adopted
+
+    pending = [c for c in cands if c["full_name"].lower() not in skips and not is_adopted(c["full_name"])]
+    n_skip = sum(1 for c in cands if c["full_name"].lower() in skips)
+    n_adopt = sum(1 for c in cands if is_adopted(c["full_name"]))
+    shown = pending if args.all else pending[:args.top]
+    print(f"# {len(pending)} pending ({n_skip} skipped, {n_adopt} adopted) of {len(cands)}; showing {len(shown)}")
     print(f"{'#':>3}  {'prio':>5}  {'stars':>7}  project -- description")
     for i, c in enumerate(shown, 1):
         tag = " [verify]" if c["full_name"].lower() in disp else ""

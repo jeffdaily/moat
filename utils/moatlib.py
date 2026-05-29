@@ -303,8 +303,10 @@ def unblock_all_followers():
 # ---- dispositions (candidates we will NOT port, and why) -------------------
 
 DISPOSITIONS = REPO_ROOT / "data" / "dispositions.json"
-SKIP_REASONS = ["already-ported", "already-supported", "cant-port",
-                "not-a-target", "duplicate", "other"]
+SKIP_REASONS = ["already-ported", "already-supported", "ported-elsewhere",
+                "cant-port", "not-a-target", "duplicate", "other"]
+# ported-elsewhere: AMD's ROCm/HIP support for this project (or an equivalent)
+# lives in a separate repo, fork, or effort, so porting this one adds no value.
 
 
 def load_dispositions():

@@ -1,4 +1,11 @@
 {
+  "arrayfire/arrayfire": {
+    "decided": "2026-05-29T23:30:02Z",
+    "disposition": "verify",
+    "full_name": "arrayfire/arrayfire",
+    "note": "OpenCL backend covers AMD; CUDA backend has no HIP path",
+    "reason": "verify"
+  },
   "bbuf/how-to-optim-algorithm-in-cuda": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -12,6 +19,13 @@
     "full_name": "cupy/cupy",
     "note": "ROCm/HIP build supported upstream",
     "reason": "already-supported"
+  },
+  "deepmodeling/deepmd-kit": {
+    "decided": "2026-05-29T23:30:02Z",
+    "disposition": "verify",
+    "full_name": "deepmodeling/deepmd-kit",
+    "note": "reportedly ROCm-capable; confirm real/complete",
+    "reason": "verify"
   },
   "deepseek-ai/deepep": {
     "decided": "2026-05-29T23:23:27Z",
@@ -40,6 +54,20 @@
     "full_name": "facebookincubator/AITemplate",
     "note": "joint AMD project; had ROCm/CK backend",
     "reason": "already-supported"
+  },
+  "flashinfer-ai/flashinfer": {
+    "decided": "2026-05-29T23:30:02Z",
+    "disposition": "skip",
+    "full_name": "flashinfer-ai/flashinfer",
+    "note": "AMD has its own equivalent kernels (CK / vLLM)",
+    "reason": "ported-elsewhere"
+  },
+  "hazyresearch/thunderkittens": {
+    "decided": "2026-05-29T23:30:02Z",
+    "disposition": "skip",
+    "full_name": "HazyResearch/ThunderKittens",
+    "note": "separate ROCm/HIP effort exists for this repo",
+    "reason": "ported-elsewhere"
   },
   "infatoshi/cuda-course": {
     "decided": "2026-05-29T23:13:18Z",

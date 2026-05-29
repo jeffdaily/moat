@@ -17,7 +17,21 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 ## Projects
 
 <!-- MOAT:TABLE:START -->
-_No projects adopted yet. Run `python3 utils/discover.py` then adopt rows from `data/candidates.json`._
+| Project | Upstream | Fork | gfx90a | gfx1100 | gfx1151 |
+| --- | --- | --- | --- | --- | --- |
+| Open3D | [isl-org/Open3D](https://github.com/isl-org/Open3D) | - | todo | gated | gated |
+| cudf | [rapidsai/cudf](https://github.com/rapidsai/cudf) | - | todo | gated | gated |
+| LMCache | [LMCache/LMCache](https://github.com/LMCache/LMCache) | - | todo | gated | gated |
+| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | - | todo | gated | gated |
+| llm.c | [karpathy/llm.c](https://github.com/karpathy/llm.c) | - | todo | gated | gated |
+| kaldi | [kaldi-asr/kaldi](https://github.com/kaldi-asr/kaldi) | - | todo | gated | gated |
+| cuml | [rapidsai/cuml](https://github.com/rapidsai/cuml) | - | todo | gated | gated |
+| CTranslate2 | [OpenNMT/CTranslate2](https://github.com/OpenNMT/CTranslate2) | - | todo | gated | gated |
+| alien | [chrxh/alien](https://github.com/chrxh/alien) | - | todo | gated | gated |
+| lc0 | [LeelaChessZero/lc0](https://github.com/LeelaChessZero/lc0) | - | todo | gated | gated |
+| oneflow | [Oneflow-Inc/oneflow](https://github.com/Oneflow-Inc/oneflow) | - | todo | gated | gated |
+| CV-CUDA | [CVCUDA/CV-CUDA](https://github.com/CVCUDA/CV-CUDA) | - | todo | gated | gated |
+| cugraph | [rapidsai/cugraph](https://github.com/rapidsai/cugraph) | - | todo | gated | gated |
 <!-- MOAT:TABLE:END -->
 
 ## Layout
