@@ -303,10 +303,13 @@ def unblock_all_followers():
 # ---- dispositions (candidates we will NOT port, and why) -------------------
 
 DISPOSITIONS = REPO_ROOT / "data" / "dispositions.json"
-SKIP_REASONS = ["already-ported", "already-supported", "ported-elsewhere",
+SKIP_REASONS = ["already-supported", "ported-elsewhere",
                 "cant-port", "not-a-target", "duplicate", "other"]
+# already-supported: this upstream repo already supports ROCm/HIP, by any means
+#   (CUDA path ported to HIP, or a native/designed-in backend); provenance is
+#   irrelevant, what matters is that it runs on AMD.
 # ported-elsewhere: AMD's ROCm/HIP support for this project (or an equivalent)
-# lives in a separate repo, fork, or effort, so porting this one adds no value.
+#   lives in a SEPARATE repo, fork, or effort; only use it with a found reference.
 
 
 def load_dispositions():

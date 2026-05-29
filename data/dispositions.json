@@ -28,18 +28,18 @@
     "reason": "verify"
   },
   "deepseek-ai/deepep": {
-    "decided": "2026-05-29T23:23:27Z",
+    "decided": "2026-05-29T23:43:03Z",
     "disposition": "skip",
     "full_name": "deepseek-ai/DeepEP",
-    "note": "NVSHMEM-coupled; AMD has equivalent efforts",
-    "reason": "already-supported"
+    "note": "AMD ROCm fork: github.com/ROCm/DeepEP",
+    "reason": "ported-elsewhere"
   },
   "deepseek-ai/deepgemm": {
-    "decided": "2026-05-29T23:23:27Z",
+    "decided": "2026-05-29T23:43:03Z",
     "disposition": "skip",
     "full_name": "deepseek-ai/DeepGEMM",
-    "note": "Hopper FP8-specific; AMD has equivalent efforts",
-    "reason": "already-supported"
+    "note": "no direct fork; AMD AITER has equivalent block-scale FP8 GEMM: github.com/ROCm/aiter",
+    "reason": "ported-elsewhere"
   },
   "diku-dk/futhark": {
     "decided": "2026-05-29T23:23:27Z",
@@ -56,17 +56,17 @@
     "reason": "already-supported"
   },
   "flashinfer-ai/flashinfer": {
-    "decided": "2026-05-29T23:30:02Z",
+    "decided": "2026-05-29T23:43:03Z",
     "disposition": "skip",
     "full_name": "flashinfer-ai/flashinfer",
-    "note": "AMD has its own equivalent kernels (CK / vLLM)",
+    "note": "AMD ROCm port: github.com/ROCm/flashinfer",
     "reason": "ported-elsewhere"
   },
   "hazyresearch/thunderkittens": {
-    "decided": "2026-05-29T23:30:02Z",
+    "decided": "2026-05-29T23:43:03Z",
     "disposition": "skip",
     "full_name": "HazyResearch/ThunderKittens",
-    "note": "separate ROCm/HIP effort exists for this repo",
+    "note": "AMD counterpart by same authors: github.com/HazyResearch/HipKittens",
     "reason": "ported-elsewhere"
   },
   "infatoshi/cuda-course": {
@@ -104,13 +104,6 @@
     "note": "NVIDIA tensor-core arch specific; ROCm analog is Composable Kernel",
     "reason": "cant-port"
   },
-  "nvidia/tensorrt-llm": {
-    "decided": "2026-05-29T22:55:39Z",
-    "disposition": "skip",
-    "full_name": "NVIDIA/TensorRT-LLM",
-    "note": "per review",
-    "reason": "already-ported"
-  },
   "oneapi-src/oneapi-samples": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -133,11 +126,11 @@
     "reason": "not-a-target"
   },
   "sgl-project/sglang": {
-    "decided": "2026-05-29T22:55:39Z",
+    "decided": "2026-05-29T23:41:51Z",
     "disposition": "skip",
     "full_name": "sgl-project/sglang",
     "note": "ROCm supported upstream",
-    "reason": "already-ported"
+    "reason": "already-supported"
   },
   "shader-slang/slang": {
     "decided": "2026-05-29T23:23:27Z",
@@ -154,11 +147,11 @@
     "reason": "already-supported"
   },
   "vllm-project/vllm": {
-    "decided": "2026-05-29T22:55:39Z",
+    "decided": "2026-05-29T23:41:51Z",
     "disposition": "skip",
     "full_name": "vllm-project/vllm",
     "note": "ROCm supported upstream",
-    "reason": "already-ported"
+    "reason": "already-supported"
   },
   "xlite-dev/leetcuda": {
     "decided": "2026-05-29T23:13:18Z",
