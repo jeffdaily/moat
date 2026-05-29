@@ -1,0 +1,37 @@
+{
+  "cupy/cupy": {
+    "decided": "2026-05-29T22:55:39Z",
+    "disposition": "skip",
+    "full_name": "cupy/cupy",
+    "note": "ROCm/HIP build supported upstream",
+    "reason": "already-supported"
+  },
+  "nvidia/cutlass": {
+    "decided": "2026-05-29T22:55:39Z",
+    "disposition": "skip",
+    "full_name": "NVIDIA/cutlass",
+    "note": "NVIDIA tensor-core arch specific; ROCm analog is Composable Kernel",
+    "reason": "cant-port"
+  },
+  "nvidia/tensorrt-llm": {
+    "decided": "2026-05-29T22:55:39Z",
+    "disposition": "skip",
+    "full_name": "NVIDIA/TensorRT-LLM",
+    "note": "per review",
+    "reason": "already-ported"
+  },
+  "sgl-project/sglang": {
+    "decided": "2026-05-29T22:55:39Z",
+    "disposition": "skip",
+    "full_name": "sgl-project/sglang",
+    "note": "ROCm supported upstream",
+    "reason": "already-ported"
+  },
+  "vllm-project/vllm": {
+    "decided": "2026-05-29T22:55:39Z",
+    "disposition": "skip",
+    "full_name": "vllm-project/vllm",
+    "note": "ROCm supported upstream",
+    "reason": "already-ported"
+  }
+}

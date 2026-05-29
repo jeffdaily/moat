@@ -300,10 +300,61 @@ def unblock_all_followers():
     return changed
 
 
+# ---- dispositions (candidates we will NOT port, and why) -------------------
+
+DISPOSITIONS = REPO_ROOT / "data" / "dispositions.json"
+SKIP_REASONS = ["already-ported", "already-supported", "cant-port",
+                "not-a-target", "duplicate", "other"]
+
+
+def load_dispositions():
+    if DISPOSITIONS.exists():
+        try:
+            return json.loads(DISPOSITIONS.read_text())
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def save_dispositions(d):
+    DISPOSITIONS.parent.mkdir(parents=True, exist_ok=True)
+    with open(DISPOSITIONS, "w") as f:
+        json.dump(d, f, indent=2, sort_keys=True)
+        f.write("\n")
+
+
+def get_disposition(full_name):
+    return load_dispositions().get(full_name.lower())
+
+
+def set_disposition(full_name, disposition, reason, note=""):
+    if disposition == "skip" and reason not in SKIP_REASONS:
+        raise ValueError(f"reason must be one of {SKIP_REASONS}")
+    d = load_dispositions()
+    d[full_name.lower()] = {"full_name": full_name, "disposition": disposition,
+                            "reason": reason, "note": note, "decided": now_iso()}
+    save_dispositions(d)
+    return d[full_name.lower()]
+
+
+def clear_disposition(full_name):
+    d = load_dispositions()
+    if full_name.lower() in d:
+        del d[full_name.lower()]
+        save_dispositions(d)
+        return True
+    return False
+
+
 # ---- scaffolding -----------------------------------------------------------
 
 def scaffold_project(full_name, upstream_url=None, default_branch="main",
-                     ext_type="unknown", priority=0.0):
+                     ext_type="unknown", priority=0.0, force=False):
+    disp = get_disposition(full_name)
+    if disp and disp.get("disposition") == "skip" and not force:
+        raise ValueError(
+            f"{full_name} is marked skip ({disp.get('reason')}): {disp.get('note', '')}. "
+            f"Use force=True / --force to adopt anyway.")
     name = full_name.split("/")[-1]
     pdir = PROJECTS / name
     pdir.mkdir(parents=True, exist_ok=True)
@@ -397,6 +448,7 @@ def main(argv=None):
     s.add_argument("--branch", default="main")
     s.add_argument("--ext", default="unknown", choices=["cmake", "torch-extension", "unknown"])
     s.add_argument("--priority", type=float, default=0.0)
+    s.add_argument("--force", action="store_true", help="adopt even if marked skip")
 
     s = sub.add_parser("next-task", help="print next actionable project for a platform")
     s.add_argument("platform", choices=PLATFORMS)
@@ -425,7 +477,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     if args.cmd == "scaffold":
-        name = scaffold_project(args.full_name, args.url, args.branch, args.ext, args.priority)
+        name = scaffold_project(args.full_name, args.url, args.branch, args.ext, args.priority, args.force)
         print(f"scaffolded projects/{name}")
     elif args.cmd == "next-task":
         t = next_task(args.platform)

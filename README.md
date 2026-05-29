@@ -10,6 +10,8 @@ Each project gets a folder under `projects/` holding its plan, notes, and a per-
 
 The project list below is a best-effort ranked union of targeted GitHub searches, not a census of every CUDA repo (GitHub search caps results per query and misses repos whose dominant language is not Cuda). Ports aim to be minimally invasive: for pure CMake projects we prefer `enable_language(HIP)` plus a single cuda-to-hip compat header (the colmap model); for pytorch extensions we rely on torch's build-time hipify. A CPU-only build smoketest proves compilation only; correctness is gated on real-GPU test runs. See PORTING_GUIDE.md.
 
+Projects we will not port (already ported, already supported, can't be ported, or not a real target) are recorded with reasons in `data/dispositions.json` and kept out of the actionable list; `utils/triage.py` manages those decisions.
+
 Status legend: `todo` not started, `planning` / `porting` / `review` / `validating` in progress, `done` completed, `gated` waiting on the gfx90a port, `revalidate` the shared branch changed since this platform last passed, `blocked` needs input.
 
 ## Projects

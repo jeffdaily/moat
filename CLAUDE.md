@@ -76,4 +76,4 @@ If uncertain, choose the simpler, more concise implementation.
 
 # How to add a project
 
-Adopt a row from data/candidates.json, then run `python3 utils/moatlib.py scaffold <owner/repo>` to write projects/<name>/{status.json,upstream.json}. orient.sh will then pick it up.
+Review candidates with `python3 utils/triage.py review`. Mark any you will not port using `python3 utils/triage.py skip <owner/repo> --reason <already-ported|already-supported|cant-port|not-a-target|duplicate|other> --note "..."`; decisions persist in data/dispositions.json and scaffold refuses a skipped project. Adopt a remaining row with `python3 utils/moatlib.py scaffold <owner/repo>` (writes projects/<name>/{status.json,upstream.json}); orient.sh then picks it up.
