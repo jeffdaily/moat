@@ -1,10 +1,38 @@
 {
+  "bbuf/how-to-optim-algorithm-in-cuda": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "BBuf/how-to-optim-algorithm-in-cuda",
+    "note": "tutorial/learning repo",
+    "reason": "not-a-target"
+  },
   "cupy/cupy": {
     "decided": "2026-05-29T22:55:39Z",
     "disposition": "skip",
     "full_name": "cupy/cupy",
     "note": "ROCm/HIP build supported upstream",
     "reason": "already-supported"
+  },
+  "infatoshi/cuda-course": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "Infatoshi/cuda-course",
+    "note": "tutorial/learning repo",
+    "reason": "not-a-target"
+  },
+  "juliagpu/cuda.jl": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "JuliaGPU/CUDA.jl",
+    "note": "Julia CUDA toolchain; AMDGPU.jl is the AMD-side equivalent",
+    "reason": "not-a-target"
+  },
+  "numba/numba": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "numba/numba",
+    "note": "LLVM-based CUDA JIT compiler, not a kernel port",
+    "reason": "cant-port"
   },
   "nvidia/cutlass": {
     "decided": "2026-05-29T22:55:39Z",
@@ -20,6 +48,27 @@
     "note": "per review",
     "reason": "already-ported"
   },
+  "oneapi-src/oneapi-samples": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "oneapi-src/oneAPI-samples",
+    "note": "Intel oneAPI, not CUDA",
+    "reason": "not-a-target"
+  },
+  "patriciogonzalezvivo/lygia": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "patriciogonzalezvivo/lygia",
+    "note": "multi-language shader library, not a CUDA app",
+    "reason": "not-a-target"
+  },
+  "rust-gpu/rust-cuda": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "Rust-GPU/rust-cuda",
+    "note": "Rust GPU codegen toolchain, not a CUDA app",
+    "reason": "not-a-target"
+  },
   "sgl-project/sglang": {
     "decided": "2026-05-29T22:55:39Z",
     "disposition": "skip",
@@ -33,5 +82,12 @@
     "full_name": "vllm-project/vllm",
     "note": "ROCm supported upstream",
     "reason": "already-ported"
+  },
+  "xlite-dev/leetcuda": {
+    "decided": "2026-05-29T23:13:18Z",
+    "disposition": "skip",
+    "full_name": "xlite-dev/LeetCUDA",
+    "note": "tutorial/learning repo",
+    "reason": "not-a-target"
   }
 }
