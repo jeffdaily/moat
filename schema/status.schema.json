@@ -1,0 +1,89 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/jeffdaily/moat/schema/status.schema.json",
+  "title": "MOAT per-project status",
+  "type": "object",
+  "required": ["schema_version", "name", "upstream_url", "fork_default_branch", "priority", "ext_type", "platforms"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": { "const": 1 },
+    "name": { "type": "string" },
+    "upstream_url": { "type": "string" },
+    "fork_url": { "type": ["string", "null"] },
+    "fork_default_branch": { "type": "string" },
+    "priority": { "type": "number" },
+    "ext_type": { "enum": ["cmake", "torch-extension", "unknown"] },
+    "adopted_at": { "type": ["string", "null"] },
+    "updated_at": { "type": ["string", "null"] },
+    "head_sha": { "type": ["string", "null"], "description": "current fork branch HEAD" },
+    "platforms": {
+      "type": "object",
+      "required": ["linux-gfx90a", "linux-gfx1100", "windows-gfx1151"],
+      "additionalProperties": false,
+      "properties": {
+        "linux-gfx90a": { "$ref": "#/$defs/platform" },
+        "linux-gfx1100": { "$ref": "#/$defs/platform" },
+        "windows-gfx1151": { "$ref": "#/$defs/platform" }
+      }
+    }
+  },
+  "$defs": {
+    "state": {
+      "enum": [
+        "unclaimed",
+        "planned",
+        "porting",
+        "ported",
+        "changes-requested",
+        "review-passed",
+        "validating",
+        "validation-failed",
+        "validated",
+        "pr-approved-by-user",
+        "pr-open",
+        "completed",
+        "blocked-needs-gfx90a",
+        "port-ready",
+        "delta-ported",
+        "revalidate"
+      ]
+    },
+    "platform": {
+      "type": "object",
+      "required": ["state", "blocked", "updated_at", "stats"],
+      "additionalProperties": false,
+      "properties": {
+        "state": { "$ref": "#/$defs/state" },
+        "blocked": { "type": "boolean" },
+        "blocked_reason": { "type": ["string", "null"] },
+        "pr_url": { "type": ["string", "null"] },
+        "validated_sha": { "type": ["string", "null"], "description": "fork HEAD this platform last passed validation against" },
+        "started_at": { "type": ["string", "null"] },
+        "completed_at": { "type": ["string", "null"] },
+        "updated_at": { "type": ["string", "null"] },
+        "stats": { "$ref": "#/$defs/stats" }
+      }
+    },
+    "stats": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tokens_total": { "type": "number" },
+        "tokens_approx": { "type": "boolean" },
+        "wall_seconds": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "thinking": { "type": "number" },
+            "compile": { "type": "number" },
+            "test": { "type": "number" },
+            "misc": { "type": "number" }
+          }
+        },
+        "session_count": { "type": "number" },
+        "first_session_at": { "type": ["string", "null"] },
+        "last_session_at": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

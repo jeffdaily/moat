@@ -1,0 +1,8 @@
+# Semantic merge for per-project status so concurrent CLIs never hard-conflict.
+# Driver is registered by utils/setup_git.sh (run once per clone; orient.sh
+# ensures it). See utils/merge_status.py.
+projects/*/status.json merge=moat-status
+
+# Append-only docs: on concurrent edits keep both sides instead of conflicting.
+projects/*/notes.md merge=union
+PORTING_GUIDE.md merge=union

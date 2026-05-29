@@ -1,0 +1,14 @@
+# MOAT is a control-plane repo. It tracks tracking artifacts (status.json,
+# plan.md, notes.md, stats.jsonl) but NOT the working clones of the forks or
+# any scratch. The actual port lives in each project's jeffdaily fork.
+
+projects/*/src/
+projects/*/.lock
+projects/*/.claim
+projects/.selection.lock
+agent_space/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
