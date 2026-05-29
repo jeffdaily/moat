@@ -11,7 +11,10 @@ throttle_seconds = 2.5        # pause between queries to respect the search rate
 exclude = ["pytorch/pytorch", "microsoft/onnxruntime"]
 # Whole orgs to drop: AMD's own GPU orgs (already ROCm/HIP) and NVIDIA's orgs
 # (a ROCm port has nowhere to upstream, so it is not worth the effort).
-exclude_orgs = ["ROCm", "ROCm-Developer-Tools", "ROCmSoftwarePlatform", "NVIDIA", "NVlabs", "NVIDIAGameWorks", "NVIDIA-AI-IOT", "NVIDIA-Merlin"]
+exclude_orgs = ["ROCm", "ROCm-Developer-Tools", "ROCmSoftwarePlatform", "NVlabs"]
+# Drop any owner whose name contains one of these substrings; catches every
+# NVIDIA sub-org (NVIDIA, nvidia-isaac, NVIDIA-AI-IOT, NVIDIAGameWorks, ...).
+exclude_org_substrings = ["nvidia"]
 # Forks are dropped by default. Allowlist a fork here (owner/repo) when upstream
 # is dead and maintenance has moved to it.
 fork_exceptions = []

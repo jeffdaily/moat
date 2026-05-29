@@ -174,6 +174,7 @@ def main(argv=None):
     raw_hits = gather(cfg, limit)
 
     excl_orgs = {o.lower() for o in s.get("exclude_orgs", [])}
+    excl_substr = [x.lower() for x in s.get("exclude_org_substrings", [])]
     threshold = max(1, int(s.get("min_cuda_bytes", 0)))
     cache = {}
     recs = []
@@ -182,7 +183,8 @@ def main(argv=None):
         if not passes(h, cfg):
             n_filter += 1
             continue
-        if h["fullName"].split("/")[0].lower() in excl_orgs:
+        owner = h["fullName"].split("/")[0].lower()
+        if owner in excl_orgs or any(sub in owner for sub in excl_substr):
             n_org += 1
             continue
         if not args.no_verify and h.get("language") != "Cuda":

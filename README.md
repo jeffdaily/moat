@@ -20,6 +20,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | Project | Upstream | Fork | gfx90a | gfx1100 | gfx1151 |
 | --- | --- | --- | --- | --- | --- |
 | Open3D | [isl-org/Open3D](https://github.com/isl-org/Open3D) | - | todo | gated | gated |
+| catboost | [catboost/catboost](https://github.com/catboost/catboost) | - | todo | gated | gated |
 | cudf | [rapidsai/cudf](https://github.com/rapidsai/cudf) | - | todo | gated | gated |
 | LMCache | [LMCache/LMCache](https://github.com/LMCache/LMCache) | - | todo | gated | gated |
 | gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | - | todo | gated | gated |
@@ -28,10 +29,19 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | cuml | [rapidsai/cuml](https://github.com/rapidsai/cuml) | - | todo | gated | gated |
 | CTranslate2 | [OpenNMT/CTranslate2](https://github.com/OpenNMT/CTranslate2) | - | todo | gated | gated |
 | alien | [chrxh/alien](https://github.com/chrxh/alien) | - | todo | gated | gated |
+| LichtFeld-Studio | [MrNeRF/LichtFeld-Studio](https://github.com/MrNeRF/LichtFeld-Studio) | - | todo | gated | gated |
 | lc0 | [LeelaChessZero/lc0](https://github.com/LeelaChessZero/lc0) | - | todo | gated | gated |
 | oneflow | [Oneflow-Inc/oneflow](https://github.com/Oneflow-Inc/oneflow) | - | todo | gated | gated |
 | CV-CUDA | [CVCUDA/CV-CUDA](https://github.com/CVCUDA/CV-CUDA) | - | todo | gated | gated |
 | cugraph | [rapidsai/cugraph](https://github.com/rapidsai/cugraph) | - | todo | gated | gated |
+| k2 | [k2-fsa/k2](https://github.com/k2-fsa/k2) | - | todo | gated | gated |
+| raft | [rapidsai/raft](https://github.com/rapidsai/raft) | - | todo | gated | gated |
+| heavydb | [heavyai/heavydb](https://github.com/heavyai/heavydb) | - | todo | gated | gated |
+| rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | - | todo | gated | gated |
+| cuvs | [rapidsai/cuvs](https://github.com/rapidsai/cuvs) | - | todo | gated | gated |
+| GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | - | todo | gated | gated |
+| CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | - | todo | gated | gated |
+| cupoch | [neka-nat/cupoch](https://github.com/neka-nat/cupoch) | - | todo | gated | gated |
 <!-- MOAT:TABLE:END -->
 
 ## Layout

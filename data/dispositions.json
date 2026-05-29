@@ -13,6 +13,13 @@
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
   },
+  "brucefan1983/cuda-programming": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "brucefan1983/CUDA-Programming",
+    "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
   "cupy/cupy": {
     "decided": "2026-05-29T22:55:39Z",
     "disposition": "skip",
@@ -48,6 +55,20 @@
     "note": "has a HIP backend",
     "reason": "already-supported"
   },
+  "dtolm/vkfft": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "verify",
+    "full_name": "DTolm/VkFFT",
+    "note": "lists HIP; verify current and not wave64-only",
+    "reason": "verify"
+  },
+  "enpeizhao/cvprojects": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "enpeizhao/CVprojects",
+    "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
   "facebookincubator/aitemplate": {
     "decided": "2026-05-29T23:23:27Z",
     "disposition": "skip",
@@ -61,6 +82,13 @@
     "full_name": "flashinfer-ai/flashinfer",
     "note": "AMD ROCm port: github.com/ROCm/flashinfer",
     "reason": "ported-elsewhere"
+  },
+  "forceinjection/ai-fundamentals": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "ForceInjection/AI-fundamentals",
+    "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
   },
   "hazyresearch/thunderkittens": {
     "decided": "2026-05-29T23:43:03Z",
@@ -97,6 +125,20 @@
     "note": "LLVM-based CUDA JIT compiler, not a kernel port",
     "reason": "cant-port"
   },
+  "nvidia-bionemo/nvmolkit": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "NVIDIA-BioNeMo/nvMolKit",
+    "note": "NVIDIA-affiliated org; nowhere to upstream",
+    "reason": "not-a-target"
+  },
+  "nvidia-isaac/cuvslam": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "nvidia-isaac/cuVSLAM",
+    "note": "NVIDIA-affiliated org; nowhere to upstream",
+    "reason": "not-a-target"
+  },
   "nvidia/cutlass": {
     "decided": "2026-05-29T22:55:39Z",
     "disposition": "skip",
@@ -117,6 +159,13 @@
     "full_name": "patriciogonzalezvivo/lygia",
     "note": "multi-language shader library, not a CUDA app",
     "reason": "not-a-target"
+  },
+  "pytorch/ao": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "pytorch/ao",
+    "note": "ROCm support upstream (per jeff)",
+    "reason": "already-supported"
   },
   "rust-gpu/rust-cuda": {
     "decided": "2026-05-29T23:13:18Z",
@@ -139,6 +188,13 @@
     "note": "graphics shader language; AMD via SPIR-V/Vulkan",
     "reason": "not-a-target"
   },
+  "tpoisonooo/how-to-optimize-gemm": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "skip",
+    "full_name": "tpoisonooo/how-to-optimize-gemm",
+    "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
   "tracel-ai/cubecl": {
     "decided": "2026-05-29T23:23:26Z",
     "disposition": "skip",
@@ -159,5 +215,12 @@
     "full_name": "xlite-dev/LeetCUDA",
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
+  },
+  "zaneham/barracuda": {
+    "decided": "2026-05-29T23:57:04Z",
+    "disposition": "verify",
+    "full_name": "Zaneham/BarraCUDA",
+    "note": "claims HIP target; verify completeness/quality",
+    "reason": "verify"
   }
 }
