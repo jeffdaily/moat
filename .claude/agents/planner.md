@@ -20,8 +20,18 @@ You are the MOAT planner. You produce the porting plan for one project on Linux 
 5. Enumerate the real test suite and the exact build + GPU-test commands (this feeds the validator). Note the non-GPU tests that must not regress.
 6. Write projects/<name>/plan.md.
 
+## Assess existing AMD support first
+
+A port is not always a fresh CUDA-to-HIP conversion. Before planning one, determine whether it adds value:
+- Mature ROCm/HIP support already upstream -> recommend a skip (already-supported) in plan.md and stop.
+- AMD supported only via OpenCL/Vulkan/SYCL with no HIP path -> a ROCm/HIP port of the CUDA code still adds value; proceed.
+- An abandoned or incomplete ROCm/HIP port (stale branch, unmerged PR, old fork) -> plan to finish it.
+- A ROCm/HIP port exists but is below PORTING_GUIDE best practices -> plan to improve it.
+Record the finding and the decision in plan.md; if no port is warranted, set the disposition with `python3 utils/triage.py skip <repo> --reason already-supported`.
+
 ## plan.md sections
 - Project (name, upstream, default branch)
+- Existing AMD support (mature ROCm | OpenCL/Vulkan-only | abandoned port | improvable) + decision
 - Build classification (cmake | torch-extension) + evidence
 - Port strategy (A compat-header | B torch-hipify) + rationale
 - CUDA surface inventory

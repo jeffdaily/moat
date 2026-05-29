@@ -13,12 +13,47 @@
     "note": "ROCm/HIP build supported upstream",
     "reason": "already-supported"
   },
+  "deepseek-ai/deepep": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "skip",
+    "full_name": "deepseek-ai/DeepEP",
+    "note": "NVSHMEM-coupled; AMD has equivalent efforts",
+    "reason": "already-supported"
+  },
+  "deepseek-ai/deepgemm": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "skip",
+    "full_name": "deepseek-ai/DeepGEMM",
+    "note": "Hopper FP8-specific; AMD has equivalent efforts",
+    "reason": "already-supported"
+  },
+  "diku-dk/futhark": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "skip",
+    "full_name": "diku-dk/futhark",
+    "note": "has a HIP backend",
+    "reason": "already-supported"
+  },
+  "facebookincubator/aitemplate": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "skip",
+    "full_name": "facebookincubator/AITemplate",
+    "note": "joint AMD project; had ROCm/CK backend",
+    "reason": "already-supported"
+  },
   "infatoshi/cuda-course": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
     "full_name": "Infatoshi/cuda-course",
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
+  },
+  "jittor/jittor": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "verify",
+    "full_name": "Jittor/jittor",
+    "note": "claims ROCm; confirm real HIP port vs partial/OpenCL",
+    "reason": "verify"
   },
   "juliagpu/cuda.jl": {
     "decided": "2026-05-29T23:13:18Z",
@@ -75,6 +110,20 @@
     "full_name": "sgl-project/sglang",
     "note": "ROCm supported upstream",
     "reason": "already-ported"
+  },
+  "shader-slang/slang": {
+    "decided": "2026-05-29T23:23:27Z",
+    "disposition": "skip",
+    "full_name": "shader-slang/slang",
+    "note": "graphics shader language; AMD via SPIR-V/Vulkan",
+    "reason": "not-a-target"
+  },
+  "tracel-ai/cubecl": {
+    "decided": "2026-05-29T23:23:26Z",
+    "disposition": "skip",
+    "full_name": "tracel-ai/cubecl",
+    "note": "ROCm/HIP backend exists",
+    "reason": "already-supported"
   },
   "vllm-project/vllm": {
     "decided": "2026-05-29T22:55:39Z",

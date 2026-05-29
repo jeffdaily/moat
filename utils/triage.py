@@ -35,23 +35,30 @@ def load_candidates():
 
 def cmd_review(args):
     disp = moatlib.load_dispositions()
+    skips = {k for k, v in disp.items() if v.get("disposition") == "skip"}
     cands = load_candidates()
-    actionable = [c for c in cands if c["full_name"].lower() not in disp]
-    disposed = len(cands) - len(actionable)
-    shown = actionable if args.all else actionable[:args.top]
-    print(f"# {len(actionable)} undecided candidates ({disposed} disposed of {len(cands)}); showing {len(shown)}")
+    shownable = [c for c in cands if c["full_name"].lower() not in skips]
+    shown = shownable if args.all else shownable[:args.top]
+    print(f"# {len(shownable)} not skipped ({len(cands) - len(shownable)} skipped of {len(cands)}); showing {len(shown)}")
     print(f"{'#':>3}  {'prio':>5}  {'stars':>7}  project -- description")
     for i, c in enumerate(shown, 1):
-        desc = (c.get("description") or "")[:68]
-        print(f"{i:>3}  {c['priority']:>5}  {c['stars']:>7}  {c['full_name']} -- {desc}")
-    print(f"\nskip with: python3 utils/triage.py skip <owner/repo> "
-          f"--reason <{'|'.join(moatlib.SKIP_REASONS)}> --note \"...\"")
+        tag = " [verify]" if c["full_name"].lower() in disp else ""
+        desc = (c.get("description") or "")[:64]
+        print(f"{i:>3}  {c['priority']:>5}  {c['stars']:>7}  {c['full_name']}{tag} -- {desc}")
+    print(f"\nskip:   python3 utils/triage.py skip <owner/repo> --reason <{'|'.join(moatlib.SKIP_REASONS)}> --note \"...\"")
+    print("verify: python3 utils/triage.py verify <owner/repo> --note \"...\"")
     return 0
 
 
 def cmd_skip(args):
     d = moatlib.set_disposition(args.repo, "skip", args.reason, args.note or "")
     print(f"skip {d['full_name']} ({d['reason']}) {d['note']}".rstrip())
+    return 0
+
+
+def cmd_verify(args):
+    d = moatlib.set_disposition(args.repo, "verify", "verify", args.note or "")
+    print(f"verify {d['full_name']}" + (f" -- {d['note']}" if d["note"] else ""))
     return 0
 
 
@@ -83,6 +90,10 @@ def main(argv=None):
     s.add_argument("--reason", required=True, choices=moatlib.SKIP_REASONS)
     s.add_argument("--note")
     s.set_defaults(fn=cmd_skip)
+    v = sub.add_parser("verify", help="flag a project to investigate (not a skip)")
+    v.add_argument("repo")
+    v.add_argument("--note")
+    v.set_defaults(fn=cmd_verify)
     u = sub.add_parser("unskip", help="remove a disposition")
     u.add_argument("repo")
     u.set_defaults(fn=cmd_unskip)

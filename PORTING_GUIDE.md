@@ -4,6 +4,15 @@ Living best practices for porting CUDA projects to ROCm/HIP. The planner reads t
 
 ROCm is AMD's GPU compute stack; HIP is its CUDA-like C++ runtime and kernel language. Most CUDA C++ has a 1:1 HIP spelling (`cudaMalloc` -> `hipMalloc`), so a port is usually mechanical plus a handful of real semantic differences listed under Fault classes.
 
+## Before porting: assess existing AMD support
+
+A "port" is not always a fresh CUDA-to-HIP conversion. Check first:
+- Mature ROCm/HIP support already upstream -> skip it (disposition already-supported); no work to do.
+- AMD supported only via OpenCL, Vulkan, or SYCL, with no HIP path -> a ROCm/HIP port of the CUDA code is still valuable.
+- An abandoned or incomplete ROCm/HIP port (stale branch, unmerged PR, old fork) -> finish it rather than starting over.
+- A ROCm/HIP port exists but is below the best practices here -> improve it (minimal footprint, warp_size abstraction, and so on).
+The planner makes this call per project and records it in plan.md. "Already supports AMD via OpenCL/Vulkan" alone does not mean skip.
+
 ## Build classification
 
 Decide which strategy applies before touching code.
