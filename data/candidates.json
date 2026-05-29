@@ -1,0 +1,6769 @@
+[
+  {
+    "full_name": "vllm-project/vllm",
+    "url": "https://github.com/vllm-project/vllm",
+    "default_branch": "main",
+    "stars": 81379,
+    "forks": 17407,
+    "pushed_at": "2026-05-29T21:26:56Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A high-throughput and memory-efficient inference and serving engine for LLMs",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 8.531,
+    "score_parts": {
+      "stars_term": 4.911,
+      "forks_term": 2.12,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "sgl-project/sglang",
+    "url": "https://github.com/sgl-project/sglang",
+    "default_branch": "main",
+    "stars": 28446,
+    "forks": 6218,
+    "pushed_at": "2026-05-29T22:35:28Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "SGLang is a high-performance serving framework for large language models and multimodal models.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 7.851,
+    "score_parts": {
+      "stars_term": 4.454,
+      "forks_term": 1.897,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "jamiepine/voicebox",
+    "url": "https://github.com/jamiepine/voicebox",
+    "default_branch": "main",
+    "stars": 28837,
+    "forks": 3525,
+    "pushed_at": "2026-04-26T20:29:17Z",
+    "days_since_push": 33.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "TypeScript",
+    "description": "The open-source AI voice studio. Clone, dictate, create.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.554,
+    "score_parts": {
+      "stars_term": 4.46,
+      "forks_term": 1.774,
+      "recency_term": 1.321
+    }
+  },
+  {
+    "full_name": "NVIDIA/TensorRT-LLM",
+    "url": "https://github.com/NVIDIA/TensorRT-LLM",
+    "default_branch": "main",
+    "stars": 13765,
+    "forks": 2415,
+    "pushed_at": "2026-05-29T19:48:13Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "TensorRT LLM provides users with an easy-to-use Python API to define Large Language Models (LLMs) and supports state-of-the-art optimizations to perform inference efficiently on NVIDIA GPUs. TensorRT LLM also contains components to create Python and C++ runtimes that orchestrate the inference execution in a performant way.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 7.33,
+    "score_parts": {
+      "stars_term": 4.139,
+      "forks_term": 1.692,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "isl-org/Open3D",
+    "url": "https://github.com/isl-org/Open3D",
+    "default_branch": "main",
+    "stars": 13632,
+    "forks": 2568,
+    "pushed_at": "2026-05-23T22:29:32Z",
+    "days_since_push": 6.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Open3D: A Modern Library for 3D Data Processing",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 7.305,
+    "score_parts": {
+      "stars_term": 4.135,
+      "forks_term": 1.705,
+      "recency_term": 1.466
+    }
+  },
+  {
+    "full_name": "hashcat/hashcat",
+    "url": "https://github.com/hashcat/hashcat",
+    "default_branch": "master",
+    "stars": 26050,
+    "forks": 3442,
+    "pushed_at": "2026-02-20T11:54:48Z",
+    "days_since_push": 98.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "World's fastest and most advanced password recovery utility",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.211,
+    "score_parts": {
+      "stars_term": 4.416,
+      "forks_term": 1.768,
+      "recency_term": 1.027
+    }
+  },
+  {
+    "full_name": "tracel-ai/burn",
+    "url": "https://github.com/tracel-ai/burn",
+    "default_branch": "main",
+    "stars": 15282,
+    "forks": 922,
+    "pushed_at": "2026-05-29T21:10:27Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Burn is a next generation tensor library and Deep Learning Framework that doesn't compromise on flexibility, efficiency and portability.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.166,
+    "score_parts": {
+      "stars_term": 4.184,
+      "forks_term": 1.483,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuda-samples",
+    "url": "https://github.com/NVIDIA/cuda-samples",
+    "default_branch": "master",
+    "stars": 9233,
+    "forks": 2349,
+    "pushed_at": "2026-05-27T21:57:00Z",
+    "days_since_push": 2.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Samples for CUDA Developers which demonstrates features in CUDA Toolkit",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.139,
+    "score_parts": {
+      "stars_term": 3.965,
+      "forks_term": 1.686,
+      "recency_term": 1.488
+    }
+  },
+  {
+    "full_name": "NVIDIA/cutlass",
+    "url": "https://github.com/NVIDIA/cutlass",
+    "default_branch": "main",
+    "stars": 9809,
+    "forks": 1882,
+    "pushed_at": "2026-05-29T00:34:48Z",
+    "days_since_push": 0.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "CUDA Templates and Python DSLs for High-Performance Linear Algebra",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 7.124,
+    "score_parts": {
+      "stars_term": 3.992,
+      "forks_term": 1.637,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "vosen/ZLUDA",
+    "url": "https://github.com/vosen/ZLUDA",
+    "default_branch": "master",
+    "stars": 14233,
+    "forks": 910,
+    "pushed_at": "2026-05-28T06:19:46Z",
+    "days_since_push": 1.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "CUDA on non-NVIDIA GPUs",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.123,
+    "score_parts": {
+      "stars_term": 4.153,
+      "forks_term": 1.48,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "antirez/ds4",
+    "url": "https://github.com/antirez/ds4",
+    "default_branch": "main",
+    "stars": 12466,
+    "forks": 1064,
+    "pushed_at": "2026-05-29T18:16:03Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "DeepSeek 4 Flash local inference engine for Metal and CUDA",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 7.108,
+    "score_parts": {
+      "stars_term": 4.096,
+      "forks_term": 1.514,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "numba/numba",
+    "url": "https://github.com/numba/numba",
+    "default_branch": "main",
+    "stars": 11031,
+    "forks": 1272,
+    "pushed_at": "2026-05-29T18:29:39Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "NumPy aware dynamic Python compiler using LLVM",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 7.094,
+    "score_parts": {
+      "stars_term": 4.043,
+      "forks_term": 1.552,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "xlite-dev/LeetCUDA",
+    "url": "https://github.com/xlite-dev/LeetCUDA",
+    "default_branch": "main",
+    "stars": 11123,
+    "forks": 1124,
+    "pushed_at": "2026-05-29T03:23:13Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "\ud83d\udcdaLeetCUDA: Modern CUDA Learn Notes with PyTorch for Beginners\ud83d\udc11, 200+ CUDA Kernels, Tensor Cores, HGEMM, FA-2 MMA.\ud83c\udf89",
+    "matched_queries": [
+      "cuda kernel",
+      "language:Cuda",
+      "topic:cuda"
+    ],
+    "priority": 7.067,
+    "score_parts": {
+      "stars_term": 4.046,
+      "forks_term": 1.526,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "cupy/cupy",
+    "url": "https://github.com/cupy/cupy",
+    "default_branch": "main",
+    "stars": 10971,
+    "forks": 1033,
+    "pushed_at": "2026-05-29T07:30:11Z",
+    "days_since_push": 0.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "NumPy & SciPy for GPU",
+    "matched_queries": [
+      "cublas",
+      "cudnn",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 7.044,
+    "score_parts": {
+      "stars_term": 4.04,
+      "forks_term": 1.507,
+      "recency_term": 1.496
+    }
+  },
+  {
+    "full_name": "deepseek-ai/DeepEP",
+    "url": "https://github.com/deepseek-ai/DeepEP",
+    "default_branch": "main",
+    "stars": 9685,
+    "forks": 1271,
+    "pushed_at": "2026-05-26T02:49:43Z",
+    "days_since_push": 3.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "DeepEP: an efficient expert-parallel communication library",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 7.016,
+    "score_parts": {
+      "stars_term": 3.986,
+      "forks_term": 1.552,
+      "recency_term": 1.478
+    }
+  },
+  {
+    "full_name": "catboost/catboost",
+    "url": "https://github.com/catboost/catboost",
+    "default_branch": "master",
+    "stars": 8967,
+    "forks": 1293,
+    "pushed_at": "2026-05-29T21:06:58Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A fast, scalable, high performance Gradient Boosting on Decision Trees library, used for ranking, classification, regression and other machine learning tasks for Python, R, Java, C++. Supports computation on CPU and GPU.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 7.008,
+    "score_parts": {
+      "stars_term": 3.953,
+      "forks_term": 1.556,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "rapidsai/cudf",
+    "url": "https://github.com/rapidsai/cudf",
+    "default_branch": "main",
+    "stars": 9644,
+    "forks": 1065,
+    "pushed_at": "2026-05-29T22:43:53Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "cuDF - GPU DataFrame Library",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.998,
+    "score_parts": {
+      "stars_term": 3.984,
+      "forks_term": 1.514,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "LMCache/LMCache",
+    "url": "https://github.com/LMCache/LMCache",
+    "default_branch": "dev",
+    "stars": 8386,
+    "forks": 1221,
+    "pushed_at": "2026-05-29T22:46:05Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "LMCache: Supercharge Your LLM with the Fastest KV Cache Layer",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 6.967,
+    "score_parts": {
+      "stars_term": 3.924,
+      "forks_term": 1.544,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "replicate/cog",
+    "url": "https://github.com/replicate/cog",
+    "default_branch": "main",
+    "stars": 9415,
+    "forks": 690,
+    "pushed_at": "2026-05-29T16:17:06Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "Containers for machine learning",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.892,
+    "score_parts": {
+      "stars_term": 3.974,
+      "forks_term": 1.42,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "deepseek-ai/DeepGEMM",
+    "url": "https://github.com/deepseek-ai/DeepGEMM",
+    "default_branch": "main",
+    "stars": 7314,
+    "forks": 1007,
+    "pushed_at": "2026-05-29T02:44:09Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "DeepGEMM: clean and efficient FP8 GEMM kernels with fine-grained scaling",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 6.861,
+    "score_parts": {
+      "stars_term": 3.864,
+      "forks_term": 1.502,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "NVlabs/instant-ngp",
+    "url": "https://github.com/NVlabs/instant-ngp",
+    "default_branch": "master",
+    "stars": 17411,
+    "forks": 2064,
+    "pushed_at": "2026-02-02T12:32:34Z",
+    "days_since_push": 116.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Instant neural graphics primitives: lightning fast NeRF and more",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda"
+    ],
+    "priority": 6.856,
+    "score_parts": {
+      "stars_term": 4.241,
+      "forks_term": 1.657,
+      "recency_term": 0.958
+    }
+  },
+  {
+    "full_name": "hybridgroup/gocv",
+    "url": "https://github.com/hybridgroup/gocv",
+    "default_branch": "release",
+    "stars": 7452,
+    "forks": 897,
+    "pushed_at": "2026-05-28T08:16:03Z",
+    "days_since_push": 1.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "Go package for computer vision using OpenCV 4 and beyond. Includes support for DNN, CUDA, OpenCV Contrib, and OpenVINO.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.84,
+    "score_parts": {
+      "stars_term": 3.872,
+      "forks_term": 1.477,
+      "recency_term": 1.491
+    }
+  },
+  {
+    "full_name": "flashinfer-ai/flashinfer",
+    "url": "https://github.com/flashinfer-ai/flashinfer",
+    "default_branch": "main",
+    "stars": 5706,
+    "forks": 1011,
+    "pushed_at": "2026-05-29T22:38:15Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "FlashInfer: Kernel Library for LLM Serving",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.759,
+    "score_parts": {
+      "stars_term": 3.756,
+      "forks_term": 1.503,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "NVIDIA/nccl",
+    "url": "https://github.com/NVIDIA/nccl",
+    "default_branch": "master",
+    "stars": 4766,
+    "forks": 1272,
+    "pushed_at": "2026-05-29T17:18:28Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Optimized primitives for collective multi-GPU communication",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.729,
+    "score_parts": {
+      "stars_term": 3.678,
+      "forks_term": 1.552,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "NVIDIA/warp",
+    "url": "https://github.com/NVIDIA/warp",
+    "default_branch": "main",
+    "stars": 6706,
+    "forks": 520,
+    "pushed_at": "2026-05-29T22:47:18Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A Python framework for GPU-accelerated simulation, robotics, and machine learning.",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.685,
+    "score_parts": {
+      "stars_term": 3.827,
+      "forks_term": 1.358,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "nerfstudio-project/gsplat",
+    "url": "https://github.com/nerfstudio-project/gsplat",
+    "default_branch": "main",
+    "stars": 5106,
+    "forks": 861,
+    "pushed_at": "2026-05-29T22:45:32Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "CUDA accelerated rasterization of gaussian splatting",
+    "matched_queries": [
+      "cuda accelerated"
+    ],
+    "priority": 6.676,
+    "score_parts": {
+      "stars_term": 3.708,
+      "forks_term": 1.468,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "karpathy/llm.c",
+    "url": "https://github.com/karpathy/llm.c",
+    "default_branch": "master",
+    "stars": 30063,
+    "forks": 3619,
+    "pushed_at": "2025-06-26T17:03:40Z",
+    "days_since_push": 337.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "LLM training in simple, raw C/CUDA",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 6.667,
+    "score_parts": {
+      "stars_term": 4.478,
+      "forks_term": 1.779,
+      "recency_term": 0.409
+    }
+  },
+  {
+    "full_name": "kaldi-asr/kaldi",
+    "url": "https://github.com/kaldi-asr/kaldi",
+    "default_branch": "master",
+    "stars": 15398,
+    "forks": 5359,
+    "pushed_at": "2025-09-22T07:06:00Z",
+    "days_since_push": 249.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Shell",
+    "description": "kaldi-asr/kaldi is the official location of the Kaldi project.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.626,
+    "score_parts": {
+      "stars_term": 4.187,
+      "forks_term": 1.865,
+      "recency_term": 0.574
+    }
+  },
+  {
+    "full_name": "rapidsai/cuml",
+    "url": "https://github.com/rapidsai/cuml",
+    "default_branch": "main",
+    "stars": 5205,
+    "forks": 626,
+    "pushed_at": "2026-05-29T20:15:48Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "cuML - RAPIDS Machine Learning Library",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.615,
+    "score_parts": {
+      "stars_term": 3.717,
+      "forks_term": 1.399,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "NVIDIAGameWorks/kaolin",
+    "url": "https://github.com/NVIDIAGameWorks/kaolin",
+    "default_branch": "master",
+    "stars": 5094,
+    "forks": 621,
+    "pushed_at": "2026-05-28T03:15:03Z",
+    "days_since_push": 1.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A PyTorch Library for Accelerating 3D Deep Learning Research",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda"
+    ],
+    "priority": 6.594,
+    "score_parts": {
+      "stars_term": 3.707,
+      "forks_term": 1.397,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "gpustack/gpustack",
+    "url": "https://github.com/gpustack/gpustack",
+    "default_branch": "main",
+    "stars": 5071,
+    "forks": 536,
+    "pushed_at": "2026-05-29T10:07:18Z",
+    "days_since_push": 0.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A GPU cluster manager that configures and orchestrates inference engines like vLLM and SGLang for high-performance AI model deployment.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 6.567,
+    "score_parts": {
+      "stars_term": 3.705,
+      "forks_term": 1.365,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "iree-org/iree",
+    "url": "https://github.com/iree-org/iree",
+    "default_branch": "main",
+    "stars": 3780,
+    "forks": 914,
+    "pushed_at": "2026-05-29T21:01:18Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A retargetable MLIR-based machine learning compiler and runtime toolkit.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.558,
+    "score_parts": {
+      "stars_term": 3.578,
+      "forks_term": 1.481,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "shader-slang/slang",
+    "url": "https://github.com/shader-slang/slang",
+    "default_branch": "master",
+    "stars": 5331,
+    "forks": 449,
+    "pushed_at": "2026-05-29T21:40:30Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Making it easier to work with shaders",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.553,
+    "score_parts": {
+      "stars_term": 3.727,
+      "forks_term": 1.327,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "ROCm/hip",
+    "url": "https://github.com/ROCm/hip",
+    "default_branch": "develop",
+    "stars": 4337,
+    "forks": 582,
+    "pushed_at": "2026-05-28T19:33:50Z",
+    "days_since_push": 1.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "HIP: C++ Heterogeneous-Compute Interface for Portability",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.514,
+    "score_parts": {
+      "stars_term": 3.637,
+      "forks_term": 1.383,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "XuehaiPan/nvitop",
+    "url": "https://github.com/XuehaiPan/nvitop",
+    "default_branch": "main",
+    "stars": 6928,
+    "forks": 234,
+    "pushed_at": "2026-05-25T13:47:09Z",
+    "days_since_push": 4.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "An interactive NVIDIA-GPU process viewer and beyond, the one-stop solution for GPU process management.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.501,
+    "score_parts": {
+      "stars_term": 3.841,
+      "forks_term": 1.186,
+      "recency_term": 1.475
+    }
+  },
+  {
+    "full_name": "OpenNMT/CTranslate2",
+    "url": "https://github.com/OpenNMT/CTranslate2",
+    "default_branch": "master",
+    "stars": 4501,
+    "forks": 489,
+    "pushed_at": "2026-05-29T05:08:47Z",
+    "days_since_push": 0.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Fast inference engine for Transformer models",
+    "matched_queries": [
+      "cuda inference",
+      "thrust cuda",
+      "topic:cuda"
+    ],
+    "priority": 6.494,
+    "score_parts": {
+      "stars_term": 3.653,
+      "forks_term": 1.345,
+      "recency_term": 1.496
+    }
+  },
+  {
+    "full_name": "NVIDIA/TransformerEngine",
+    "url": "https://github.com/NVIDIA/TransformerEngine",
+    "default_branch": "main",
+    "stars": 3362,
+    "forks": 733,
+    "pushed_at": "2026-05-29T22:38:00Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A library for accelerating Transformer models on NVIDIA GPUs, including using 8-bit and 4-bit floating point (FP8 and FP4) precision on Hopper, Ada and Blackwell GPUs, to provide better performance with lower memory utilization in both training and inference.",
+    "matched_queries": [
+      "cuda accelerated",
+      "cuda inference",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.46,
+    "score_parts": {
+      "stars_term": 3.527,
+      "forks_term": 1.433,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "chrxh/alien",
+    "url": "https://github.com/chrxh/alien",
+    "default_branch": "develop",
+    "stars": 5418,
+    "forks": 184,
+    "pushed_at": "2026-05-28T21:12:33Z",
+    "days_since_push": 1.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "ALIEN is a CUDA-powered artificial life simulation program.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.361,
+    "score_parts": {
+      "stars_term": 3.734,
+      "forks_term": 1.134,
+      "recency_term": 1.494
+    }
+  },
+  {
+    "full_name": "NVlabs/tiny-cuda-nn",
+    "url": "https://github.com/NVlabs/tiny-cuda-nn",
+    "default_branch": "master",
+    "stars": 4495,
+    "forks": 569,
+    "pushed_at": "2026-04-21T11:57:48Z",
+    "days_since_push": 38.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Lightning fast C++/CUDA neural network framework",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.324,
+    "score_parts": {
+      "stars_term": 3.653,
+      "forks_term": 1.378,
+      "recency_term": 1.294
+    }
+  },
+  {
+    "full_name": "apache/mahout",
+    "url": "https://github.com/apache/mahout",
+    "default_branch": "main",
+    "stars": 2291,
+    "forks": 993,
+    "pushed_at": "2026-05-23T12:19:48Z",
+    "days_since_push": 6.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Apache Mahout - an environment for quickly creating scalable, performant machine learning applications.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.322,
+    "score_parts": {
+      "stars_term": 3.36,
+      "forks_term": 1.499,
+      "recency_term": 1.463
+    }
+  },
+  {
+    "full_name": "meta-pytorch/torchrec",
+    "url": "https://github.com/meta-pytorch/torchrec",
+    "default_branch": "main",
+    "stars": 2551,
+    "forks": 649,
+    "pushed_at": "2026-05-29T21:33:51Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Pytorch domain library for recommendation systems",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.313,
+    "score_parts": {
+      "stars_term": 3.407,
+      "forks_term": 1.406,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "pytorch/ao",
+    "url": "https://github.com/pytorch/ao",
+    "default_branch": "main",
+    "stars": 2841,
+    "forks": 510,
+    "pushed_at": "2026-05-29T21:12:16Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "PyTorch native quantization and sparsity for training and inference",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 6.307,
+    "score_parts": {
+      "stars_term": 3.454,
+      "forks_term": 1.354,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "roflcoopter/viseron",
+    "url": "https://github.com/roflcoopter/viseron",
+    "default_branch": "dev",
+    "stars": 3189,
+    "forks": 394,
+    "pushed_at": "2026-05-28T11:49:01Z",
+    "days_since_push": 1.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Self-hosted, local only NVR and AI Computer Vision software.  With features such as object detection, motion detection, face recognition and more, it gives you the power to keep an eye on your home, office or any other place you want to monitor.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.294,
+    "score_parts": {
+      "stars_term": 3.504,
+      "forks_term": 1.298,
+      "recency_term": 1.492
+    }
+  },
+  {
+    "full_name": "NVIDIA/gpu-operator",
+    "url": "https://github.com/NVIDIA/gpu-operator",
+    "default_branch": "main",
+    "stars": 2721,
+    "forks": 510,
+    "pushed_at": "2026-05-29T18:09:47Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "NVIDIA GPU Operator creates, configures, and manages GPUs in Kubernetes",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.288,
+    "score_parts": {
+      "stars_term": 3.435,
+      "forks_term": 1.354,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "pytorch/TensorRT",
+    "url": "https://github.com/pytorch/TensorRT",
+    "default_branch": "main",
+    "stars": 2967,
+    "forks": 404,
+    "pushed_at": "2026-05-29T22:39:06Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "PyTorch/TorchScript/FX compiler for NVIDIA GPUs using TensorRT",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.276,
+    "score_parts": {
+      "stars_term": 3.472,
+      "forks_term": 1.304,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "MrNeRF/LichtFeld-Studio",
+    "url": "https://github.com/MrNeRF/LichtFeld-Studio",
+    "default_branch": "master",
+    "stars": 3132,
+    "forks": 342,
+    "pushed_at": "2026-05-29T20:23:19Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Train, inspect, edit, automate, and export 3D Gaussian Splatting scenes from a single native application.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.263,
+    "score_parts": {
+      "stars_term": 3.496,
+      "forks_term": 1.268,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "HazyResearch/ThunderKittens",
+    "url": "https://github.com/HazyResearch/ThunderKittens",
+    "default_branch": "main",
+    "stars": 3394,
+    "forks": 287,
+    "pushed_at": "2026-05-27T23:25:43Z",
+    "days_since_push": 2.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Tile primitives for speedy kernels",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 6.249,
+    "score_parts": {
+      "stars_term": 3.531,
+      "forks_term": 1.23,
+      "recency_term": 1.489
+    }
+  },
+  {
+    "full_name": "LeelaChessZero/lc0",
+    "url": "https://github.com/LeelaChessZero/lc0",
+    "default_branch": "master",
+    "stars": 3101,
+    "forks": 590,
+    "pushed_at": "2026-05-05T22:05:03Z",
+    "days_since_push": 24.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Open source neural network chess engine with GPU acceleration and broad hardware support.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.245,
+    "score_parts": {
+      "stars_term": 3.492,
+      "forks_term": 1.386,
+      "recency_term": 1.367
+    }
+  },
+  {
+    "full_name": "Oneflow-Inc/oneflow",
+    "url": "https://github.com/Oneflow-Inc/oneflow",
+    "default_branch": "master",
+    "stars": 9398,
+    "forks": 1015,
+    "pushed_at": "2025-12-04T01:29:28Z",
+    "days_since_push": 176.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "OneFlow is a deep learning framework designed to be user-friendly, scalable and efficient.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.236,
+    "score_parts": {
+      "stars_term": 3.973,
+      "forks_term": 1.503,
+      "recency_term": 0.759
+    }
+  },
+  {
+    "full_name": "Rust-GPU/rust-cuda",
+    "url": "https://github.com/Rust-GPU/rust-cuda",
+    "default_branch": "main",
+    "stars": 5212,
+    "forks": 231,
+    "pushed_at": "2026-04-29T03:27:39Z",
+    "days_since_push": 30.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Ecosystem of libraries and tools for writing and executing fast GPU code fully in Rust.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.232,
+    "score_parts": {
+      "stars_term": 3.717,
+      "forks_term": 1.183,
+      "recency_term": 1.332
+    }
+  },
+  {
+    "full_name": "containers/ramalama",
+    "url": "https://github.com/containers/ramalama",
+    "default_branch": "main",
+    "stars": 2864,
+    "forks": 341,
+    "pushed_at": "2026-05-28T13:52:25Z",
+    "days_since_push": 1.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "RamaLama is an open-source developer tool that simplifies the local serving of AI models from any source and facilitates their use for inference in production, all through the familiar language of containers.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 6.216,
+    "score_parts": {
+      "stars_term": 3.457,
+      "forks_term": 1.267,
+      "recency_term": 1.492
+    }
+  },
+  {
+    "full_name": "Jittor/jittor",
+    "url": "https://github.com/Jittor/jittor",
+    "default_branch": "master",
+    "stars": 3225,
+    "forks": 322,
+    "pushed_at": "2026-05-21T12:28:51Z",
+    "days_since_push": 8.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Jittor is a high-performance deep learning framework based on JIT compiling and meta-operators.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.215,
+    "score_parts": {
+      "stars_term": 3.509,
+      "forks_term": 1.255,
+      "recency_term": 1.452
+    }
+  },
+  {
+    "full_name": "NVIDIA/CUDALibrarySamples",
+    "url": "https://github.com/NVIDIA/CUDALibrarySamples",
+    "default_branch": "main",
+    "stars": 2412,
+    "forks": 456,
+    "pushed_at": "2026-05-28T06:00:58Z",
+    "days_since_push": 1.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CUDA Library Samples",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.203,
+    "score_parts": {
+      "stars_term": 3.383,
+      "forks_term": 1.33,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "facebookincubator/AITemplate",
+    "url": "https://github.com/facebookincubator/AITemplate",
+    "default_branch": "main",
+    "stars": 4722,
+    "forks": 387,
+    "pushed_at": "2026-04-09T02:07:25Z",
+    "days_since_push": 50.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "AITemplate is a Python framework which renders neural network into high performance CUDA/HIP C++ code. Specialized for FP16 TensorCore (NVIDIA GPU) and MatrixCore (AMD GPU) inference.",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 6.202,
+    "score_parts": {
+      "stars_term": 3.674,
+      "forks_term": 1.294,
+      "recency_term": 1.233
+    }
+  },
+  {
+    "full_name": "deepmodeling/deepmd-kit",
+    "url": "https://github.com/deepmodeling/deepmd-kit",
+    "default_branch": "master",
+    "stars": 1942,
+    "forks": 615,
+    "pushed_at": "2026-05-29T17:38:10Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A deep learning package for many-body potential energy representation and molecular dynamics",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 6.182,
+    "score_parts": {
+      "stars_term": 3.288,
+      "forks_term": 1.395,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "BBuf/how-to-optim-algorithm-in-cuda",
+    "url": "https://github.com/BBuf/how-to-optim-algorithm-in-cuda",
+    "default_branch": "master",
+    "stars": 3040,
+    "forks": 276,
+    "pushed_at": "2026-05-25T11:02:36Z",
+    "days_since_push": 4.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "how to optimize some algorithm in cuda.",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda"
+    ],
+    "priority": 6.179,
+    "score_parts": {
+      "stars_term": 3.483,
+      "forks_term": 1.221,
+      "recency_term": 1.474
+    }
+  },
+  {
+    "full_name": "NVIDIA/cccl",
+    "url": "https://github.com/NVIDIA/cccl",
+    "default_branch": "main",
+    "stars": 2351,
+    "forks": 396,
+    "pushed_at": "2026-05-29T22:20:23Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "CUDA Core Compute Libraries",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.171,
+    "score_parts": {
+      "stars_term": 3.371,
+      "forks_term": 1.299,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "arrayfire/arrayfire",
+    "url": "https://github.com/arrayfire/arrayfire",
+    "default_branch": "master",
+    "stars": 4884,
+    "forks": 550,
+    "pushed_at": "2026-03-07T03:06:52Z",
+    "days_since_push": 83.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "ArrayFire: a general purpose GPU library.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.146,
+    "score_parts": {
+      "stars_term": 3.689,
+      "forks_term": 1.371,
+      "recency_term": 1.086
+    }
+  },
+  {
+    "full_name": "CVCUDA/CV-CUDA",
+    "url": "https://github.com/CVCUDA/CV-CUDA",
+    "default_branch": "main",
+    "stars": 2687,
+    "forks": 250,
+    "pushed_at": "2026-05-28T04:51:17Z",
+    "days_since_push": 1.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "CV-CUDA\u2122 is an open-source, GPU accelerated library for cloud-scale image processing and computer vision.",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.119,
+    "score_parts": {
+      "stars_term": 3.429,
+      "forks_term": 1.2,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "rapidsai/cugraph",
+    "url": "https://github.com/rapidsai/cugraph",
+    "default_branch": "main",
+    "stars": 2185,
+    "forks": 353,
+    "pushed_at": "2026-05-29T22:08:41Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "cuGraph - RAPIDS Graph Analytics Library",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.114,
+    "score_parts": {
+      "stars_term": 3.34,
+      "forks_term": 1.275,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "diku-dk/futhark",
+    "url": "https://github.com/diku-dk/futhark",
+    "default_branch": "master",
+    "stars": 2734,
+    "forks": 199,
+    "pushed_at": "2026-05-29T21:34:46Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Haskell",
+    "description": ":boom::computer::boom: A data-parallel functional programming language",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.087,
+    "score_parts": {
+      "stars_term": 3.437,
+      "forks_term": 1.151,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "Infatoshi/cuda-course",
+    "url": "https://github.com/Infatoshi/cuda-course",
+    "default_branch": "master",
+    "stars": 3662,
+    "forks": 642,
+    "pushed_at": "2026-03-11T05:55:03Z",
+    "days_since_push": 79.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 6.071,
+    "score_parts": {
+      "stars_term": 3.564,
+      "forks_term": 1.404,
+      "recency_term": 1.104
+    }
+  },
+  {
+    "full_name": "Luce-Org/lucebox-hub",
+    "url": "https://github.com/Luce-Org/lucebox-hub",
+    "default_branch": "main",
+    "stars": 2292,
+    "forks": 212,
+    "pushed_at": "2026-05-29T10:50:24Z",
+    "days_since_push": 0.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Fast LLM speculative inference server for consumer hardware.",
+    "matched_queries": [
+      "cuda inference",
+      "cuda kernel",
+      "topic:cuda"
+    ],
+    "priority": 6.022,
+    "score_parts": {
+      "stars_term": 3.36,
+      "forks_term": 1.164,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "mirage-project/mirage",
+    "url": "https://github.com/mirage-project/mirage",
+    "default_branch": "mpk",
+    "stars": 2282,
+    "forks": 212,
+    "pushed_at": "2026-05-29T03:17:18Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Mirage Persistent Kernel: Compiling LLMs into a MegaKernel",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 6.018,
+    "score_parts": {
+      "stars_term": 3.359,
+      "forks_term": 1.164,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "tenstorrent/tt-metal",
+    "url": "https://github.com/tenstorrent/tt-metal",
+    "default_branch": "main",
+    "stars": 1474,
+    "forks": 469,
+    "pushed_at": "2026-05-29T22:47:34Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": ":metal: TT-NN operator library, and TT-Metalium low level kernel programming model.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 6.005,
+    "score_parts": {
+      "stars_term": 3.169,
+      "forks_term": 1.336,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "oneapi-src/oneAPI-samples",
+    "url": "https://github.com/oneapi-src/oneAPI-samples",
+    "default_branch": "main",
+    "stars": 1147,
+    "forks": 745,
+    "pushed_at": "2026-05-29T03:08:04Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Samples for Intel\u00ae oneAPI Toolkits",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.992,
+    "score_parts": {
+      "stars_term": 3.06,
+      "forks_term": 1.436,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "NVlabs/cuda-oxide",
+    "url": "https://github.com/NVlabs/cuda-oxide",
+    "default_branch": "main",
+    "stars": 2504,
+    "forks": 159,
+    "pushed_at": "2026-05-27T16:59:12Z",
+    "days_since_push": 2.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "cuda-oxide is an experimental Rust-to-CUDA compiler that lets you write (SIMT) GPU kernels in safe(ish), idiomatic Rust. It compiles standard Rust code directly to PTX \u2014 no DSLs, no foreign language bindings, just Rust.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.988,
+    "score_parts": {
+      "stars_term": 3.399,
+      "forks_term": 1.102,
+      "recency_term": 1.487
+    }
+  },
+  {
+    "full_name": "tracel-ai/cubecl",
+    "url": "https://github.com/tracel-ai/cubecl",
+    "default_branch": "main",
+    "stars": 2162,
+    "forks": 180,
+    "pushed_at": "2026-05-29T20:22:25Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Multi-platform high-performance compute language extension for Rust.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.963,
+    "score_parts": {
+      "stars_term": 3.335,
+      "forks_term": 1.129,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "ashvardanian/StringZilla",
+    "url": "https://github.com/ashvardanian/StringZilla",
+    "default_branch": "main",
+    "stars": 3469,
+    "forks": 125,
+    "pushed_at": "2026-05-05T13:43:24Z",
+    "days_since_push": 24.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "Up to 100x faster strings for C, C++, CUDA, Python, Rust, Swift, JS, & Go, leveraging NEON, AVX2, AVX-512, SVE, GPGPU, & SWAR to accelerate search, hashing, sorting, edit distances, sketches, and memory ops \ud83e\udd96",
+    "matched_queries": [
+      "cuda accelerated"
+    ],
+    "priority": 5.956,
+    "score_parts": {
+      "stars_term": 3.54,
+      "forks_term": 1.05,
+      "recency_term": 1.366
+    }
+  },
+  {
+    "full_name": "withcatai/node-llama-cpp",
+    "url": "https://github.com/withcatai/node-llama-cpp",
+    "default_branch": "master",
+    "stars": 2077,
+    "forks": 192,
+    "pushed_at": "2026-05-27T00:26:13Z",
+    "days_since_push": 2.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "TypeScript",
+    "description": "Run AI models locally on your machine with node.js bindings for llama.cpp. Enforce a JSON schema on the model output on the generation level",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.944,
+    "score_parts": {
+      "stars_term": 3.318,
+      "forks_term": 1.143,
+      "recency_term": 1.483
+    }
+  },
+  {
+    "full_name": "NVlabs/curobo",
+    "url": "https://github.com/NVlabs/curobo",
+    "default_branch": "main",
+    "stars": 1583,
+    "forks": 282,
+    "pushed_at": "2026-05-29T16:12:07Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "CUDA Accelerated Robot Library",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda"
+    ],
+    "priority": 5.924,
+    "score_parts": {
+      "stars_term": 3.2,
+      "forks_term": 1.226,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "NVIDIA/nccl-tests",
+    "url": "https://github.com/NVIDIA/nccl-tests",
+    "default_branch": "master",
+    "stars": 1537,
+    "forks": 374,
+    "pushed_at": "2026-05-20T16:05:09Z",
+    "days_since_push": 9.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "NCCL Tests",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.921,
+    "score_parts": {
+      "stars_term": 3.187,
+      "forks_term": 1.287,
+      "recency_term": 1.447
+    }
+  },
+  {
+    "full_name": "JuliaGPU/CUDA.jl",
+    "url": "https://github.com/JuliaGPU/CUDA.jl",
+    "default_branch": "main",
+    "stars": 1409,
+    "forks": 275,
+    "pushed_at": "2026-05-28T15:48:05Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Julia",
+    "description": "CUDA programming in Julia.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.862,
+    "score_parts": {
+      "stars_term": 3.149,
+      "forks_term": 1.22,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "pykeen/pykeen",
+    "url": "https://github.com/pykeen/pykeen",
+    "default_branch": "master",
+    "stars": 2001,
+    "forks": 219,
+    "pushed_at": "2026-05-09T19:16:35Z",
+    "days_since_push": 20.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "\ud83e\udd16 A Python library for learning and evaluating knowledge graph embeddings",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.861,
+    "score_parts": {
+      "stars_term": 3.301,
+      "forks_term": 1.171,
+      "recency_term": 1.388
+    }
+  },
+  {
+    "full_name": "patriciogonzalezvivo/lygia",
+    "url": "https://github.com/patriciogonzalezvivo/lygia",
+    "default_branch": "main",
+    "stars": 3348,
+    "forks": 215,
+    "pushed_at": "2026-03-24T12:31:58Z",
+    "days_since_push": 66.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "GLSL",
+    "description": "LYGIA, it's a granular and multi-language (GLSL, HLSL, Metal,  WGSL,  WEGL and CUDA) shader library designed for performance and flexibility",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.854,
+    "score_parts": {
+      "stars_term": 3.525,
+      "forks_term": 1.167,
+      "recency_term": 1.161
+    }
+  },
+  {
+    "full_name": "devnen/Chatterbox-TTS-Server",
+    "url": "https://github.com/devnen/Chatterbox-TTS-Server",
+    "default_branch": "main",
+    "stars": 1250,
+    "forks": 304,
+    "pushed_at": "2026-05-26T19:49:30Z",
+    "days_since_push": 3.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Self-host the powerful Chatterbox TTS model. This server offers a user-friendly Web UI, flexible API endpoints (incl. OpenAI compatible), predefined voices, voice cloning, and large audiobook-scale text processing. Runs accelerated on NVIDIA (CUDA), AMD (ROCm), and CPU.",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda"
+    ],
+    "priority": 5.821,
+    "score_parts": {
+      "stars_term": 3.097,
+      "forks_term": 1.242,
+      "recency_term": 1.482
+    }
+  },
+  {
+    "full_name": "m4rs-mt/ILGPU",
+    "url": "https://github.com/m4rs-mt/ILGPU",
+    "default_branch": "master",
+    "stars": 1717,
+    "forks": 140,
+    "pushed_at": "2026-05-29T00:21:41Z",
+    "days_since_push": 0.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C#",
+    "description": "ILGPU JIT Compiler for high-performance .Net GPU programs",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.804,
+    "score_parts": {
+      "stars_term": 3.235,
+      "forks_term": 1.075,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "beam-cloud/beta9",
+    "url": "https://github.com/beam-cloud/beta9",
+    "default_branch": "main",
+    "stars": 1657,
+    "forks": 143,
+    "pushed_at": "2026-05-29T22:39:48Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "Ultrafast serverless GPU inference, sandboxes, and background jobs",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.799,
+    "score_parts": {
+      "stars_term": 3.22,
+      "forks_term": 1.079,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "dphnAI/aphrodite-engine",
+    "url": "https://github.com/dphnAI/aphrodite-engine",
+    "default_branch": "main",
+    "stars": 1746,
+    "forks": 198,
+    "pushed_at": "2026-05-08T20:37:16Z",
+    "days_since_push": 21.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Large-scale LLM inference engine",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 5.775,
+    "score_parts": {
+      "stars_term": 3.242,
+      "forks_term": 1.149,
+      "recency_term": 1.383
+    }
+  },
+  {
+    "full_name": "ForceInjection/AI-fundamentals",
+    "url": "https://github.com/ForceInjection/AI-fundamentals",
+    "default_branch": "main",
+    "stars": 1337,
+    "forks": 209,
+    "pushed_at": "2026-05-26T11:18:20Z",
+    "days_since_push": 3.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "HTML",
+    "description": "AI \u57fa\u7840\u77e5\u8bc6 - GPU \u67b6\u6784\u3001CUDA \u7f16\u7a0b\u3001\u5927\u6a21\u578b\u57fa\u7840\u53caAI Agent \u76f8\u5173\u77e5\u8bc6\u3002",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.768,
+    "score_parts": {
+      "stars_term": 3.126,
+      "forks_term": 1.161,
+      "recency_term": 1.48
+    }
+  },
+  {
+    "full_name": "nvidia-isaac/cuVSLAM",
+    "url": "https://github.com/nvidia-isaac/cuVSLAM",
+    "default_branch": "main",
+    "stars": 1534,
+    "forks": 154,
+    "pushed_at": "2026-05-26T13:24:33Z",
+    "days_since_push": 3.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "cuVSLAM: CUDA-Accelerated Visual Odometry and Mapping",
+    "matched_queries": [
+      "cuda accelerated"
+    ],
+    "priority": 5.762,
+    "score_parts": {
+      "stars_term": 3.186,
+      "forks_term": 1.095,
+      "recency_term": 1.481
+    }
+  },
+  {
+    "full_name": "k2-fsa/k2",
+    "url": "https://github.com/k2-fsa/k2",
+    "default_branch": "master",
+    "stars": 1339,
+    "forks": 233,
+    "pushed_at": "2026-05-20T09:09:47Z",
+    "days_since_push": 9.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "FSA/FST algorithms, differentiable, with PyTorch compatibility.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.757,
+    "score_parts": {
+      "stars_term": 3.127,
+      "forks_term": 1.185,
+      "recency_term": 1.446
+    }
+  },
+  {
+    "full_name": "thu-ml/SageAttention",
+    "url": "https://github.com/thu-ml/SageAttention",
+    "default_branch": "main",
+    "stars": 3394,
+    "forks": 427,
+    "pushed_at": "2026-01-17T17:43:28Z",
+    "days_since_push": 132.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "[ICLR2025, ICML2025, NeurIPS2025 Spotlight] Quantized Attention achieves speedup of 2-5x compared to FlashAttention, without losing end-to-end metrics across language, image, and video models.",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda"
+    ],
+    "priority": 5.748,
+    "score_parts": {
+      "stars_term": 3.531,
+      "forks_term": 1.316,
+      "recency_term": 0.902
+    }
+  },
+  {
+    "full_name": "lupinemachines/lupine",
+    "url": "https://github.com/lupinemachines/lupine",
+    "default_branch": "main",
+    "stars": 1872,
+    "forks": 85,
+    "pushed_at": "2026-05-28T06:42:08Z",
+    "days_since_push": 1.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "LUPINE is a GPU over IP bridge allowing GPUs on remote machines to be attached to CPU-only machines.",
+    "matched_queries": [
+      "cublas",
+      "cudnn",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.73,
+    "score_parts": {
+      "stars_term": 3.273,
+      "forks_term": 0.967,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "uccl-project/uccl",
+    "url": "https://github.com/uccl-project/uccl",
+    "default_branch": "main",
+    "stars": 1389,
+    "forks": 149,
+    "pushed_at": "2026-05-29T17:31:49Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "UCCL is an efficient communication library for GPUs, covering collectives, P2P (e.g., KV cache transfer, RL weight transfer), and EP (e.g., GPU-driven)",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.73,
+    "score_parts": {
+      "stars_term": 3.143,
+      "forks_term": 1.088,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "inducer/pycuda",
+    "url": "https://github.com/inducer/pycuda",
+    "default_branch": "main",
+    "stars": 2047,
+    "forks": 298,
+    "pushed_at": "2026-03-27T19:17:38Z",
+    "days_since_push": 63.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "CUDA integration for Python, plus shiny features",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.725,
+    "score_parts": {
+      "stars_term": 3.311,
+      "forks_term": 1.238,
+      "recency_term": 1.176
+    }
+  },
+  {
+    "full_name": "beehive-lab/TornadoVM",
+    "url": "https://github.com/beehive-lab/TornadoVM",
+    "default_branch": "master",
+    "stars": 1452,
+    "forks": 133,
+    "pushed_at": "2026-05-28T10:43:12Z",
+    "days_since_push": 1.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Java",
+    "description": "TornadoVM: A practical and efficient heterogeneous programming framework for managed languages",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.717,
+    "score_parts": {
+      "stars_term": 3.162,
+      "forks_term": 1.064,
+      "recency_term": 1.491
+    }
+  },
+  {
+    "full_name": "intel/auto-round",
+    "url": "https://github.com/intel/auto-round",
+    "default_branch": "main",
+    "stars": 1426,
+    "forks": 134,
+    "pushed_at": "2026-05-29T12:45:09Z",
+    "days_since_push": 0.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A SOTA quantization algorithm for high-accuracy low-bit LLM inference, seamlessly optimized for CPU/XPU/CUDA, with multi-datatype support and full compatibility with vLLM, SGLang, and Transformers.",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 5.717,
+    "score_parts": {
+      "stars_term": 3.154,
+      "forks_term": 1.065,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "alibaba/rtp-llm",
+    "url": "https://github.com/alibaba/rtp-llm",
+    "default_branch": "main",
+    "stars": 1138,
+    "forks": 197,
+    "pushed_at": "2026-05-29T18:22:06Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "RTP-LLM: Alibaba's high-performance LLM inference engine for diverse applications.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.704,
+    "score_parts": {
+      "stars_term": 3.057,
+      "forks_term": 1.148,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "Zaneham/BarraCUDA",
+    "url": "https://github.com/Zaneham/BarraCUDA",
+    "default_branch": "master",
+    "stars": 1689,
+    "forks": 85,
+    "pushed_at": "2026-05-29T12:05:33Z",
+    "days_since_push": 0.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "Open-source CUDA, Triton and HIP compiler targeting multiple GPU architectures.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.693,
+    "score_parts": {
+      "stars_term": 3.228,
+      "forks_term": 0.967,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "NVIDIA/MatX",
+    "url": "https://github.com/NVIDIA/MatX",
+    "default_branch": "main",
+    "stars": 1425,
+    "forks": 117,
+    "pushed_at": "2026-05-29T21:37:45Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "An efficient C++20 GPU numerical computing library with Python-like syntax",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.69,
+    "score_parts": {
+      "stars_term": 3.154,
+      "forks_term": 1.036,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "rapidsai/raft",
+    "url": "https://github.com/rapidsai/raft",
+    "default_branch": "main",
+    "stars": 1009,
+    "forks": 232,
+    "pushed_at": "2026-05-29T18:48:44Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "RAFT contains fundamental widely-used algorithms and primitives for machine learning and information retrieval. The algorithms are CUDA-accelerated and form building blocks for more easily writing high performance applications.",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.687,
+    "score_parts": {
+      "stars_term": 3.004,
+      "forks_term": 1.184,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "heavyai/heavydb",
+    "url": "https://github.com/heavyai/heavydb",
+    "default_branch": "master",
+    "stars": 3055,
+    "forks": 456,
+    "pushed_at": "2026-01-06T15:25:31Z",
+    "days_since_push": 143.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "HeavyDB (formerly MapD/OmniSciDB)",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.679,
+    "score_parts": {
+      "stars_term": 3.485,
+      "forks_term": 1.33,
+      "recency_term": 0.864
+    }
+  },
+  {
+    "full_name": "enpeizhao/CVprojects",
+    "url": "https://github.com/enpeizhao/CVprojects",
+    "default_branch": "main",
+    "stars": 2607,
+    "forks": 694,
+    "pushed_at": "2025-12-26T12:52:58Z",
+    "days_since_push": 154.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "computer vision projects |  \u8ba1\u7b97\u673a\u89c6\u89c9\u76f8\u5173\u597d\u73a9\u7684AI\u9879\u76ee\uff08Python\u3001C++\u3001embedded system\uff09",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.665,
+    "score_parts": {
+      "stars_term": 3.416,
+      "forks_term": 1.421,
+      "recency_term": 0.828
+    }
+  },
+  {
+    "full_name": "gprMax/gprMax",
+    "url": "https://github.com/gprMax/gprMax",
+    "default_branch": "master",
+    "stars": 839,
+    "forks": 380,
+    "pushed_at": "2026-05-20T02:15:13Z",
+    "days_since_push": 9.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "gprMax is open source software that simulates electromagnetic wave propagation using the Finite-Difference Time-Domain (FDTD) method for numerical modelling of Ground Penetrating Radar (GPR)",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.659,
+    "score_parts": {
+      "stars_term": 2.924,
+      "forks_term": 1.29,
+      "recency_term": 1.444
+    }
+  },
+  {
+    "full_name": "SemiAnalysisAI/InferenceX",
+    "url": "https://github.com/SemiAnalysisAI/InferenceX",
+    "default_branch": "main",
+    "stars": 1014,
+    "forks": 178,
+    "pushed_at": "2026-05-29T22:27:52Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Open Source Continuous Inference Benchmarking Qwen3.5, DeepSeek, GPTOSS - GB200 NVL72 vs MI355X vs B200 vs GB300 NVL72 vs H100 & soon\u2122 TPUv6e/v7/Trainium2/3",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 5.633,
+    "score_parts": {
+      "stars_term": 3.006,
+      "forks_term": 1.126,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "mratsim/Arraymancer",
+    "url": "https://github.com/mratsim/Arraymancer",
+    "default_branch": "master",
+    "stars": 1404,
+    "forks": 100,
+    "pushed_at": "2026-05-26T20:28:54Z",
+    "days_since_push": 3.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Nim",
+    "description": "A fast, ergonomic and portable tensor library in Nim with a deep learning focus for CPU, GPU and embedded devices via OpenMP, Cuda and OpenCL backends",
+    "matched_queries": [
+      "cudnn",
+      "topic:cuda"
+    ],
+    "priority": 5.632,
+    "score_parts": {
+      "stars_term": 3.148,
+      "forks_term": 1.002,
+      "recency_term": 1.482
+    }
+  },
+  {
+    "full_name": "psalias2006/gpu-hot",
+    "url": "https://github.com/psalias2006/gpu-hot",
+    "default_branch": "main",
+    "stars": 1546,
+    "forks": 72,
+    "pushed_at": "2026-05-28T07:57:58Z",
+    "days_since_push": 1.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "JavaScript",
+    "description": "\ud83d\udd25 Real-time NVIDIA GPU dashboard",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.612,
+    "score_parts": {
+      "stars_term": 3.189,
+      "forks_term": 0.932,
+      "recency_term": 1.491
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuopt",
+    "url": "https://github.com/NVIDIA/cuopt",
+    "default_branch": "main",
+    "stars": 902,
+    "forks": 178,
+    "pushed_at": "2026-05-29T21:01:04Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "GPU accelerated decision optimization",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.582,
+    "score_parts": {
+      "stars_term": 2.956,
+      "forks_term": 1.126,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "LuxCoreRender/LuxCore",
+    "url": "https://github.com/LuxCoreRender/LuxCore",
+    "default_branch": "master",
+    "stars": 1303,
+    "forks": 164,
+    "pushed_at": "2026-05-03T17:29:05Z",
+    "days_since_push": 26.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "LuxCore source repository",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.58,
+    "score_parts": {
+      "stars_term": 3.115,
+      "forks_term": 1.109,
+      "recency_term": 1.356
+    }
+  },
+  {
+    "full_name": "mryab/efficient-dl-systems",
+    "url": "https://github.com/mryab/efficient-dl-systems",
+    "default_branch": "main",
+    "stars": 992,
+    "forks": 149,
+    "pushed_at": "2026-05-28T15:00:14Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "Efficient Deep Learning Systems course materials (HSE, YSDA)",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.577,
+    "score_parts": {
+      "stars_term": 2.997,
+      "forks_term": 1.088,
+      "recency_term": 1.492
+    }
+  },
+  {
+    "full_name": "chelsea0x3b/cudarc",
+    "url": "https://github.com/chelsea0x3b/cudarc",
+    "default_branch": "main",
+    "stars": 1144,
+    "forks": 156,
+    "pushed_at": "2026-05-15T15:58:41Z",
+    "days_since_push": 14.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Safe rust wrapper around CUDA toolkit",
+    "matched_queries": [
+      "cublas",
+      "cudnn",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.576,
+    "score_parts": {
+      "stars_term": 3.059,
+      "forks_term": 1.098,
+      "recency_term": 1.42
+    }
+  },
+  {
+    "full_name": "marcoslucianops/DeepStream-Yolo",
+    "url": "https://github.com/marcoslucianops/DeepStream-Yolo",
+    "default_branch": "master",
+    "stars": 2018,
+    "forks": 457,
+    "pushed_at": "2026-01-25T15:24:40Z",
+    "days_since_push": 124.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "NVIDIA DeepStream SDK 8.0 / 7.1 / 7.0 / 6.4 / 6.3 / 6.2 / 6.1.1 / 6.1 / 6.0.1 / 6.0 / 5.1 implementation for YOLO models",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.565,
+    "score_parts": {
+      "stars_term": 3.305,
+      "forks_term": 1.33,
+      "recency_term": 0.929
+    }
+  },
+  {
+    "full_name": "rapidsai/rmm",
+    "url": "https://github.com/rapidsai/rmm",
+    "default_branch": "main",
+    "stars": 698,
+    "forks": 249,
+    "pushed_at": "2026-05-29T15:15:37Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "RAPIDS Memory Manager",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.542,
+    "score_parts": {
+      "stars_term": 2.844,
+      "forks_term": 1.199,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "inducer/pyopencl",
+    "url": "https://github.com/inducer/pyopencl",
+    "default_branch": "main",
+    "stars": 1138,
+    "forks": 249,
+    "pushed_at": "2026-04-19T19:40:30Z",
+    "days_since_push": 40.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "OpenCL integration for Python, plus shiny features",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.541,
+    "score_parts": {
+      "stars_term": 3.057,
+      "forks_term": 1.199,
+      "recency_term": 1.285
+    }
+  },
+  {
+    "full_name": "NVIDIA/cudnn-frontend",
+    "url": "https://github.com/NVIDIA/cudnn-frontend",
+    "default_branch": "develop",
+    "stars": 829,
+    "forks": 173,
+    "pushed_at": "2026-05-29T20:37:24Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "cuDNN Frontend is NVIDIA's modern, open-source entry point to the cuDNN library and a growing collection of high-performance open-source kernels.",
+    "matched_queries": [
+      "cuda kernel",
+      "cudnn",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.539,
+    "score_parts": {
+      "stars_term": 2.919,
+      "forks_term": 1.12,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "CERN/TIGRE",
+    "url": "https://github.com/CERN/TIGRE",
+    "default_branch": "master",
+    "stars": 778,
+    "forks": 248,
+    "pushed_at": "2026-05-20T13:57:27Z",
+    "days_since_push": 9.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "MATLAB",
+    "description": "TIGRE: Tomographic Iterative GPU-based Reconstruction Toolbox",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.536,
+    "score_parts": {
+      "stars_term": 2.892,
+      "forks_term": 1.198,
+      "recency_term": 1.447
+    }
+  },
+  {
+    "full_name": "rapidsai/cuvs",
+    "url": "https://github.com/rapidsai/cuvs",
+    "default_branch": "main",
+    "stars": 769,
+    "forks": 190,
+    "pushed_at": "2026-05-29T21:24:07Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "cuVS - a library for vector search and clustering on the GPU",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.527,
+    "score_parts": {
+      "stars_term": 2.886,
+      "forks_term": 1.141,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "DTolm/VkFFT",
+    "url": "https://github.com/DTolm/VkFFT",
+    "default_branch": "master",
+    "stars": 1747,
+    "forks": 134,
+    "pushed_at": "2026-04-04T19:41:08Z",
+    "days_since_push": 55.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Vulkan/CUDA/HIP/OpenCL/Level Zero/Metal Fast Fourier Transform library",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.521,
+    "score_parts": {
+      "stars_term": 3.243,
+      "forks_term": 1.065,
+      "recency_term": 1.213
+    }
+  },
+  {
+    "full_name": "LuisaGroup/LuisaCompute",
+    "url": "https://github.com/LuisaGroup/LuisaCompute",
+    "default_branch": "stable",
+    "stars": 1014,
+    "forks": 102,
+    "pushed_at": "2026-05-29T07:17:39Z",
+    "days_since_push": 0.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "High-Performance Rendering Framework on Stream Architectures",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.509,
+    "score_parts": {
+      "stars_term": 3.006,
+      "forks_term": 1.006,
+      "recency_term": 1.496
+    }
+  },
+  {
+    "full_name": "brucefan1983/GPUMD",
+    "url": "https://github.com/brucefan1983/GPUMD",
+    "default_branch": "master",
+    "stars": 777,
+    "forks": 182,
+    "pushed_at": "2026-05-27T13:30:55Z",
+    "days_since_push": 2.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Graphics Processing Units Molecular Dynamics",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.508,
+    "score_parts": {
+      "stars_term": 2.891,
+      "forks_term": 1.131,
+      "recency_term": 1.486
+    }
+  },
+  {
+    "full_name": "uxlfoundation/oneMath",
+    "url": "https://github.com/uxlfoundation/oneMath",
+    "default_branch": "develop",
+    "stars": 761,
+    "forks": 178,
+    "pushed_at": "2026-05-29T01:19:37Z",
+    "days_since_push": 0.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "oneAPI Math Library (oneMath)",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.503,
+    "score_parts": {
+      "stars_term": 2.882,
+      "forks_term": 1.126,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "markus-perl/ffmpeg-build-script",
+    "url": "https://github.com/markus-perl/ffmpeg-build-script",
+    "default_branch": "master",
+    "stars": 1204,
+    "forks": 365,
+    "pushed_at": "2026-03-17T12:52:10Z",
+    "days_since_push": 73.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Shell",
+    "description": "The FFmpeg build script provides an easy way to build a static FFmpeg on OSX and Linux with non-free codecs included.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.493,
+    "score_parts": {
+      "stars_term": 3.081,
+      "forks_term": 1.282,
+      "recency_term": 1.131
+    }
+  },
+  {
+    "full_name": "Dao-AILab/causal-conv1d",
+    "url": "https://github.com/Dao-AILab/causal-conv1d",
+    "default_branch": "main",
+    "stars": 887,
+    "forks": 188,
+    "pushed_at": "2026-05-09T11:47:00Z",
+    "days_since_push": 20.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Causal depthwise conv1d in CUDA, with a PyTorch interface",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.473,
+    "score_parts": {
+      "stars_term": 2.948,
+      "forks_term": 1.138,
+      "recency_term": 1.386
+    }
+  },
+  {
+    "full_name": "NVIDIA/nvbench",
+    "url": "https://github.com/NVIDIA/nvbench",
+    "default_branch": "main",
+    "stars": 865,
+    "forks": 109,
+    "pushed_at": "2026-05-29T22:09:05Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CUDA Kernel Benchmarking Library",
+    "matched_queries": [
+      "cuda kernel",
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.458,
+    "score_parts": {
+      "stars_term": 2.938,
+      "forks_term": 1.021,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "ddemidov/amgcl",
+    "url": "https://github.com/ddemidov/amgcl",
+    "default_branch": "master",
+    "stars": 863,
+    "forks": 137,
+    "pushed_at": "2026-05-16T17:05:45Z",
+    "days_since_push": 13.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "C++ library for solving large sparse linear systems with algebraic multigrid method",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.432,
+    "score_parts": {
+      "stars_term": 2.937,
+      "forks_term": 1.07,
+      "recency_term": 1.425
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuda-tile",
+    "url": "https://github.com/NVIDIA/cuda-tile",
+    "default_branch": "main",
+    "stars": 965,
+    "forks": 81,
+    "pushed_at": "2026-05-28T04:41:31Z",
+    "days_since_push": 1.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "CUDA Tile IR is an MLIR-based intermediate representation and compiler infrastructure for CUDA kernel optimization, focusing on tile-based computation patterns and optimizations targeting NVIDIA tensor core units.",
+    "matched_queries": [
+      "cuda kernel"
+    ],
+    "priority": 5.432,
+    "score_parts": {
+      "stars_term": 2.985,
+      "forks_term": 0.957,
+      "recency_term": 1.49
+    }
+  },
+  {
+    "full_name": "eyalroz/cuda-api-wrappers",
+    "url": "https://github.com/eyalroz/cuda-api-wrappers",
+    "default_branch": "master",
+    "stars": 890,
+    "forks": 87,
+    "pushed_at": "2026-05-26T17:55:06Z",
+    "days_since_push": 3.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Thin, unified, C++-flavored wrappers for the CUDA APIs",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.404,
+    "score_parts": {
+      "stars_term": 2.95,
+      "forks_term": 0.972,
+      "recency_term": 1.482
+    }
+  },
+  {
+    "full_name": "brucefan1983/CUDA-Programming",
+    "url": "https://github.com/brucefan1983/CUDA-Programming",
+    "default_branch": "master",
+    "stars": 2062,
+    "forks": 387,
+    "pushed_at": "2025-12-14T13:27:03Z",
+    "days_since_push": 166.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Sample codes for my CUDA programming book",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.399,
+    "score_parts": {
+      "stars_term": 3.314,
+      "forks_term": 1.294,
+      "recency_term": 0.79
+    }
+  },
+  {
+    "full_name": "uncomplicate/neanderthal",
+    "url": "https://github.com/uncomplicate/neanderthal",
+    "default_branch": "master",
+    "stars": 1124,
+    "forks": 60,
+    "pushed_at": "2026-05-18T17:21:34Z",
+    "days_since_push": 11.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Clojure",
+    "description": "Fast Clojure Matrix Library",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.38,
+    "score_parts": {
+      "stars_term": 3.051,
+      "forks_term": 0.893,
+      "recency_term": 1.437
+    }
+  },
+  {
+    "full_name": "spcl/dace",
+    "url": "https://github.com/spcl/dace",
+    "default_branch": "main",
+    "stars": 583,
+    "forks": 157,
+    "pushed_at": "2026-05-29T18:23:31Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "DaCe - Data Centric Parallel Programming",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.365,
+    "score_parts": {
+      "stars_term": 2.766,
+      "forks_term": 1.099,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "RightNow-AI/autokernel",
+    "url": "https://github.com/RightNow-AI/autokernel",
+    "default_branch": "main",
+    "stars": 1385,
+    "forks": 138,
+    "pushed_at": "2026-03-19T03:13:43Z",
+    "days_since_push": 71.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Autoresearch for GPU kernels. Give it any PyTorch model, go to sleep, wake up to optimized Triton kernels.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.351,
+    "score_parts": {
+      "stars_term": 3.142,
+      "forks_term": 1.072,
+      "recency_term": 1.138
+    }
+  },
+  {
+    "full_name": "Celebrandil/CudaSift",
+    "url": "https://github.com/Celebrandil/CudaSift",
+    "default_branch": "AdaLovelace",
+    "stars": 943,
+    "forks": 302,
+    "pushed_at": "2026-03-17T09:39:35Z",
+    "days_since_push": 73.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "A CUDA implementation of SIFT for NVidia GPUs (1.2 ms on a GTX 1060)",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.346,
+    "score_parts": {
+      "stars_term": 2.975,
+      "forks_term": 1.241,
+      "recency_term": 1.13
+    }
+  },
+  {
+    "full_name": "stotko/stdgpu",
+    "url": "https://github.com/stotko/stdgpu",
+    "default_branch": "master",
+    "stars": 1262,
+    "forks": 98,
+    "pushed_at": "2026-04-10T07:44:57Z",
+    "days_since_push": 49.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "stdgpu: Efficient STL-like Data Structures on the GPU",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.338,
+    "score_parts": {
+      "stars_term": 3.101,
+      "forks_term": 0.998,
+      "recency_term": 1.239
+    }
+  },
+  {
+    "full_name": "parca-dev/parca-agent",
+    "url": "https://github.com/parca-dev/parca-agent",
+    "default_branch": "main",
+    "stars": 726,
+    "forks": 88,
+    "pushed_at": "2026-05-28T16:41:17Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "eBPF based always-on CPU/GPU profiler auto-discovering targets in Kubernetes and systemd, zero code changes or restarts needed!",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.329,
+    "score_parts": {
+      "stars_term": 2.862,
+      "forks_term": 0.975,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuCollections",
+    "url": "https://github.com/NVIDIA/cuCollections",
+    "default_branch": "dev",
+    "stars": 647,
+    "forks": 109,
+    "pushed_at": "2026-05-27T00:29:51Z",
+    "days_since_push": 2.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.315,
+    "score_parts": {
+      "stars_term": 2.812,
+      "forks_term": 1.021,
+      "recency_term": 1.483
+    }
+  },
+  {
+    "full_name": "ginkgo-project/ginkgo",
+    "url": "https://github.com/ginkgo-project/ginkgo",
+    "default_branch": "develop",
+    "stars": 597,
+    "forks": 116,
+    "pushed_at": "2026-05-29T15:32:50Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Numerical linear algebra software package",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.309,
+    "score_parts": {
+      "stars_term": 2.777,
+      "forks_term": 1.034,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "giovtorres/slurm-docker-cluster",
+    "url": "https://github.com/giovtorres/slurm-docker-cluster",
+    "default_branch": "main",
+    "stars": 511,
+    "forks": 261,
+    "pushed_at": "2026-05-08T18:15:11Z",
+    "days_since_push": 21.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Shell",
+    "description": "A Slurm cluster using docker-compose",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.301,
+    "score_parts": {
+      "stars_term": 2.709,
+      "forks_term": 1.209,
+      "recency_term": 1.382
+    }
+  },
+  {
+    "full_name": "ScalingIntelligence/KernelBench",
+    "url": "https://github.com/ScalingIntelligence/KernelBench",
+    "default_branch": "main",
+    "stars": 1030,
+    "forks": 171,
+    "pushed_at": "2026-03-24T04:29:13Z",
+    "days_since_push": 66.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "KernelBench: Can LLMs Write GPU Kernels? - Benchmark + Toolkit with Torch -> CUDA (+ more DSLs)",
+    "matched_queries": [
+      "cuda kernel"
+    ],
+    "priority": 5.291,
+    "score_parts": {
+      "stars_term": 3.013,
+      "forks_term": 1.118,
+      "recency_term": 1.16
+    }
+  },
+  {
+    "full_name": "insight-platform/Savant",
+    "url": "https://github.com/insight-platform/Savant",
+    "default_branch": "develop",
+    "stars": 816,
+    "forks": 80,
+    "pushed_at": "2026-05-15T04:20:31Z",
+    "days_since_push": 14.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Python Computer Vision & Video Analytics Framework With Batteries Included",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.284,
+    "score_parts": {
+      "stars_term": 2.912,
+      "forks_term": 0.954,
+      "recency_term": 1.417
+    }
+  },
+  {
+    "full_name": "neka-nat/cupoch",
+    "url": "https://github.com/neka-nat/cupoch",
+    "default_branch": "main",
+    "stars": 1051,
+    "forks": 117,
+    "pushed_at": "2026-04-07T15:09:31Z",
+    "days_since_push": 52.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Robotics with GPU computing",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.284,
+    "score_parts": {
+      "stars_term": 3.022,
+      "forks_term": 1.036,
+      "recency_term": 1.226
+    }
+  },
+  {
+    "full_name": "gunrock/gunrock",
+    "url": "https://github.com/gunrock/gunrock",
+    "default_branch": "main",
+    "stars": 1088,
+    "forks": 223,
+    "pushed_at": "2026-02-28T17:51:48Z",
+    "days_since_push": 90.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Programmable CUDA/C++ GPU Graph Analytics",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.272,
+    "score_parts": {
+      "stars_term": 3.037,
+      "forks_term": 1.175,
+      "recency_term": 1.06
+    }
+  },
+  {
+    "full_name": "AccelerateHS/accelerate",
+    "url": "https://github.com/AccelerateHS/accelerate",
+    "default_branch": "master",
+    "stars": 1009,
+    "forks": 132,
+    "pushed_at": "2026-04-02T17:38:58Z",
+    "days_since_push": 57.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Haskell",
+    "description": "Embedded language for high-performance array computations",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.27,
+    "score_parts": {
+      "stars_term": 3.004,
+      "forks_term": 1.062,
+      "recency_term": 1.203
+    }
+  },
+  {
+    "full_name": "Devsh-Graphics-Programming/Nabla",
+    "url": "https://github.com/Devsh-Graphics-Programming/Nabla",
+    "default_branch": "master",
+    "stars": 697,
+    "forks": 71,
+    "pushed_at": "2026-05-29T12:15:12Z",
+    "days_since_push": 0.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Vulkan, OptiX and CUDA Interoperation Modular Rendering Library and Framework for PC/Linux/Android",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.27,
+    "score_parts": {
+      "stars_term": 2.844,
+      "forks_term": 0.929,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "tpoisonooo/how-to-optimize-gemm",
+    "url": "https://github.com/tpoisonooo/how-to-optimize-gemm",
+    "default_branch": "master",
+    "stars": 727,
+    "forks": 94,
+    "pushed_at": "2026-05-14T09:01:41Z",
+    "days_since_push": 15.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "row-major matmul optimization",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.264,
+    "score_parts": {
+      "stars_term": 2.862,
+      "forks_term": 0.989,
+      "recency_term": 1.413
+    }
+  },
+  {
+    "full_name": "mni-ml/framework",
+    "url": "https://github.com/mni-ml/framework",
+    "default_branch": "main",
+    "stars": 856,
+    "forks": 116,
+    "pushed_at": "2026-04-20T15:40:12Z",
+    "days_since_push": 39.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "A machine learning library with a TypeScript API and Rust backend. CUDA and WebGPU compatibility. Built to understand how ML frameworks and models work internally.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.256,
+    "score_parts": {
+      "stars_term": 2.933,
+      "forks_term": 1.034,
+      "recency_term": 1.289
+    }
+  },
+  {
+    "full_name": "gezp/docker-ubuntu-desktop",
+    "url": "https://github.com/gezp/docker-ubuntu-desktop",
+    "default_branch": "main",
+    "stars": 505,
+    "forks": 129,
+    "pushed_at": "2026-05-28T16:06:00Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Dockerfile",
+    "description": "Docker Image for Ubuntu Desktop which support HW GPU accelerated GUI apps. you can access the Container with ssh or remote desktop,  just like Cloud VM.",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda"
+    ],
+    "priority": 5.254,
+    "score_parts": {
+      "stars_term": 2.704,
+      "forks_term": 1.057,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "inducer/loopy",
+    "url": "https://github.com/inducer/loopy",
+    "default_branch": "main",
+    "stars": 630,
+    "forks": 81,
+    "pushed_at": "2026-05-28T16:43:39Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A code generator for array-based code on CPUs and GPUs",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.25,
+    "score_parts": {
+      "stars_term": 2.8,
+      "forks_term": 0.957,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "glotzerlab/hoomd-blue",
+    "url": "https://github.com/glotzerlab/hoomd-blue",
+    "default_branch": "trunk",
+    "stars": 435,
+    "forks": 167,
+    "pushed_at": "2026-05-28T16:35:22Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Molecular dynamics and Monte Carlo soft matter simulation on GPUs.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.245,
+    "score_parts": {
+      "stars_term": 2.639,
+      "forks_term": 1.113,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "IBM/aihwkit",
+    "url": "https://github.com/IBM/aihwkit",
+    "default_branch": "master",
+    "stars": 482,
+    "forks": 187,
+    "pushed_at": "2026-05-14T15:55:16Z",
+    "days_since_push": 15.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "IBM Analog Hardware Acceleration Kit",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.235,
+    "score_parts": {
+      "stars_term": 2.684,
+      "forks_term": 1.137,
+      "recency_term": 1.414
+    }
+  },
+  {
+    "full_name": "tumaer/JAXFLUIDS",
+    "url": "https://github.com/tumaer/JAXFLUIDS",
+    "default_branch": "main",
+    "stars": 583,
+    "forks": 105,
+    "pushed_at": "2026-05-19T08:59:06Z",
+    "days_since_push": 10.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Differentiable Fluid Dynamics Package",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.219,
+    "score_parts": {
+      "stars_term": 2.766,
+      "forks_term": 1.013,
+      "recency_term": 1.44
+    }
+  },
+  {
+    "full_name": "SunOner/sunone_aimbot_2",
+    "url": "https://github.com/SunOner/sunone_aimbot_2",
+    "default_branch": "main",
+    "stars": 493,
+    "forks": 101,
+    "pushed_at": "2026-05-28T21:28:27Z",
+    "days_since_push": 1.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Aim-bot based on AI for all FPS and TPS games",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.192,
+    "score_parts": {
+      "stars_term": 2.694,
+      "forks_term": 1.004,
+      "recency_term": 1.494
+    }
+  },
+  {
+    "full_name": "alicevision/popsift",
+    "url": "https://github.com/alicevision/popsift",
+    "default_branch": "develop",
+    "stars": 495,
+    "forks": 125,
+    "pushed_at": "2026-05-19T16:25:06Z",
+    "days_since_push": 10.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "PopSift is an implementation of the SIFT algorithm in CUDA.",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.188,
+    "score_parts": {
+      "stars_term": 2.695,
+      "forks_term": 1.05,
+      "recency_term": 1.442
+    }
+  },
+  {
+    "full_name": "radarsimx/radarsimpy",
+    "url": "https://github.com/radarsimx/radarsimpy",
+    "default_branch": "master",
+    "stars": 540,
+    "forks": 109,
+    "pushed_at": "2026-05-18T00:57:59Z",
+    "days_since_push": 11.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Radar Simulator built with Python and C++",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.187,
+    "score_parts": {
+      "stars_term": 2.733,
+      "forks_term": 1.021,
+      "recency_term": 1.433
+    }
+  },
+  {
+    "full_name": "luigifcruz/CyberEther",
+    "url": "https://github.com/luigifcruz/CyberEther",
+    "default_branch": "main",
+    "stars": 736,
+    "forks": 40,
+    "pushed_at": "2026-05-29T02:29:32Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "High-performance GPU-accelerated signal processing and visualization framework that runs anywhere.",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.169,
+    "score_parts": {
+      "stars_term": 2.867,
+      "forks_term": 0.806,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "QMCPACK/qmcpack",
+    "url": "https://github.com/QMCPACK/qmcpack",
+    "default_branch": "develop",
+    "stars": 386,
+    "forks": 149,
+    "pushed_at": "2026-05-27T22:26:54Z",
+    "days_since_push": 2.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Main repository for QMCPACK, an open-source production level many-body ab initio Quantum Monte Carlo code for computing the electronic structure of atoms, molecules, and solids with full performance portable GPU support",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.164,
+    "score_parts": {
+      "stars_term": 2.588,
+      "forks_term": 1.088,
+      "recency_term": 1.488
+    }
+  },
+  {
+    "full_name": "SHI-Labs/NATTEN",
+    "url": "https://github.com/SHI-Labs/NATTEN",
+    "default_branch": "main",
+    "stars": 755,
+    "forks": 61,
+    "pushed_at": "2026-05-10T02:33:38Z",
+    "days_since_push": 19.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Fast Multi-dimensional Sparse Attention",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.164,
+    "score_parts": {
+      "stars_term": 2.879,
+      "forks_term": 0.896,
+      "recency_term": 1.39
+    }
+  },
+  {
+    "full_name": "mp3guy/ElasticFusion",
+    "url": "https://github.com/mp3guy/ElasticFusion",
+    "default_branch": "master",
+    "stars": 1915,
+    "forks": 592,
+    "pushed_at": "2025-08-03T10:04:09Z",
+    "days_since_push": 299.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Real-time dense visual SLAM system",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.142,
+    "score_parts": {
+      "stars_term": 3.282,
+      "forks_term": 1.387,
+      "recency_term": 0.473
+    }
+  },
+  {
+    "full_name": "MFlowCode/MFC",
+    "url": "https://github.com/MFlowCode/MFC",
+    "default_branch": "master",
+    "stars": 367,
+    "forks": 137,
+    "pushed_at": "2026-05-29T16:53:16Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Fortran",
+    "description": "Exascale multiphase flow solver \u2014 2025 Gordon Bell Prize Finalist | 200T grid points on 43K+ GPUs",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.134,
+    "score_parts": {
+      "stars_term": 2.566,
+      "forks_term": 1.07,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "ServerlessLLM/ServerlessLLM",
+    "url": "https://github.com/ServerlessLLM/ServerlessLLM",
+    "default_branch": "main",
+    "stars": 685,
+    "forks": 72,
+    "pushed_at": "2026-05-04T14:16:35Z",
+    "days_since_push": 25.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Serverless LLM Serving for Everyone.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.128,
+    "score_parts": {
+      "stars_term": 2.836,
+      "forks_term": 0.932,
+      "recency_term": 1.36
+    }
+  },
+  {
+    "full_name": "rapidsai/cucim",
+    "url": "https://github.com/rapidsai/cucim",
+    "default_branch": "main",
+    "stars": 461,
+    "forks": 81,
+    "pushed_at": "2026-05-29T14:36:15Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "cuCIM - RAPIDS GPU-accelerated image processing library",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.12,
+    "score_parts": {
+      "stars_term": 2.665,
+      "forks_term": 0.957,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "alternbits/awesome-cuda-books",
+    "url": "https://github.com/alternbits/awesome-cuda-books",
+    "default_branch": "main",
+    "stars": 878,
+    "forks": 28,
+    "pushed_at": "2026-05-19T08:00:06Z",
+    "days_since_push": 10.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "",
+    "description": "A curated list of best cuda programming books",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.115,
+    "score_parts": {
+      "stars_term": 2.944,
+      "forks_term": 0.731,
+      "recency_term": 1.44
+    }
+  },
+  {
+    "full_name": "siliconflow/onediff",
+    "url": "https://github.com/siliconflow/onediff",
+    "default_branch": "main",
+    "stars": 1966,
+    "forks": 129,
+    "pushed_at": "2025-12-04T01:30:48Z",
+    "days_since_push": 176.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "OneDiff: An out-of-the-box acceleration library for diffusion models.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.11,
+    "score_parts": {
+      "stars_term": 3.294,
+      "forks_term": 1.057,
+      "recency_term": 0.759
+    }
+  },
+  {
+    "full_name": "MarioSieg/magnetron",
+    "url": "https://github.com/MarioSieg/magnetron",
+    "default_branch": "master",
+    "stars": 687,
+    "forks": 35,
+    "pushed_at": "2026-05-28T17:18:38Z",
+    "days_since_push": 1.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A zero-dependency ML framework in C with a modern Python API for full control over execution and memory.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.109,
+    "score_parts": {
+      "stars_term": 2.838,
+      "forks_term": 0.778,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "3dem/relion",
+    "url": "https://github.com/3dem/relion",
+    "default_branch": "master",
+    "stars": 536,
+    "forks": 228,
+    "pushed_at": "2026-04-01T04:33:14Z",
+    "days_since_push": 58.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Image-processing software for cryo-electron microscopy",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.106,
+    "score_parts": {
+      "stars_term": 2.73,
+      "forks_term": 1.18,
+      "recency_term": 1.196
+    }
+  },
+  {
+    "full_name": "mumax/3",
+    "url": "https://github.com/mumax/3",
+    "default_branch": "master",
+    "stars": 494,
+    "forks": 170,
+    "pushed_at": "2026-04-20T12:28:57Z",
+    "days_since_push": 39.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "GPU-accelerated micromagnetic simulator",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:cuda"
+    ],
+    "priority": 5.1,
+    "score_parts": {
+      "stars_term": 2.695,
+      "forks_term": 1.116,
+      "recency_term": 1.289
+    }
+  },
+  {
+    "full_name": "NVIDIA/aerial-cuda-accelerated-ran",
+    "url": "https://github.com/NVIDIA/aerial-cuda-accelerated-ran",
+    "default_branch": "main",
+    "stars": 366,
+    "forks": 121,
+    "pushed_at": "2026-05-28T00:14:33Z",
+    "days_since_push": 1.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "An SDK (Software Development Kit) for building commercial-grade, AI-native, 3GPP, and O-RAN compliant 5G/6G gNB software on NVIDIA-accelerated computing platforms.",
+    "matched_queries": [
+      "cuda accelerated"
+    ],
+    "priority": 5.097,
+    "score_parts": {
+      "stars_term": 2.565,
+      "forks_term": 1.043,
+      "recency_term": 1.489
+    }
+  },
+  {
+    "full_name": "inclusionAI/cuLA",
+    "url": "https://github.com/inclusionAI/cuLA",
+    "default_branch": "main",
+    "stars": 513,
+    "forks": 59,
+    "pushed_at": "2026-05-29T01:47:42Z",
+    "days_since_push": 0.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "CUDA kernels for linear attention variants, written in CuTe DSL and CUTLASS C++.",
+    "matched_queries": [
+      "cuda kernel"
+    ],
+    "priority": 5.095,
+    "score_parts": {
+      "stars_term": 2.711,
+      "forks_term": 0.889,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "zhihu/ZhiLight",
+    "url": "https://github.com/zhihu/ZhiLight",
+    "default_branch": "main",
+    "stars": 905,
+    "forks": 101,
+    "pushed_at": "2026-03-18T02:47:55Z",
+    "days_since_push": 72.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A highly optimized LLM inference acceleration engine for Llama and its variants.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 5.095,
+    "score_parts": {
+      "stars_term": 2.957,
+      "forks_term": 1.004,
+      "recency_term": 1.133
+    }
+  },
+  {
+    "full_name": "AmineDjeghri/awesome-os-setup",
+    "url": "https://github.com/AmineDjeghri/awesome-os-setup",
+    "default_branch": "main",
+    "stars": 570,
+    "forks": 45,
+    "pushed_at": "2026-05-28T18:43:13Z",
+    "days_since_push": 1.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "An app and guide to easily configure Windows, Linux, MacOS, Google TV, Stremio, Home Assistant and more (including WSL2, GPU drivers & development tools). Improve your UX & productivity.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.081,
+    "score_parts": {
+      "stars_term": 2.757,
+      "forks_term": 0.831,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "lattice/quda",
+    "url": "https://github.com/lattice/quda",
+    "default_branch": "develop",
+    "stars": 352,
+    "forks": 113,
+    "pushed_at": "2026-05-29T20:29:07Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "QUDA is a library for performing calculations in lattice QCD on GPUs.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.076,
+    "score_parts": {
+      "stars_term": 2.548,
+      "forks_term": 1.028,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "NVIDIA/nvshmem",
+    "url": "https://github.com/NVIDIA/nvshmem",
+    "default_branch": "devel",
+    "stars": 537,
+    "forks": 84,
+    "pushed_at": "2026-05-05T22:52:36Z",
+    "days_since_push": 24.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "NVIDIA NVSHMEM is a parallel programming interface for NVIDIA GPUs based on OpenSHMEM. NVSHMEM can significantly reduce multi-process communication and coordination overheads by allowing programmers to perform one-sided communication from within CUDA kernels and on CUDA streams.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda"
+    ],
+    "priority": 5.063,
+    "score_parts": {
+      "stars_term": 2.731,
+      "forks_term": 0.965,
+      "recency_term": 1.368
+    }
+  },
+  {
+    "full_name": "ashvardanian/less_slow.cpp",
+    "url": "https://github.com/ashvardanian/less_slow.cpp",
+    "default_branch": "main",
+    "stars": 1911,
+    "forks": 82,
+    "pushed_at": "2025-12-23T14:38:25Z",
+    "days_since_push": 157.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Playing around \"Less Slow\" coding practices in C++ 20, C, CUDA, PTX, & Assembly, from numerics & SIMD to coroutines, ranges, exception handling, networking and user-space IO",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.059,
+    "score_parts": {
+      "stars_term": 3.281,
+      "forks_term": 0.96,
+      "recency_term": 0.818
+    }
+  },
+  {
+    "full_name": "dromara/Omega-AI",
+    "url": "https://github.com/dromara/Omega-AI",
+    "default_branch": "master",
+    "stars": 482,
+    "forks": 61,
+    "pushed_at": "2026-05-24T05:06:31Z",
+    "days_since_push": 5.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Java",
+    "description": "Omega-AI\uff1a\u57fa\u4e8ejava\u6253\u9020\u7684\u6df1\u5ea6\u5b66\u4e60\u6846\u67b6\uff0c\u5e2e\u52a9\u4f60\u5feb\u901f\u642d\u5efa\u795e\u7ecf\u7f51\u7edc\uff0c\u5b9e\u73b0\u6a21\u578b\u63a8\u7406\u4e0e\u8bad\u7ec3\uff0c\u5f15\u64ce\u652f\u6301\u81ea\u52a8\u6c42\u5bfc\uff0c\u591a\u7ebf\u7a0b\u4e0eGPU\u8fd0\u7b97\uff0cGPU\u652f\u6301CUDA\uff0cCUDNN\u3002",
+    "matched_queries": [
+      "cudnn"
+    ],
+    "priority": 5.047,
+    "score_parts": {
+      "stars_term": 2.684,
+      "forks_term": 0.896,
+      "recency_term": 1.467
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuQuantum",
+    "url": "https://github.com/NVIDIA/cuQuantum",
+    "default_branch": "main",
+    "stars": 486,
+    "forks": 100,
+    "pushed_at": "2026-05-01T21:08:10Z",
+    "days_since_push": 28.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "Home for cuQuantum Python & NVIDIA cuQuantum SDK C++ samples",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.036,
+    "score_parts": {
+      "stars_term": 2.688,
+      "forks_term": 1.002,
+      "recency_term": 1.346
+    }
+  },
+  {
+    "full_name": "thu-ml/SpargeAttn",
+    "url": "https://github.com/thu-ml/SpargeAttn",
+    "default_branch": "main",
+    "stars": 996,
+    "forks": 91,
+    "pushed_at": "2026-02-25T00:07:21Z",
+    "days_since_push": 93.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "[ICML2025] SpargeAttention: A training-free sparse attention that accelerates any model inference.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.025,
+    "score_parts": {
+      "stars_term": 2.999,
+      "forks_term": 0.982,
+      "recency_term": 1.045
+    }
+  },
+  {
+    "full_name": "Avarok-Cybersecurity/atlas",
+    "url": "https://github.com/Avarok-Cybersecurity/atlas",
+    "default_branch": "main",
+    "stars": 430,
+    "forks": 58,
+    "pushed_at": "2026-05-29T21:53:54Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Pure Rust Inference Engine",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 5.02,
+    "score_parts": {
+      "stars_term": 2.634,
+      "forks_term": 0.885,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "cyberia-to/go-cyber",
+    "url": "https://github.com/cyberia-to/go-cyber",
+    "default_branch": "main",
+    "stars": 361,
+    "forks": 91,
+    "pushed_at": "2026-05-26T05:05:41Z",
+    "days_since_push": 3.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "TypeScript",
+    "description": "\ud83d\udfe2 cybergraph prototype sdk",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 5.019,
+    "score_parts": {
+      "stars_term": 2.559,
+      "forks_term": 0.982,
+      "recency_term": 1.479
+    }
+  },
+  {
+    "full_name": "efeslab/Nanoflow",
+    "url": "https://github.com/efeslab/Nanoflow",
+    "default_branch": "Nanoflow-python",
+    "stars": 961,
+    "forks": 49,
+    "pushed_at": "2026-03-29T05:30:29Z",
+    "days_since_push": 61.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Jupyter Notebook",
+    "description": "A throughput-oriented high-performance serving framework for LLMs",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 5.015,
+    "score_parts": {
+      "stars_term": 2.983,
+      "forks_term": 0.849,
+      "recency_term": 1.183
+    }
+  },
+  {
+    "full_name": "KernelTuner/kernel_tuner",
+    "url": "https://github.com/KernelTuner/kernel_tuner",
+    "default_branch": "master",
+    "stars": 398,
+    "forks": 67,
+    "pushed_at": "2026-05-29T14:02:33Z",
+    "days_since_push": 0.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Kernel Tuner",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.015,
+    "score_parts": {
+      "stars_term": 2.601,
+      "forks_term": 0.916,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "ArchaeaSoftware/cudahandbook",
+    "url": "https://github.com/ArchaeaSoftware/cudahandbook",
+    "default_branch": "master",
+    "stars": 574,
+    "forks": 198,
+    "pushed_at": "2026-03-10T15:08:38Z",
+    "days_since_push": 80.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Source code that accompanies The CUDA Handbook.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 5.01,
+    "score_parts": {
+      "stars_term": 2.76,
+      "forks_term": 1.149,
+      "recency_term": 1.101
+    }
+  },
+  {
+    "full_name": "BytedTsinghua-SIA/CUDA-Agent",
+    "url": "https://github.com/BytedTsinghua-SIA/CUDA-Agent",
+    "default_branch": "main",
+    "stars": 962,
+    "forks": 76,
+    "pushed_at": "2026-03-04T16:57:48Z",
+    "days_since_push": 86.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "CUDA Agent: Large-Scale Agentic RL for High-Performance CUDA Kernel Generation",
+    "matched_queries": [
+      "cuda kernel"
+    ],
+    "priority": 5.003,
+    "score_parts": {
+      "stars_term": 2.984,
+      "forks_term": 0.943,
+      "recency_term": 1.076
+    }
+  },
+  {
+    "full_name": "theICTlab/3DUNDERWORLD-SLS-GPU_CPU",
+    "url": "https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU",
+    "default_branch": "dev",
+    "stars": 308,
+    "forks": 117,
+    "pushed_at": "2026-05-25T16:16:13Z",
+    "days_since_push": 4.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A structured light scanner",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 5.001,
+    "score_parts": {
+      "stars_term": 2.49,
+      "forks_term": 1.036,
+      "recency_term": 1.476
+    }
+  },
+  {
+    "full_name": "NVIDIA/AMGX",
+    "url": "https://github.com/NVIDIA/AMGX",
+    "default_branch": "main",
+    "stars": 669,
+    "forks": 180,
+    "pushed_at": "2026-02-19T21:38:37Z",
+    "days_since_push": 99.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Distributed multigrid linear solver library on GPU",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.979,
+    "score_parts": {
+      "stars_term": 2.826,
+      "forks_term": 1.129,
+      "recency_term": 1.024
+    }
+  },
+  {
+    "full_name": "rnd-team-dev/plotoptix",
+    "url": "https://github.com/rnd-team-dev/plotoptix",
+    "default_branch": "master",
+    "stars": 516,
+    "forks": 30,
+    "pushed_at": "2026-05-29T09:15:16Z",
+    "days_since_push": 0.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Data visualisation and ray tracing in Python based on OptiX 9.1 framework.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.956,
+    "score_parts": {
+      "stars_term": 2.713,
+      "forks_term": 0.746,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "ccsb-scripps/AutoDock-GPU",
+    "url": "https://github.com/ccsb-scripps/AutoDock-GPU",
+    "default_branch": "develop",
+    "stars": 582,
+    "forks": 146,
+    "pushed_at": "2026-03-10T20:56:44Z",
+    "days_since_push": 80.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "AutoDock for GPUs and other accelerators",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.951,
+    "score_parts": {
+      "stars_term": 2.766,
+      "forks_term": 1.084,
+      "recency_term": 1.102
+    }
+  },
+  {
+    "full_name": "BobMcDear/attorch",
+    "url": "https://github.com/BobMcDear/attorch",
+    "default_branch": "main",
+    "stars": 600,
+    "forks": 32,
+    "pushed_at": "2026-05-13T19:19:22Z",
+    "days_since_push": 16.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A subset of PyTorch's neural network modules, written in Python using OpenAI's Triton.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.948,
+    "score_parts": {
+      "stars_term": 2.779,
+      "forks_term": 0.759,
+      "recency_term": 1.41
+    }
+  },
+  {
+    "full_name": "alpaka-group/alpaka",
+    "url": "https://github.com/alpaka-group/alpaka",
+    "default_branch": "develop",
+    "stars": 414,
+    "forks": 86,
+    "pushed_at": "2026-04-29T13:25:49Z",
+    "days_since_push": 30.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Abstraction Library for Parallel Kernel Acceleration :llama:",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.922,
+    "score_parts": {
+      "stars_term": 2.618,
+      "forks_term": 0.97,
+      "recency_term": 1.334
+    }
+  },
+  {
+    "full_name": "MoonshotAI/FlashKDA",
+    "url": "https://github.com/MoonshotAI/FlashKDA",
+    "default_branch": "master",
+    "stars": 445,
+    "forks": 37,
+    "pushed_at": "2026-05-26T06:31:25Z",
+    "days_since_push": 3.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "FlashKDA: high-performance Kimi Delta Attention kernels",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.918,
+    "score_parts": {
+      "stars_term": 2.649,
+      "forks_term": 0.79,
+      "recency_term": 1.479
+    }
+  },
+  {
+    "full_name": "gpu-mode/reference-kernels",
+    "url": "https://github.com/gpu-mode/reference-kernels",
+    "default_branch": "main",
+    "stars": 267,
+    "forks": 153,
+    "pushed_at": "2026-05-11T02:02:56Z",
+    "days_since_push": 18.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Official Problem Sets / Reference Kernels for the GPU MODE Leaderboard!",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.917,
+    "score_parts": {
+      "stars_term": 2.428,
+      "forks_term": 1.094,
+      "recency_term": 1.395
+    }
+  },
+  {
+    "full_name": "Samarvivian/3P-ADMM-PC2",
+    "url": "https://github.com/Samarvivian/3P-ADMM-PC2",
+    "default_branch": "features",
+    "stars": 345,
+    "forks": 55,
+    "pushed_at": "2026-05-28T16:35:57Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.906,
+    "score_parts": {
+      "stars_term": 2.539,
+      "forks_term": 0.874,
+      "recency_term": 1.493
+    }
+  },
+  {
+    "full_name": "jinbooooom/ai-infra-hpc",
+    "url": "https://github.com/jinbooooom/ai-infra-hpc",
+    "default_branch": "main",
+    "stars": 492,
+    "forks": 54,
+    "pushed_at": "2026-04-27T06:00:28Z",
+    "days_since_push": 32.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "hpc \u6559\u7a0b\uff0c\u5305\u542b\u96c6\u5408\u901a\u4fe1(mpi\u3001nccl)\u3001cuda \u7f16\u7a0b\u3001\u5411\u91cf\u5316 SIMD\u3001RDMA \u901a\u4fe1\u7b49",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.886,
+    "score_parts": {
+      "stars_term": 2.693,
+      "forks_term": 0.87,
+      "recency_term": 1.323
+    }
+  },
+  {
+    "full_name": "AmusementClub/vs-mlrt",
+    "url": "https://github.com/AmusementClub/vs-mlrt",
+    "default_branch": "master",
+    "stars": 449,
+    "forks": 29,
+    "pushed_at": "2026-05-28T02:54:02Z",
+    "days_since_push": 1.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Efficient CPU/GPU ML Runtimes for VapourSynth (with built-in support for waifu2x, DPIR, RealESRGANv2/v3, Real-CUGAN, RIFE, SCUNet, ArtCNN and more!)",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.881,
+    "score_parts": {
+      "stars_term": 2.653,
+      "forks_term": 0.739,
+      "recency_term": 1.489
+    }
+  },
+  {
+    "full_name": "ModelEngine-Group/unified-cache-management",
+    "url": "https://github.com/ModelEngine-Group/unified-cache-management",
+    "default_branch": "develop",
+    "stars": 281,
+    "forks": 76,
+    "pushed_at": "2026-05-27T11:04:16Z",
+    "days_since_push": 2.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Persist and reuse KV Cache to speedup your LLM.",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.879,
+    "score_parts": {
+      "stars_term": 2.45,
+      "forks_term": 0.943,
+      "recency_term": 1.486
+    }
+  },
+  {
+    "full_name": "koide3/gtsam_points",
+    "url": "https://github.com/koide3/gtsam_points",
+    "default_branch": "master",
+    "stars": 377,
+    "forks": 80,
+    "pushed_at": "2026-05-01T13:17:48Z",
+    "days_since_push": 28.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A collection of GTSAM factors and optimizers for point cloud SLAM",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.876,
+    "score_parts": {
+      "stars_term": 2.577,
+      "forks_term": 0.954,
+      "recency_term": 1.345
+    }
+  },
+  {
+    "full_name": "pyscf/gpu4pyscf",
+    "url": "https://github.com/pyscf/gpu4pyscf",
+    "default_branch": "master",
+    "stars": 305,
+    "forks": 60,
+    "pushed_at": "2026-05-28T14:36:18Z",
+    "days_since_push": 1.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "A plugin to use Nvidia GPU in PySCF package",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.871,
+    "score_parts": {
+      "stars_term": 2.486,
+      "forks_term": 0.893,
+      "recency_term": 1.492
+    }
+  },
+  {
+    "full_name": "FZJ-JSC/tutorial-multi-gpu",
+    "url": "https://github.com/FZJ-JSC/tutorial-multi-gpu",
+    "default_branch": "main",
+    "stars": 359,
+    "forks": 75,
+    "pushed_at": "2026-05-06T15:47:02Z",
+    "days_since_push": 23.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Efficient Distributed GPU Programming for Exascale, an SC/ISC Tutorial",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.868,
+    "score_parts": {
+      "stars_term": 2.556,
+      "forks_term": 0.94,
+      "recency_term": 1.371
+    }
+  },
+  {
+    "full_name": "UoB-HPC/BabelStream",
+    "url": "https://github.com/UoB-HPC/BabelStream",
+    "default_branch": "main",
+    "stars": 363,
+    "forks": 131,
+    "pushed_at": "2026-04-10T13:28:39Z",
+    "days_since_push": 49.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "STREAM, for lots of devices written in many programming models",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.862,
+    "score_parts": {
+      "stars_term": 2.561,
+      "forks_term": 1.06,
+      "recency_term": 1.24
+    }
+  },
+  {
+    "full_name": "CHIP-SPV/chipStar",
+    "url": "https://github.com/CHIP-SPV/chipStar",
+    "default_branch": "main",
+    "stars": 353,
+    "forks": 41,
+    "pushed_at": "2026-05-29T15:46:55Z",
+    "days_since_push": 0.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "LLVM",
+    "description": "chipStar is a tool for compiling and running HIP/CUDA on SPIR-V via OpenCL or Level Zero APIs.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.859,
+    "score_parts": {
+      "stars_term": 2.549,
+      "forks_term": 0.812,
+      "recency_term": 1.498
+    }
+  },
+  {
+    "full_name": "QPT-Family/QPT",
+    "url": "https://github.com/QPT-Family/QPT",
+    "default_branch": "\u5f00\u53d1\u5206\u652f",
+    "stars": 794,
+    "forks": 92,
+    "pushed_at": "2026-02-06T14:09:34Z",
+    "days_since_push": 112.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "[\u5185\u6d4b\u4e2d]QPT - \u81f4\u529b\u4e8e\u8ba9\u5f00\u6e90\u9879\u76ee\u66f4\u597d\u901a\u5f80\u4e92\u8054\u7f51\u4e16\u754c\u7684Python to EXE\u5de5\u5177\uff08Python\u6253\u5305\uff09\u3002",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.858,
+    "score_parts": {
+      "stars_term": 2.9,
+      "forks_term": 0.984,
+      "recency_term": 0.973
+    }
+  },
+  {
+    "full_name": "CEED/libCEED",
+    "url": "https://github.com/CEED/libCEED",
+    "default_branch": "main",
+    "stars": 256,
+    "forks": 72,
+    "pushed_at": "2026-05-29T19:55:21Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "CEED Library: Code for Efficient Extensible Discretizations",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.841,
+    "score_parts": {
+      "stars_term": 2.41,
+      "forks_term": 0.932,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "NVIDIA/tilus",
+    "url": "https://github.com/NVIDIA/tilus",
+    "default_branch": "main",
+    "stars": 486,
+    "forks": 25,
+    "pushed_at": "2026-05-19T22:45:55Z",
+    "days_since_push": 10.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Tilus is a tile-level kernel programming language with explicit control over shared memory and registers.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda"
+    ],
+    "priority": 4.838,
+    "score_parts": {
+      "stars_term": 2.688,
+      "forks_term": 0.707,
+      "recency_term": 1.443
+    }
+  },
+  {
+    "full_name": "shibatch/sleef",
+    "url": "https://github.com/shibatch/sleef",
+    "default_branch": "master",
+    "stars": 830,
+    "forks": 151,
+    "pushed_at": "2025-12-25T03:17:15Z",
+    "days_since_push": 155.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "SIMD Library for Evaluating Elementary Functions, vectorized libm and DFT",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.834,
+    "score_parts": {
+      "stars_term": 2.92,
+      "forks_term": 1.091,
+      "recency_term": 0.823
+    }
+  },
+  {
+    "full_name": "AmmarkoV/SAM3DBody-cpp",
+    "url": "https://github.com/AmmarkoV/SAM3DBody-cpp",
+    "default_branch": "main",
+    "stars": 335,
+    "forks": 39,
+    "pushed_at": "2026-05-29T21:30:39Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "Real-time 3D full-body reconstruction from a single camera, Multiperson BVH output, Pure C++ runtime, ONNX + ggml, 70-joint skeleton with hands.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.827,
+    "score_parts": {
+      "stars_term": 2.526,
+      "forks_term": 0.801,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "xiaguan/pegainfer",
+    "url": "https://github.com/xiaguan/pegainfer",
+    "default_branch": "main",
+    "stars": 341,
+    "forks": 38,
+    "pushed_at": "2026-05-29T10:44:22Z",
+    "days_since_push": 0.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Pure Rust + CUDA LLM inference engine",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.827,
+    "score_parts": {
+      "stars_term": 2.534,
+      "forks_term": 0.796,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "gau-nernst/learn-cuda",
+    "url": "https://github.com/gau-nernst/learn-cuda",
+    "default_branch": "main",
+    "stars": 310,
+    "forks": 49,
+    "pushed_at": "2026-05-24T07:41:00Z",
+    "days_since_push": 5.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Learn CUDA with PyTorch",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.81,
+    "score_parts": {
+      "stars_term": 2.493,
+      "forks_term": 0.849,
+      "recency_term": 1.468
+    }
+  },
+  {
+    "full_name": "LuisaGroup/LuisaRender",
+    "url": "https://github.com/LuisaGroup/LuisaRender",
+    "default_branch": "next",
+    "stars": 605,
+    "forks": 53,
+    "pushed_at": "2026-03-24T04:36:58Z",
+    "days_since_push": 66.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "High-Performance Cross-Platform Monte Carlo Renderer Based on LuisaCompute",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.809,
+    "score_parts": {
+      "stars_term": 2.782,
+      "forks_term": 0.866,
+      "recency_term": 1.16
+    }
+  },
+  {
+    "full_name": "Qengineering/Jetson-Nano-Ubuntu-20-image",
+    "url": "https://github.com/Qengineering/Jetson-Nano-Ubuntu-20-image",
+    "default_branch": "main",
+    "stars": 954,
+    "forks": 100,
+    "pushed_at": "2025-12-23T09:08:59Z",
+    "days_since_push": 157.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "",
+    "description": "Jetson Nano with Ubuntu 20.04 image",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.8,
+    "score_parts": {
+      "stars_term": 2.98,
+      "forks_term": 1.002,
+      "recency_term": 0.818
+    }
+  },
+  {
+    "full_name": "owensgroup/RXMesh",
+    "url": "https://github.com/owensgroup/RXMesh",
+    "default_branch": "main",
+    "stars": 309,
+    "forks": 41,
+    "pushed_at": "2026-05-28T01:58:13Z",
+    "days_since_push": 1.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "GPU-accelerated triangle mesh processing",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.792,
+    "score_parts": {
+      "stars_term": 2.491,
+      "forks_term": 0.812,
+      "recency_term": 1.489
+    }
+  },
+  {
+    "full_name": "jamjamjon/usls",
+    "url": "https://github.com/jamjamjon/usls",
+    "default_branch": "main",
+    "stars": 407,
+    "forks": 44,
+    "pushed_at": "2026-05-01T20:17:55Z",
+    "days_since_push": 28.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "A Rust library integrated with ONNXRuntime, providing a collection of Computer Vison and Vision-Language models such as YOLO, FastVLM, and more.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.783,
+    "score_parts": {
+      "stars_term": 2.611,
+      "forks_term": 0.827,
+      "recency_term": 1.346
+    }
+  },
+  {
+    "full_name": "ACDSLab/MPPI-Generic",
+    "url": "https://github.com/ACDSLab/MPPI-Generic",
+    "default_branch": "main",
+    "stars": 280,
+    "forks": 43,
+    "pushed_at": "2026-05-29T02:55:38Z",
+    "days_since_push": 0.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Templated C++/CUDA implementation of Model Predictive Path Integral Control (MPPI)",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.766,
+    "score_parts": {
+      "stars_term": 2.449,
+      "forks_term": 0.822,
+      "recency_term": 1.495
+    }
+  },
+  {
+    "full_name": "uncomplicate/deep-diamond",
+    "url": "https://github.com/uncomplicate/deep-diamond",
+    "default_branch": "master",
+    "stars": 463,
+    "forks": 19,
+    "pushed_at": "2026-05-18T21:59:25Z",
+    "days_since_push": 11.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Clojure",
+    "description": "A fast Clojure Tensor & Deep Learning library",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.755,
+    "score_parts": {
+      "stars_term": 2.667,
+      "forks_term": 0.651,
+      "recency_term": 1.438
+    }
+  },
+  {
+    "full_name": "siboehm/SGEMM_CUDA",
+    "url": "https://github.com/siboehm/SGEMM_CUDA",
+    "default_branch": "master",
+    "stars": 1202,
+    "forks": 189,
+    "pushed_at": "2025-09-02T14:42:11Z",
+    "days_since_push": 269.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Fast CUDA matrix multiplication from scratch",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.751,
+    "score_parts": {
+      "stars_term": 3.08,
+      "forks_term": 1.139,
+      "recency_term": 0.532
+    }
+  },
+  {
+    "full_name": "NVlabs/cutile-rs",
+    "url": "https://github.com/NVlabs/cutile-rs",
+    "default_branch": "main",
+    "stars": 326,
+    "forks": 28,
+    "pushed_at": "2026-05-29T22:06:56Z",
+    "days_since_push": 0.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "cuTile Rust provides a safe, tile-based kernel programming DSL for the Rust programming language. It features a safe host-side API for passing tensors to asynchronously executed kernel functions.",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.746,
+    "score_parts": {
+      "stars_term": 2.515,
+      "forks_term": 0.731,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "hybridgroup/yzma",
+    "url": "https://github.com/hybridgroup/yzma",
+    "default_branch": "main",
+    "stars": 484,
+    "forks": 15,
+    "pushed_at": "2026-05-18T17:00:06Z",
+    "days_since_push": 11.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Go",
+    "description": "Go with your own intelligence - Go applications that directly integrate llama.cpp for local inference using hardware acceleration.",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 4.724,
+    "score_parts": {
+      "stars_term": 2.686,
+      "forks_term": 0.602,
+      "recency_term": 1.436
+    }
+  },
+  {
+    "full_name": "omlins/ParallelStencil.jl",
+    "url": "https://github.com/omlins/ParallelStencil.jl",
+    "default_branch": "main",
+    "stars": 396,
+    "forks": 42,
+    "pushed_at": "2026-04-24T13:16:16Z",
+    "days_since_push": 35.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Julia",
+    "description": "Package for writing high-level code for parallel high-performance stencil computations that can be deployed on both GPUs and CPUs",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.724,
+    "score_parts": {
+      "stars_term": 2.599,
+      "forks_term": 0.817,
+      "recency_term": 1.309
+    }
+  },
+  {
+    "full_name": "a2flo/floor",
+    "url": "https://github.com/a2flo/floor",
+    "default_branch": "master",
+    "stars": 339,
+    "forks": 23,
+    "pushed_at": "2026-05-29T11:48:48Z",
+    "days_since_push": 0.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A C++ Compute/Graphics Library and Toolchain enabling same-source CUDA/Host/Metal/OpenCL/Vulkan C++ programming and execution.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.719,
+    "score_parts": {
+      "stars_term": 2.531,
+      "forks_term": 0.69,
+      "recency_term": 1.497
+    }
+  },
+  {
+    "full_name": "CalvinXKY/BasicCUDA",
+    "url": "https://github.com/CalvinXKY/BasicCUDA",
+    "default_branch": "master",
+    "stars": 437,
+    "forks": 60,
+    "pushed_at": "2026-03-23T12:25:10Z",
+    "days_since_push": 67.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "A tutorial for CUDA&PyTorch",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.691,
+    "score_parts": {
+      "stars_term": 2.641,
+      "forks_term": 0.893,
+      "recency_term": 1.157
+    }
+  },
+  {
+    "full_name": "arborx/ArborX",
+    "url": "https://github.com/arborx/ArborX",
+    "default_branch": "master",
+    "stars": 231,
+    "forks": 46,
+    "pushed_at": "2026-05-27T18:03:43Z",
+    "days_since_push": 2.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Performance-portable geometric search library",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.689,
+    "score_parts": {
+      "stars_term": 2.365,
+      "forks_term": 0.836,
+      "recency_term": 1.487
+    }
+  },
+  {
+    "full_name": "travisvn/chatterbox-tts-api",
+    "url": "https://github.com/travisvn/chatterbox-tts-api",
+    "default_branch": "main",
+    "stars": 602,
+    "forks": 143,
+    "pushed_at": "2025-12-23T01:05:47Z",
+    "days_since_push": 157.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Local, OpenAI-compatible text-to-speech (TTS) API using Chatterbox, enabling users to generate voice cloned speech anywhere the OpenAI API is used (e.g. Open WebUI, AnythingLLM, etc.)",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.676,
+    "score_parts": {
+      "stars_term": 2.78,
+      "forks_term": 1.079,
+      "recency_term": 0.817
+    }
+  },
+  {
+    "full_name": "unitaryfoundation/qrack",
+    "url": "https://github.com/unitaryfoundation/qrack",
+    "default_branch": "main",
+    "stars": 224,
+    "forks": 43,
+    "pushed_at": "2026-05-29T17:19:25Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Comprehensive, GPU accelerated framework for developing universal virtual quantum processors",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.673,
+    "score_parts": {
+      "stars_term": 2.352,
+      "forks_term": 0.822,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "supranational/sppark",
+    "url": "https://github.com/supranational/sppark",
+    "default_branch": "main",
+    "stars": 219,
+    "forks": 96,
+    "pushed_at": "2026-04-28T18:13:53Z",
+    "days_since_push": 31.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Zero-knowledge template library",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.666,
+    "score_parts": {
+      "stars_term": 2.342,
+      "forks_term": 0.993,
+      "recency_term": 1.33
+    }
+  },
+  {
+    "full_name": "bytedance/flux",
+    "url": "https://github.com/bytedance/flux",
+    "default_branch": "main",
+    "stars": 1314,
+    "forks": 103,
+    "pushed_at": "2025-08-28T06:26:38Z",
+    "days_since_push": 274.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A fast communication-overlapping library for tensor/expert parallelism on GPUs.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.648,
+    "score_parts": {
+      "stars_term": 3.119,
+      "forks_term": 1.009,
+      "recency_term": 0.521
+    }
+  },
+  {
+    "full_name": "gpufit/Gpufit",
+    "url": "https://github.com/gpufit/Gpufit",
+    "default_branch": "master",
+    "stars": 339,
+    "forks": 102,
+    "pushed_at": "2026-03-12T10:57:46Z",
+    "days_since_push": 78.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "GPU-accelerated Levenberg-Marquardt curve fitting in CUDA",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda"
+    ],
+    "priority": 4.647,
+    "score_parts": {
+      "stars_term": 2.531,
+      "forks_term": 1.006,
+      "recency_term": 1.109
+    }
+  },
+  {
+    "full_name": "LiangSu8899/FlashRT",
+    "url": "https://github.com/LiangSu8899/FlashRT",
+    "default_branch": "main",
+    "stars": 247,
+    "forks": 30,
+    "pushed_at": "2026-05-29T21:31:49Z",
+    "days_since_push": 0.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "FlashRT is a high-performance realtime inference engine for small-batch, latency-sensitive AI workloads. The flagship integration is production VLA control for Pi0, Pi0.5, GROOT N1.6, and Pi0-FAST. Also support llm e.g, qwen3.6-27B",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.64,
+    "score_parts": {
+      "stars_term": 2.394,
+      "forks_term": 0.746,
+      "recency_term": 1.5
+    }
+  },
+  {
+    "full_name": "devnen/Dia-TTS-Server",
+    "url": "https://github.com/devnen/Dia-TTS-Server",
+    "default_branch": "main",
+    "stars": 353,
+    "forks": 64,
+    "pushed_at": "2026-03-28T16:29:42Z",
+    "days_since_push": 62.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Self-host the powerful Dia TTS model. This server offers a user-friendly Web UI, flexible API endpoints (incl. OpenAI compatible), support for SafeTensors/BF16, voice cloning, dialogue generation, and GPU/CPU execution.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.636,
+    "score_parts": {
+      "stars_term": 2.549,
+      "forks_term": 0.906,
+      "recency_term": 1.18
+    }
+  },
+  {
+    "full_name": "EMI-Group/evogp",
+    "url": "https://github.com/EMI-Group/evogp",
+    "default_branch": "main",
+    "stars": 287,
+    "forks": 43,
+    "pushed_at": "2026-05-01T17:44:46Z",
+    "days_since_push": 28.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A GPU-accelerated library for Tree-based Genetic Programming, leveraging PyTorch and custom CUDA kernels for high-performance evolutionary computation. It supports symbolic regression, classification, and policy optimization with advanced features like multi-output trees and benchmark tools.",
+    "matched_queries": [
+      "cuda accelerated",
+      "cuda kernel"
+    ],
+    "priority": 4.627,
+    "score_parts": {
+      "stars_term": 2.459,
+      "forks_term": 0.822,
+      "recency_term": 1.346
+    }
+  },
+  {
+    "full_name": "hybridizer-io/hybridizer-basic-samples",
+    "url": "https://github.com/hybridizer-io/hybridizer-basic-samples",
+    "default_branch": "master",
+    "stars": 245,
+    "forks": 30,
+    "pushed_at": "2026-05-27T14:11:54Z",
+    "days_since_push": 2.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C#",
+    "description": "Examples of C# code compiled to GPU by hybridizer",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.623,
+    "score_parts": {
+      "stars_term": 2.391,
+      "forks_term": 0.746,
+      "recency_term": 1.486
+    }
+  },
+  {
+    "full_name": "NVIDIA/multi-gpu-programming-models",
+    "url": "https://github.com/NVIDIA/multi-gpu-programming-models",
+    "default_branch": "master",
+    "stars": 888,
+    "forks": 150,
+    "pushed_at": "2025-09-26T07:08:33Z",
+    "days_since_push": 245.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Examples demonstrating available options to program multiple GPUs in a single node or a cluster",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.621,
+    "score_parts": {
+      "stars_term": 2.949,
+      "forks_term": 1.089,
+      "recency_term": 0.582
+    }
+  },
+  {
+    "full_name": "mrshaw01/software-engineer",
+    "url": "https://github.com/mrshaw01/software-engineer",
+    "default_branch": "main",
+    "stars": 362,
+    "forks": 63,
+    "pushed_at": "2026-03-22T15:40:06Z",
+    "days_since_push": 68.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A curated learning repository focused on High-Performance Computing (HPC) \u2014 covering fundamentals to advanced topics in CUDA, MPI, C++, and Python-C++ interoperability.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.616,
+    "score_parts": {
+      "stars_term": 2.56,
+      "forks_term": 0.903,
+      "recency_term": 1.153
+    }
+  },
+  {
+    "full_name": "NVIDIA-BioNeMo/nvMolKit",
+    "url": "https://github.com/NVIDIA-BioNeMo/nvMolKit",
+    "default_branch": "main",
+    "stars": 259,
+    "forks": 24,
+    "pushed_at": "2026-05-29T18:01:15Z",
+    "days_since_push": 0.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "A high-performance, GPU-accelerated library for key computational chemistry tasks, such as molecular similarity, conformer generation, and geometry relaxation.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.613,
+    "score_parts": {
+      "stars_term": 2.415,
+      "forks_term": 0.699,
+      "recency_term": 1.499
+    }
+  },
+  {
+    "full_name": "szellmann/visionaray",
+    "url": "https://github.com/szellmann/visionaray",
+    "default_branch": "master",
+    "stars": 439,
+    "forks": 37,
+    "pushed_at": "2026-03-26T13:06:15Z",
+    "days_since_push": 64.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A C++-based, cross platform ray tracing library",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.604,
+    "score_parts": {
+      "stars_term": 2.643,
+      "forks_term": 0.79,
+      "recency_term": 1.171
+    }
+  },
+  {
+    "full_name": "NVlabs/vibetensor",
+    "url": "https://github.com/NVlabs/vibetensor",
+    "default_branch": "main",
+    "stars": 624,
+    "forks": 48,
+    "pushed_at": "2026-02-02T15:42:58Z",
+    "days_since_push": 116.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Our first fully AI generated deep learning system",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.599,
+    "score_parts": {
+      "stars_term": 2.796,
+      "forks_term": 0.845,
+      "recency_term": 0.959
+    }
+  },
+  {
+    "full_name": "toverainc/willow-inference-server",
+    "url": "https://github.com/toverainc/willow-inference-server",
+    "default_branch": "main",
+    "stars": 502,
+    "forks": 60,
+    "pushed_at": "2026-02-12T15:41:20Z",
+    "days_since_push": 106.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Open source, local, and self-hosted highly optimized language inference server supporting ASR/STT, TTS, and LLM across WebRTC, REST, and WS",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 4.59,
+    "score_parts": {
+      "stars_term": 2.702,
+      "forks_term": 0.893,
+      "recency_term": 0.996
+    }
+  },
+  {
+    "full_name": "nvidia-holoscan/holoscan-sdk",
+    "url": "https://github.com/nvidia-holoscan/holoscan-sdk",
+    "default_branch": "main",
+    "stars": 211,
+    "forks": 56,
+    "pushed_at": "2026-05-08T20:36:43Z",
+    "days_since_push": 21.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "The AI sensor processing SDK for low latency streaming workflows",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.587,
+    "score_parts": {
+      "stars_term": 2.326,
+      "forks_term": 0.878,
+      "recency_term": 1.383
+    }
+  },
+  {
+    "full_name": "xmrig/xmrig-cuda",
+    "url": "https://github.com/xmrig/xmrig-cuda",
+    "default_branch": "master",
+    "stars": 462,
+    "forks": 198,
+    "pushed_at": "2025-12-07T11:23:11Z",
+    "days_since_push": 173.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "NVIDIA CUDA plugin for XMRig miner",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.584,
+    "score_parts": {
+      "stars_term": 2.666,
+      "forks_term": 1.149,
+      "recency_term": 0.769
+    }
+  },
+  {
+    "full_name": "hedronvision/bazel-compile-commands-extractor",
+    "url": "https://github.com/hedronvision/bazel-compile-commands-extractor",
+    "default_branch": "main",
+    "stars": 900,
+    "forks": 188,
+    "pushed_at": "2025-08-11T21:33:33Z",
+    "days_since_push": 291.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Goal: Enable awesome tooling for Bazel users of the C language family.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.582,
+    "score_parts": {
+      "stars_term": 2.955,
+      "forks_term": 1.138,
+      "recency_term": 0.489
+    }
+  },
+  {
+    "full_name": "ekondis/mixbench",
+    "url": "https://github.com/ekondis/mixbench",
+    "default_branch": "master",
+    "stars": 458,
+    "forks": 73,
+    "pushed_at": "2026-02-07T21:52:41Z",
+    "days_since_push": 111.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A GPU benchmark tool for evaluating GPUs and CPUs on mixed operational intensity kernels (CUDA, OpenCL, HIP, SYCL, OpenMP)",
+    "matched_queries": [
+      "cuda kernel",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.575,
+    "score_parts": {
+      "stars_term": 2.662,
+      "forks_term": 0.935,
+      "recency_term": 0.978
+    }
+  },
+  {
+    "full_name": "cvxgrp/pymde",
+    "url": "https://github.com/cvxgrp/pymde",
+    "default_branch": "main",
+    "stars": 588,
+    "forks": 30,
+    "pushed_at": "2026-02-26T16:36:33Z",
+    "days_since_push": 92.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Minimum-distortion embedding with PyTorch",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.567,
+    "score_parts": {
+      "stars_term": 2.77,
+      "forks_term": 0.746,
+      "recency_term": 1.051
+    }
+  },
+  {
+    "full_name": "MooreThreads/LiteGS",
+    "url": "https://github.com/MooreThreads/LiteGS",
+    "default_branch": "master",
+    "stars": 368,
+    "forks": 32,
+    "pushed_at": "2026-04-10T10:29:22Z",
+    "days_since_push": 49.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "A refactored codebase for Gaussian Splatting. Training 3DGS in 50 seconds!",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.566,
+    "score_parts": {
+      "stars_term": 2.567,
+      "forks_term": 0.759,
+      "recency_term": 1.24
+    }
+  },
+  {
+    "full_name": "osayamenja/FlashMoE",
+    "url": "https://github.com/osayamenja/FlashMoE",
+    "default_branch": "main",
+    "stars": 261,
+    "forks": 36,
+    "pushed_at": "2026-05-05T03:37:48Z",
+    "days_since_push": 24.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Distributed MoE in a Single Kernel [NeurIPS '25]",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.566,
+    "score_parts": {
+      "stars_term": 2.418,
+      "forks_term": 0.784,
+      "recency_term": 1.363
+    }
+  },
+  {
+    "full_name": "deepreinforce-ai/CUDA-L2",
+    "url": "https://github.com/deepreinforce-ai/CUDA-L2",
+    "default_branch": "main",
+    "stars": 442,
+    "forks": 28,
+    "pushed_at": "2026-03-30T06:44:15Z",
+    "days_since_push": 60.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CUDA-L2: Surpassing cuBLAS Performance for Matrix Multiplication through Reinforcement Learning",
+    "matched_queries": [
+      "cublas",
+      "language:Cuda"
+    ],
+    "priority": 4.565,
+    "score_parts": {
+      "stars_term": 2.646,
+      "forks_term": 0.731,
+      "recency_term": 1.187
+    }
+  },
+  {
+    "full_name": "NVlabs/parrot",
+    "url": "https://github.com/NVlabs/parrot",
+    "default_branch": "main",
+    "stars": 277,
+    "forks": 18,
+    "pushed_at": "2026-05-26T17:06:53Z",
+    "days_since_push": 3.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Parrot is an array fusion GPU library built on NVIDIA's CCCL libaries (Thrust/CUB).",
+    "matched_queries": [
+      "language:Cuda",
+      "thrust cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.565,
+    "score_parts": {
+      "stars_term": 2.444,
+      "forks_term": 0.639,
+      "recency_term": 1.481
+    }
+  },
+  {
+    "full_name": "NVIDIA-Merlin/HierarchicalKV",
+    "url": "https://github.com/NVIDIA-Merlin/HierarchicalKV",
+    "default_branch": "master",
+    "stars": 202,
+    "forks": 35,
+    "pushed_at": "2026-05-22T00:48:45Z",
+    "days_since_push": 7.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "HierarchicalKV is a part of NVIDIA Merlin and provides hierarchical key-value storage to meet RecSys requirements.  The key capability of HierarchicalKV is to store key-value feature-embeddings on high-bandwidth memory (HBM) of GPUs and in host memory.  It also can be used as a generic key-value storage.",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.541,
+    "score_parts": {
+      "stars_term": 2.307,
+      "forks_term": 0.778,
+      "recency_term": 1.455
+    }
+  },
+  {
+    "full_name": "rapidsai/node",
+    "url": "https://github.com/rapidsai/node",
+    "default_branch": "main",
+    "stars": 211,
+    "forks": 26,
+    "pushed_at": "2026-05-28T01:35:24Z",
+    "days_since_push": 1.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "TypeScript",
+    "description": "GPU-accelerated data science and visualization in node",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.531,
+    "score_parts": {
+      "stars_term": 2.326,
+      "forks_term": 0.716,
+      "recency_term": 1.489
+    }
+  },
+  {
+    "full_name": "NVlabs/CGBN",
+    "url": "https://github.com/NVlabs/CGBN",
+    "default_branch": "master",
+    "stars": 245,
+    "forks": 75,
+    "pushed_at": "2026-03-31T16:26:17Z",
+    "days_since_push": 59.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CGBN:   CUDA Accelerated Multiple Precision Arithmetic (Big Num) using Cooperative Groups",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda"
+    ],
+    "priority": 4.525,
+    "score_parts": {
+      "stars_term": 2.391,
+      "forks_term": 0.94,
+      "recency_term": 1.194
+    }
+  },
+  {
+    "full_name": "Tongkaio/CUDA_Kernel_Samples",
+    "url": "https://github.com/Tongkaio/CUDA_Kernel_Samples",
+    "default_branch": "master",
+    "stars": 985,
+    "forks": 108,
+    "pushed_at": "2025-08-23T14:14:00Z",
+    "days_since_push": 279.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CUDA \u7b97\u5b50\u624b\u6495\u4e0e\u9762\u8bd5\u6307\u5357",
+    "matched_queries": [
+      "cuda kernel",
+      "language:Cuda"
+    ],
+    "priority": 4.524,
+    "score_parts": {
+      "stars_term": 2.994,
+      "forks_term": 1.019,
+      "recency_term": 0.512
+    }
+  },
+  {
+    "full_name": "merzlab/QUICK",
+    "url": "https://github.com/merzlab/QUICK",
+    "default_branch": "master",
+    "stars": 209,
+    "forks": 52,
+    "pushed_at": "2026-04-30T04:43:27Z",
+    "days_since_push": 29.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "QUICK: A GPU-enabled ab intio quantum chemistry software package",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.522,
+    "score_parts": {
+      "stars_term": 2.322,
+      "forks_term": 0.862,
+      "recency_term": 1.338
+    }
+  },
+  {
+    "full_name": "ingonyama-zk/icicle",
+    "url": "https://github.com/ingonyama-zk/icicle",
+    "default_branch": "main",
+    "stars": 500,
+    "forks": 168,
+    "pushed_at": "2025-11-10T11:46:37Z",
+    "days_since_push": 200.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A hardware acceleration library for compute intensive cryptography :ice_cube:",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.507,
+    "score_parts": {
+      "stars_term": 2.7,
+      "forks_term": 1.114,
+      "recency_term": 0.693
+    }
+  },
+  {
+    "full_name": "facebookresearch/dietgpu",
+    "url": "https://github.com/facebookresearch/dietgpu",
+    "default_branch": "main",
+    "stars": 392,
+    "forks": 33,
+    "pushed_at": "2026-03-18T15:41:10Z",
+    "days_since_push": 72.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "GPU implementation of a fast generalized ANS (asymmetric numeral system) entropy encoder and decoder, with extensions for lossless compression of numerical and other data types in HPC/ML applications.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.496,
+    "score_parts": {
+      "stars_term": 2.594,
+      "forks_term": 0.766,
+      "recency_term": 1.135
+    }
+  },
+  {
+    "full_name": "66RING/tiny-flash-attention",
+    "url": "https://github.com/66RING/tiny-flash-attention",
+    "default_branch": "main",
+    "stars": 518,
+    "forks": 53,
+    "pushed_at": "2026-01-20T11:24:35Z",
+    "days_since_push": 129.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "flash attention tutorial written in python, triton, cuda, cutlass",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.492,
+    "score_parts": {
+      "stars_term": 2.715,
+      "forks_term": 0.866,
+      "recency_term": 0.911
+    }
+  },
+  {
+    "full_name": "nv-tlabs/NKSR",
+    "url": "https://github.com/nv-tlabs/NKSR",
+    "default_branch": "public",
+    "stars": 964,
+    "forks": 69,
+    "pushed_at": "2025-09-24T23:17:00Z",
+    "days_since_push": 247.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "[CVPR 2023 Highlight] Neural Kernel Surface Reconstruction",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.487,
+    "score_parts": {
+      "stars_term": 2.985,
+      "forks_term": 0.923,
+      "recency_term": 0.579
+    }
+  },
+  {
+    "full_name": "LegNeato/rust-gpu-chimera",
+    "url": "https://github.com/LegNeato/rust-gpu-chimera",
+    "default_branch": "main",
+    "stars": 486,
+    "forks": 14,
+    "pushed_at": "2026-04-04T05:57:54Z",
+    "days_since_push": 55.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "Demo project showing a single Rust codebase running on CPU and directly on GPUs",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.486,
+    "score_parts": {
+      "stars_term": 2.688,
+      "forks_term": 0.588,
+      "recency_term": 1.21
+    }
+  },
+  {
+    "full_name": "ninazero/tron",
+    "url": "https://github.com/ninazero/tron",
+    "default_branch": "main",
+    "stars": 305,
+    "forks": 19,
+    "pushed_at": "2026-05-02T08:14:17Z",
+    "days_since_push": 27.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "USDT\u94b1\u5305\u9753\u53f7\u751f\u6210\u5668,Trx\u9753\u53f7,\u6ce2\u573aGPU\u9753\u53f7\u6e90\u7801,TRON\u94b1\u5305\u9753\u53f7\u751f\u6210",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.485,
+    "score_parts": {
+      "stars_term": 2.486,
+      "forks_term": 0.651,
+      "recency_term": 1.349
+    }
+  },
+  {
+    "full_name": "godweiyang/GrabGPU",
+    "url": "https://github.com/godweiyang/GrabGPU",
+    "default_branch": "master",
+    "stars": 415,
+    "forks": 40,
+    "pushed_at": "2026-02-27T14:53:57Z",
+    "days_since_push": 91.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "\u4e00\u6b3e\u4fbf\u6377\u7684\u62a2\u5360\u663e\u5361\u811a\u672c",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.481,
+    "score_parts": {
+      "stars_term": 2.619,
+      "forks_term": 0.806,
+      "recency_term": 1.055
+    }
+  },
+  {
+    "full_name": "zjhellofss/KuiperLLama",
+    "url": "https://github.com/zjhellofss/KuiperLLama",
+    "default_branch": "main",
+    "stars": 546,
+    "forks": 142,
+    "pushed_at": "2025-10-28T01:52:59Z",
+    "days_since_push": 213.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "\u6821\u62db\u3001\u79cb\u62db\u3001\u6625\u62db\u3001\u5b9e\u4e60\u597d\u9879\u76ee\uff0c\u5e26\u4f60\u4ece\u96f6\u52a8\u624b\u5b9e\u73b0\u652f\u6301LLama2/3\u548cQwen2.5\u7684\u5927\u6a21\u578b\u63a8\u7406\u6846\u67b6\u3002",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.474,
+    "score_parts": {
+      "stars_term": 2.738,
+      "forks_term": 1.078,
+      "recency_term": 0.658
+    }
+  },
+  {
+    "full_name": "ZaidQureshi/bam",
+    "url": "https://github.com/ZaidQureshi/bam",
+    "default_branch": "master",
+    "stars": 224,
+    "forks": 74,
+    "pushed_at": "2026-03-28T05:55:23Z",
+    "days_since_push": 62.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.468,
+    "score_parts": {
+      "stars_term": 2.352,
+      "forks_term": 0.938,
+      "recency_term": 1.178
+    }
+  },
+  {
+    "full_name": "SakanaAI/sparser-faster-llms",
+    "url": "https://github.com/SakanaAI/sparser-faster-llms",
+    "default_branch": "master",
+    "stars": 238,
+    "forks": 21,
+    "pushed_at": "2026-05-14T14:52:06Z",
+    "days_since_push": 15.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Cuda kernels for leveraging LLM sparsity to improve throughput and decrease the memory requirements during inference and training.",
+    "matched_queries": [
+      "cuda inference",
+      "cuda kernel",
+      "language:Cuda"
+    ],
+    "priority": 4.464,
+    "score_parts": {
+      "stars_term": 2.378,
+      "forks_term": 0.671,
+      "recency_term": 1.414
+    }
+  },
+  {
+    "full_name": "Infatoshi/mnist-cuda",
+    "url": "https://github.com/Infatoshi/mnist-cuda",
+    "default_branch": "master",
+    "stars": 486,
+    "forks": 86,
+    "pushed_at": "2025-12-18T08:52:50Z",
+    "days_since_push": 162.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.459,
+    "score_parts": {
+      "stars_term": 2.688,
+      "forks_term": 0.97,
+      "recency_term": 0.802
+    }
+  },
+  {
+    "full_name": "florianmattana/sass-king",
+    "url": "https://github.com/florianmattana/sass-king",
+    "default_branch": "main",
+    "stars": 268,
+    "forks": 13,
+    "pushed_at": "2026-05-18T15:58:43Z",
+    "days_since_push": 11.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Reverse engineering NVIDIA SASS  instruction dictionary, kernel audits and pattern recognition across GPU architectures.",
+    "matched_queries": [
+      "cuda kernel",
+      "language:Cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.439,
+    "score_parts": {
+      "stars_term": 2.43,
+      "forks_term": 0.573,
+      "recency_term": 1.436
+    }
+  },
+  {
+    "full_name": "llnl/LEAP",
+    "url": "https://github.com/llnl/LEAP",
+    "default_branch": "main",
+    "stars": 228,
+    "forks": 29,
+    "pushed_at": "2026-04-28T05:50:44Z",
+    "days_since_push": 31.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "comprehensive library of 3D transmission Computed Tomography (CT) algorithms with Python and C++ APIs, a PyQt GUI, and fully integrated with PyTorch",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.426,
+    "score_parts": {
+      "stars_term": 2.36,
+      "forks_term": 0.739,
+      "recency_term": 1.328
+    }
+  },
+  {
+    "full_name": "tensorflow/recommenders-addons",
+    "url": "https://github.com/tensorflow/recommenders-addons",
+    "default_branch": "master",
+    "stars": 636,
+    "forks": 145,
+    "pushed_at": "2025-09-04T15:43:50Z",
+    "days_since_push": 267.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Additional utils and helpers to extend TensorFlow when build recommendation systems, contributed and maintained by SIG Recommenders.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.422,
+    "score_parts": {
+      "stars_term": 2.804,
+      "forks_term": 1.082,
+      "recency_term": 0.536
+    }
+  },
+  {
+    "full_name": "nicehash/NiceHashQuickMiner",
+    "url": "https://github.com/nicehash/NiceHashQuickMiner",
+    "default_branch": "main",
+    "stars": 468,
+    "forks": 201,
+    "pushed_at": "2025-10-01T07:08:19Z",
+    "days_since_push": 240.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "HTML",
+    "description": "Super simple & easy Windows 10 cryptocurrency miner made by NiceHash.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.418,
+    "score_parts": {
+      "stars_term": 2.671,
+      "forks_term": 1.153,
+      "recency_term": 0.594
+    }
+  },
+  {
+    "full_name": "jasmcaus/caer",
+    "url": "https://github.com/jasmcaus/caer",
+    "default_branch": "dev",
+    "stars": 811,
+    "forks": 107,
+    "pushed_at": "2025-08-11T08:11:30Z",
+    "days_since_push": 291.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "High-performance Vision library in Python. Scale your research, not boilerplate.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.414,
+    "score_parts": {
+      "stars_term": 2.91,
+      "forks_term": 1.017,
+      "recency_term": 0.488
+    }
+  },
+  {
+    "full_name": "Qengineering/Install-OpenCV-Jetson-Nano",
+    "url": "https://github.com/Qengineering/Install-OpenCV-Jetson-Nano",
+    "default_branch": "main",
+    "stars": 241,
+    "forks": 64,
+    "pushed_at": "2026-03-06T11:11:53Z",
+    "days_since_push": 84.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Shell",
+    "description": "OpenCV installation script with CUDA and cuDNN support",
+    "matched_queries": [
+      "cudnn"
+    ],
+    "priority": 4.374,
+    "score_parts": {
+      "stars_term": 2.384,
+      "forks_term": 0.906,
+      "recency_term": 1.083
+    }
+  },
+  {
+    "full_name": "LambdaLabsML/distributed-training-guide",
+    "url": "https://github.com/LambdaLabsML/distributed-training-guide",
+    "default_branch": "main",
+    "stars": 615,
+    "forks": 72,
+    "pushed_at": "2025-10-22T21:27:41Z",
+    "days_since_push": 219.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Best practices & guides on how to write distributed pytorch training code",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.367,
+    "score_parts": {
+      "stars_term": 2.79,
+      "forks_term": 0.932,
+      "recency_term": 0.645
+    }
+  },
+  {
+    "full_name": "ArthurinRUC/cutlass-notes",
+    "url": "https://github.com/ArthurinRUC/cutlass-notes",
+    "default_branch": "main",
+    "stars": 210,
+    "forks": 12,
+    "pushed_at": "2026-05-27T08:36:56Z",
+    "days_since_push": 2.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "From Minimal GEMM to Everything",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.366,
+    "score_parts": {
+      "stars_term": 2.324,
+      "forks_term": 0.557,
+      "recency_term": 1.485
+    }
+  },
+  {
+    "full_name": "xaskasdf/ntransformer",
+    "url": "https://github.com/xaskasdf/ntransformer",
+    "default_branch": "main",
+    "stars": 457,
+    "forks": 19,
+    "pushed_at": "2026-02-22T22:59:05Z",
+    "days_since_push": 96.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "High-efficiency LLM inference engine in C++/CUDA. Run Llama 70B on RTX 3090.",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.348,
+    "score_parts": {
+      "stars_term": 2.661,
+      "forks_term": 0.651,
+      "recency_term": 1.036
+    }
+  },
+  {
+    "full_name": "raketenkater/llm-server",
+    "url": "https://github.com/raketenkater/llm-server",
+    "default_branch": "main",
+    "stars": 218,
+    "forks": 10,
+    "pushed_at": "2026-05-27T06:41:02Z",
+    "days_since_push": 2.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Shell",
+    "description": "Smart launcher for llama.cpp / ik_llama.cpp \u2014 auto-detects GPUs, optimizes MoE placement, crash recovery",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.346,
+    "score_parts": {
+      "stars_term": 2.34,
+      "forks_term": 0.521,
+      "recency_term": 1.485
+    }
+  },
+  {
+    "full_name": "chenxingqiang/YiRage",
+    "url": "https://github.com/chenxingqiang/YiRage",
+    "default_branch": "main",
+    "stars": 233,
+    "forks": 11,
+    "pushed_at": "2026-05-16T06:31:13Z",
+    "days_since_push": 13.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "YiRage (Yield Revolutionary AGile Engine) - Multi-Backend LLM Inference Optimization. Extends Mirage with comprehensive support for CUDA, MPS, CPU, Triton, NKI, cuDNN, and MKL backends.",
+    "matched_queries": [
+      "cuda inference",
+      "cudnn"
+    ],
+    "priority": 4.332,
+    "score_parts": {
+      "stars_term": 2.369,
+      "forks_term": 0.54,
+      "recency_term": 1.423
+    }
+  },
+  {
+    "full_name": "libocca/occa",
+    "url": "https://github.com/libocca/occa",
+    "default_branch": "main",
+    "stars": 441,
+    "forks": 96,
+    "pushed_at": "2025-11-07T20:55:38Z",
+    "days_since_push": 203.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Portable and vendor neutral framework for parallel programming on heterogeneous platforms.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.325,
+    "score_parts": {
+      "stars_term": 2.645,
+      "forks_term": 0.993,
+      "recency_term": 0.686
+    }
+  },
+  {
+    "full_name": "coderonion/awesome-llm-and-aigc",
+    "url": "https://github.com/coderonion/awesome-llm-and-aigc",
+    "default_branch": "main",
+    "stars": 805,
+    "forks": 75,
+    "pushed_at": "2025-08-01T16:22:21Z",
+    "days_since_push": 301.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "",
+    "description": "\ud83d\ude80\ud83d\ude80\ud83d\ude80A collection of some awesome public projects about Large Language Model(LLM), Vision Language Model(VLM), Vision Language Action(VLA), AI Generated Content(AIGC), the related Datasets and Applications.",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.317,
+    "score_parts": {
+      "stars_term": 2.906,
+      "forks_term": 0.94,
+      "recency_term": 0.47
+    }
+  },
+  {
+    "full_name": "zhongkaifu/Seq2SeqSharp",
+    "url": "https://github.com/zhongkaifu/Seq2SeqSharp",
+    "default_branch": "master",
+    "stars": 212,
+    "forks": 43,
+    "pushed_at": "2026-03-18T01:46:34Z",
+    "days_since_push": 72.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C#",
+    "description": "Seq2SeqSharp is a tensor based fast & flexible deep neural network framework written by .NET (C#). It has many highlighted features, such as automatic differentiation, different network types (Transformer,  LSTM, BiLSTM and so on), multi-GPUs supported, cross-platforms (Windows, Linux, MacOS), multimodal model for text and images and so on.",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.283,
+    "score_parts": {
+      "stars_term": 2.328,
+      "forks_term": 0.822,
+      "recency_term": 1.133
+    }
+  },
+  {
+    "full_name": "psmarter/mini-infer",
+    "url": "https://github.com/psmarter/mini-infer",
+    "default_branch": "main",
+    "stars": 247,
+    "forks": 13,
+    "pushed_at": "2026-04-24T08:27:59Z",
+    "days_since_push": 35.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "LLM inference engine from scratch \u2014 paged KV cache, continuous batching, chunked prefill, prefix caching, speculative decoding, CUDA graph,  tensor parallelism,  OpenAI-compatible serving",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.275,
+    "score_parts": {
+      "stars_term": 2.394,
+      "forks_term": 0.573,
+      "recency_term": 1.308
+    }
+  },
+  {
+    "full_name": "ddemidov/vexcl",
+    "url": "https://github.com/ddemidov/vexcl",
+    "default_branch": "master",
+    "stars": 720,
+    "forks": 85,
+    "pushed_at": "2025-07-19T18:54:30Z",
+    "days_since_push": 314.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "VexCL is a C++ vector expression template library for OpenCL/CUDA/OpenMP",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.273,
+    "score_parts": {
+      "stars_term": 2.858,
+      "forks_term": 0.967,
+      "recency_term": 0.447
+    }
+  },
+  {
+    "full_name": "pranjalssh/fast.cu",
+    "url": "https://github.com/pranjalssh/fast.cu",
+    "default_branch": "main",
+    "stars": 579,
+    "forks": 76,
+    "pushed_at": "2025-09-18T15:31:33Z",
+    "days_since_push": 253.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Fastest kernels written from scratch",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.272,
+    "score_parts": {
+      "stars_term": 2.763,
+      "forks_term": 0.943,
+      "recency_term": 0.566
+    }
+  },
+  {
+    "full_name": "eric2003/OneFLOW",
+    "url": "https://github.com/eric2003/OneFLOW",
+    "default_branch": "master",
+    "stars": 278,
+    "forks": 85,
+    "pushed_at": "2026-01-04T16:58:31Z",
+    "days_since_push": 145.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "LargeScale Multiphysics Scientific Simulation Environment-OneFLOW CFD",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.27,
+    "score_parts": {
+      "stars_term": 2.446,
+      "forks_term": 0.967,
+      "recency_term": 0.857
+    }
+  },
+  {
+    "full_name": "rahul-goel/fused-ssim",
+    "url": "https://github.com/rahul-goel/fused-ssim",
+    "default_branch": "main",
+    "stars": 226,
+    "forks": 80,
+    "pushed_at": "2026-02-02T20:28:23Z",
+    "days_since_push": 116.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Lightning fast differentiable SSIM.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.27,
+    "score_parts": {
+      "stars_term": 2.356,
+      "forks_term": 0.954,
+      "recency_term": 0.959
+    }
+  },
+  {
+    "full_name": "NVIDIA/jitify",
+    "url": "https://github.com/NVIDIA/jitify",
+    "default_branch": "master",
+    "stars": 575,
+    "forks": 74,
+    "pushed_at": "2025-09-15T22:06:02Z",
+    "days_since_push": 256.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A single-header C++ library for simplifying the use of CUDA Runtime Compilation (NVRTC).",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.258,
+    "score_parts": {
+      "stars_term": 2.76,
+      "forks_term": 0.938,
+      "recency_term": 0.56
+    }
+  },
+  {
+    "full_name": "DavidDiazGuerra/gpuRIR",
+    "url": "https://github.com/DavidDiazGuerra/gpuRIR",
+    "default_branch": "master",
+    "stars": 597,
+    "forks": 98,
+    "pushed_at": "2025-07-18T11:25:57Z",
+    "days_since_push": 315.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Python library for Room Impulse Response (RIR) simulation with GPU acceleration",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.22,
+    "score_parts": {
+      "stars_term": 2.777,
+      "forks_term": 0.998,
+      "recency_term": 0.445
+    }
+  },
+  {
+    "full_name": "andrewkchan/yalm",
+    "url": "https://github.com/andrewkchan/yalm",
+    "default_branch": "main",
+    "stars": 584,
+    "forks": 61,
+    "pushed_at": "2025-09-13T09:22:40Z",
+    "days_since_push": 258.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Yet Another Language Model: LLM inference in C++/CUDA, no libraries except for I/O",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 4.218,
+    "score_parts": {
+      "stars_term": 2.767,
+      "forks_term": 0.896,
+      "recency_term": 0.554
+    }
+  },
+  {
+    "full_name": "AndreSlavescu/mHC.cu",
+    "url": "https://github.com/AndreSlavescu/mHC.cu",
+    "default_branch": "main",
+    "stars": 266,
+    "forks": 21,
+    "pushed_at": "2026-03-09T03:17:48Z",
+    "days_since_push": 81.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "mHC kernels implemented in CUDA",
+    "matched_queries": [
+      "cuda kernel",
+      "language:Cuda"
+    ],
+    "priority": 4.192,
+    "score_parts": {
+      "stars_term": 2.427,
+      "forks_term": 0.671,
+      "recency_term": 1.095
+    }
+  },
+  {
+    "full_name": "jmaczan/tiny-vllm",
+    "url": "https://github.com/jmaczan/tiny-vllm",
+    "default_branch": "main",
+    "stars": 229,
+    "forks": 10,
+    "pushed_at": "2026-04-14T09:45:25Z",
+    "days_since_push": 45.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Build your own high performance LLM inference engine in C++ and CUDA - a smaller version of vLLM",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 4.141,
+    "score_parts": {
+      "stars_term": 2.362,
+      "forks_term": 0.521,
+      "recency_term": 1.259
+    }
+  },
+  {
+    "full_name": "yassa9/qwen600",
+    "url": "https://github.com/yassa9/qwen600",
+    "default_branch": "main",
+    "stars": 553,
+    "forks": 48,
+    "pushed_at": "2025-09-08T18:28:59Z",
+    "days_since_push": 263.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Static suckless single batch CUDA-only qwen3-0.6B mini inference engine",
+    "matched_queries": [
+      "cuda inference",
+      "language:Cuda",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.133,
+    "score_parts": {
+      "stars_term": 2.744,
+      "forks_term": 0.845,
+      "recency_term": 0.544
+    }
+  },
+  {
+    "full_name": "d0rc/egg.c",
+    "url": "https://github.com/d0rc/egg.c",
+    "default_branch": "master",
+    "stars": 350,
+    "forks": 32,
+    "pushed_at": "2025-12-22T19:10:49Z",
+    "days_since_push": 158.2,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "EGGROLL in C, integer-first training",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.12,
+    "score_parts": {
+      "stars_term": 2.545,
+      "forks_term": 0.759,
+      "recency_term": 0.816
+    }
+  },
+  {
+    "full_name": "livehl/aimirror",
+    "url": "https://github.com/livehl/aimirror",
+    "default_branch": "main",
+    "stars": 212,
+    "forks": 20,
+    "pushed_at": "2026-03-15T08:18:52Z",
+    "days_since_push": 75.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "\ud83d\ude80 200\u500d\u901f\uff01AI\u65f6\u4ee3\u7684\u4e0b\u8f7d\u795e\u5668 | Docker/PyPI/HuggingFace/CRAN \u5168\u52a0\u901f | \u5e76\u884c\u5206\u7247+\u667a\u80fd\u7f13\u5b58\uff0c\u8ba9\u4e0b\u8f7d\u98de\u8d77\u6765",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.111,
+    "score_parts": {
+      "stars_term": 2.328,
+      "forks_term": 0.661,
+      "recency_term": 1.121
+    }
+  },
+  {
+    "full_name": "HenryHuYu/DiffPhysDrone",
+    "url": "https://github.com/HenryHuYu/DiffPhysDrone",
+    "default_branch": "master",
+    "stars": 557,
+    "forks": 80,
+    "pushed_at": "2025-06-25T03:42:15Z",
+    "days_since_push": 338.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Published on Nature Machine Intelligence! The first real robot(quadrotor) based on differentiable physics training.",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 4.108,
+    "score_parts": {
+      "stars_term": 2.747,
+      "forks_term": 0.954,
+      "recency_term": 0.407
+    }
+  },
+  {
+    "full_name": "vitalight/Velvet",
+    "url": "https://github.com/vitalight/Velvet",
+    "default_branch": "master",
+    "stars": 203,
+    "forks": 41,
+    "pushed_at": "2026-02-08T14:17:45Z",
+    "days_since_push": 110.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "A CUDA-accelerated cloth simulation engine based on Extended Position Based Dynamics (XPBD).",
+    "matched_queries": [
+      "cuda accelerated",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.102,
+    "score_parts": {
+      "stars_term": 2.31,
+      "forks_term": 0.812,
+      "recency_term": 0.981
+    }
+  },
+  {
+    "full_name": "fastvideo/gpu-camera-sample",
+    "url": "https://github.com/fastvideo/gpu-camera-sample",
+    "default_branch": "master",
+    "stars": 367,
+    "forks": 74,
+    "pushed_at": "2025-08-31T10:41:19Z",
+    "days_since_push": 271.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Image processing software on GPU (Windows, Linux, ARM) for real time machine vision camera applications. Performance benchmarks and Glass-to-Glass time measurements. MIPI CSI cameras support. RAW2RGB processing on CUDA with 16-bit ISP. Software for Jetson.",
+    "matched_queries": [
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 4.031,
+    "score_parts": {
+      "stars_term": 2.566,
+      "forks_term": 0.938,
+      "recency_term": 0.527
+    }
+  },
+  {
+    "full_name": "Zielon/INSTA",
+    "url": "https://github.com/Zielon/INSTA",
+    "default_branch": "master",
+    "stars": 516,
+    "forks": 45,
+    "pushed_at": "2025-08-03T08:46:39Z",
+    "days_since_push": 299.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "INSTA - Instant Volumetric Head Avatars [CVPR2023]",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 4.018,
+    "score_parts": {
+      "stars_term": 2.713,
+      "forks_term": 0.831,
+      "recency_term": 0.473
+    }
+  },
+  {
+    "full_name": "NVIDIA/cuda-checkpoint",
+    "url": "https://github.com/NVIDIA/cuda-checkpoint",
+    "default_branch": "main",
+    "stars": 455,
+    "forks": 35,
+    "pushed_at": "2025-09-15T23:00:41Z",
+    "days_since_push": 256.0,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "CUDA checkpoint and restore utility",
+    "matched_queries": [
+      "topic:cuda"
+    ],
+    "priority": 3.997,
+    "score_parts": {
+      "stars_term": 2.659,
+      "forks_term": 0.778,
+      "recency_term": 0.56
+    }
+  },
+  {
+    "full_name": "coderonion/awesome-cuda-and-hpc",
+    "url": "https://github.com/coderonion/awesome-cuda-and-hpc",
+    "default_branch": "main",
+    "stars": 480,
+    "forks": 46,
+    "pushed_at": "2025-08-02T02:08:40Z",
+    "days_since_push": 300.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "",
+    "description": "\ud83d\ude80\ud83d\ude80\ud83d\ude80 This repository lists some awesome public CUDA, cuda-python, cuBLAS, cuDNN, CUTLASS, TensorRT, TensorRT-LLM, Triton, TVM, MLIR, PTX and High Performance Computing (HPC) projects.",
+    "matched_queries": [
+      "cublas",
+      "cudnn",
+      "topic:cuda",
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.989,
+    "score_parts": {
+      "stars_term": 2.682,
+      "forks_term": 0.836,
+      "recency_term": 0.471
+    }
+  },
+  {
+    "full_name": "OpenBMB/CPM.cu",
+    "url": "https://github.com/OpenBMB/CPM.cu",
+    "default_branch": "main",
+    "stars": 240,
+    "forks": 25,
+    "pushed_at": "2026-01-14T09:34:08Z",
+    "days_since_push": 135.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "CPM.cu is a lightweight, high-performance CUDA implementation for LLMs, optimized for end-device inference and featuring cutting-edge techniques in sparse architecture, speculative sampling and quantization.",
+    "matched_queries": [
+      "cuda inference",
+      "language:Cuda"
+    ],
+    "priority": 3.98,
+    "score_parts": {
+      "stars_term": 2.382,
+      "forks_term": 0.707,
+      "recency_term": 0.89
+    }
+  },
+  {
+    "full_name": "BlinkDL/RWKV-CUDA",
+    "url": "https://github.com/BlinkDL/RWKV-CUDA",
+    "default_branch": "main",
+    "stars": 232,
+    "forks": 35,
+    "pushed_at": "2025-12-10T09:40:28Z",
+    "days_since_push": 170.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "The CUDA version of the RWKV language model ( https://github.com/BlinkDL/RWKV-LM )",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.923,
+    "score_parts": {
+      "stars_term": 2.367,
+      "forks_term": 0.778,
+      "recency_term": 0.778
+    }
+  },
+  {
+    "full_name": "carlinds/splatad",
+    "url": "https://github.com/carlinds/splatad",
+    "default_branch": "main",
+    "stars": 372,
+    "forks": 29,
+    "pushed_at": "2025-10-09T08:57:32Z",
+    "days_since_push": 232.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "SplatAD: Real-Time Lidar and Camera Rendering with 3D Gaussian Splatting for Autonomous Driving",
+    "matched_queries": [
+      "language:Cuda",
+      "topic:cuda"
+    ],
+    "priority": 3.923,
+    "score_parts": {
+      "stars_term": 2.572,
+      "forks_term": 0.739,
+      "recency_term": 0.613
+    }
+  },
+  {
+    "full_name": "mit-han-lab/Quest",
+    "url": "https://github.com/mit-han-lab/Quest",
+    "default_branch": "main",
+    "stars": 387,
+    "forks": 48,
+    "pushed_at": "2025-07-10T21:29:37Z",
+    "days_since_push": 323.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "[ICML 2024] Quest: Query-Aware Sparsity for Efficient Long-Context LLM Inference",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.866,
+    "score_parts": {
+      "stars_term": 2.589,
+      "forks_term": 0.845,
+      "recency_term": 0.432
+    }
+  },
+  {
+    "full_name": "SJTU-IPADS/PhoenixOS",
+    "url": "https://github.com/SJTU-IPADS/PhoenixOS",
+    "default_branch": "v0",
+    "stars": 282,
+    "forks": 33,
+    "pushed_at": "2025-09-28T10:29:34Z",
+    "days_since_push": 243.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Fast OS-level support for GPU checkpoint and restore",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.805,
+    "score_parts": {
+      "stars_term": 2.452,
+      "forks_term": 0.766,
+      "recency_term": 0.587
+    }
+  },
+  {
+    "full_name": "Maharshi-Pandya/cudacodes",
+    "url": "https://github.com/Maharshi-Pandya/cudacodes",
+    "default_branch": "master",
+    "stars": 437,
+    "forks": 20,
+    "pushed_at": "2025-06-29T19:13:35Z",
+    "days_since_push": 334.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Learnings and programs related to CUDA",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.717,
+    "score_parts": {
+      "stars_term": 2.641,
+      "forks_term": 0.661,
+      "recency_term": 0.414
+    }
+  },
+  {
+    "full_name": "interestingLSY/swiftLLM",
+    "url": "https://github.com/interestingLSY/swiftLLM",
+    "default_branch": "master",
+    "stars": 329,
+    "forks": 38,
+    "pushed_at": "2025-06-10T05:43:08Z",
+    "days_since_push": 353.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "A tiny yet powerful LLM inference system tailored for researching purpose. vLLM-equivalent performance with only 2k lines of code (2% of vLLM).",
+    "matched_queries": [
+      "cuda inference",
+      "topic:cuda"
+    ],
+    "priority": 3.698,
+    "score_parts": {
+      "stars_term": 2.519,
+      "forks_term": 0.796,
+      "recency_term": 0.384
+    }
+  },
+  {
+    "full_name": "modelscope/dash-infer",
+    "url": "https://github.com/modelscope/dash-infer",
+    "default_branch": "main",
+    "stars": 273,
+    "forks": 28,
+    "pushed_at": "2025-08-06T15:59:28Z",
+    "days_since_push": 296.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C",
+    "description": "DashInfer is a native LLM inference engine aiming to deliver industry-leading performance atop various hardware architectures, including CUDA,  x86 and ARMv9.",
+    "matched_queries": [
+      "cuda inference"
+    ],
+    "priority": 3.648,
+    "score_parts": {
+      "stars_term": 2.438,
+      "forks_term": 0.731,
+      "recency_term": 0.479
+    }
+  },
+  {
+    "full_name": "DD-DuDa/Cute-Learning",
+    "url": "https://github.com/DD-DuDa/Cute-Learning",
+    "default_branch": "main",
+    "stars": 275,
+    "forks": 34,
+    "pushed_at": "2025-07-01T15:34:56Z",
+    "days_since_push": 332.3,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Makefile",
+    "description": "Examples of CUDA implementations by Cutlass CuTe",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.63,
+    "score_parts": {
+      "stars_term": 2.441,
+      "forks_term": 0.772,
+      "recency_term": 0.417
+    }
+  },
+  {
+    "full_name": "lukasHoel/3DGS-LM",
+    "url": "https://github.com/lukasHoel/3DGS-LM",
+    "default_branch": "main",
+    "stars": 294,
+    "forks": 18,
+    "pushed_at": "2025-08-22T10:02:47Z",
+    "days_since_push": 280.5,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "3DGS-LM accelerates Gaussian-Splatting optimization by replacing the ADAM optimizer with Levenberg-Marquardt. (ICCV 2025)",
+    "matched_queries": [
+      "cuda accelerated",
+      "language:Cuda"
+    ],
+    "priority": 3.618,
+    "score_parts": {
+      "stars_term": 2.47,
+      "forks_term": 0.639,
+      "recency_term": 0.509
+    }
+  },
+  {
+    "full_name": "usyd-fsalab/fp6_llm",
+    "url": "https://github.com/usyd-fsalab/fp6_llm",
+    "default_branch": "main",
+    "stars": 282,
+    "forks": 24,
+    "pushed_at": "2025-07-16T01:41:43Z",
+    "days_since_push": 317.9,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "An efficient GPU support for LLM inference with x-bit quantization (e.g. FP6,FP5).",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.592,
+    "score_parts": {
+      "stars_term": 2.452,
+      "forks_term": 0.699,
+      "recency_term": 0.441
+    }
+  },
+  {
+    "full_name": "shocker-0x15/GfxExp",
+    "url": "https://github.com/shocker-0x15/GfxExp",
+    "default_branch": "master",
+    "stars": 248,
+    "forks": 22,
+    "pushed_at": "2025-08-02T07:30:43Z",
+    "days_since_push": 300.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Sandbox for graphics paper implementation",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.548,
+    "score_parts": {
+      "stars_term": 2.396,
+      "forks_term": 0.681,
+      "recency_term": 0.471
+    }
+  },
+  {
+    "full_name": "DrLi-Ming/DDN-SLAM",
+    "url": "https://github.com/DrLi-Ming/DDN-SLAM",
+    "default_branch": "main",
+    "stars": 204,
+    "forks": 5,
+    "pushed_at": "2025-12-10T06:08:43Z",
+    "days_since_push": 170.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "DDN-SLAM: Real-time Dense Dynamic Neural Implicit SLAM (RA-L 2025)",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.478,
+    "score_parts": {
+      "stars_term": 2.312,
+      "forks_term": 0.389,
+      "recency_term": 0.777
+    }
+  },
+  {
+    "full_name": "msminhas93/nviwatch",
+    "url": "https://github.com/msminhas93/nviwatch",
+    "default_branch": "master",
+    "stars": 234,
+    "forks": 10,
+    "pushed_at": "2025-08-22T20:46:08Z",
+    "days_since_push": 280.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Rust",
+    "description": "NviWatch: A blazingly fast rust based TUI for managing and monitoring NVIDIA GPU processes",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.402,
+    "score_parts": {
+      "stars_term": 2.371,
+      "forks_term": 0.521,
+      "recency_term": 0.51
+    }
+  },
+  {
+    "full_name": "LetianHuang/op43dgs",
+    "url": "https://github.com/LetianHuang/op43dgs",
+    "default_branch": "main",
+    "stars": 209,
+    "forks": 18,
+    "pushed_at": "2025-07-10T05:05:19Z",
+    "days_since_push": 323.7,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "[ECCV'24] On the Error Analysis of 3D Gaussian Splatting and an Optimal Projection Strategy",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.393,
+    "score_parts": {
+      "stars_term": 2.322,
+      "forks_term": 0.639,
+      "recency_term": 0.431
+    }
+  },
+  {
+    "full_name": "ricosjp/monolish",
+    "url": "https://github.com/ricosjp/monolish",
+    "default_branch": "master",
+    "stars": 201,
+    "forks": 13,
+    "pushed_at": "2025-06-12T08:25:03Z",
+    "days_since_push": 351.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "monolish: MONOlithic LInear equation Solvers for Highly-parallel architecture",
+    "matched_queries": [
+      "topic:gpu topic:cuda"
+    ],
+    "priority": 3.266,
+    "score_parts": {
+      "stars_term": 2.305,
+      "forks_term": 0.573,
+      "recency_term": 0.387
+    }
+  },
+  {
+    "full_name": "HenryNdubuaku/cuda-tutorials",
+    "url": "https://github.com/HenryNdubuaku/cuda-tutorials",
+    "default_branch": "main",
+    "stars": 226,
+    "forks": 9,
+    "pushed_at": "2025-06-11T13:52:26Z",
+    "days_since_push": 352.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Cuda",
+    "description": "Comprehensive CUDA tutorials for Maths & ML with examples",
+    "matched_queries": [
+      "language:Cuda"
+    ],
+    "priority": 3.242,
+    "score_parts": {
+      "stars_term": 2.356,
+      "forks_term": 0.5,
+      "recency_term": 0.386
+    }
+  }
+]
