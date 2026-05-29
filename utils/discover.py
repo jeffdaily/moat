@@ -135,25 +135,70 @@ def to_record(h, cfg):
         "language": h.get("language"),
         "description": (h.get("description") or "").strip(),
         "matched_queries": sorted(set(h.get("matched_queries", []))),
+        "cuda_bytes": h.get("_cuda_bytes"),
+        "cuda_dominant": h.get("language") == "Cuda",
         "priority": prio,
         "score_parts": parts,
     }
+
+
+def cuda_bytes(full_name, cache):
+    """Bytes of CUDA code in the repo via the languages API; 0 if none or on
+    error. This is the decisive signal that a repo actually contains .cu/.cuh
+    kernels, versus merely mentioning CUDA in its README."""
+    if full_name in cache:
+        return cache[full_name]
+    r = subprocess.run(["gh", "api", f"repos/{full_name}/languages"],
+                       capture_output=True, text=True)
+    cb = 0
+    if r.returncode == 0:
+        try:
+            cb = int(json.loads(r.stdout).get("Cuda", 0))
+        except (json.JSONDecodeError, ValueError):
+            cb = 0
+    cache[full_name] = cb
+    time.sleep(0.08)
+    return cb
 
 
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="discover")
     ap.add_argument("--limit", type=int, help="per-query result cap (<=1000)")
     ap.add_argument("--out", default=str(DATA / "candidates.json"))
+    ap.add_argument("--no-verify", action="store_true",
+                    help="skip the languages-API check that a repo really has CUDA code")
     args = ap.parse_args(argv)
     cfg = load_cfg()
-    limit = args.limit or cfg["search"]["per_query_limit"]
+    s = cfg["search"]
+    limit = args.limit or s["per_query_limit"]
     raw_hits = gather(cfg, limit)
-    recs = [to_record(h, cfg) for h in raw_hits if passes(h, cfg)]
+
+    excl_orgs = {o.lower() for o in s.get("exclude_orgs", [])}
+    threshold = max(1, int(s.get("min_cuda_bytes", 0)))
+    cache = {}
+    recs = []
+    n_filter = n_org = n_nocuda = 0
+    for h in raw_hits:
+        if not passes(h, cfg):
+            n_filter += 1
+            continue
+        if h["fullName"].split("/")[0].lower() in excl_orgs:
+            n_org += 1
+            continue
+        if not args.no_verify and h.get("language") != "Cuda":
+            cb = cuda_bytes(h["fullName"], cache)
+            h["_cuda_bytes"] = cb
+            if cb < threshold:
+                n_nocuda += 1
+                continue
+        recs.append(to_record(h, cfg))
     recs.sort(key=lambda r: (-r["priority"], r["full_name"].lower()))
     with open(args.out, "w") as f:
         json.dump(recs, f, indent=2)
         f.write("\n")
-    sys.stderr.write(f"discover: {len(raw_hits)} unique hits, {len(recs)} after filters -> {args.out}\n")
+    sys.stderr.write(
+        f"discover: {len(raw_hits)} unique hits -> {len(recs)} candidates "
+        f"(dropped {n_filter} filters, {n_org} excluded-org, {n_nocuda} no-CUDA-code) -> {args.out}\n")
     return 0
 
 

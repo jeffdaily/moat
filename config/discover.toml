@@ -9,23 +9,25 @@ min_stars = 200
 per_query_limit = 1000        # gh --limit; GitHub caps search at 1000 regardless
 throttle_seconds = 2.5        # pause between queries to respect the search rate limit
 exclude = ["pytorch/pytorch", "microsoft/onnxruntime"]
+# Whole orgs to drop: AMD's own GPU orgs (already ROCm/HIP) and NVIDIA's orgs
+# (a ROCm port has nowhere to upstream, so it is not worth the effort).
+exclude_orgs = ["ROCm", "ROCm-Developer-Tools", "ROCmSoftwarePlatform", "NVIDIA", "NVlabs", "NVIDIAGameWorks", "NVIDIA-AI-IOT", "NVIDIA-Merlin"]
 # Forks are dropped by default. Allowlist a fork here (owner/repo) when upstream
 # is dead and maintenance has moved to it.
 fork_exceptions = []
+# A candidate is kept only if the repo actually contains at least this many bytes
+# of CUDA code (GitHub languages API), not just a text mention. 0 means any .cu.
+min_cuda_bytes = 0
 
-# Each entry is one `gh search repos` query string. Adding coverage = adding a
-# line. No single query means "uses CUDA", so we union several.
+# Each entry is one `gh search repos` query string. High-signal queries plus two
+# recall queries for C++/Python repos that contain .cu but are not Cuda-dominant;
+# the languages-API check (min_cuda_bytes) then removes text-only mentions.
 queries = [
   "language:Cuda",
   "topic:cuda",
   "topic:gpu topic:cuda",
-  "cuda kernel",
-  "cuda inference",
-  "cuda accelerated",
-  "nvcc",
-  "cudnn",
-  "cublas",
-  "thrust cuda",
+  "cuda language:C++",
+  "cuda language:Python",
 ]
 
 [weights]
