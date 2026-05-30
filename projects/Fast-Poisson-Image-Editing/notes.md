@@ -104,3 +104,63 @@ call `fpie.cli.main()` (as the validation harness does). Not a port issue.
 - cv2 (opencv-python-headless) pulls numpy 2.x which breaks numba 0.64 (needs numpy<2.3); pin
   `numpy==1.26.2` so numba + cv2 + the core path all import.
 - taichi not installed (optional backend); not needed for the cuda port validation.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+Fork branch: `moat-port` @ `6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff` (no source change from gfx90a).
+
+**Build commands (wrapped with timeit.sh):**
+
+```
+cmake /var/lib/jenkins/moat/projects/Fast-Poisson-Image-Editing/src \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DPYTHON_EXECUTABLE=$(which python3) \
+  -B /var/lib/jenkins/moat/agent_space/fpie_build_gfx1100
+
+utils/timeit.sh Fast-Poisson-Image-Editing compile -- \
+  cmake --build /var/lib/jenkins/moat/agent_space/fpie_build_gfx1100 --target core_cuda -j$(nproc)
+```
+
+Build: PASS. Only warnings are `nodiscard` on `hipGetDeviceProperties` (pre-existing CUDA style, harmless).
+
+**gfx1100 code-object evidence:**
+
+```
+roc-obj-ls core_cuda.cpython-312-x86_64-linux-gnu.so
+# -> hipv4-amdgcn-amd-amdhsa--gfx1100 (two code objects, one per kernel file)
+# No gfx90a code objects present.
+
+nm -D core_cuda.cpython-312-x86_64-linux-gnu.so | grep PyInit
+# -> 0000000000022940 T PyInit_core_cuda  (NO_EXTRAS fix confirmed working)
+```
+
+**.so size:** 434 KB (not tiny; LTO pitfall avoided via NO_EXTRAS).
+
+**Import check:**
+
+```python
+from fpie.process import ALL_BACKEND
+# -> ['numpy', 'numba', 'taichi-cpu', 'taichi-gpu', 'gcc', 'openmp', 'cuda']
+```
+
+**GPU validation (HIP_VISIBLE_DEVICES=0, test1 dataset, 5000 Jacobi iters, gradient=max, mask_on_tgt=(-150,-50)):**
+
+```
+utils/timeit.sh Fast-Poisson-Image-Editing test -- \
+  python3 /var/lib/jenkins/moat/agent_space/validate_fpie_gfx1100.py
+```
+
+Results:
+- equ solver: max|cuda - numpy| = 0.0 (bit-exact vs numpy reference), residual=[0,0,0], output shape 427x770.
+- grid solver: max|cuda - numpy| = 0.0 (bit-exact vs numpy reference), residual=[0,0,0] (numpy residual ~0.06; HIP converged better).
+- Determinism (run1 vs run2): max|run1-run2| = 0 for both equ and grid (bit-exact, wave32 serial reductions as expected).
+- Output matches the gfx90a reference: bit-exact in all channels (both solvers).
+
+**Non-GPU smoke suite (pytest tests/test_smoke.py):** 8 passed, 0 skipped, 0 failed. (gfx90a had 7 passed + 1 skipped for OpenMP; here OpenMP is installed so all 8 pass -- no regression.)
+
+**Fork:** NOT touched. No source change needed, no fork push, head_sha unchanged at `6a41e0b`.
+
+**Result: PASS.**
