@@ -116,7 +116,8 @@ These are the real semantic differences. Most porting bugs are here, not in symb
 ## Validation policy
 
 - A port is validated only when the project's real test suite builds and passes on a real AMD GPU for the target arch, with no regression in non-GPU tests.
-- A CPU-only docker build (image `rocm/dev-ubuntu-24.04` or similar) proves the code compiles and links under ROCm. It cannot observe any Fault-class bug above, since no GPU runs. Add it as a CI tripwire for contributors without AMD hardware, never as the sole gate.
+- A CPU-only docker build (image `rocm/dev-ubuntu-24.04` or similar) proves the code compiles and links under ROCm. It cannot observe any Fault-class bug above, since no GPU runs. Add it as a CI tripwire for contributors without AMD hardware, never as the sole gate. Add this CI workflow in the LEAD-port commit only.
+- A follower validation (gfx1100/gfx1151) must not introduce a NEW fork commit for anything non-essential (CI YAML, formatting, comments). Advancing head_sha forces every already-passed platform back to `revalidate` for a zero-GPU-effect change -- pure churn. If a follower needs no code change, leave the curated commit untouched; amend in only a genuinely necessary build/source fix (e.g. configurable arch).
 - gfx90a is CDNA (wave64); gfx1100/gfx1151 are RDNA (wave32). A change that passes on gfx90a can still fail on RDNA via the warp-size class, which is why followers re-validate on their own hardware.
 
 ## Per-arch notes
