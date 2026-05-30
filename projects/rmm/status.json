@@ -7,8 +7,8 @@
   "priority": 5.542,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:05Z",
-  "updated_at": "2026-05-30T22:22:30Z",
-  "head_sha": "d22baffcff708f23805a6a41f971a51418f8b8a0",
+  "updated_at": "2026-05-30T23:02:37Z",
+  "head_sha": "1473ffc5bab2b81efd7d849db55e13a62b08822f",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
@@ -33,28 +33,6 @@
       },
       "last_agent": "validator"
     },
-    "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-30T18:21:03Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
@@ -77,6 +55,28 @@
         "last_session_at": null
       },
       "last_agent": "validator"
+    },
+    "windows-gfx1151": {
+      "state": "port-ready",
+      "blocked": true,
+      "blocked_reason": "Builds fully on Windows gfx1151 (27/27 test exes, see windows-gfx1151-build-enablement.patch) and core ops pass, but clean GPU validation is blocked by gfx1151-APU/Windows-TheRock-ROCm runtime gaps (hipMemGetInfo returns invalid argument on the integrated APU; process-teardown SIGSEGV fails otherwise-passing binaries; specific stream/buffer/thrust tests hang). Not a port-code defect (gfx90a/gfx1100 pass 658/658). Better validated on a discrete-RDNA Windows GPU.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-05-30T23:02:37Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
     }
   }
 }

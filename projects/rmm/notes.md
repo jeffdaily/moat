@@ -369,3 +369,68 @@ feeding a `rmm::device_uvector<int>`, set/get element on a GPU stream --
 compiles against the install tree (only `CMAKE_PREFIX_PATH` set) and runs
 correctly on gfx90a:
 `consumer: device_uvector[0] = 42 (expect 42) via find_package(rmm)+rmm::rmm`.
+
+## Windows gfx1151 attempt 2026-05-30 -- BUILDS, GPU validation BLOCKED (APU/runtime)
+
+Platform: AMD Radeon 8060S (gfx1151, RDNA3.5, **integrated APU**, Ryzen AI Max, 72GB
+shared memory), Windows 11. ROCm via TheRock wheels (rocm-sdk 7.14.0a20260519, hip
+7.13.26190), all-clang CMake HIP build (no torch). Attempted against fork moat-port
+HEAD d22baffc (note: the fork was re-curated since the gfx90a/gfx1100 validation --
+status.head_sha 1473ffc no longer exists in the fork; d22baffc is the current port
+commit on the v25.08.00 tag).
+
+### Outcome: the ROCm port BUILDS fully on Windows gfx1151 (27/27 test exes +
+rmm.dll + rapids_logger.dll), and core ops work (ALIGNED_TEST 9/9; DEVICE_BUFFER
+EmptyBuffer/DefaultMemoryResource pass; ERROR_MACROS 10/10). But a clean ctest run
+is blocked by gfx1151-APU / Windows-TheRock-ROCm RUNTIME gaps, NOT port-code defects
+(the same code passes 658/658 on gfx90a and gfx1100). Set blocked; build-enablement
+preserved as projects/rmm/windows-gfx1151-build-enablement.patch.
+
+### Windows build-enablement done (in the patch; all guarded/benign on Linux)
+1. All-clang CMake: enable_language(HIP) on Windows refuses to mix Clang-HIP with
+   MSVC-CXX, so CXX and HIP both use TheRock's clang++ (-DCMAKE_CXX_COMPILER=clang++
+   -DCMAKE_HIP_COMPILER=clang++). HIP language support works (Clang 23).
+2. LLP64: `long`/`UL` are 32-bit on Windows, so `long{1}<<40` and `224UL<<30`
+   overflow and are non-constexpr. byte_literals.hpp -> 1LL; arena.hpp size_classes
+   + maximum_size UL -> ULL. (Values identical on LP64.)
+3. MSVC STL: `auto* bound = ...begin()` fails (array iterator is a checked class, not
+   a raw pointer) -> `auto`. `uniform_int_distribution<int8_t>` is rejected by MSVC
+   -> draw with a >=short type and narrow. `path`->`std::string` is not implicit on
+   Windows (wchar_t) -> `.string()`.
+4. POSIX-only: `<dlfcn.h>` (unused, guarded `#if !_WIN32`); test helpers `setenv/
+   unsetenv/mkdtemp` -> Windows shims (`_putenv_s`, `_mktemp_s`+create_directory).
+5. DLL exports: RMM_EXPORT is a GCC visibility attr (no-op on Windows PE/COFF), so
+   nothing was dllexported and rmm.lib/rapids_logger.lib were empty -> set
+   WINDOWS_EXPORT_ALL_SYMBOLS ON on both targets (ignored on Linux).
+6. rmm_hip_tests.cmake linked a bare `pthread` -> lld-link sought pthread.lib (none
+   on Windows) -> Threads::Threads (portable).
+
+Deps on Windows (no conda/vcpkg): built googletest v1.17.0 + spdlog v1.15.1 (bundled
+fmt) from source with clang++ into agent_space/cppdeps/install; cloned rapids_logger
+release/0.2.0 and libhipcxx amd-develop fa4ccc6 in agent_space/. Build env:
+agent_space/rmm_buildenv.sh. Configure: -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151
+-DCMAKE_PREFIX_PATH="<rocm>;<cppdeps>" -DLIBHIPCXX_INCLUDE_DIR=... -DRAPIDS_LOGGER_SOURCE_DIR=...
+
+### The runtime blockers (gfx1151 APU + Windows TheRock ROCm)
+1. **hipMemGetInfo returns hipErrorInvalidValue** on the gfx1151 APU (standalone probe
+   agent_space/meminfo_probe.cpp: rc=1 invalid argument, free=0 total=0; integrated=1,
+   totalGlobalMem=72GB). rmm's available_device_memory() (src/cuda_device.cpp:46) and
+   percent_of_free_device_memory() depend on it -> every pool/arena default-sizing test
+   throws (e.g. PoolTest.AllocateNinetyPercent, AsyncMRTest.ExplicitInitialPoolSize).
+   This is a runtime/APU gap (discrete free/total memory query is not meaningful/
+   implemented for the unified-memory APU on Windows), not an rmm bug.
+2. **Process-teardown SIGSEGV**: binaries whose tests all PASS still exit 139 (e.g.
+   ERROR_MACROS_TEST: 10 OK then crash on exit) -> ctest reports "***Exception:
+   SegFault" even on all-pass. A Windows HIP/DLL static-destruction crash at process
+   exit.
+3. **Specific-test hangs**: the full DEVICE_BUFFER_TEST / CUDA_STREAM_TEST /
+   DEVICE_SCALAR_TEST / THRUST_ALLOCATOR_TEST / STREAM_ADAPTOR_TEST time out, while a
+   filtered subset of the same binary's basic tests passes -- a particular later test
+   (multi-device, or a managed/prefetch/stream path) hangs the HIP runtime on this APU.
+
+gsplat ran full PyTorch GPU workloads on this same gfx1151 fine, so the GPU works; the
+blockers are specific to rmm's allocator/stream/memory-info usage on the Windows APU
+runtime. Resolving them needs HIP-runtime-level debugging (teardown crash, per-test
+hangs) and/or an APU memory-info workaround, with uncertain payoff -- deferred. A
+Windows host with a DISCRETE RDNA GPU (where hipMemGetInfo works) is the better target
+to validate this build-enablement.
