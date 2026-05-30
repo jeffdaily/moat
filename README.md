@@ -44,7 +44,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | cuvs | [rapidsai/cuvs](https://github.com/rapidsai/cuvs) | - | todo | gated | gated |
 | GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | - | todo | gated | gated |
 | amgcl | [ddemidov/amgcl](https://github.com/ddemidov/amgcl) | - | todo | gated | gated |
-| CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | - | review | gated | gated |
+| CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | - | validating | gated | gated |
 | cupoch | [neka-nat/cupoch](https://github.com/neka-nat/cupoch) | - | todo | gated | gated |
 | popsift | [alicevision/popsift](https://github.com/alicevision/popsift) | - | todo | gated | gated |
 | NATTEN | [SHI-Labs/NATTEN](https://github.com/SHI-Labs/NATTEN) | - | todo | gated | gated |

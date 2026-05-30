@@ -119,3 +119,5 @@ Append `YYYY-MM-DD -- lesson -- source project` when you learn a generalizable l
 - seed -- warp-size abstraction: runtime `warpSize` on host, per-arch constant in device code, compile-time upper bound for static arrays -- pytorch, FBGEMM
 - seed -- colmap model: `enable_language(HIP)` + a single `cuda_to_hip.h`, `.cu` marked `LANGUAGE HIP` -- colmap
 - seed -- rule-of-five on texture handles; clamp out-of-bounds neighbor reads; 256-byte texture pitch -- colmap
+- 2026-05-30 -- before dismissing the 256B-pitch fault class, confirm the ACTUAL texture resource type: a cudaResourceTypePitch2D bind is subject to it (even if the pitch happens to satisfy it); do not assume the texture is cudaArray-backed -- CudaSift
+- 2026-05-30 -- review (code/strategy/analysis) and validate (real GPU run) are separate MOAT stages; the reviewer does not block on a missing GPU run, the validator provides it -- CudaSift
