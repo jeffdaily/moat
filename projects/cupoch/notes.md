@@ -237,3 +237,35 @@ agent_space/cupoch_validate_gfx1100/validate.cpp (gitignored): 20000-point wavy-
 Port lives in projects/cupoch/src (gitignored; parent delivers the fork). Build dirs
 in agent_space (out of git). Committed to MOAT: status.json, plan.md, notes.md, and
 the PORTING_GUIDE changelog lines.
+
+## Windows gfx1151 attempt 2026-05-30 -- BLOCKED (stdgpu Windows build port + APU thrust risk)
+
+Platform: AMD Radeon 8060S (gfx1151 integrated APU), Windows 11, TheRock ROCm
+(rocm-sdk 7.14.0a20260519). Fork moat-port HEAD 8fd4806, CORE_ONLY build attempted.
+
+Configure SUCCEEDS (all-clang: CMAKE_C/CXX/HIP_COMPILER=clang++; needs
+-DCMAKE_POLICY_VERSION_MINIMUM=3.5 for the old cmake_minimum_required, and
+-DCMAKE_C_COMPILER=clang because project(cupoch) enables C which otherwise defaults
+to MSVC cl and trips CMake's "no Clang/MSVC mix" rule). But the core build FAILS --
+the vendored **stdgpu** submodule (third_party/stdgpu 1.3.0) is not Windows-ported:
+
+1. stdgpu forces `-fPIC` onto every HIP TU; clang rejects it on the
+   x86_64-pc-windows-msvc target ("unsupported option '-fPIC'") -- 5+ TUs fail.
+   (POSITION_INDEPENDENT_CODE is a no-op on Windows; the flag must be stripped.)
+2. C++ standard / clang-Windows issues in stdgpu + flann under -x hip: "auto not
+   allowed in template parameter until C++17", "rocPRIM requires at least C++17"
+   (some TUs compiled below C++17), `unknown type name 'variant'` / `no template
+   named 'variant' in std`, `unknown type name 'cudaStream_t'` (a TU missing the
+   hip compat), "too few arguments to function-like macro".
+3. (spdlog/spdlog.h not found was my submodule-init omission, not a real blocker --
+   third_party/spdlog just needs `git submodule update --init`.)
+
+These are NEW Windows porting needs in the stdgpu dependency (and flann), beyond the
+existing Linux port -- a substantial dependency-level effort (porting stdgpu 1.3.0 to
+clang-on-Windows). Furthermore, cupoch's GPU validation (VoxelDownSample + EstimateNormals)
+is built on heavy thrust::device_vector + stdgpu GPU containers -- the same workload class
+that HUNG on this gfx1151 APU for rmm (see [[gfx1151-apu-runtime-gaps]]). So even with the
+stdgpu build ported, GPU validation would likely hit the APU thrust runtime gap.
+
+Set blocked. Better tackled on a discrete-RDNA Windows GPU, and needs a dedicated
+stdgpu-on-Windows build port first. Not a cupoch-port-code defect (gfx90a/gfx1100 pass).
