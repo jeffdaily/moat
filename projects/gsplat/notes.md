@@ -430,3 +430,85 @@ test cases fail only due to missing nerfacc reference, not a kernel correctness 
   (_rasterization / _rasterize_to_pixels accumulate) was replaced by the
   independent compositor above for the compositing-kernel check.
 - libhipcxx does NOT provide `<cuda/ptx>` (cuda::ptx); gsplat does not use it.
+
+## Validation 2026-05-30 (windows-gfx1151, TheRock ROCm) -- delta-port + validate at 5cdaa15
+
+Platform: AMD Radeon(TM) 8060S Graphics, gfx1151 (RDNA3.5, wave32), Windows 11.
+ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260519 (hip 7.13.26190), torch
+2.12.0+rocm7.14.0a20260519 (torch[device-gfx1151], whl-staging-multi-arch index).
+Python 3.13 (python.org, space-free path -- REQUIRED, see below). MSVC 14.44 host.
+Fork tip validated: 5cdaa1551336c1590297a86db03c578a1820b130 (was c1ae9ce; this
+session amended the shared ROCm commit with the win32+HIP deltas below, so gfx90a
+and gfx1100 flip to revalidate -- the change is guarded win32+HIP so their Linux
+build is byte-identical).
+
+### Windows build deltas (all guarded sys.platform=="win32" and torch.version.hip)
+1. build.py win32 device flags were nvcc/MSVC-only and broke amdclang (a gcc-style
+   driver): dropped `-allow-unsupported-compiler` (nvcc-only) and `-Xcompiler
+   /Zc:preprocessor` / `-Xcompiler /openmp` (clang treats the MSVC flags as input
+   files); use `-fopenmp` instead. The MSVC host (.cpp via cl.exe) still gets
+   /Zc:preprocessor and /openmp.
+2. The 11 host .cpp op-wrappers include c10/cuda/CUDAGuard.h -> on ROCm pulls in HIP
+   runtime headers (amd_hip_vector_types.h) whose GCC __attribute__ syntax MSVC
+   cl.exe cannot parse. torch routes .cpp -> cl.exe, .cu/.hip -> hipcc. Fix: build.py
+   copies each host .cpp to a same-dir `<name>_winhip.cu` shim (byte-identical, so
+   relative #includes resolve) so torch hands it to hipcc/amdclang. Shims carry no
+   device code; the device pass compiles nothing. *_winhip.cu and gsplat/hip/ are
+   gitignored. ext.cpp pulls no HIP guard header, so it stays .cpp (cl.exe).
+3. distributed.py imported torch.distributed.nn.functional eagerly; the Windows ROCm
+   torch wheel ships without a c10d backend so that import fails at module load
+   ("cannot import name 'group'"). Import it lazily under dist.is_available(); the
+   collective helpers are multi-GPU-only (all guard world_size==1) and unused
+   single-process. Linux/CUDA bind exactly as before.
+
+### Environment (host config, NOT source changes)
+- Python MUST be on a space-free path. The MS Store Python lives under
+  "C:\Program Files\WindowsApps\..." (space); torch's hipcc -I space-handling
+  mangles "Program Files" -> "Program\Files" and Python.h is not found. Installed
+  python.org 3.13 to C:\Users\<u>\AppData\Local\Programs\Python\Python313 (no space).
+- DISTUTILS_USE_SDK=1 (torch requires it when the VC env is already active).
+- HIP_DEVICE_LIB_PATH=<rocm-sdk-devel>/lib/llvm/amdgcn/bitcode -- the TheRock wheel
+  puts the amdgcn device bitcode under lib/llvm/ and the hipcc wrapper does not pass
+  --rocm-path to clang ("cannot find ROCm device library").
+- MSVC link.exe must precede MSYS/Git /usr/bin/link.exe on PATH or the final .pyd
+  link fails (Git's link is a coreutils tool). buildenv prepends the cl.exe dir.
+- Repeatable build env: agent_space/gsplat_buildenv.sh.
+
+### Build command (gfx1151, full 3DGUT)
+    cd projects/gsplat/src
+    source ../../../agent_space/gsplat_buildenv.sh   # sets ROCM_HOME, arch, the env above
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    LIBHIPCXX_INCLUDE=<clone>/include \
+      BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1 BUILD_RELOC=1 \
+      BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 \
+      python -m pip install -e . --no-build-isolation -v
+libhipcxx: ROCm/libhipcxx amd-develop commit fa4ccc6.
+
+### Import verification
+has_3dgut/has_3dgs/has_2dgs/has_adam all True.
+
+### pytest results (HIP_VISIBLE_DEVICES=0)
+- Core 3DGS/2DGS subset (same -k as the Linux validations): 108 passed, 0 failed
+  (matches gfx1100). BUILD_3DGUT=0 core build separately: 102 passed, 6 skipped.
+- tests/test_basic.py FULL: 251 passed, 42 failed. 38 of the 42 are the documented
+  nerfacc-only reference gap (27 eval3d + 9 rasterize_to_pixels + degenerate +
+  high_opacity), identical class to gfx1100. The other 4 are
+  test_fully_fused_projection_ut[*-batch_dims1/2]: a single gaussian's derived pixel
+  RADIUS lands 12 vs 10 px over the test's heuristic radii_atol (1/769252, rel 1%) --
+  a gfx1151 FP-rounding boundary on the UT projection, deterministic, NOT a kernel
+  defect (means/covars/depths comparisons pass; gfx1100 passes the same test). Do
+  not loosen the upstream test tolerance.
+- tests/test_external_distortion.py + tests/test_ftheta.py: 57 passed, 0 failed.
+- tests/test_basic.py::test_isect_lidar: 6 passed (needs scipy: pip install scipy).
+
+### Standalone rasterization validation (agent_space/gsplat_validate_gfx1151.py)
+[B] forward render sane (range [0,0.85], 63% lit, no NaN/Inf). PASS.
+[C] analytic d(loss)/d(colors) vs central finite-diff: max rel err 1.1% (<2%). PASS.
+[D] determinism: render + alpha bit-exact across same-seed runs. PASS.
+
+### wave32 verdict (gfx1151, RDNA3.5)
+tiled_partition<32> is exactly one wavefront on gfx1151 (wave32), same as gfx1100.
+The shfl_xor reductions (fault 4), match_any LabeledGroup (fault 7), and the 3DGUT
+cuda::std::optional path (libhipcxx) all execute correctly. No wave-size source fix
+required beyond the shared commit; the only gfx1151-specific deltas were the Windows
+build-toolchain issues above, none of them numeric.
