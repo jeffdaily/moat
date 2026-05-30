@@ -78,6 +78,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | LEAP | [llnl/LEAP](https://github.com/llnl/LEAP) | - | todo | gated | gated |
 | ntransformer | [xaskasdf/ntransformer](https://github.com/xaskasdf/ntransformer) | - | todo | gated | gated |
 | FaithC | [Luo-Yihao/FaithC](https://github.com/Luo-Yihao/FaithC) | - | todo | gated | gated |
+| rmcl | [uos/rmcl](https://github.com/uos/rmcl) | - | todo | gated | gated |
 | fused-ssim | [rahul-goel/fused-ssim](https://github.com/rahul-goel/fused-ssim) | - | todo | gated | gated |
 | gpuRIR | [DavidDiazGuerra/gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) | - | todo | gated | gated |
 | yalm | [andrewkchan/yalm](https://github.com/andrewkchan/yalm) | - | todo | gated | gated |

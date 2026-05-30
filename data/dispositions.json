@@ -77,7 +77,7 @@
     "reason": "not-a-target"
   },
   "bytedance/flux": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
     "full_name": "bytedance/flux",
     "note": "AMD equivalent: ByteDance+AMD Triton-Distributed (separate project, same comms-overlap capability)",
@@ -182,10 +182,10 @@
     "reason": "not-a-target"
   },
   "eric2003/oneflow": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "verify",
     "full_name": "eric2003/OneFLOW",
-    "note": "in-repo CUDA looks like teaching samples not solver core; confirm GPU is load-bearing",
+    "note": "in-repo CUDA looks like teaching samples not solver core; OpenCL is docs-only",
     "reason": "verify"
   },
   "facebookincubator/aitemplate": {
@@ -350,11 +350,11 @@
     "reason": "not-a-target"
   },
   "lmk123568/pyvideoproc": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
     "full_name": "lmk123568/PyVideoProc",
-    "note": "NVIDIA video-codec-locked (NVDEC/DeepStream); AMD needs VA-API/AMF rewrite, not a kernel port",
-    "reason": "not-a-target"
+    "note": "NVIDIA video codec (NVDEC/DeepStream) locked; AMD needs VA-API/AMF rewrite",
+    "reason": "cant-port"
   },
   "luce-org/lucebox-hub": {
     "decided": "2026-05-30T00:04:56Z",
@@ -511,7 +511,7 @@
     "reason": "not-a-target"
   },
   "shocker-0x15/gfxexp": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
     "full_name": "shocker-0x15/GfxExp",
     "note": "total OptiX dependence; no ROCm OptiX equivalent (hipRT differs)",
@@ -546,17 +546,17 @@
     "reason": "not-a-target"
   },
   "szellmann/visionaray": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "verify",
     "full_name": "szellmann/visionaray",
-    "note": "experimental HIP tree exists ('for testing'), no CMake enablement; needs a build-test on current ROCm",
+    "note": "experimental HIP tree (for testing), no CMake enablement; build-test before deciding",
     "reason": "verify"
   },
   "tensorflow/recommenders-addons": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
     "full_name": "tensorflow/recommenders-addons",
-    "note": "TF-ecosystem; ROCm ifdefs are boilerplate, no build path; skip per jeff",
+    "note": "TF-ecosystem addon; ROCm ifdefs are boilerplate with no build path",
     "reason": "not-a-target"
   },
   "thu-ml/sageattention": {
@@ -665,7 +665,7 @@
     "reason": "not-a-target"
   },
   "zielon/insta": {
-    "decided": "2026-05-30T03:26:34Z",
+    "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
     "full_name": "Zielon/INSTA",
     "note": "DLSS (proprietary) + tiny-cuda-nn lock-in",
