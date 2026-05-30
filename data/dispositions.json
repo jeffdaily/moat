@@ -6,12 +6,19 @@
     "note": "vLLM umbrella; AMD supports vLLM (vllm-project/vllm), not derivatives",
     "reason": "ported-elsewhere"
   },
+  "3dem/relion": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "skip",
+    "full_name": "3dem/relion",
+    "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
+    "reason": "already-supported"
+  },
   "alibaba/rtp-llm": {
-    "decided": "2026-05-30T00:00:41Z",
-    "disposition": "verify",
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "skip",
     "full_name": "alibaba/rtp-llm",
-    "note": "Alibaba inference engine, not a vLLM fork; verify ROCm status",
-    "reason": "verify"
+    "note": "real ROCm backend (rocm/, AITER, CK); README 'coming soon' is stale",
+    "reason": "already-supported"
   },
   "archaeasoftware/cudahandbook": {
     "decided": "2026-05-30T00:31:01Z",
@@ -167,6 +174,13 @@
     "note": "real/current HIP backend (research-confirmed)",
     "reason": "already-supported"
   },
+  "glotzerlab/hoomd-blue": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "skip",
+    "full_name": "glotzerlab/hoomd-blue",
+    "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
+    "reason": "already-supported"
+  },
   "gunrock/gunrock": {
     "decided": "2026-05-30T00:04:56Z",
     "disposition": "skip",
@@ -223,6 +237,13 @@
     "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
   },
+  "lattice/quda": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "skip",
+    "full_name": "lattice/quda",
+    "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
+    "reason": "already-supported"
+  },
   "llnl/blt": {
     "decided": "2026-05-30T00:31:02Z",
     "disposition": "skip",
@@ -257,6 +278,13 @@
     "full_name": "marcoslucianops/DeepStream-Yolo",
     "note": "NVIDIA DeepStream SDK-locked; no AMD equivalent",
     "reason": "not-a-target"
+  },
+  "mariosieg/magnetron": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "verify",
+    "full_name": "MarioSieg/magnetron",
+    "note": "GPU backend immature/WIP; README 'AMD' = Zen CPU SIMD, not GPU",
+    "reason": "verify"
   },
   "numba/numba": {
     "decided": "2026-05-29T23:13:18Z",
@@ -312,6 +340,13 @@
     "disposition": "skip",
     "full_name": "pytorch/ao",
     "note": "ROCm support upstream (per jeff)",
+    "reason": "already-supported"
+  },
+  "qmcpack/qmcpack": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "skip",
+    "full_name": "QMCPACK/qmcpack",
+    "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
   "rust-gpu/rust-cuda": {
@@ -390,6 +425,13 @@
     "full_name": "uccl-project/uccl",
     "note": "real/current HIP backend (research-confirmed)",
     "reason": "already-supported"
+  },
+  "uncomplicate/deep-diamond": {
+    "decided": "2026-05-30T00:39:37Z",
+    "disposition": "verify",
+    "full_name": "uncomplicate/deep-diamond",
+    "note": "AMD via OpenCL only; Clojure binding, port = new MIOpen backend not kernel hipify",
+    "reason": "verify"
   },
   "uncomplicate/neanderthal": {
     "decided": "2026-05-30T00:04:57Z",
