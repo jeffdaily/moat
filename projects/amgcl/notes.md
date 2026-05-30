@@ -219,3 +219,33 @@ The gfx1100 iteration count differs by 1 from gfx90a for spai0 (8 vs 7) and ilu0
 PASS. No source changes. No fork push. validated_sha = f4b87da72010e59e944847380ea972efa0aa15b8.
 
 Toolchain: ROCm 7.2.1, hipSPARSE, rocSPARSE, rocThrust on gfx1100 (RDNA3, wave32).
+
+## Windows gfx1151 attempt 2026-05-30 -- HIP backend COMPILES, GPU validation BLOCKED (hipSPARSE on APU)
+
+Platform: AMD Radeon 8060S (gfx1151, RDNA3.5, integrated APU), Windows 11. ROCm via
+TheRock wheels (rocm-sdk 7.14.0a20260519, hip 7.13.26190, hipSPARSE/rocSPARSE present
+as hipsparse.lib/rocsparse.lib + DLLs). Fork moat-port HEAD f4b87da, NO source changes.
+
+### Outcome
+The amgcl HIP backend (amgcl/backend/hip.hpp, relaxation/rocsparse_ilu0.hpp) COMPILES
+cleanly on Windows gfx1151 with NO port-code change -- a Boost-free standalone driver
+(agent_space/amgcl_hip_validate.cpp: AMG smoothed_aggregation + spai0 + CG on both the
+HIP and builtin backends) builds with hipcc + -lhipsparse -lrocsparse (Boost headers
+from D:/Develop/TheRock/build/third-party/boost/source). The CPU builtin backend SOLVES
+correctly (3D Poisson n=24: 12 iters, resid 7.94e-9). But the HIP backend SEGFAULTS at
+runtime, and a minimal standalone hipSPARSE generic-API CSR SpMV (3x3 matrix) ALSO
+segfaults on this device -- the crash is in rocSPARSE/hipSPARSE (before the first user
+printf; likely a rocsparse DLL load / static-init failure on the APU), not in amgcl.
+
+### Blocker (gfx1151 APU + Windows TheRock ROCm)
+rocSPARSE/hipSPARSE is non-functional on the gfx1151 integrated APU here: a trivial
+hipsparseCreate + hipsparseCreateCsr + hipsparseSpMV crashes (exit 139). amgcl's GPU
+backend is fundamentally hipSPARSE SpMV/SpSV, so it cannot be GPU-validated on this
+device. Same class as the rmm hipMemGetInfo gap -- a Windows-ROCm/APU runtime limitation,
+not a port-code defect (amgcl gfx90a/gfx1100 pass; the port headers compile here unchanged).
+gsplat (PyTorch) and GPUMD (hipBLAS/hipSOLVER/hipFFT + kernels) run fine on this same APU,
+so the GPU and those libraries work; the gap is specific to rocSPARSE on the APU.
+
+Better validated on a discrete-RDNA Windows GPU where rocSPARSE works. No fork change was
+needed (the port compiles clean on Windows), so nothing to preserve as a patch.
+State: set blocked=true; no source/sha change.

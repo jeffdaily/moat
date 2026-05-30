@@ -7,7 +7,7 @@
   "priority": 5.432,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-30T08:30:00Z",
+  "updated_at": "2026-05-30T23:21:57Z",
   "head_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "HIP backend compiles clean on Windows gfx1151 (no source change) and the CPU builtin backend solves, but GPU validation is blocked: rocSPARSE/hipSPARSE is non-functional on the gfx1151 integrated APU (a trivial 3x3 hipSPARSE CSR SpMV segfaults; likely a rocsparse DLL load/static-init failure for the APU). amgcl's GPU path is fundamentally hipSPARSE SpMV/SpSV. Not a port defect (gfx90a/gfx1100 pass). Better validated on a discrete-RDNA Windows GPU.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T07:28:58Z",
+      "updated_at": "2026-05-30T23:21:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
