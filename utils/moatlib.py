@@ -229,6 +229,21 @@ def lead_done(obj):
     return obj["platforms"][LEAD]["state"] == "completed"
 
 
+def project_lead_state(name):
+    """Lead-platform state of another project, or None if it is not adopted."""
+    try:
+        return load_status(name)["platforms"][LEAD]["state"]
+    except (FileNotFoundError, ValueError, json.JSONDecodeError, KeyError):
+        return None
+
+
+def unmet_deps(obj):
+    """MOAT-internal upstream projects this one depends_on whose LEAD is not yet
+    `completed` (or not adopted). A project is not portable until these are done:
+    its build links/uses the ported dependency. See DEPENDENCIES.md."""
+    return [d for d in obj.get("depends_on", []) if project_lead_state(d) != "completed"]
+
+
 def actionable(obj, platform):
     """Is this platform pickable by an agent on this host right now?"""
     blk = obj["platforms"][platform]
@@ -237,6 +252,8 @@ def actionable(obj, platform):
     if blk["state"] in INERT:
         return False
     if platform != LEAD and not lead_done(obj):
+        return False
+    if unmet_deps(obj):  # deps-first ordering: wait until depended-on ports complete
         return False
     return blk["state"] in STAGE_FOR_STATE
 
@@ -355,7 +372,7 @@ def clear_disposition(full_name):
 # ---- scaffolding -----------------------------------------------------------
 
 def scaffold_project(full_name, upstream_url=None, default_branch="main",
-                     ext_type="unknown", priority=0.0, force=False):
+                     ext_type="unknown", priority=0.0, force=False, depends_on=None):
     disp = get_disposition(full_name)
     if disp and disp.get("disposition") == "skip" and not force:
         raise ValueError(
@@ -378,6 +395,7 @@ def scaffold_project(full_name, upstream_url=None, default_branch="main",
         "adopted_at": now_iso(),
         "updated_at": now_iso(),
         "head_sha": None,
+        "depends_on": list(depends_on or []),
         "platforms": {
             LEAD: _platform_block("unclaimed"),
             "linux-gfx1100": _platform_block("blocked-needs-gfx90a"),
@@ -457,6 +475,7 @@ def main(argv=None):
     s.add_argument("--ext", default="unknown", choices=["cmake", "torch-extension", "unknown"])
     s.add_argument("--priority", type=float, default=0.0)
     s.add_argument("--force", action="store_true", help="adopt even if marked skip")
+    s.add_argument("--deps", nargs="*", default=[], help="MOAT project name(s) this depends on")
 
     s = sub.add_parser("next-task", help="print next actionable project for a platform")
     s.add_argument("platform", choices=PLATFORMS)
@@ -482,11 +501,17 @@ def main(argv=None):
     s = sub.add_parser("show")
     s.add_argument("name")
 
+    s = sub.add_parser("set-deps", help="record the MOAT projects a project depends on")
+    s.add_argument("name")
+    s.add_argument("deps", nargs="*")
+
+    sub.add_parser("deps", help="print inter-project dependencies and what is blocked on them")
+
     args = ap.parse_args(argv)
 
     if args.cmd == "scaffold":
-        name = scaffold_project(args.full_name, args.url, args.branch, args.ext, args.priority, args.force)
-        print(f"scaffolded projects/{name}")
+        name = scaffold_project(args.full_name, args.url, args.branch, args.ext, args.priority, args.force, args.deps)
+        print(f"scaffolded projects/{name}" + (f" (depends_on={args.deps})" if args.deps else ""))
     elif args.cmd == "next-task":
         t = next_task(args.platform)
         if t is None:
@@ -510,6 +535,30 @@ def main(argv=None):
         print(f"{args.name} status.json valid")
     elif args.cmd == "show":
         _print_json(load_status(args.name))
+    elif args.cmd == "set-deps":
+        obj = load_status(args.name)
+        obj["depends_on"] = list(args.deps)
+        obj["updated_at"] = now_iso()
+        save_status(args.name, obj)
+        print(f"{args.name} depends_on = {args.deps}")
+    elif args.cmd == "deps":
+        any_dep = False
+        for d in sorted(PROJECTS.iterdir()):
+            if not (d / "status.json").exists():
+                continue
+            try:
+                obj = load_status(d.name)
+            except (ValueError, json.JSONDecodeError):
+                continue
+            deps = obj.get("depends_on", [])
+            if not deps:
+                continue
+            any_dep = True
+            unmet = unmet_deps(obj)
+            mark = "READY (deps complete)" if not unmet else ("WAITING on " + ", ".join(unmet))
+            print(f"{d.name}: depends_on={deps} -> {mark}")
+        if not any_dep:
+            print("(no inter-project dependencies recorded)")
     return 0
 
 

@@ -77,3 +77,7 @@ If uncertain, choose the simpler, more concise implementation.
 # How to add a project
 
 Review candidates with `python3 utils/triage.py review`. Mark any you will not port using `python3 utils/triage.py skip <owner/repo> --reason <already-supported|ported-elsewhere|cant-port|not-a-target|duplicate|other> --note "..."` (or `triage.py verify <owner/repo>` to flag one for investigation without skipping); decisions persist in data/dispositions.json and scaffold refuses a skipped project. Adopt a remaining row with `python3 utils/moatlib.py scaffold <owner/repo>` (writes projects/<name>/{status.json,upstream.json}); orient.sh then picks it up.
+
+# Project dependencies
+
+Some targets build on other targets (RAPIDS: most build on rmm; cuml/cugraph on raft/cudf). A project's status.json `depends_on` lists the MOAT projects its build needs; the selector will not pick a project until those deps' lead platform is `completed` (deps-first ordering -- `moatlib.py deps` shows the graph). When porting a project that has deps, clone + build + install each ported dep (jeffdaily/<dep> @ moat-port) per its notes.md "## Install as a dependency" section into `_deps/<dep>/` (gitignored at the repo root) and point your build at it (e.g. `-DCMAKE_PREFIX_PATH=.../_deps/<dep>/install`). Record deps with `scaffold --deps ...` or `set-deps <name> <deps...>`. A base library other targets consume MUST document an "## Install as a dependency" section in its notes.md. Full workflow: DEPENDENCIES.md.

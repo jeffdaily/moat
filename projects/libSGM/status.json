@@ -1,14 +1,15 @@
 {
   "schema_version": 1,
-  "name": "cudf",
-  "upstream_url": "https://github.com/rapidsai/cudf",
+  "name": "libSGM",
+  "upstream_url": "https://github.com/fixstars/libSGM",
   "fork_url": null,
   "fork_default_branch": "main",
-  "priority": 6.998,
-  "ext_type": "unknown",
-  "adopted_at": "2026-05-29T23:30:03Z",
+  "priority": 4.0,
+  "ext_type": "cmake",
+  "adopted_at": "2026-05-30T17:07:50Z",
   "updated_at": "2026-05-30T17:07:50Z",
   "head_sha": null,
+  "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "unclaimed",
@@ -17,7 +18,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T17:07:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -39,7 +40,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T17:07:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,7 +62,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T17:07:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,8 +77,5 @@
         "last_session_at": null
       }
     }
-  },
-  "depends_on": [
-    "rmm"
-  ]
+  }
 }

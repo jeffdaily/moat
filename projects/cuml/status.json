@@ -7,7 +7,7 @@
   "priority": 6.614,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-29T23:30:03Z",
+  "updated_at": "2026-05-30T17:07:50Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
@@ -76,5 +76,11 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "depends_on": [
+    "rmm",
+    "raft",
+    "cuvs",
+    "cudf"
+  ]
 }

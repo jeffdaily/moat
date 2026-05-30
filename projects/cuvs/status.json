@@ -7,7 +7,7 @@
   "priority": 5.527,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:05Z",
-  "updated_at": "2026-05-29T23:57:05Z",
+  "updated_at": "2026-05-30T17:07:50Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
@@ -76,5 +76,9 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "depends_on": [
+    "rmm",
+    "raft"
+  ]
 }

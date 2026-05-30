@@ -12,3 +12,4 @@ agent_space/
 __pycache__/
 *.pyc
 *.pyo
+_deps/

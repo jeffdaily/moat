@@ -86,6 +86,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | EnvGS | [zju3dv/EnvGS](https://github.com/zju3dv/EnvGS) | - | todo | gated | gated |
 | egg.c | [d0rc/egg.c](https://github.com/d0rc/egg.c) | - | todo | gated | gated |
 | DiffPhysDrone | [HenryHuYu/DiffPhysDrone](https://github.com/HenryHuYu/DiffPhysDrone) | - | todo | gated | gated |
+| libSGM | [fixstars/libSGM](https://github.com/fixstars/libSGM) | - | todo | gated | gated |
 | CPM.cu | [OpenBMB/CPM.cu](https://github.com/OpenBMB/CPM.cu) | - | todo | gated | gated |
 | marian-dev | [marian-nmt/marian-dev](https://github.com/marian-nmt/marian-dev) | - | todo | gated | gated |
 | RWKV-CUDA | [BlinkDL/RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA) | - | todo | gated | gated |
