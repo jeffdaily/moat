@@ -258,6 +258,13 @@
     "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
+  "inclusionai/cula": {
+    "decided": "2026-05-30T00:46:51Z",
+    "disposition": "skip",
+    "full_name": "inclusionAI/cuLA",
+    "note": "CuTe DSL (NVIDIA CUTLASS), not mechanically portable; AMD FlyDSL is the equivalent DSL",
+    "reason": "cant-port"
+  },
   "infatoshi/cuda-course": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -516,6 +523,13 @@
     "full_name": "thu-ml/SageAttention",
     "note": "AMD fork: github.com/EmbeddedLLM/SageAttention-rocm",
     "reason": "ported-elsewhere"
+  },
+  "thu-ml/spargeattn": {
+    "decided": "2026-05-30T00:46:51Z",
+    "disposition": "verify",
+    "full_name": "thu-ml/SpargeAttn",
+    "note": "coordinate with AMD PR #108 (rocWMMA, RDNA3/gfx1151 + Windows, unmerged); main is CUDA-only",
+    "reason": "verify"
   },
   "tongkaio/cuda_kernel_samples": {
     "decided": "2026-05-30T00:45:17Z",

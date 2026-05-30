@@ -47,9 +47,17 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | - | review | gated | gated |
 | cupoch | [neka-nat/cupoch](https://github.com/neka-nat/cupoch) | - | todo | gated | gated |
 | popsift | [alicevision/popsift](https://github.com/alicevision/popsift) | - | todo | gated | gated |
+| NATTEN | [SHI-Labs/NATTEN](https://github.com/SHI-Labs/NATTEN) | - | todo | gated | gated |
 | ElasticFusion | [mp3guy/ElasticFusion](https://github.com/mp3guy/ElasticFusion) | - | todo | gated | gated |
 | cucim | [rapidsai/cucim](https://github.com/rapidsai/cucim) | - | todo | gated | gated |
+| ZhiLight | [zhihu/ZhiLight](https://github.com/zhihu/ZhiLight) | - | todo | gated | gated |
+| 3DUNDERWORLD-SLS-GPU_CPU | [theICTlab/3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) | - | todo | gated | gated |
+| AutoDock-GPU | [ccsb-scripps/AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) | - | todo | gated | gated |
+| FlashKDA | [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) | - | todo | gated | gated |
+| 3P-ADMM-PC2 | [Samarvivian/3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) | - | todo | gated | gated |
+| unified-cache-management | [ModelEngine-Group/unified-cache-management](https://github.com/ModelEngine-Group/unified-cache-management) | - | todo | gated | gated |
 | gtsam_points | [koide3/gtsam_points](https://github.com/koide3/gtsam_points) | - | todo | gated | gated |
+| gpu4pyscf | [pyscf/gpu4pyscf](https://github.com/pyscf/gpu4pyscf) | - | todo | gated | gated |
 | RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | - | todo | gated | gated |
 | MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | - | todo | gated | gated |
 <!-- MOAT:TABLE:END -->
