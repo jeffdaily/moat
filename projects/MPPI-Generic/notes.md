@@ -96,7 +96,9 @@ Fresh CUDA->HIP port.
 7. cudaFuncSetAttribute signature: CUDA takes the typed kernel pointer; HIP's
    hipFuncSetAttribute takes const void*. Added MPPI_GPU_FUNC_PTR(...) (variadic so a
    comma-bearing template-id kernel<A,B,C> is one macro arg): casts to const void* on
-   HIP, identity on CUDA, at the 3 call sites in mppi_common.cu.
+   HIP, identity on CUDA, at the 3 call sites in mppi_common.cu (cuda_to_hip.h:207 HIP,
+   :216 CUDA). The macro is defined in cuda_to_hip.h, which is force-included on HIP but
+   NOT on CUDA -- so mppi_common.cu now #includes it explicitly (see reviewer fix R1).
 
 8. cuFFT status codes without hipFFT equivalents. cufftGetErrorString switches over
    CUFFT_LICENSE_ERROR (reachable on HIP since the CUDART_VERSION<13000 branch is
@@ -143,11 +145,57 @@ provides std::void_t etc., which collides with the library's own `#if __cplusplu
 < 201703L` C++17 back-fills (generic_sampling_distribution_tests). CUDA default
 (C++11) is unchanged.
 
+## Reviewer fixes (round 2)
+
+R1 (BLOCKING -- CUDA-path regression). MPPI_GPU_FUNC_PTR was defined ONLY in
+cuda_to_hip.h, which is force-included on HIP (CMAKE_HIP_FLAGS -include) but never
+reached on the CUDA build (hip_compat/ is on the include path only under USE_HIP and
+nothing #included the header directly). So mppi_common.cu:1308,1341,1374 used an
+undefined macro under nvcc -> the upstream CUDA build was broken. Fix (option a, the
+cleaner of the two): add `#include <mppi/hip_compat/cuda_to_hip.h>` at
+mppi_common.cu:9 (just below the existing `#include <curand.h>`). Why this is airtight
+on BOTH toolchains:
+  - cuda_to_hip.h:1 is `#pragma once`, so on HIP the force-include + this explicit
+    include process the header exactly once (no double-define).
+  - On CUDA the header's #else branch (cuda_to_hip.h:209-217) is self-contained: it
+    just `#include <cuda_runtime.h>/<curand.h>/<cufft.h>` (real toolkit) and
+    `#define MPPI_GPU_FUNC_PTR(...) (__VA_ARGS__)` (identity). No HIP-only symbol is
+    referenced on that path, so it compiles under nvcc.
+  - `<mppi/hip_compat/cuda_to_hip.h>` resolves on the CUDA build because the base
+    `include/` dir is on the header lib's INTERFACE include path UNCONDITIONALLY
+    (CMakeLists.txt:145, outside the `if(USE_HIP)` block); the file lives at
+    include/mppi/hip_compat/cuda_to_hip.h. The hip_compat/ dir is prepended only on
+    HIP (for the <cuda_runtime.h> shim redirect), but the explicit path does not need
+    it. Net: the macro is now reachable on both backends; HIP behavior is byte-identical
+    (no-op include).
+
+R2 (nit). memset was only transitively included under nvcc. Added `#include <cstring>`
+to colored_noise.cu:12 (the library variance precompute, memset at :104,:333) and
+colored_noise_tests.cu:8 (test-side, 4 memset sites). HIP no-op (already compiled via
+the cstring force-include in cuda_to_hip.h:19, but the explicit include is correct
+hygiene and what the CUDA build needs).
+
+R3 (nit/honesty). CMake-excluded the 7 deferred TUs on the HIP build so a default
+`cmake --build` is GREEN (exit 0). Each test dir builds one target per *.cu via
+file(GLOB)+foreach; under USE_HIP we list(REMOVE_ITEM ...) the deferred sources:
+  - tests/texture_helpers/CMakeLists.txt: texture_helper_test.cu,
+    two_d_texture_helper_test.cu, three_d_texture_helper_test.cu (all 3 in this dir).
+  - tests/dynamics/CMakeLists.txt: racer_dubins_elevation_model_test.cu,
+    racer_dubins_elevation_suspension_test.cu,
+    racer_dubins_elevation_lstm_steering_model_test.cu,
+    bicycle_slip_parametric_model_test.cu (exactly these 4; the sibling
+    racer_dubins_model_test / racer_suspension_model_test /
+    racer_dubins_elevation_lstm_uncertainty_model_test still build).
+No non-deferred test/example includes the deferred vehicle-model headers (grep-verified),
+so excluding exactly these 7 test targets leaves no orphaned library-only TU reachable.
+CUDA build unchanged (guards are `if(USE_HIP)`).
+
 ## Validation (GPU 3, HIP_VISIBLE_DEVICES=3)
 
-Build: 172/179 targets compile and link under HIP (gfx90a). The 7 that do not are
-the deferred texture-map-cost sub-feature (texture_helper tests + the
-racer_dubins/bicycle_slip vehicle dynamics that consume the texture helper),
+Build: default `cmake --build build-hip` is now GREEN (74/74 active targets, exit 0)
+after R3 CMake-excluded the 7 deferred texture-map-cost TUs on HIP. Pre-exclusion that
+was 172/179 (the 7 deferred were hard compile failures making build-all non-zero); the
+deferred set is unchanged, just no longer configured into the HIP build. The 7 remain
 blocked on the texture linear-filter rejection + clang `case this->CONST`/typename
 strictness. ALL core MPPI translation units build.
 
@@ -177,10 +225,20 @@ seed_ to wall-clock time; with a fixed seed it is exactly reproducible.)
 Same program's closed loop: determinism=PASS convergence=PASS (cart 19.92, pole
 3.11, cost 1.50).
 
+Re-validated after the round-2 reviewer fixes (R1 compat-header include, R2 cstring,
+R3 CMake-exclude): rebuilt the core lib + mppi_common.cu (recompiled via both reduction
+test targets) and the determinism check FROM SOURCE on GPU3. rollout_kernel_tests 6/6,
+rmppi_kernel_tests 5/5 still PASS; determinism max|seq1-seq2| = 0.000e+00 / convergence
+cart_x=19.9217 pole=3.1134 cost=1.5039 -- bit-identical to the pre-fix numbers, i.e. the
+R1 include is a verified HIP no-op. Full default build-all is now exit 0.
+
 ctest (full suite, serial -j1 to avoid single-GPU contention): 430/472 = 91% pass.
 All 42 non-passes triaged, NONE a core regression:
 - 22 deferred texture/vehicle sub-feature (ARStandardCost SEGFAULTs = texture
-  linear-filter fault class; ARRobustCost, RacerDubins*, ARNeuralNet; 7 NOT_BUILT).
+  linear-filter fault class; ARRobustCost, RacerDubins*, ARNeuralNet). NOTE: this
+  ctest run predates R3; the 7 deferred test executables are now CMake-excluded on
+  HIP (no longer configured), so a re-run would simply not list those 7 rather than
+  report them NOT_BUILT/failed.
 - 6 RNG/FP tolerance: GaussianTests (samples ARE Gaussian: 0.35% empirical-vs-CDF
   bin error vs an over-tight 0.1% bound; hipRAND!=cuRAND sequence) + RK4 (2e-4 vs a
   1e-6 abs bound after 100 steps; AMD vs NVIDIA fma rounding).
