@@ -166,6 +166,98 @@ machinery -- the C++ library + headers are what RAPIDS links). The CUDA
 driver-API VMM arena path does not exist in v25.08.00 (runtime pool only), so
 nothing VMM was deferred.
 
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32); ROCm 7.2.1; HIP clang 22.0.0. Follower validation against head_sha 1473ffc5bab2b81efd7d849db55e13a62b08822f. Fork untouched (no commits, no CI workflow added).
+
+### Build command
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/rmm/src/cpp -B projects/rmm/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/opt/rocm;/opt/conda/envs/py_3.12" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/projects/rmm/install-gfx1100 \
+  -DBUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/rmm/build-gfx1100 -j$(nproc)
+```
+
+Configure: 2.1 s; build: 16.8 s (65 targets, warnings only -- no errors). Conda deps installed fresh: gtest/gmock 1.17, spdlog 1.17, fmt 12.1. Vendored libhipcxx cloned at fa4ccc6 (amd-develop), rapids_logger at 4c72b59 (release/0.2.0).
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls projects/rmm/build-gfx1100/gtests/DEVICE_BUFFER_TEST
+```
+Output:
+```
+1  host-x86_64-unknown-linux-gnu-       ...#offset=282624&size=0
+1  hipv4-amdgcn-amd-amdhsa--gfx1100    ...#offset=282624&size=3035920
+```
+No gfx90a code object present; all 27 test binaries target gfx1100 exclusively. `CMAKE_HIP_ARCHITECTURES` flows correctly from the CMake flag through `HIP_ARCHITECTURES` target property (no hardcoded arch in the HIP cmake files).
+
+### Test results
+
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir projects/rmm/build-gfx1100 --output-on-failure
+```
+Result: **100% tests passed, 0 failed out of 27** (68.9 s wall time).
+
+Individual gtest case counts (658 total -- matches gfx90a exactly):
+
+| Test binary          | Passed | Skipped | Failed |
+|----------------------|--------|---------|--------|
+| ADAPTOR_TEST         | 32     | 0       | 0      |
+| ALIGNED_TEST         | 9      | 0       | 0      |
+| ARENA_MR_TEST        | 42     | 0       | 0      |
+| BINNING_MR_TEST      | 2      | 0       | 0      |
+| CALLBACK_MR_TEST     | 2      | 0       | 0      |
+| CONTAINER_MULTIDEVICE_TEST | 12 | 0     | 0      |
+| CUDA_ASYNC_MR_TEST   | 3      | 1       | 0      |
+| CUDA_STREAM_TEST     | 12     | 0       | 0      |
+| DEVICE_BUFFER_TEST   | 46     | 0       | 0      |
+| DEVICE_MR_REF_TEST   | 204    | 5       | 0      |
+| DEVICE_SCALAR_TEST   | 56     | 0       | 0      |
+| DEVICE_UVECTOR_TEST  | 100    | 0       | 0      |
+| ERROR_MACROS_TEST    | 11     | 0       | 0      |
+| FAILURE_CALLBACK_TEST| 2      | 0       | 0      |
+| HOST_MR_REF_TEST     | 23     | 0       | 0      |
+| LIMITING_TEST        | 5      | 0       | 0      |
+| LOGGER_TEST          | 7      | 0       | 0      |
+| PINNED_POOL_MR_TEST  | 6      | 0       | 0      |
+| POLYMORPHIC_ALLOCATOR_TEST | 10 | 0    | 0      |
+| POOL_MR_TEST         | 10     | 0       | 0      |
+| PREFETCH_ADAPTOR_TEST| 5      | 0       | 0      |
+| PREFETCH_TEST        | 6      | 0       | 0      |
+| STATISTICS_TEST      | 7      | 0       | 0      |
+| STREAM_ADAPTOR_TEST  | 8      | 0       | 0      |
+| SYSTEM_MR_TEST       | 1      | 4       | 0      |
+| THRUST_ALLOCATOR_TEST| 12     | 6       | 0      |
+| TRACKING_TEST        | 9      | 0       | 0      |
+| **TOTAL**            | **642**| **16**  | **0**  |
+
+### Skip set vs gfx90a
+
+Identical to gfx90a -- no difference:
+- `AsyncMRFabricTest.FabricHandlesSupport` (CUDA_ASYNC_MR_TEST, 1 skip): HIP has no fabric IPC handle; GTEST_SKIP at runtime.
+- `ResourceTests/mr_ref_test.*/System` (DEVICE_MR_REF_TEST, 5 skips): system/managed resource not supported on this device config.
+- `SystemMRTest.*` (SYSTEM_MR_TEST, 4 skips): HeadroomMR + FirstTouch variants -- system memory resource tests that skip when conditions not met.
+- `ThrustAllocatorTests/allocator_test.multi_device/*` (THRUST_ALLOCATOR_TEST, 6 skips): multi-device variants skip when only 1 device is visible.
+- `CudaStreamDeathTest.TestSyncNoThrow`: guarded out at the source level under USE_HIP (not listed by gtest_list_tests) -- same as gfx90a.
+
+### Determinism
+
+Allocator tests (POOL_MR_TEST, ARENA_MR_TEST, DEVICE_BUFFER_TEST) produced identical pass counts across multiple ctest invocations; no flakiness observed.
+
+### Verdict
+
+PASS. gfx1100 validation matches gfx90a identically (27/27 ctest, 642 passed + 16 skipped + 0 failed out of 658 gtest cases). Real GPU allocation/stream-ordered ops confirmed on AMD Radeon Pro W7800 (gfx1100). State: port-ready -> completed (validated_sha = 1473ffc5bab2b81efd7d849db55e13a62b08822f).
+
 ## Install as a dependency
 
 This is the contract raft/cudf/cuvs/cugraph/cuml consume. rmm is header-heavy:
