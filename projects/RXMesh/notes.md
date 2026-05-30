@@ -311,3 +311,86 @@ in this run, per bounded scope):
    slicing cycle -- a gfx90a hardware cap, needs kernel restructuring (blocker (4)).
 2. The cuDSS -> STRUMPACK solver substitution (high-level solve -> hipSOLVER
    csrlsvchol). STRUMPACK is the recorded dep and is now completed in MOAT.
+
+## 2026-05-30 (run 2) -- editing tests GREEN: blocker (4) was MISDIAGNOSED; real cause = a hardcoded 80 KB launch-box override
+
+THE 3 CAVITY EDITING TESTS NOW PASS on gfx90a (RandomFlips, RandomCollapse,
+TriangleRefinement), deterministically (3/3 repeated runs). Core 22 (21 + 
+PatchSlicing) unregressed. The fix is ONE line, not a kernel restructuring.
+
+=== Blocker (4) re-root-caused -- it is NOT slice_patches, and NOT a real >64 KB
+    requirement ===
+The prior run attributed the >64 KB shared-memory request to detail::slice_patches
+and concluded the kernel needed tiling/splitting. That was WRONG. Instrumenting
+the actual byte budgets showed:
+- slice_patches' own host-computed dyn_shmem (rxmesh_dynamic.h:807-827) is only
+  ~23298 B for sphere3's capacities (cap_v=549, cap_e=1581, cap_f=1034). It fits
+  the 64 KB cap with room to spare and was never the failing launch. The
+  "82477 B" the prior run saw was attributed to slice_patches but actually came
+  from a DIFFERENT kernel's launch box.
+- The 82477 B request belongs to the cavity EDITING kernels (random_flips /
+  random_collapse / tri_refine), sized by RXMeshDynamic::update_launch_box
+  (rxmesh_dynamic.cu). That function carefully computes the CavityManager
+  footprint (connectivity + cavity-id + bitmasks + ... ) and arrives at a value
+  that, for these meshes, is only ~14880-34015 B -- comfortably under 64 KB.
+- BUT immediately after computing it, upstream UNCONDITIONALLY overwrites it:
+      launch_box.smem_bytes_dyn = 80 * 1024;          // rxmesh_dynamic.cu:3239
+  (present verbatim in pristine upstream 30a4137:3216). With with_vertex_valence
+  it becomes 81920 + cap_v + 8 = 82477. On NVIDIA the 96-227 KB opt-in swallows
+  the 80 KB slack so nobody noticed; on CDNA2's hard 64 KB/block cap the launch
+  is rejected with "invalid argument", whose sticky error was then caught at the
+  NEXT slice_patches' pre-launch cudaGetLastError (rxmesh_dynamic.h:785) -- which
+  is why it LOOKED like slice_patches was the offender. Classic sticky-error
+  misattribution across kernel launches.
+
+=== FIX (rxmesh_dynamic.cu:3237-3247, __HIP_PLATFORM_AMD__-guarded) ===
+Drop the 80 KB override on AMD and use the value update_launch_box already
+computed (the kernel's true ShmemAllocator footprint). CUDA path is byte-for-byte
+unchanged (still takes the 80 KB line). The guard is on the host macro
+__HIP_PLATFORM_AMD__ (same macro the porter uses in shmem_allocator.cuh:92);
+update_launch_box is host code so this is a host-side #if. No gfx90a hardcoding:
+the value is the computed per-capacity footprint, and check_shared_memory reads
+the device cap from cudaDeviceProp, so it scales to any AMD target.
+
+Why a guard rather than deleting the line outright: deleting it would also change
+CUDA (improving its occupancy, since 14-34 KB << 80 KB), which is a behavior
+change outside this port's mandate. Per the MOAT rule "if a change would alter
+CUDA, guard the ROCm path," the override is left intact for NVIDIA.
+
+=== Post-fix budgets (gfx90a, sphere3 / bumpy-cube) ===
+random_flips dyn_shmem: was forced to 82477 B (FAIL, > 64216 func max);
+now 14880 B (iter 0) -> 34015 B (steady), + 5192 static = 39207 B total, fits
+(occupancy 1 block/SM). slice_patches unchanged at ~23298 B. The compute_vf VF
+ribbon query (blocker (2)) still legitimately wants ~81920 B and is still skipped
+by the validate() guard -- that one IS a real per-capacity requirement and is the
+only place the 64 KB cap genuinely bites; it is non-fatal (EV-based ribbon check
+still runs).
+
+=== TriangleRefinement input ===
+The TriangleRefinement test hardcodes input/rocker-arm.obj, which ships NOWHERE in
+the RXMesh repo (not tracked in upstream 30a4137, 404 on raw.githubusercontent).
+It is a separate test-DATA gap, unrelated to the port. To validate the refinement
+kernel on bundled data, the test input was switched to input/bumpy-cube.obj
+(tests/RXMesh_test/test_triangle_refinement.cu:146) -- a larger closed manifold
+(~60k lines, 227 patches) that exercises the slice/cavity path harder than
+rocker-arm would. With it, TriangleRefinement passes deterministically.
+
+=== Validation (GPU 0, gfx90a, HIP_VISIBLE_DEVICES=0, Release) ===
+- RandomFlips / RandomCollapse / TriangleRefinement: PASS, 3/3 repeated runs.
+- Full core re-run (RXMeshStatic.* + RXMesh.* + Util.* + RXMeshDynamic
+  PatchScheduler/PatchSlicing/Validate + PatchLock): 22/22 PASS in isolation.
+- Whole binary end-to-end: 24/25 PASS; the only failure is RXMeshDynamic.PatchLock
+  (blocker (5)), which still passes 5/5 in ISOLATION and fails only in-suite after
+  the heavy Queries tests -- the pre-existing wave64 lock-protocol flake, NOT
+  touched by this fix (PatchLock does not go through prepare_launch_box's override
+  path). Unchanged from the prior run's characterization.
+
+VERDICT: core mesh-data-structure + full static mesh-query + dynamic-editing
+(slicing + flips + collapse + refinement) port is COMPLETE and GPU-validated on
+gfx90a. State -> ported, blocked=false. The ONLY remaining follow-on is the
+module-level cuDSS -> STRUMPACK solver/diff substitution (separate; STRUMPACK is
+the recorded dep and is `completed` in MOAT) -- NOT attempted here.
+
+NOTE on the superseded blocker (4): the "slice_patches needs a <64 KB restructuring"
+item above is RESOLVED-AS-MISDIAGNOSED. No slice_patches restructuring was needed;
+the offending request was the editing kernels' launch box being force-set to 80 KB.

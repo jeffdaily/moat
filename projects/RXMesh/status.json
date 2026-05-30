@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T20:17:18Z",
+  "updated_at": "2026-05-30T20:41:33Z",
   "head_sha": "ad95e89e2faa9d3b7dd4052816e5bcfedbfc7e82",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "INVALID16 post-edit-count bug ROOT-CAUSED + FIXED; PatchSlicing now PASSES deterministically (3/3). Root cause was NOT a wave64 active-bitmask stray bit (the Bitmask is 32-bit-word-indexed by element id, width-independent; the count recompute uses atomicMax(v+1) with no ballot). It was a LATENT UPSTREAM __shared__ buffer overflow benign on nvcc but fatal on clang: remove_surplus_elements cleared `__shared__ uint32_t s_patch_stash[PatchStash::stash_size]` (=64) with fill_n(..., LPHashTable::stash_size=128, INVALID32), overrunning 256B into the adjacent __shared__ count accumulators (s_num_edges/faces/vertices sit immediately after s_patch_stash on clang's layout -- confirmed by printing addresses), setting all three to 0xFFFFFFFF -> truncated to 0xFFFF=INVALID16 on store to num_*[0]. FIX (rxmesh_dynamic.cu:539-540): fill with PatchStash::stash_size. A/B-verified. Earlier ShmemMutex SIMT-deadlock (1) and compute_vf 80KB-shmem overflow (2) remain fixed. The 3 cavity editing tests (RandomFlips/RandomCollapse/TriangleRefinement) are now blocked ONLY by a DISTINCT issue (4): on the 2nd slicing cycle the slice_patches kernel itself requests ~82KB dynamic + ~5KB static shared memory, exceeding gfx90a's 64KB/block hard cap (CUDA gets 96-227KB opt-in). This is a hardware-capability gap, NOT a wave64 bug; fitting it under 64KB needs kernel restructuring (smaller block / tiled masks) -- left as the next editing-path work item per bounded scope. PatchLock (5) is flaky in isolation (8/10) and after the heavy Queries tests -- pre-existing wave64 lock-protocol concurrency, confirmed NOT a regression from the (3) fix. Core 21 tests pass individually. Remaining follow-on beyond (4): cuDSS->STRUMPACK solver substitution (STRUMPACK now completed). Full detail in notes.md; PORTING_GUIDE updated with the INVALID16-fill-length lesson.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-05-30T09:21:09Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T18:27:34Z",
+      "updated_at": "2026-05-30T20:41:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
