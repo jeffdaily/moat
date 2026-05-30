@@ -51,6 +51,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | ElasticFusion | [mp3guy/ElasticFusion](https://github.com/mp3guy/ElasticFusion) | - | todo | gated | gated |
 | cucim | [rapidsai/cucim](https://github.com/rapidsai/cucim) | - | todo | gated | gated |
 | ZhiLight | [zhihu/ZhiLight](https://github.com/zhihu/ZhiLight) | - | todo | gated | gated |
+| SpargeAttn | [thu-ml/SpargeAttn](https://github.com/thu-ml/SpargeAttn) | - | todo | gated | gated |
 | 3DUNDERWORLD-SLS-GPU_CPU | [theICTlab/3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) | - | todo | gated | gated |
 | AutoDock-GPU | [ccsb-scripps/AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) | - | todo | gated | gated |
 | FlashKDA | [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) | - | todo | gated | gated |
@@ -60,6 +61,28 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | gpu4pyscf | [pyscf/gpu4pyscf](https://github.com/pyscf/gpu4pyscf) | - | todo | gated | gated |
 | RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | - | todo | gated | gated |
 | MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | - | todo | gated | gated |
+| sppark | [supranational/sppark](https://github.com/supranational/sppark) | - | todo | gated | gated |
+| Gpufit | [gpufit/Gpufit](https://github.com/gpufit/Gpufit) | - | todo | gated | gated |
+| evogp | [EMI-Group/evogp](https://github.com/EMI-Group/evogp) | - | todo | gated | gated |
+| ffpa-attn | [xlite-dev/ffpa-attn](https://github.com/xlite-dev/ffpa-attn) | - | todo | gated | gated |
+| FlashMoE | [osayamenja/FlashMoE](https://github.com/osayamenja/FlashMoE) | - | todo | gated | gated |
+| dietgpu | [facebookresearch/dietgpu](https://github.com/facebookresearch/dietgpu) | - | todo | gated | gated |
+| sparser-faster-llms | [SakanaAI/sparser-faster-llms](https://github.com/SakanaAI/sparser-faster-llms) | - | todo | gated | gated |
+| llmq | [IST-DASLab/llmq](https://github.com/IST-DASLab/llmq) | - | todo | gated | gated |
+| LEAP | [llnl/LEAP](https://github.com/llnl/LEAP) | - | todo | gated | gated |
+| FaithC | [Luo-Yihao/FaithC](https://github.com/Luo-Yihao/FaithC) | - | todo | gated | gated |
+| fused-ssim | [rahul-goel/fused-ssim](https://github.com/rahul-goel/fused-ssim) | - | todo | gated | gated |
+| gpuRIR | [DavidDiazGuerra/gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) | - | todo | gated | gated |
+| mHC.cu | [AndreSlavescu/mHC.cu](https://github.com/AndreSlavescu/mHC.cu) | - | todo | gated | gated |
+| EnvGS | [zju3dv/EnvGS](https://github.com/zju3dv/EnvGS) | - | todo | gated | gated |
+| DiffPhysDrone | [HenryHuYu/DiffPhysDrone](https://github.com/HenryHuYu/DiffPhysDrone) | - | todo | gated | gated |
+| splatad | [carlinds/splatad](https://github.com/carlinds/splatad) | - | todo | gated | gated |
+| cudaKDTree | [ingowald/cudaKDTree](https://github.com/ingowald/cudaKDTree) | - | todo | gated | gated |
+| Quest | [mit-han-lab/Quest](https://github.com/mit-han-lab/Quest) | - | todo | gated | gated |
+| 3DGS-LM | [lukasHoel/3DGS-LM](https://github.com/lukasHoel/3DGS-LM) | - | todo | gated | gated |
+| fp6_llm | [usyd-fsalab/fp6_llm](https://github.com/usyd-fsalab/fp6_llm) | - | todo | gated | gated |
+| DDN-SLAM | [DrLi-Ming/DDN-SLAM](https://github.com/DrLi-Ming/DDN-SLAM) | - | todo | gated | gated |
+| op43dgs | [LetianHuang/op43dgs](https://github.com/LetianHuang/op43dgs) | - | todo | gated | gated |
 <!-- MOAT:TABLE:END -->
 
 ## Layout

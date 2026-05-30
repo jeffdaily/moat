@@ -524,13 +524,6 @@
     "note": "AMD fork: github.com/EmbeddedLLM/SageAttention-rocm",
     "reason": "ported-elsewhere"
   },
-  "thu-ml/spargeattn": {
-    "decided": "2026-05-30T00:46:51Z",
-    "disposition": "verify",
-    "full_name": "thu-ml/SpargeAttn",
-    "note": "coordinate with AMD PR #108 (rocWMMA, RDNA3/gfx1151 + Windows, unmerged); main is CUDA-only",
-    "reason": "verify"
-  },
   "tongkaio/cuda_kernel_samples": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",

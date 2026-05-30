@@ -29,6 +29,8 @@ A port is not always a fresh CUDA-to-HIP conversion. Before planning one, determ
 - A ROCm/HIP port exists but is below PORTING_GUIDE best practices -> plan to improve it.
 Record the finding and the decision in plan.md; if no port is warranted, set the disposition with `python3 utils/triage.py skip <repo> --reason already-supported`.
 
+For performance-critical kernels (attention, GEMM, quantization) that are NVIDIA-tuned (CUTLASS/CuTe, Hopper wgmma, warp specialization), note that a mechanical HIP translation can underperform an AMD-native (rocWMMA / Composable Kernel / MFMA) rewrite. Decide port-vs-rewrite and state it in plan.md; a correctness-first mechanical port is a valid first step even if a later AMD-native pass is wanted.
+
 ## plan.md sections
 - Project (name, upstream, default branch)
 - Existing AMD support (mature ROCm | OpenCL/Vulkan-only | abandoned port | improvable) + decision

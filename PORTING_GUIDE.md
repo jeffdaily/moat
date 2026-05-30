@@ -13,6 +13,8 @@ A "port" is not always a fresh CUDA-to-HIP conversion. Check first:
 - A ROCm/HIP port exists but is below the best practices here -> improve it (minimal footprint, warp_size abstraction, and so on).
 The planner makes this call per project and records it in plan.md. "Already supports AMD via OpenCL/Vulkan" alone does not mean skip.
 
+Performance-critical kernels (attention, GEMM, quantization) are often tuned to NVIDIA-specific features (CUTLASS/CuTe, Hopper sm90 wgmma/MMA, warp specialization). A straight CUDA-to-HIP translation will compile and run but can leave large performance on the table versus an AMD-native implementation (rocWMMA, Composable Kernel, MFMA intrinsics). For these the planner decides between a mechanical port (correctness first) and an AMD-native rewrite of the hot kernels, and says which in plan.md.
+
 ## Build classification
 
 Decide which strategy applies before touching code.
@@ -121,3 +123,4 @@ Append `YYYY-MM-DD -- lesson -- source project` when you learn a generalizable l
 - seed -- rule-of-five on texture handles; clamp out-of-bounds neighbor reads; 256-byte texture pitch -- colmap
 - 2026-05-30 -- before dismissing the 256B-pitch fault class, confirm the ACTUAL texture resource type: a cudaResourceTypePitch2D bind is subject to it (even if the pitch happens to satisfy it); do not assume the texture is cudaArray-backed -- CudaSift
 - 2026-05-30 -- review (code/strategy/analysis) and validate (real GPU run) are separate MOAT stages; the reviewer does not block on a missing GPU run, the validator provides it -- CudaSift
+- 2026-05-30 -- perf-critical kernels (attention/GEMM/quant, often CUTLASS/CuTe/Hopper-tuned): a straight HIP translation may underperform an AMD-native (rocWMMA/CK/MFMA) approach; the planner decides port-vs-rewrite -- per jeff
