@@ -7,17 +7,17 @@
   "priority": 6.998,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-30T17:07:50Z",
+  "updated_at": "2026-05-30T20:33:11Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "unclaimed",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "porting",
+      "blocked": true,
+      "blocked_reason": "libcudf core needs cuCollections (CCCL-native concurrent hashtable, NO ROCm fork; gates join/groupby/hash/reductions/stream_compaction/search) + jitify/NVRTC (binaryop/transform/rolling); the 404-file C++20 monolith fails to compile at the foundational column_device_view.cu via the __CUDACC__-gated CUDF_HOST_DEVICE macro cascade (46 guard sites/22 headers). nvCOMP (proprietary, unportable) and KvikIO are io-only so cuIO is separable. Arrow is NOT a blocker (v25.08 uses nanoarrow). rmm dependency recipe validated and works. Port needs cuCollections ported first as its own target.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-30T20:28:26Z",
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T20:33:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
