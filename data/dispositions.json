@@ -13,6 +13,20 @@
     "note": "Alibaba inference engine, not a vLLM fork; verify ROCm status",
     "reason": "verify"
   },
+  "archaeasoftware/cudahandbook": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "ArchaeaSoftware/cudahandbook",
+    "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "ashvardanian/less_slow.cpp": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "ashvardanian/less_slow.cpp",
+    "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
   "bbuf/how-to-optim-algorithm-in-cuda": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -25,6 +39,20 @@
     "disposition": "skip",
     "full_name": "brucefan1983/CUDA-Programming",
     "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
+  "bytedtsinghua-sia/cuda-agent": {
+    "decided": "2026-05-30T00:31:02Z",
+    "disposition": "skip",
+    "full_name": "BytedTsinghua-SIA/CUDA-Agent",
+    "note": "RL agent that generates CUDA kernels, not a CUDA app to port",
+    "reason": "not-a-target"
+  },
+  "crazyguitar/cppcheatsheet": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "crazyguitar/cppcheatsheet",
+    "note": "tutorial/book/educational, not a library to port",
     "reason": "not-a-target"
   },
   "cupy/cupy": {
@@ -83,6 +111,13 @@
     "note": "real/current HIP backend (research-confirmed)",
     "reason": "already-supported"
   },
+  "dusty-nv/jetson-utils": {
+    "decided": "2026-05-30T00:31:02Z",
+    "disposition": "skip",
+    "full_name": "dusty-nv/jetson-utils",
+    "note": "NVIDIA Jetson-locked (dusty-nv NVIDIA-affiliated)",
+    "reason": "not-a-target"
+  },
   "enpeizhao/cvprojects": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "skip",
@@ -109,6 +144,20 @@
     "disposition": "skip",
     "full_name": "ForceInjection/AI-fundamentals",
     "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
+  "fzj-jsc/tutorial-multi-gpu": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "FZJ-JSC/tutorial-multi-gpu",
+    "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "gau-nernst/learn-cuda": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "gau-nernst/learn-cuda",
+    "note": "tutorial/book/educational, not a library to port",
     "reason": "not-a-target"
   },
   "ginkgo-project/ginkgo": {
@@ -146,6 +195,13 @@
     "note": "built on NVIDIA DeepStream; no AMD equivalent",
     "reason": "not-a-target"
   },
+  "jinbooooom/ai-infra-hpc": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "jinbooooom/ai-infra-hpc",
+    "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
   "jittor/jittor": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "verify",
@@ -158,6 +214,20 @@
     "disposition": "skip",
     "full_name": "JuliaGPU/CUDA.jl",
     "note": "Julia CUDA toolchain; AMDGPU.jl is the AMD-side equivalent",
+    "reason": "not-a-target"
+  },
+  "kerneltuner/kernel_tuner": {
+    "decided": "2026-05-30T00:31:02Z",
+    "disposition": "skip",
+    "full_name": "KernelTuner/kernel_tuner",
+    "note": "benchmark suite / build or tuning tool, not a port target",
+    "reason": "not-a-target"
+  },
+  "llnl/blt": {
+    "decided": "2026-05-30T00:31:02Z",
+    "disposition": "skip",
+    "full_name": "llnl/blt",
+    "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
   },
   "luce-org/lucebox-hub": {
@@ -223,6 +293,13 @@
     "note": "Intel oneAPI, not CUDA",
     "reason": "not-a-target"
   },
+  "ornl/hecbench": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "ORNL/HeCBench",
+    "note": "benchmark suite / build or tuning tool, not a port target",
+    "reason": "not-a-target"
+  },
   "patriciogonzalezvivo/lygia": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -258,6 +335,13 @@
     "note": "graphics shader language; AMD via SPIR-V/Vulkan",
     "reason": "not-a-target"
   },
+  "siboehm/sgemm_cuda": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "siboehm/SGEMM_CUDA",
+    "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
   "spcl/dace": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
@@ -271,6 +355,13 @@
     "full_name": "stotko/stdgpu",
     "note": "HIP backend experimental + CI-untested; hardening/validation has value",
     "reason": "verify"
+  },
+  "sunoner/sunone_aimbot_2": {
+    "decided": "2026-05-30T00:31:02Z",
+    "disposition": "skip",
+    "full_name": "SunOner/sunone_aimbot_2",
+    "note": "game aimbot/cheat, not a target",
+    "reason": "not-a-target"
   },
   "thu-ml/sageattention": {
     "decided": "2026-05-30T00:04:57Z",
@@ -306,6 +397,13 @@
     "full_name": "uncomplicate/neanderthal",
     "note": "Clojure BLAS binding; OpenCL on AMD; no custom kernels (judgment call)",
     "reason": "verify"
+  },
+  "uob-hpc/babelstream": {
+    "decided": "2026-05-30T00:31:01Z",
+    "disposition": "skip",
+    "full_name": "UoB-HPC/BabelStream",
+    "note": "benchmark suite / build or tuning tool, not a port target",
+    "reason": "not-a-target"
   },
   "vllm-project/vllm": {
     "decided": "2026-05-30T00:01:04Z",
