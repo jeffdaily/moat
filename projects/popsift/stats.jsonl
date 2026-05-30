@@ -1,0 +1,27 @@
+{"kind":"phase","ts":"2026-05-30T01:41:28Z","phase":"compile","seconds":2.728,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON"}
+{"kind":"phase","ts":"2026-05-30T01:41:39Z","phase":"compile","seconds":7.013,"exit":2,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T01:42:56Z","phase":"compile","seconds":17.671,"exit":2,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T01:44:54Z","phase":"compile","seconds":27.366,"exit":2,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T01:47:12Z","phase":"compile","seconds":31.115,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T01:48:18Z","phase":"compile","seconds":30.481,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T03:40:47Z","phase":"compile","seconds":3.035,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON"}
+{"kind":"phase","ts":"2026-05-30T03:43:10Z","phase":"compile","seconds":0.271,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T03:43:24Z","phase":"test","seconds":1.460,"exit":134,"cmd":"/var/lib/jenkins/moat/projects/popsift/src/build-hip/Linux-x86_64/popsift-demo -i /var/lib/jenkins/moat/agent_space/popsift_imgs/scene.png"}
+{"kind":"phase","ts":"2026-05-30T03:44:28Z","phase":"test","seconds":0.162,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/popsift/src/build-hip/Linux-x86_64/popsift-match /var/lib/jenkins/moat/agent_space/popsift_imgs/scene.png /var/lib/jenkins/moat/agent_space/popsift_imgs/scene_rot.png"}
+{"kind":"phase","ts":"2026-05-30T03:44:42Z","phase":"test","seconds":1.506,"exit":134,"cmd":"/var/lib/jenkins/moat/projects/popsift/src/build-hip/Linux-x86_64/popsift-match -l /var/lib/jenkins/moat/agent_space/popsift_imgs/scene.png -r /var/lib/jenkins/moat/agent_space/popsift_imgs/scene_rot.png"}
+{"kind":"phase","ts":"2026-05-30T04:56:01Z","phase":"compile","seconds":6.416,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:08:03Z","phase":"compile","seconds":6.390,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:16:06Z","phase":"compile","seconds":6.327,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:16:06Z","phase":"compile","seconds":0.267,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:18:03Z","phase":"compile","seconds":6.328,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:19:12Z","phase":"compile","seconds":6.179,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:20:49Z","phase":"compile","seconds":6.570,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:21:22Z","phase":"compile","seconds":6.671,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:22:20Z","phase":"compile","seconds":6.446,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:23:15Z","phase":"compile","seconds":6.428,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:24:17Z","phase":"compile","seconds":6.431,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:26:29Z","phase":"compile","seconds":2.390,"exit":2,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:26:37Z","phase":"compile","seconds":1.179,"exit":2,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:26:57Z","phase":"compile","seconds":6.454,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:28:14Z","phase":"compile","seconds":6.427,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:29:52Z","phase":"compile","seconds":0.275,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}

@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "popsift",
   "upstream_url": "https://github.com/alicevision/popsift",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/popsift",
   "fork_default_branch": "develop",
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T00:36:13Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T05:42:25Z",
+  "head_sha": "35de1a8ee91bb792b88615c77f60271b0b7ea5e4",
   "platforms": {
     "linux-gfx90a": {
-      "state": "unclaimed",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "ported",
+      "blocked": true,
+      "blocked_reason": "Texture/surface coherency: make_dog reads the octave data array via tex2DLayered and gets stale/zero after aa::vert wrote it via surf2DLayeredwrite (an immediate surf2DLayeredread returns the fresh value), so the DoG pyramid is all-zero and 0 features are detected. HIP linear-filter texture and wave64 warp-packing bugs already fixed (determinism restored, no -nan). Under investigation whether this is a HIP runtime bug (texture cache not invalidated at the launch boundary; CUDA guarantees cross-launch coherency), a CDNA detail, or app intra-kernel-coherence reliance. Fix candidates: read make_dog/extrema from the surface, recreate the texture after the blur, or invalidate. WIP preserved at jeffdaily/popsift @ moat-port.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-30T01:38:56Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T00:36:13Z",
+      "updated_at": "2026-05-30T05:42:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -30,7 +30,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
