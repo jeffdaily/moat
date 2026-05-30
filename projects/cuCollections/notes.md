@@ -58,26 +58,48 @@ with `thread_scope_device -> __HIP_MEMORY_SCOPE_AGENT`, `_block -> WORKGROUP`,
 `_system -> SYSTEM`. A full `static_set` insert/find/contains/size builds and
 runs correctly (probe `static_set_probe.cu`). This de-risked the whole port.
 
-### libhipcxx atomic GAP: sub-word (1-/2-byte) CAS is BROKEN on gfx90a
+### libhipcxx atomic GAP: sub-word (1-/2-byte) CAS -- FIXED with a CAS-loop shim
 
 `cuda::atomic_ref<int8_t|int16_t>::compare_exchange_strong` is **incorrect** on
-gfx90a/CDNA2 (probe `agent_space/cuco_probe/atomic_size_sweep.cu`):
+gfx90a/CDNA2 (probe `agent_space/cuco_probe/atomic_size_sweep.cu`). CDNA2 has no
+native sub-32-bit atomic CAS, and libhipcxx does **not** emulate it (NVIDIA
+libcu++ emulates via a containing-word CAS loop; libhipcxx forwards the 1-/2-byte
+type straight to `__hip_atomic_compare_exchange_*`, which RMWs at word granularity
+and corrupts sibling sub-word slots packed in the same 32-bit word):
 
-| slot type | distinct slots claimed / 256 |
-|-----------|------------------------------|
-| int8  (1B)  | 64  (BROKEN -- 4 slots/word collide) |
-| int16 (2B)  | 128 (BROKEN -- 2 slots/word collide) |
-| int32 (4B)  | 256 (OK) |
-| int64 (8B)  | 256 (OK) |
+| slot type | distinct slots / 256 (bare libhipcxx) | with the shim |
+|-----------|---------------------------------------|---------------|
+| int8  (1B)  | 64  (BROKEN -- 4 slots/word collide)  | 256 (OK) |
+| int16 (2B)  | 128 (BROKEN -- 2 slots/word collide)  | 256 (OK) |
+| int32 (4B)  | 256 (OK)                              | 256 (OK) |
+| int64 (8B)  | 256 (OK)                              | 256 (OK) |
 
-CDNA2 has no native sub-32-bit atomic CAS, and libhipcxx does **not** emulate it
-(NVIDIA libcu++ emulates via a containing-word CAS loop; libhipcxx forwards the
-1-/2-byte type straight to `__hip_atomic_compare_exchange_*`, which RMWs at word
-granularity and corrupts sibling sub-word slots). Consequence: cuco's
-`static_set` with `int8_t`/`int16_t` **keys** fails (11/97 static_set cases --
-all and only the small-key variants). All key types >= 4 bytes (int32, int64,
-and structured keys up to 8 bytes) are correct. cudf hashes to 32/64-bit keys,
-so this gap does not block the cudf core.
+**Fix (HIP-only, NVIDIA path untouched):** a sub-word `compare_exchange`
+emulation in `include/cuco/detail/hip_subword_atomic.cuh`
+(`cuco::detail::atomic_compare_exchange_relaxed<Scope>(obj, expected, desired)`),
+adapted from PyTorch's `ATen/cuda/Atomic.cuh` `Atomic*IntegerImpl<T,1>/<T,2>`
+RMW technique to compare-exchange: locate the containing 32-bit word
+(`off = addr & 3` for 1B / `& 2` for 2B), splice the desired sub-field in, do a
+full-word `atomicCAS`, and retry while a neighbor mutated the word (the retry
+serializes concurrent updates to the OTHER sub-word slots in the same word, so
+they are never clobbered; signedness handled by extracting/masking with the
+unsigned width and casting back to `T`). The helper only diverges for
+`sizeof(T) < 4` AND `__HIP_DEVICE_COMPILE__`; every other case (all of CUDA, and
+all >= 4-byte slots on HIP) forwards verbatim to `cuda::atomic_ref`, so the
+native-hardware paths and the upstream NVIDIA build are byte-for-byte unaffected.
+Routed through the helper at cuco's six relaxed key/slot CAS sites:
+`open_addressing_ref_impl.cuh` `packed_cas` (static_set sub-word keys, the
+hot path), `back_to_back_cas`, `cas_dependent_write`; and
+`static_map_ref.inl` `attempt_insert_or_assign` + `attempt_insert_or_apply`.
+
+Result: **STATIC_SET 97/97 cases (887 assertions)** and **STATIC_MAP 82/82 cases
+(526 assertions)** now pass with zero exclusions (previously 86/97 set and 72
+map "core"; the 11 set + 10 map small-key cases were excluded). Deterministic
+(`--rng-seed 12345` x2 bit-identical). No regression on the >= 4-byte suites
+(STATIC_SET >=4B 55/489, STATIC_MAP >=4B 72/456, MULTISET 70/582, MULTIMAP
+72/228, DYNAMIC_MAP 12/144, UTILITY 38/1561 -- all counts unchanged from the
+pre-fix validation). cudf hashes to 32/64-bit keys so it never needed this, but
+the gap is now fully closed for int8/int16 keys too.
 
 ## Cooperative groups + wave64 (PASSED, deterministic)
 
@@ -183,21 +205,23 @@ Build: `cmake -S src -B build-hip -GNinja -DUSE_HIP=ON
 Arch flows from `CMAKE_HIP_ARCHITECTURES` (gfx90a code object confirmed via
 roc-obj-ls; no hardcoded arch except the default-when-unset).
 
-Real-GPU pass counts (keyed structures run with the documented int8/int16
-sub-word-atomic cases excluded; everything else full):
+Real-GPU pass counts (the int8/int16 sub-word-atomic cases are now fixed via the
+`hip_subword_atomic.cuh` CAS-loop shim and run full; no exclusions for keyed
+structures):
 
 | test exe              | cases | assertions | result |
 |-----------------------|-------|------------|--------|
-| STATIC_SET_TEST       | 55    | 489        | PASS (full incl small: 86/97, 11 int8/16 fail) |
-| STATIC_MAP_TEST       | 72    | 456        | PASS (core: find/count/contains/erase/for_each/retrieve/rehash/key_sentinel/hash/heterogeneous_lookup/capacity) |
-| STATIC_MULTISET_TEST  | 70    | 582        | PASS (full incl small) |
+| STATIC_SET_TEST       | 97    | 887        | PASS (FULL incl int8/int16 -- was 86/97 before the sub-word shim) |
+| STATIC_MAP_TEST       | 82    | 526        | PASS (FULL incl int8/int16 -- was 72 core before the sub-word shim) |
+| STATIC_MULTISET_TEST  | 70    | 582        | PASS (full) |
 | STATIC_MULTIMAP_TEST  | 72    | 228        | PASS |
 | DYNAMIC_MAP_TEST      | 12    | 144        | PASS (core: insert/find/erase) |
 | UTILITY_TEST          | 38    | 1561       | PASS (hash, probing_scheme, extent, storage, fast_int, next_prime) |
 | ROARING_BITMAP_TEST   | 2     | 4          | PASS (1 skipped -- needs test-data download) |
-| **TOTAL**             | **~321** | **~3464** | **all passing** |
+| **TOTAL**             | **~373** | **~3932** | **all passing** |
 
-Determinism confirmed (static_set core bit-identical across runs). Deferred:
+Determinism confirmed (static_set incl. small keys bit-identical across runs,
+`--rng-seed 12345` x2). Deferred:
 the rocPRIM-pair-DeviceSelect TUs (retrieve_all-over-pairs), the >8B/16B atomic
 CAS TUs, the libhipcxx-nv/target bloom_filter, and DYNAMIC_BITSET (separate
 non-get_wrapper compile error, not investigated -- a trie bitset, off the
@@ -267,7 +291,8 @@ cmake -S projects/cuCollections/src -B projects/cuCollections/build-hip -GNinja 
 cmake --build projects/cuCollections/build-hip \
   --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
            STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j$(nproc)
-# run (single GPU): HIP_VISIBLE_DEVICES=2 ./build-hip/tests/<TEST> "~*int8_t*" "~*int16_t*"
+# run (single GPU): HIP_VISIBLE_DEVICES=2 ./build-hip/tests/<TEST>
+# (the int8/int16 sub-word cases now pass thanks to hip_subword_atomic.cuh -- no exclusion needed)
 ```
 
 A follower validates with only `-DCMAKE_HIP_ARCHITECTURES=<arch>` (gfx1100 etc.)
