@@ -250,3 +250,69 @@ jeffdaily/Gpufit moat-port (lease baseline 0015899...). head_sha advanced to
 5ab0c05; gfx90a stays `revalidate` against this final SHA (revalidates once).
 
 Result: linux-gfx1100 -> delta-ported. No blockers.
+
+## Revalidation 2026-05-30 (gfx90a re-confirm at gfx1100 delta tip)
+
+linux-gfx90a was bounced to `revalidate` when the gfx1100 delta-port advanced
+the shared fork head from the gfx90a-validated `060a66c2` to `5ab0c059`. Re-ran
+on gfx90a (MI250X, wave64, GPU0 / HIP_VISIBLE_DEVICES=0, ROCm 7.2.1) to confirm
+no regression at the new tip.
+
+### What the gfx1100 delta changed (060a66c2..5ab0c059)
+
+```
+git --no-pager diff 060a66c2..HEAD --stat
+ CMakeLists.txt                        | 5 +++++
+ Gpufit/CMakeLists.txt                 | 5 ++++-
+ Gpufit/tests/Gauss_Fit_2D_Rotated.cpp | 8 ++++++++
+ examples/c++/CMakeLists.txt           | 5 ++++-
+```
+
+Test-tolerance + CMake only; NO device-code (.cu) logic changed, so gfx90a
+numerics are byte-identical to the 060a66c2 validation. Specifically:
+- `Gauss_Fit_2D_Rotated.cpp`: parameter[6] (rotation angle r) relaxed from
+  `< 1e-6f` to `< 3e-6f`, gated `#if defined(USE_HIP)` (CUDA `#else` keeps
+  strict `1e-6f`). This only LOOSENS the bound, so it cannot regress wave64,
+  which already passed at the strict 1e-6f.
+- `CMakeLists.txt`: `target_compile_definitions(${target} PRIVATE USE_HIP)` on
+  the Boost test targets under `if(USE_HIP)` so the test TU actually sees the
+  guard symbol (the PRIVATE define on the Gpufit lib target does not propagate
+  to the test executables here).
+- `Gpufit/CMakeLists.txt` + `examples/c++/CMakeLists.txt`: HIP_ARCHITECTURES now
+  honors `CMAKE_HIP_ARCHITECTURES` (defaulting to gfx90a when unset) instead of
+  hardcoding gfx90a. Confirmed `-DCMAKE_HIP_ARCHITECTURES=gfx90a` still yields
+  gfx90a code objects.
+
+The change is exactly the RDNA/wave32 guard expected -- harmless on gfx90a.
+
+### Build (clean reconfigure, build dir out of git under src/)
+
+```
+git fetch fork moat-port            # 060a66c..5ab0c05 (forced update)
+git checkout -B moat-port fork/moat-port   # HEAD == 5ab0c059
+cmake -S . -B build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF
+cmake --build build-hip -j
+```
+
+Build clean to 100%. `roc-obj-ls build-hip/Gpufit/libGpufit.so` shows all 3
+code objects `hipv4-amdgcn-amd-amdhsa--gfx90a` (no gfx1100). The new
+configurable-arch logic correctly produces gfx90a here.
+
+### Test results (HIP_VISIBLE_DEVICES=0, MI250X gfx90a, wave64)
+
+```
+cd build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1
+```
+
+100% tests passed, 0 failed out of 10 (the 9 Boost known-answer GPU suites +
+Cpufit_Gpufit_Test_Consistency). Notably `Gpufit_Test_Gauss_Fit_2D_Rotated`,
+which FAILED on gfx1100/wave32 at the strict 1e-6f, PASSES on gfx90a/wave64:
+wave64 lands the rotation angle within the original 1e-6f, and the relaxed
+3e-6f HIP bound is a strict superset. Determinism: a second full ctest pass is
+also 100%; the rotated-fit binary prints "No errors detected", exit 0.
+
+No regression from the gfx1100 delta. Result: linux-gfx90a `revalidate` ->
+`completed`, validated_sha = 5ab0c059ed761d571c3e66a519f3246a62184145 (the
+rebuilt + revalidated HEAD).
