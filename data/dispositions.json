@@ -13,13 +13,6 @@
     "note": "Alibaba inference engine, not a vLLM fork; verify ROCm status",
     "reason": "verify"
   },
-  "arrayfire/arrayfire": {
-    "decided": "2026-05-29T23:30:02Z",
-    "disposition": "verify",
-    "full_name": "arrayfire/arrayfire",
-    "note": "OpenCL backend covers AMD; CUDA backend has no HIP path",
-    "reason": "verify"
-  },
   "bbuf/how-to-optim-algorithm-in-cuda": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
@@ -41,12 +34,19 @@
     "note": "ROCm/HIP build supported upstream",
     "reason": "already-supported"
   },
+  "dao-ailab/causal-conv1d": {
+    "decided": "2026-05-30T00:04:56Z",
+    "disposition": "skip",
+    "full_name": "Dao-AILab/causal-conv1d",
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
+  },
   "deepmodeling/deepmd-kit": {
-    "decided": "2026-05-29T23:30:02Z",
-    "disposition": "verify",
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
     "full_name": "deepmodeling/deepmd-kit",
-    "note": "reportedly ROCm-capable; confirm real/complete",
-    "reason": "verify"
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
   },
   "deepseek-ai/deepep": {
     "decided": "2026-05-29T23:43:03Z",
@@ -77,11 +77,11 @@
     "reason": "ported-elsewhere"
   },
   "dtolm/vkfft": {
-    "decided": "2026-05-29T23:57:04Z",
-    "disposition": "verify",
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
     "full_name": "DTolm/VkFFT",
-    "note": "lists HIP; verify current and not wave64-only",
-    "reason": "verify"
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
   },
   "enpeizhao/cvprojects": {
     "decided": "2026-05-29T23:57:04Z",
@@ -111,6 +111,20 @@
     "note": "tutorial/learning/collection repo",
     "reason": "not-a-target"
   },
+  "ginkgo-project/ginkgo": {
+    "decided": "2026-05-30T00:04:56Z",
+    "disposition": "skip",
+    "full_name": "ginkgo-project/ginkgo",
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
+  },
+  "gunrock/gunrock": {
+    "decided": "2026-05-30T00:04:56Z",
+    "disposition": "skip",
+    "full_name": "gunrock/gunrock",
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
+  },
   "hazyresearch/thunderkittens": {
     "decided": "2026-05-29T23:43:03Z",
     "disposition": "skip",
@@ -133,10 +147,10 @@
     "reason": "not-a-target"
   },
   "jittor/jittor": {
-    "decided": "2026-05-29T23:23:27Z",
+    "decided": "2026-05-30T00:04:57Z",
     "disposition": "verify",
     "full_name": "Jittor/jittor",
-    "note": "claims ROCm; confirm real HIP port vs partial/OpenCL",
+    "note": "extern/rocm HIP backend ~3.5yr stale (2022); refresh value",
     "reason": "verify"
   },
   "juliagpu/cuda.jl": {
@@ -144,6 +158,27 @@
     "disposition": "skip",
     "full_name": "JuliaGPU/CUDA.jl",
     "note": "Julia CUDA toolchain; AMDGPU.jl is the AMD-side equivalent",
+    "reason": "not-a-target"
+  },
+  "luce-org/lucebox-hub": {
+    "decided": "2026-05-30T00:04:56Z",
+    "disposition": "skip",
+    "full_name": "Luce-Org/lucebox-hub",
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
+  },
+  "luisagroup/luisacompute": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
+    "full_name": "LuisaGroup/LuisaCompute",
+    "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
+    "reason": "not-a-target"
+  },
+  "lupinemachines/lupine": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
+    "full_name": "lupinemachines/lupine",
+    "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
     "reason": "not-a-target"
   },
   "marcoslucianops/deepstream-yolo": {
@@ -223,6 +258,27 @@
     "note": "graphics shader language; AMD via SPIR-V/Vulkan",
     "reason": "not-a-target"
   },
+  "spcl/dace": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
+    "full_name": "spcl/dace",
+    "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
+    "reason": "not-a-target"
+  },
+  "stotko/stdgpu": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "verify",
+    "full_name": "stotko/stdgpu",
+    "note": "HIP backend experimental + CI-untested; hardening/validation has value",
+    "reason": "verify"
+  },
+  "thu-ml/sageattention": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
+    "full_name": "thu-ml/SageAttention",
+    "note": "AMD fork: github.com/EmbeddedLLM/SageAttention-rocm",
+    "reason": "ported-elsewhere"
+  },
   "tpoisonooo/how-to-optimize-gemm": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "skip",
@@ -237,12 +293,33 @@
     "note": "ROCm/HIP backend exists",
     "reason": "already-supported"
   },
+  "uccl-project/uccl": {
+    "decided": "2026-05-30T00:04:56Z",
+    "disposition": "skip",
+    "full_name": "uccl-project/uccl",
+    "note": "real/current HIP backend (research-confirmed)",
+    "reason": "already-supported"
+  },
+  "uncomplicate/neanderthal": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "verify",
+    "full_name": "uncomplicate/neanderthal",
+    "note": "Clojure BLAS binding; OpenCL on AMD; no custom kernels (judgment call)",
+    "reason": "verify"
+  },
   "vllm-project/vllm": {
     "decided": "2026-05-30T00:01:04Z",
     "disposition": "skip",
     "full_name": "vllm-project/vllm",
     "note": "ROCm supported upstream (canonical; forks/derivatives are ported-elsewhere)",
     "reason": "already-supported"
+  },
+  "wilicc/gpu-burn": {
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
+    "full_name": "wilicc/gpu-burn",
+    "note": "AMD: ROCm/HIP-Examples gpu-burn; KerwinTsaiii/amd-gpu-burn",
+    "reason": "ported-elsewhere"
   },
   "xlite-dev/leetcuda": {
     "decided": "2026-05-29T23:13:18Z",
@@ -252,10 +329,10 @@
     "reason": "not-a-target"
   },
   "zaneham/barracuda": {
-    "decided": "2026-05-29T23:57:04Z",
-    "disposition": "verify",
+    "decided": "2026-05-30T00:04:57Z",
+    "disposition": "skip",
     "full_name": "Zaneham/BarraCUDA",
-    "note": "claims HIP target; verify completeness/quality",
-    "reason": "verify"
+    "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
+    "reason": "not-a-target"
   }
 }
