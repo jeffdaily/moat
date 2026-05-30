@@ -174,6 +174,13 @@ by a documented gap:
   (a hard wave32 assumption).
 - DISTANCE: CUTLASS-based (fused_distance_nn) -- the largest single port item.
 
+ROCm path for the CUTLASS-based items above (DISTANCE / NEIGHBORS, and the
+MATRIX/STATS distance epilogue): CUTLASS does NOT port to ROCm. These kernels
+must be REIMPLEMENTED against Composable Kernel (CK), preferring ck_tile -- not
+a 1:1 API, so understand the CUTLASS kernel's intent and write the CK equivalent
+from CK's in-repo examples. This is the real gate for cuvs/cuml, not a CUTLASS
+port.
+
 The compiled lanczos solvers (4 of libraft's stock 8 TUs) are deferred behind
 `RAFT_COMPILE_LANCZOS=OFF` for the same cusolverSp/Xsyevd reasons.
 
