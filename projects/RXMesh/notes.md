@@ -157,3 +157,12 @@ BLOCKER -- dynamic mesh-EDITING tests hang:
   callee (avoid passing a raw __shared__ pointer through device calls); or audit
   whether the CavityManager `m_s_patch_stash_mutex` member's alloc() actually runs
   for the slice path.
+
+## 2026-05-30 -- sparse-solver dependency analysis (cuDSS / cusolverSp) + STRUMPACK dep
+
+RXMesh's solver/autodiff path uses NVIDIA sparse solvers; the ROCm story per facility:
+- High-level cusolverSp solve (csrlsvqr/csrlsvchol): AVAILABLE in hipSOLVER (hipsolverSp*, rocSPARSE+SuiteSparse backend, BUILD_WITH_SPARSE). Portable today.
+- Low-level cusolverSp factorization (csrqr*/csrchol* Setup/BufferInfo/Factor/Solve/ZeroPivot), csrlsvluHost, csrsymrcm reordering: NOT in hipSOLVER. Feature request filed: https://github.com/ROCm/hipSOLVER/issues/443
+- cuDSS (used heavily here): proprietary/closed-source -> NOT portable. Open ROCm-capable substitute: STRUMPACK (BSD; multifrontal sparse LU; already HIP/ROCm; ~1.9x faster than cuDSS single-GPU per a 2025 paper).
+
+DEPENDENCY: RXMesh now depends_on STRUMPACK (pending). The solver path substitutes cuDSS -> STRUMPACK (and the high-level solve -> hipSOLVER csrlsvchol) once STRUMPACK is validated on ROCm in MOAT. This is SEPARATE from the ShmemMutex editing-path blocker; the core mesh-query + editing port does not need STRUMPACK.

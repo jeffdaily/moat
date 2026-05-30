@@ -42,3 +42,7 @@ CORRECTION/history: the original cudaKDTree note framed this as "mis-sorts"; a f
 - Reproducers (clean): findings/hipcub-rocprim-beginbit/{sweep.cpp,minrepro.cpp,bbtest.cpp,sweep_out.txt}.
 - FILED: ROCm/rocPRIM#775 (https://github.com/ROCm/rocPRIM/issues/775). Self-contained report (full repro inline): findings/hipcub-rocprim-beginbit/BUG_REPORT.md.
 - Confirmation: DONE.
+
+## Feature requests filed
+
+- hipSOLVER low-level cusolverSp sparse factorization API (csrqr*/csrchol*, csrlsvluHost, csrsymrcm) -- https://github.com/ROCm/hipSOLVER/issues/443 -- surfaced by RXMesh; body at findings/hipsolver-sparse-fr/REQUEST.md. (High-level csrlsvqr/csrlsvchol already ship in hipSOLVER; cuDSS is closed-source and covered on ROCm by STRUMPACK.)

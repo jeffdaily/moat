@@ -53,6 +53,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | ZhiLight | [zhihu/ZhiLight](https://github.com/zhihu/ZhiLight) | - | todo | gated | gated |
 | SpargeAttn | [thu-ml/SpargeAttn](https://github.com/thu-ml/SpargeAttn) | - | todo | gated | gated |
 | 3DUNDERWORLD-SLS-GPU_CPU | [theICTlab/3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port) | done | done | validating |
+| STRUMPACK | [pghysels/STRUMPACK](https://github.com/pghysels/STRUMPACK) | - | todo | gated | gated |
 | AutoDock-GPU | [ccsb-scripps/AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) | [AutoDock-GPU](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port) | done | done | validating |
 | FlashKDA | [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) | - | todo | gated | gated |
 | 3P-ADMM-PC2 | [Samarvivian/3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) | - | todo | gated | gated |
