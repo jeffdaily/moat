@@ -2,13 +2,13 @@
   "schema_version": 1,
   "name": "RXMesh",
   "upstream_url": "https://github.com/owensgroup/RXMesh",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/RXMesh",
   "fork_default_branch": "main",
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T18:27:34Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T20:17:18Z",
+  "head_sha": "ad95e89e2faa9d3b7dd4052816e5bcfedbfc7e82",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",

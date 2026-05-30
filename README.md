@@ -53,14 +53,14 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | ZhiLight | [zhihu/ZhiLight](https://github.com/zhihu/ZhiLight) | - | todo | gated | gated |
 | SpargeAttn | [thu-ml/SpargeAttn](https://github.com/thu-ml/SpargeAttn) | - | todo | gated | gated |
 | 3DUNDERWORLD-SLS-GPU_CPU | [theICTlab/3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port) | done | done | validating |
-| STRUMPACK | [pghysels/STRUMPACK](https://github.com/pghysels/STRUMPACK) | [STRUMPACK](https://github.com/jeffdaily/STRUMPACK/tree/moat-port) | done | validating | validating |
+| STRUMPACK | [pghysels/STRUMPACK](https://github.com/pghysels/STRUMPACK) | [STRUMPACK](https://github.com/jeffdaily/STRUMPACK/tree/moat-port) | done | done | validating |
 | AutoDock-GPU | [ccsb-scripps/AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) | [AutoDock-GPU](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port) | done | done | validating |
 | FlashKDA | [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) | - | todo | gated | gated |
 | 3P-ADMM-PC2 | [Samarvivian/3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) | - | todo | gated | gated |
 | unified-cache-management | [ModelEngine-Group/unified-cache-management](https://github.com/ModelEngine-Group/unified-cache-management) | - | todo | gated | gated |
 | gtsam_points | [koide3/gtsam_points](https://github.com/koide3/gtsam_points) | - | todo | gated | gated |
 | gpu4pyscf | [pyscf/gpu4pyscf](https://github.com/pyscf/gpu4pyscf) | - | todo | gated | gated |
-| RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | - | porting (blocked) | gated | gated |
+| RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | [RXMesh](https://github.com/jeffdaily/RXMesh/tree/moat-port) | porting (blocked) | gated | gated |
 | MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | [MPPI-Generic](https://github.com/jeffdaily/MPPI-Generic/tree/moat-port) | done | done | validating |
 | sppark | [supranational/sppark](https://github.com/supranational/sppark) | - | todo | gated | gated |
 | Gpufit | [gpufit/Gpufit](https://github.com/gpufit/Gpufit) | [Gpufit](https://github.com/jeffdaily/Gpufit/tree/moat-port) | done | done | validating |
