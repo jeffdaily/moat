@@ -300,3 +300,21 @@ Under investigation (per jeff): is this a HIP runtime software bug (texture cach
 Fix candidates (correct regardless of root cause): read make_dog/extrema from the surface instead of the texture; recreate/refresh the texture object after the blur writes; or add an explicit texture-cache invalidation.
 
 Where I need jeff's input when he returns: confirm the root-cause direction (HIP bug to file vs popsift-side fix) from the investigation agent's findings, and the preferred workaround.
+
+## 2026-05-30 -- coherency root cause RESOLVED: HIP runtime bug (layered-image texture cache)
+
+A standalone HIP reproducer (findings/popsift-texsurf-coherency/repro.cpp, run on gfx90a) isolates the blocker to a HIP runtime bug, NOT hardware and NOT a popsift spec violation:
+
+| variation (layered float array) | result |
+|---|---|
+| reused texture, tex2DLayered read | STALE (reproduces popsift) |
+| surf2DLayeredread instead | FRESH |
+| fresh texture created AFTER the write | STALE |
+| reused texture + hipDeviceSynchronize | STALE |
+| non-layered 2D array, same path | FRESH |
+
+popsift's surf2DLayeredwrite (aa::vert) and tex2DLayered read (make_dog) are separate kernel launches on the same stream -- the canonical cross-launch pattern that CUDA and HIP both document as coherent. The layered-image texture cache is not invalidated at the kernel-launch boundary on gfx90a/CDNA2 (ROCm 7.x); a non-layered 2D array on the same path is fine, an explicit sync does not help, and recreating the texture does not help. The defect is in the layered path, not a write-flush or stale-descriptor issue.
+
+Fix (in progress): have make_dog (and any sibling that point-reads the freshly-surface-written layered _data array via texture in a later same-stream launch) read via surf2DLayeredread instead of the point texture, USE_HIP-guarded so the CUDA path keeps the texture. make_dog uses pure point access at integer texel centers, so no filtering is lost.
+
+HIP bug report at findings/popsift-texsurf-coherency/BUG_REPORT.md; to be filed against ROCm and tracked in FINDINGS.md.

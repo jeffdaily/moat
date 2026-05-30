@@ -7,17 +7,17 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T05:42:25Z",
+  "updated_at": "2026-05-30T05:58:54Z",
   "head_sha": "35de1a8ee91bb792b88615c77f60271b0b7ea5e4",
   "platforms": {
     "linux-gfx90a": {
       "state": "ported",
       "blocked": true,
-      "blocked_reason": "Texture/surface coherency: make_dog reads the octave data array via tex2DLayered and gets stale/zero after aa::vert wrote it via surf2DLayeredwrite (an immediate surf2DLayeredread returns the fresh value), so the DoG pyramid is all-zero and 0 features are detected. HIP linear-filter texture and wave64 warp-packing bugs already fixed (determinism restored, no -nan). Under investigation whether this is a HIP runtime bug (texture cache not invalidated at the launch boundary; CUDA guarantees cross-launch coherency), a CDNA detail, or app intra-kernel-coherence reliance. Fix candidates: read make_dog/extrema from the surface, recreate the texture after the blur, or invalidate. WIP preserved at jeffdaily/popsift @ moat-port.",
+      "blocked_reason": "Root cause CONFIRMED: HIP runtime bug -- layered-image texture cache not invalidated at the kernel-launch boundary (gfx90a/CDNA2, ROCm 7.x); tex2DLayered in make_dog reads stale pre-write data after aa::vert's surf2DLayeredwrite, though surf2DLayeredread is fresh. popsift is in-spec (separate launches; CUDA+HIP document cross-launch coherency). Standalone repro in findings/popsift-texsurf-coherency. Fix in progress: make_dog reads via surf2DLayeredread (USE_HIP-guarded). texture-linear + wave64 bugs already fixed.",
       "validated_sha": null,
       "started_at": "2026-05-30T01:38:56Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T05:42:25Z",
+      "updated_at": "2026-05-30T05:58:54Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
