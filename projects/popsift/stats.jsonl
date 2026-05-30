@@ -25,3 +25,5 @@
 {"kind":"phase","ts":"2026-05-30T05:26:57Z","phase":"compile","seconds":6.454,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
 {"kind":"phase","ts":"2026-05-30T05:28:14Z","phase":"compile","seconds":6.427,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
 {"kind":"phase","ts":"2026-05-30T05:29:52Z","phase":"compile","seconds":0.275,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T09:28:17Z","phase":"compile","seconds":5.484,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON"}
+{"kind":"phase","ts":"2026-05-30T09:28:58Z","phase":"compile","seconds":37.012,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
