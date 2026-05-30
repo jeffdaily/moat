@@ -2,3 +2,6 @@
 {"kind":"phase","ts":"2026-05-30T05:09:58Z","phase":"compile","seconds":1.333,"exit":2,"cmd":"cmake --build projects/Gpufit/src/build-hip -j"}
 {"kind":"phase","ts":"2026-05-30T05:11:09Z","phase":"compile","seconds":2.898,"exit":0,"cmd":"cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF"}
 {"kind":"phase","ts":"2026-05-30T05:11:28Z","phase":"compile","seconds":18.154,"exit":0,"cmd":"cmake --build projects/Gpufit/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:57:43Z","phase":"compile","seconds":2.242,"exit":0,"cmd":"cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF"}
+{"kind":"phase","ts":"2026-05-30T05:58:04Z","phase":"compile","seconds":13.288,"exit":0,"cmd":"cmake --build projects/Gpufit/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T05:58:17Z","phase":"test","seconds":1.849,"exit":8,"cmd":"sh -c cd projects/Gpufit/src/build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1 2>&1"}
