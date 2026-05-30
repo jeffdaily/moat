@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "Fast-Poisson-Image-Editing",
   "upstream_url": "https://github.com/Trinkle23897/Fast-Poisson-Image-Editing",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/Fast-Poisson-Image-Editing",
   "fork_default_branch": "main",
   "priority": 4.518,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-05-30T07:14:59Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T07:18:07Z",
+  "head_sha": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
       "started_at": "2026-05-30T07:02:44Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T07:14:59Z",
+      "completed_at": "2026-05-30T07:18:07Z",
+      "updated_at": "2026-05-30T07:18:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T03:26:35Z",
+      "updated_at": "2026-05-30T07:18:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T03:26:35Z",
+      "updated_at": "2026-05-30T07:18:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
