@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "STRUMPACK",
   "upstream_url": "https://github.com/pghysels/STRUMPACK",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/STRUMPACK",
   "fork_default_branch": "main",
   "priority": 5.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:39:43Z",
-  "updated_at": "2026-05-30T17:56:25Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T17:59:07Z",
+  "head_sha": "ab5396f0f71e2c16955b6676399a68b21a601159",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "ab5396f0f71e2c16955b6676399a68b21a601159",
       "started_at": "2026-05-30T17:56:25Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T17:56:25Z",
+      "completed_at": "2026-05-30T17:59:07Z",
+      "updated_at": "2026-05-30T17:59:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T17:39:43Z",
+      "updated_at": "2026-05-30T17:59:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T17:39:43Z",
+      "updated_at": "2026-05-30T17:59:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
