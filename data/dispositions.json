@@ -1,4 +1,11 @@
 {
+  "0xd0gf00d/documentsass": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "0xD0GF00D/DocumentSASS",
+    "note": "NVIDIA SASS ISA reverse-engineering/docs, not portable",
+    "reason": "not-a-target"
+  },
   "1catai/1cat-vllm": {
     "decided": "2026-05-30T00:00:41Z",
     "disposition": "skip",
@@ -13,6 +20,20 @@
     "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
+  "66ring/tiny-flash-attention": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "66RING/tiny-flash-attention",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
+  "albond/dgx_spark_qwen3.5-122b-a10b-ar-int4": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "albond/DGX_Spark_Qwen3.5-122B-A10B-AR-INT4",
+    "note": "single-model benchmark writeup, not a library",
+    "reason": "not-a-target"
+  },
   "alibaba/rtp-llm": {
     "decided": "2026-05-30T00:39:37Z",
     "disposition": "skip",
@@ -25,6 +46,13 @@
     "disposition": "skip",
     "full_name": "ArchaeaSoftware/cudahandbook",
     "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "arthurinruc/cutlass-notes": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "ArthurinRUC/cutlass-notes",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
   "ashvardanian/less_slow.cpp": {
@@ -53,6 +81,13 @@
     "disposition": "skip",
     "full_name": "BytedTsinghua-SIA/CUDA-Agent",
     "note": "RL agent that generates CUDA kernels, not a CUDA app to port",
+    "reason": "not-a-target"
+  },
+  "calvinxky/basiccuda": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "CalvinXKY/BasicCUDA",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
   "crazyguitar/cppcheatsheet": {
@@ -125,6 +160,13 @@
     "note": "NVIDIA Jetson-locked (dusty-nv NVIDIA-affiliated)",
     "reason": "not-a-target"
   },
+  "ekondis/mixbench": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "ekondis/mixbench",
+    "note": "GPU benchmark tool (already multi-backend)",
+    "reason": "not-a-target"
+  },
   "enpeizhao/cvprojects": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "skip",
@@ -145,6 +187,13 @@
     "full_name": "flashinfer-ai/flashinfer",
     "note": "AMD ROCm port: github.com/ROCm/flashinfer",
     "reason": "ported-elsewhere"
+  },
+  "florianmattana/sass-king": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "florianmattana/sass-king",
+    "note": "NVIDIA SASS ISA reverse-engineering/docs, not portable",
+    "reason": "not-a-target"
   },
   "forceinjection/ai-fundamentals": {
     "decided": "2026-05-29T23:57:04Z",
@@ -181,6 +230,13 @@
     "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
+  "godweiyang/grabgpu": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "godweiyang/GrabGPU",
+    "note": "GPU-grabbing utility script",
+    "reason": "not-a-target"
+  },
   "gunrock/gunrock": {
     "decided": "2026-05-30T00:04:56Z",
     "disposition": "skip",
@@ -195,11 +251,25 @@
     "note": "AMD counterpart by same authors: github.com/HazyResearch/HipKittens",
     "reason": "ported-elsewhere"
   },
+  "henryndubuaku/cuda-tutorials": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "HenryNdubuaku/cuda-tutorials",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
   "infatoshi/cuda-course": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
     "full_name": "Infatoshi/cuda-course",
     "note": "tutorial/learning repo",
+    "reason": "not-a-target"
+  },
+  "infatoshi/mnist-cuda": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "Infatoshi/mnist-cuda",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
   "insight-platform/savant": {
@@ -214,6 +284,13 @@
     "disposition": "skip",
     "full_name": "jinbooooom/ai-infra-hpc",
     "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "jinbooooom/origindl": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "jinbooooom/OriginDL",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
   "jittor/jittor": {
@@ -272,6 +349,13 @@
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
     "reason": "not-a-target"
   },
+  "maharshi-pandya/cudacodes": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "Maharshi-Pandya/cudacodes",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
   "marcoslucianops/deepstream-yolo": {
     "decided": "2026-05-30T00:00:41Z",
     "disposition": "skip",
@@ -286,12 +370,33 @@
     "note": "GPU backend immature/WIP; README 'AMD' = Zen CPU SIMD, not GPU",
     "reason": "verify"
   },
+  "mrshaw01/software-engineer": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "mrshaw01/software-engineer",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
+  "ninazero/tron": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "ninazero/tron",
+    "note": "crypto wallet vanity-address generator",
+    "reason": "not-a-target"
+  },
   "numba/numba": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
     "full_name": "numba/numba",
     "note": "LLVM-based CUDA JIT compiler, not a kernel port",
     "reason": "cant-port"
+  },
+  "nv-tlabs/nksr": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "nv-tlabs/NKSR",
+    "note": "NVIDIA Toronto AI Lab (NVIDIA-affiliated); nowhere to upstream",
+    "reason": "not-a-target"
   },
   "nvidia-bionemo/nvmolkit": {
     "decided": "2026-05-29T23:57:04Z",
@@ -333,6 +438,13 @@
     "disposition": "skip",
     "full_name": "patriciogonzalezvivo/lygia",
     "note": "multi-language shader library, not a CUDA app",
+    "reason": "not-a-target"
+  },
+  "pranjalssh/fast.cu": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "pranjalssh/fast.cu",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
   "pytorch/ao": {
@@ -405,6 +517,13 @@
     "note": "AMD fork: github.com/EmbeddedLLM/SageAttention-rocm",
     "reason": "ported-elsewhere"
   },
+  "tongkaio/cuda_kernel_samples": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "Tongkaio/CUDA_Kernel_Samples",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
   "tpoisonooo/how-to-optimize-gemm": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "skip",
@@ -468,11 +587,32 @@
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
   },
+  "xmrig/xmrig-cuda": {
+    "decided": "2026-05-30T00:45:18Z",
+    "disposition": "skip",
+    "full_name": "xmrig/xmrig-cuda",
+    "note": "crypto miner (AMD has a separate OpenCL plugin)",
+    "reason": "not-a-target"
+  },
+  "yassa9/qwen600": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "yassa9/qwen600",
+    "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
   "zaneham/barracuda": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
     "full_name": "Zaneham/BarraCUDA",
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
+    "reason": "not-a-target"
+  },
+  "zjhellofss/kuiperllama": {
+    "decided": "2026-05-30T00:45:17Z",
+    "disposition": "skip",
+    "full_name": "zjhellofss/KuiperLLama",
+    "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   }
 }
