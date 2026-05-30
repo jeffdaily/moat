@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-05-30T06:52:18Z",
+  "updated_at": "2026-05-30T07:04:58Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-05-30T06:52:18Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T06:52:18Z",
+      "updated_at": "2026-05-30T07:04:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
