@@ -3,6 +3,10 @@
 # any scratch. The actual port lives in each project's jeffdaily fork.
 
 projects/*/src/
+projects/*/build/
+projects/*/build-*/
+projects/*/install/
+projects/*/install-*/
 projects/*/.lock
 projects/*/.claim
 projects/.selection.lock
