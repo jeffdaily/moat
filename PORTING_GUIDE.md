@@ -51,13 +51,20 @@ Goal: only `.cu`/`.hip` translation units see the HIP toolchain; host C++ is unt
        option(USE_HIP "Build with HIP for AMD GPUs" OFF)
        if(USE_HIP)
          enable_language(HIP)
+         # Never hardcode the lead arch as a literal here: a literal "gfx90a"
+         # overrides -DCMAKE_HIP_ARCHITECTURES, so every follower (gfx1100,
+         # gfx1151) is forced to edit this file to build -- churning the curated
+         # commit's head_sha and forcing already-passed platforms to revalidate.
+         if(NOT DEFINED CMAKE_HIP_ARCHITECTURES OR CMAKE_HIP_ARCHITECTURES STREQUAL "")
+           set(CMAKE_HIP_ARCHITECTURES "gfx90a")  # default the lead arch only when unset
+         endif()
          set_source_files_properties(${CUDA_SOURCES} PROPERTIES LANGUAGE HIP)
-         set_target_properties(<tgt> PROPERTIES HIP_ARCHITECTURES "gfx90a")
+         set_target_properties(<tgt> PROPERTIES HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}")
        else()
          enable_language(CUDA)
        endif()
 
-   Marking the existing `.cu` files `LANGUAGE HIP` keeps the diff minimal and the NVIDIA build intact. Configure with `-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a` (add `-DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++` if CMake does not find it).
+   Marking the existing `.cu` files `LANGUAGE HIP` keeps the diff minimal and the NVIDIA build intact. Configure with `-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a` (add `-DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++` if CMake does not find it). Because the target reads `${CMAKE_HIP_ARCHITECTURES}`, the same lead-port commit builds for any AMD target with only `-DCMAKE_HIP_ARCHITECTURES=<arch>` (gfx90a, gfx1100, gfx1151) and no source change, so a follower validation needs no commit. Also pass every target arch you can test at planning time so the lead bringup is right the first time.
 
 3. Guard genuinely divergent code with `#if defined(USE_HIP)`; keep such guards rare. Dispatch sites that accept either backend use `#if defined(USE_CUDA) || defined(USE_HIP)`.
 
@@ -135,3 +142,4 @@ Append `YYYY-MM-DD -- lesson -- source project` when you learn a generalizable l
 - 2026-05-30 -- IPO/LTO + the HIP toolchain breaks pybind11 modules: INTERPROCEDURAL_OPTIMIZATION leaves the .so as slim LTO bitcode with no PyInit_* (ImportError, tiny .so), because the HIP link step does not finalize LTO; disable IPO for the HIP build (it is usually optional) -- gpuRIR
 - 2026-05-30 -- the 1D-texture linear-filter rejection is the same fault class as 2D (popsift): a cudaFilterModeLinear + cudaReadModeElementType float texture is rejected at create time on AMD regardless of dims; create it cudaFilterModePoint and lerp in software (point-fetch 2 neighbors, -0.5 texel-center convention) -- gpuRIR
 - 2026-05-30 -- RIR/audio validation: the direct path is the FIRST significant arrival (round(dist/c*Fs)), NOT the global max; constructive early reflections can exceed it in a reverberant room, so a global-argmax peak check gives a false negative -- gpuRIR
+- 2026-05-30 -- bake a configurable HIP arch into the LEAD port: set HIP_ARCHITECTURES from ${CMAKE_HIP_ARCHITECTURES} (default the lead arch only when unset), never a literal "gfx90a". A hardcoded arch overrides the cache var, so every follower validation is forced to edit CMake -- churning the curated commit's head_sha and forcing already-passed platforms to revalidate. Design the lead bringup for all target arches up front to avoid this churn -- CudaSift, Gpufit (per jeff)
