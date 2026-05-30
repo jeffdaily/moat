@@ -238,3 +238,86 @@ consumable. No kernel/algorithm source edits. Per MOAT boundaries this agent did
 NOT fork/push; the parent delivers the diff. The diff lives in the working clone
 `projects/STRUMPACK/src` (see `git diff` there). No README/gen_readme changes; no
 GitHub Actions.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: AMD Radeon Pro W7800 48GB x2, gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+Fork: jeffdaily/STRUMPACK moat-port, commit `ab5396f0f71e2c16955b6676399a68b21a601159`.
+No fork commit added (follower validation, no code change needed).
+
+### Build
+
+Cloned fork into `projects/STRUMPACK/src/`, configured and built sequentially:
+
+```
+cmake -S projects/STRUMPACK/src -B projects/STRUMPACK/build-gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=.../build-gfx1100/install \
+  -DSTRUMPACK_USE_MPI=OFF \
+  -DSTRUMPACK_USE_OPENMP=ON \
+  -DSTRUMPACK_USE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DTPL_ENABLE_SLATE=OFF -DTPL_ENABLE_PARMETIS=OFF \
+  -DTPL_ENABLE_SCOTCH=OFF -DTPL_ENABLE_PTSCOTCH=OFF \
+  -DTPL_ENABLE_BPACK=OFF -DTPL_ENABLE_ZFP=OFF -DTPL_ENABLE_COMBBLAS=OFF \
+  -DTPL_METIS_PREFIX=/usr \
+  -DBLAS_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas.so \
+  -DLAPACK_LIBRARIES=/usr/lib/x86_64-linux-gnu/libopenblas.so
+cmake --build projects/STRUMPACK/build-gfx1100 -j64
+```
+
+Build time: 18.4s (library only; linking examples adds ~10s). Clean exit, no warnings about
+`--offload-arch` on host TUs.
+
+### gfx1100 code-object evidence
+
+`llvm-objdump --offloading` on both HIP objects:
+- `FrontHIP.hip.o`: `hipv4-amdgcn-amd-amdhsa--gfx1100`
+- `HIPWrapper.hip.o`: `hipv4-amdgcn-amd-amdhsa--gfx1100`
+
+No `gfx90a` literal anywhere in the source or CMake. The arch flows entirely from
+`CMAKE_HIP_ARCHITECTURES=gfx1100` at configure time.
+
+### Host CXX flag check (fix #1 verification)
+
+From `CMakeFiles/strumpack.dir/flags.make`:
+```
+HIP_FLAGS = -O3 -DNDEBUG -std=c++17 --offload-arch=gfx1100 -fPIC
+CXX_FLAGS = -O3 -DNDEBUG -fPIC -Wall -Wno-overloaded-virtual -fopenmp
+```
+CXX_FLAGS has no `-x hip` and no `--offload-arch`. The offload flag appears only in
+HIP_FLAGS (applied to `.hip` TUs). Fix #1 confirmed effective on gfx1100.
+
+### GPU factor+solve validation (ALL PASS)
+
+Custom harness `agent_space/strumpack_validate.cpp` (same as gfx90a), built and linked:
+```
+g++ -std=c++17 -O2 -fopenmp -I.../src/src -I.../build-gfx1100 \
+  -c agent_space/strumpack_validate.cpp -o agent_space/strumpack_validate_gfx1100.o
+/opt/rocm/bin/hipcc --offload-arch=gfx1100 agent_space/strumpack_validate_gfx1100.o \
+  build-gfx1100/libstrumpack.a \
+  -L/opt/rocm/lib -lrocsolver -lrocblas -lhipblas -lhipsparse \
+  /usr/lib/x86_64-linux-gnu/libopenblas.so /usr/lib/x86_64-linux-gnu/libmetis.so \
+  -lgfortran -fopenmp -o agent_space/strumpack_validate_gfx1100
+HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=16 OMP_NUM_THREADS=16 \
+  agent_space/strumpack_validate_gfx1100 40
+```
+
+Results at n=40 (64000 unknowns):
+- GPU relative residual ||Ax-b||/||b|| = 7.476e-15 (converged)
+- CPU reference residual = 6.439e-15
+- ||x_gpu - x_cpu||_inf / ||x_cpu||_inf = 8.216e-15 (GPU matches CPU to machine eps)
+- ||x_gpu - x_exact||_inf / ||x_exact|| = 5.773e-14 (matches exact solution to near-eps)
+- ||x_gpu1 - x_gpu2||_inf = 0.000e+00 (BITWISE IDENTICAL -- deterministic)
+
+Test time (timeit): 4.2s. Exit 0. PASS.
+
+Additional shipped examples:
+- `testPoisson3d 50` (125000 unknowns): COMPONENTWISE SCALED RESIDUAL = 2.43e-15 (1 Krylov iter).
+- `testMMdouble pde900.mtx`: COMPONENTWISE SCALED RESIDUAL = 3.90e-16, RELATIVE ERROR = 5.05e-16.
+- `test_sparse_seq pde900.mtx`: EXIT 0, SCALED RESIDUAL = 3.90e-16.
+
+All results match gfx90a (MI250X, wave64) closely. The rocSOLVER/rocSPARSE calls are
+arch-agnostic; the multifrontal LU + triangular solve correct on gfx1100 (RDNA3, wave32)
+confirms the port's wave64-to-wave32 portability.
