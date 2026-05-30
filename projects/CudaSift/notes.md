@@ -227,3 +227,43 @@ and prefix-sum reductions) produce CORRECT on-device output: descriptors are
 unit-length, extraction is bit-reproducible (100% position match across runs),
 and the recovered homography geometry is accurate (translation within ~0.3 px).
 The static wave64 parity analysis is now confirmed on real gfx90a.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100, wave32), ROCm 7.2.1. Used HIP_VISIBLE_DEVICES=0 (in-process ordinal 0). Binaries embed `hipv4-amdgcn-amd-amdhsa--gfx1100` (verified via `roc-obj-ls`).
+
+CMakeLists.txt fix: the original port hardcoded `HIP_ARCHITECTURES "gfx90a"` in `set_target_properties`. Added a guard that reads from `CMAKE_HIP_ARCHITECTURES` (defaulting to gfx90a if unset) so follower platforms can pass `-DCMAKE_HIP_ARCHITECTURES=gfx1100` at configure time. The CI smoketest workflow `.github/workflows/rocm-build-smoketest.yml` was also added (rocm/dev-ubuntu-24.04, compile-only, not a correctness gate). These changes were amended into the port commit; new fork head SHA: 0523b54.
+
+OpenCV install: `sudo apt-get install -y libopencv-dev` -> 4.6.0 (was absent on this host).
+
+### Build commands (gfx1100, run from /var/lib/jenkins/moat)
+```
+sudo apt-get install -y libopencv-dev
+utils/timeit.sh CudaSift compile -- cmake -S projects/CudaSift/src \
+  -B projects/CudaSift/src/build-hip -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release
+utils/timeit.sh CudaSift compile -- cmake --build projects/CudaSift/src/build-hip -j
+```
+Configure: exit 0 (~1.9s). Build: exit 0 (~4.8s). All targets built: cudasift_lib, cudasift, test_extract, test_match, test_homography, benchmark, demo_extract, demo_match, demo_video. Warnings: ~152 `-Wunused-value` (nodiscard hipError_t, pre-existing pattern), 4 `-Wliteral-conversion`, 2 `-Wnan-infinity-disabled`.
+
+### Test results (gfx1100)
+```
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_extract
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_match
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_homography
+```
+
+| test            | exit | result            | key numbers |
+|-----------------|------|-------------------|-------------|
+| test_extract    | 0    | 10 passed, 0 fail | basic 1910 kpts (all valid, descriptors unit-norm); thresh monotonic 7077/1910/542/6; reproducibility 1910/1910 = 100%; scaleUp 3104 > normal 1910 |
+| test_match      | 0    | 11 passed, 0 fail | self-match 1901/1910 score>0.95; cross img1/img2 1910 vs 2084 feats, all valid; homography 850 RANSAC / 827 inliers; match 0.31 ms |
+| test_homography | 0    | 8 passed, 0 fail  | translation (30,20) recovered h[2]=30.14 h[5]=20.28, 1636 matches; rotation 10deg 1195; scale 0.8 943; PGM pair L1452/R2082, 754 RANSAC / 675 inliers |
+
+PASS/FAIL: PASS (29/29 sub-checks across the three binaries, all exit 0). No GPU page fault, no safeCall abort, no crash; dmesg clean.
+
+### Wave32 analysis (gfx1100)
+gfx1100 is wave32. The width-32 subgroup shuffles (`__shfl_*(var, delta, width=32)`) in cudautils.h ShiftDown/Up/Shuffle map 1:1 to the native 32-lane wave on gfx1100 -- this is the straightforward case. The `__any_sync -> __any` mapping (FindPointsMulti kernels, 32-thread blocks) polls all active lanes, matching the original intent. The descriptor-norm partial-sum pattern (`sums[idx/32]`, 4 slots for 128 threads) is a layout constant, not wave-size-dependent. Result: numeric output matches gfx90a (same keypoint counts, same correctness checks), confirming the shuffle-width concern is a non-issue on wave32.
+
+### Fork push status
+The fork push (amended commit 0523b54 to jeffdaily/CudaSift moat-port) could not be completed: the jeffdaily GitHub HTTPS token on this host is expired (401). The commit is staged locally. The user needs to refresh the jeffdaily token or push manually: `cd projects/CudaSift/src && git push --force-with-lease origin moat-port`.
