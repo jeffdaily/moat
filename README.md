@@ -46,7 +46,12 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | amgcl | [ddemidov/amgcl](https://github.com/ddemidov/amgcl) | - | todo | gated | gated |
 | CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | - | review | gated | gated |
 | cupoch | [neka-nat/cupoch](https://github.com/neka-nat/cupoch) | - | todo | gated | gated |
+| popsift | [alicevision/popsift](https://github.com/alicevision/popsift) | - | todo | gated | gated |
+| ElasticFusion | [mp3guy/ElasticFusion](https://github.com/mp3guy/ElasticFusion) | - | todo | gated | gated |
 | cucim | [rapidsai/cucim](https://github.com/rapidsai/cucim) | - | todo | gated | gated |
+| gtsam_points | [koide3/gtsam_points](https://github.com/koide3/gtsam_points) | - | todo | gated | gated |
+| RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | - | todo | gated | gated |
+| MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | - | todo | gated | gated |
 <!-- MOAT:TABLE:END -->
 
 ## Layout
