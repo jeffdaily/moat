@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "amgcl",
   "upstream_url": "https://github.com/ddemidov/amgcl",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/amgcl",
   "fork_default_branch": "master",
   "priority": 5.432,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-30T07:21:06Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T07:28:58Z",
+  "head_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
       "started_at": "2026-05-30T07:08:22Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T07:21:06Z",
+      "completed_at": "2026-05-30T07:28:58Z",
+      "updated_at": "2026-05-30T07:28:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:04:57Z",
+      "updated_at": "2026-05-30T07:28:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:04:57Z",
+      "updated_at": "2026-05-30T07:28:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
