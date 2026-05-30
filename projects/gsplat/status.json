@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "gsplat",
   "upstream_url": "https://github.com/nerfstudio-project/gsplat",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/gsplat",
   "fork_default_branch": "main",
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-05-30T08:21:51Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T08:34:08Z",
+  "head_sha": "621ebd6e74b4dfabb3e64fdaaa2e7ed3941a5f08",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "621ebd6e74b4dfabb3e64fdaaa2e7ed3941a5f08",
       "started_at": "2026-05-30T07:12:53Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T08:21:51Z",
+      "completed_at": "2026-05-30T08:34:08Z",
+      "updated_at": "2026-05-30T08:34:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:02Z",
+      "updated_at": "2026-05-30T08:34:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:02Z",
+      "updated_at": "2026-05-30T08:34:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
