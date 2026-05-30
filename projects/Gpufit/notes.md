@@ -198,3 +198,55 @@ identical chi2/status to gfx90a.
 
 Bouncing to porter for the one-line tolerance fix in
 Gpufit/tests/Gauss_Fit_2D_Rotated.cpp line 97.
+
+## Delta-port 2026-05-30 (gfx1100 wave32 tolerance fix)
+
+Applied the wave32 tolerance fix the validator diagnosed. Two edits, both
+HIP-guarded so the CUDA/NVIDIA assertions are byte-for-byte unchanged (this
+commit is the upstream PR):
+
+1. `Gpufit/tests/Gauss_Fit_2D_Rotated.cpp` -- relax ONLY parameter[6] (rotation
+   angle r) from `< 1e-6f` to `< 3e-6f`, gated `#if defined(USE_HIP)` (CUDA keeps
+   `1e-6f` in the `#else`). Observed wave32 error was 1.13e-6 (chi^2 ~2.84e-12,
+   converged); 3e-6f is ~2.6x margin over the observed error, still tight. Picked
+   3e-6f over the validator's suggested 2e-6f because 2e-6f is only ~1.77x the
+   observed error -- too thin for a deterministic-but-FP-order-sensitive iterate.
+
+2. `CMakeLists.txt` (`add_boost_test`) -- the test executables compile only the
+   `.cpp` (host CXX) and link the Gpufit lib, so they did NOT receive `-DUSE_HIP`
+   (it is PRIVATE to the Gpufit target). The proposed `#if defined(USE_HIP)` guard
+   would have been silently false in the HIP build, leaving the strict 1e-6f and
+   re-failing. Fix: add `target_compile_definitions(${target} PRIVATE USE_HIP)`
+   under `if(USE_HIP)` so the test TU gets the define. Guarded by `if(USE_HIP)`,
+   so the CUDA build is untouched. (`__HIP_PLATFORM_AMD__` does leak transitively
+   into the test TU via `hip::host`, but an explicit USE_HIP guard is the robust,
+   self-documenting discriminator; relying on a leaked define is fragile.)
+
+GOTCHA (the load-bearing one): in this project the Boost test targets do NOT
+inherit the library's PRIVATE `USE_HIP` define -- verify the guard symbol is
+actually in the test TU's `CXX_DEFINES` (build-hip/.../<test>.dir/flags.make)
+before trusting a compile-time `#if`. Confirmed present after the CMake fix:
+`CXX_DEFINES = -DUSE_HIP -DUSE_PROF_API=1 -D__HIP_PLATFORM_AMD__=1`.
+
+### Local gfx1100 re-run (AMD Radeon Pro W7800, wave32, ROCm 7.2.1)
+
+Reused the existing build-hip config (USE_HIP=ON, CMAKE_HIP_ARCHITECTURES=gfx1100,
+USE_CUBLAS=OFF, Release). The CMakeLists.txt edit triggered a reconfigure; build
+clean to 100%.
+
+```
+cmake --build projects/Gpufit/src/build-hip -j
+cd projects/Gpufit/src/build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1
+```
+
+`Gpufit_Test_Gauss_Fit_2D_Rotated` now: 11/11 assertions pass (line 102, the
+`< 3e-6f` HIP branch, passes), "test module Gpufit has passed", exit 0. Full
+ctest: 100% tests passed, 0 failed out of 10 (the 9 known-answer suites +
+Cpufit_Gpufit_Test_Consistency). No regression.
+
+Amended the single curated commit (no second commit). New fork SHA:
+`5ab0c059ed761d571c3e66a519f3246a62184145`, pushed --force-with-lease to
+jeffdaily/Gpufit moat-port (lease baseline 0015899...). head_sha advanced to
+5ab0c05; gfx90a stays `revalidate` against this final SHA (revalidates once).
+
+Result: linux-gfx1100 -> delta-ported. No blockers.
