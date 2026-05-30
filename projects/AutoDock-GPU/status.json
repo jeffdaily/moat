@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "AutoDock-GPU",
   "upstream_url": "https://github.com/ccsb-scripps/AutoDock-GPU",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/AutoDock-GPU",
   "fork_default_branch": "develop",
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-05-30T07:04:58Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T07:14:04Z",
+  "head_sha": "4a860c8fe1b57b0ebfbbf7a87b65f4528fc6dc41",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "4a860c8fe1b57b0ebfbbf7a87b65f4528fc6dc41",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T07:04:58Z",
+      "completed_at": "2026-05-30T07:14:04Z",
+      "updated_at": "2026-05-30T07:14:04Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:46:51Z",
+      "updated_at": "2026-05-30T07:14:04Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:46:51Z",
+      "updated_at": "2026-05-30T07:14:04Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
