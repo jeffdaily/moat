@@ -192,3 +192,45 @@ HAC output: 50 rows x 11 columns, time grid 0.1-9.9 ps (matches reference exactl
 ### Result: PASS
 
 No source or build change was needed (zero-change follower validation). Fork was NOT pushed; curated commit 65b4ded is untouched. validated_sha = 65b4ded54e7118861a9cb6de6ca3e8ca0e2f1b3e.
+
+## Validation 2026-05-30 (windows-gfx1151, TheRock ROCm) -- follower, NO source change
+
+Platform: AMD Radeon 8060S (gfx1151, RDNA3.5, integrated APU), Windows 11. ROCm via
+TheRock wheels (rocm-sdk 7.14.0a20260519, hip 7.13.26190), hipcc = clang 23. Validated
+fork moat-port HEAD 65b4ded54e7118861a9cb6de6ca3e8ca0e2f1b3e unchanged -- the follower
+needs no fork edit (the makefile.hip HIP_ARCH param already added by the lead does the job).
+
+### Build (no source change)
+    cd projects/GPUMD/src/src
+    # env: TheRock _rocm_sdk_devel/bin + lib/llvm/bin on PATH, HIP_PATH=<rocm root>,
+    #      HIP_DEVICE_LIB_PATH=<rocm>/lib/llvm/amdgcn/bitcode, MSVC cl dir ahead of MSYS link.exe
+    mingw32-make -f makefile.hip gpumd HIP_ARCH=gfx1151 LDFLAGS="-L<rocm>/lib" -j16
+Builds clean (only benign -Wnodiscard warnings, zero errors) -> gpumd (13.7 MB). The only
+Windows-specific invocation detail vs Linux is `LDFLAGS=-L<rocm>/lib` so lld-link finds
+hipblas/hipsolver/hipfft import libs (on Linux /opt/rocm/lib is the default search path);
+this is an environment flag, NOT a source/makefile change. hipBLAS/hipSOLVER/hipFFT/hipRAND
++ rocThrust all resolve from the TheRock wheel. A single hipSOLVER TU (cusolver_wrapper.cu)
+and the full link both succeed. Renamed the output to gpumd.exe to run on Windows.
+
+### Validation (real gfx1151 GPU, HIP_VISIBLE_DEVICES=0) -- three MD workloads, all PASS
+Acceptance gate per the gfx90a/gfx1100 records: clean exit, no HIP fault (GPUMD calls
+gpuGetLastError after every kernel via GPU_CHECK_KERNEL), no NaN, energy conservation
+(chaotic MD is not bit-exact run-to-run or cross-vendor).
+
+1. tests/gpumd/carbon (NEP4 potential, NVE, 100 steps): exit 0, empty stderr, no NaN.
+   Total energy Etot=KE+PE conserved: range 1.43e-1 on |Etot|~1.6e5 -> ~9e-7 relative
+   (matches the gfx90a/gfx1100 "~1e-6" level). PASS.
+2. tests/gpumd/graphene_dos (Tersoff, compute_dos via VAC + hipFFT, 2x10000 steps):
+   exit 0, empty stderr. dos.out 200x4 + mvac.out + velocity.out all finite, no NaN.
+   Exercises the hipFFT path. PASS.
+3. tests/gpumd/graphene_kappa_emd (Tersoff, compute_hac EMD thermal transport, 2x10000):
+   exit 0, empty stderr. hac.out 50x11 finite, no NaN (matches gfx1100's 50x11). PASS.
+
+### Notes
+- GPUMD is compute-heavy (kernels + hipBLAS/hipSOLVER/hipFFT) and does NOT query
+  hipMemGetInfo, so it is unaffected by the gfx1151-APU runtime gap that blocked rmm; it
+  runs cleanly on the APU just like the gsplat PyTorch workloads did.
+- No warp intrinsics (block-level __syncthreads reductions only), so wave32 is correct by
+  construction -- confirmed by the clean energy-conserving runs (same as the gfx1100 wave32
+  result). No wave-size or any source fix required for gfx1151.
+State: port-ready -> completed (validated_sha 65b4ded, fork unchanged).
