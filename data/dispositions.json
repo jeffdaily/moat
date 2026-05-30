@@ -1,4 +1,18 @@
 {
+  "1catai/1cat-vllm": {
+    "decided": "2026-05-30T00:00:41Z",
+    "disposition": "skip",
+    "full_name": "1CatAI/1Cat-vLLM",
+    "note": "vLLM umbrella; AMD supports vLLM (vllm-project/vllm), not derivatives",
+    "reason": "ported-elsewhere"
+  },
+  "alibaba/rtp-llm": {
+    "decided": "2026-05-30T00:00:41Z",
+    "disposition": "verify",
+    "full_name": "alibaba/rtp-llm",
+    "note": "Alibaba inference engine, not a vLLM fork; verify ROCm status",
+    "reason": "verify"
+  },
   "arrayfire/arrayfire": {
     "decided": "2026-05-29T23:30:02Z",
     "disposition": "verify",
@@ -55,6 +69,13 @@
     "note": "has a HIP backend",
     "reason": "already-supported"
   },
+  "dphnai/aphrodite-engine": {
+    "decided": "2026-05-30T00:00:41Z",
+    "disposition": "skip",
+    "full_name": "dphnAI/aphrodite-engine",
+    "note": "vLLM fork; AMD officially supports vLLM, not forks",
+    "reason": "ported-elsewhere"
+  },
   "dtolm/vkfft": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "verify",
@@ -104,6 +125,13 @@
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
   },
+  "insight-platform/savant": {
+    "decided": "2026-05-30T00:00:41Z",
+    "disposition": "skip",
+    "full_name": "insight-platform/Savant",
+    "note": "built on NVIDIA DeepStream; no AMD equivalent",
+    "reason": "not-a-target"
+  },
   "jittor/jittor": {
     "decided": "2026-05-29T23:23:27Z",
     "disposition": "verify",
@@ -116,6 +144,13 @@
     "disposition": "skip",
     "full_name": "JuliaGPU/CUDA.jl",
     "note": "Julia CUDA toolchain; AMDGPU.jl is the AMD-side equivalent",
+    "reason": "not-a-target"
+  },
+  "marcoslucianops/deepstream-yolo": {
+    "decided": "2026-05-30T00:00:41Z",
+    "disposition": "skip",
+    "full_name": "marcoslucianops/DeepStream-Yolo",
+    "note": "NVIDIA DeepStream SDK-locked; no AMD equivalent",
     "reason": "not-a-target"
   },
   "numba/numba": {
@@ -203,11 +238,11 @@
     "reason": "already-supported"
   },
   "vllm-project/vllm": {
-    "decided": "2026-05-29T23:41:51Z",
+    "decided": "2026-05-30T00:00:41Z",
     "disposition": "skip",
     "full_name": "vllm-project/vllm",
-    "note": "ROCm supported upstream",
-    "reason": "already-supported"
+    "note": "vLLM umbrella; AMD supports vLLM (vllm-project/vllm), not derivatives",
+    "reason": "ported-elsewhere"
   },
   "xlite-dev/leetcuda": {
     "decided": "2026-05-29T23:13:18Z",
