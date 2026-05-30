@@ -1,0 +1,8 @@
+{
+  "full_name": "NVIDIA/cuCollections",
+  "upstream_url": "https://github.com/NVIDIA/cuCollections",
+  "default_branch": "dev",
+  "fork_url": null,
+  "ext_type": "cmake",
+  "base_sha": null
+}

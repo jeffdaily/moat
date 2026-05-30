@@ -1,23 +1,24 @@
 {
   "schema_version": 1,
-  "name": "cudf",
-  "upstream_url": "https://github.com/rapidsai/cudf",
+  "name": "cuCollections",
+  "upstream_url": "https://github.com/NVIDIA/cuCollections",
   "fork_url": null,
-  "fork_default_branch": "main",
-  "priority": 6.998,
+  "fork_default_branch": "dev",
+  "priority": 5.5,
   "ext_type": "cmake",
-  "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-30T20:36:58Z",
+  "adopted_at": "2026-05-30T20:36:22Z",
+  "updated_at": "2026-05-30T20:36:22Z",
   "head_sha": null,
+  "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "libcudf core needs cuCollections (CCCL-native concurrent hashtable, NO ROCm fork; gates join/groupby/hash/reductions/stream_compaction/search) + jitify/NVRTC (binaryop/transform/rolling); the 404-file C++20 monolith fails to compile at the foundational column_device_view.cu via the __CUDACC__-gated CUDF_HOST_DEVICE macro cascade (46 guard sites/22 headers). nvCOMP (proprietary, unportable) and KvikIO are io-only so cuIO is separable. Arrow is NOT a blocker (v25.08 uses nanoarrow). rmm dependency recipe validated and works. Port needs cuCollections ported first as its own target.",
+      "state": "unclaimed",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
-      "started_at": "2026-05-30T20:28:26Z",
+      "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T20:33:11Z",
+      "updated_at": "2026-05-30T20:36:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -39,7 +40,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T20:36:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,7 +62,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-29T23:30:03Z",
+      "updated_at": "2026-05-30T20:36:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,9 +77,5 @@
         "last_session_at": null
       }
     }
-  },
-  "depends_on": [
-    "rmm",
-    "cuCollections"
-  ]
+  }
 }

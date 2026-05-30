@@ -33,8 +33,9 @@ If a project is (or is likely to be) a dependency of another MOAT target, its `n
 
 RAPIDS (port in this order):
 - `rmm` -- base, no MOAT deps.
+- `cuCollections` -- base (NVIDIA CCCL-native concurrent hashtables: static_map/static_set/static_multimap). No ROCm fork exists, so it must be ported from scratch. Consumed by `cudf` (join/groupby/hash/reductions/search) and other hashtable users.
 - `raft` -- depends on `rmm`.
-- `cudf` -- depends on `rmm`.
+- `cudf` -- depends on `rmm`, `cuCollections`.
 - `cuvs` -- depends on `rmm`, `raft`.
 - `cugraph` -- depends on `rmm`, `raft`, `cudf`.
 - `cuml` -- depends on `rmm`, `raft`, `cuvs`, `cudf`.
