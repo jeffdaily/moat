@@ -40,7 +40,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | k2 | [k2-fsa/k2](https://github.com/k2-fsa/k2) | - | todo | gated | gated |
 | raft | [rapidsai/raft](https://github.com/rapidsai/raft) | - | todo | gated | gated |
 | heavydb | [heavyai/heavydb](https://github.com/heavyai/heavydb) | - | todo | gated | gated |
-| rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | - | todo | gated | gated |
+| rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | [rmm](https://github.com/jeffdaily/rmm/tree/moat-port) | done | validating | validating |
 | cuvs | [rapidsai/cuvs](https://github.com/rapidsai/cuvs) | - | todo | gated | gated |
 | GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | [GPUMD](https://github.com/jeffdaily/GPUMD/tree/moat-port) | done | done | validating |
 | amgcl | [ddemidov/amgcl](https://github.com/ddemidov/amgcl) | [amgcl](https://github.com/jeffdaily/amgcl/tree/moat-port) | done | done | validating |
@@ -53,7 +53,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | ZhiLight | [zhihu/ZhiLight](https://github.com/zhihu/ZhiLight) | - | todo | gated | gated |
 | SpargeAttn | [thu-ml/SpargeAttn](https://github.com/thu-ml/SpargeAttn) | - | todo | gated | gated |
 | 3DUNDERWORLD-SLS-GPU_CPU | [theICTlab/3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port) | done | done | validating |
-| STRUMPACK | [pghysels/STRUMPACK](https://github.com/pghysels/STRUMPACK) | - | planned | gated | gated |
+| STRUMPACK | [pghysels/STRUMPACK](https://github.com/pghysels/STRUMPACK) | [STRUMPACK](https://github.com/jeffdaily/STRUMPACK/tree/moat-port) | done | validating | validating |
 | AutoDock-GPU | [ccsb-scripps/AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) | [AutoDock-GPU](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port) | done | done | validating |
 | FlashKDA | [MoonshotAI/FlashKDA](https://github.com/MoonshotAI/FlashKDA) | - | todo | gated | gated |
 | 3P-ADMM-PC2 | [Samarvivian/3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) | - | todo | gated | gated |
