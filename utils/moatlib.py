@@ -22,6 +22,7 @@ SCHEMA_VERSION = 1
 
 LEAD = "linux-gfx90a"
 PLATFORMS = ["linux-gfx90a", "linux-gfx1100", "windows-gfx1151"]
+PORT_BRANCH = "moat-port"  # the topic branch that holds the port on each fork
 
 # Per-platform pipeline. blocked-needs-gfx90a is the follower start state; the
 # `blocked` boolean (needs user input) is orthogonal and set separately.

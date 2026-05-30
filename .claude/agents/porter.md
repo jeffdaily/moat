@@ -14,7 +14,7 @@ You are the MOAT porter. You implement the port on the jeffdaily fork for the cu
 
 ## Steps
 1. Ensure the jeffdaily fork exists: `gh repo fork <full_name> --clone=false` (stay on the jeffdaily account; never an AMD-internal account). Record fork_url in upstream.json and status.json.
-2. Ensure projects/<name>/src/ is the fork clone with the fork as `origin`. The fork default branch holds the unified port (MOAT convention).
+2. Ensure projects/<name>/src/ has the jeffdaily fork as a remote. Put the port on a `moat-port` topic branch; the fork's default branch stays a clean mirror of upstream. The single upstream PR is `moat-port` -> upstream default.
 3. Apply plan.md. Strategy A: add the single `cuda_to_hip.h` compat header, `enable_language(HIP)` + `set_source_files_properties(... LANGUAGE HIP)`, keep other files in CUDA spelling. Strategy B: rely on torch build-time hipify; fix only what hipify cannot.
 4. Honor the fault classes (PORTING_GUIDE): a warp_size abstraction (never literal 32), rule-of-five on texture/resource handles, clamp OOB neighbor reads, 256B texture pitch, library swaps. Any fix to shared (non-arch-guarded) code MUST be arch-unified (correct on wave32 AND wave64), never a per-arch hack that ping-pongs platforms.
 5. Build for the detected arch, wrapped: `utils/timeit.sh <name> compile -- <build cmd>`.

@@ -79,7 +79,7 @@ def render_table(projects):
         name = p.get("name", "?")
         up = owner_repo(p.get("upstream_url"))
         upstream = f"[{up}]({p.get('upstream_url')})"
-        fork = f"[{name}]({p['fork_url']})" if p.get("fork_url") else "-"
+        fork = f"[{name}]({p['fork_url']}/tree/{moatlib.PORT_BRANCH})" if p.get("fork_url") else "-"
         plats = p.get("platforms", {})
         cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
         lines.append(f"| {name} | {upstream} | {fork} | {cells[0]} | {cells[1]} | {cells[2]} |")

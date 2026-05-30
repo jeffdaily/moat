@@ -26,7 +26,7 @@ Stop and ask on genuine blockers instead of guessing or thrashing: an unresolvab
 
 - All forks and all work under the `jeffdaily` GitHub account. Do not switch to any AMD-internal account; MOAT is public.
 - Never ghstack.
-- The MOAT repo itself takes commits on top and is never force-pushed. Subproject forks are the deliberate exception: keep a clean curated commit (amend/rebase as needed) and `git push --force-with-lease`, with the commit title and body kept current with the latest port state. Bare `--force` without lease is forbidden everywhere.
+- The MOAT repo itself takes commits on top and is never force-pushed. Subproject forks are the deliberate exception: keep a clean curated commit (amend/rebase as needed) and `git push --force-with-lease`, with the commit title and body kept current with the latest port state. Bare `--force` without lease is forbidden everywhere. The port lives on a `moat-port` topic branch (the fork's default branch stays a clean upstream mirror); the single upstream PR is `moat-port` -> upstream default.
 - Validation means exercising the change on real GPU. Lint is not validation. A CPU-only docker build smoketest proves compilation only, never GPU correctness, so it is never the sole validation gate.
 - Commit titles: prefix `[ROCm]`, <= 72 chars. Body mentions Claude by name; no `Co-Authored-By: noreply` trailer.
 - Prose: "ROCm" casing (code identifiers like USE_ROCM and arch names like gfx90a stay as-is). ASCII only, no em-dash (use -- or ; or parentheses). Do not manually line-wrap GitHub or markdown prose; let it reflow. No sycophancy.
