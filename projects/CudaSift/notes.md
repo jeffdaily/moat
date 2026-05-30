@@ -324,3 +324,40 @@ recovered geometry). The gfx1100 delta did NOT regress gfx90a.
 State: linux-gfx90a `revalidate` -> `completed`, validated_sha set to the
 rebuilt HEAD `0523b54` (full SHA 0523b540bf209af49f755c52af49cc2a057b95db) via
 `python3 utils/moatlib.py set-state CudaSift linux-gfx90a completed --agent validator`.
+
+## Validation 2026-05-30 (windows-gfx1151, TheRock ROCm) -- follower, NO source change
+
+Platform: AMD Radeon 8060S (gfx1151, RDNA3.5, integrated APU), Windows 11. ROCm via
+TheRock wheels (rocm-sdk 7.14.0a20260519, hip 7.13.26190, hipcc=clang 23). Validated fork
+moat-port HEAD 0523b54 unchanged (zero-churn follower).
+
+### Build (no source change; all-clang CMake HIP)
+    cmake -S projects/CudaSift/src -B build-hip -GNinja -DUSE_HIP=ON \
+      -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang++ \
+      -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++ \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_PREFIX_PATH=<rocm> \
+      -DOpenCV_DIR=<opencv>/build/x64/vc16/lib -DCMAKE_BUILD_TYPE=Release
+    cmake --build build-hip -j16
+Builds clean (exit 0) -> cudasift_lib + cudasift + test_extract/test_match/test_homography
++ benchmark + demos. Windows specifics (env/deps, NOT source changes): CXX and HIP must both
+be clang (CMake refuses to mix Clang-HIP with MSVC-CXX); OpenCV is the prebuilt 4.11.0
+Windows pack (opencv.org), with OpenCV_DIR pointed at .../build/x64/vc16/lib directly (the
+top-level OpenCVConfig.cmake rejects a non-MSVC compiler) -- the vc16 opencv_world4110.lib
+links fine into the clang build (MSVC ABI). At runtime put opencv_world4110.dll's bin dir +
+the rocm bin on PATH, and run from projects/CudaSift/src (tests load data/img1.png relative
+to cwd).
+
+### Validation (real gfx1151 GPU, HIP_VISIBLE_DEVICES=0, run from src/)
+- test_extract:    10 passed, 0 failed (basic ~kpts all valid + unit-norm descriptors;
+  threshold monotonic; octave count; reproducibility >95%; scale-up detects more). 
+- test_match:      11 passed, 0 failed (refined homography >10 inliers; non-identity;
+  low reprojection error; matching < 2-5 ms).
+- test_homography:  8 passed, 0 failed (RANSAC 753 matches / 674 inliers on the stereo
+  pair; both images > 100 features; > 20 matches).
+Matches the gfx90a/gfx1100 results. No NaN, clean exit, no HIP fault.
+
+### Notes
+- Compute-based (SIFT image-processing kernels), no rocSPARSE/hipMemGetInfo use, so
+  unaffected by the gfx1151-APU runtime gaps that blocked rmm/amgcl -- runs clean on the
+  APU like gsplat and GPUMD. No warp-size or any source fix required for gfx1151.
+State: port-ready -> completed (validated_sha 0523b54, fork unchanged).
