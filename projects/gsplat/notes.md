@@ -200,6 +200,56 @@ ROCm (FAST_MATH=1 still opt-in); CUDA default unchanged. NOT a wave64/port defec
        PASS. (Gradient atomicAdd order is non-deterministic on any GPU incl. CUDA;
        the forward has no shared-output atomics so it is bit-exact.)
 
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1.
+conda env py_3.12, torch 2.13.0a0+gitb5e90ff, torch.version.hip 7.2.53211.
+Fork tip validated: 621ebd6e74b4dfabb3e64fdaaa2e7ed3941a5f08.
+
+### Build command
+    cd projects/gsplat/src
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 BUILD_3DGUT=0 BUILD_CAMERA_WRAPPERS=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -v
+No fork modification required (follower reuses gfx90a moat-port commit).
+
+### Code-object evidence
+    roc-obj-ls gsplat/csrc.so | grep gfx1100 | wc -l  -> 20
+All 20 code objects are hipv4-amdgcn-amd-amdhsa--gfx1100; no other arch present.
+
+### pytest test suite (tests/test_basic.py)
+Command:
+    cd projects/gsplat/src && HIP_VISIBLE_DEVICES=0 python3 -m pytest tests/test_basic.py \
+        -k "(test_quat_scale_to_covar_preci or test_proj or test_projection or \
+             test_fully_fused_projection_packed or test_isect or test_sh) and not lidar" -v
+Result: 102 passed, 6 skipped, 0 failures -- identical to gfx90a result.
+Run twice for determinism: both runs 102 passed, 6 skipped.
+The 6 skips: 3 test_isect + 3 test_projection_ut_* (3DGUT/lidar, excluded by BUILD_3DGUT=0).
+
+Tests covered (forward + autograd.grad backward):
+- test_quat_scale_to_covar_preci: covariance/precision matrix computation
+- test_proj, test_projection: 3DGS projection fwd+bwd for pinhole/ortho/fisheye
+- test_fully_fused_projection_packed: packed/fused LabeledGroup projection bwd
+- test_sh: spherical harmonics
+All compare HIP ext output vs pure-torch reference at the upstream test tolerances.
+
+### Standalone rasterization fwd+bwd validation (agent_space/gsplat_validate_gfx1100.py)
+(nerfacc CUDA wheel not available on ROCm; test_rasterization.py test_rasterization[...]
+failures are all ModuleNotFoundError: nerfacc, same as on gfx90a, not a numeric defect.)
+
+[B] Forward: render [0, 0.84], alpha [0, 1.0], 95.8% pixels lit (alpha>0.1). No NaN/Inf. PASS.
+[C] Backward: analytic d(loss)/d(colors) vs finite-diff over top contributing gaussians:
+    max rel err = 1.19e-3 (<2%). PASS.
+[D] Determinism: render + alpha bit-exact across same-seed runs. Gradient rel diff 8.73e-06. PASS.
+
+### wave32 warp-tile reductions
+gfx1100 is RDNA3 (wave32). tiled_partition<32> creates tiles that are exactly ONE full
+wavefront on gfx1100, so each tile's butterfly shfl_xor reduction (warpReduceSum/Max) and
+LabeledGroup match_any logic operate on a single wavefront with no inter-wavefront
+coordination needed. The 102/102 projection fwd+bwd and the rasterization fwd+bwd results
+confirm the custom warpSum/warpMax (fault 4) and LabeledGroup via match_any (fault 7) are
+correct on wave32. No wave-size source fix required for gfx1100.
+
 ## Scope / known limitations on this ROCm stack
 - BUILD_3DGUT=0: the 3DGUT/eval3d/unscented-transform path (RasterizeToPixelsFrom
   World*, ProjectionUT3DGS*) uses cuda::std::optional, and libcu++ (<cuda/std/*>)
