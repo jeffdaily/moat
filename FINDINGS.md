@@ -4,17 +4,20 @@ Upstream bugs and notable issues that MOAT porting work uncovered while porting 
 
 | # | Title | Surfaced by | Arch / ROCm | Status | Upstream issue |
 |---|-------|-------------|-------------|--------|----------------|
-| 1 | HIP layered-image texture cache not invalidated at kernel-launch boundary | popsift | gfx90a / CDNA2, ROCm 7.x | Confirmed, repro ready | PENDING |
+| 1 | HIP layered cudaArray collapses its layer dimension on cross-launch read | popsift | gfx90a / CDNA2, ROCm 7.2.1 | Confirmed (multi-layer repro); root cause corrected | PENDING |
 | 2 | Integer atomicMin/atomicMax silently no-op on coarse-grained hipMallocManaged memory | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | Candidate (agent micro-test; needs standalone repro + spec check) | PENDING |
 | 3 | hipCUB DeviceRadixSort::SortKeys mis-sorts with nonzero begin_bit | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | Candidate (agent direct test: 9974/10000 misordered; needs standalone repro) | PENDING |
 
-## 1. HIP layered-image texture cache not invalidated at kernel-launch boundary
+## 1. HIP layered cudaArray collapses its layer dimension on cross-launch read
 
-A `tex2DLayered` fetch does not observe a `surf2DLayeredwrite` made to the same `cudaArrayLayered` array by a PRIOR kernel launch on the same stream (returns stale/pre-write data); a `surf2DLayeredread` of the same location is fresh. A non-layered 2D array on the same code path is coherent; `hipDeviceSynchronize` and recreating the texture do not help. CUDA and HIP both document cross-launch texture/surface coherency, so in-spec separate-launch code is mishandled. Isolated to the layered-image path; not a write-flush, stale-descriptor, or hardware limit.
+A multi-layer `cudaArrayLayered` (+ `cudaArraySurfaceLoadStore`) float array, written one layer per kernel launch via `surf2DLayeredwrite`, returns the LAST-written layer's data for EVERY layer index on any LATER-launch read -- `tex2DLayered`, `surf2DLayeredread`, AND host `hipMemcpy3D` all collapse the layer dimension. `hipDeviceSynchronize` between launches and recreating the texture/surface do not help. CUDA preserves the per-layer contents across launches, so in-spec code is mishandled.
 
-- Reproducer: `findings/popsift-texsurf-coherency/repro.cpp`
-- Full report: `findings/popsift-texsurf-coherency/BUG_REPORT.md`
-- Port workaround: read the consumer via `surf2DLayeredread` (popsift make_dog).
+CORRECTION: an earlier "the texture is stale but `surf2DLayeredread` is fresh" finding was an artifact of a repro that touched only ONE layer -- so the last-written layer equalled the layer read. With >=2 layers, surface reads collapse too, so reading via the surface does NOT fix it. A NON-layered 3D array (`hipMalloc3DArray` WITHOUT `cudaArrayLayered`, accessed via `surf3Dwrite`/`surf3Dread`/`tex3D` with the level as a real z coordinate) is fully per-slice coherent across launches (so is a tall 2D array, W x H*L).
+
+- Reproducers (decisive, multi-layer): `findings/popsift-texsurf-coherency/{multilayer_check.cpp,multilayer_check2.cpp,array3d_check.cpp,tall2d_check.cpp}`
+- Earlier single-layer repro (misleading, kept for the record): `findings/popsift-texsurf-coherency/repro.cpp`
+- Report: `findings/popsift-texsurf-coherency/BUG_REPORT.md` -- PREDATES the corrected root cause; regenerate from the multi-layer repros before filing.
+- Port workaround: drop `cudaArrayLayered` on HIP; use a non-layered 3D array (`surf3Dwrite`/`surf3Dread`/`tex3D`, level as z). In popsift this is one compat-header wrapper (`surf2DLayeredwrite` -> `surf3Dwrite`) plus routing reads through the fetch helper to `surf3Dread`.
 
 ## 2. Integer atomicMin/atomicMax silently no-op on coarse-grained hipMallocManaged memory
 
