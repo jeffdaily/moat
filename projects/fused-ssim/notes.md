@@ -106,3 +106,64 @@ Reference: `pytorch_msssim` 1.0.0 (pip) and a pure-PyTorch conv-based SSIM.
 Zero kernel/source edits. The port is "build against ROCm torch + validate";
 no fork commit carries a code change for gfx90a. No GitHub Actions added; no
 README/gen_readme changes.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+**GPU:** AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1. torch 2.13.0a0+gitb5e90ff, hip 7.2.53211. Validated sha: `666987fb33dcc378d98e5a649e13f6c6d37da620`.
+
+**Fork interaction:** none. Follower reuses the gfx90a branch unchanged; no source edit, no fork push, no CI workflow.
+
+### Build
+
+```
+bash -c "cd /var/lib/jenkins/moat/projects/fused-ssim/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python -m pip install -e . --no-build-isolation -v"
+```
+
+Compile time: 37.5s. Torch hipify rewrote `ssim.cu` -> `ssim.hip`, `ssim3d.cu` -> `ssim3d.hip` with zero unsupported CUDA calls. setup.py HIP branch: `['-O3', '-DFUSED_SSIM_CUDA', '-ffast-math']`. Module imports cleanly; `is_3D_supported=True`; all four symbols present (`fusedssim`, `fusedssim_backward`, `fusedssim3d`, `fusedssim_backward3d`).
+
+**gfx1100 code-object evidence** (`roc-obj-ls` on `fused_ssim_cuda.cpython-312-x86_64-linux-gnu.so`):
+
+```
+1  hipv4-amdgcn-amd-amdhsa--gfx1100  offset=208896 size=14896   (ssim.hip kernel)
+2  hipv4-amdgcn-amd-amdhsa--gfx1100  offset=229376 size=23312   (ssim3d.hip kernel)
+```
+
+Both kernels compiled natively for gfx1100; no gfx90a or generic-arch code objects present.
+
+### Test results (all from /tmp, HIP_VISIBLE_DEVICES=0)
+
+**1. Repo tests/test.py** (2D, 100 iters, B=5 CH=5 H=1080 W=1920, `torch.isclose` fwd + full-tensor grad `.all()` vs ref SSIM and pytorch_msssim): PASS (exit 0). Fused fwd 4.6ms vs ref 157ms.
+
+```
+cd /tmp && HIP_VISIBLE_DEVICES=0 python /var/lib/jenkins/moat/projects/fused-ssim/src/tests/test.py
+```
+
+**2. Repo tests/test_3D.py** (3D, 10 iters, B=2 CH=1 D=H=W=96, `torch.allclose` rtol=1e-6 atol=1e-8 vs conv3d ref and pytorch_msssim(spatial_dims=3)): PASS (exit 0). Fused fwd 0.33ms vs ref 452ms.
+
+```
+cd /tmp && HIP_VISIBLE_DEVICES=0 python /var/lib/jenkins/moat/projects/fused-ssim/src/tests/test_3D.py
+```
+
+Both tests run twice; identical pass results.
+
+**3. Independent harness** `agent_space/fused_ssim_validate_gfx1100.py` (2D: 4 configs CH=1/3/16, B=1..4; 3D: 3 shapes; NaN/Inf checks; bitwise determinism):
+
+```
+cd /tmp && HIP_VISIBLE_DEVICES=0 python /var/lib/jenkins/moat/agent_space/fused_ssim_validate_gfx1100.py
+```
+
+Results:
+- 2D fwd vs ref (same-padding): max|diff| = 5.22e-08 (tolerance 1e-4; 4 orders margin)
+- 2D fwd vs pm (valid-padding): max|diff| = 1.25e-07 (tolerance 1e-4; 3 orders margin)
+- 2D grad vs ref: max|diff| = 1.75e-09; 2D grad vs pm: max|diff| = 2.10e-09
+- 3D fwd vs pm: max|diff| = 1.32e-08; 3D grad vs pm: max|diff| = 3.12e-10
+- NaN/Inf: none in fwd or grad, 2D and 3D
+- Determinism: 2D and 3D fwd+grad bitwise identical across two calls within run
+
+### Comparison to gfx90a
+
+gfx90a (wave64): 2D fwd_ref ~1e-8, 2D grad ~1e-10..1e-12, 3D fwd ~5e-9, 3D grad ~1e-11.
+gfx1100 (wave32): 2D fwd_ref 5.22e-08, 2D grad 1.75e-09, 3D fwd 1.32e-08, 3D grad 3.12e-10.
+All differences between platforms are within ~1 order of magnitude and well within the asserted tolerances. The literal-32 stride in the 2D backward load is confirmed correct on wave32 (gradients pass at the same tolerance as wave64).
+
+**RESULT: PASS. linux-gfx1100 -> completed.**
