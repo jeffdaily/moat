@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T06:58:47Z",
+  "updated_at": "2026-05-30T09:21:09Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "porting",
+      "blocked": true,
+      "blocked_reason": "Dynamic mesh-editing tests (RXMeshDynamic.RandomFlips/RandomCollapse/TriangleRefinement/PatchSlicing) HANG on gfx90a: slice_patches waves spin forever in ShmemMutex::lock on a garbage __shared__ m_mutex pointer under HIP -fgpu-rdc. The static query + core data-structure path (21 tests incl. all 8 query ops x1000, Oriented_VV, EVDiamond, MultiQueries, dynamic PatchScheduler/PatchLock/Validate) is GPU-validated and passes. cusolverSp sparse-solver tests excluded (no hipSOLVER equivalent). Two targeted fixes (syncthreads in alloc, header-inline insert_patch) did not stop the spin; needs deeper GPU debugging (try non-rdc dynamic path or recompute shared mutex addr in callee). See notes.md.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-30T09:21:09Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T06:58:47Z",
+      "updated_at": "2026-05-30T09:21:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
