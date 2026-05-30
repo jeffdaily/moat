@@ -154,3 +154,68 @@ cmake --build build-hip --target solver_hip -j
 ```
 
 Toolchain: ROCm 7.2.1, hipSPARSE 4.2.0 / rocSPARSE 4.2.0, gfx90a (MI250X).
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100. Host: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), 4 GPUs. HIP_VISIBLE_DEVICES=0.
+Fork branch moat-port at head_sha f4b87da72010e59e944847380ea972efa0aa15b8 -- NO source changes made (zero-churn follower).
+
+### Libraries present
+
+```
+/opt/rocm/lib/libhipsparse.so  -- confirmed
+/opt/rocm/lib/librocsparse.so  -- confirmed
+/opt/rocm/include/thrust/      -- rocThrust confirmed
+```
+
+### Build commands
+
+```
+cmake -S projects/amgcl/src -B projects/amgcl/src/build-hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DAMGCL_BUILD_EXAMPLES=ON \
+  -DCMAKE_PREFIX_PATH=/opt/rocm
+
+cmake --build projects/amgcl/src/build-hip -j --target solver
+cmake --build projects/amgcl/src/build-hip -j --target solver_hip
+```
+
+Configure succeeded (CMake 3.x, HIP compiler: Clang 22.0.0). Both targets built with only warnings (unused parameter, nodiscard hipGetDevice -- pre-existing from gfx90a build). No errors.
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls projects/amgcl/src/build-hip/examples/solver_hip
+```
+Output:
+```
+1  host-x86_64-unknown-linux-gnu-
+1  hipv4-amdgcn-amd-amdhsa--gfx1100   offset=184320 size=1523056
+```
+gfx1100 code object embedded, no gfx90a object present.
+
+### Solver convergence (real GPU, HIP_VISIBLE_DEVICES=0)
+
+7-point 3D Poisson, n=64 (262144 unknowns), 3-level AMG, BiCGStab.
+
+spai0 relaxation (default):
+  Run 1: Iterations 8, Error 2.9431e-09
+  Run 2: Iterations 8, Error 2.9431e-09  (bitwise identical -- deterministic)
+  CPU builtin (same n=64): Iterations 8, Error 2.9431e-09  (exact match)
+
+ilu0 relaxation (rocsparse_ilu0.hpp path):
+  Iterations 6, Error 1.54581e-09  (converges cleanly)
+
+gfx90a reference (from notes above, example solver_hip):
+  spai0: 7 iters, error 5.24e-09
+  ilu0:  5 iters, error 1.40e-09
+
+The gfx1100 iteration count differs by 1 from gfx90a for spai0 (8 vs 7) and ilu0 (6 vs 5). This is expected: BiCGStab convergence history is not bitwise identical across architectures (different floating-point reduction order), but both converge well below the 1e-8 tolerance with no NaN/Inf. Within the same architecture (two runs on gfx1100), the residual is bitwise identical at 2.9431e-09 -- confirming HIPSPARSE_SPMV_CSR_ALG1 (rowsplit) determinism. No hipSPARSE errors, clean exit on both relaxation paths.
+
+### Pass/fail
+
+PASS. No source changes. No fork push. validated_sha = f4b87da72010e59e944847380ea972efa0aa15b8.
+
+Toolchain: ROCm 7.2.1, hipSPARSE, rocSPARSE, rocThrust on gfx1100 (RDNA3, wave32).
