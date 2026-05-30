@@ -111,3 +111,86 @@ Source edits live as working-tree changes under projects/AutoDock-GPU/src (paren
 delivers; not forked/pushed here). 6 files modified + 2 new (cuda/cuda_to_hip.h,
 Makefile.Hip); CUDA and OpenCL/CPU paths untouched and behaviorally unchanged. No
 GitHub Actions added, README not regenerated.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: 4x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1,
+HIP 7.2.53211. No fork changes; the curated commit (4a860c8) is untouched.
+
+### Build commands
+
+```
+make -C projects/AutoDock-GPU/src DEVICE=HIP NUMWI=64  HIP_ARCH=gfx1100
+make -C projects/AutoDock-GPU/src DEVICE=HIP NUMWI=128 HIP_ARCH=gfx1100
+```
+
+Both built cleanly (warnings only: nodiscard on hipDeviceReset in RTERROR macro,
+and INFINITY undefined-behavior under -ffast-math -- both pre-existing in
+upstream, no errors). HIP_ARCH is not hardcoded in Makefile.Hip (defaults gfx90a
+when unset); gfx1100 requires no source or Makefile edit -- exactly as designed.
+
+### GFX1100 code-object evidence
+
+```
+$ roc-obj-ls bin/autodock_gpu_64wi
+1  host-x86_64-unknown-linux-gnu-                     ...autodock_gpu_64wi#offset=331776&size=0
+1  hipv4-amdgcn-amd-amdhsa--gfx1100                   ...autodock_gpu_64wi#offset=331776&size=85048
+
+$ roc-obj-ls bin/autodock_gpu_128wi
+1  host-x86_64-unknown-linux-gnu-                     ...autodock_gpu_128wi#offset=331776&size=0
+1  hipv4-amdgcn-amd-amdhsa--gfx1100                   ...autodock_gpu_128wi#offset=331776&size=85048
+```
+
+No gfx90a object present in either binary.
+
+### Wave32 path analysis
+
+gfx1100 is NOT __GFX9__, so at device-compile time:
+- WARP_SIZE = 32 (the __GFX9__ branch is not taken)
+- WARPMINIMUM_TOP expands to nothing (guard: WARP_SIZE > 32 is false)
+- WARPSUM_TOP expands to nothing (same guard)
+- The stride-32 shuffle-add and exchange steps are compiled out
+
+At runtime, cudaGetDeviceProperties returns warpSize=32 for gfx1100, so:
+- cData.warpmask = 31, cData.warpbits = 5
+
+The kernel4 cross-warp reduction uses blockDim.x / WARP_SIZE (=32), yielding
+2 warps/block for 64wi and 4 warps/block for 128wi -- correct on wave32.
+
+WARP_FULL_MASK = 0xffffffffffffffffULL (64-bit, required by the HIP 7.2 API
+regardless of actual wave width; upper bits address no lanes on wave32 so
+all-ones is still correct as "all active lanes").
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+```
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi  -ffile input/1stp/derived/1stp_protein.maps.fld \
+  -lfile input/1stp/derived/1stp_ligand.pdbqt -nrun 10 -seed 42 -resnam <out>
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi  -ffile input/1stp/derived/1stp_protein.maps.fld \
+  -lfile input/1stp/derived/1stp_ligand.pdbqt -nrun 10 -seed 7  -resnam <out>
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_128wi -ffile input/1stp/derived/1stp_protein.maps.fld \
+  -lfile input/1stp/derived/1stp_ligand.pdbqt -nrun 10 -seed 42 -resnam <out>
+```
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.40 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.38 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.35 kcal/mol      | 0.41 A                   | 1, 10/10 runs |
+
+Reference (wave64, gfx90a lead):
+
+| build / seed     | best binding energy | best-pose reference RMSD |
+|------------------|---------------------|--------------------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.48 A                   |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.37 A                   |
+| 128wi / seed 42  | -8.33 kcal/mol      | 0.39 A                   |
+
+All three cases: all 10 runs converge to a single cluster; best energies within
+0.02 kcal/mol of the wave64 lead; best-pose reference RMSD sub-0.5 A in all
+cases. No NaN in energies, no HIP fault, clean exit. The 128wi case exercises
+the cross-warp final reduction in kernel4 on wave32 (4 warps/block, WARP_SIZE=32
+path) and is also correct.
+
+PASS: wave32 warp reductions (WARPMINIMUM2, REDUCEINTEGERSUM, REDUCEFLOATSUM)
+are numerically correct on gfx1100. Fork is untouched; head_sha = 4a860c8.
