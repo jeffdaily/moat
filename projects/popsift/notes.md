@@ -438,3 +438,50 @@ The wave64 fix (ballot_group, any_group, width-32 shuffles, single-wavefront ext
 ### Result
 
 PASS. Feature count stable (2421/5 runs), zero NaN/Inf across all descriptor modes, keypoints in-bounds, popsift-match produces real finite distances. GPU: HIP_VISIBLE_DEVICES=0 (AMD Radeon Pro W7800, gfx1100). Validated sha: 0ec6f0258855b2fd46b318d433de155cc869f1b2.
+
+## Re-validation 2026-05-30 -- gfx90a at the gfx1100-advanced tip (0ec6f02): PASS
+
+Trigger: the gfx1100 host force-updated the shared fork (jeffdaily/popsift @ moat-port)
+from 6190168 -> 0ec6f0258855b2fd46b318d433de155cc869f1b2 and ran advance-head, which
+flipped linux-gfx90a `completed` -> `revalidate`. This run re-confirms gfx90a at the new tip.
+
+### What the gfx1100 delta changed (git diff 6190168..0ec6f02 --stat)
+`src/CMakeLists.txt` only, +4/-1. The hardcoded `HIP_ARCHITECTURES "gfx90a"` on the popsift
+target now reads `${CMAKE_HIP_ARCHITECTURES}`, with a guard that defaults it to `gfx90a` when
+the var is unset/empty. Pure build-system change; NO source/kernel edits. There is no new
+"RDNA wave32 handling" code -- per the gfx1100 validation section above, the existing wave64
+fixes (ballot_group/any_group with group=0, width-32 shuffle guards) already degenerate
+correctly to wave32, so gfx1100 needed no source change. The gfx90a wave64 paths are
+byte-for-byte identical to the 6190168 commit that previously passed; the default-to-gfx90a
+guard means an explicit `-DCMAKE_HIP_ARCHITECTURES=gfx90a` reproduces the old build exactly.
+
+### Build (gfx90a, GPU HIP_VISIBLE_DEVICES=1, MI250X/gfx90a)
+Wiped build-hip/ (it had a stale cache) and did a clean configure + build with the same line:
+```
+cmake -S projects/popsift/src -B projects/popsift/src/build-hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release \
+  -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON
+cmake --build projects/popsift/src/build-hip -j
+```
+100% built; libpopsift.so + popsift-demo + popsift-match linked; only the pre-existing benign
+-Wunused-value (debug_macros nodiscard) / -Wdeprecated (rocThrust::identity) warnings.
+roc-obj-ls confirms a single embedded `hipv4-amdgcn-amd-amdhsa--gfx90a` code object
+(size 9833696), no other arch. build-hip/ stays out of git via .git/info/exclude.
+
+### Validation (gfx90a, HIP_VISIBLE_DEVICES=1, scene.png 1052x744 grayscale, default VLFeat/loop/RootSift)
+```
+HIP_VISIBLE_DEVICES=1 popsift-demo -i agent_space/popsift_imgs/scene.png   # x5
+HIP_VISIBLE_DEVICES=1 popsift-demo --log -i .../scene.png                  # dump descriptors
+```
+- (1) NON-ZERO + deterministic: 895 feature points / 1494 descriptors, IDENTICAL across 5/5 runs.
+- (2) NO NaN/Inf: 0 NaN, 0 Inf in all 191232 descriptor values; 0 all-zero descriptors.
+- (3) value sanity: per-descriptor L2 norm in [0.9993, 1.0009] (RootSift ~1.0); bin values in
+  [0, 0.347], mean 0.063; keypoint x in [59.05, 996.47], y in [34.96, 676.35] (within 1052x744);
+  scale in [0.0004, 1.3815]. All finite.
+- Reproduces the prior gfx90a reference exactly (895/1494, same L2/bin/x/y/scale envelopes).
+
+NO REGRESSION from the gfx1100 delta. The configurable-arch CMake change leaves gfx90a's
+wave64 output bit-for-bit equivalent in behavior. linux-gfx90a transitioned `revalidate` ->
+`completed`; validated_sha = 0ec6f0258855b2fd46b318d433de155cc869f1b2 (the rebuilt HEAD).
+Validation-only; no push to the fork.
