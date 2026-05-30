@@ -62,7 +62,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | - | todo | gated | gated |
 | MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | - | todo | gated | gated |
 | sppark | [supranational/sppark](https://github.com/supranational/sppark) | - | todo | gated | gated |
-| Gpufit | [gpufit/Gpufit](https://github.com/gpufit/Gpufit) | - | todo | gated | gated |
+| Gpufit | [gpufit/Gpufit](https://github.com/gpufit/Gpufit) | [Gpufit](https://github.com/jeffdaily/Gpufit/tree/moat-port) | done | validating | validating |
 | FlashRT | [LiangSu8899/FlashRT](https://github.com/LiangSu8899/FlashRT) | - | todo | gated | gated |
 | evogp | [EMI-Group/evogp](https://github.com/EMI-Group/evogp) | - | todo | gated | gated |
 | ffpa-attn | [xlite-dev/ffpa-attn](https://github.com/xlite-dev/ffpa-attn) | - | todo | gated | gated |
