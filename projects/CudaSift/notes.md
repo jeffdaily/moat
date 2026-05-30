@@ -265,5 +265,62 @@ PASS/FAIL: PASS (29/29 sub-checks across the three binaries, all exit 0). No GPU
 ### Wave32 analysis (gfx1100)
 gfx1100 is wave32. The width-32 subgroup shuffles (`__shfl_*(var, delta, width=32)`) in cudautils.h ShiftDown/Up/Shuffle map 1:1 to the native 32-lane wave on gfx1100 -- this is the straightforward case. The `__any_sync -> __any` mapping (FindPointsMulti kernels, 32-thread blocks) polls all active lanes, matching the original intent. The descriptor-norm partial-sum pattern (`sums[idx/32]`, 4 slots for 128 threads) is a layout constant, not wave-size-dependent. Result: numeric output matches gfx90a (same keypoint counts, same correctness checks), confirming the shuffle-width concern is a non-issue on wave32.
 
-### Fork push status
-The fork push (amended commit 0523b54 to jeffdaily/CudaSift moat-port) could not be completed: the jeffdaily GitHub HTTPS token on this host is expired (401). The commit is staged locally. The user needs to refresh the jeffdaily token or push manually: `cd projects/CudaSift/src && git push --force-with-lease origin moat-port`.
+### Fork push status (historical, gfx1100 host)
+The gfx1100 host reported it could not push its amended commit (0523b54) to the
+jeffdaily/CudaSift fork during that session. By the time of the gfx90a
+revalidation below, the fork's moat-port tip already resolved to 0523b54
+(`git fetch fork moat-port`), so the shared tip is in place. Re-pushing the fork
+is the porter's/user's concern and is out of scope for validation; no fork push
+is performed here.
+
+## Revalidation 2026-05-30 (gfx90a re-confirm at new shared tip 0523b54)
+
+Cross-platform regression guard: the gfx1100 follower advanced the shared
+moat-port HEAD from fe209b4 (gfx90a's prior validated_sha) to 0523b54, so
+gfx90a re-validated at the new tip. The delta fe209b4 -> 0523b54 changed only
+two files (no device code): (1) `CMakeLists.txt` -- the hardcoded
+`HIP_ARCHITECTURES "gfx90a"` was replaced by a guard that reads
+`CMAKE_HIP_ARCHITECTURES`, defaulting to gfx90a when unset/empty, so followers
+can pass `-DCMAKE_HIP_ARCHITECTURES=gfx1100`; (2) a new
+`.github/workflows/rocm-build-smoketest.yml` (CPU-only compile smoketest,
+explicitly NOT a correctness gate). `cudaSiftD.cu`, `cudautils.h`, the compat
+header, and all other `.cu`/`.cpp` device sources are byte-identical to the
+fe209b4 port that passed before -- this is a pure build-system + CI delta, so
+the only gfx90a regression surface is "does it still configure+build for gfx90a
+(default arch path) and pass the GPU suite."
+
+GPU: AMD Instinct MI250X / MI250, `gfx90a` (wave64), ROCm 7.2.1. Host has 4x
+gfx90a (`rocm_agent_enumerator` -> 4x gfx90a), all idle; pinned to the highest
+index with `HIP_VISIBLE_DEVICES=3` (one visible device -> in-process ordinal 0,
+default devNum=0). Wiped the stale `build-hip/` and did a clean
+configure+build so no prior arch cache (e.g. a gfx1100 cache) could leak in.
+Binaries embed `hipv4-amdgcn-amd-amdhsa--gfx90a` (verified via
+`llvm-objdump --offloading` on test_extract/test_match/test_homography),
+confirming the new CMake arch-guard resolves to gfx90a on the default path.
+
+Configure exit 0 (~2.5s), build exit 0 (~6.6s), all targets built
+(cudasift_lib, cudasift, test_extract, test_match, test_homography, benchmark,
+demo_extract/match/video). Only the pre-existing ~152 `-Wunused-value`
+nodiscard `hipError_t` warnings (+ the `-ffast-math` literal/nan warnings); no
+errors.
+
+Tests (each `utils/timeit.sh CudaSift test -- bash -c 'cd projects/CudaSift/src
+&& ./build-hip/<bin>'`, run from src/ so `data/` resolves):
+
+| test            | exit | result            | key numbers |
+|-----------------|------|-------------------|-------------|
+| test_extract    | 0    | 10 passed, 0 fail | basic 1910 kpts (all valid, descriptors unit-norm); thresh monotonic 7080/1910/542/6; octaves monotonic 1740/1876/1910/1919; reproducibility 1910/1910 = 100%; scaleUp 3104 > normal 1910 |
+| test_match      | 0    | 11 passed, 0 fail | self-match 1900/1910 score>0.95; cross img1/img2 1910 vs 2084 feats, 1910 valid / 1909 good; homography 851 RANSAC / 828 inliers; match 1.22 ms |
+| test_homography | 0    | 8 passed, 0 fail  | translation (30,20) recovered h[2]=30.13 h[5]=20.27, 1646 matches; rotation 10deg 1195; scale 0.8 945; PGM pair 752 RANSAC / 673 inliers |
+
+PASS/FAIL: PASS (29/29 sub-checks across the three binaries, all exit 0). No GPU
+page fault, no `safeCall` abort, no crash; GPU 3 healthy/idle post-run, dmesg
+clean of amdgpu/page-fault. Numbers match the prior gfx90a validation at fe209b4
+within RANSAC/self-match run-to-run variation (e.g. PGM 752/673 vs 751/672,
+self-match 1900 vs 1899), and the wave64-sensitive paths still produce correct
+on-device output (unit-norm descriptors, 100% reproducible positions, accurate
+recovered geometry). The gfx1100 delta did NOT regress gfx90a.
+
+State: linux-gfx90a `revalidate` -> `completed`, validated_sha set to the
+rebuilt HEAD `0523b54` (full SHA 0523b540bf209af49f755c52af49cc2a057b95db) via
+`python3 utils/moatlib.py set-state CudaSift linux-gfx90a completed --agent validator`.
