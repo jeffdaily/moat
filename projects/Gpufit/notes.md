@@ -375,3 +375,75 @@ Not done at review time (expected): the gfx1100 real-GPU run at this exact tip
 -- that is the validator's stage; the reviewer does not block on it.
 
 Result: linux-gfx1100 delta-ported -> review-passed.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1) -- re-run at 5ab0c05
+
+Re-validation after the wave32 tolerance delta-port + review. Fork clone at
+`projects/Gpufit/src` confirmed on moat-port HEAD `5ab0c059ed761d571c3e66a519f3246a62184145`
+before build.
+
+### GPU
+
+AMD Radeon Pro W7800 48GB, gfx1100, wave32 (GPU0, HIP_VISIBLE_DEVICES=0).
+
+### Build command
+
+```
+bash utils/timeit.sh Gpufit compile -- \
+  cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-hip \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF
+
+bash utils/timeit.sh Gpufit compile -- \
+  cmake --build projects/Gpufit/src/build-hip -j
+```
+
+Build: clean (100%), all targets including libGpufit.so, Boost.Test executables,
+Simple_Example, CUDA_Interface_Example (HIP-compiled).
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls projects/Gpufit/src/build-hip/Gpufit/libGpufit.so
+```
+
+Output:
+```
+1  hipv4-amdgcn-amd-amdhsa--gfx1100    size=132784
+2  hipv4-amdgcn-amd-amdhsa--gfx1100    size=9208
+3  hipv4-amdgcn-amd-amdhsa--gfx1100    size=6680
+```
+
+All 3 code objects are gfx1100. No gfx90a code objects present.
+
+### Test results (HIP_VISIBLE_DEVICES=0, AMD Radeon Pro W7800, gfx1100, wave32)
+
+```
+bash utils/timeit.sh Gpufit test -- \
+  bash -c "cd projects/Gpufit/src/build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1"
+```
+
+| Test | Result |
+|------|--------|
+| Gpufit_Test_Error_Handling | PASS |
+| Gpufit_Test_Linear_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_2D | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Rotated | PASS |
+| Gpufit_Test_Cauchy_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Fletcher_Powell_Helix_Fit | PASS |
+| Gpufit_Test_Brown_Dennis_Fit | PASS |
+| Cpufit_Gpufit_Test_Consistency | PASS |
+
+10/10 PASS. 0 failed. Total test time: 1.77 sec.
+
+Gauss_Fit_2D_Rotated PASSES: the wave32-guarded `< 3e-6f` tolerance on parameter[6]
+(rotation angle r) is satisfied. Previously failed at `< 1e-6f` by 1.13e-6; the delta-port
+relaxed it to 3e-6f (2.65x observed error, HIP-only #if guard). No regression in the other
+9 suites versus the prior gfx1100 run (all were already passing at the strict 1e-6f).
+
+No NaN, no divergence, clean exit 0 on all suites.
+
+Result: linux-gfx1100 review-passed -> completed, validated_sha = 5ab0c059ed761d571c3e66a519f3246a62184145.
