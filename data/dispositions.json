@@ -238,11 +238,11 @@
     "reason": "already-supported"
   },
   "vllm-project/vllm": {
-    "decided": "2026-05-30T00:00:41Z",
+    "decided": "2026-05-30T00:01:04Z",
     "disposition": "skip",
     "full_name": "vllm-project/vllm",
-    "note": "vLLM umbrella; AMD supports vLLM (vllm-project/vllm), not derivatives",
-    "reason": "ported-elsewhere"
+    "note": "ROCm supported upstream (canonical; forks/derivatives are ported-elsewhere)",
+    "reason": "already-supported"
   },
   "xlite-dev/leetcuda": {
     "decided": "2026-05-29T23:13:18Z",
