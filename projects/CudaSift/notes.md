@@ -232,7 +232,7 @@ The static wave64 parity analysis is now confirmed on real gfx90a.
 
 GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100, wave32), ROCm 7.2.1. Used HIP_VISIBLE_DEVICES=0 (in-process ordinal 0). Binaries embed `hipv4-amdgcn-amd-amdhsa--gfx1100` (verified via `roc-obj-ls`).
 
-CMakeLists.txt fix: the original port hardcoded `HIP_ARCHITECTURES "gfx90a"` in `set_target_properties`. Added a guard that reads from `CMAKE_HIP_ARCHITECTURES` (defaulting to gfx90a if unset) so follower platforms can pass `-DCMAKE_HIP_ARCHITECTURES=gfx1100` at configure time. The CI smoketest workflow `.github/workflows/rocm-build-smoketest.yml` was also added (rocm/dev-ubuntu-24.04, compile-only, not a correctness gate). These changes were amended into the port commit; new fork head SHA: 0523b54.
+CMakeLists.txt fix: the original port hardcoded `HIP_ARCHITECTURES "gfx90a"` in `set_target_properties`. Added a guard that reads from `CMAKE_HIP_ARCHITECTURES` (defaulting to gfx90a if unset) so follower platforms can pass `-DCMAKE_HIP_ARCHITECTURES=gfx1100` at configure time. The CI smoketest workflow `.github/workflows/rocm-build-smoketest.yml` was also added (rocm/dev-ubuntu-24.04, compile-only, not a correctness gate). These changes were amended into the port commit; new fork head SHA: 0523b54. [Policy update 2026-05-30: the no-CI-in-ports rule now forbids GHA workflows in a port; remove this yml from the curated commit at upstream-PR prep (deferred to avoid churning the already-completed gfx90a/gfx1100 validations). The fork's Actions are disabled, so it does not run.]
 
 OpenCV install: `sudo apt-get install -y libopencv-dev` -> 4.6.0 (was absent on this host).
 
