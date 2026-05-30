@@ -316,3 +316,62 @@ also 100%; the rotated-fit binary prints "No errors detected", exit 0.
 No regression from the gfx1100 delta. Result: linux-gfx90a `revalidate` ->
 `completed`, validated_sha = 5ab0c059ed761d571c3e66a519f3246a62184145 (the
 rebuilt + revalidated HEAD).
+
+## Review 2026-05-30 (linux-gfx1100 delta-ported, fork moat-port @ 5ab0c059)
+
+Reviewed `git diff a0bd66c..5ab0c05` (the single curated commit) with the
+/pr-review skill, fact-checking every load-bearing claim against the source.
+Verdict: review-passed -> validator. Problems found: none material.
+
+Diff scope: 7 files (2 CMake, cuda_to_hip.h, 2 hip_compat shims,
+Gauss_Fit_2D_Rotated.cpp, examples/c++/CMakeLists.txt). No .cu/.cuh device
+code changed.
+
+What I verified (independently, not from notes alone):
+- Strategy A correct: one compat header, .cu marked LANGUAGE HIP (not renamed),
+  parallel modern-CMake HIP path beside the legacy FindCUDA path.
+- Compat-header coverage is EXACT: the 19 cuda* runtime symbols referenced in
+  the sources match the 19 aliased in cuda_to_hip.h one-for-one (no missing
+  alias -> no compile break; no dead alias). No warp/texture/lib mappings
+  because none are used.
+- Fault classes: zero warp intrinsics across cuda_kernels.cu /
+  cuda_gaussjordan.cu / lm_fit_cuda.cu (__shfl/__ballot/__any/__all/
+  __activemask/__syncwarp count = 0). No hardcoded 32 / lane masks. The only
+  warpSize use is info.cu:20 (runtime query) feeding the block-PACKING
+  heuristic at lm_fit_cuda.cu:306, not a 32-lane reduction. No textures /
+  surfaces / cudaArray / __constant__ / atomics anywhere, so the rule-of-five,
+  OOB-clamp, 256B-pitch, and texture-filter classes do not apply. cuBLAS is
+  fully #ifdef USE_CUBLAS-guarded and off the default GJ path.
+- Wave32 tolerance delta is a genuine FP-reduction-order fix, NOT a masked
+  bug: sum_up_floats (cuda_kernels.cu:139) is a __syncthreads tree reduction
+  over points with multiple fits packed per block; n_hessians_per_block
+  (driven by info_.warp_size_) changes block geometry on wave32 vs wave64,
+  reshuffling FP summation order -> rotation angle shifts 1.13e-6 while
+  chi^2 stays 2.84e-12 (converged). 3e-6f bound = 2.65x the observed error
+  (tight); param[0] already uses 2e-5f upstream, so per-parameter loosening
+  in this test has precedent.
+- The USE_HIP test guard is ACTIVE, not dead: build-hip flags.make for the
+  rotated test TU shows `CXX_DEFINES = -DUSE_HIP -DUSE_PROF_API=1
+  -D__HIP_PLATFORM_AMD__=1`. The lib's PRIVATE USE_HIP does not reach the test
+  exe; target_compile_definitions(${target} PRIVATE USE_HIP) in add_boost_test
+  supplies it. Without this fix the #if would be false and CUDA's 1e-6f would
+  wrongly apply on HIP -> re-fail. Correctly handled.
+- CUDA path byte-for-byte unchanged: no device source touched; the test #else
+  keeps exactly < 1e-6f (matches upstream a0bd66c); the CUDA CMake logic is
+  byte-identical inside if(NOT USE_HIP); project()/cmake_minimum_required
+  reduce to the original literals when USE_HIP=OFF; find_package(hip) is gated
+  inside if(USE_HIP), so no ROCm dependency on the CUDA/CPU build.
+- hip::host (not hip::device) is linked -- correct, so -x hip / --offload-arch
+  does not leak into the host .cpp TUs of the mixed lib target (cupoch lesson).
+- Arch-configurable: HIP_ARCHITECTURES reads ${CMAKE_HIP_ARCHITECTURES},
+  defaults gfx90a only when unset, in BOTH Gpufit/CMakeLists.txt and
+  examples/c++/CMakeLists.txt -- not a hardcoded literal.
+- Commit hygiene: title `[ROCm] Add HIP build for AMD GPUs; configurable
+  HIP_ARCHITECTURES` (60 chars <= 72); body has Test Plan + "Authored with
+  Claude"; no noreply/co-authored trailer; author jeffdaily public email; no
+  non-ASCII, no em-dash, no AMD-internal account references.
+
+Not done at review time (expected): the gfx1100 real-GPU run at this exact tip
+-- that is the validator's stage; the reviewer does not block on it.
+
+Result: linux-gfx1100 delta-ported -> review-passed.
