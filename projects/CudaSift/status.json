@@ -7,17 +7,17 @@
   "priority": 5.346,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-30T00:09:14Z",
+  "updated_at": "2026-05-30T00:15:15Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
-      "blocked": true,
-      "blocked_reason": "needs OpenCV (find_package(OpenCV REQUIRED)); not installed on host (no pkg-config/headers/OpenCVConfig.cmake)",
+      "state": "porting",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-30T00:15:15Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T00:09:14Z",
+      "updated_at": "2026-05-30T00:15:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
