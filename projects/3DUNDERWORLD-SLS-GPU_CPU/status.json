@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "3DUNDERWORLD-SLS-GPU_CPU",
   "upstream_url": "https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU",
   "fork_default_branch": "dev",
   "priority": 5.001,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-05-30T07:32:57Z",
-  "head_sha": null,
+  "updated_at": "2026-05-30T07:44:01Z",
+  "head_sha": "3a506a202f999f97bfe93b080c55e188bd7a0e35",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "3a506a202f999f97bfe93b080c55e188bd7a0e35",
       "started_at": "2026-05-30T07:07:24Z",
-      "completed_at": null,
-      "updated_at": "2026-05-30T07:32:57Z",
+      "completed_at": "2026-05-30T07:44:01Z",
+      "updated_at": "2026-05-30T07:44:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:46:51Z",
+      "updated_at": "2026-05-30T07:44:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:46:51Z",
+      "updated_at": "2026-05-30T07:44:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
