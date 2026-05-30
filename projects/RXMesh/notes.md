@@ -495,3 +495,8 @@ PASS. The gfx90a wave64 ballot/sub-warp fixes degenerate correctly to wave32
 on gfx1100. All 25 RXMesh_test tests pass on real GPU hardware (gfx1100) in
 two deterministic runs. No hang, no corrupted topology, no NaN, clean exit.
 Fork commit d50370b is validated on linux-gfx1100. State: completed.
+
+
+## Validation 2026-05-30 (gfx1100) -- carry-forward at 6b30d8e (tree-identical squash)
+
+The fork was squashed to a single curated commit (d50370b -> 6b30d8e). `git rev-parse 6b30d8e^{tree}` == `git rev-parse d50370b^{tree}` == bad32dde416667d1ef029d8fb0faece857c98b88 -- the source tree is BYTE-FOR-BYTE identical, only the commit history changed. The prior gfx1100 real-GPU validation at d50370b (RXMesh_test 25/25 deterministic, WARP_SIZE=32 confirmed, wave64 ballot/sub-warp fixes degenerate correctly, ShmemMutex no-deadlock) therefore applies unchanged; a re-run on identical objects would yield identical results. validated_sha -> 6b30d8e. No GPU re-run (identical tree), no fork change.
