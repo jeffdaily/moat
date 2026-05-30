@@ -81,16 +81,19 @@ precision (off by default), and 3D pitched copies.
 ## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
 
 GPU: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1.
-Fork branch: moat-port. Validated SHA: cc8736bf3ce23e016d4882efe2b0b6853c131b4d.
+Fork branch: moat-port. Validated SHA: 6c912137c40fd1b7509722f8188bbc3f6fd0f702.
 
 ### Build
 
 No source change needed for gfx1100 -- the CMakeLists.txt already correctly
 reads `${CMAKE_HIP_ARCHITECTURES}` from the CMake variable (defaulting to gfx90a
 only when unset), so passing `-DCMAKE_HIP_ARCHITECTURES=gfx1100` is sufficient.
-The CI smoketest workflow (.github/workflows/rocm-hip-build.yml) was added to
-the curated commit (amended), so the fork SHA changed from 6c91213 to cc8736b;
-gfx90a was flipped to `revalidate` accordingly.
+Because gfx1100 required no code change, the curated commit is left untouched at
+6c91213 (the SHA gfx90a was validated at): no head_sha churn, and gfx90a stays
+`completed` instead of being forced to revalidate. (An earlier pass amended a CI
+smoketest YAML into the commit, advancing the SHA to cc8736b and flipping gfx90a
+to revalidate; that was reverted -- a non-essential file must never churn an
+already-validated platform. A CI tripwire belongs in the lead-port commit.)
 
 ```
 CMAKE_ARGS="-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" \
@@ -135,7 +138,8 @@ Results match gfx90a exactly (same sample 168, LUT/sinc agreement within roundin
 
 ### CI smoketest
 
-Added .github/workflows/rocm-hip-build.yml: rocm/dev-ubuntu-24.04 container,
-compile-only tripwire (no GPU present in CI). Verifies: the USE_HIP=ON build
-succeeds, the gpuRIR_bind .so is > a few KB (LTO bitcode regression tripwire),
-and PyInit_gpuRIR_bind is exported. NOT a GPU correctness gate.
+Intentionally NOT added during this follower validation. A rocm/dev-ubuntu-24.04
+compile-only tripwire (USE_HIP=ON builds, the gpuRIR_bind .so exceeds a few KB,
+PyInit_gpuRIR_bind exported) is worth having, but adding it here would have
+churned the curated commit and forced gfx90a to revalidate for a non-GPU file.
+It should be added to the lead-port commit instead, so no follower pays for it.
