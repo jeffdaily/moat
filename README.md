@@ -80,7 +80,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | FaithC | [Luo-Yihao/FaithC](https://github.com/Luo-Yihao/FaithC) | - | todo | gated | gated |
 | rmcl | [uos/rmcl](https://github.com/uos/rmcl) | - | todo | gated | gated |
 | fused-ssim | [rahul-goel/fused-ssim](https://github.com/rahul-goel/fused-ssim) | - | todo | gated | gated |
-| gpuRIR | [DavidDiazGuerra/gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) | - | review | gated | gated |
+| gpuRIR | [DavidDiazGuerra/gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) | [gpuRIR](https://github.com/jeffdaily/gpuRIR/tree/moat-port) | done | validating | validating |
 | yalm | [andrewkchan/yalm](https://github.com/andrewkchan/yalm) | - | todo | gated | gated |
 | mHC.cu | [AndreSlavescu/mHC.cu](https://github.com/AndreSlavescu/mHC.cu) | - | todo | gated | gated |
 | EnvGS | [zju3dv/EnvGS](https://github.com/zju3dv/EnvGS) | - | todo | gated | gated |

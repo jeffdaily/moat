@@ -1,0 +1,8 @@
+{"kind":"phase","ts":"2026-05-30T05:25:47Z","phase":"compile","seconds":1.122,"exit":2,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/gpuRIR/src/build_hip -j4"}
+{"kind":"phase","ts":"2026-05-30T05:26:10Z","phase":"compile","seconds":5.921,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/gpuRIR/src/build_hip -j4"}
+{"kind":"phase","ts":"2026-05-30T05:26:35Z","phase":"compile","seconds":10.575,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/pip install ./projects/gpuRIR/src --no-build-isolation"}
+{"kind":"phase","ts":"2026-05-30T05:27:14Z","phase":"test","seconds":0.437,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/gpuRIR_validate.py"}
+{"kind":"phase","ts":"2026-05-30T05:28:18Z","phase":"compile","seconds":9.604,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/pip install ./projects/gpuRIR/src --no-build-isolation --force-reinstall --no-deps"}
+{"kind":"phase","ts":"2026-05-30T05:28:37Z","phase":"test","seconds":2.785,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/gpuRIR_validate.py"}
+{"kind":"phase","ts":"2026-05-30T05:29:22Z","phase":"test","seconds":1.081,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/gpuRIR_validate.py"}
+{"kind":"phase","ts":"2026-05-30T05:32:15Z","phase":"test","seconds":1.322,"exit":0,"cmd":"bash -c cd projects/gpuRIR/src && /opt/conda/envs/py_3.12/bin/python examples/example.py"}
