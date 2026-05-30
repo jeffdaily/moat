@@ -190,43 +190,96 @@ EDITING-TEST BLOCKERS (RandomFlips/RandomCollapse/TriangleRefinement/PatchSlicin
   VF-based ribbon-faces sub-check (the EV-based ribbon-edges check still runs),
   log a warning, and return -- no failed launch, no sticky error.
 
-== (3) Post-edit patch metadata = INVALID16 -- STILL BLOCKING (separate bug) ==
-- With (1)+(2) fixed, slice_patches(patch 0) and cleanup() run to completion, but
-  the next loop iteration reads patch 1 with num_v == num_e == num_f == 0xFFFF
-  (INVALID16) at slice_patches entry (rxmesh_dynamic.h:166); the element-strided
-  loops then run on a bogus huge bound and spin. rocgdb localized it to a
-  `for(i=tid;i<num;...)` loop in BOTH the SLICE_GGP (line 273) and non-SLICE_GGP
-  paths, so it is NOT block_mat_transpose/GGP (disabling SLICE_GGP did not help).
-- Stage-instrumented (printf of pid + counts) slice_patches entry and
-  remove_surplus_elements (RSE) entry pinned the transition:
-    iter0: SLICE-ENTRY pid=0 v=163 e=447 f=285  (patch 0 sliced OK)
-           RSE-ENTRY   pid=1 v=132 e=358 f=227  (patch 1 still VALID during
-                                                 iter0 cleanup)
-    iter1: SLICE-ENTRY pid=1 v=65535 e=65535 f=65535  (patch 1 now INVALID16)
-  So a patch's stored element counts go valid->INVALID16 across one
-  edit+cleanup cycle, on a NEIGHBOR patch (not the one being sliced).
-- RSE recomputes and writes the counts at rxmesh_dynamic.cu:582-618:
-  s_num_vertices = atomicMax(v+1) over s_vert_tag (the post-cleanup active
-  bitmask from reevaluate_active_elements), then pi.num_vertices[0]=s_num_vertices.
-  A spurious high tag bit (a wave64 Bitmask / __ballot artifact in the cleanup
-  active-mask recompute) would make that max == 0xFFFF. This is the next thing to
-  chase: audit reevaluate_active_elements + Bitmask set/store/ballot on wave64
-  for an out-of-range bit, OR a patch-metadata aliasing bug when slicing adds a
-  patch. It is a distinct CORRECTNESS bug from the ShmemMutex hang.
-- The 3 cavity-based editing tests (RandomFlips/RandomCollapse/TriangleRefinement)
-  no longer HANG after fix (1) -- the ShmemMutexArray wave-serialization removed
-  the cavity-graph deadlock; they now fail with a CUDA error in update_host's
-  cudaMemcpy (rxmesh_dynamic.cu:2877) whose size derives from the same corrupt
-  num_edges[0] -- i.e. the same bug (3). PatchSlicing still hangs on bug (3).
+== (3) Post-edit patch metadata = INVALID16 -- ROOT-CAUSED AND FIXED ==
+- Symptom: with (1)+(2) fixed, after one slice+cleanup cycle a patch's stored
+  num_v/num_e/num_f read back as 0xFFFF (INVALID16); the next op's element-strided
+  loops run on a ~65535 bound -> PatchSlicing runaway-spins and the cavity tests'
+  update_host cudaMemcpy (rxmesh_dynamic.cu:~2871, size = 2*num_edges) faults
+  "invalid argument".
+- The prior "spurious wave64 active-bitmask bit in the cleanup recompute"
+  hypothesis was WRONG. The Bitmask here is uniformly 32-bit-WORD indexed by
+  element id (local_id/32, local_id%32, atomicOr(word + id/32)) -- width
+  independent and correct on wave64 -- and the count recompute is
+  atomicMax(&s_num_vertices, v+1) over s_vert_tag with NO __ballot/__popc/__ffs at
+  all. So no stray-bit path exists there.
+- TRUE root cause (a LATENT UPSTREAM __shared__ buffer overflow, benign on nvcc,
+  fatal on hipcc/clang): remove_surplus_elements declares
+  `__shared__ uint32_t s_patch_stash[PatchStash::stash_size]` (PatchStash::
+  stash_size == 1<<6 == 64) but cleared it with
+  `fill_n(s_patch_stash, LPHashTable::stash_size, INVALID32)` -- the WRONG length
+  constant: LPHashTable::stash_size == 128. With block_size=256 the fill writes
+  INVALID32 (0xFFFFFFFF) into words 0..127 of a 64-word array, overrunning 64
+  words / 256 bytes past the end. Instrumented the addresses on gfx90a:
+    s_patch_stash = 0x...0200, size 64, end = 0x...0300
+    s_num_edges   = 0x...0300   (overflow word 64)
+    s_num_faces   = 0x...0304   (overflow word 65)
+    s_num_vertices= 0x...0308   (overflow word 66)
+  i.e. clang places the kernel's __shared__ count accumulators IMMEDIATELY after
+  s_patch_stash, so the overflow clobbers all three with 0xFFFFFFFF. Confirmed by
+  printf at the write-back: `RSE-WRITE ... v=4294967295 e=4294967295 f=4294967295
+  (in v=195 e=542 f=348)` -- entry counts VALID, recomputed counts == INVALID32,
+  truncated to uint16 on store to num_*[0] == 0xFFFF = INVALID16. nvcc's layout
+  happened to put the overrun on dead padding, which is why CUDA never saw it.
+- FIX (one constant; CUDA path identical, no guard needed since it is just the
+  array's own correct size): rxmesh_dynamic.cu:539-540
+    fill_n<blockThreads>(s_patch_stash, uint16_t(PatchStash::stash_size),
+                         INVALID32);
+  (The store at ~584 already used PatchStash::stash_size correctly.) Verified A/B:
+  with the original (128) constant, the overflow + INVALID16 reproduces; with the
+  fix, PatchSlicing PASSES and is deterministic (3/3 runs, ~470 ms each, no smem
+  warning).
+- See PORTING_GUIDE changelog (the "INVALID16 cleanup-count fingerprint" lesson)
+  for the generalized rule: a post-cleanup count that reads back all-ones and
+  matches a sentinel a nearby fill/memset writes => a static-__shared__ array
+  filled with a SIBLING array's length constant; clang's shared layout differs
+  from nvcc's, so the overrun lands on a live neighbor on HIP.
 
-Verdict: ShmemMutex hang == RXMesh logic bug (assumes Volta ITS), FIXED on HIP
-(wave-serialization). Editing tests remain blocked on bug (3). Core 21 tests
-pass TOGETHER (no regression) after (1)+(2) -- before (2) the suite aborted at
-Util.Scan from the compute_vf sticky error. Determinism holds (PatchLock 10/10 on
-a clean build; earlier 'flakiness' was a stale-binary artifact from an aborted
-rebuild, not real).
-Standalone repro + full matrix: agent_space/rxmesh_shmem_mutex/ (mutex.h,
-main.hip, worker.hip, run.sh..run4.sh).
+== (4) slice_patches dynamic shared memory > 64 KB on the 2nd+ slicing cycle --
+   DISTINCT, NOT cleanly fixable on gfx90a (hardware cap, NOT a wave64 bug) ==
+- With (3) fixed, RandomFlips/RandomCollapse/TriangleRefinement no longer corrupt
+  counts and progress through iter 0, but on the next slicing cycle the
+  detail::slice_patches kernel itself requests ~82 KB dynamic + ~5 KB static
+  (~87 KB total) shared memory (driven by per-patch cap_v/cap_e/cap_f for sphere3),
+  which exceeds gfx90a's hard 64 KB/block cap. set_max_dynamic_smem already opts in
+  to the full device max (sharedMemPerBlockOptin == 65536); the kernel's per-block
+  request is simply larger than any opt-in gfx90a can grant (maxDynamicSharedSize
+  for the func == 64216 B). check_shared_memory logs RXMESH_ERROR but its exit() is
+  commented out, so the launch proceeds, fails, and the sticky "invalid argument"
+  is caught at the NEXT slice_patches's cudaGetLastError (rxmesh_dynamic.h:785).
+- This is the SAME hardware-capability-gap class as fix (2) (compute_vf 80 KB VF
+  query) -- CUDA targets get 96-227 KB opt-in shared memory; CDNA2 gfx90a offers
+  only 64 KB. It is NOT a wave64 logic bug. Unlike (2), slice_patches is core
+  functionality and cannot be skipped; fitting it under 64 KB needs algorithmic
+  kernel restructuring (smaller block_size, or staging the 11 masks +
+  connectivity through shared in tiles), which is out of scope for the localized
+  INVALID16 fix and is left as the next editing-path work item.
+- PatchSlicing PASSES because its test mesh's per-patch capacities keep
+  slice_patches within the 64 KB budget (no smem-overflow warning observed).
+
+== (5) PatchLock test flakiness -- PRE-EXISTING, independent of (3) ==
+- RXMeshDynamic.PatchLock is a distributed deadlock-avoidance lock test (1000
+  iters; one block/patch each tries to lock its own + all other patch locks in a
+  shuffled order via PatchLock::acquire_lock's atomicCAS; asserts EXACTLY one
+  block wins per iter, sum==1). It is genuinely flaky on gfx90a: 8/10 pass in
+  isolation; it also fails when run right after the heavy RXMeshStatic.Queries /
+  MultiQueries tests. A/B confirms this reproduces with the ORIGINAL (count=128)
+  code too, so it is NOT a regression from the (3) fix (which only touches the
+  cleanup count recompute; PatchLock never calls cleanup()). This is a wave64
+  lock-protocol concurrency limitation in acquire_lock (same family as the
+  ShmemMutex SIMT issue), pre-existing and out of scope for this run. The prior
+  pass's "PatchLock 10/10, flakiness was a stale binary" note was over-optimistic;
+  the flake is real.
+
+Verdict: ShmemMutex hang (1) and compute_vf smem overflow (2) FIXED; the INVALID16
+post-edit count corruption (3) ROOT-CAUSED + FIXED (s_patch_stash fill length bug)
+-- PatchSlicing now PASSES deterministically. The 3 cavity editing tests
+(RandomFlips/RandomCollapse/TriangleRefinement) are now blocked ONLY by (4),
+slice_patches's >64 KB shared-memory request on the 2nd slicing cycle, a gfx90a
+hardware cap (not a wave64 bug) needing kernel restructuring -- a DISTINCT
+remaining item, stopped here per bounded scope. Core 21 tests pass individually;
+PatchLock (5) is flaky in-suite and in isolation, pre-existing and not caused by
+the (3) fix. Determinism: PatchSlicing 3/3; the static query suite stable.
+Standalone ShmemMutex repro + full matrix: agent_space/rxmesh_shmem_mutex/.
 
 ## 2026-05-30 -- sparse-solver dependency analysis (cuDSS / cusolverSp) + STRUMPACK dep
 
@@ -235,4 +288,26 @@ RXMesh's solver/autodiff path uses NVIDIA sparse solvers; the ROCm story per fac
 - Low-level cusolverSp factorization (csrqr*/csrchol* Setup/BufferInfo/Factor/Solve/ZeroPivot), csrlsvluHost, csrsymrcm reordering: NOT in hipSOLVER. Feature request filed: https://github.com/ROCm/hipSOLVER/issues/443
 - cuDSS (used heavily here): proprietary/closed-source -> NOT portable. Open ROCm-capable substitute: STRUMPACK (BSD; multifrontal sparse LU; already HIP/ROCm; ~1.9x faster than cuDSS single-GPU per a 2025 paper).
 
-DEPENDENCY: RXMesh now depends_on STRUMPACK (pending). The solver path substitutes cuDSS -> STRUMPACK (and the high-level solve -> hipSOLVER csrlsvchol) once STRUMPACK is validated on ROCm in MOAT. This is SEPARATE from the ShmemMutex editing-path blocker; the core mesh-query + editing port does not need STRUMPACK.
+DEPENDENCY: RXMesh depends_on STRUMPACK, which is now `completed` in MOAT (BSD
+multifrontal sparse LU, validated single-GPU on gfx90a). The solver path
+substitutes cuDSS -> STRUMPACK (and the high-level cusolverSp solve ->
+hipSOLVER csrlsvchol). This is SEPARATE from the editing path; the core
+mesh-query + editing port does not need STRUMPACK.
+
+## 2026-05-30 -- editing-port status after the INVALID16 fix (this run)
+
+Core mesh-data-structure path, the full static mesh-query path, and the
+dynamic-editing PatchSlicing path are now DONE and GPU-validated on gfx90a:
+- 21 core tests pass (individually); PatchSlicing passes deterministically.
+- The INVALID16 post-edit-count corruption is root-caused + fixed (s_patch_stash
+  fill used LPHashTable::stash_size=128 instead of PatchStash::stash_size=64,
+  overflowing 256 B into the adjacent __shared__ count accumulators on clang's
+  layout -- see blocker (3)).
+
+REMAINING FOLLOW-ONS (both distinct from the now-fixed INVALID16 bug; NOT done
+in this run, per bounded scope):
+1. The 3 cavity editing tests (RandomFlips/RandomCollapse/TriangleRefinement) are
+   blocked on slice_patches requesting >64 KB dynamic shared memory on the 2nd
+   slicing cycle -- a gfx90a hardware cap, needs kernel restructuring (blocker (4)).
+2. The cuDSS -> STRUMPACK solver substitution (high-level solve -> hipSOLVER
+   csrlsvchol). STRUMPACK is the recorded dep and is now completed in MOAT.

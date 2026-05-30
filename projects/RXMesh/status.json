@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T18:05:33Z",
+  "updated_at": "2026-05-30T18:27:34Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "Editing tests still blocked, but ShmemMutex hang is ROOT-CAUSED + FIXED. Corrected verdict (prior 'garbage __shared__ pointer under -fgpu-rdc' hypothesis was WRONG): the hang is a SIMT spin-lock deadlock -- ShmemMutex's while(atomicCAS(m,0,1)) spin-lock is contended by multiple lanes of one wave64 wavefront, and CDNA has no per-lane forward progress (Volta ITS) so the CAS winner stalls at reconvergence behind the spinning losers. A standalone repro (agent_space/rxmesh_shmem_mutex/) hangs in ALL 8 of {inlined|cross-TU}x{rdc on|off}x{static|dynamic shared}; pointer is valid+lane-uniform. FIX: wave-serialized critical_section() in ShmemMutex + ShmemMutexArray (__ballot/__ffsll elect one lane at a time; HIP-guarded, CUDA unchanged); rocgdb confirms the hang moves past the mutex and the 3 cavity tests no longer hang. Also fixed: compute_vf VF-query 80KB-shmem launch overflow in validate() that poisoned later CUDA calls (skip-on-overflow guard). Core 21 tests pass together (no regression). REMAINING BLOCKER (separate, not the mutex): after a slice+cleanup, a neighbor patch's stored num_v/e/f read back as INVALID16 (0xFFFF), so the next op spins on a runaway loop / update_host memcpy fails. Localized to remove_surplus_elements count-recompute (rxmesh_dynamic.cu:582-618) reading a spurious active-bitmask bit -- a distinct wave64 correctness bug to chase next. Full detail + repro matrix in notes.md.",
+      "blocked_reason": "INVALID16 post-edit-count bug ROOT-CAUSED + FIXED; PatchSlicing now PASSES deterministically (3/3). Root cause was NOT a wave64 active-bitmask stray bit (the Bitmask is 32-bit-word-indexed by element id, width-independent; the count recompute uses atomicMax(v+1) with no ballot). It was a LATENT UPSTREAM __shared__ buffer overflow benign on nvcc but fatal on clang: remove_surplus_elements cleared `__shared__ uint32_t s_patch_stash[PatchStash::stash_size]` (=64) with fill_n(..., LPHashTable::stash_size=128, INVALID32), overrunning 256B into the adjacent __shared__ count accumulators (s_num_edges/faces/vertices sit immediately after s_patch_stash on clang's layout -- confirmed by printing addresses), setting all three to 0xFFFFFFFF -> truncated to 0xFFFF=INVALID16 on store to num_*[0]. FIX (rxmesh_dynamic.cu:539-540): fill with PatchStash::stash_size. A/B-verified. Earlier ShmemMutex SIMT-deadlock (1) and compute_vf 80KB-shmem overflow (2) remain fixed. The 3 cavity editing tests (RandomFlips/RandomCollapse/TriangleRefinement) are now blocked ONLY by a DISTINCT issue (4): on the 2nd slicing cycle the slice_patches kernel itself requests ~82KB dynamic + ~5KB static shared memory, exceeding gfx90a's 64KB/block hard cap (CUDA gets 96-227KB opt-in). This is a hardware-capability gap, NOT a wave64 bug; fitting it under 64KB needs kernel restructuring (smaller block / tiled masks) -- left as the next editing-path work item per bounded scope. PatchLock (5) is flaky in isolation (8/10) and after the heavy Queries tests -- pre-existing wave64 lock-protocol concurrency, confirmed NOT a regression from the (3) fix. Core 21 tests pass individually. Remaining follow-on beyond (4): cuDSS->STRUMPACK solver substitution (STRUMPACK now completed). Full detail in notes.md; PORTING_GUIDE updated with the INVALID16-fill-length lesson.",
       "validated_sha": null,
       "started_at": "2026-05-30T09:21:09Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T18:05:33Z",
+      "updated_at": "2026-05-30T18:27:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
