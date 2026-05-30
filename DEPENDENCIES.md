@@ -33,8 +33,8 @@ If a project is (or is likely to be) a dependency of another MOAT target, its `n
 
 RAPIDS (port in this order):
 - `rmm` -- base, no MOAT deps.
-- `cuCollections` -- base (NVIDIA CCCL-native concurrent hashtables: static_map/static_set/static_multimap). No ROCm fork exists, so it must be ported from scratch. Consumed by `cudf` (join/groupby/hash/reductions/search) and other hashtable users.
-- `raft` -- depends on `rmm`.
+- `cuCollections` -- base (NVIDIA CCCL-native concurrent hashtables: static_map/static_set/static_multimap). No ROCm fork exists, so it must be ported from scratch. Consumed by `cudf` (join/groupby/hash/reductions/search) and other hashtable users. DELIVERED PARTIAL (jeffdaily/cuCollections @ moat-port, state `ported`): the concurrent hashtables are GPU-validated for >=4-byte keys (what cudf needs); deferred = sub-word (int8/int16) keys, retrieve_all-over-pairs (rocPRIM tuple DeviceSelect wall), >8-byte atomic CAS (needs sm_90+/ITS), bloom_filter.
+- `raft` -- depends on `rmm`. DELIVERED PARTIAL (jeffdaily/raft @ moat-port, state `ported`): core/linalg/random/label/utils GPU-validated; neighbors/distance/sparse/solvers/matrix/stats deferred (need cuCollections + CUTLASS on ROCm). cuvs/cuml need those deferred raft modules, so they stay effectively blocked even though raft is delivered.
 - `cudf` -- depends on `rmm`, `cuCollections`.
 - `cuvs` -- depends on `rmm`, `raft`.
 - `cugraph` -- depends on `rmm`, `raft`, `cudf`.

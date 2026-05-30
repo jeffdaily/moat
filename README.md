@@ -23,7 +23,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | catboost | [catboost/catboost](https://github.com/catboost/catboost) | - | todo | gated | gated |
 | cudf | [rapidsai/cudf](https://github.com/rapidsai/cudf) | - | porting (blocked) | gated | gated |
 | LMCache | [LMCache/LMCache](https://github.com/LMCache/LMCache) | - | todo | gated | gated |
-| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | done | done | validating |
+| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | revalidate | revalidate | done |
 | llm.c | [karpathy/llm.c](https://github.com/karpathy/llm.c) | - | todo | gated | gated |
 | kaldi | [kaldi-asr/kaldi](https://github.com/kaldi-asr/kaldi) | - | todo | gated | gated |
 | cuml | [rapidsai/cuml](https://github.com/rapidsai/cuml) | - | todo | gated | gated |
@@ -38,12 +38,12 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | cugraph | [rapidsai/cugraph](https://github.com/rapidsai/cugraph) | - | todo | gated | gated |
 | mirage | [mirage-project/mirage](https://github.com/mirage-project/mirage) | - | todo | gated | gated |
 | k2 | [k2-fsa/k2](https://github.com/k2-fsa/k2) | - | todo | gated | gated |
-| raft | [rapidsai/raft](https://github.com/rapidsai/raft) | - | porting | gated | gated |
+| raft | [rapidsai/raft](https://github.com/rapidsai/raft) | [raft](https://github.com/jeffdaily/raft/tree/moat-port) | review | gated | gated |
 | heavydb | [heavyai/heavydb](https://github.com/heavyai/heavydb) | - | todo | gated | gated |
-| rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | [rmm](https://github.com/jeffdaily/rmm/tree/moat-port) | done | done | validating |
+| rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | [rmm](https://github.com/jeffdaily/rmm/tree/moat-port) | done | revalidate | validating |
 | cuvs | [rapidsai/cuvs](https://github.com/rapidsai/cuvs) | - | todo | gated | gated |
 | GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | [GPUMD](https://github.com/jeffdaily/GPUMD/tree/moat-port) | done | done | validating |
-| cuCollections | [NVIDIA/cuCollections](https://github.com/NVIDIA/cuCollections) | - | porting | gated | gated |
+| cuCollections | [NVIDIA/cuCollections](https://github.com/NVIDIA/cuCollections) | [cuCollections](https://github.com/jeffdaily/cuCollections/tree/moat-port) | review | gated | gated |
 | amgcl | [ddemidov/amgcl](https://github.com/ddemidov/amgcl) | [amgcl](https://github.com/jeffdaily/amgcl/tree/moat-port) | done | done | validating |
 | CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | [CudaSift](https://github.com/jeffdaily/CudaSift/tree/moat-port) | done | done | validating |
 | cupoch | [neka-nat/cupoch](https://github.com/neka-nat/cupoch) | [cupoch](https://github.com/jeffdaily/cupoch/tree/moat-port) | done | done | validating |
@@ -61,7 +61,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | unified-cache-management | [ModelEngine-Group/unified-cache-management](https://github.com/ModelEngine-Group/unified-cache-management) | - | todo | gated | gated |
 | gtsam_points | [koide3/gtsam_points](https://github.com/koide3/gtsam_points) | - | todo | gated | gated |
 | gpu4pyscf | [pyscf/gpu4pyscf](https://github.com/pyscf/gpu4pyscf) | - | todo | gated | gated |
-| RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | [RXMesh](https://github.com/jeffdaily/RXMesh/tree/moat-port) | done | validating | validating |
+| RXMesh | [owensgroup/RXMesh](https://github.com/owensgroup/RXMesh) | [RXMesh](https://github.com/jeffdaily/RXMesh/tree/moat-port) | done | done | validating |
 | MPPI-Generic | [ACDSLab/MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) | [MPPI-Generic](https://github.com/jeffdaily/MPPI-Generic/tree/moat-port) | done | done | validating |
 | sppark | [supranational/sppark](https://github.com/supranational/sppark) | - | todo | gated | gated |
 | Gpufit | [gpufit/Gpufit](https://github.com/gpufit/Gpufit) | [Gpufit](https://github.com/jeffdaily/Gpufit/tree/moat-port) | done | done | validating |
