@@ -138,3 +138,22 @@ expected physical convergence of the example. Compile/lint is explicitly NOT the
   models pull the same texture/atomic edges.
 - Do NOT add GitHub Actions; do NOT run gen_readme; commit only status.json/plan.md/notes.md
   + a PORTING_GUIDE changelog line. Parent delivers the fork.
+
+## Final status (lead linux-gfx90a: ported)
+
+Core MPPI ported and GPU-validated on gfx90a. 172/179 HIP TUs build; all core MPPI
+TUs build and the core GPU-vs-CPU correctness suite, the cartpole closed-loop
+example, and a fixed-seed bit-identical determinism check all PASS (details in
+notes.md). The wave64 warp-synchronous reduction was the one real correctness fault;
+the rest were clang-strictness + toolkit-mapping mechanics, all USE_HIP-guarded with
+the CUDA path unchanged.
+
+Deferred (separate follow-up, recorded in notes.md): the texture-backed map-cost
+sub-feature -- the autorally/quadrotor costs + racer_dubins/bicycle_slip vehicle
+dynamics that consume texture_helper. It needs (a) the texture linear-filter
+software-interpolation fix (popsift/gpuRIR fault class -- texture_helper defaults
+cudaFilterModeLinear+element-read float, rejected on AMD), (b) HIP texture-object is
+a pointer not an int so gtest `EXPECT_EQ(tex,0)` comparisons need adjusting, and
+(c) the `case this->CONST` / dependent-typename clang fixes across those models.
+7 TUs (3 texture-helper tests + 4 vehicle models) do not build pending this; ~22
+ctest cases are in this bucket. Not required for core MPPI correctness.
