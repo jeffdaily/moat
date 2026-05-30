@@ -394,3 +394,104 @@ the recorded dep and is `completed` in MOAT) -- NOT attempted here.
 NOTE on the superseded blocker (4): the "slice_patches needs a <64 KB restructuring"
 item above is RESOLVED-AS-MISDIAGNOSED. No slice_patches restructuring was needed;
 the offending request was the editing kernels' launch box being force-set to 80 KB.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3 wave32), ROCm 7.2.1.
+Fork: jeffdaily/RXMesh moat-port @ d50370b0691ba6961198e8f14a3a552c5d988ff1 (lead sha, NO fork push needed).
+
+### Build command
+
+```
+cmake -S projects/RXMesh/src -B projects/RXMesh/src/build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DRX_USE_POLYSCOPE=OFF -DRX_BUILD_APPS=OFF -DRX_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release
+HIP_VISIBLE_DEVICES=0 ninja -C projects/RXMesh/src/build RXMesh RXMesh_test
+```
+
+Build: 103 steps, 0 errors, 0 warnings that affect correctness.
+
+### gfx1100 code-object evidence
+
+`roc-obj-ls` on RXMesh_test:
+```
+1  host-x86_64-unknown-linux-gnu-
+1  hipv4-amdgcn-amd-amdhsa--gfx1100   (42566000 bytes)
+```
+No gfx90a code object; exactly one gfx1100 device binary.
+
+### WARP_SIZE = 32 on gfx1100
+
+macros.h defines WARP_SIZE as 64 on `__GFX9__` (CDNA2, gfx90a) and 32 on all
+other AMD targets (else-branch of `#if defined(__GFX9__)`). On gfx1100 (RDNA3)
+`__GFX9__` is NOT defined; the `#else` branch fires: WARP_SIZE = 32.
+
+Confirmed by a standalone preprocessor check:
+  clang++ --offload-arch=gfx1100 ... -x hip warp_check.cu
+  -> `#pragma message: WARP_SIZE=32` (device pass)
+  -> `static_assert(WARP_SIZE == 32)` passes (no error)
+
+### Wave64 fixes degenerate correctly to wave32
+
+ballot_sub_warp_32() (kernels/util.cuh): on HIP calls `__ballot(predicate)`
+(64-bit on wave64, 32-bit on wave32). Then `half = (threadIdx.x % warpSize) / 32`.
+On gfx1100, warpSize=32, so half=0 always; result = `(b >> 0) & 0xFFFFFFFF` --
+identical to a plain 32-bit ballot. No truncation, no second-word write needed.
+On gfx90a, warpSize=64, half=0 or 1, each 32-lane sub-group extracts its own word.
+
+warp_update_mask and query_dispatcher call ballot_sub_warp_32() and write one
+32-bit participation/deletion bitmask word per call -- correct on both wave sizes.
+
+ShmemMutex::critical_section(): on __HIP_DEVICE_COMPILE__ uses `__ballot(1)`
+(32-bit on gfx1100) and `__ffsll` to elect one lane at a time. On wave32 this
+degenerates to a 32-bit mask over the 32-lane warp -- the serialization loop
+iterates at most 32 times (one per active lane) and is deadlock-free by
+construction (only one contending lane per wavefront is allowed to hold the
+mutex at a time). Wave64-specific code paths (`__GFX9__`) are NOT taken on gfx1100.
+
+### Test results (RXMesh_test, HIP_VISIBLE_DEVICES=0, sphere3.obj)
+
+Filter: RXMeshStatic.*:RXMesh.*:Util.*:RXMeshDynamic.PatchScheduler:RXMeshDynamic.PatchLock:
+RXMeshDynamic.Validate:RXMeshDynamic.RandomFlips:RXMeshDynamic.RandomCollapse:
+RXMeshDynamic.TriangleRefinement:RXMeshDynamic.PatchSlicing
+
+Run 1: 25/25 PASSED (1181 ms)
+Run 2: 25/25 PASSED (1220 ms)
+
+vs gfx90a lead: gfx90a ended 24/25 (PatchLock was flaky in-suite after heavy
+static queries); on gfx1100 all 25 pass cleanly in both runs, including PatchLock.
+The full 25 = the gfx90a 21 core tests + 4 dynamic-editing tests (RandomFlips,
+RandomCollapse, TriangleRefinement, PatchSlicing) that the lead also validated
+in its second run (the editing-port completion run). Follower passes ALL of them.
+
+Individual dynamic-editing results (run 1):
+- RXMeshDynamic.RandomFlips:        OK (11 ms)
+- RXMeshDynamic.RandomCollapse:     OK (6 ms)
+- RXMeshDynamic.TriangleRefinement: OK (179 ms, input bumpy-cube.obj)
+- RXMeshDynamic.PatchSlicing:       OK (13 ms)
+- RXMeshDynamic.PatchLock:          OK (80 ms) -- NO flake on gfx1100
+- RXMeshDynamic.PatchScheduler:     OK
+- RXMeshDynamic.Validate:           OK
+
+### No-deadlock confirmation for dynamic editing
+
+The ShmemMutex and ShmemMutexArray critical_section() paths (used by
+PatchStash::insert_patch and CavityManager::add_edge_to_cavity_graph) ran to
+completion in all 7 dynamic-editing/locking tests across both runs. Total wall
+time for the full suite was ~1.2 s; no timeout, no hang, clean gtest exit.
+
+On gfx1100 (wave32), the critical_section() wave-serial loop iterates over at
+most 32 active lanes. There is no intra-wavefront spin-lock hazard because only
+one lane holds the mutex at a time within its wavefront; cross-wavefront
+contention resolves via the atomic CAS (wavefronts schedule independently).
+This is the same mechanism that fixed gfx90a, and it degenerates correctly to
+a single-step loop when only one lane of a 32-wide warp contends.
+
+### Verdict
+
+PASS. The gfx90a wave64 ballot/sub-warp fixes degenerate correctly to wave32
+on gfx1100. All 25 RXMesh_test tests pass on real GPU hardware (gfx1100) in
+two deterministic runs. No hang, no corrupted topology, no NaN, clean exit.
+Fork commit d50370b is validated on linux-gfx1100. State: completed.
