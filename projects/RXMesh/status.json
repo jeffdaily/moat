@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T17:39:43Z",
+  "updated_at": "2026-05-30T18:05:33Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "Dynamic mesh-editing tests (RXMeshDynamic.RandomFlips/RandomCollapse/TriangleRefinement/PatchSlicing) HANG on gfx90a: slice_patches waves spin forever in ShmemMutex::lock on a garbage __shared__ m_mutex pointer under HIP -fgpu-rdc. The static query + core data-structure path (21 tests incl. all 8 query ops x1000, Oriented_VV, EVDiamond, MultiQueries, dynamic PatchScheduler/PatchLock/Validate) is GPU-validated and passes. cusolverSp sparse-solver tests excluded (no hipSOLVER equivalent). Two targeted fixes (syncthreads in alloc, header-inline insert_patch) did not stop the spin; needs deeper GPU debugging (try non-rdc dynamic path or recompute shared mutex addr in callee). See notes.md.",
+      "blocked_reason": "Editing tests still blocked, but ShmemMutex hang is ROOT-CAUSED + FIXED. Corrected verdict (prior 'garbage __shared__ pointer under -fgpu-rdc' hypothesis was WRONG): the hang is a SIMT spin-lock deadlock -- ShmemMutex's while(atomicCAS(m,0,1)) spin-lock is contended by multiple lanes of one wave64 wavefront, and CDNA has no per-lane forward progress (Volta ITS) so the CAS winner stalls at reconvergence behind the spinning losers. A standalone repro (agent_space/rxmesh_shmem_mutex/) hangs in ALL 8 of {inlined|cross-TU}x{rdc on|off}x{static|dynamic shared}; pointer is valid+lane-uniform. FIX: wave-serialized critical_section() in ShmemMutex + ShmemMutexArray (__ballot/__ffsll elect one lane at a time; HIP-guarded, CUDA unchanged); rocgdb confirms the hang moves past the mutex and the 3 cavity tests no longer hang. Also fixed: compute_vf VF-query 80KB-shmem launch overflow in validate() that poisoned later CUDA calls (skip-on-overflow guard). Core 21 tests pass together (no regression). REMAINING BLOCKER (separate, not the mutex): after a slice+cleanup, a neighbor patch's stored num_v/e/f read back as INVALID16 (0xFFFF), so the next op spins on a runaway loop / update_host memcpy fails. Localized to remove_surplus_elements count-recompute (rxmesh_dynamic.cu:582-618) reading a spurious active-bitmask bit -- a distinct wave64 correctness bug to chase next. Full detail + repro matrix in notes.md.",
       "validated_sha": null,
       "started_at": "2026-05-30T09:21:09Z",
       "completed_at": null,
-      "updated_at": "2026-05-30T09:21:09Z",
+      "updated_at": "2026-05-30T18:05:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

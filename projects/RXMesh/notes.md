@@ -134,29 +134,99 @@ Determinism: Queries / Oriented_VV pass identically across repeated runs; the
 participation bitmask (where the wave64 ballot bug would corrupt non-
 deterministically) is stable.
 
-BLOCKER -- dynamic mesh-EDITING tests hang:
-- RXMeshDynamic.RandomFlips / RandomCollapse / TriangleRefinement / PatchSlicing
-  HANG (infinite spin; never complete in 100s+ on a tiny mesh). rocgdb on the live
-  hang: the `slice_patches` kernel waves are stuck in `ShmemMutex::lock`
-  (kernels/shmem_mutex.cuh) spinning on `atomicCAS(m_mutex, 0, 1)` where `m_mutex`
-  is a GARBAGE pointer (0x1, 0x10, 0x1000000000000, differing per lane), so the
-  CAS on an invalid address never succeeds.
-- Root: the ShmemMutex carries a function-local `__shared__ int` pointer set in
-  `alloc()`. Pre-port this device code was dead on HIP (`#ifdef __CUDA_ARCH__`
-  false) so the mutex was a silent no-op; enabling it correctly (via the
-  __CUDA_ARCH__||__HIP_DEVICE_COMPILE__ rewrite) surfaced that the shared mutex
-  pointer is not valid where it is dereferenced under HIP -fgpu-rdc.
-- Tried and did NOT fix it: (1) `__syncthreads()` after the 0-init in alloc()
-  (the pointer itself is bad, not a stale word); (2) making
-  PatchStash::insert_patch(patch, ShmemMutex&) header-inline to remove the
-  cross-TU device-function boundary (patch_stash.cu -> patch_stash.h). Both kept;
-  neither stops the spin. Core 21 tests still pass after both (no regression).
-- Candidate next steps (need deeper GPU debugging): build the dynamic-editing
-  path without -fgpu-rdc; or replace the shared-pointer ShmemMutex with a scheme
-  that recomputes the shared mutex address from a known shared base in each
-  callee (avoid passing a raw __shared__ pointer through device calls); or audit
-  whether the CavityManager `m_s_patch_stash_mutex` member's alloc() actually runs
-  for the slice path.
+EDITING-TEST BLOCKERS (RandomFlips/RandomCollapse/TriangleRefinement/PatchSlicing):
+
+== (1) ShmemMutex spin-lock deadlock -- ROOT-CAUSED AND FIXED ==
+- Symptom: slice_patches waves spin forever in ShmemMutex::lock on
+  `atomicCAS(m_mutex, 0, 1)` (kernels/shmem_mutex.cuh).
+- The prior "garbage / per-lane m_mutex pointer under -fgpu-rdc" hypothesis was
+  WRONG. A standalone HIP repro (agent_space/rxmesh_shmem_mutex/) of exactly the
+  pattern -- a __device__ helper that points a member at a function-local
+  __shared__ int (mirroring alloc()), then an atomicCAS spin-lock, exercised by
+  256 threads (4 wave64 wavefronts) -- swept the full matrix:
+    {helper inlined vs separate-TU} x {-fgpu-rdc on/off} x {static vs dynamic
+    extern __shared__}. The original split lock()/unlock() form HANGS in ALL
+  configurations (incl. inlined + rdc-off + static shared -- no cross-TU, no rdc).
+  The repro also showed m_mutex is a VALID, lane-uniform shared address
+  (0x1000000000000 is just the generic-address-space tag; low32 == 0). So the
+  bug is neither -fgpu-rdc codegen, nor cross-TU, nor a garbage pointer.
+- TRUE root cause: a SIMT spin-lock deadlock. CUDA Volta+ has Independent Thread
+  Scheduling so a lane that wins the CAS makes forward progress to unlock() even
+  while sibling lanes of the same warp spin. AMD CDNA (gfx90a, wave64) has NO
+  per-lane forward-progress guarantee within a wavefront: the winning lane is
+  stuck at SIMT reconvergence waiting on the losing lanes, which spin forever ->
+  classic lockstep spin-lock deadlock. This is exactly what ShmemMutex's own
+  `#error ... requires sm70 ... Independent Thread Scheduling` warns about.
+- Folding the critical section into the CAS-acquire loop ("body-in-loop")
+  does NOT help: the compiler peels acquiring lanes off the exec mask
+  (s_andn2_b64 exec,...) and keeps the lock held until the body runs for the
+  reconverged wave -> still deadlocks (repro: 10/10 hang at -O3).
+- FIX (USE_HIP/__HIP_DEVICE_COMPILE__-guarded; CUDA path unchanged): wave-serialize
+  the lock. Added ShmemMutex::critical_section(func) and
+  ShmemMutexArray::critical_section(loc, func): elect one active lane of the
+  wavefront at a time via __ballot(1)/__ffsll, let that single lane fully
+  acquire/run/release, then retire its bit and move to the next. With only one
+  contending lane per wavefront there is no intra-wavefront spin-lock hazard
+  (cross-wavefront contention is fine -- wavefronts schedule independently).
+  Repro: wave-serial is 10/10 correct & deadlock-free at -O3, incl. the
+  subset-of-lanes-from-a-loop shape that mirrors copy_to_hashtable.
+  Call sites converted: PatchStash::insert_patch(patch, ShmemMutex&)
+  (patch_stash.h) and CavityManager::add_edge_to_cavity_graph's two
+  ShmemMutexArray critical sections (cavity_manager_impl.cuh). rocgdb confirms
+  the hang moves PAST the mutex (slice now completes for the first patch with
+  valid counts 151/417/267). The two earlier "fixes" (__syncthreads in alloc;
+  header-inlining insert_patch) were neither necessary nor sufficient.
+
+== (2) compute_vf (Op::VF) shared-memory overflow in validate() -- FIXED ==
+- RXMeshDynamic::validate()'s check_ribbon launches the VF query (compute_vf),
+  which here needs ~81920 B (80 KB) of dynamic shared memory. gfx90a offers only
+  64 KB/block, so the launch fails with "invalid argument". A following
+  cudaDeviceSynchronize() does NOT clear it (no kernel was queued), so the sticky
+  error poisons the next unrelated CUDA call (it broke Util.Scan when the suite
+  ran end-to-end, and slice_patches' pre-launch checkpoint). This is a hardware
+  capability gap, not a logic bug (CUDA targets have >=96 KB optin).
+- FIX: in check_ribbon, query cudaFuncGetAttributes(compute_vf).
+  maxDynamicSharedSizeBytes and, if the required dyn smem exceeds it, skip the
+  VF-based ribbon-faces sub-check (the EV-based ribbon-edges check still runs),
+  log a warning, and return -- no failed launch, no sticky error.
+
+== (3) Post-edit patch metadata = INVALID16 -- STILL BLOCKING (separate bug) ==
+- With (1)+(2) fixed, slice_patches(patch 0) and cleanup() run to completion, but
+  the next loop iteration reads patch 1 with num_v == num_e == num_f == 0xFFFF
+  (INVALID16) at slice_patches entry (rxmesh_dynamic.h:166); the element-strided
+  loops then run on a bogus huge bound and spin. rocgdb localized it to a
+  `for(i=tid;i<num;...)` loop in BOTH the SLICE_GGP (line 273) and non-SLICE_GGP
+  paths, so it is NOT block_mat_transpose/GGP (disabling SLICE_GGP did not help).
+- Stage-instrumented (printf of pid + counts) slice_patches entry and
+  remove_surplus_elements (RSE) entry pinned the transition:
+    iter0: SLICE-ENTRY pid=0 v=163 e=447 f=285  (patch 0 sliced OK)
+           RSE-ENTRY   pid=1 v=132 e=358 f=227  (patch 1 still VALID during
+                                                 iter0 cleanup)
+    iter1: SLICE-ENTRY pid=1 v=65535 e=65535 f=65535  (patch 1 now INVALID16)
+  So a patch's stored element counts go valid->INVALID16 across one
+  edit+cleanup cycle, on a NEIGHBOR patch (not the one being sliced).
+- RSE recomputes and writes the counts at rxmesh_dynamic.cu:582-618:
+  s_num_vertices = atomicMax(v+1) over s_vert_tag (the post-cleanup active
+  bitmask from reevaluate_active_elements), then pi.num_vertices[0]=s_num_vertices.
+  A spurious high tag bit (a wave64 Bitmask / __ballot artifact in the cleanup
+  active-mask recompute) would make that max == 0xFFFF. This is the next thing to
+  chase: audit reevaluate_active_elements + Bitmask set/store/ballot on wave64
+  for an out-of-range bit, OR a patch-metadata aliasing bug when slicing adds a
+  patch. It is a distinct CORRECTNESS bug from the ShmemMutex hang.
+- The 3 cavity-based editing tests (RandomFlips/RandomCollapse/TriangleRefinement)
+  no longer HANG after fix (1) -- the ShmemMutexArray wave-serialization removed
+  the cavity-graph deadlock; they now fail with a CUDA error in update_host's
+  cudaMemcpy (rxmesh_dynamic.cu:2877) whose size derives from the same corrupt
+  num_edges[0] -- i.e. the same bug (3). PatchSlicing still hangs on bug (3).
+
+Verdict: ShmemMutex hang == RXMesh logic bug (assumes Volta ITS), FIXED on HIP
+(wave-serialization). Editing tests remain blocked on bug (3). Core 21 tests
+pass TOGETHER (no regression) after (1)+(2) -- before (2) the suite aborted at
+Util.Scan from the compute_vf sticky error. Determinism holds (PatchLock 10/10 on
+a clean build; earlier 'flakiness' was a stale-binary artifact from an aborted
+rebuild, not real).
+Standalone repro + full matrix: agent_space/rxmesh_shmem_mutex/ (mutex.h,
+main.hip, worker.hip, run.sh..run4.sh).
 
 ## 2026-05-30 -- sparse-solver dependency analysis (cuDSS / cusolverSp) + STRUMPACK dep
 
