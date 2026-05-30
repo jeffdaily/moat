@@ -144,8 +144,94 @@ output-precision determinism on gfx90a. Validated.
 
 ## Outstanding / follower notes
 
-- gfx1100/gfx1151: expected to pass with only a `-DCMAKE_HIP_ARCHITECTURES`
-  change (no wave64 dependence). Validate on that hardware before marking.
+- gfx1100: VALIDATED 2026-05-30 (see section below).
+- gfx1151: expected to pass with only a `-DCMAKE_HIP_ARCHITECTURES` change; validate on that hardware.
 - The `data` submodule gitlink is missing from the dev HEAD tree (`.gitmodules`
   references it but `git ls-tree HEAD data` is empty); clone the DATA repo
   directly as above. Not a port issue.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100. GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1, hipcc/clang++ 22.0.0. SHA validated: 3a506a202f999f97bfe93b080c55e188bd7a0e35.
+
+No source or CMake changes were needed; only `-DCMAKE_HIP_ARCHITECTURES=gfx1100` differs from the gfx90a build.
+
+### Build commands
+
+```bash
+cd projects/3DUNDERWORLD-SLS-GPU_CPU/src
+# dep install (GLM not present on this host)
+sudo apt-get install -y libglm-dev
+# data: clone directly (submodule not in dev HEAD tree)
+git clone --depth 1 https://github.com/theICTlab/3DUNDERWORLD-SLS-DATA.git data
+rm -rf build_hip && mkdir build_hip
+HIP_VISIBLE_DEVICES=0 cmake -S . -B build_hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DGTEST=ON
+# wrapped with timeit:
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU compile -- \
+  cmake --build build_hip -j$(nproc)
+```
+
+Build result: success, warnings only (nodiscard on cudaEvent aliases, unused variable in CPU path -- pre-existing). 3 HIP translation units compiled for gfx1100.
+
+### Code-object evidence
+
+```
+roc-obj-ls build_hip/bin/SLS_GPU
+# 3 code objects, all hipv4-amdgcn-amd-amdhsa--gfx1100; no gfx90a.
+1  hipv4-amdgcn-amd-amdhsa--gfx1100  (6640 bytes)
+2  hipv4-amdgcn-amd-amdhsa--gfx1100  (12392 bytes)
+3  hipv4-amdgcn-amd-amdhsa--gfx1100  (27128 bytes)
+```
+
+### GPU reconstruction result
+
+```bash
+DATA=projects/3DUNDERWORLD-SLS-GPU_CPU/src/data/alexander
+BIN=projects/3DUNDERWORLD-SLS-GPU_CPU/src/build_hip/bin
+# Run 1
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU test -- bash -c \
+  "HIP_VISIBLE_DEVICES=0 $BIN/SLS_GPU --leftcam=$DATA/leftCam/dataset1 \
+   --rightcam=$DATA/rightCam/dataset1 \
+   --leftconfig=$DATA/leftCam/calib/output/calib.xml \
+   --rightconfig=$DATA/rightCam/calib/output/calib.xml \
+   --output=/tmp/output_gpu_run1.ply --format=jpg --width=1024 --height=768"
+# Run 2 (determinism)
+HIP_VISIBLE_DEVICES=0 $BIN/SLS_GPU ... --output=/tmp/output_gpu_run2.ply ...
+# CPU reference
+$BIN/SLS ... --output=/tmp/output_cpu.ply ...
+```
+
+Point counts: GPU run1 = GPU run2 = CPU = 146064 (matches gfx90a reference exactly).
+
+Coordinate stats (GPU run1):
+- x: min=-119.898, max=135.822, mean=45.003
+- y: min=-117.639, max=208.327, mean=16.143
+- z: min=-116.617, max=134.884, mean=-55.124
+- No NaN/Inf detected.
+
+Matches gfx90a coordinate stats within print precision.
+
+GPU vs CPU nearest-neighbor correspondence:
+- CPU->GPU: mean=3.7e-5, p99.9=1.0e-3, max=2.5e-3; 100% coverage @tol=10.0 and @tol=0.5.
+- GPU->CPU: same (symmetric). Reconstruction is numerically identical to CPU reference to file print precision.
+
+Determinism (run1 vs run2, set-based NN):
+- count match: True (146064 each)
+- run1->run2: mean=4.7e-6, max=1.0e-3; 100% coverage @tol=1.0, 99.96% @tol=1e-3.
+- The residual max (1.0e-3) is the ASCII PLY 6-sig-fig print-precision ceiling; identical to gfx90a behavior. The point SET is stable; only bucket-fill ordering (atomicInc) varies, producing last-digit float jitter -- well below the project's MAX_DIFF=10 tolerance.
+
+### CPU gtest suite
+
+```bash
+cd build_hip && ctest --output-on-failure
+# 3/3 passed: RunCPUTest.Arch, RunCPUTest.Alexander, CPU_TEST (44 sec total)
+```
+
+No regression in non-GPU tests.
+
+### Verdict
+
+PASS. gfx1100 (wave32, RDNA3) produces identical reconstruction results to gfx90a and CPU reference. No source changes were needed; the port is wave-size-agnostic. No fork interaction performed.
