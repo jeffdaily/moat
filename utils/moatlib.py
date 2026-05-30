@@ -429,7 +429,9 @@ def commit_and_push(paths, message, push=True, retries=3):
     if not push:
         return True
     for _ in range(retries):
-        _git("pull", "--rebase", check=False)
+        # --autostash so a concurrent agent's unstaged files in the shared
+        # working tree don't abort our rebase (multi-agent MOAT runs).
+        _git("pull", "--rebase", "--autostash", check=False)
         r = _git("push", check=False)
         if r.returncode == 0:
             return True
