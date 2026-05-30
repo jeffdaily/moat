@@ -259,3 +259,85 @@ All 42 non-passes triaged, NONE a core regression:
 
 Build/validation logs in agent_space/ (gitignored): mppi_build_*.log,
 ctest_serial_full.log, mppi_determinism_check.cu.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1,
+hipcc clang 22, cmake 3.31, Ninja. fork sha 4231397db (moat-port tip, unchanged).
+
+### Build
+
+Clone: `git clone --branch moat-port https://github.com/jeffdaily/MPPI-Generic src`
+then `git submodule update --init --recursive` (submodules not cloned by default).
+libyaml-cpp-dev installed via apt (libeigen3-dev was already present).
+
+Configure:
+```
+cmake -S projects/MPPI-Generic/src -B projects/MPPI-Generic/src/build-hip -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DMPPI_BUILD_TESTS=ON -DMPPI_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/MPPI-Generic/src/build-hip -j16
+```
+Result: 160/160 targets built, exit 0. Configure ~4s, build ~50s.
+
+gfx1100 code-object evidence (roc-obj-ls on rollout_kernel_tests):
+  hipv4-amdgcn-amd-amdhsa--gfx1100  (size=55544)
+No gfx90a code object present. Arch confirmed.
+
+### gtest results (ctest -j1, HIP_VISIBLE_DEVICES=0, 174s)
+
+429/465 passed (92%). 36 failures + 5 disabled + 3 skipped.
+gfx90a reference: 430/472 = 91% (42 non-passes, but that run predates R3; R3
+CMake-excluded the 7 deferred executables, removing them from the test pool).
+
+All 36 failures are pre-existing categories -- ZERO new core regressions:
+
+- 8 ARStandardCost.* (5 SEGFAULT + 3 Failed): deferred texture linear-filter
+  fault class, identical to gfx90a.
+- 2 ARRobustCostTest.*: deferred vehicle cost, identical to gfx90a.
+- 1 ARNeuralNetDynamics.computeGradTest: map::at NN-loader npz, same as gfx90a.
+- 2 Dynamics.stepGPU + DubinsDynamics.TestUpdateStateGPU: vendor-agnostic
+  dim_x guard, same as gfx90a.
+- 4 RacerDubinsElevationLSTMUncertaintyTest.*: map::at NN-loader, same as gfx90a.
+- 1 WeightedReductionKernel.comparisonTestAutorallyMPPI_Generic: legacy
+  reference-kernel in-place RAW hazard, same as gfx90a.
+- 1 cuFFT.checkErrorCode: Bus error (hipFFT dereferences garbage plan handle),
+  same as gfx90a.
+- 6 GaussianTests.Check*: hipRAND != cuRAND sequence, over-tight 0.1% CDF bound,
+  same category as gfx90a.
+- 1 Integration.RK4: AMD vs NVIDIA fma rounding (2e-4 vs 1e-6 abs bound),
+  same as gfx90a.
+- 6 FNNHelperTest.LoadModelNPZTestNested + LSTMHelperTest.* + LSTMLSTMHelperTest.*:
+  map::at NN-loader npz, same category as gfx90a.
+- 1 SamplingDistributionTests.CompareLikelihoodRatioCostsCPUvsGPU<GaussianDistribution
+  <LinearDynamicsParams<1,7>>>: FP tolerance margin (2.98e-8 vs bound 2.58e-8,
+  16% over), same AMD-vs-NVIDIA rounding category as RK4. Functionally correct.
+- 1 CudaFloatStructsTests/*.VecAddVecMultScalar: FMA rounding on float2 (GPU uses
+  fused multiply-add for `input1 + input2 * scalar`; CPU uses two separate ops);
+  exact-equality assert fails on the float2 variant only. AMD-vs-NVIDIA FP category.
+- 1 DoubleIntegratorTracking.TubeMPPILargeVariance: stochastic controller test;
+  re-run passes. Same flakiness class as GaussianTests (RNG-sensitive).
+- 1 RacerDubins.ComputeStateTrajectoryFiniteTest: pre-existing test bug --
+  computeDynamics writes 6 of 7 state_der entries; STEER_ANGLE_RATE (index 6)
+  is never set, leaving uninitialized stack memory. allFinite() check on that
+  slot fails on gfx1100 Release where stack happens to contain Inf/NaN; was
+  passing on gfx90a by luck. CPU-only test, no GPU path involved.
+
+### Core correctness: wave-agnostic reduction on wave32
+
+The key correctness tests (same results as gfx90a lead):
+- rollout_kernel_tests: 6/6 PASS including CombinedRolloutKernelGPUvsCPU,
+  SplitRolloutKernelGPUvsCPU (full GPU rollout vs CPU baseline within tolerance).
+- rmppi_kernel_tests: 5/5 PASS including ValidateCombined/SplitInitEvalKernelAgainstCPU
+  and ValidateCombined/SplitRMPPIRolloutKernelAgainstCPU (exercises
+  multiCostArrayReduction, the 2nd wave64 reduction site).
+- normexp_kernel_tests 7/7, CartPole 12/12, all PASS.
+- SamplingDistributionTests CompareLikelihoodRatioCostsCPUvsGPU: 9/10 PASS
+  (the 1 failure is an FP tolerance margin issue, not a functional error).
+
+The warpReduceAdd -> __syncthreads block reduction fix (stop_condition=0) is
+correct on wave32: the reduction-dependent tests (GPU rollout cost sums, optimal
+control) all pass. No NaN, no HIP fault, clean exits throughout.
+
+No fork changes needed or made. Fork sha 4231397db unchanged.
