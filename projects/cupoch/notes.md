@@ -185,6 +185,53 @@ gfx90a. (Harness CPU reference had a latent bug -- Eigen Vector3f default ctor d
 NOT zero, so a std::map accumulator must be explicitly zero-initialized before +=;
 fixed in the harness, not a cupoch issue.)
 
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork sha: 8fd480654b900040a1fa03140435916bcbd93d47 (moat-port, unchanged -- no follower code change needed).
+
+### Build
+
+Submodules initialized (stdgpu, eigen, spdlog, dlpack; lbvh/lbvh_index in-tree):
+
+    cmake <src> -DUSE_HIP=ON -DCUPOCH_CORE_ONLY=ON -DUSE_RMM=OFF \
+        -DBUILD_UNIT_TESTS=OFF -DBUILD_PYTHON_MODULE=OFF -DBUILD_PYBIND11=OFF \
+        -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+        -DCMAKE_BUILD_TYPE=Release
+    cmake --build . --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j$(nproc)
+
+Result: 0 errors, 7 libs built: libcupoch_{utility,camera,knn,geometry}.a + libflann_cuda_s.a + libstdgpu.a + libjsoncpp.a. Build time ~132s.
+
+### gfx1100 code-object evidence
+
+    llvm-objdump --offloading libcupoch_geometry.a | grep "Extracting"
+    -> all .cu.o entries: "hipv4-amdgcn-amd-amdhsa--gfx1100" (25 objects)
+    -> no gfx90a entries
+
+Same confirmed for libcupoch_knn.a (kdtree_flann.cu.o, lbvh_knn.cu.o both gfx1100).
+
+### GPU dispatch confirmation
+
+AMD_LOG_LEVEL=3 on harness (3 GPU runs): 1710 hipLaunchKernel calls + 324 hipMemcpy ops (real device execution, not CPU fallback). All hipLaunchKernel: Returned hipSuccess. GPU agent: amdgcn-amd-amdhsa--gfx1100.
+
+### Validation harness
+
+agent_space/cupoch_validate_gfx1100/validate.cpp (gitignored): 20000-point wavy-plane cloud, fixed seed 42, voxel_size=0.05, KNN=30. Same approach as gfx90a harness.
+
+### VoxelDownSample (rocThrust transform -> sort_by_key -> reduce_by_key)
+
+2804 occupied-voxel centroids (consistent count: gfx90a used 709 because the original harness used a larger voxel; here voxel_size=0.05 on 20000 pts gives 2804).
+- GPU vs CPU (floor((p-min)/voxel) convention): max centroid error = 1.33e-07 (well within float eps). PASS.
+- Bitwise-identical output across 3 runs (deterministic). PASS.
+
+### EstimateNormals (flann CUDA kdtree KNN + covariance smallest-eigenvector)
+
+- No NaN in 20000 normals. PASS.
+- Per-point normals vs CPU brute-force KNN + 3x3 covariance reference (500-point sample): worst sign-free |dot(n_gpu, n_cpu)| = 1.000000, 0 points below 0.99. PASS.
+- Deterministic across 3 runs; worst |dot(run1, run2)| over all 20000 points = 0.999999. PASS.
+
+### Result: 6 / 6 PASS. linux-gfx1100 -> completed.
+
 ## Deliverable / git
 
 Port lives in projects/cupoch/src (gitignored; parent delivers the fork). Build dirs
