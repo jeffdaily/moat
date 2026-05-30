@@ -114,3 +114,81 @@ gfx1100/gfx1151 (RDNA, wave32): reuse this branch, build with
 `make -f makefile.hip HIP_ARCH=<arch>`, no source change. Since the code has no
 warp-size assumptions, the lead fix should carry; they validate on their own
 hardware per MOAT policy.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Host: 4x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1 / hipcc clang 22.0.0git (roc-7.2.1). Ran on HIP_VISIBLE_DEVICES=0.
+
+### Fork state
+
+Fork: https://github.com/jeffdaily/GPUMD, branch moat-port, commit 65b4ded54e7118861a9cb6de6ca3e8ca0e2f1b3e. Zero-change validation: no fork push, curated commit untouched, head_sha unchanged.
+
+### Build
+
+    cd projects/GPUMD/src/src
+    make -f makefile.hip clean
+    make -f makefile.hip HIP_ARCH=gfx1100 -j16
+    # -> gpumd (7.8 MB), nep (838 KB); only benign nodiscard warnings, zero errors.
+
+Wrapped with `utils/timeit.sh GPUMD compile`.
+
+Code-object proof (roc-obj-ls ./gpumd): all GPU bundles are
+`hipv4-amdgcn-amd-amdhsa--gfx1100`. No gfx90a code objects present.
+
+    $ roc-obj-ls ./gpumd | grep -v host | head -5
+    1  hipv4-amdgcn-amd-amdhsa--gfx1100  file://...#offset=655360&size=8648
+    2  hipv4-amdgcn-amd-amdhsa--gfx1100  file://...#offset=671744&size=5024
+    3  hipv4-amdgcn-amd-amdhsa--gfx1100  file://...#offset=684032&size=122680
+    ...
+
+### Validation (real gfx1100 GPU)
+
+Wrapped with `utils/timeit.sh GPUMD test`. Fresh runs from agent_space/ (no pre-existing output files) with potentials symlinked via ../../../potentials/. All three runs: empty stderr, no HIP fault (GPUMD calls gpuGetLastError after every kernel via GPU_CHECK_KERNEL), no NaN, clean exit.
+
+**1. carbon -- NEP4 NVE, 100 steps, 64000 atoms**
+
+    cd agent_space/gpumd_tests/carbon
+    HIP_VISIBLE_DEVICES=0 /path/to/gpumd
+
+NVE energy conservation (KE+PE across 10 thermo dumps at steps 10-100):
+
+| metric | gfx1100 | gfx90a |
+|--------|---------|--------|
+| drift (max-min)/\|mean\| | 9.76e-7 | 2.6e-7 |
+| std/\|mean\| | 3.45e-7 | 3.8e-7 |
+| T mean | 300.35 K | 300.4 K |
+
+Cross-check vs committed CUDA reference (thermo1.out, step 10):
+
+| quantity | rel diff gfx1100 | rel diff gfx90a |
+|----------|-----------------|-----------------|
+| PE | 9.77e-6 | 5.8e-6 |
+| T/KE | 6.18e-4 | 4.0e-4 |
+
+Both are within the chaotic-MD divergence window (wave32 vs wave64 vs CUDA; non-deterministic atomicAdd cell binning). Energy conservation is tight (~1e-6 level). PASS.
+
+**2. graphene_dos -- Tersoff + phonon DOS via hipFFT, NPT+NVE, 2x10000 steps**
+
+    cd agent_space/gpumd_tests/graphene_dos
+    HIP_VISIBLE_DEVICES=0 /path/to/gpumd
+
+NPT equilibration (100 rows, dump_thermo 100): T_mean 299.55 K (target 300 K), std 1.91 K. NVE+compute_dos does not write thermo.out (by GPUMD design when compute_dos is active); NVE health confirmed via MVAC.
+
+MVAC t=0 normalization: x=y=z=1.000000 (exact normalization; NVE physics valid).
+
+DOS (200 freq points, 2-400 THz): all finite, all non-negative (min 3.17e-2, max 1.22e3 a.u.).
+
+DOS spectral shape vs CUDA ref (dos1.out, normalized): max diff 6.35e-2, RMSE 1.25e-2. gfx90a had 5.7e-2. Consistent -- within expected run-to-run MD variability. PASS.
+
+**3. graphene_kappa_emd -- EMD Green-Kubo thermal conductivity, Tersoff, NPT+NVE 2x10000 steps**
+
+    cd agent_space/gpumd_tests/graphene_kappa_emd
+    HIP_VISIBLE_DEVICES=0 /path/to/gpumd
+
+NPT equilibration (100 rows): T_mean 299.36 K, std 2.31 K. Clean exit after NVE+compute_hac.
+
+HAC output: 50 rows x 11 columns, time grid 0.1-9.9 ps (matches reference exactly), all finite, no NaN/inf. HAC running-kappa values differ from CUDA ref as expected (long-time transport correlation is chaos-sensitive; gfx90a notes same caveat). PASS.
+
+### Result: PASS
+
+No source or build change was needed (zero-change follower validation). Fork was NOT pushed; curated commit 65b4ded is untouched. validated_sha = 65b4ded54e7118861a9cb6de6ca3e8ca0e2f1b3e.
