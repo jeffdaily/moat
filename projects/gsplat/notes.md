@@ -6,9 +6,11 @@ differentiable Gaussian-splatting rasterization. Strategy B (torch hipifies the
 .cu/.cuh at build time). Upstream already carries a partial ROCm flag path in its
 build scripts (`torch.version.hip` -> `-DUSE_ROCM`), but it was never completed:
 the kernels using cooperative-groups reduce, cub, GLM, labeled_partition, and
-cuda::std do not build under ROCm. Per the GPUMD precedent (do not auto-skip a
+cuda::std did not build under ROCm. Per the GPUMD precedent (do not auto-skip a
 project that merely declares an AMD path), this port builds + GPU-validates and
-fixes the rot.
+fixes the rot. The core 3DGS/2DGS path is fully ported; the 3DGUT path (needs
+cuda::std::optional) is also now enabled on ROCm by vendoring ROCm/libhipcxx --
+see "Enabling 3DGUT on ROCm" below.
 
 ## Environment
 - torch 2.13.0a0+gitb5e90ff, torch.version.hip 7.2.53211, device MI250X (gfx90a).
@@ -27,10 +29,51 @@ fixes the rot.
   gfx90a/942/950/1100 from the wheel default; gfx1100 is a follower platform).
 - BUILD_3DGUT=0 excludes the 3DGUT/eval3d kernels (RasterizeToPixelsFromWorld*,
   ProjectionUT3DGS*), which use cuda::std::optional/nullopt. libcu++ (<cuda/std/*>)
-  is NOT shipped with ROCm 7.2.1, so 3DGUT cannot build on this stack. The core
-  3DGS + 2DGS rasterization/sort/compositing (the port's target) is unaffected.
+  is NOT shipped with ROCm 7.2.1. The core 3DGS + 2DGS rasterization/sort/
+  compositing (the port's target) is unaffected. NOTE: 3DGUT IS now buildable on
+  ROCm by supplying cuda::std from ROCm/libhipcxx -- see "Enabling 3DGUT" below.
 - The bundled GLM submodule MUST be initialized; an empty submodule silently falls
   back to system GLM 0.9.9 (no HIP support, wrong errors).
+
+## Enabling 3DGUT on ROCm with ROCm/libhipcxx (gfx90a, ROCm 7.2.1)
+The only blocker for 3DGUT on ROCm was `cuda::std::optional` (3 files include
+`<cuda/std/optional>`): RasterizeToPixelsFromWorld3DGS{Fwd,Bwd}.cu and
+ProjectionUT3DGSFused.cu. ROCm/libhipcxx (header-only, provides the `cuda::std`
+namespace; see findings/libhipcxx/NOTES.md) fills it. Steps:
+
+    # 1. Vendor libhipcxx (header-only; amd-develop validated on ROCm 7.2.1)
+    git clone --depth 1 --branch amd-develop \
+        https://github.com/ROCm/libhipcxx.git <somewhere>/libhipcxx
+
+    # 2. Build gsplat with 3DGUT + the libhipcxx include. Config.h treats
+    #    "enable ANY module" as "disable all UNSPECIFIED modules", so to keep the
+    #    core 3DGS/2DGS/adam/reloc/losses you MUST list them all explicitly:
+    cd projects/gsplat/src
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx90a \
+      LIBHIPCXX_INCLUDE=<somewhere>/libhipcxx/include \
+      BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1 BUILD_RELOC=1 \
+      BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -v
+
+- `gsplat/cuda/build.py` reads `LIBHIPCXX_INCLUDE` and, on ROCm, appends
+  `-I$LIBHIPCXX_INCLUDE` to `extra_cuda_cflags` (the device-compile flags; reaches
+  hipcc via setup.py's `nvcc` key). It also flips the ROCm `BUILD_3DGUT` default to
+  1 when `LIBHIPCXX_INCLUDE` is set (still 0 when unset, so a plain `pip install`
+  without libhipcxx does not hard-error on the missing header). CUDA path unchanged.
+- `<cuda/std/optional>` and `cuda::std::optional`/`nullopt` pass through torch's
+  hipify UNCHANGED (no mapping), so the only source change beyond the include was
+  one latent fault: the two FromWorld kernels' `cudaFuncSetAttribute(kernel,...)`
+  needed the `(const void*)kernel<...>` cast (fault #9) -- it was already applied to
+  the non-3DGUT rasterizers but those 2 files were never compiled at BUILD_3DGUT=0.
+- libhipcxx does NOT provide `<cuda/ptx>`; gsplat does not use cuda::ptx, so fine.
+
+## CONFIG GOTCHA (gsplat Config.h module selection)
+Config.h (csrc/Config.h): if you explicitly set GSPLAT_BUILD_<X>=1 for ANY module,
+every module you did NOT name defaults to 0. So `BUILD_3DGUT=1` ALONE builds ONLY
+3DGUT and silently drops 3DGS/2DGS/adam/reloc/losses (has_3dgs()==False, only 2 ops
+register). To add 3DGUT to the full extension, enable all desired modules together
+(see the build command above). This is upstream behavior, not ROCm-specific.
 
 ## CUDA surface (warp / wave64)
 gsplat does NOT use raw warp intrinsics (`__shfl`/`__ballot`/`__any`/`__syncwarp`)
@@ -89,11 +132,16 @@ wave64 lane-math rework was required -- the fixes below are HIP-CG / hipify gaps
    `cg::reduce(warp,bin_final,greater<int>())` sites route through it. width-32 tile
    shuffle is wave64-correct.
 
-5. No libcu++ (<cuda/std/*>) on ROCm. Utils.cuh used cuda::std::is_floating_point_v
-   / numeric_limits. Fix: `namespace gstd = std` on ROCm (std numeric_limits/
-   type_traits are constexpr + device-usable under HIP), cuda::std on CUDA.
-   (cuda::std::optional in the 3DGUT files has no std drop-in -> excluded via
-   BUILD_3DGUT=0.)
+5. No libcu++ (<cuda/std/*>) in the ROCm 7.2.x RELEASE. Utils.cuh used
+   cuda::std::is_floating_point_v / numeric_limits. Fix (core path): `namespace
+   gstd = std` on ROCm (std numeric_limits/type_traits are constexpr +
+   device-usable under HIP), cuda::std on CUDA -- avoids an extra dependency for
+   the core build. The 3DGUT files instead use cuda::std::optional, which has no
+   std drop-in; that is now supplied by vendoring the header-only ROCm/libhipcxx
+   (provides the `cuda::std` namespace) and adding its include/ to the device
+   compile -- see "Enabling 3DGUT on ROCm" above. (Utils.cuh keeps the gstd=std
+   alias on ROCm even in the 3DGUT build; only the 3DGUT .cu files' direct
+   cuda::std::optional needs libhipcxx.)
 
 6. hipify maps `<cub/cub.cuh>` -> `<hipcub/hipcub.hpp>` but leaves the `cub::`
    namespace unrenamed -> cub::DoubleBuffer/DeviceRadixSort undeclared
@@ -147,7 +195,9 @@ wave64 lane-math rework was required -- the fixes below are HIP-CG / hipify gaps
 
 ## Files changed (port diff)
 - setup.py (hipify GLM-ignore monkeypatch; skip experimental render ext on ROCm)
-- gsplat/cuda/build.py, experimental/render/kernels/cuda/build.py (nvcc flag guards)
+- gsplat/cuda/build.py, experimental/render/kernels/cuda/build.py (nvcc flag guards;
+  build.py also: LIBHIPCXX_INCLUDE -> -I on ROCm device flags, flips ROCm 3DGUT
+  default on when LIBHIPCXX_INCLUDE set)
 - gsplat/cuda/include/Common.h (host ::min/::max shim)
 - gsplat/cuda/include/Utils.cuh (cg::reduce -> shfl_xor, cuda::std -> gstd,
   LabeledGroup via match_any + LABELED_PARTITION)
@@ -159,7 +209,12 @@ wave64 lane-math rework was required -- the fixes below are HIP-CG / hipify gaps
   ProjectionEWA3DGS{Fused,Packed}.cu (LABELED_PARTITION)
 - gsplat/cuda/csrc/RasterizeToPixels{3DGS,2DGS}{Fwd,Bwd}.cu,
   RasterizeToIndices{2DGS,3DGS}.cu (const void* kernel cast)
+- gsplat/cuda/csrc/RasterizeToPixelsFromWorld3DGS{Fwd,Bwd}.cu (const void* kernel
+  cast -- the 3DGUT-only FromWorld rasterizers, surfaced once BUILD_3DGUT=1 compiled
+  them; same fault #9 as the non-3DGUT rasterizers)
 - bundled GLM submodule initialized to 1.0.2 (delivered by fork, not a source edit)
+- (3DGUT requires the external ROCm/libhipcxx clone for cuda::std; not a source edit,
+  wired via LIBHIPCXX_INCLUDE -- see "Enabling 3DGUT on ROCm" above)
 
 ## Validation (gfx90a / MI250X, HIP_VISIBLE_DEVICES=2, ROCm 7.2.1)
 Build flags: PYTORCH_ROCM_ARCH=gfx90a BUILD_3DGUT=0 BUILD_CAMERA_WRAPPERS=1
@@ -250,16 +305,43 @@ coordination needed. The 102/102 projection fwd+bwd and the rasterization fwd+bw
 confirm the custom warpSum/warpMax (fault 4) and LabeledGroup via match_any (fault 7) are
 correct on wave32. No wave-size source fix required for gfx1100.
 
+## 3DGUT now ENABLED on ROCm via ROCm/libhipcxx (2026-05-30, gfx90a, ROCm 7.2.1)
+The earlier BUILD_3DGUT=0 limitation existed ONLY because libcu++ (`<cuda/std/*>`,
+for cuda::std::optional) is absent from ROCm 7.2.x. Supplying it from the
+header-only ROCm/libhipcxx (amd-develop, commit fa4ccc6) closes the gap; see
+"Enabling 3DGUT on ROCm" above for the exact flags.
+
+Build: full extension with `BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1
+BUILD_RELOC=1 BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 LIBHIPCXX_INCLUDE=<clone>/include`
+on gfx90a -> exit 0. `has_3dgut()`, `has_3dgs()`, `has_2dgs()`, `has_adam()` all
+True; all 5 op namespaces register (3DGUT: projection_ut_3dgs_fused,
+intersect_tile_lidar, rasterize_to_pixels_from_world_3dgs_fwd).
+
+Tests previously blocked, now passing on gfx90a (HIP_VISIBLE_DEVICES=1):
+- test_isect_lidar_corner_cases: 102 passed (was 100% "op not registered"
+  AttributeError -- the test has no has_3dgut() skip). [collection is 102, not the
+  ~107 the earlier note estimated.]
+- test_isect_lidar + test_projection_ut_* + test_ut_params_*: 137 passed (were
+  has_3dgut()-skipped).
+- test_external_distortion.py + test_ftheta.py: 57 passed (were has_3dgut()-skipped).
+Total: 296 3DGUT/lidar/UT tests that were unavailable at BUILD_3DGUT=0 now pass.
+
+Core regression unaffected: the notes' core 3DGS/2DGS filter still passes (104-105
+of 105; one test_projection[pinhole] element flaps run-to-run at the tight gradient
+tolerance -- the pre-existing float-atomic accumulation-order noise of fault #7,
+passes in isolation and on rerun, NOT introduced by 3DGUT/libhipcxx). FAST_MATH
+remains off by default on ROCm (fault #13).
+
 ## Scope / known limitations on this ROCm stack
-- BUILD_3DGUT=0: the 3DGUT/eval3d/unscented-transform path (RasterizeToPixelsFrom
-  World*, ProjectionUT3DGS*) uses cuda::std::optional, and libcu++ (<cuda/std/*>)
-  is not shipped with ROCm 7.2.1. The lidar intersection op (intersect_tile_lidar)
-  is also #if GSPLAT_BUILD_3DGUT-gated, so the 107 test_isect_lidar_corner_cases
-  failures are "op not registered" (AttributeError), NOT a numeric/wave64 defect --
-  expected given the excluded build, and the test suite has no has_3dgut() skip on
-  them. eval3d/ut tests are auto-skipped via has_3dgut()==False.
+- 3DGUT eval3d tests (test_rasterize_to_pixels_eval3d, 28 cases) still FAIL, but
+  ONLY because their pure-torch REFERENCE (gsplat/cuda/_torch_impl_eval3d.py) does
+  `from nerfacc import ...` and nerfacc is absent on ROCm (its CUDA wheel's _C is
+  None anyway). This is a missing-reference-package limitation, NOT a HIP kernel or
+  libhipcxx defect -- the eval3d HIP kernel itself built and its op registered. Same
+  nerfacc gap already noted for test_rasterization below.
 - experimental/render inference renderer skipped on ROCm (NVIDIA PTX/half2/cub),
   separate from the core API.
 - nerfacc CUDA wheel's _C is None on ROCm; the nerfacc-backed reference path
   (_rasterization / _rasterize_to_pixels accumulate) was replaced by the
   independent compositor above for the compositing-kernel check.
+- libhipcxx does NOT provide `<cuda/ptx>` (cuda::ptx); gsplat does not use it.

@@ -145,6 +145,14 @@ provides std::void_t etc., which collides with the library's own `#if __cplusplu
 < 201703L` C++17 back-fills (generic_sampling_distribution_tests). CUDA default
 (C++11) is unchanged.
 
+## libcu++ / cuda::std (not needed here)
+MPPI-Generic does NOT use `cuda::std` / `<cuda/std/*>` anywhere (grep of src/ finds
+zero), so the lack of libcu++ on ROCm 7.2.x is a non-issue for this port -- the C++17
+collision above is plain libstdc++ `std::`, not libcu++. For reference, projects that
+DO depend on `cuda::std` on ROCm can get it from the header-only ROCm/libhipcxx
+(`cuda::std` namespace; add its include/ to the hipcc compile; see
+findings/libhipcxx/NOTES.md). No MPPI rebuild was done for this note.
+
 ## Reviewer fixes (round 2)
 
 R1 (BLOCKING -- CUDA-path regression). MPPI_GPU_FUNC_PTR was defined ONLY in
