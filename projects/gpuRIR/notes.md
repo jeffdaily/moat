@@ -77,3 +77,65 @@ precision (off by default), and 3D pitched copies.
   mic) also runs clean (exit 0). NOTE: the direct path is the first arrival,
   NOT the global max -- constructive early reflections can be larger in a
   reverberant room; a global-argmax check is wrong.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+GPU: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1.
+Fork branch: moat-port. Validated SHA: cc8736bf3ce23e016d4882efe2b0b6853c131b4d.
+
+### Build
+
+No source change needed for gfx1100 -- the CMakeLists.txt already correctly
+reads `${CMAKE_HIP_ARCHITECTURES}` from the CMake variable (defaulting to gfx90a
+only when unset), so passing `-DCMAKE_HIP_ARCHITECTURES=gfx1100` is sufficient.
+The CI smoketest workflow (.github/workflows/rocm-hip-build.yml) was added to
+the curated commit (amended), so the fork SHA changed from 6c91213 to cc8736b;
+gfx90a was flipped to `revalidate` accordingly.
+
+```
+CMAKE_ARGS="-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" \
+  bash utils/timeit.sh gpuRIR compile -- \
+  pip install ./projects/gpuRIR/src --no-build-isolation --force-reinstall --no-deps
+```
+
+Result: build succeeded, gpurir-1.2.0 installed, .so = 333 KB (IPO/LTO skipped, no slim LTO bitcode regression).
+
+### gfx1100 code-object evidence
+
+```
+/opt/rocm/llvm/bin/llvm-objdump --offloading gpuRIR_bind.cpython-312-x86_64-linux-gnu.so
+```
+
+Output:
+```
+Extracting offload bundle: ...so.0.host-x86_64-unknown-linux-gnu-
+Extracting offload bundle: ...so.0.hipv4-amdgcn-amd-amdhsa--gfx1100
+```
+
+gfx1100 confirmed, no gfx90a objects. PyInit_gpuRIR_bind exported (nm -D confirms `T PyInit_gpuRIR_bind`).
+
+### Validation run
+
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh gpuRIR test -- \
+  python3 agent_space/gpuRIR_validate_gfx1100.py
+```
+
+Shoebox room 4x5x3 m, src (1,1,1.5) -> rcv (3,4,1.5), c=343.0, Fs=16000.
+Distance = 3.6056 m, expected direct-path sample = round(3.6056/343.0*16000) = 168.
+
+- LUT path: first significant arrival (>10% of peak) at sample **168** (expected 168). PASS.
+- Exact-sinc path: first significant arrival at sample **168** (expected 168). PASS.
+- LUT vs sinc max diff: 0.000108, peak: 0.065515. Agreement: **0.165% of peak** (< 0.5% threshold). PASS.
+- Pre-direct silence: verified (no sample before index 168 exceeds 10% of peak). PASS.
+- hipFFT convolution (simulateTrajectory, 5-point trajectory): output shape (19199, 1), finite, non-zero. PASS.
+- examples/example.py (2 src x 3 rcv, cardioid mic, MPLBACKEND=Agg): exit 0. PASS.
+
+Results match gfx90a exactly (same sample 168, LUT/sinc agreement within rounding). No warp intrinsics in the kernel; RDNA3 wave32 is low numeric risk and confirmed numerically equivalent.
+
+### CI smoketest
+
+Added .github/workflows/rocm-hip-build.yml: rocm/dev-ubuntu-24.04 container,
+compile-only tripwire (no GPU present in CI). Verifies: the USE_HIP=ON build
+succeeds, the gpuRIR_bind .so is > a few KB (LTO bitcode regression tripwire),
+and PyInit_gpuRIR_bind is exported. NOT a GPU correctness gate.
