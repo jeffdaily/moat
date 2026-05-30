@@ -318,3 +318,52 @@ popsift's surf2DLayeredwrite (aa::vert) and tex2DLayered read (make_dog) are sep
 Fix (in progress): have make_dog (and any sibling that point-reads the freshly-surface-written layered _data array via texture in a later same-stream launch) read via surf2DLayeredread instead of the point texture, USE_HIP-guarded so the CUDA path keeps the texture. make_dog uses pure point access at integer texel centers, so no filtering is lost.
 
 HIP bug report at findings/popsift-texsurf-coherency/BUG_REPORT.md; to be filed against ROCm and tracked in FINDINGS.md.
+
+## 2026-05-30 -- VALIDATED on gfx90a (MI250X): PASS. Layered-image bug is deeper than "stale texture"; full root-cause + fix below.
+
+The "route reads through surf2DLayeredread" plan was necessary but INSUFFICIENT. New standalone repros (agent_space/popsift_run/multilayer_check*.cpp, array3d_check.cpp, tall2d_check.cpp; all run on gfx90a GPU 3) show the layered-image bug is far broader than the earlier single-layer repro implied:
+
+- Earlier repro only ever wrote+read ONE layer (TEST_LAYER=2), so surf2DLayeredread looked "fresh".
+- Write layers 0..L-1 (each in its own launch, or all in one launch), then read every layer in a later launch: tex2DLayered AND surf2DLayeredread AND host hipMemcpy3D ALL return the LAST-written layer's data for EVERY layer index. The layer dimension is collapsed on read. hipDeviceSynchronize between writes and recreating the surface object do not help.
+- A NON-layered 3D array (hipMalloc3DArray WITHOUT hipArrayLayered; surf3Dwrite/surf3Dread/tex3D) is fully coherent across launches, per-slice. A tall 2D array (W x H*L, slice k at y+k*H) is also coherent.
+
+So `hipArrayLayered | hipArraySurfaceLoadStore` is effectively unusable for the write-many-layers / read-back pattern on this ROCm 7.2.1 / gfx90a. THE FIX is to drop the layered flag.
+
+### THE FIX (HIP-guarded; CUDA path unchanged)
+
+1. **Non-layered 3D pyramid arrays** (sift_octave.cu alloc_data_planes/alloc_interm_array/alloc_dog_array): on HIP allocate `_data`/`_intm`/`_dog_3d` with `cudaArraySurfaceLoadStore` only (no cudaArrayLayered). z (the blur level) becomes a real 3D coordinate. CUDA keeps `cudaArrayLayered | cudaArraySurfaceLoadStore`.
+
+2. **Writes**: cuda_to_hip.h `surf2DLayeredwrite` wrapper now forwards to `surf3Dwrite(data, surf, x, y, layer)` (layer -> z, 1:1; byte-x and y unchanged). No call-site edits -- all ~17 surf2DLayeredwrite sites are untouched.
+
+3. **Reads switched to the coherent SURFACE** (the reads I actually switched, file:line):
+   - common/assist.h: new `LayeredTex{tex,surf,width,height}` struct + `readTex(LayeredTex, x,y,z)` overload that does the same -0.5-texel-center manual bilinear as before but point-fetches via `surf3Dread` (surfFetchClamped, assist.h:~165) with x,y clamped to [0,W-1]x[0,H-1] (reproduces cudaAddressModeClamp; surf3Dread returns 0 out of range). `LayeredReadTex` alias = LayeredTex on HIP, cudaTextureObject_t on CUDA; `POPSIFT_LAYERED_SRC(tex,surf,w,h)` builds it (on CUDA expands to just `tex`, so CUDA is byte-for-byte).
+   - s_gradiant.h get_gradiant (3 overloads) + get_gradiant32: param `cudaTextureObject_t` -> `LayeredReadTex` (orientation + all descriptor modes read _data through these).
+   - Every consumer kernel signature + launch site switched to LayeredReadTex / POPSIFT_LAYERED_SRC, passing the array's OWN surface as the read source:
+     * s_pyramid_build_aa.cu horiz/vert/vert_abs0/vert_all_abs0 (read _data or _intm) + s_pyramid_build_aa.h
+     * s_pyramid_build_ai.cu horiz/vert/vert_abs0/vert_all_abs0 (read _data/_intm linear) + s_pyramid_build_ai.h
+     * s_pyramid_build.cu: get_by_2_pick_every_second (reads prev _data), make_dog (reads _data); launch sites downscale_from_prev_octave, horiz_from_prev_level (getDataSurface), vert_from_interm x4 + vert_all_from_interm x2 (getIntermediateSurface), dogs_from_blurred (getDataSurface).
+     * s_extrema.cu is_extremum / find_extrema_in_dog_sub / find_extrema_in_dog (read DoG via getDogSurface); 3 launch sites.
+     * s_orientation.cu ori_par (reads _data via getDataSurface).
+     * s_desc_loop/iloop/grid/igrid/notile/vlfeat .cu + their launcher .h (read _data point or linear via getDataSurface).
+     * s_pyramid_fixed.cu absoluteTexAddress::octave_fixed / octave_fixed_vert (reads prev-octave _data). relativeTexAddress + normalizedSource (s_pyramid_build_ra.cu) read the INPUT image via tex2D (non-layered, written by memcpy) -> NOT a layered chain, left as plain cudaTextureObject_t.
+   Full audit of surface-write -> texture-read chains on layered arrays: producers write _intm (ra::horiz, ai/aa::horiz), _data (aa/ai::vert, get_by_2, octave_fixed), _dog_3d (make_dog, octave_fixed); consumers read _data (aa/ai::horiz, get_by_2, make_dog, ori_par, all desc modes, octave_fixed), _intm (aa/ai::vert), _dog_3d (find_extrema). ALL consumer reads of these three arrays were switched to surf3Dread; every chain is fixed. (With non-layered 3D arrays the texture path is ALSO coherent -- array3d_check confirms tex3D is fresh -- but reads stay on surf3Dread for a single coherent mechanism.)
+
+### Two more real bugs found ONLY once real data flowed (had been masked by the 0-feature blocker):
+
+4. **extrema_count wave64 count inflation (THE determinism killer).** s_extrema.cu extrema_count packed two 32-thread rows into one 64-lane wavefront and did per-half-wavefront leader election (`lane=threadIdx.x&31; if(lane==0) atomicAdd`). On wave64 this fired the atomicAdd on EVERY set ballot bit, not just the row leader, inflating ext_ct ~32-64x (575 real octave-0 extrema -> ext_ct 36691). The inflated count made ori_par walk uninitialized i_ext_off slots (read 0 -> all point at a few extrema), so a handful of keypoints were emitted ~9000x and the descriptor total swung run-to-run (34k-70k) purely on which garbage the fresh buffers held. Fix: a SINGLE full-wavefront 64-bit ballot -- one atomicAdd by wavefront lane 0 of `__popcll(ballot)`, broadcast via `__shfl(.,0,64)`, exclusive prefix `__popcll(ballot & ((1<<wflane)-1))`, wflane = threadIdx.x+(threadIdx.y&1)*32. All rows feed the same octave counter so one wavefront-wide unit is correct. CUDA arm = original 32-lane warp logic. (ballot_group/any_group in assist.h are still used by ori_par with group 0 -- left as-is.)
+
+5. **RootSift NaN (default norm mode is RootSift, not L2).** s_desc_norm_rs.h computed `sqrt(bin/sum)`; on AMD the descriptor accumulation's round-toward-+inf intrinsics are mapped to round-to-nearest (cuda_to_hip.h), which lets a bin go very slightly negative, and an all-flat window gives sum==0 -> sqrt(neg)/0/0 = NaN (4 NaN in loop/grid, ~315 in iloop/igrid). Fix (HIP-guarded): `inv = sum>0 ? 1/sum : 0; sqrt(fmaxf(bin*inv, 0))`. Also added an isfinite guard on the two __frsqrt_rn results in s_desc_norm_l2.h for the all-zero-descriptor case (L2 mode). CUDA arms unchanged.
+
+### Build (reused build-hip/, kept out of git via .git/info/exclude already in place)
+```
+cmake --build projects/popsift/src/build-hip -j
+```
+(configure from the prior session is intact: -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON). 100% built, popsift-demo + popsift-match linked, only pre-existing benign -Wunused-value/-Wdeprecated warnings.
+
+### Validation (GPU 3, gfx90a MI250X, scene.png 1052x744 grayscale, default mode = VLFeat gauss / loop desc / RootSift norm)
+- **(1) NON-ZERO + deterministic:** 895 feature points / 1494 descriptors, IDENTICAL across 5/5 runs (was 0 before the fix). scene_rot.png: 896/1484, 3/3 identical.
+- **(2) determinism:** 5x identical, exact.
+- **(3) NO -nan / finite:** 0 NaN, 0 Inf in all 1494 descriptors; keypoint x in [59,996.5], y in [35,676.4] (within 1052x744), scale in [0.0004,1.38], all finite. Verified across ALL six desc modes (loop/iloop/grid/igrid/notile/vlfeat) -> 0 NaN each (before the RootSift fix: 4/315/4/316/0/0).
+- **(4) value sanity:** per-descriptor L2 norm = 1.000 +/-0.001 (RootSift); 0 all-zero descriptors; bin values in [0,0.347], mean 0.063 (structured, not constant). Blurred octave-1 levels progressively smoother (std 26.75 -> 20.58, mean stable 241.22); DoG zero-mean (~1e-5), std 2.5-3.1, absmax 17-39, mostly non-zero; consecutive blur levels differ (|L1-L2| mean abs 1.369) -> real pyramid, not stale copies. popsift-match scene vs scene_rot: real finite distances, sane accept/reject ratio test, no -nan. (popsift has no CPU/reference path to diff against.)
+
+PASS. Code edits left uncommitted on moat-port for the parent's review pass; control-plane (status.json, notes.md, PORTING_GUIDE.md) committed.
