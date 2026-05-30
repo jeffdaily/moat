@@ -1,88 +1,67 @@
-# [Bug] Layered cudaArray: texture fetch does not observe surface writes from a prior kernel launch (cross-launch texture-cache not invalidated) on gfx90a / CDNA2
+# Layered cudaArray collapses to one layer: surf2DLayeredread / tex2DLayered return the last-written layer for every layer index (gfx90a)
 
 ## Component
-HIP runtime / clr (texture + surface over `hipMalloc3DArray` layered arrays)
-
-## Environment
-- GPU: AMD Instinct MI250X / MI250 (`gfx90a:sramecc+:xnack-`, CDNA2)
-- ROCm: 7.2.1
-- HIP version: 7.2.53211-e1a6bc5663
-- hipconfig --version: 7.2.53211-e1a6bc5663
-- HSA Runtime Version: 1.18
-- Kernel (amdgpu): 6.16.6
-- Compiler: AMD clang 22.0.0git (roc-7.2.1)
+HIP runtime / clr -- surface/texture over a layered `hipMalloc3DArray`.
 
 ## Summary
-For a **layered** `hipArray` allocated with `hipArrayLayered | hipArraySurfaceLoadStore`,
-a `tex2DLayered` fetch in kernel B does **not** observe values written by
-`surf2DLayeredwrite` in a **separate, earlier** kernel A on the same stream. The
-texture read returns the array's pre-write contents (zero), even though:
-- a `surf2DLayeredread` of the same location in kernel B returns the fresh value, and
-- an explicit `hipDeviceSynchronize()` between A and B does not help, and
-- creating a brand-new texture object *after* the write (before B) does not help.
+On gfx90a (CDNA2, ROCm 7.2.1), a **layered** cudaArray (`hipMalloc3DArray` with `hipArrayLayered | hipArraySurfaceLoadStore`) that is written one layer at a time via `surf2DLayeredwrite` in separate kernel launches returns the **last-written layer's data for every layer index** when read back in a later launch -- via `surf2DLayeredread`, `tex2DLayered`, or even host `hipMemcpy3D`. The per-layer contents are lost; the array behaves as if it holds a single layer. A non-layered 3D array of the same dimensions (no `hipArrayLayered`, accessed with `surf3Dwrite`/`surf3Dread`/`tex3D` and the layer as the z coordinate) is correct. CUDA preserves the per-layer contents.
 
-The identical pattern on a **non-layered 2D** array (`hipMallocArray` +
-`surf2Dwrite` / `tex2D`) returns the fresh value correctly. So the defect is
-specific to layered arrays.
+## Environment
+- AMD Instinct MI250X, gfx90a (CDNA2)
+- ROCm 7.2.1
 
-Per both the CUDA C Programming Guide and AMD's own HIP documentation, the
-texture/surface cache must be coherent **across** kernel-launch boundaries (it is
-only undefined to read writes from the *same* launch). HIP's docs state
-explicitly: "Since surfaces are also cached in the read-only texture cache, the
-changes written back to the surface can't be observed in the same kernel. A new
-kernel has to be launched in order to see the updated surface."
-(https://rocm.docs.amd.com/projects/HIP/en/docs-7.0.2/how-to/hip_runtime_api/memory_management/device_memory.html)
-A new kernel *is* launched here, yet the update is not observed.
-
-## Expected vs Actual
-- Expected: kernel B's `tex2DLayered` returns 161.7 (the value kernel A wrote).
-- Actual: kernel B's `tex2DLayered` returns 0.0 (stale, pre-write contents).
-
-## Minimal reproducer
-See `repro.cpp` (attached). Build and run:
+## Reproducer (`multilayer_check.cpp`, build: `hipcc -O2 multilayer_check.cpp -o mlc`)
+```cpp
+#include <cstring>
+#include <hip/hip_runtime.h>
+#include <cstdio>
+#define CHECK(cmd) do{ hipError_t e=(cmd); if(e!=hipSuccess){ \
+  printf("HIP error %s:%d: %s\n",__FILE__,__LINE__,hipGetErrorString(e)); return -1;}}while(0)
+static const int W=32,H=32,L=6;
+__global__ void writeOneLayer(hipSurfaceObject_t surf,int layer){
+  int x=blockIdx.x*blockDim.x+threadIdx.x, y=blockIdx.y*blockDim.y+threadIdx.y;
+  if(x>=W||y>=H) return;
+  surf2DLayeredwrite((float)(layer*100+7), surf, x*4, y, layer);
+}
+__global__ void readAll(hipSurfaceObject_t surf,float* out,int cx,int cy){
+  for(int l=0;l<L;l++){ float v; surf2DLayeredread(&v,surf,cx*4,cy,l); out[l]=v; }
+}
+int main(){
+  hipChannelFormatDesc d=hipCreateChannelDesc(32,0,0,0,hipChannelFormatKindFloat);
+  hipArray_t arr; hipExtent ext=make_hipExtent(W,H,L);
+  CHECK(hipMalloc3DArray(&arr,&d,ext,hipArrayLayered|hipArraySurfaceLoadStore));
+  hipResourceDesc rd; memset(&rd,0,sizeof(rd)); rd.resType=hipResourceTypeArray; rd.res.array.array=arr;
+  hipSurfaceObject_t surf; CHECK(hipCreateSurfaceObject(&surf,&rd));
+  dim3 b(8,8), g((W+7)/8,(H+7)/8);
+  for(int l=0;l<L;l++) hipLaunchKernelGGL(writeOneLayer,g,b,0,0,surf,l);  // one layer per launch
+  float* dout; CHECK(hipMalloc(&dout,L*sizeof(float)));
+  hipLaunchKernelGGL(readAll,dim3(1),dim3(1),0,0,surf,dout,16,16);        // separate launch
+  CHECK(hipDeviceSynchronize());
+  float h[L]; CHECK(hipMemcpy(h,dout,L*sizeof(float),hipMemcpyDeviceToHost));
+  for(int l=0;l<L;l++){ int exp=l*100+7; printf("  layer %d: got %.1f exp %d %s\n",l,h[l],exp,(int)h[l]==exp?"OK":"STALE"); }
+  return 0;
+}
 ```
-hipcc --offload-arch=gfx90a -O2 repro.cpp -o repro
-./repro
-```
-Observed output (deterministic, reproduced on two separate MI250X dies):
-```
-[A] Layered: tex created BEFORE write, read via TEXTURE, no sync between launches
-  read via tex2DLayered (reused tex)             ... -> STALE (all == 0)
-[B] Layered: read via SURFACE (surf2DLayeredread), no sync between launches
-  read via surf2DLayeredread                     ... -> FRESH (all == magic)
-[C] Layered: tex created AFTER write (fresh tex), read via TEXTURE
-  read via tex2DLayered (fresh tex)              ... -> STALE (all == 0)
-[D] Layered: reused tex, explicit hipDeviceSynchronize between launches
-  read via tex2DLayered (reused tex, synced)     ... -> STALE (all == 0)
-[E] Layered: reused tex, two rounds (write v1->read, write v2->read)
-  round1 (write magic, read tex)                 ... -> STALE (all == 0)
-  round2 (write 42, read SAME tex)               ... -> MIXED
-[F] Non-layered 2D: tex created BEFORE write, read via TEXTURE
-  read via tex2D (reused tex, 2D)                ... -> FRESH (all == magic)
-```
-The contrast between [A] (layered texture, STALE) and [F] (2D texture, FRESH),
-plus [B] (layered surface read, FRESH), isolates the defect to the layered-array
-texture-fetch path: the array backing store does contain the written value
-([B], [F]), but the layered `tex2DLayered` path serves stale data and is not
-invalidated at the kernel-launch boundary ([A], [C], [D]).
 
-## Notes on root cause
-- [C] rules out a stale image/texture descriptor snapshot taken at
-  `hipCreateTextureObject` time: a texture object created *after* the write still
-  reads stale data.
-- [D] rules out host-side ordering: an explicit device sync between the launches
-  does not change the result.
-- [F] shows the cross-launch invalidation works for non-layered 2D arrays.
-The most likely cause is that the image/texture L1 cache (or the layered image's
-descriptor/metadata) is not invalidated at the kernel-launch boundary for layered
-images on gfx90a, whereas it is for non-layered images.
+## Observed (each layer L is written `L*100+7`, then all layers read at one (x,y) in a separate launch)
+```
+  layer 0: got 507.0 exp 7   STALE
+  layer 1: got 507.0 exp 107 STALE
+  layer 2: got 507.0 exp 207 STALE
+  layer 3: got 507.0 exp 307 STALE
+  layer 4: got 507.0 exp 407 STALE
+  layer 5: got 507.0 exp 507 OK     <- 507 is the value written to the LAST layer
+```
+Every layer returns 507.0 = the last-written layer's value. `tex2DLayered` and a host `hipMemcpy3D` of the array read back the same collapsed result.
 
-## Real-world impact
-Found while porting popsift (CUDA SIFT) to gfx90a. popsift builds its Gaussian
-pyramid by writing blurred octave levels into a layered array via
-`surf2DLayeredwrite` (kernel `gauss::absoluteSource::vert`) and then, in a
-separate kernel launch on the same stream (`gauss::make_dog`), reading them back
-via `tex2DLayered`. Because the texture read returns stale zeros, the entire
-Difference-of-Gaussian pyramid is zero, no extrema are found, and 0 features are
-produced. The application is in-spec per the CUDA programming guide (the write and
-read are separate launches).
+## Expected
+Each layer returns its own value (7, 107, 207, 307, 407, 507), as on CUDA. A **non-layered 3D array** with the same data (drop `hipArrayLayered`; write/read via `surf3Dwrite`/`surf3Dread`/`tex3D` with the layer as z) is correct on ROCm -- both surface and texture reads return the right per-slice value -- so the data path itself is fine; only the *layered* addressing collapses:
+```
+  z0..z5 via surf3D: 7,107,207,307,407,507  => ALL FRESH
+  z0..z5 via tex3D : 7,107,207,307,407,507  => ALL FRESH
+```
+
+## Notes
+- All layers are written before any read, with `hipDeviceSynchronize` between the writes and the read; recreating the surface/texture object after the writes does not help. The single discriminator is the `hipArrayLayered` flag.
+- Impact: surfaced porting popsift (GPU SIFT). Its Gaussian-pyramid and DoG octaves are layered arrays written per-level via surface and read per-level via texture; the layer collapse made the DoG all-zero, yielding 0 detected features. Workaround: make the octave arrays non-layered 3D (`surf3D`/`tex3D`, level as z).
+- Repros attached: `multilayer_check.cpp` (the bug), `array3d_check.cpp` (the non-layered 3D control, passes).
