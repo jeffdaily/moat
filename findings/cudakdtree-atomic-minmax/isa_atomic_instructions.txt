@@ -1,0 +1,14 @@
+	global_atomic_smin v0, v1, s[0:1]
+	.amdhsa_kernel _Z5k_minPiPKii
+	global_atomic_smax v0, v1, s[0:1]
+	.amdhsa_kernel _Z5k_maxPiPKii
+	global_atomic_add v0, v1, s[0:1]
+	.amdhsa_kernel _Z5k_addPiPKii
+	global_atomic_cmpswap v3, v2, v[0:1], s[0:1] glc
+	.amdhsa_kernel _Z8k_casminPiPKii
+	global_atomic_cmpswap v3, v2, v[0:1], s[0:1] glc
+	.amdhsa_kernel _Z8k_casmaxPiPKii
+	global_atomic_cmpswap v0, v2, v[0:1], s[0:1] glc
+	.amdhsa_kernel _Z12k_min_systemPiPKii
+	global_atomic_cmpswap v0, v2, v[0:1], s[0:1] glc
+	.amdhsa_kernel _Z12k_max_systemPiPKii

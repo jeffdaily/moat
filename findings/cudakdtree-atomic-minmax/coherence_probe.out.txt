@@ -1,0 +1,5 @@
+  hipMallocManaged (default)                 -> FINE-grained (mode=0)
+  hipMallocManaged + SetCoarseGrain          -> COARSE-grained (mode=1)
+  hipExtMallocWithFlags(Finegrained)         -> FINE-grained (mode=0)
+  hipHostMalloc (default)                    -> FINE-grained (mode=0)
+  hipMalloc (device)                         -> COARSE-grained (mode=1)

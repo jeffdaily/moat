@@ -1,0 +1,47 @@
+N=4096  CPU ref: min=-10000 max=9989 sum=-159616
+
+Device: AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-)
+
+allocation \ op                                    | atomicMin        | atomicMax        | atomicAdd        | CAS-min          | CAS-max          | atomicMin_system | atomicMax_system
+managed-default (hipMallocManaged, fine/host-coherent) | NO-OP            | NO-OP            | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT         
+device (hipMalloc, coarse VRAM)                    | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT         
+fine-device-VRAM (hipExtMallocWithFlags Finegrained) | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT         
+hostmalloc (hipHostMalloc, fine/host-coherent)     | NO-OP            | NO-OP            | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT         
+managed+hipMemAdviseSetCoarseGrain                 | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT          | CORRECT         
+
+--- exact values (got vs expected) ---
+  managed-default (hipMallocManaged, fine/host-coherent) atomicMin        init=2139095039  got=2139095039  exp=-10000      **MISMATCH**
+  managed-default (hipMallocManaged, fine/host-coherent) atomicMax        init=-2139095039 got=-2139095039 exp=9989        **MISMATCH**
+  managed-default (hipMallocManaged, fine/host-coherent) atomicAdd        init=0           got=-159616     exp=-159616     OK
+  managed-default (hipMallocManaged, fine/host-coherent) CAS-min          init=2139095039  got=-10000      exp=-10000      OK
+  managed-default (hipMallocManaged, fine/host-coherent) CAS-max          init=-2139095039 got=9989        exp=9989        OK
+  managed-default (hipMallocManaged, fine/host-coherent) atomicMin_system init=2139095039  got=-10000      exp=-10000      OK
+  managed-default (hipMallocManaged, fine/host-coherent) atomicMax_system init=-2139095039 got=9989        exp=9989        OK
+  device (hipMalloc, coarse VRAM)            atomicMin        init=2139095039  got=-10000      exp=-10000      OK
+  device (hipMalloc, coarse VRAM)            atomicMax        init=-2139095039 got=9989        exp=9989        OK
+  device (hipMalloc, coarse VRAM)            atomicAdd        init=0           got=-159616     exp=-159616     OK
+  device (hipMalloc, coarse VRAM)            CAS-min          init=2139095039  got=-10000      exp=-10000      OK
+  device (hipMalloc, coarse VRAM)            CAS-max          init=-2139095039 got=9989        exp=9989        OK
+  device (hipMalloc, coarse VRAM)            atomicMin_system init=2139095039  got=-10000      exp=-10000      OK
+  device (hipMalloc, coarse VRAM)            atomicMax_system init=-2139095039 got=9989        exp=9989        OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) atomicMin        init=2139095039  got=-10000      exp=-10000      OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) atomicMax        init=-2139095039 got=9989        exp=9989        OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) atomicAdd        init=0           got=-159616     exp=-159616     OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) CAS-min          init=2139095039  got=-10000      exp=-10000      OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) CAS-max          init=-2139095039 got=9989        exp=9989        OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) atomicMin_system init=2139095039  got=-10000      exp=-10000      OK
+  fine-device-VRAM (hipExtMallocWithFlags Finegrained) atomicMax_system init=-2139095039 got=9989        exp=9989        OK
+  hostmalloc (hipHostMalloc, fine/host-coherent) atomicMin        init=2139095039  got=2139095039  exp=-10000      **MISMATCH**
+  hostmalloc (hipHostMalloc, fine/host-coherent) atomicMax        init=-2139095039 got=-2139095039 exp=9989        **MISMATCH**
+  hostmalloc (hipHostMalloc, fine/host-coherent) atomicAdd        init=0           got=-159616     exp=-159616     OK
+  hostmalloc (hipHostMalloc, fine/host-coherent) CAS-min          init=2139095039  got=-10000      exp=-10000      OK
+  hostmalloc (hipHostMalloc, fine/host-coherent) CAS-max          init=-2139095039 got=9989        exp=9989        OK
+  hostmalloc (hipHostMalloc, fine/host-coherent) atomicMin_system init=2139095039  got=-10000      exp=-10000      OK
+  hostmalloc (hipHostMalloc, fine/host-coherent) atomicMax_system init=-2139095039 got=9989        exp=9989        OK
+  managed+hipMemAdviseSetCoarseGrain         atomicMin        init=2139095039  got=-10000      exp=-10000      OK
+  managed+hipMemAdviseSetCoarseGrain         atomicMax        init=-2139095039 got=9989        exp=9989        OK
+  managed+hipMemAdviseSetCoarseGrain         atomicAdd        init=0           got=-159616     exp=-159616     OK
+  managed+hipMemAdviseSetCoarseGrain         CAS-min          init=2139095039  got=-10000      exp=-10000      OK
+  managed+hipMemAdviseSetCoarseGrain         CAS-max          init=-2139095039 got=9989        exp=9989        OK
+  managed+hipMemAdviseSetCoarseGrain         atomicMin_system init=2139095039  got=-10000      exp=-10000      OK
+  managed+hipMemAdviseSetCoarseGrain         atomicMax_system init=-2139095039 got=9989        exp=9989        OK
