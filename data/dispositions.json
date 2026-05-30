@@ -76,6 +76,13 @@
     "note": "tutorial/learning/collection repo",
     "reason": "not-a-target"
   },
+  "bytedance/flux": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "skip",
+    "full_name": "bytedance/flux",
+    "note": "AMD equivalent: ByteDance+AMD Triton-Distributed (separate project, same comms-overlap capability)",
+    "reason": "ported-elsewhere"
+  },
   "bytedtsinghua-sia/cuda-agent": {
     "decided": "2026-05-30T00:31:02Z",
     "disposition": "skip",
@@ -173,6 +180,13 @@
     "full_name": "enpeizhao/CVprojects",
     "note": "tutorial/learning/collection repo",
     "reason": "not-a-target"
+  },
+  "eric2003/oneflow": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "verify",
+    "full_name": "eric2003/OneFLOW",
+    "note": "in-repo CUDA looks like teaching samples not solver core; confirm GPU is load-bearing",
+    "reason": "verify"
   },
   "facebookincubator/aitemplate": {
     "decided": "2026-05-29T23:23:27Z",
@@ -335,6 +349,13 @@
     "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
   },
+  "lmk123568/pyvideoproc": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "skip",
+    "full_name": "lmk123568/PyVideoProc",
+    "note": "NVIDIA video-codec-locked (NVDEC/DeepStream); AMD needs VA-API/AMF rewrite, not a kernel port",
+    "reason": "not-a-target"
+  },
   "luce-org/lucebox-hub": {
     "decided": "2026-05-30T00:04:56Z",
     "disposition": "skip",
@@ -489,6 +510,13 @@
     "note": "graphics shader language; AMD via SPIR-V/Vulkan",
     "reason": "not-a-target"
   },
+  "shocker-0x15/gfxexp": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "skip",
+    "full_name": "shocker-0x15/GfxExp",
+    "note": "total OptiX dependence; no ROCm OptiX equivalent (hipRT differs)",
+    "reason": "cant-port"
+  },
   "siboehm/sgemm_cuda": {
     "decided": "2026-05-30T00:31:01Z",
     "disposition": "skip",
@@ -515,6 +543,20 @@
     "disposition": "skip",
     "full_name": "SunOner/sunone_aimbot_2",
     "note": "game aimbot/cheat, not a target",
+    "reason": "not-a-target"
+  },
+  "szellmann/visionaray": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "verify",
+    "full_name": "szellmann/visionaray",
+    "note": "experimental HIP tree exists ('for testing'), no CMake enablement; needs a build-test on current ROCm",
+    "reason": "verify"
+  },
+  "tensorflow/recommenders-addons": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "skip",
+    "full_name": "tensorflow/recommenders-addons",
+    "note": "TF-ecosystem; ROCm ifdefs are boilerplate, no build path; skip per jeff",
     "reason": "not-a-target"
   },
   "thu-ml/sageattention": {
@@ -573,6 +615,13 @@
     "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
   },
+  "uos/rmcl": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "verify",
+    "full_name": "uos/rmcl",
+    "note": "OptiX-centric robot localization; only the CUDA correspondence code is HIP-portable (AMD otherwise via Vulkan); take a closer look",
+    "reason": "verify"
+  },
   "vllm-project/vllm": {
     "decided": "2026-05-30T00:01:04Z",
     "disposition": "skip",
@@ -614,6 +663,13 @@
     "full_name": "Zaneham/BarraCUDA",
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
     "reason": "not-a-target"
+  },
+  "zielon/insta": {
+    "decided": "2026-05-30T03:26:34Z",
+    "disposition": "skip",
+    "full_name": "Zielon/INSTA",
+    "note": "DLSS (proprietary) + tiny-cuda-nn lock-in",
+    "reason": "cant-port"
   },
   "zjhellofss/kuiperllama": {
     "decided": "2026-05-30T00:45:17Z",

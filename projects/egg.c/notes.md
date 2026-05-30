@@ -1,0 +1,1 @@
+# egg.c notes
