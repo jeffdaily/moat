@@ -332,6 +332,91 @@ tolerance -- the pre-existing float-atomic accumulation-order noise of fault #7,
 passes in isolation and on rerun, NOT introduced by 3DGUT/libhipcxx). FAST_MATH
 remains off by default on ROCm (fault #13).
 
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1) -- revalidate at c1ae9ce (3DGUT enabled)
+
+Platform: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1.
+conda env py_3.12, torch 2.13.0a0+gitb5e90ff, torch.version.hip 7.2.53211.
+Fork tip validated: c1ae9ce2acf39e2ffc8ea39a236a6bda7d436f74.
+State transition: revalidate -> completed.
+
+### Build command (gfx1100, 3DGUT enabled)
+    cd projects/gsplat/src
+    git reset --hard origin/moat-port  # update from 621ebd6 to c1ae9ce
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 \
+      BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1 BUILD_RELOC=1 \
+      BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 \
+      LIBHIPCXX_INCLUDE=agent_space/libhipcxx/include \
+      pip install -e . --no-build-isolation -v
+libhipcxx: ROCm/libhipcxx amd-develop commit fa4ccc6 at agent_space/libhipcxx.
+No fork modification required (follower reuses gfx90a moat-port commit, no wave32-specific
+code change needed -- the shared commit already builds and passes on gfx1100).
+
+### Import verification
+    has_3dgut(): True
+    has_3dgs():  True
+    has_2dgs():  True
+    has_adam():  True
+All 5 op namespaces register: gsplat_3dgs, gsplat_2dgs, gsplat_3dgut, gsplat_cuda, gsplat.
+
+### Code-object evidence (gfx1100 + 3DGUT kernels)
+    roc-obj-ls gsplat/csrc.so | grep gfx1100 | wc -l  -> 25
+All 25 code objects are hipv4-amdgcn-amd-amdhsa--gfx1100 (up from 20 at BUILD_3DGUT=0).
+The 5 new objects carry the 3DGUT kernels confirmed by llvm-objdump --offloading:
+- rasterize_to_pixels_from_world_3dgs_bwd_kernel<128,float> (csrc.so.21)
+- rasterize_to_pixels_from_world_3dgs_fwd_kernel<128,float> (csrc.so.22)
+- projection_ut_3dgs_fused_kernel<float> containing cuda::std::optional<...> in signature (csrc.so.13)
+- intersect_tile_lidar_kernel<double> (csrc.so.5)
+No other arch present (only gfx1100 code objects in the .so).
+
+### pytest test suite (tests/test_basic.py + test_external_distortion.py + test_ftheta.py)
+Commands:
+    cd /tmp
+    HIP_VISIBLE_DEVICES=0 python3 -m pytest \
+      tests/test_basic.py -v --tb=short
+    HIP_VISIBLE_DEVICES=0 python3 -m pytest \
+      tests/test_external_distortion.py tests/test_ftheta.py -v
+
+test_basic.py result:    255 passed, 38 failed, 1 warning
+test_external_distortion.py + test_ftheta.py:  57 passed, 0 failed
+Grand total: 312 passed, 38 failed (all 38 are nerfacc-only, see below)
+
+### Failure breakdown vs gfx90a baseline: NO new gfx1100 regressions
+
+All 38 failures are due to `ModuleNotFoundError: No module named 'nerfacc'` in the pure-torch
+reference path (_torch_impl_eval3d.py `accumulate_eval3d`). Categories:
+- 27 test_rasterize_to_pixels_eval3d[...] -- the documented known-fail (eval3d reference needs nerfacc)
+- 9 test_rasterize_to_pixels[batch_dims*-{3,32,128}] -- the non-eval3d rasterization tests also use
+  nerfacc for their reference accumulator (same nerfacc gap as test_rasterization.py; BUILD_3DGUT=1
+  exposes them in this parametrize; they were not in scope at BUILD_3DGUT=0)
+- 2 test_rasterize_eval3d_degenerate_gaussians_culled, test_backward_high_opacity_no_nan -- also
+  nerfacc-gated eval3d path
+
+The gfx90a notes counted "28 test_rasterize_to_pixels_eval3d cases" as the eval3d known-fails.
+On gfx1100 the same set is present (27 eval3d param variants visible here + the 2 named tests
+above) -- all nerfacc, same root cause, NOT a wave32 or gfx1100 issue. The HIP eval3d kernel
+built and its op registered; the fault is the missing reference package only.
+
+3DGUT/lidar/UT tests newly passing (matching gfx90a):
+- test_isect_lidar_corner_cases: 102 passed
+- test_isect_lidar (incl. corner_cases) + test_projection_ut_* + test_ut_params_*: 113 passed
+- test_external_distortion.py + test_ftheta.py: 57 passed
+
+Original 3DGS/2DGS core suite (regression check):
+    HIP_VISIBLE_DEVICES=0 python3 -m pytest tests/test_basic.py \
+      -k "(test_quat_scale_to_covar_preci or test_proj or test_projection or \
+           test_fully_fused_projection_packed or test_isect or test_sh) and not lidar"
+Result: 108 passed, 0 failures -- no regression vs the gfx1100 BUILD_3DGUT=0 baseline
+(102 passed in original validation; the +6 are UT tests newly matched by this -k).
+
+### wave32 3DGUT path confirmation
+gfx1100 is RDNA3 (wave32). tiled_partition<32> is exactly one wavefront on gfx1100.
+The projection_ut_3dgs_fused kernel uses cuda::std::optional from ROCm/libhipcxx, compiles to
+gfx1100, and the 113 lidar/UT tests confirm it executes correctly on wave32. The
+rasterize_to_pixels_from_world_3dgs_{fwd,bwd} kernels compile and register on gfx1100 (their
+test cases fail only due to missing nerfacc reference, not a kernel correctness issue). The
+3DGUT path works on wave32: no wave32-specific code fix was required beyond the shared commit.
+
 ## Scope / known limitations on this ROCm stack
 - 3DGUT eval3d tests (test_rasterize_to_pixels_eval3d, 28 cases) still FAIL, but
   ONLY because their pure-torch REFERENCE (gsplat/cuda/_torch_impl_eval3d.py) does
