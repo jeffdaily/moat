@@ -512,3 +512,56 @@ The shfl_xor reductions (fault 4), match_any LabeledGroup (fault 7), and the 3DG
 cuda::std::optional path (libhipcxx) all execute correctly. No wave-size source fix
 required beyond the shared commit; the only gfx1151-specific deltas were the Windows
 build-toolchain issues above, none of them numeric.
+
+## Validation 2026-05-30 (linux-gfx90a revalidate at 5cdaa15)
+
+Platform: AMD Instinct MI250X, gfx90a (wave64). ROCm 7.2.1.
+conda env py_3.12, torch 2.13.0a0+gitb5e90ff, torch.version.hip 7.2.53211.
+Fork tip validated: 5cdaa1551336c1590297a86db03c578a1820b130 (prior validated_sha was c1ae9ce).
+State transition: revalidate -> completed. No code change required; the shared commit
+(5cdaa15) carries win32+HIP build deltas guarded by sys.platform=="win32", byte-identical
+on Linux.
+
+### Build command (gfx90a, 3DGUT enabled, HIP_VISIBLE_DEVICES=2)
+    cd projects/gsplat/src
+    git reset --hard fork/moat-port   # update c1ae9ce -> 5cdaa15
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx90a \
+      LIBHIPCXX_INCLUDE=agent_space/libhipcxx/include \
+      BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1 BUILD_RELOC=1 \
+      BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 MAX_JOBS=16 \
+      pip install -e . --no-build-isolation -v
+libhipcxx: ROCm/libhipcxx amd-develop commit fa4ccc6 at agent_space/libhipcxx.
+
+### Import verification
+    has_3dgut: True  has_3dgs: True  has_2dgs: True  has_adam: True
+
+### Code-object evidence
+    roc-obj-ls gsplat/csrc.so | grep gfx90a | wc -l  -> 25
+All 25 code objects are hipv4-amdgcn-amd-amdhsa--gfx90a (same count as gfx1100 at 5cdaa15).
+
+### pytest test suite
+
+Core 3DGS/2DGS subset (same -k as prior gfx90a/gfx1100 validations):
+    cd /tmp && HIP_VISIBLE_DEVICES=2 python3 -m pytest \
+      tests/test_basic.py \
+      -k "(test_quat_scale_to_covar_preci or test_proj or test_projection or \
+           test_fully_fused_projection_packed or test_isect or test_sh) and not lidar" \
+      -v
+Result: 108 passed, 0 failed (matches gfx1100 result at c1ae9ce/5cdaa15).
+
+Full test_basic.py:
+    cd /tmp && HIP_VISIBLE_DEVICES=2 python3 -m pytest tests/test_basic.py -v --tb=short
+Result: 255 passed, 38 failed, 1 warning.
+All 38 failures are nerfacc-only (documented known-fail):
+- 27 test_rasterize_to_pixels_eval3d variants
+- 9 test_rasterize_to_pixels[batch_dims*-{3,32,128}] (nerfacc reference)
+- 2 test_rasterize_eval3d_degenerate_gaussians_culled, test_backward_high_opacity_no_nan
+Identical failure set to gfx1100 revalidation at c1ae9ce. No gfx90a regression.
+
+test_external_distortion.py + test_ftheta.py:
+    cd /tmp && HIP_VISIBLE_DEVICES=2 python3 -m pytest \
+      tests/test_external_distortion.py tests/test_ftheta.py -v
+Result: 57 passed, 0 failed (matches gfx1100).
+
+Grand total: 312 passed (255+57), 38 failed (nerfacc-only, unchanged from prior bar).
