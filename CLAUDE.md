@@ -16,11 +16,11 @@ MOAT (Moat Obliteration via Automated Translation) is a Claude-driven effort to 
 
 Auto mode is maximal within these bounds.
 
-Allowed without asking: edit the working tree and the fork clone in `projects/<name>/src/`; build, hipify, compile, run tests including on GPU; inside the fork clone do git branch/add/commit/amend/rebase and `git push --force-with-lease` to the jeffdaily fork; `gh repo fork` and `gh` reads; update status.json, plan.md, notes.md, PORTING_GUIDE.md and push them to this MOAT repo.
+Allowed without asking: edit the working tree and the fork clone in `projects/<name>/src/`; build, hipify, compile, run tests including on GPU; install missing build dependencies via apt or conda when a standard package exists; inside the fork clone do git branch/add/commit/amend/rebase and `git push --force-with-lease` to the jeffdaily fork; `gh repo fork` and `gh` reads; update status.json, plan.md, notes.md, PORTING_GUIDE.md and push them to this MOAT repo.
 
 Requires explicit approval (show the draft, wait for yes): any GitHub-visible action against an UPSTREAM repo (opening a PR, a PR or issue comment, a review) or anything visible outside the jeffdaily forks. The upstream PR is additionally gated behind the `pr-approved-by-user` state.
 
-Stop and ask on genuine blockers instead of guessing or thrashing: an unresolvable build dependency, a porting-strategy decision with no clear best answer, missing hardware or access, a discovery root-vs-fork ambiguity, or repeated validation failure with unclear root cause after 3 porter attempts. Set the platform `blocked=true` with a concrete reason and ask a specific question.
+Make progress without asking; ask jeff only when truly unavoidable (install missing build deps yourself via apt/conda; do not ask for those). If you are genuinely stuck on a project after a real attempt (an unresolvable dependency, a porting-strategy decision with no clear answer, missing hardware or access, or repeated validation failure with unclear cause after 3 porter attempts), set the platform `blocked=true` with a concrete reason and MOVE ON to the next project rather than waiting; jeff will have you summarize the blocked projects when he returns.
 
 # Standing rules
 
