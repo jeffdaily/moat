@@ -258,6 +258,25 @@ Allocator tests (POOL_MR_TEST, ARENA_MR_TEST, DEVICE_BUFFER_TEST) produced ident
 
 PASS. gfx1100 validation matches gfx90a identically (27/27 ctest, 642 passed + 16 skipped + 0 failed out of 658 gtest cases). Real GPU allocation/stream-ordered ops confirmed on AMD Radeon Pro W7800 (gfx1100). State: port-ready -> completed (validated_sha = 1473ffc5bab2b81efd7d849db55e13a62b08822f).
 
+## Validation 2026-05-30 (gfx1100) -- revalidate at 3c0e802 (install-path fix)
+
+Revalidation triggered because head_sha moved 1473ffc -> 3c0e802 (single-file amendment to `cpp/cmake/hip/rmm_hip.cmake`: changed the force-include install-path expression from `CMAKE_INSTALL_PREFIX/CMAKE_INSTALL_INCLUDEDIR` to `$<INSTALL_PREFIX>/include` so downstream consumers get the correct generator-expression-resolved path). No kernel, source, or test files changed.
+
+Fetched and checked out 3c0e8029849ba5cae2c773207fdf271b180f9b8f from jeffdaily/rmm moat-port. Re-ran cmake configure (0.1 s) + build (ninja: no work to do -- only CMake install/export logic changed, no compilation units recompiled). Fork untouched; no CI added.
+
+gfx1100 code-object confirmed:
+```
+roc-obj-ls projects/rmm/build-gfx1100/gtests/DEVICE_BUFFER_TEST
+hipv4-amdgcn-amd-amdhsa--gfx1100  ...#offset=282624&size=3035920
+```
+No gfx90a code object present.
+
+Test run: `HIP_VISIBLE_DEVICES=0 ctest --test-dir projects/rmm/build-gfx1100 --output-on-failure` (69.5 s wall time).
+
+Result: **100% tests passed, 0 tests failed out of 27** ctest tests. Individual gtest counts: **642 passed + 16 skipped + 0 failed** -- identical to the prior gfx1100 run at 1473ffc. Skip set unchanged (AsyncMRFabricTest, System/DEVICE_MR_REF_TEST, SystemMRTest, THRUST_ALLOCATOR multi-device, USE_HIP-guarded death test absent from listing). No new failures.
+
+State: revalidate -> completed (validated_sha = 3c0e8029849ba5cae2c773207fdf271b180f9b8f).
+
 ## Install as a dependency
 
 This is the contract raft/cudf/cuvs/cugraph/cuml consume. rmm is header-heavy:
