@@ -88,3 +88,113 @@ Determinism: known-answer suites pass on every repeat; CUDA_Interface_Example
 prints byte-identical means/chi^2 across runs.
 
 Result: linux-gfx90a -> ported. No blockers.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+### Arch fix: configurable HIP_ARCHITECTURES
+
+The original moat-port commit hardcoded `HIP_ARCHITECTURES "gfx90a"` in both
+`Gpufit/CMakeLists.txt` and `examples/c++/CMakeLists.txt` via
+`set_target_properties`. This means `-DCMAKE_HIP_ARCHITECTURES=gfx1100` was
+silently ignored -- the cache variable was irrelevant once
+`set_target_properties` overrode it. Fixed both targets to honor
+`CMAKE_HIP_ARCHITECTURES` (defaulting to gfx90a when unset), and amended
+the single curated moat-port commit. New SHA: `0015899374416cf2a82b1030aeab79b113d57a7b`.
+
+This bumped `head_sha`, which correctly flipped linux-gfx90a to `revalidate`
+(gfx90a device code is unchanged; only the arch selection logic changed).
+
+### Configure/build
+
+```
+cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF
+
+cmake --build projects/Gpufit/src/build-hip -j
+```
+
+Build: clean (100%). All targets built including libGpufit.so, all Boost.Test
+executables, Simple_Example, CUDA_Interface_Example (HIP-compiled).
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls projects/Gpufit/src/build-hip/Gpufit/libGpufit.so
+```
+
+Output:
+```
+1  host-x86_64-unknown-linux-gnu-              ...size=0
+1  hipv4-amdgcn-amd-amdhsa--gfx1100           ...size=132784
+2  host-x86_64-unknown-linux-gnu-              ...size=0
+2  hipv4-amdgcn-amd-amdhsa--gfx1100           ...size=9208
+3  host-x86_64-unknown-linux-gnu-              ...size=0
+3  hipv4-amdgcn-amd-amdhsa--gfx1100           ...size=6680
+```
+
+gfx1100 confirmed in all 3 code objects. No gfx90a code objects present.
+
+### Test results (HIP_VISIBLE_DEVICES=0, AMD Radeon Pro W7800, gfx1100, wave32)
+
+```
+cd projects/Gpufit/src/build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1
+```
+
+| Test | Result |
+|------|--------|
+| Gpufit_Test_Error_Handling | PASS |
+| Gpufit_Test_Linear_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_2D | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Rotated | FAIL (see below) |
+| Gpufit_Test_Cauchy_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Fletcher_Powell_Helix_Fit | PASS |
+| Gpufit_Test_Brown_Dennis_Fit | PASS |
+| Cpufit_Gpufit_Test_Consistency | PASS |
+
+9/10 PASS, 1/10 FAIL.
+
+### Gauss_Fit_2D_Rotated failure analysis
+
+The failure is in `Gauss_Fit_2D_Rotated.cpp` line 97, parameter[6] (rotation
+angle `r`), tolerance `< 1e-6f`:
+
+```
+true_params:   r = 0.1963495463  (PI/16)
+output_params: r = 0.1963506788
+abs diff[6]  = 1.1324882507e-06  (threshold = 1e-6f)
+```
+
+The LM solver CONVERGES correctly: chi2 = 2.8421709430e-12 (well below the
+1e-6 chi2 threshold), status=0, 6 iterations. All other 6 parameters are
+within 1e-6. The rotation angle is off by 1.13e-6 -- 13% over the 1e-6
+threshold.
+
+Root cause: wave32 (gfx1100) vs wave64 (gfx90a) changes the block-packing
+heuristic in `lm_fit_cuda.cu`: with `warp_size_=32` the GJ solver packs
+differently per block, changing the order of FP accumulation in the
+gradient/hessian reduction over 64 data points. The fit is numerically
+correct (chi2 proves convergence), but the final iterate lands 13% outside
+the 1e-6 tolerance. This is deterministic and reproducible across all 4
+W7800 cards on this host.
+
+This is NOT a warp-intrinsic bug or convergence failure. The fix is a
+one-line test tolerance adjustment: `< 1e-6f` -> `< 2e-6f` for parameter[6]
+in `Gauss_Fit_2D_Rotated.cpp:97`. This matches the approach already taken for
+parameter[0] (amplitude, which uses `2e-5f`). The CUDA path is unaffected.
+
+### Wave32 confirmation
+
+warpSize = 32 on gfx1100 (runtime query in info.cu). Its sole effect is
+feeding the block-packing heuristic in lm_fit_cuda.cu:306. This does NOT
+cause NaN/divergence -- only a FP accumulation-order difference that slightly
+shifts the final iterate for tight tolerances. All other 9 suites pass with
+identical chi2/status to gfx90a.
+
+### State: validation-failed
+
+Bouncing to porter for the one-line tolerance fix in
+Gpufit/tests/Gauss_Fit_2D_Rotated.cpp line 97.
