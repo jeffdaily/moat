@@ -43,3 +43,4 @@ RAPIDS (port in this order):
 
 Module-level (not hard `depends_on`):
 - `cupoch`'s deferred `imageproc` module needs `libSGM` (CUDA semi-global-matching stereo). Porting `libSGM` would unblock that cupoch module; the cupoch core does not need it.
+- `RXMesh`'s matrix/solver/diff module needs the low-level cusolverSp csrqr API (ROCm/hipSOLVER#443, filed) and a cuDSS-class GPU direct solver (maps to STRUMPACK, completed). It is header-only; the delivered RXMesh core + mesh-query + dynamic-editing port does not need it.
