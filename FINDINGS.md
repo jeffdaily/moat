@@ -4,9 +4,9 @@ Upstream bugs and notable issues that MOAT porting work uncovered while porting 
 
 | # | Title | Surfaced by | Arch / ROCm | Status | Upstream issue |
 |---|-------|-------------|-------------|--------|----------------|
-| 1 | HIP layered cudaArray collapses its layer dimension on cross-launch read | popsift | gfx90a / CDNA2, ROCm 7.2.1 | Confirmed (multi-layer repro); root cause corrected | PENDING |
+| 1 | HIP layered cudaArray collapses its layer dimension on cross-launch read | popsift | gfx90a / CDNA2, ROCm 7.2.1 | Confirmed (multi-layer repro); root cause corrected | [ROCm/clr#275](https://github.com/ROCm/clr/issues/275) |
 | 2 | Integer atomicMin/atomicMax silently no-op on host-coherent (fine-grained) hipMallocManaged memory | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | Expected (not a bug): documented PCIe/fine-grained atomic limitation; standalone repro + ISA + docs confirm | N/A (usage rule) |
-| 3 | rocPRIM/hipCUB DeviceRadixSort loses keys when begin_bit>0 and end_bit==key bit-width | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | CONFIRMED (clean repro: keys lost; both hipCUB+rocPRIM, multi-seed/size) | PENDING (file vs ROCm/rocPRIM) |
+| 3 | rocPRIM/hipCUB DeviceRadixSort loses keys when begin_bit>0 and end_bit==key bit-width | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | CONFIRMED (clean repro: keys lost; both hipCUB+rocPRIM, multi-seed/size) | [ROCm/rocPRIM#775](https://github.com/ROCm/rocPRIM/issues/775) |
 
 ## 1. HIP layered cudaArray collapses its layer dimension on cross-launch read
 
@@ -16,7 +16,7 @@ CORRECTION: an earlier "the texture is stale but `surf2DLayeredread` is fresh" f
 
 - Reproducers (decisive, multi-layer): `findings/popsift-texsurf-coherency/{multilayer_check.cpp,multilayer_check2.cpp,array3d_check.cpp,tall2d_check.cpp}`
 - Earlier single-layer repro (misleading, kept for the record): `findings/popsift-texsurf-coherency/repro.cpp`
-- Report: `findings/popsift-texsurf-coherency/BUG_REPORT.md` -- PREDATES the corrected root cause; regenerate from the multi-layer repros before filing.
+- FILED: ROCm/clr#275 (https://github.com/ROCm/clr/issues/275). Self-contained report (full repros inline): `findings/popsift-texsurf-coherency/BUG_REPORT.md`.
 - Port workaround: drop `cudaArrayLayered` on HIP; use a non-layered 3D array (`surf3Dwrite`/`surf3Dread`/`tex3D`, level as z). In popsift this is one compat-header wrapper (`surf2DLayeredwrite` -> `surf3Dwrite`) plus routing reads through the fetch helper to `surf3Dread`.
 
 ## 2. Integer atomicMin/atomicMax silently no-op on host-coherent (fine-grained) hipMallocManaged memory -- EXPECTED, not a bug
@@ -40,5 +40,5 @@ CORRECTION/history: the original cudaKDTree note framed this as "mis-sorts"; a f
 - Surfaced by: cudaKDTree spatial-kdtree.h (sorts a 64-bit (nodeID<<32)|primID key by the high 32 bits via [32,64) -- exactly the trigger).
 - Port workaround: sort the full 64-bit key ([0,64)) -- correct; keep it.
 - Reproducers (clean): findings/hipcub-rocprim-beginbit/{sweep.cpp,minrepro.cpp,bbtest.cpp,sweep_out.txt}.
-- Bug report (ready, gated): findings/hipcub-rocprim-beginbit/BUG_REPORT.md -- file against ROCm/rocPRIM.
+- FILED: ROCm/rocPRIM#775 (https://github.com/ROCm/rocPRIM/issues/775). Self-contained report (full repro inline): findings/hipcub-rocprim-beginbit/BUG_REPORT.md.
 - Confirmation: DONE.
