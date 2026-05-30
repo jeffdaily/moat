@@ -100,6 +100,8 @@ These are the real semantic differences. Most porting bugs are here, not in symb
 
 - Texture pitch alignment. AMD requires 256-byte row pitch for pitched 2D texture binds; widths that work on CUDA can fail. If a kernel only point-samples, a linear (`tex1Dfetch`-style) bind avoids pitch entirely. (colmap BindTexture2D bug.)
 
+- Texture hardware linear filtering. CUDA accepts a `cudaFilterModeLinear` + `cudaReadModeElementType` texture over a float array; HIP/ROCm rejects it at creation (`hipCreateTextureObject` -> "operation not supported") -- AMD hardware does not support linear filtering on element-read float textures. Fix: on HIP create the texture `cudaFilterModePoint` and do manual bilinear interpolation in software (point-sample the 4 neighbors and lerp), matching CUDA's unnormalized -0.5 texel-center convention: a coordinate c samples texel `floor(c-0.5)` and `floor(c-0.5)+1` with weight `(c-0.5)-floor(c-0.5)`. Put the interpolation behind the project's texture-fetch helper so callers are unchanged. (popsift sift_octave linear textures.)
+
 - Library swaps. cuBLAS -> hipBLAS, cuFFT -> hipFFT, cuRAND -> hipRAND, cuSPARSE -> hipSPARSE, cuDNN -> MIOpen, Thrust/CUB -> rocThrust/hipCUB. APIs are mostly 1:1; watch handle types and a few signature differences (for example hipBLAS v2 enums).
 
 ## Validation policy
@@ -124,3 +126,5 @@ Append `YYYY-MM-DD -- lesson -- source project` when you learn a generalizable l
 - 2026-05-30 -- before dismissing the 256B-pitch fault class, confirm the ACTUAL texture resource type: a cudaResourceTypePitch2D bind is subject to it (even if the pitch happens to satisfy it); do not assume the texture is cudaArray-backed -- CudaSift
 - 2026-05-30 -- review (code/strategy/analysis) and validate (real GPU run) are separate MOAT stages; the reviewer does not block on a missing GPU run, the validator provides it -- CudaSift
 - 2026-05-30 -- perf-critical kernels (attention/GEMM/quant, often CUTLASS/CuTe/Hopper-tuned): a straight HIP translation may underperform an AMD-native (rocWMMA/CK/MFMA) approach; the planner decides port-vs-rewrite -- per jeff
+- 2026-05-30 -- HIP rejects cudaFilterModeLinear + element-read float textures; replace the hardware linear fetch with manual bilinear interpolation (point fetch 4 neighbors + lerp, -0.5 texel-center convention) -- popsift
+- 2026-05-30 -- kernels that pack two 32-thread rows into one block break on wave64 (one 64-lane wavefront): __ballot/__popc/__any/warp-bitonic-sort must operate per 32-lane half; treat the wavefront as two independent 32-lane groups so each row matches a 32-lane NVIDIA warp -- popsift (wave64 fix in progress)
