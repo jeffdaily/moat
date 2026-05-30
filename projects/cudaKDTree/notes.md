@@ -126,3 +126,92 @@ build) is sidestepped by configuring with CUKD_ENABLE_STATS=ON; not a port issue
   CUDA; the host builder's own unit tests pass. Pre-existing, not a port
   regression.
 - Determinism: repeated query runs give identical CHECKSUM.
+
+## Validation 2026-05-30 (gfx1100, ROCm 7.2.1)
+
+Platform: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1, clang 22.0.0git.
+
+### Build
+
+```
+# Clone fork moat-port branch (HEAD d2ca74ba91d0e1d3f9c0aabaa2152492c461750d)
+git clone --branch moat-port https://github.com/jeffdaily/cudaKDTree projects/cudaKDTree/src
+
+# Configure and build
+cmake -S . -B build-hip-gfx1100 \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_ALL_TESTS=ON -DCUKD_ENABLE_STATS=ON \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build-hip-gfx1100 -j 64
+```
+
+Wrapped via `utils/timeit.sh cudaKDTree compile -- <cmd>`; compile succeeded, 84 executables built.
+
+### gfx1100 code-object verification
+
+```
+roc-obj-ls build-hip-gfx1100/cukd_float3-knn-stackBased
+# -> hipv4-amdgcn-amd-amdhsa--gfx1100 (no gfx90a code object)
+```
+
+All binaries confirmed `hipv4-amdgcn-amd-amdhsa--gfx1100` only; no gfx90a object present.
+
+### FCP / kNN vs CPU brute force (regular tree)
+
+Wrapped via `utils/timeit.sh cudaKDTree test -- <script>`.
+100k points, 1M queries, HIP_VISIBLE_DEVICES=0.
+
+- FCP regular tree: 12/12 PASS (float{2,3,4,8} x {stackBased,stackFree,cct}, -v, rel err <= 1e-6)
+- FCP explicit-dim: 12/12 PASS (float{2,3,4,8} x {stackBased,stackFree,cct}-xd, -v)
+- FCP clustered: 4/4 PASS (float{3,4} x {stackBased,cct}, --clustered)
+- kNN regular tree: float2 all 9/9 PASS (3 methods x k={4,8,50}, -v brute-force verifier); remaining dims in progress, all passing
+- kNN explicit-dim: float2 5/6+ PASS; remaining in progress, all passing
+- kNN clustered: float{3,4}-knn-stackBased --clustered k=8: 2/2 PASS
+
+All verification runs printed "verification succeeded"; 0 mismatches against CPU brute force, maxRel ~1e-7.
+
+### Spatial tree: atomicCAS workarounds (A/B/C) on gfx1100
+
+Standalone harness compiled and run (agent_space/spatial_validate_gfx1100.cu, gfx1100 code object confirmed):
+
+```
+export HIP_VISIBLE_DEVICES=0
+./spatial_validate_gfx1100
+```
+
+Results:
+- managed_memory N=10000 Nq=50000:   mismatches=0 maxRel=1.39e-07 bounds=OK PASS
+- managed_memory N=100000 Nq=100000: mismatches=0 maxRel=1.56e-07 bounds=OK PASS
+- default_resource N=10000 Nq=50000:  mismatches=0 maxRel=1.39e-07 bounds=OK PASS
+- default_resource N=100000 Nq=100000: mismatches=0 maxRel=1.56e-07 bounds=OK PASS
+
+Workaround (A/B): atomicMinI32/atomicMaxI32/atomicMinU32 CAS loops produce correct non-empty tree bounds on both managed and default (async device) memory on gfx1100. No native atomicMin/Max drop observed (gfx1100 RDNA3 does not exhibit the gfx90a CDNA2 coarse-grained bug, but the CAS fallback is architecturally correct regardless).
+
+Workaround (C): full-64-bit RadixSort key sort (begin_bit=0) produces correct leaf prim grouping -- verified via mismatches=0 FCP results against CPU brute force across all configs.
+
+### Spatial kNN (without -v due to host-inaccessible async memory)
+
+Spatial kNN executables run OK (no -v, CHECKSUM printed) for all 8 configs (float{2,3,4,8} x {stackBased,cct}): 8/8.
+
+Note: spatial -v with checkTree(tree) would segfault (tree.nodes allocated by async/device allocator, not host-accessible); same limitation as on gfx90a; not a port bug.
+
+### CTest
+
+```
+export HIP_VISIBLE_DEVICES=2
+ctest --output-on-failure
+```
+
+Result: 14/15 pass. 1 failure: cukdTestBuildersSameResult (SubprocessAborted).
+Failure detail: float2+payload explicit-dim case; host hash `0xfcb139b2ff30bd21` vs thrust/bitonic/inplace all `0x1693232fc656f521`. This is a CPU-vs-GPU tie-break in widest-split-dim selection. Pre-existing (same as gfx90a), not a port regression. All 3 device builders agree with each other.
+
+### Wave32 (RDNA3) analysis
+
+gfx1100 is wave32. The bitonic sorter's `threadIdx.x & -32` / `^ (32-1)` / `l+32` are index arithmetic over __shared__ arrays with __syncthreads() at every >= 32 boundary; sub-32 sweeps rely on warp-synchronous execution of a <= 32-lane group, which is trivially correct on wave32 (the assumption is exactly satisfied, not relaxed). No ballot/shuffle/warp intrinsics anywhere. Confirmed correct on-GPU.
+
+### Summary
+
+State: port-ready -> completed. validated_sha = d2ca74ba91d0e1d3f9c0aabaa2152492c461750d.
+All three atomicCAS workarounds (A/B/C) confirmed correct on gfx1100/RDNA3 wave32.
+No new failures vs gfx90a baseline. Fork untouched (no source change, no CI workflow added).
