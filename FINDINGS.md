@@ -6,7 +6,7 @@ Upstream bugs and notable issues that MOAT porting work uncovered while porting 
 |---|-------|-------------|-------------|--------|----------------|
 | 1 | HIP layered cudaArray collapses its layer dimension on cross-launch read | popsift | gfx90a / CDNA2, ROCm 7.2.1 | Confirmed (multi-layer repro); root cause corrected | PENDING |
 | 2 | Integer atomicMin/atomicMax silently no-op on host-coherent (fine-grained) hipMallocManaged memory | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | Expected (not a bug): documented PCIe/fine-grained atomic limitation; standalone repro + ISA + docs confirm | N/A (usage rule) |
-| 3 | hipCUB DeviceRadixSort::SortKeys mis-sorts with nonzero begin_bit | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | Candidate (agent direct test: 9974/10000 misordered; needs standalone repro) | PENDING |
+| 3 | rocPRIM/hipCUB DeviceRadixSort loses keys when begin_bit>0 and end_bit==key bit-width | cudaKDTree | gfx90a / CDNA2, ROCm 7.2.1 | CONFIRMED (clean repro: keys lost; both hipCUB+rocPRIM, multi-seed/size) | PENDING (file vs ROCm/rocPRIM) |
 
 ## 1. HIP layered cudaArray collapses its layer dimension on cross-launch read
 
@@ -31,10 +31,14 @@ The real discriminator is host-coherent vs device-local, not coarse vs fine: `hi
 - Citations: ROCm "Hardware atomics operation support" (PCIe min/max = NOP); amd-lab-notes mi200-memory-space (managed default = fine-grained); LLVM llvm-project#122137 (add/xchg not expanded, min/max are).
 - Confirmation: DONE (standalone repro + ISA + doc/spec check). Mechanism label corrected from "coarse-grained" to "fine-grained host-coherent".
 
-## 3. hipCUB DeviceRadixSort::SortKeys mis-sorts with a nonzero begin_bit
+## 3. rocPRIM/hipCUB DeviceRadixSort loses keys when begin_bit>0 and end_bit==key bit-width -- CONFIRMED
 
-On gfx90a / ROCm 7.2.1, `hipcub::DeviceRadixSort::SortKeys` with a nonzero `begin_bit` in the [32,64) range mis-sorts (a direct test showed 9974/10000 keys out of order), which corrupted the spatial k-d tree's leaf primitive ranges so queries missed the true nearest neighbor. Sorting the full 64-bit key (begin_bit=0) is correct. Needs a standalone repro isolating the begin_bit parameter (and a check of whether rocPRIM underneath has the same defect).
+VERDICT: CONFIRMED real bug (clean standalone repro). On gfx90a / ROCm 7.2.1 (hipCUB 4.2.0, rocPRIM 4.2.0), `rocprim::radix_sort_keys` -- and `hipcub::DeviceRadixSort::SortKeys` which wraps it -- gives a WRONG result when sorting a key sub-range with begin_bit > 0 AND end_bit == 8*sizeof(KeyT) (the full key width): the output is NOT a permutation of the input (keys lost/duplicated) and is misordered. Any end_bit < width is correct even with begin_bit > 0 ([32,48), [24,56), [8,24) all pass), and the full-key sort [0,width) is correct. Confirmed for [32,64),[40,64),[48,64),[56,64) on uint64, both hipCUB and rocPRIM, N=10000 and N=1000000, multiple seeds. The defect is in rocPRIM; hipCUB inherits it.
 
-- Surfaced by: cudaKDTree spatial-kdtree.h sort.
-- Port workaround: sort the full 64-bit key on HIP.
-- Confirmation: TODO (standalone repro varying begin_bit).
+CORRECTION/history: the original cudaKDTree note framed this as "mis-sorts"; a first confirmation agent's repros were unreliable (their own full-key sanity sort itself failed -- an artifact of comparing the FULL key after a PARTIAL-range sort, which only orders the selected bits), which initially looked like a test artifact. A correct repro (compare only the [begin_bit,end_bit) subkey and verify the output is a permutation of the input) shows it is a genuine key-loss bug for the begin_bit>0 & end_bit==width case.
+
+- Surfaced by: cudaKDTree spatial-kdtree.h (sorts a 64-bit (nodeID<<32)|primID key by the high 32 bits via [32,64) -- exactly the trigger).
+- Port workaround: sort the full 64-bit key ([0,64)) -- correct; keep it.
+- Reproducers (clean): findings/hipcub-rocprim-beginbit/{sweep.cpp,minrepro.cpp,bbtest.cpp,sweep_out.txt}.
+- Bug report (ready, gated): findings/hipcub-rocprim-beginbit/BUG_REPORT.md -- file against ROCm/rocPRIM.
+- Confirmation: DONE.

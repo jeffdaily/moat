@@ -1,0 +1,17 @@
+uint64, hipCUB 4.2.0 / rocPRIM 4.2.0, gfx90a, ROCm 7.2.1 -- subkey-inv MUST be 0 and perm MUST be yes
+  N=1000000  seed=12345 [ 0,64) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [ 0,32) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [ 8,24) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [16,40) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [16,48) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [24,56) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [32,48) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [32,56) hipCUB : subkey-inv=0       perm=yes
+  N=1000000  seed=12345 [32,64) hipCUB : subkey-inv=435111  perm=NO-KEYS-LOST
+  N=1000000  seed=12345 [40,64) hipCUB : subkey-inv=411078  perm=NO-KEYS-LOST
+  N=1000000  seed=12345 [48,64) hipCUB : subkey-inv=432515  perm=NO-KEYS-LOST
+  N=1000000  seed=12345 [56,64) hipCUB : subkey-inv=370212  perm=NO-KEYS-LOST
+-- a couple cross-checks (rocPRIM + 2nd seed) --
+  N=1000000  seed=777 [32,64) hipCUB : subkey-inv=423542  perm=NO-KEYS-LOST
+  N=1000000  seed=777 [32,64) rocPRIM: subkey-inv=432548  perm=NO-KEYS-LOST
+  N=10000    seed=5   [40,64) hipCUB : subkey-inv=3946    perm=NO-KEYS-LOST
