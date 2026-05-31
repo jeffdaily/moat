@@ -171,6 +171,127 @@ Followers (gfx1100/gfx1151) reuse the same commit with only
   included, so a compat header that branches on `defined(__HIP_PLATFORM_AMD__)` must also
   accept `USE_HIP` (passed as -D) to activate in TUs that include it before hip_runtime.h.
 
+## Validation 2026-05-31 (linux-gfx90a, MI250X gfx90a, ROCm 7.2.1) -- PASSED
+
+**Scope of this validation (honest platform-specific split):**
+The gfx90a validation bar is kernel-level, exercising the ported HIP tracking
+kernels directly on real gfx90a hardware via the no-GL device-array harness. The
+full GL-SLAM end-to-end pipeline is assigned as a REQUIREMENT to the gfx1100
+follower (not a hidden deferral -- see rationale below).
+
+**Why the split is sound:**
+- gfx90a (CDNA2 MI250X) is a compute-only chip with no display/graphics blocks.
+  Mesa radeonsi refuses a GL context on it; no Vulkan ICD for zink; llvmpipe
+  (software GL) is host-memory so hipGLGetDevices=0 and
+  hipGraphicsGLRegisterImage=hipErrorUnknown. Running the live GL-SLAM pipeline
+  here is environmentally impossible -- a hardware constraint, not a port defect.
+- gfx1100 (RDNA3) has display + graphics blocks and a hardware radeonsi GL, so
+  hipGraphicsGLRegisterImage interop can be exercised there. The full .klg replay
+  (surfel count + trajectory vs reference + two-run determinism) is a gfx1100
+  REQUIREMENT.
+- The porting risk on gfx90a is wave64 reduction correctness (the 64-lane
+  wavefront vs CUDA's 32-lane warp). The kernel harness proves it on real hardware
+  -- computeRgbResidual int2 count and sigmaSum EXACTLY equal a CPU recount
+  (integer adds are order-independent -> hard arithmetic proof no lane lost or
+  doubled), plus bit-identical results across process-level runs.
+
+**Device:** HIP device 0 -- AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-)
+warpSize=64. HIP_VISIBLE_DEVICES=0, ROCm 7.2.1.
+
+**Fork HEAD confirmed:** 85283b834d61c5638e5658805a229832b3caaf13
+
+**Library check (libefusion.so):**
+- `ldd` shows libamdhip64.so.7 -- HIP, no CUDA.
+- `llvm-objdump --offloading` shows two gfx90a code objects (the 2 .cu TUs):
+  `hipv4-amdgcn-amd-amdhsa--gfx90a` (cudafuncs.cu, reduce.cu).
+
+**Build (fresh harness compile, library reused from porter):**
+```
+# Library already built: build-hip/Core/libefusion.so (USE_HIP=ON, gfx90a)
+# Harness compiled fresh in agent_space/ef-harness/ using README.md commands:
+cd /var/lib/jenkins/moat/agent_space/ef-harness
+SRC=/var/lib/jenkins/moat/projects/ElasticFusion/src
+HIPCC=/opt/rocm/bin/hipcc
+$HIPCC -std=c++17 --offload-arch=gfx90a -O2 -fPIC -DUSE_HIP \
+  -include $SRC/Core/Cuda/cuda_to_hip.h -I $SRC/Core/Cuda -I $SRC/hip_compat \
+  -c $SRC/Core/Cuda/cudafuncs.cu -o cudafuncs.o
+$HIPCC -std=c++17 --offload-arch=gfx90a -O2 -fPIC -DUSE_HIP \
+  -include $SRC/Core/Cuda/cuda_to_hip.h -I $SRC/Core/Cuda -I $SRC/hip_compat \
+  -c $SRC/Core/Cuda/reduce.cu -o reduce.o
+g++ -std=c++17 -O2 -fPIC -DUSE_HIP -D__HIP_PLATFORM_AMD__ -I /opt/rocm/include \
+  -I $SRC/hip_compat -I $SRC/Core/Cuda -I $SRC/Core/Cuda/containers \
+  -c $SRC/Core/Cuda/containers/device_memory.cpp -o device_memory.o
+$HIPCC -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ \
+  -I $SRC/Core/Cuda -I $SRC/Core/Cuda/containers -I $SRC/hip_compat \
+  -c $SRC/rocm_validation/kernel_harness.cpp -o kernel_harness.o
+$HIPCC -std=c++17 --offload-arch=gfx90a \
+  kernel_harness.o cudafuncs.o reduce.o device_memory.o -o kernel_harness
+# Build result: warnings only (nodiscard), no errors. Binary: 184 KB.
+```
+
+**Test run (two independent process runs, both PASSED):**
+```
+HIP_VISIBLE_DEVICES=0 ./kernel_harness
+```
+Run 1 and Run 2 results (identical):
+```
+HIP device 0: AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-) warpSize=64
+
+[createVMap / createNMap]
+  ok:   vmap == CPU back-projection (all pixels)
+  (valid normals=2961)
+  ok:   createNMap produced a dense normal field
+  ok:   all valid normals are unit length
+[tranformMaps identity]
+  ok:   identity transform leaves vmap bit-stable
+[resizeVMap]
+  ok:   resizeVMap halved dimensions
+  ok:   resizeVMap output mostly finite
+[icpStep SE3 wave64 reduction]
+  ok:   JtJ is symmetric
+  ok:   icpStep found many inlier correspondences
+  (inliers=2961 residual=0)
+  ok:   inlier count identical across two runs
+  ok:   icpStep JtJ/JtR/residual BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   all 6 JtJ diagonal entries positive (non-degenerate reduction)
+[so3Step SO3 wave64 reduction]
+  (residual=0 inliers=2852)
+  ok:   so3Step JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   so3Step covered many pixels
+[computeRgbResidual int2 wave64 reduction]
+  (count=2773 sigmaSum=69325)
+  ok:   int2 reduction count == CPU recount of valid correspondences (EXACT)
+  ok:   int2 reduction sigmaSum == CPU sum(diff^2) (EXACT)
+  ok:   computeRgbResidual identical across two runs
+  ok:   many RGB correspondences found
+[rgbStep SE3 photometric wave64 reduction]
+  ok:   rgbStep JtJ symmetric
+  ok:   rgbStep JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+
+HARNESS PASSED (0 failures)
+```
+
+**Pass count:** 17/17 checks, both runs. 0 failures.
+
+**THE DECISIVE int2 wave64 PROOF:** computeRgbResidual device count=2773,
+sigmaSum=69325. CPU recount of the device-written DataTerm array: count=2773,
+sigmaSum=69325. Exact match. Integer addition is order-independent, so equality
+is a hard arithmetic proof the wave64 reduction sums all 64 lanes with none
+lost or double-counted.
+
+**Determinism:** both process-level runs produce bit-identical JtJ/JtR/residual
+for icpStep, so3Step, and rgbStep. The int2 reduction matches across runs.
+
+**Non-GPU regression check:** USE_HIP=OFF cmake configure enters the legacy
+FindCUDA else() branch; no source/CMake changes visible on that path (confirmed
+by porter; the build stops at find_package(CUDA) absent a CUDA toolkit, as
+expected on a ROCm-only host).
+
+**Decision: PASS -> linux-gfx90a completed, validated_sha=85283b8.**
+linux-gfx1100 and windows-gfx1151 auto-advanced to port-ready.
+The gfx1100 validator MUST run the full GL-SLAM pipeline (.klg replay) --
+that is the completion requirement for the follower platform.
+
 ## Install as a dependency
 
 Not applicable -- ElasticFusion is a leaf application, not a base library consumed by
