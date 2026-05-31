@@ -277,6 +277,58 @@ Result: **100% tests passed, 0 tests failed out of 27** ctest tests. Individual 
 
 State: revalidate -> completed (validated_sha = 3c0e8029849ba5cae2c773207fdf271b180f9b8f).
 
+## Validation 2026-05-31 (gfx90a, revalidate at 565705bf)
+
+Revalidation of linux-gfx90a triggered because head_sha moved d22baffc -> 565705bf. The new commit squashes in the Windows port fixes: arena.hpp LLP64 size_class/maximum_size UL->ULL, byte_literals.hpp 1LL literal, device_scalar_tests.cpp uniform_int_distribution narrowing, logger_tests.cpp CRLF strip for Windows, rmm_hip_tests.cmake Threads::Threads, rmm_hip.cmake WINDOWS_EXPORT_ALL_SYMBOLS + dlfcn guard, runtime_async_alloc.hpp WIN32 guard. All changes are guarded or Windows-only; no Linux/HIP logic was altered.
+
+GPU arch: gfx90a (MI250X). ROCm 7.2.1. GCD: HIP_VISIBLE_DEVICES=3.
+
+### Build command
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/rmm/src/cpp -B agent_space/rmm_build -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  "-DCMAKE_PREFIX_PATH=/opt/rocm;/opt/conda/envs/py_3.12" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/agent_space/rmm_install \
+  -DBUILD_TESTS=ON
+bash utils/timeit.sh rmm compile -- cmake --build agent_space/rmm_build -j16
+```
+
+Configure: 0.1 s; incremental build: 43 targets rebuilt (warnings only, no errors). gfx90a code objects confirmed via `roc-obj-ls gtests/DEVICE_BUFFER_TEST` -- `hipv4-amdgcn-amd-amdhsa--gfx90a` present, size 4823552.
+
+### Test results
+
+```
+bash utils/timeit.sh rmm test -- bash -c \
+  "HIP_VISIBLE_DEVICES=3 ctest --test-dir agent_space/rmm_build --output-on-failure -j1"
+```
+
+Result: **100% tests passed, 0 tests failed out of 27** (158.81 s wall time).
+
+Individual gtest counts for key binaries (full suite = 658 cases matching prior gfx90a run):
+
+| Test binary           | Passed | Skipped | Failed |
+|-----------------------|--------|---------|--------|
+| DEVICE_BUFFER_TEST    | 46     | 0       | 0      |
+| DEVICE_UVECTOR_TEST   | 100    | 0       | 0      |
+| DEVICE_SCALAR_TEST    | 56     | 0       | 0      |
+| ARENA_MR_TEST         | 42     | 0       | 0      |
+| DEVICE_MR_REF_TEST    | 203    | 5       | 0      |
+| CUDA_ASYNC_MR_TEST    | 3      | 1       | 0      |
+| CUDA_STREAM_TEST      | 12     | 0       | 0      |
+| THRUST_ALLOCATOR_TEST | 11     | 6       | 0      |
+
+Skip set identical to prior gfx90a run: AsyncMRFabricTest (1), System/DEVICE_MR_REF_TEST (5), SystemMRTest (via SYSTEM_MR_TEST ctest pass), THRUST multi-device (6), USE_HIP-guarded death test absent. No new failures.
+
+### Verdict
+
+PASS. State: revalidate -> completed (validated_sha = 565705bf0c67c4b1a57a87130cb54d5bf6e90ae6). Real GPU allocation confirmed on gfx90a MI250X.
+
 ## Install as a dependency
 
 This is the contract raft/cudf/cuvs/cugraph/cuml consume. rmm is header-heavy:
