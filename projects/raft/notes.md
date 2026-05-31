@@ -184,6 +184,156 @@ port.
 The compiled lanczos solvers (4 of libraft's stock 8 TUs) are deferred behind
 `RAFT_COMPILE_LANCZOS=OFF` for the same cusolverSp/Xsyevd reasons.
 
+## CUTLASS distance/neighbors -> CK design (gfx90a)
+
+### What the CUTLASS distance kernels actually do (intent, not API)
+
+raft's distance machinery has TWO implementations of every distance, selected at
+runtime by `pairwise_matrix_dispatch` (dispatch-inl.cuh) and the fused-NN impls:
+
+1. A CUTLASS path on SM80+ (`dispatch_sm80.cuh` -> `pairwise_distance_cutlass_base.cuh`,
+   and `fused_distance_nn/cutlass_base.cuh`). It is a `GemmUniversal` whose EPILOGUE
+   is the distance op: the GEMM computes `accVal = dot(x_i, y_j)`, and the epilogue
+   `PairwiseDistanceEpilogueElementwise` applies `out[i][j] = distance_op(xn[i],
+   yn[j], accVal)` where `xn`/`yn` are the per-row/per-col L2 norms passed as a C
+   "vector" (row broadcast) and a broadcast vector (col broadcast). For expanded-L2:
+   `||x_i||^2 + ||y_j||^2 - 2*dot`; for cosine: `1 - dot/(||x_i|| ||y_j||)`.
+2. A "legacy" hand-written SIMT path (`pairwise_matrix/kernel_sm60.cuh` ->
+   `PairwiseDistances` in `pairwise_distance_base.cuh`; fused-NN's
+   `simt_kernel.cuh` / `fusedL2NNkernel`). NO CUTLASS: it tiles X and Y into shared
+   memory, accumulates the same `acc += x*y` dot product in registers, and applies
+   the SAME `distance_op.epilog(...)` formula. Mathematically identical to the
+   CUTLASS path, just a generic SIMT GEMM instead of tensor-core MMA.
+
+So "expanded-L2 = GEMM + epilogue" is literally the design of BOTH paths. The CK
+reimplementation target is path (1): replace the CUTLASS tensor-core GEMM+epilogue
+with a CK/ck_tile MFMA GEMM + the same distance epilogue. The mapping is:
+
+| CUTLASS construct | CK / ck_tile equivalent |
+|---|---|
+| `cutlass::gemm::device::GemmUniversalAdapter` | ck_tile universal GEMM (tile GEMM pipeline) or classic CK `DeviceGemmMultipleD` |
+| tensor-core MMA (sm80 `mma.sync`) | CK MFMA warp-gemm `WarpGemmMfmaF32F32F32M16N16K16` (gfx90a `v_mfma_f32_16x16x16f32`) |
+| `PairwiseDistanceEpilogueElementwise(aNorm, bNorm, accVal)` | a CK CDE element op / ck_tile epilogue functor that reads the GEMM accumulator + two broadcast norm tensors (xn row, yn col) |
+| GEMM batching over N (gridYZMax) | CK tile partitioner over M*N tiles (no 65535 grid-Y limit on the relevant axis) |
+
+ck_tile DOES support fp32 MFMA on gfx90a: `WarpGemmDispatcher<float,float,float,16,16,16>`
+-> `WarpGemmMfmaF32F32F32M16N16K16` (warp_gemm_dispatcher.hpp). Classic CK's
+`DeviceGemmMultipleD` maps the epilogue even more directly: its `CDEElementOp(e, c,
+d0, d1)` is exactly `out = distance_op(xn=d0_row, yn=d1_col, acc=c)` with `d0`/`d1`
+as 1-D broadcast tensors -- the same shape as the CUTLASS C-vector + broadcast-vec.
+
+### fused_distance_nn (the largest item)
+
+`fusedDistanceNNImpl` -> {`fusedL2NNImpl`, `fusedCosineNN`}. Same two-path split:
+CUTLASS `cutlassFusedDistanceNN` (a GEMM whose epilogue, instead of writing the
+distance matrix, does an argmin-reduction per row into a KeyValuePair<idx,dist>)
+vs. the SIMT `fusedDistanceNNkernel`/`fusedL2NNkernel` (simt_kernel.cuh) which fuses
+the same row-argmin into the tiled SIMT GEMM epilogue. The CK reimplementation is a
+CK GEMM with a REDUCING epilogue (row-wise argmin of `distance_op(xn,yn,acc)`),
+i.e. the CK `DeviceGemmReduce`/`gemm + block-row reduce` family, writing the
+KeyValuePair output + the per-row mutex update.
+
+### wave64 considerations for the CK/neighbors work
+
+- The CUTLASS path encodes NVIDIA warp=32 implicitly in its MMA fragment layout;
+  the CK MFMA path is wave64-native on CDNA (16x16x16 MFMA uses all 64 lanes), so
+  the GEMM tiling is correct on wave64 by construction -- no 32-lane assumption to
+  port, unlike the faiss top-k below.
+- faiss_select top-k (neighbors) DOES hardcode wave32: see the faiss_select +
+  select_warpsort fixes below. These are the wave64-correctness gate for neighbors.
+- The SIMT fused-NN fallback's per-row `updateReducedVal` uses a spin-lock, but it
+  is acquired one lane at a time across the unrolled `j` loop (only lane
+  `lid==j*AccThCols` enters per step), so it does NOT hit the RXMesh wave64
+  all-lanes-contend deadlock; it serializes by construction. shfl widths are the
+  sub-warp `AccThCols`, correct on wave64 via raft::shfl's width arg.
+
+### Strategy chosen for this pass (correctness path + one CK kernel)
+
+Layer A (ships now, unblocks the neighbors/distance BUILD on ROCm): the runtime
+arch detect (`kernel_virtual_arch` reads `ptxVersion`, meaningless on HIP) plus the
+`#include <cutlass/...>` in the 5 CUTLASS files is what breaks the build. On HIP,
+(a) make every `#include <cutlass/...>` and CUTLASS-only body `#if !defined(USE_HIP)`,
+(b) force `pairwise_matrix_dispatch` / the fused-NN dispatchers to ALWAYS take the
+legacy SIMT/sm60 branch (correct identical math), and (c) flip the SIMT-fallback
+`#if __CUDA_ARCH__ < 800` guards to also compile their body when `USE_HIP` (the
+compat header sets `__CUDA_ARCH__=800` on gfx90a, which would otherwise EMPTY the
+fallback kernel body). This makes distance + neighbors build and run correct on
+gfx90a using raft's own non-CUTLASS kernels -- the same approach raft itself uses
+on pre-Ampere NVIDIA GPUs.
+
+Layer B (the CK reimplementation deliverable): a standalone CK MFMA GEMM + fused
+expanded-L2 distance epilogue, GPU-validated numerically against a CPU reference
+(agent_space/ck_l2/ck_l2_expanded.cpp). Proves the CUTLASS->CK mapping concretely
+on gfx90a and is the template for swapping the high-performance path into
+dispatch_sm80 on HIP in a follow-up (replacing Layer A's legacy-kernel routing for
+the large-matrix regime where the MFMA GEMM wins).
+
+NOTE on ck_tile vs classic CK at ROCm 7.2.1: the in-repo ck_tile GEMM EXAMPLES
+(composable_kernel/example/ck_tile/03_gemm) target a NEWER ck_tile high-level
+kernel/epilogue API than the ck_tile headers SHIPPED in /opt/rocm/include/ck_tile
+(7.2.1): e.g. the shipped `CShuffleEpilogueProblem` is the multi-ABD form
+(AsDataType/BsDataType/DsDataType/CDElementwise/...) while the example passes the
+older `<ADataType,BDataType,AccDataType,CDataType,CLayout,...>` positional form, so
+the examples do not compile verbatim against the system headers. Rather than pin a
+matching ck_tile commit, the validated kernel uses CK's classic
+`DeviceGemmMultipleD_Xdl_CShuffle` -- which IS the XDL/MFMA tensor-core path on
+gfx90a and exposes a STABLE fused multi-D epilogue (`CDEElementOp(e,c,d0,d1)`),
+the most direct 1:1 mapping of the CUTLASS `GemmUniversal + PairwiseDistance
+epilogue`. ck_tile is still preferred for greenfield work; for THIS port the
+classic DeviceGemmMultipleD is the robust choice on the installed ROCm. The
+ck_tile route remains open once the system headers and examples realign.
+
+### What this pass delivered + GPU-validated (gfx90a, MI250X)
+
+1. DISTANCE/NEIGHBORS BUILD unblocked on ROCm: the `#include <cutlass/...>` wall in
+   the 5 CUTLASS files (pairwise_distance_cutlass_base, dispatch_sm80,
+   fused_distance_nn/cutlass_base, fused_l2_nn, fused_distance_nn/{fused_l2_nn,
+   fused_cosine_nn}) is `#if !defined(USE_HIP)`-guarded; the dispatchers force the
+   legacy SIMT/sm60 path on HIP; the SIMT-fallback kernel bodies (`#if __CUDA_ARCH__
+   < 800`) also build under USE_HIP. Distance headers + neighbors now compile under
+   hipcc.
+2. CK expanded-L2 (L2Expanded + L2SqrtExpanded): MFMA GEMM + fused `xn+yn-2*dot`
+   epilogue. PASS vs CPU ref at M,N,K in {512x384x128, 1024x1024x256, 100x200x64,
+   2048x512x128} (max_rel ~1.7e-7, 0 mismatches). Build: clang++ -x hip
+   --offload-arch=gfx90a -I/opt/rocm/include -lamdhip64. CONSTRAINT: this tuned
+   instance needs N % 4 == 0 (CShuffle CDE vector width 4) and N%4 / K%4 for the
+   A/B vector loads; arbitrary N needs a scalar (vec=1) instance or padding -- same
+   alignment dispatch raft does on the CUDA side. Also: CK DeviceGemmMultipleD only
+   supports Row-major D tensors and a stride-0 Row D broadcasts the N-vector (yn),
+   so the per-M norm (xn) is materialized [M,N] here; a single-vector fused variant
+   would transpose the GEMM (compute D[n,m]).
+3. faiss/select_warpsort wave64 fix (the neighbors top-k): `ballot()` now returns
+   the 64-bit WarpMask (was truncating lanes 32-63 into uint32) + `popc_mask`/
+   `ffs_mask`/`lane_bit` WarpMask helpers; select_warpsort's two `add()` loops use
+   them; faiss MergeNetworkWarp single-warp bitonic sort adds the stride-32 merge on
+   wave64. select_k MATRIX_SELECT_TEST (the kWarp* algorithms exercising this) runs
+   on GPU.
+4. THE ROOT-CAUSE wave64 fix -- host/device WarpSize mismatch: raft::WarpSize and
+   warp_size() were 64 only when __GFX9__ is defined, which is ONLY the device
+   pass; the HOST pass fell back to 32. select_warpsort computes its launch geometry
+   (block_dim, smem, per-warp data partition) on the HOST from WarpSize, so a 32 on
+   the host disagreed with the 64-lane device kernel and FAULTED (small-len top-k
+   coredumped; large-len silently mis-partitioned). Fix: the HIP build derives
+   RAFT_HOST_WARP_SIZE from CMAKE_HIP_ARCHITECTURES (gfx9->64, gfx10/11/12->32) and
+   cuda_dev_essentials.cuh / cudart_utils.hpp use it in the host pass so host==device.
+   Confirmed: same top-k inputs that coredumped now return identical, correct
+   results across immediate/filtered/distributed (probe agent_space/raft_select_probe).
+
+### faiss warp-select (knn_brute_force / ball_cover / fused_l2_knn) -- still deferred
+
+The FAISS BlockSelect/WarpSelect (Select.cuh / key_value_block_select.cuh) is more
+deeply wave32-coupled than select_warpsort: `kNumWarpQRegisters = NumWarpQ /
+WarpSize` goes to 0 when a kernel requests NumWarpQ=32 on a 64-lane wavefront
+(zero-length register arrays; `warpMergeAnyRegisters` no-match), and it has
+`__any_sync(0xffffffff,...)` 32-bit masks. Making it wave64-correct needs the
+warp-queue capacity raised to >= WarpSize at every instantiation in fused_l2_knn /
+ball_cover plus the mask widening -- a larger change than this pass. NEIGHBORS_TEST
+(haversine/ball_cover/epsilon) therefore stays RAFT_TEST_NEIGHBORS=OFF; select_k
+(MATRIX_SELECT) is the validated neighbors-top-k surface. Other gaps surfaced while
+building NEIGHBORS_TEST and are part of that follow-up: ball_cover.cu uses
+`CUDART_PI_F` (add to the compat math_constants.h) and fused_l2_knn-inl.cuh:431 has
+a `long`->key_type narrowing in a `{}` init (clang-strict).
+
 ## Install as a dependency
 
 This is the contract cuvs / cugraph / cuml consume. raft is header-heavy: a

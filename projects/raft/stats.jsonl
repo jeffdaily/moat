@@ -1,0 +1,9 @@
+{"kind":"phase","ts":"2026-05-30T23:35:03Z","phase":"compile","seconds":5.926,"exit":1,"cmd":"cmake --build projects/raft/build --target NEIGHBORS_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-30T23:40:59Z","phase":"compile","seconds":6.144,"exit":1,"cmd":"cmake --build projects/raft/build --target NEIGHBORS_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-30T23:42:34Z","phase":"compile","seconds":13.656,"exit":1,"cmd":"cmake --build projects/raft/build --target NEIGHBORS_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-30T23:44:34Z","phase":"compile","seconds":5.349,"exit":1,"cmd":"cmake --build projects/raft/build --target MATRIX_SELECT_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-30T23:46:21Z","phase":"compile","seconds":73.302,"exit":0,"cmd":"cmake --build projects/raft/build --target MATRIX_SELECT_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-30T23:46:45Z","phase":"test","seconds":0.006,"exit":127,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST --gtest_brief=1"}
+{"kind":"phase","ts":"2026-05-30T23:46:52Z","phase":"test","seconds":0.648,"exit":141,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST --gtest_brief=1"}
+{"kind":"phase","ts":"2026-05-30T23:58:31Z","phase":"compile","seconds":74.548,"exit":0,"cmd":"cmake --build projects/raft/build --target MATRIX_SELECT_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T00:21:51Z","phase":"compile","seconds":66.180,"exit":0,"cmd":"cmake --build projects/raft/build -j 16"}
