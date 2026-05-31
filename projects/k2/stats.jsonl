@@ -9,3 +9,6 @@
 {"kind":"phase","ts":"2026-05-31T07:46:01Z","phase":"test","seconds":104.959,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_run.sh"}
 {"kind":"phase","ts":"2026-05-31T07:51:16Z","phase":"test","seconds":289.305,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_run.sh"}
 {"kind":"phase","ts":"2026-05-31T07:59:35Z","phase":"compile","seconds":464.601,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/k2/src/build && cmake --build . -j 16 --target _k2 2>&1 | tail -15"}
+{"kind":"phase","ts":"2026-05-31T08:27:40Z","phase":"compile","seconds":206.077,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:29:26Z","phase":"test","seconds":87.325,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_run_gfx90a_val.sh"}
+{"kind":"phase","ts":"2026-05-31T08:32:48Z","phase":"test","seconds":183.161,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_run_gfx90a_val.sh"}

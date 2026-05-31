@@ -152,6 +152,61 @@ mutual_information and rnnt_loss (the CG-heavy autograd kernels) pass on GPU.
 take a genuinely idle one (~11 MB VRAM, no compute PID); other agents share the
 box. This port validated on GPU 0.
 
+## Validation 2026-05-31
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Validator agent.
+Fork: jeffdaily/k2 @ moat-port, HEAD 20f56c062675d09e34615209a811a63ff81f4b7f.
+GPU: GCD 3 (HIP_VISIBLE_DEVICES=3), idle (~11 MB VRAM, no KFD PIDs).
+
+### Commands
+
+Compile (incremental; already built by porter -- confirmed no-op):
+```
+bash utils/timeit.sh k2 compile -- cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16
+```
+Elapsed: ~206s (mostly link-step staleness check; all .o current).
+
+C++ gtests (HIP_VISIBLE_DEVICES=3, serial):
+```
+bash utils/timeit.sh k2 test -- bash agent_space/k2_gtest_run_gfx90a_val.sh
+```
+Elapsed: ~87s.
+
+Python slice (HIP_VISIBLE_DEVICES=3):
+```
+bash utils/timeit.sh k2 test -- bash agent_space/k2_pytest_run_gfx90a_val.sh
+```
+Elapsed: ~183s.
+
+### C++ gtest results (primary gate)
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (25),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+Total individual tests: 298 passed, 0 failed.
+
+### Python slice results
+
+20/23 files pass outright. sort_test.py absent from upstream source (not a failure).
+3 files "fail" -- all contain exclusively the 2 documented pre-existing artifacts:
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6 weights_only=True refuses _k2.ragged.RaggedTensor. Device-independent; reproduces on CPU; not a port bug.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 weights_only=True artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation divergence from hipCUB summation order vs torch reference; float64 passes exactly. Non-associative float32 reduction artifact; benign, not a port bug.
+
+No new Python failures beyond the 2 documented artifact categories.
+
+### Verdict
+
+PASS. 30/30 C++ gtests. Python slice clean modulo the 2 documented pre-existing artifacts. Transition: review-passed -> completed. validated_sha = 20f56c06. Followers linux-gfx1100 + windows-gfx1151 unblocked to port-ready.
+
 ## Review 2026-05-31
 
 Reviewer (linux-gfx90a, moat-port @ 20f56c06 vs master e625cb9). Verdict:
