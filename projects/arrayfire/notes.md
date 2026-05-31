@@ -395,6 +395,51 @@ full link, then GPU-validate the core gtest subset (the hip backend runs under t
 prefix) on one isolated GCD. Only then -> ported. reduce_by_key wave64 staging needs explicit
 GPU determinism validation.
 
+## Review 2026-05-31 (reviewer, full /pr-review) -- VERDICT: APPROVE
+
+Reviewed the linux-gfx90a port at fork HEAD 1802a81. Verdict APPROVE, modulo
+exactly two fold-in fixes (both now applied; no re-review needed). The whole
+validatable core is GPU-green (CUDA.* ctest 126/132 on gfx90a GCD 2); the 6
+residual failures are all accepted dispositions, not port defects.
+
+### Two fixes applied (folded into the single curated commit)
+1. (BC discipline) common/half.hpp: the hipRTC std-shim additions
+   (integral_constant / is_integral / is_signed / numeric_limits<...> /
+   std::isnan|isinf(float|double), incl. the __builtin_huge_valf / __builtin_isnan
+   bodies) sat under the SHARED `#ifdef __CUDACC_RTC__` guard (active on BOTH
+   NVRTC and hipRTC). They are only needed on the hipRTC JIT path -- NVRTC bundles
+   the full <type_traits>/<limits>/<cmath> -- so the block (the source symbols
+   between the pre-existing is_same_v shim and the `}  // namespace std` close,
+   now lines 82-183 wrapped by `#if defined(__HIP_RTC__) ... #endif`) is sub-gated
+   to the hipRTC path only, matching the AF_CONSTEXPR precedent just below it.
+   Provably inert for HIP (our JIT compile defines __HIP_RTC__, so the symbols stay
+   active); the change only removes them from the untested NVRTC path. The
+   pre-existing NVRTC shim (float_round_style / enable_if / is_same / is_same_v)
+   and the namespace-std close stay unguarded.
+2. (cosmetic) hip/device_manager.cpp compute2cores(): the NVIDIA compute-cap->cores
+   table mapped gfx90a (major=9) onto the sm_90 entry (128), producing a wrong
+   GFLOPs figure that only feeds an AF_TRACE line and a same-arch flops-based device
+   sort (no compute/selection correctness impact). On `__HIP_PLATFORM_AMD__` it now
+   returns a neutral per-CU lane count (64) instead of the NVIDIA-table lookup; the
+   NVIDIA path is untouched.
+
+Sanity: targeted single-TU compile (device_manager.cpp + transpose.cpp + jit.cpp,
+the JIT-dependent path) succeeded exit 0; the embedded JIT half_hpp.hpp blob
+regenerated from the edited half.hpp, confirming the guard did not break the HIP
+compile and the embedded JIT source still forms. No full rebuild / GPU run (the
+validator does the real-GPU validation next).
+
+### Accepted residual dispositions (NOT port defects)
+- sparse / sparse_arith / sparse_convert / threading: acceptable SCOPED DEFERRAL.
+  The three sparse binaries hit clean AF_ERR_NOT_SUPPORTED stubs (a proper error
+  return, not a crash); threading aborts only because it spins a std::thread that
+  calls af::sparse and rethrows. Porting the hipSPARSE generic-api backend later
+  fixes all four at once.
+- confidence_connected: FreeImage / headless build-config artifact
+  (AF_WITH_IMAGEIO=OFF in the headless build), not a port defect.
+- blas int8-gemm subcase: genuine rocBLAS HIPBLAS_STATUS_NOT_SUPPORTED for 8I->32F
+  (a library capability gap; int8 gemm needs int32 accumulate + a post-convert).
+
 ## Gotchas log
 - Porting a runtime NVRTC JIT engine to hipRTC: the runtime COMPILE OPTIONS need four things
   beyond the symbol swap. (1) Per-token split each option string: NVRTC accepts a flag+arg
