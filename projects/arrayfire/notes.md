@@ -395,6 +395,56 @@ full link, then GPU-validate the core gtest subset (the hip backend runs under t
 prefix) on one isolated GCD. Only then -> ported. reduce_by_key wave64 staging needs explicit
 GPU determinism validation.
 
+## Validation 2026-05-31 (validator) -- RESULT: COMPLETED (linux-gfx90a)
+
+GPU: gfx90a (MI250X), HIP_VISIBLE_DEVICES=2, ROCm 7.2.1. Fork HEAD: 86fbbbe.
+
+Build: incremental `cmake --build` (155 targets compiled; picked up reviewer fold-in
+changes to common/half.hpp and hip/device_manager.cpp which were newer than the prior
+libafcuda.so). Exit 0. Build time: 103 seconds.
+
+Full `ctest -R '_cuda$' -j1` run: 126/132 PASS across two deterministic full runs.
+
+Substantive-fix suites (targeted confirmation):
+- jit: 1781/1781 (hipRTC JIT engine, both full runs)
+- transpose: 140/140 + 66/66 (transpose + transpose_inplace)
+- fft: 108/108 + 12/12 (fft + fft_real)
+- ireduce: 62/62
+- scan: 50/50
+- scan_by_key: 55/55
+- math: 117/117
+- convolve: 507/507
+- reduce: 1062/1062 (including by-key and ragged)
+- topk: 110/110 (3 independent runs -- NO LDS fault recurrence; BlockRadixSort union fix holds)
+- nearest_neighbour: 122/122 (2 independent runs -- NO GPU fault recurrence)
+
+Failing binaries (exactly the 6 documented, confirmed failure modes):
+1. blas: 126/127 -- only MatrixMultiply.schar fails (hipblasGemmEx 8I->32F ->
+   HIPBLAS_STATUS_NOT_SUPPORTED; all other blas subtests pass)
+2. confidence_connected: all subtests throw "ArrayFire compiled without Image IO
+   (FreeImage) support" (AF_ERR_NOT_CONFIGURED:302); AF_WITH_IMAGEIO=OFF build-config,
+   not a port defect
+3. sparse: AF_ERR_NOT_SUPPORTED:301 from sparseConvertDenseToStorage stub ("Sparse
+   arrays are not yet supported on the ROCm/HIP backend"); clean exception, not a crash
+4. sparse_arith: same stub, AF_ERR_NOT_SUPPORTED:301
+5. sparse_convert: same stub, AF_ERR_NOT_SUPPORTED:301
+6. threading: Threading.Sparse raises AF_ERR_NOT_SUPPORTED in a std::thread, rethrows
+   as terminate -> Subprocess aborted; all 8 other Threading subtests pass
+
+Commands run:
+```
+# Build (incremental, picks up reviewer fold-in changes)
+bash /var/lib/jenkins/moat/agent_space/af_build-hip.sh
+# Full test suite x2
+HIP_VISIBLE_DEVICES=2 ctest --test-dir .../build-hip -R '_cuda$' -j1 --output-on-failure
+# Determinism: topk 3x, nearest_neighbour 2x
+HIP_VISIBLE_DEVICES=2 ctest --test-dir .../build-hip -R '^test_topk_cuda$' -j1
+HIP_VISIBLE_DEVICES=2 ctest --test-dir .../build-hip -R '^test_nearest_neighbour_cuda$' -j1
+```
+
+State transition: review-passed -> completed. validated_sha = 86fbbbe.
+Followers unblocked: linux-gfx1100 -> port-ready, windows-gfx1151 -> port-ready.
+
 ## Review 2026-05-31 (reviewer, full /pr-review) -- VERDICT: APPROVE
 
 Reviewed the linux-gfx90a port at fork HEAD 1802a81. Verdict APPROVE, modulo

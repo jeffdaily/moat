@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T20:02:52Z",
+  "updated_at": "2026-05-31T20:19:33Z",
   "head_sha": "86fbbbe57b303a4d720e61255aab1ae4cb4049a4",
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": "REVIEW-PASSED at fork 86fbbbe (reviewer APPROVE, full /pr-review). Two fold-in fixes applied on top of the ported 1802a81 and folded into the single curated commit: (1) common/half.hpp -- the hipRTC std-shim block (integral_constant/is_integral/is_signed/numeric_limits/std::isnan|isinf) sub-gated from the shared __CUDACC_RTC__ guard to __HIP_RTC__ only (inert for HIP, removed from the untested NVRTC path), matching the AF_CONSTEXPR precedent; (2) hip/device_manager.cpp compute2cores() returns a neutral per-CU lane count (64) on __HIP_PLATFORM_AMD__ instead of aliasing gfx90a major=9 onto the NVIDIA sm_90 entry (cosmetic; only feeds an AF_TRACE line + a same-arch flops sort). Single-TU compile sanity (device_manager+transpose+jit, embedded JIT half blob regenerated) PASS, exit 0. Full CUDA.* gtest suite GPU-validated on gfx90a (HIP_VISIBLE_DEVICES=2, ctest -R _cuda$ -j1) = 126/132 binaries pass; the entire validatable core is green (hipRTC JIT engine jit 1781/1781, transpose/scan/scan_by_key/fft/reduce incl ragged+by-key/ireduce, cholesky/lu/qr/svd dense, blas 126/127, complex, math all half transcendentals, norm/binary/approx/convolve/medfilt, random/rng_quality, sort/set/dot/reorder/join/moddims/index/assign/lookup, CV ops fast/harris/orb/sift/homography, nearest_neighbour 122/122, hamming, topk 110/110). The 6 residual failures are accepted dispositions, NOT port defects: sparse+sparse_arith+sparse_convert+threading (sparse hipSPARSE scoped deferral -> clean AF_ERR_NOT_SUPPORTED; threading aborts only because it calls af::sparse), confidence_connected (FreeImage/headless build-config; AF_WITH_IMAGEIO=OFF), schar int8-gemm subcase (rocBLAS HIPBLAS_STATUS_NOT_SUPPORTED for 8I->32F library gap). Next: validator real-GPU validation. See notes.md Review 2026-05-31 + Session 3.",
-      "validated_sha": null,
+      "validated_sha": "86fbbbe57b303a4d720e61255aab1ae4cb4049a4",
       "started_at": "2026-05-31T02:38:19Z",
-      "completed_at": null,
-      "updated_at": "2026-05-31T20:02:52Z",
+      "completed_at": "2026-05-31T20:19:33Z",
+      "updated_at": "2026-05-31T20:19:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:04:57Z",
+      "updated_at": "2026-05-31T20:19:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:04:57Z",
+      "updated_at": "2026-05-31T20:19:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
