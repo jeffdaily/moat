@@ -1,0 +1,11 @@
+{"kind":"phase","ts":"2026-05-31T03:02:45Z","phase":"compile","seconds":36.785,"exit":2,"cmd":"cmake --build projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T03:06:37Z","phase":"compile","seconds":137.207,"exit":2,"cmd":"cmake --build projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T03:19:43Z","phase":"compile","seconds":0.635,"exit":2,"cmd":"cmake --build projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T03:53:55Z","phase":"compile","seconds":764.462,"exit":2,"cmd":"cmake --build projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T03:57:09Z","phase":"compile","seconds":167.703,"exit":0,"cmd":"cmake --build projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:31:10Z","phase":"compile","seconds":0.968,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/k2/src/build && cmake --build . -j 16 2>&1 | tail -60"}
+{"kind":"phase","ts":"2026-05-31T07:33:55Z","phase":"test","seconds":137.293,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_run.sh"}
+{"kind":"phase","ts":"2026-05-31T07:43:49Z","phase":"compile","seconds":482.478,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/k2/src/build && cmake --build . -j 16 --target cu_ragged_test cu_rm_epsilon_test context 2>&1 | tail -25"}
+{"kind":"phase","ts":"2026-05-31T07:46:01Z","phase":"test","seconds":104.959,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_run.sh"}
+{"kind":"phase","ts":"2026-05-31T07:51:16Z","phase":"test","seconds":289.305,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_run.sh"}
+{"kind":"phase","ts":"2026-05-31T07:59:35Z","phase":"compile","seconds":464.601,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/k2/src/build && cmake --build . -j 16 --target _k2 2>&1 | tail -15"}
