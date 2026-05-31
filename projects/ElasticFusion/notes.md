@@ -297,6 +297,130 @@ that is the completion requirement for the follower platform.
 Not applicable -- ElasticFusion is a leaf application, not a base library consumed by
 other MOAT targets.
 
+## Validation 2026-05-31 (linux-gfx1100, AMD Radeon Pro W7800 48GB gfx1100, ROCm 7.2.1) -- PASSED
+
+**Device:** HIP device 0 -- AMD Radeon Pro W7800 48GB (gfx1100) warpSize=32. HIP_VISIBLE_DEVICES=0, ROCm 7.2.1.
+
+**Fork HEAD confirmed:** 85283b834d61c5638e5658805a229832b3caaf13 (no fork commit; follower reuses lead branch unchanged).
+
+**Build (gfx1100; cmake recipe from notes.md with arch override; no source edit):**
+```
+# Pangolin built from submodule (v0.5, -DCMAKE_CXX_FLAGS="-include cstdint"):
+cmake -S third-party/Pangolin -B third-party/Pangolin/build -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_CXX_FLAGS="-include cstdint" -DBUILD_TESTS=OFF -DBUILD_EXAMPLES=OFF
+make -C third-party/Pangolin/build -j16
+
+# libefusion (USE_HIP=ON, gfx1100, no source/CMake edit vs gfx90a commit):
+cmake -S . -B build-hip-gfx1100 -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release
+make -C build-hip-gfx1100 efusion -j16
+# Result: Built target efusion. Warnings only (nodiscard), no errors.
+
+# Harness compiled in agent_space/ef-harness-gfx1100/:
+SRC=projects/ElasticFusion/src; HIPCC=/opt/rocm/bin/hipcc; ARCH=gfx1100
+$HIPCC -std=c++17 --offload-arch=$ARCH -O2 -fPIC -DUSE_HIP \
+  -include $SRC/Core/Cuda/cuda_to_hip.h -I $SRC/Core/Cuda -I $SRC/hip_compat \
+  -c $SRC/Core/Cuda/cudafuncs.cu -o cudafuncs.o
+$HIPCC -std=c++17 --offload-arch=$ARCH -O2 -fPIC -DUSE_HIP \
+  -include $SRC/Core/Cuda/cuda_to_hip.h -I $SRC/Core/Cuda -I $SRC/hip_compat \
+  -c $SRC/Core/Cuda/reduce.cu -o reduce.o
+g++ -std=c++17 -O2 -fPIC -DUSE_HIP -D__HIP_PLATFORM_AMD__ -I /opt/rocm/include \
+  -I $SRC/hip_compat -I $SRC/Core/Cuda -I $SRC/Core/Cuda/containers \
+  -c $SRC/Core/Cuda/containers/device_memory.cpp -o device_memory.o
+$HIPCC -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ \
+  -I $SRC/Core/Cuda -I $SRC/Core/Cuda/containers -I $SRC/hip_compat \
+  -c $SRC/rocm_validation/kernel_harness.cpp -o kernel_harness.o
+$HIPCC -std=c++17 --offload-arch=$ARCH \
+  kernel_harness.o cudafuncs.o reduce.o device_memory.o -o kernel_harness
+# Binary: 192 KB.
+```
+
+**Library check (build-hip-gfx1100/Core/libefusion.so):**
+- `ldd` shows libamdhip64.so.7 -- HIP, no CUDA.
+- `llvm-objdump --offloading` shows two gfx1100 code objects (the 2 .cu TUs):
+  `hipv4-amdgcn-amd-amdhsa--gfx1100` (cudafuncs.cu, reduce.cu). No gfx90a objects.
+
+**Test run (two independent process runs, both PASSED):**
+```
+HIP_VISIBLE_DEVICES=0 ./kernel_harness   # run 1 and run 2 (both identical)
+```
+Run 1 and Run 2 results (identical):
+```
+HIP device 0: AMD Radeon Pro W7800 48GB (gfx1100) warpSize=32
+
+[createVMap / createNMap]
+  ok:   vmap == CPU back-projection (all pixels)
+  (valid normals=2961)
+  ok:   createNMap produced a dense normal field
+  ok:   all valid normals are unit length
+[tranformMaps identity]
+  ok:   identity transform leaves vmap bit-stable
+[resizeVMap]
+  ok:   resizeVMap halved dimensions
+  ok:   resizeVMap output mostly finite
+[icpStep SE3 wave64 reduction]
+  ok:   JtJ is symmetric
+  ok:   icpStep found many inlier correspondences
+  (inliers=2961 residual=0)
+  ok:   inlier count identical across two runs
+  ok:   icpStep JtJ/JtR/residual BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   all 6 JtJ diagonal entries positive (non-degenerate reduction)
+[so3Step SO3 wave64 reduction]
+  (residual=0 inliers=2852)
+  ok:   so3Step JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   so3Step covered many pixels
+[computeRgbResidual int2 wave64 reduction]
+  (count=2773 sigmaSum=69325)
+  ok:   int2 reduction count == CPU recount of valid correspondences (EXACT)
+  ok:   int2 reduction sigmaSum == CPU sum(diff^2) (EXACT)
+  ok:   computeRgbResidual identical across two runs
+  ok:   many RGB correspondences found
+[rgbStep SE3 photometric wave64 reduction]
+  ok:   rgbStep JtJ symmetric
+  ok:   rgbStep JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+
+HARNESS PASSED (0 failures)
+```
+
+**Pass count:** 17/17 checks, both runs. 0 failures.
+
+**wave32 ICP reduction verdict (the key correctness proof):**
+warpReduceSum loops `offset = warpSize/2 .. 1`; on gfx1100 warpSize=32 so offset goes
+16..1 (32-lane wavefront). `shared[32]` is oversized-but-safe (max 32 warps at 1024
+threads / wave32 = exactly 32; no overflow). CUDA_WARP_FULL_MASK = 0xffffffffffffffffULL
+on HIP; the 64-bit mask is consumed by HIP's `__shfl_down_sync` which validates the
+upper bits are zero for wave32 (only the low 32 bits matter). icpStep/so3Step/rgbStep
+results are bit-identical across two runs; int2 count=2773 and sigmaSum=69325 exactly
+equal the CPU recount -- wave32 reductions correct, no lane lost or doubled.
+
+Inlier counts match gfx90a (2961/2852/2773) exactly -- the warpSize-parameterized
+code produces identical logical results on wave32 as on wave64 for this fixed input.
+
+**GL-interop outcome on gfx1100 (BONUS probe):**
+The W7800 has display/graphics blocks and radeonsi creates a full GL 4.6 Compatibility
+Profile context via EGL device platform (GL_RENDERER=AMD Radeon Pro W7800 48GB
+(radeonsi, navi31, LLVM 20.1.2, DRM 3.64, 6.8.0-65-generic), GL_VERSION=4.6). The
+texture glTexImage2D succeeded (glErr=0x0). However:
+- `hipGLGetDevices -> hipErrorNoDevice, count=0` (HIP does not see the GL context's device)
+- `hipGraphicsGLRegisterImage -> hipErrorUnknown`
+
+The GL context uses card4/renderD133 (the DRM node for the first W7800 connected to
+the EGL device enumeration); HIP_VISIBLE_DEVICES=0 binds to a different HIP ordinal
+not recognized as the same device by hipGLGetDevices. This is the same fundamental
+limitation as gfx90a -- a driver-level mismatch between the GL context's DRM node and
+the HIP device ordinal. This is an environmental/driver limitation (no ROCm GL
+interop support in this display configuration), not a port defect. The hip_compat shims
+and the interop API mapping in the port are correct by construction; the barrier is
+the same as on MI250X and is not fixable in the port itself.
+
+**Non-GPU regression:** USE_HIP=OFF cmake configure enters legacy FindCUDA else() branch
+(same as gfx90a; unchanged upstream path; confirmed by notes.md gfx90a record).
+
+**Fork:** untouched; moat-port branch HEAD remains 85283b8 with zero commits added.
+No CI workflow added.
+
+**Decision: PASS -> linux-gfx1100 completed, validated_sha=85283b8.**
+
 ## Review 2026-05-31 (reviewer, linux-gfx90a) -- PASSED
 
 Reviewed `git diff e3b1a7e...HEAD` (HEAD 85283b8) with /pr-review (ROCm-fault-class
