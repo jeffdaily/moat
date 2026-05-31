@@ -7,13 +7,13 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T02:38:19Z",
-  "head_sha": null,
+  "updated_at": "2026-05-31T02:52:22Z",
+  "head_sha": "260285364a00602162a15d1df5772908c299981e",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": false,
-      "blocked_reason": null,
+      "blocked_reason": "In progress (largest MOAT port, ~42K LOC). Phase 0 hipRTC go/no-go is GO (GPU-proven on gfx90a); the NVRTC->hipRTC JIT engine (compile_module.cpp), the wave64 shfl_intrinsics fix, the JIT-source HIP shims, the hip_compat header, and the AF_BUILD_HIP CMake wiring are landed at fork 2602853 and verified standalone on GPU. NOT yet a full compiling backend: device_manager.cpp NVML port, ~26 CUDA-library swap files (hipBLAS/hipSOLVER/hipSPARSE/hipFFT/rocThrust), the afhip add_library source list + force-include in src/backend/hip/CMakeLists.txt, and the reduce/scan wave64 staging (deferred to GPU validation) remain. Full roadmap in notes.md (Session 1 progress). Resume there; -> ported only after the gtest core passes on gfx90a.",
       "validated_sha": null,
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": null,
