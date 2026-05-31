@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T11:15:10Z",
-  "head_sha": "96edd3a2696e3bf6071e620144c3ec970b2f5180",
+  "updated_at": "2026-05-31T19:37:21Z",
+  "head_sha": "1802a81",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": false,
-      "blocked_reason": "Largest MOAT port (~42K LOC). FULL afcuda shared library + all 132 CUDA-tagged gtest binaries BUILD and LINK for gfx90a at fork 96edd3a. The hipRTC runtime-JIT engine is GPU-validated (jit 1779/1781), and the core ops reduce sum/min/max/all/any (120/120, after the wave64 reduce.hpp rework), random (513), set, dot, moddims, reorder (233/334), sort/join partial PASS on gfx90a. Library swaps (hipBLAS/hipSOLVER/hipFFT/rocThrust) + the void* tag-keyed handles + POD complex + wave64 staging landed. STILL porting (core not fully green): the biggest remaining wall is JIT ops whose runtime source pulls common/half.hpp's half<->int CONVERSIONS, which fail to hipRTC-compile with a __device__-intrinsic-from-__host__ attribute mismatch -> AF_ERR_INTERNAL (blocks transpose/scan/fft); plus a strided-gemm blas core dump, reduce-by-key/ragged wave64 correctness, and the deferred sparse/CV-kernel/convolveNN follow-ons. Precise next-step fix + full results in notes.md (Session 2 FINAL). -> ported only after the JIT-half wall is cleared and the gtest core passes.",
+      "blocked_reason": "PORTED at fork 1802a81. Full afcuda + all 132 CUDA-tagged gtest binaries build for gfx90a; the full CUDA.* gtest suite GPU-validated on gfx90a (HIP_VISIBLE_DEVICES=2, ctest -R _cuda$ -j1) = 126/132 binaries pass. The entire validatable core is green: the hipRTC runtime-JIT engine (jit 1781/1781), transpose/scan/scan_by_key/fft/reduce (incl ragged + by-key)/ireduce, cholesky/lu/qr/svd dense (hipSOLVER), blas matmul (126/127), complex, math (all half transcendentals), norm/binary/approx/convolve/medfilt, random/rng_quality, sort/set/dot/reorder/join/moddims/index/assign/lookup, AND the CV feature ops (fast/harris/orb/sift/homography), nearest_neighbour (122/122), hamming, topk (110/110). The 6 remaining failures are all documented deferrals or library gaps, NOT port defects: sparse + sparse_arith + sparse_convert + threading (the sparse hipSPARSE deferral -> AF_ERR_NOT_SUPPORTED; threading aborts because it calls af::sparse), confidence_connected (needs FreeImage; AF_WITH_IMAGEIO=OFF in the headless build), and the schar int8-gemm subcase (rocBLAS HIPBLAS_STATUS_NOT_SUPPORTED for 8I->32F). See notes.md Session 3 for the full wall-by-wall root-cause + fix log.",
       "validated_sha": null,
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T02:38:19Z",
+      "updated_at": "2026-05-31T19:37:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

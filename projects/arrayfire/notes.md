@@ -161,6 +161,107 @@ file, and GPU-validate the core gtest subset (jit/arith/reduce/scan/sort/set/bla
 transpose/index) on one isolated GCD via `ctest -R '^CUDA\.' --output-on-failure` run serially.
 Only then -> `ported`.
 
+## Session 3 (porter) -- JIT walls + JIT-complex CLEARED; CUDA.* ctest 122+/132
+
+Final-of-session summary first, details below. The JIT-half wall, the
+multi-launcher -D pattern, the half-transcendental ambiguity, the upstream
+memcopy typo, the JIT-complex (componentwise) bug, the topk BlockRadixSort fault,
+and the convolve-complex bug are all FIXED. Full `ctest -R _cuda$` on gfx90a GCD 2
+is at 126/132. The 6 remaining failures are: sparse + sparse_arith +
+sparse_convert + threading (the documented sparse deferral -> AF_ERR_NOT_SUPPORTED;
+threading aborts because it calls af::sparse), confidence_connected (needs
+FreeImage; AF_WITH_IMAGEIO=OFF in the headless build), and blas (only the schar
+int8 gemm subcase; rocBLAS returns HIPBLAS_STATUS_NOT_SUPPORTED for 8I->32F).
+nearest_neighbour and hamming -- earlier GPU-faulting -- now PASS (122/122, 10/10).
+
+### topk GPU memory fault -- FIXED.
+kerTopkDim0 placed the hipCUB BlockRadixSort TempStorage in a UNION with the
+pre-sort rearrange buffer (keyValBlocks). hipCUB's BlockRadixSort works fine
+standalone, but on rocPRIM the temp storage aliasing the rearrange buffer
+corrupts LDS and the kernel GPU-faults (even single-block, n=100). Split them
+into two separate __shared__ allocations (kernel/topk.hpp). topk 0 -> 110/110.
+
+### schar (int8) gemm -- DEFERRED (rocBLAS limitation).
+gemmDispatch's hipblasGemmEx path was behind `#if __CUDACC_VER_MAJOR__ >= 10`
+(a CUDA-only macro, so compiled out on HIP -> every gemm fell to the typed
+gemm_func, which has no schar specialization -> AF_ERR_TYPE). blas.cu now routes
+ONLY schar through hipblasGemmEx on HIP (float/complex/half keep the validated
+Hgemm/Sgemm path -- enabling Ex for half regressed accuracy), and getComputeType
+returns hipblasComputeType_t (HIPBLAS_COMPUTE_*, which hipblasGemmEx requires,
+not hipDataType). rocBLAS still returns HIPBLAS_STATUS_NOT_SUPPORTED for 8I in /
+32F out, so the 3x3 int8 test cannot pass; documented as a rocBLAS gap (int8 gemm
+needs int32 accumulate + a post-convert, a follow-on). blas 126/127.
+
+### JIT complex multiply (convolve C32/C64) -- FIXED.
+In the hipRTC compile of a TEMPLATED kernel that does a bare `a * b` on a complex
+T (cfloat = cuFloatComplex = float2 = HIP_vector_type there), the multiply binds
+to HIP's COMPONENTWISE float2 friend operator, silently producing a componentwise
+product instead of the complex product (convolve1 (1,1)*(2,3) returned (2,3), not
+(-1,5)). Two complementary fixes:
+- nvrtc_shims/cuComplex.h: under __CUDACC_RTC__ ONLY, cuFloatComplex/cuDoubleComplex
+  are now plain PODs (no operators) with cuC*/make_cu* inline helpers, instead of
+  aliasing hipFloatComplex (HIP_vector_type). The host/compiled branch keeps the
+  hipFloatComplex aliases (hip_compat.h force-#defines the same names on every
+  compiled TU, so a POD there collides). This fixed approx/resize cubic-complex
+  (Interp uses scalar<cfloat>()*val) and is the right shape, but convolve still
+  bound componentwise via ADL on the __constant__-reinterpret operands.
+- convolve{1,2,3,_separable}.cuh: spell the complex product explicitly with a
+  local convMul (two-type template -> bare * for real/mixed int*float; exact
+  cfloat/cdouble overloads -> .x/.y complex). convolve 501/6 -> 507/507.
+NOTE: dtype_traits<cfloat>::getName() MUST stay "cuFloatComplex" (the JIT
+instantiation name); changing it to "cfloat" breaks fftconvolve and others where
+only cuFloatComplex (not the project cfloat alias) is in scope.
+
+## Session 3 EARLIER (porter) -- JIT-half wall CLEARED; ctest baseline 109/132
+
+Building on Session 2's 96edd3a. The JIT-half wall (the #1 blocker) is CLEARED, plus the
+scan/ireduce/minmax JIT walls and an upstream memcopy typo. Full `ctest -R _cuda$` serial run
+on gfx90a GCD 2: 109/132 binaries PASS (83%), 23 fail. Build: `bash build-hip.sh` (copy from
+agent_space/af_build-hip.sh; NOT committed). Test: `HIP_VISIBLE_DEVICES=2 ctest -R _cuda$ -j1`.
+
+### Wall 1 (JIT-half) -- FIXED. Root cause + fix chain (all GPU-verified):
+The hipRTC JIT compile defines __CUDA_ARCH__=900 + __HIP_RTC__ + __CUDACC_RTC__. Unlike NVRTC
+(whole TU is device code), clang/hipRTC treats unattributed free functions as HOST, and
+AF_CONSTEXPR is empty on the hipRTC path (so the nvcc "constexpr implies __host__ __device__"
+promotion is lost). Five distinct fixes, each surfaced after the previous:
+- common/half.hpp: `half2int` had NO __DH__ -> added it (was host-only, called __device__
+  __half2short_rn under __CUDA_ARCH__). The member `half::infinity()` likewise -> added __DH__.
+- common/half.hpp RTC std-shim: added `numeric_limits<double>` (infinity/min/max/lowest) and
+  `std::isnan/isinf(float|double)` device-builtin overloads (hipRTC's runtime header injects only
+  a hip_bfloat16 isnan, so an unqualified std::isnan(float) found only that and failed).
+- hip/math.hpp: the `division(cfloat|cdouble|T, double)` overloads were host-only `static
+  inline` but construct a HIP_vector_type (whose default ctor is __device__) -> added __DH__.
+- hip/minmax_op.hpp: `cabs<>` + both `MinMaxOp` ctor/operator() were plain host functions that
+  call abs(cfloat) (a __device__ builtin) -> added __DH__ (fixed ireduce 3/62 -> 62/62).
+Transpose 25/140 -> 140/140; fft 5/103 -> 108/108; scan 0/50 -> 50/50; ireduce -> 62/62.
+
+### Wall: scan/ireduce "undeclared THREADS_PER_BLOCK/THREADS_X" -- FIXED.
+NOT a span bug (single-element `{{DefineValue(X)}}` arrives size=1 fine). Real cause: a shared
+.cuh (scan_first.cuh, scan_dim.cuh, ireduce.cuh) defines TWO kernel templates; one launcher
+passes the -D the template body needs as a non-dependent identifier, the OTHER launcher
+(bcast/the sibling) compiles the SAME source without it. NVRTC only phase-2-instantiates the
+requested template and tolerates the unused one; clang does phase-1 lookup on it regardless, so
+the -D must be present for EVERY launcher that compiles that source. Fixed: scan_first_bcast +
+scan_dim_bcast now also pass DefineValue(THREADS_PER_BLOCK/THREADS_X); ireduceDim + ireduceFirst
+both pass BOTH defines (the cuh uses both).
+
+### Wall: memcopy.cuh upstream typo -- FIXED (was scan TEMP_FORMAT 16 fails).
+src/backend/hip/kernel/memcopy.cuh memCopyLoop13 had `(g1 < idims1)` where `g1` should be `id1`
+(the local). Upstream CUDA has the same typo but never instantiates memCopyLoop13 on that path;
+HIP's dispatch does (sub-array / reordered moddims), so it surfaced. Fixed g1 -> id1.
+
+### CUDA.* ctest baseline at this checkpoint (109/132 PASS):
+Confirmed PASS incl.: transpose, scan, fft, reduce (ragged + by-key now green), ireduce,
+cholesky_dense, complex, clamp, compare, cast, reorder, regions, rank_dense, assign, sort, etc.
+23 FAIL, triaged below.
+- DEFERRED (documented, acceptable): sparse, sparse_arith, sparse_convert (hipSPARSE port
+  deferred -> AF_ERR_NOT_SUPPORTED stubs). nearest_neighbour (CV stub) -- but it GPU-faults
+  rather than cleanly erroring; needs the stub path checked.
+- TO FIX (real): approx1 (cubic complex), binary, blas (SUB_ARRAY gemm fault), confidence_connected,
+  convolve, diff1, diff2, empty, iir, index, math, medfilt, norm, rng_quality, replace,
+  scan_by_key, topk (GPU memfault), hamming (feature matcher), threading, plus the SIGPIPE ones
+  (hamming/topk/nearest_neighbour mem-fault -> the harness sees SIGPIPE).
+
 ## Session 2 FINAL (porter) -- afhip BUILDS + LINKS; core ops GPU-validated; JIT-half wall
 
 Fork HEAD: jeffdaily/arrayfire @ moat-port = 96edd3a. The full afcuda shared
@@ -366,3 +467,34 @@ GPU determinism validation.
   AF_BACKEND_CUDA): do NOT rename the namespace to `hip` (that would churn 354 files and the
   unified/api/test layers). The directory is hip/, the identity stays cuda. AF_BUILD_HIP is
   mutually exclusive with AF_BUILD_CUDA.
+- hipRTC compiles unattributed free functions as HOST (NVRTC treats the whole JIT TU as
+  device). Any helper reachable from a JIT kernel that lacks __device__/__host__ __device__
+  fails "call to __host__ function from __device__ function" or "no matching function" --
+  and the AF_CONSTEXPR-empty-on-hipRTC trick removes nvcc's implicit constexpr->__host__
+  __device__ promotion, so constexpr helpers need it too. Audit every shared .cuh/.hpp the
+  JIT pulls for free functions / struct members that construct device types or call device
+  intrinsics and tag them __device__ (kernel-local) or __DH__ (host+device). -- arrayfire
+- hipCUB primitive in a UNION with a project buffer can corrupt LDS on rocPRIM even when the
+  primitive is correct standalone: arrayfire topk put BlockRadixSort::TempStorage in a union
+  with its pre-sort rearrange buffer and GPU-faulted (CUB tolerates it). Give the primitive
+  its own __shared__ allocation. -- arrayfire
+- A templated device kernel doing a bare `a * b` on a complex T where T resolves to
+  HIP_vector_type (float2) silently binds to HIP's componentwise friend operator* (wrong: a
+  complex product is meant), not the project's complex operator. Two fixes: (1) make the JIT
+  complex type a POD without operators (so only the project operator matches) -- but only
+  under __CUDACC_RTC__ in the embedded cuComplex shim, since the host/compiled path's
+  hip_compat.h force-#defines the same names; (2) where ADL still picks componentwise (the
+  __constant__-reinterpret operands in convolve), spell the complex product out via .x/.y in a
+  small local helper (two-type template for real/mixed + exact cfloat/cdouble overloads).
+  -- arrayfire
+- hipblasGemmEx/GemmBatchedEx take a hipblasComputeType_t (HIPBLAS_COMPUTE_32F/64F/32I/16F),
+  NOT a hipDataType as cuBLAS's cublasGemmEx historically did; passing a hipDataType is a
+  no-matching-function error. And the GemmEx path is commonly behind `#if __CUDACC_VER_MAJOR__
+  >= 10` which is a CUDA-only macro (undefined on HIP) -- guard it with __HIP_PLATFORM_AMD__ so
+  it is reachable. rocBLAS does NOT support int8 (8I) input with 32F output gemm
+  (HIPBLAS_STATUS_NOT_SUPPORTED); int8 gemm needs int32 accumulate + a post-convert. -- arrayfire
+- A shared .cuh that defines MULTIPLE kernel templates: every getKernel launcher that compiles
+  that source must pass each -D any template's body references as a NON-dependent identifier,
+  even templates that launcher does not instantiate. NVRTC only phase-2-instantiates the
+  requested one; clang/hipRTC does phase-1 lookup on all of them. Symptom: "use of undeclared
+  identifier THREADS_X" from a sibling/bcast launcher. -- arrayfire

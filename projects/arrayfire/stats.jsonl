@@ -5,3 +5,6 @@
 {"kind":"phase","ts":"2026-05-31T08:29:06Z","phase":"compile","seconds":0.006,"exit":127,"cmd":"bash build-hip.sh"}
 {"kind":"phase","ts":"2026-05-31T08:30:55Z","phase":"compile","seconds":0.255,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}
 {"kind":"phase","ts":"2026-05-31T08:35:38Z","phase":"compile","seconds":114.691,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T16:36:39Z","phase":"compile","seconds":103.153,"exit":0,"cmd":"bash projects/arrayfire/src/build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T17:10:51Z","phase":"compile","seconds":7.859,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}
+{"kind": "milestone", "ts": "2026-05-31T19:39:15Z", "platform": "linux-gfx90a", "state": "ported", "fork_sha": "1802a81", "ctest_cuda": "126/132", "note": "core gtest green modulo sparse deferral + image-io + schar int8 rocBLAS gap"}
