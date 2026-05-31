@@ -265,6 +265,13 @@
     "note": "AMD counterpart by same authors: github.com/HazyResearch/HipKittens",
     "reason": "ported-elsewhere"
   },
+  "heavyai/heavydb": {
+    "decided": "2026-05-31T02:45:23Z",
+    "disposition": "skip",
+    "full_name": "heavyai/heavydb",
+    "note": "GPU queries run via a runtime LLVM NVVM->NVPTX codegen pipeline (NativeCodegen.cpp lookupTarget(nvptx64)/triple nvptx64-nvidia-cuda/nvvm.annotations/libdevice) JIT-linked to cubin by the CUDA driver (NvidiaKernel.cpp cuLink*) and launched via the CUDA driver API. No static GPU kernel to translate and no isolated GPU unit test -> no correctness-first slice. A ROCm port needs a new LLVM-AMDGPU codegen backend + ROCm device-libs link + hipRTC/comgr runtime-compile + a port of ~70 CUDA-driver-coupled files and the warpcore CG hash table: upstream-engineering scale. The analogous Intel SPIR-V+Level-Zero backend (PRs 671/683/688-691/697) was attempted and closed unmerged; only an inert L0 memory-manager stub remains. Not a tractable mechanical MOAT port; not GPU-validatable in-pipeline. See projects/heavydb/plan.md.",
+    "reason": "cant-port"
+  },
   "henryndubuaku/cuda-tutorials": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
