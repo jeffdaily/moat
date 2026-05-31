@@ -7,7 +7,7 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T23:33:23Z",
+  "updated_at": "2026-05-31T23:50:00Z",
   "head_sha": "3782728a8254af4eef6e828a3fed62362c268502",
   "platforms": {
     "linux-gfx90a": {
@@ -34,27 +34,27 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
-      "blocked_reason": "delta-ported at fork 2378586 (porter fixed the 2 gfx1100 follower failures). Both root causes turned out NOT to be the gfx1100-only COMGR bug the validator hypothesized: (1) where cfloat/cdouble AF_ERR_INTERNAL was a host-set C++ name-lookup bug, NOT a COMGR codegen crash and NOT arch-specific -- a standalone hiprtc repro shows the scan_first<cuFloatComplex,uint,af_notzero_t,...> JIT compile fails overload resolution IDENTICALLY on gfx90a AND gfx1100 (the COMGR \"Failing to compile to realloc\" message merely wraps that compile error). Root cause: the JIT POD cuFloatComplex/cuDoubleComplex live in the GLOBAL namespace but arrayfire complex ==/!= were in namespace arrayfire::cuda (math.hpp), unreachable by ADL from common::Transform. Fix is ARCH-UNIFIED (correct on both waves): cuComplex.h shim defines the complex ==/!= in the global namespace beside the POD; math.hpp drops its arrayfire::cuda complex ==/!= on the RTC path to avoid ambiguity. CUDA backend untouched (separate files). (2) cholesky_dense cfloat large is genuine RDNA3 FP32 accumulation drift (verified: recovered factor matches a double reference to FP32 precision, relative factor error ~3e-9; the 0.073 is the matmul reconstruction over a 1024-len complex dot product) -- test/cholesky_dense.cpp widens ONLY the cfloat large eps to 0.1 on the RDNA HIP backend (runtime compute-major check), gfx90a/CUDA keep 0.05. Local gfx1100 (W7800) full CUDA.* ctest = 126/132, the SAME 6 documented residuals (blas schar, confidence_connected, sparse x3, threading), NO new failures. where 56/56 (was 54/56), cholesky_dense 32/32 (was 30/32); where x2 + scan x2 deterministic; scan/scan_by_key/reduce/ireduce/convolve/approx/complex unchanged. Next: reviewer. See notes.md gfx1100 delta-port entry.",
-      "validated_sha": null,
+      "blocked_reason": "validated at fork 3782728. CUDA.* ctest 132/132 (100%, 0 failed) on gfx1100 (W7800, RDNA3, wave32), matching gfx90a@3782728 exactly. All former gfx1100 failures now PASS: where 56/56 (ADL fix), cholesky_dense 32/32 (RDNA tolerance), sparse 86/86 + sparse_arith 123/123 + sparse_convert 41/41 + threading 9/9 (hipSPARSE), blas 127/127 (int8 gemm), confidence_connected 36/36 (FreeImage). jit 1781/1781 (--offload-arch=gfx1100). Wave32 fully correct. No NaN/HIP fault. Determinism confirmed.",
+      "validated_sha": "3782728a8254af4eef6e828a3fed62362c268502",
       "started_at": "2026-05-31T21:00:00Z",
-      "completed_at": null,
-      "updated_at": "2026-05-31T23:33:23Z",
+      "completed_at": "2026-05-31T23:50:00Z",
+      "updated_at": "2026-05-31T23:50:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 362,
-          "test": 1050,
+          "compile": 574,
+          "test": 1371,
           "misc": 0
         },
-        "session_count": 1,
+        "session_count": 2,
         "first_session_at": "2026-05-31T21:00:00Z",
-        "last_session_at": "2026-05-31T21:30:00Z"
+        "last_session_at": "2026-05-31T23:45:00Z"
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

@@ -999,3 +999,61 @@ the completed gfx90a platform to revalidate (pure churn per PORTING_GUIDE). Fold
 opportunistically at the next natural amend (windows-gfx1151 bring-up or any future
 delta). State: delta-ported -> review-passed (routes to validator for the gfx1100
 real-GPU re-run at 3782728).
+
+## Validation 2026-05-31 (gfx1100) -- re-run at 3782728 -- RESULT: COMPLETED (132/132)
+
+GPU: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1.
+Fork HEAD: 3782728a8254af4eef6e828a3fed62362c268502 (moat-port). No fork changes made.
+
+Build: cmake reconfigured with -DAF_WITH_IMAGEIO=ON (libfreeimage-dev 3.18.0 installed via apt)
+then incremental ninja rebuild. 1036/1036 targets (including test binaries). Build time: 212s.
+
+Build command:
+```
+cmake -S projects/arrayfire/src -B projects/arrayfire/src/build-hip-gfx1100 \
+  -GNinja -DCMAKE_BUILD_TYPE=Release \
+  -DAF_BUILD_HIP=ON -DAF_BUILD_CUDA=OFF \
+  -DAF_BUILD_CPU=ON -DAF_BUILD_OPENCL=OFF -DAF_BUILD_ONEAPI=OFF \
+  -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_FORGE=OFF \
+  -DAF_WITH_CUDNN=OFF -DAF_WITH_IMAGEIO=ON -DAF_BUILD_DOCS=OFF \
+  -DAF_BUILD_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build projects/arrayfire/src/build-hip-gfx1100 -j 16
+```
+
+gfx1100 code object (roc-obj-ls on libafcuda.so): all bundles are
+`hipv4-amdgcn-amd-amdhsa--gfx1100`. Zero gfx90a code objects.
+
+Full CUDA.* ctest serial run:
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir .../build-hip-gfx1100 -R '_cuda$' -j1 --output-on-failure
+```
+Result: **132/132 PASS, 0 failures**. Total time: 321s.
+
+Comparison to gfx90a@3782728: IDENTICAL (132/132, 0 failures). All 6 prior gfx90a
+residuals and the 2 former gfx1100-specific failures now PASS on gfx1100.
+
+Formerly-failing tests now PASSING on gfx1100 (targeted confirmation run):
+- where: 56/56 (Where/2.BasicC cfloat + Where/3.BasicC cdouble -- the ADL fix in
+  nvrtc_shims/cuComplex.h + math.hpp guard works on gfx1100 JIT; no COMGR error)
+- cholesky_dense: 32/32 (UpperMultipleOfTwoLarge + LowerMultipleOfTwoLarge cfloat --
+  RDNA tolerance 0.1 in test/cholesky_dense.cpp for compute-major>=10)
+- sparse: 86/86 (hipSPARSE generic API implementation)
+- sparse_arith: 123/123 (hipSPARSE csrgeam2 + SpMV/SpMM)
+- sparse_convert: 41/41 (hipSPARSE Csr/Coo/Csc convert)
+- threading: 9/9 (Threading.Sparse PASS -- af::sparse on hipSPARSE no longer terminates)
+- blas: 127/127 (MatrixMultiply.schar -- int8->int32 gemm + cast to f32)
+- confidence_connected: 36/36 (FreeImage loaded via libfreeimage-dev 3.18.0)
+- jit: 1781/1781 (hipRTC engine with --offload-arch=gfx1100; JIT disk cache keyed gfx1100)
+
+Determinism: second run of jit + where + topk + reduce + scan all PASS (5/5, no NaN or
+LDS fault). Identical results to first run.
+
+Wave32 verdict: gfx1100 (wave32) fully correct. Static kernels compiled for gfx1100.
+JIT engine generates correct gfx1100 code objects (1781/1781 jit tests pass). Wave-size-
+dependent kernels (kWarpSize=32 on gfx1100 vs 64 on gfx90a) all pass: reduce 1062/1062,
+scan 50/50, scan_by_key 55/55, sort 71/71, topk 110/110.
+
+State transition: review-passed -> completed. validated_sha = 3782728a8254af4eef6e828a3fed62362c268502.
+Fork untouched (no commits, no push).
