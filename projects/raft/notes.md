@@ -320,20 +320,105 @@ ck_tile route remains open once the system headers and examples realign.
    Confirmed: same top-k inputs that coredumped now return identical, correct
    results across immediate/filtered/distributed (probe agent_space/raft_select_probe).
 
-### faiss warp-select (knn_brute_force / ball_cover / fused_l2_knn) -- still deferred
+### faiss warp-select (knn_brute_force / ball_cover / fused_l2_knn) -- partial
+
+NEIGHBORS now BUILDS under hipcc and the haversine + L2 brute-force top-k paths are
+wave64-correct and GPU-validated; ball_cover's FAISS KeyValueBlockSelect path is the
+one remaining wave64 correctness blocker (precise next step below).
 
 The FAISS BlockSelect/WarpSelect (Select.cuh / key_value_block_select.cuh) is more
-deeply wave32-coupled than select_warpsort: `kNumWarpQRegisters = NumWarpQ /
-WarpSize` goes to 0 when a kernel requests NumWarpQ=32 on a 64-lane wavefront
-(zero-length register arrays; `warpMergeAnyRegisters` no-match), and it has
-`__any_sync(0xffffffff,...)` 32-bit masks. Making it wave64-correct needs the
-warp-queue capacity raised to >= WarpSize at every instantiation in fused_l2_knn /
-ball_cover plus the mask widening -- a larger change than this pass. NEIGHBORS_TEST
-(haversine/ball_cover/epsilon) therefore stays RAFT_TEST_NEIGHBORS=OFF; select_k
-(MATRIX_SELECT) is the validated neighbors-top-k surface. Other gaps surfaced while
-building NEIGHBORS_TEST and are part of that follow-up: ball_cover.cu uses
-`CUDART_PI_F` (add to the compat math_constants.h) and fused_l2_knn-inl.cuh:431 has
-a `long`->key_type narrowing in a `{}` init (clang-strict).
+deeply wave32-coupled than select_warpsort. Two distinct issues:
+
+1. Warp-queue capacity. `kNumWarpQRegisters = NumWarpQ / WarpSize` collapses to 0
+   (zero-length register arrays, `warpMergeAnyRegisters` no-match) when a kernel
+   requests NumWarpQ=32 on a 64-lane wavefront. FIX (shipped): a constexpr
+   `faiss_select::utils::faissWarpQ(warp_q)` in StaticUtils.h returns
+   `max(warp_q, raft::WarpSize)` -- a no-op on NVIDIA/RDNA (32), raises 32->64 on
+   CDNA so the per-lane arrays hold one element. Applied at every sub-WarpSize
+   instantiation: knn_merge_parts (k<=32 branch), ball_cover pass_one
+   (block_rbc_kernel_registers) + pass_two (compute_final_dists_registers), and
+   the fused_l2_knn WarpSelect typedef. raft::WarpSize is a host-correct constexpr
+   (64 via RAFT_HOST_WARP_SIZE), so this is arch-unified and compile-time.
+2. 32-bit masks. `__any_sync(0xffffffff,...)` / `__ballot_sync(0xffffffffu,...)` /
+   `__shfl_up_sync(0xffffffffu,...)` static_assert on HIP (mask must be 64-bit) and
+   truncate lanes 32-63. FIX (shipped): route through the wave-width-correct
+   warp_primitives helpers (raft::any / raft::ballot -> raft::WarpMask /
+   raft::shfl_up / raft::ffs_mask / raft::lane_bit) in Select.cuh,
+   key_value_block_select.cuh, and fused_l2_knn-inl.cuh.
+
+Two minor gaps (shipped): ball_cover.cu uses `CUDART_PI_F` -> added to the compat
+math_constants.h; fused_l2_knn-inl.cuh:431 `{colId, acc}` narrows long->uint32 ->
+`static_cast<uint32_t>(colId)`.
+
+arch.cuh (shipped): `SM_compute_arch::value()` static_asserts in the host pass (it
+is meant to be device-only). clang-as-hipcc parses a __global__ body in BOTH passes,
+so the sm60 pairwise-distance kernel's `if constexpr (range.contains(SM_compute_arch()))`
+(kernel_sm60.cuh) forces the host-pass evaluation and the assert fires. Made value()
+__host__ __device__ and return 800 (the device-pass __CUDA_ARCH__ the compat header
+sets) in the HIP host pass, so the range check resolves identically in both passes;
+the __global__ host stub is never launched. CUDA path unchanged (keeps the assert).
+
+haversine (shipped): `compute_haversine` was DI (device-only) but HaversineFunc's
+virtual `__host__ __device__ operator()` (ball_cover registers_types.cuh) makes clang
+emit a HOST body that calls it -> undefined-symbol link error. Made it HDI; raft::sin/
+cos/asin/sqrt have host overloads so the host body is well-formed and identical.
+
+fused_l2_knn / L2 brute force on wave64: fusedL2Knn is the wave32 SIMT fused kNN
+kernel. Its GEMM Policy2x8/Policy4x4 has AccThCols==32 (32 threads share each output
+row), so each row's FAISS warp-select queue lives on a 32-lane group. On a 64-lane
+wavefront that group is HALF a wavefront and the queue's WarpSize-wide
+shuffles/masks no longer align with the per-row lanes (a popsift-class "two 32-thread
+rows packed into one wavefront" coupling, but inside a templated FAISS heap). Rather
+than rework the heap to a 32-lane sub-warp width, knn_brute_force.cuh guards the fused
+branch with `raft::WarpSize <= 32` so on CDNA the L2 (<=64) brute force routes to the
+general `tiled_brute_force_knn` (pairwise distance + the wave64-validated select_k +
+the l2_exp norm epilogue) -- the same "force the general/legacy path on the strict
+backend" pattern raft uses on pre-Ampere NVIDIA. fusedL2kNN still compiles (masks +
+faissWarpQ) but is not launched on wave64. Validated: HaversineKNNTestF.Fit passes;
+the brute_force::knn ball_cover baseline (L2) runs via the tiled path.
+
+### ball_cover FAISS KeyValueBlockSelect on wave64 -- the remaining blocker
+
+GPU-validated state (gfx90a, HIP_VISIBLE_DEVICES, NEIGHBORS_TEST): HaversineKNNTestF
+PASS. BallCoverAllKNNTest / BallCoverKNNQueryTest FAIL on wave64. EpsNeigh
+(eps_neighbors_l2sq + ball_cover eps kernels, no FAISS select) builds and runs but
+its RBC brute-force correctness baselines are slow under the multi-tenant box and
+were not timed-out-clean this session (re-run isolated).
+
+Root cause (confirmed two ways): in a DEBUG build (no NDEBUG, the MOAT default,
+CMAKE_BUILD_TYPE empty) `block_rbc_kernel_registers` aborts (SIGABRT) inside
+`__shfl_xor_sync<unsigned long, float>` via HIP's `__hip_check_mask`, which asserts
+`mask == __ballot(true)` -- i.e. the FAISS warp-collective bitonic sort runs with a
+PARTIAL-warp EXEC mask while passing a full (RAFT_LANE_MASK_ALL) mask. Rebuilt with
+-DNDEBUG -O2 the abort disappears but the results are WRONG (top-k distances off on
+nearly every row, e.g. 0.7545 vs ref 0.8024), so the partial-warp shuffles return
+undefined lane data and corrupt the sort -- a real correctness bug, not just a debug
+assert. Contrast: haversine uses the SAME FAISS BlockSelect + bitonic network and
+PASSES in the debug build, so the wave64 bitonic sort itself (incl. the prior
+session's stride-32 merge step) is correct WHEN fully converged. The divergence is a
+property of block_rbc_kernel_registers leaving the wavefront partially active at the
+heap's warp-collective -- an AMD reconvergence artifact (clang does not reconverge a
+divergent region as implicitly as nvcc / Volta's full-mask shuffle does; the FAISS
+`addThreadQ` per-lane `if` and the kernel's early-`return`/`if (i < R_size)` tail are
+the divergence sources, and reconvergence before `mergeWarpQ` is not guaranteed).
+
+Next concrete step (pick one, do NOT regress haversine which shares the FAISS path):
+- (a) Force reconvergence in the FAISS warp-collective on HIP: insert a
+  `__builtin_amdgcn_wave_barrier()` / full `__syncwarp()` at the top of
+  KeyValueBlockSelect::mergeWarpQ (and BlockSelect::mergeWarpQ) so EXEC is full
+  before the bitonic shuffles. Verify it fixes ball_cover AND keeps haversine green;
+  measure cost. This is the smallest change but must be proven not to perturb the
+  already-passing convergent path.
+- (b) Route ball_cover's k-select through the validated `matrix::select_k` (the
+  select_warpsort/radix path, 607 tests green) instead of the inline FAISS
+  KeyValueBlockSelect, mirroring the brute_force->tiled_brute_force_knn approach:
+  have block_rbc_kernel_registers write candidate (dist, idx) to a per-query buffer
+  and select_k the top-k. Larger refactor, but reuses a known-correct wave64 top-k
+  and sidesteps the FAISS reconvergence question entirely.
+RAFT_TEST_NEIGHBORS stays OFF in the committed cmake until ball_cover passes (the
+binary bundles ball_cover, so it cannot be a passing gate yet); select_k
+(MATRIX_SELECT) remains the validated neighbors-top-k surface and haversine + the
+tiled L2 brute force are the validated neighbors distance/kNN surface.
 
 ## Install as a dependency
 
