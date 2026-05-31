@@ -7,8 +7,8 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T00:22:40Z",
-  "head_sha": null,
+  "updated_at": "2026-05-31T01:11:04Z",
+  "head_sha": "25bfed3c8066fc3ad0a8f4f7b758680a7718a655",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",

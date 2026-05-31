@@ -1,0 +1,8 @@
+{"kind":"phase","ts":"2026-05-31T00:41:27Z","phase":"compile","seconds":0.159,"exit":1,"cmd":"cmake --build build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T00:43:14Z","phase":"compile","seconds":7.698,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T00:48:07Z","phase":"compile","seconds":131.364,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T00:53:25Z","phase":"compile","seconds":107.085,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T00:54:50Z","phase":"compile","seconds":107.249,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T00:56:37Z","phase":"compile","seconds":28.511,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T01:00:57Z","phase":"compile","seconds":120.875,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T01:07:45Z","phase":"compile","seconds":204.575,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
