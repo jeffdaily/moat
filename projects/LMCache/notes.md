@@ -223,3 +223,43 @@ Non-GPU regression:
 
 All documented pass counts met or exceeded; all documented skips reproduced exactly. No regressions.
 Transition: review-passed -> completed (validated_sha = e1d94420; followers unblocked to port-ready).
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32, ROCm 7.2.1 / hip 7.2.53211)
+Validated SHA: e1d94420d5d96b4946d26704b5b0350b88fb11d6 (fork untouched; zero source delta vs lead)
+GPU used: HIP_VISIBLE_DEVICES=0
+
+Build command (Strategy B; arch env-driven, no source edit):
+
+    cd /var/lib/jenkins/moat/projects/LMCache/src
+    BUILD_WITH_HIP=1 CXX=hipcc PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 \
+      python3 setup.py build_ext --inplace
+
+Result: clean; hipify 0 unmapped symbols, 14 kernel-launch rewrites (same as gfx90a); all 4 .so files built.
+
+gfx1100 code-object evidence (roc-obj-ls on lmcache/c_ops.cpython-312-x86_64-linux-gnu.so):
+6 code objects, all hipv4-amdgcn-amd-amdhsa--gfx1100; no gfx90a present.
+Compile flags visible in output: --offload-arch=gfx1100 (steps 5-10 of 11).
+
+GPU test results vs gfx90a bar:
+
+- tests/v1/test_mem_kernels.py              56 passed          [BAR: 56] PASS
+- tests/v1/test_mp_mem_kernels.py           40 passed          [BAR: 40] PASS
+- tests/v1/test_c_ops_fallback_parity.py +
+  tests/v1/test_python_ops_fallback.py      105 passed, 1 skip [BAR: 105p/1s] PASS
+  (c_ops == pure-Python reference for ALL ops on wave32: encode_fast_new, decode_fast_new,
+   decode_fast_prefsum, calculate_cdf, rotary_embedding_k_fused, all kv-transfer variants)
+
+Determinism: test_mem_kernels.py re-run -> 56 passed (identical to run 1). Kernel layout
+transforms + H2D/D2H reproduce bit-for-bit.
+
+Non-GPU regression:
+
+- tests/test_serde.py tests/v1/test_config.py tests/v1/test_token_database.py
+  tests/v1/test_cache_policy.py             89 passed, 8 skip  [BAR: 89p/8s] PASS
+- tests/v1/native_storage_ops/ tests/v1/storage_backend/test_fs_connector.py
+                                            330 passed          [BAR: 330] PASS
+
+No fork interaction: moat-port head e1d94420 untouched; no CI workflow added.
+Transition: port-ready -> completed (validated_sha = e1d94420).
