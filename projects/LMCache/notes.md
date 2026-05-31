@@ -184,3 +184,42 @@ Verdict: review-passed. The GPU test suite (parity 105, mem-kernels 56,
 mp-mem 40, memory-mgmt 47/3-skip, recorders 17, CacheGen 5/5 bit-exact) is the
 load-bearing evidence; the porter ran it but the validator stage re-runs it on
 real GPU next, which is the gate. Safe to proceed to GPU validation.
+
+## Validation 2026-05-31
+
+Platform: linux-gfx90a (AMD Instinct MI250X / MI250, gfx90a, ROCm 7.2.1 / hip 7.2.53211)
+Validated SHA: e1d94420d5d96b4946d26704b5b0350b88fb11d6
+GCD used: 2 (HIP_VISIBLE_DEVICES=2; GCDs 1 and 3 were at 100% GPU utilization at run time)
+
+Build command (incremental, near-no-op):
+
+    cd /var/lib/jenkins/moat/projects/LMCache/src
+    BUILD_WITH_HIP=1 CXX=hipcc PYTORCH_ROCM_ARCH=gfx90a python3 setup.py build_ext --inplace
+
+Result: c_ops.cpython-312-x86_64-linux-gnu.so relinked cleanly; all four .so outputs confirmed present.
+
+GPU test results (all vs documented bar):
+
+- tests/v1/test_mem_kernels.py            56 passed          [BAR: 56] PASS
+- tests/v1/test_mp_mem_kernels.py         40 passed          [BAR: 40] PASS
+- tests/v1/test_c_ops_fallback_parity.py +
+  tests/v1/test_python_ops_fallback.py    105 passed, 1 skip [BAR: 105p/1s] PASS
+- tests/v1/test_memory_management.py      47 passed, 3 skip  [BAR: 47p/3s] PASS
+- tests/v1/test_gpu_connector.py          32 passed, 1 skip  [BAR: ~32p/1s] PASS (no flake this run)
+- event_recorder + completion_recorder    17 passed          [BAR: 17] PASS
+  (ran under numpy 2.4.6 for cupy-rocm compat; restored to 1.26.4 after)
+
+CacheGen determinism (agent_space/lmcache/cachegen_determinism.py):
+
+    5/5 configs PASS (nl=8/16/64/2/32; max 11.2 MB)
+    All: roundtrip_exact=True, det(cdf=True, buf=True, len=True, dec=True)
+
+Non-GPU regression:
+
+- tests/test_serde.py tests/v1/test_config.py tests/v1/test_token_database.py
+  tests/v1/test_cache_policy.py                89 passed, 8 skip [BAR: 89p/8s] PASS
+- tests/v1/native_storage_ops/ tests/v1/storage_backend/test_fs_connector.py
+                                              330 passed          [BAR: 330] PASS
+
+All documented pass counts met or exceeded; all documented skips reproduced exactly. No regressions.
+Transition: review-passed -> completed (validated_sha = e1d94420; followers unblocked to port-ready).
