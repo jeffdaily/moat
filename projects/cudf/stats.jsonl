@@ -20,3 +20,6 @@
 {"kind":"phase","ts":"2026-05-31T19:02:35Z","phase":"compile","seconds":138.004,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T19:47:47Z","phase":"compile","seconds":654.507,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
 {"kind":"result","ts":"2026-05-31T20:20:00Z","platform":"linux-gfx90a","state":"ported","fork_head":"bec85ee6ee472db00ad52afcfbc999b98b0f4aaf","note":"offload-compress resolves the libcudf.so 2GiB relocation wall: sum.cu fatbin 158.6MB->2.89MB (54.9x), object 207.8MB->52.1MB. Broad surface (reductions+aggregation+groupby+join) links single 540MB .so, gfx90a-only (144 code objects), no split, no -mcmodel=large. GPU 12/12 on MI250X GCD0. Fixed cast_fn dangling-reference reduction bug (min/max identity, double sum nan when out==elem type)."}
+{"kind":"phase","ts":"2026-05-31T22:01:08Z","phase":"compile","seconds":661.414,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T23:02:45Z","phase":"compile","seconds":823.208,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T23:10:32Z","phase":"test","seconds":9.723,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cudf/build-hip --output-on-failure"}

@@ -105,7 +105,57 @@ stencil predicates, sort_merge_join thrust::get) are all still needed and are in
 bec85ee; the cast_fn fix is the new one that makes the reductions CORRECT, not
 just compiling.
 
-## State: PORTING on linux-gfx90a -- libcudf core + reductions/aggregation/join/groupby COMPILE + GPU-validate (single .so); JIT binaryop is the lone remaining internal symbol of interest
+## State: linux-gfx90a -> ported (fork c4b9b5b). Core fully links: ONLY the 2 binary_operation JIT symbols are undefined; the find_package(cudf) export contract works and is GPU-verified
+
+This session (fork ae6edc8 -> c4b9b5b) brought up the remaining ~15 non-JIT
+modules behind the prior 17-symbol residual and drove the cudf-internal
+undefined closure to EXACTLY 2 (the binary_operation JIT pair). Modules added to
+cudf_hip_sources.cmake (9 new TUs): stream_compaction/distinct_count.cu,
+quantiles/quantile.cu, quantiles/tdigest/{tdigest.cu, tdigest_aggregation.cu,
+tdigest_column_view.cpp}, groupby/sort/group_quantiles.cu, filling/repeat.cu,
+reshape/tile.cu, lists/stream_compaction/distinct.cu. libcudf.so = 559.46 MB
+(586,646,592 B), 151 embedded code objects ALL gfx90a, no -mcmodel=large, no
+split. GPU 18/18 on MI250X (GCD 0): the prior 12 (no regression) + QuantileLinear,
+DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile,
+stable over repeated runs. find_package(cudf) export contract added + verified
+(see "Install as a dependency"). This unblocks cugraph/cuml (which can now build
+on jeffdaily/cudf @ moat-port).
+
+### Three new arch-unified fault-class fixes (tdigest bring-up), all CUDA-unchanged
+
+All in quantiles/tdigest/tdigest_aggregation.cu + one core header:
+1. **rocThrust zip-iterator / rocPRIM reduce_by_key tuple interop.** rocThrust's
+   zip_iterator is parameterized on thrust::tuple and its reference neither
+   matches nor assigns a cuda::std::tuple (CCCL thrust does; rocThrust does not),
+   and rocPRIM reduce_by_key stores its accumulator in a thrust/rocprim tuple.
+   The tdigest `centroid` value type and the min/max zip-iterator functors used
+   cuda::std::tuple, so (a) `make_zip_iterator(cuda::std::make_tuple(...))` did
+   not form an iterator and (b) `output = op(...)` (cuda::std::tuple) and
+   rocPRIM's internal `get<1>(reduction)` assignment had no viable `=`. Fix: a
+   file-local `zip_tuple`/`zip_get`/`zip_make_tuple` alias = thrust:: on HIP,
+   cuda::std:: on CUDA, applied ONLY at the zip-iterator boundaries (centroid
+   reduce_by_key + its merge_centroids get<>; the min/max thrust::transform;
+   tdigest_min/max read). Per-site bodies unchanged; CUDA byte-for-byte
+   identical. Same fault family as the sorted_order_radix thrust::tuple fix.
+2. **clang rejects an attribute between operator() and its parameter list.**
+   tdigest_aggregation.cu wrote `operator() __device__(args)` and
+   `operator() CUDF_HOST_DEVICE(args)` (10 sites); nvcc tolerates it, clang does
+   not ("'operator()' cannot be the name of a variable"). Moved the attribute
+   before operator() (`__device__ ret operator()(args)`), which both compilers
+   accept. Arch-unified (no guard needed).
+3. **device_span::operator[] made CUDF_HOST_DEVICE on HIP** (include/cudf/
+   utilities/span.hpp). It was `__device__`-only, but cudf has CUDF_HOST_DEVICE
+   functors (cumulative_*/centroid_group_info/scalar_group_info_grouped) that
+   index a device_span and are instantiated for the host CPU path of tdigest
+   `generate_cluster_limit` (over pinned, host-addressable spans). clang forbids
+   a __host__ __device__ function calling a __device__-only callee (nvcc warns
+   only). USE_HIP-guarded: HIP gets host+device (matching the host span's
+   indexer; device pass unchanged), CUDA keeps the device-only form unchanged.
+   This is a core force-included header, so the change recompiles most TUs but
+   is low-risk (only ADDS host-callability) and likely prevents the same error
+   in cugraph/cuml device_span use.
+
+(Superseded baseline below; the broad-surface + these modules subsume it.)
 
 (Superseded baseline below, kept for the fault-class history; the 107-TU core is
 now subsumed by the broad-surface build above at fork bec85ee.) A scoped libcudf
@@ -547,8 +597,56 @@ broader GPU suite (gather/groupby/join/etc.) needs the remaining link-closure
 
 ## Install as a dependency
 
-NOT written yet. cudf is consumed by cugraph/cuml, which need the broad
-algorithm core (groupby/join/etc.), not just the foundational TUs here. Defer
-the `find_package(cudf)` export contract until a fully-linking core exists
-(after the link-closure walls above). The build wiring (cmake/hip/cudf_hip.cmake)
-already exports a `cudf` target shape to model it on.
+cudf is consumed by cugraph/cuml. cudf_hip.cmake (fork c4b9b5b) exports the
+`find_package(cudf)` contract: `install(TARGETS cudf EXPORT cudf-exports)` ships
+the HIP-built libcudf.so + the public `include/cudf` tree + the two generated
+headers (version_config.hpp, logger_macros.hpp), and a generated
+`cudf-config.cmake` (`find_dependency(hip)` + `find_dependency(rmm)`, then the
+exported `cudf::cudf` target) lets a downstream resolve the ROCm build via
+`-DCMAKE_PREFIX_PATH`. The install layout: `lib/libcudf.so`,
+`lib/cmake/cudf/{cudf-config.cmake,cudf-config-version.cmake,cudf-targets.cmake,
+cudf-targets-release.cmake}`, `include/cudf/...`.
+
+Recipe (build + install into _deps/cudf/install). Build rmm first (see the rmm
+recipe above), then:
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cudf/src/cpp -B projects/cudf/build-hip -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/cudf-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCUDF_CUCO_SOURCE_DIR=/var/lib/jenkins/moat/_deps/cudf-cuco/src \
+  -DCUDF_NVTX3_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/nvtx3_include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=OFF \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cudf/install
+cmake --build projects/cudf/build-hip --target install -j 16
+```
+
+A dependent consumes it with `find_package(cudf REQUIRED)` and links
+`cudf::cudf`, passing `-DCMAKE_PREFIX_PATH=".../_deps/cudf/install;
+.../_deps/cudf-rmm/install;/opt/rocm;$CONDA_PREFIX"`. The cudf-including TU MUST
+be compiled as HIP (the PUBLIC cudf headers pull rocPRIM device intrinsics, e.g.
+`__builtin_amdgcn_wavefrontsize`, which a plain-CXX TU cannot compile). The
+installed libcudf.so RUNPATH is `$ORIGIN:/opt/rocm/lib` and NEEDED is librmm.so +
+librapids_logger.so + the HIP runtime, so it loads with rmm's install/lib on the
+path (0 unresolved).
+
+CONSUMABILITY VERIFIED (fork c4b9b5b): a standalone `find_package(cudf)` project
+(agent_space/cudf_consumer) configured (resolved cudf via cudf-config ->
+find_dependency hip+rmm), compiled `main.cpp` as HIP, linked cudf::cudf
+(ldd resolves libcudf.so + librmm.so + librapids_logger.so), and RAN on gfx90a:
+`cudf::make_numeric_column` returned an INT32 column of size 8, exit 0.
+
+NOTE for cugraph/cuml: libcudf.so still carries the documented scoped-out
+deferred-dispatch symbols (the 2 binary_operation JIT overloads, and -- because
+the strings/structs segmented-scan and a few other modules are header-declared
+but their .cu is scoped out -- symbols like strings/structs
+`scan_inclusive<DeviceMin/Max>` that a downstream HIP TU may instantiate from the
+headers). A downstream that does not call them links cleanly with
+`--unresolved-symbols=ignore-in-shared-libs -z lazy` (the same option the smoke
+test uses). To call them, bring up the corresponding module in
+cudf_hip_sources.cmake (none is structurally blocked; only the 2 binaryop JIT
+overloads need the jitify->hipRTC effort).
