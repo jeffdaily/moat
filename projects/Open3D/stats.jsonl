@@ -6,3 +6,6 @@
 {"kind":"phase","ts":"2026-05-31T00:56:37Z","phase":"compile","seconds":28.511,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
 {"kind":"phase","ts":"2026-05-31T01:00:57Z","phase":"compile","seconds":120.875,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
 {"kind":"phase","ts":"2026-05-31T01:07:45Z","phase":"compile","seconds":204.575,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T01:15:27Z","phase":"compile","seconds":334.207,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-05-31T01:16:15Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./bin/tests --gtest_filter=*Tensor*"}
+{"kind":"phase","ts":"2026-05-31T01:17:25Z","phase":"test","seconds":64.044,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests --gtest_filter=*Tensor*"}

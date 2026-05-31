@@ -110,5 +110,74 @@ suites: *Tensor*, *MemoryManager*, *HashMap* (stdgpu), *NearestNeighborSearch*/
 *KnnIndex*/*FixedRadiusIndex* (FAISS wave64), *Reduction*, t-geometry +
 registration GPU tests.
 
-## STATUS / open walls
-(updated as the build progresses)
+## Additional build fixes found during bringup (beyond the plan)
+- `__CUDACC__` cannot be faked globally: defining it forces rocThrust to its
+  CUDA backend (compiler.h reads __CUDACC__ as "CUDA compiler"), dumping every
+  thrust call into the "unimplemented for this system" generic fallback. Fix:
+  do NOT define __CUDACC__; instead extend each `#ifdef __CUDACC__` device-vs-
+  host guard across the kernel headers to `__CUDACC__ || __HIPCC__` (the
+  cudaKDTree/GLM trap), force THRUST_DEVICE_SYSTEM=5 (HIP) via a compile def so
+  rocThrust's auto-detect is bypassed, and provide OPEN3D_DEVICE_CODE
+  (= __HIP_DEVICE_COMPILE__ on HIP) for the data-pointer-selection guards.
+- `MiniVec.h` FN_SPECIFIERS keyed on __CUDACC__ -> +__HIPCC__ (else device
+  kernels can't call MiniVec ctor/operator[]).
+- `OPEN3D_ASSERT_HOST_DEVICE_LAMBDA` uses the nvcc-only intrinsic
+  `__nv_is_extended_host_device_lambda_closure_type`; no-op it on HIP.
+- `__ffs(__ballot_sync(...))` is ambiguous on HIP (ballot is unsigned long long,
+  HIP has only __ffs(int)/__ffs(unsigned)); the compat header adds a
+  __host__ __device__ __ffs(unsigned long long) (uses __ffsll device /
+  __builtin_ffsll host).
+- `GeometryMacros.h`: the `__CUDA_ARCH__ < 600` double-atomicAdd fallback would
+  REDEFINE HIP's native atomicAdd(double*); guarded CUDA-only.
+- `RegistrationImpl.h`: clang requires explicit template instantiations of
+  __host__ __device__ function templates to carry the attributes -> prefixed
+  each with OPEN3D_HOST_DEVICE (cudaKDTree attribute-match lesson).
+- Host nodiscard: HIP marks the runtime API nodiscard (CUDA does not), tripping
+  host .cpp under -Werror; relaxed -Werror=unused-result for CXX/HIP under
+  USE_HIP (mirrors the CUDA build's NVCC 2809 suppression).
+- gcc13 false `-Wmaybe-uninitialized` on Eigen SIMD in MinimumOBB/OBE.cpp
+  (best_R IS Identity-initialized) -> -Wno-error=maybe-uninitialized for gcc.
+- stdgpu install: the pinned commit's HIP backend dir lacks
+  determine_thrust_paths.cmake (CUDA-only) but install() references it -> a
+  PATCH_COMMAND copies the CUDA one in. stdgpu CXX must be hipcc/clang (its host
+  impl/*.cpp reach rocPRIM); the compiler overrides go AFTER
+  ExternalProject_CMAKE_ARGS_hidden so they win over the host g++ default.
+
+## STATUS (2026-05-31): core BUILDS + broadly VALIDATES; stdgpu hashmap wall
+The full `tests` binary builds for gfx90a (all ~31 HIP .cu TUs compile + link).
+GPU validation on one MI250X GCD (HIP_VISIBLE_DEVICES, PermuteDevices CPU param
+is the oracle, `/1` = the HIP device):
+- *Tensor*: 398/398 functional PASS (1 SYCL skip; ReduceSum64bit2DCase0 once
+  OOM'd on a contended GCD, PASSES on an idle one -- environmental).
+- *Reduction*/*Reduce*: 34/34 PASS (warp reduction wave64-correct).
+- *NearestNeighborSearch*/*KnnIndex*/*FixedRadiusIndex*/*Knn*/*Hybrid*: 16/16
+  PASS -- the FAISS warp-select wave64 (highest risk) is CORRECT via the
+  two-32-lane-subgroup model.
+- Registration ICP (PointToPoint/PointToPlane/Colored), Feature (FPFH,
+  correspondences), EvaluateRegistration: PASS (atomicAdd ICP within tolerance).
+- t-geometry PointCloud/TriangleMesh/Transform (non-image): PASS.
+
+EXPECTED scoped-out failures (NOT regressions, documented above): the NPP GPU
+image-filter ops throw NppUnsupportedOnHIP, so the tests that exercise them fail
+by design -- Image.{Filter,FilterGaussian,FilterBilateral,FilterSobel,Resize,
+PyrDown,Dilate}, Odometry.RGBDOdometryMultiScale{PointToPlane,Intensity,Hybrid}
+(image pyramids), PointCloud.CreateFromRGBDOrDepthImageWithNormals. These need
+the CPU device on ROCm.
+
+REAL remaining wall (why state stays `porting`, not `ported`):
+- *HashMap* (the DEFAULT stdgpu backend): 17/20 PASS, but Reserve,
+  InsertComplexKeys, MultivalueInsertion, HashSet FAIL on the GPU. Root cause is
+  a concurrency bug in stdgpu's experimental HIP backend `unordered_base::
+  try_insert`: with duplicate/colliding keys inserted concurrently, the
+  per-bucket spinlock + `contains()` + occupied-bit dedup is not wave64-correct,
+  so two same-key threads both report success (masks.Sum()=1024 vs 1023; and an
+  off-by-one set after Reserve/rehash). Basic Insert/Find/Erase/Clear/IO/
+  Multivalue-on-distinct-keys PASS, so the backend works for non-colliding
+  workloads. This is an UPSTREAM stdgpu HIP-backend bug (its per-bucket lock /
+  atomic memory ordering under a 64-lane wavefront), not an Open3D kernel bug.
+  Fixing it means patching stdgpu's internal lock/atomic path -- deep and
+  wave64-risky; deferred per the plan (Risk 6 / Open question 1).
+  Next concrete step: either patch stdgpu's HIP atomic_ref/lock backend for
+  wave64 dedup, or implement a correct wave64 SlabHash backend (also deferred)
+  and select it for the HashMap tests. The hashmap is used by VoxelBlockGrid
+  (TSDF integration), so VoxelBlockGrid GPU correctness is gated on this too.
