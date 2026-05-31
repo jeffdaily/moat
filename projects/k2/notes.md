@@ -151,3 +151,40 @@ mutual_information and rnnt_loss (the CG-heavy autograd kernels) pass on GPU.
 4 GCDs (0-3). Check `rocm-smi --showmeminfo vram` + `rocm-smi --showpids` and
 take a genuinely idle one (~11 MB VRAM, no compute PID); other agents share the
 box. This port validated on GPU 0.
+
+## Review 2026-05-31
+
+Reviewer (linux-gfx90a, moat-port @ 20f56c06 vs master e625cb9). Verdict:
+review-passed, no changes requested. Used /pr-review; fact-checked every
+load-bearing claim by re-reading code. No problems found; safe for GPU
+validation. Verified items (so the record shows they were checked, not assumed):
+
+- segmented_sort_indices iota-seed (moderngpu_shim.h:284) is correct and
+  load-bearing. Corroborated 3 ways: CPU ref SortSublistsCpu (ragged_ops_inl.h:391)
+  std::iota(order,0) over the whole array; Sort/mergesort pre-seeds Range(0)
+  (array_ops_inl.h:970) but SortSublists does NOT (ragged_ops_inl.h:429); consumer
+  PruneRaggedAxis1 (ragged_ops_inl.h:920) uses order_map_data[idx01] as a global
+  index into row_ids1/sub_max/keep -> OOB without the seed. stable_sort_by_key +
+  iota == CPU's paired stable_sort with ascending-index tie-break.
+- cudpp_hip SegmentedExclusiveSum (cudpp_hip.cu): InclusiveSum flags->monotone key
+  then ExclusiveScanByKey(Sum, Equality, T(0)); arch-unified, no warp arithmetic.
+- transform_scan count+1 don't-care read is harmless (exclusive scan output[count]
+  excludes the last input; address is allocated).
+- ComputeRowIds upper_bound == load_balance_search CPU ref (utils.cu:81-89).
+- sorted_search needle==out aliasing in RowIdsToRowSplits (utils.cu:197) is safe:
+  per-element out[i]<-needle[i] same index, haystack (row_ids) is a distinct buffer.
+- thrust::hip::par.on(stream) is the valid rocThrust public idiom (par.h).
+- CG tiles all N in {4,8} (<=32) -> wave64 AND wave32 (RDNA follower) safe.
+- No __shfl/__ballot/__activemask, no hardcoded 32, no managed memory, no
+  textures/surfaces/cublas/cufft/cusparse in k2 code (cusparse hits are prose).
+- NVIDIA path byte-identical: utils.cu has 0 diff; __CUDA_ARCH__->K2_DEVICE_CODE
+  preserves CUDA behavior exactly; all divergence under K2_WITH_HIP/USE_HIP guards;
+  compat header never compiled on CUDA.
+- Build: HIP in project() language list, arch from cache var (not literal), RDC on
+  lib+all consumers, hip::host (not hip::device), _k2 NO_EXTRAS+IPO off, K2_WITH_CUDA
+  defined for HIP build, libhipcxx required with clear FATAL_ERROR.
+- Commit hygiene clean: [ROCm] title 64 chars, Claude-disclosed, no noreply/ghstack,
+  jeffdaily identity, Test Plan present, ASCII.
+- Two Python failures confirmed device-independent pre-existing artifacts (torch 2.6
+  weights_only=True flip, verified in installed torch serialization.py:77-78; float32
+  normalize_scores catastrophic cancellation, float64 exact).
