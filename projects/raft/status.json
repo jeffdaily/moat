@@ -7,8 +7,8 @@
   "priority": 5.687,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:05Z",
-  "updated_at": "2026-05-31T00:24:29Z",
-  "head_sha": "012b27a71e339eeae5a9285d2ee76773923a6b2b",
+  "updated_at": "2026-05-31T00:36:25Z",
+  "head_sha": "6e337a6fec8a4720a04a345313c93e818b65265d",
   "platforms": {
     "linux-gfx90a": {
       "state": "ported",

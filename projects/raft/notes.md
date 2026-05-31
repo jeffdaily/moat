@@ -306,8 +306,9 @@ ck_tile route remains open once the system headers and examples realign.
    the 64-bit WarpMask (was truncating lanes 32-63 into uint32) + `popc_mask`/
    `ffs_mask`/`lane_bit` WarpMask helpers; select_warpsort's two `add()` loops use
    them; faiss MergeNetworkWarp single-warp bitonic sort adds the stride-32 merge on
-   wave64. select_k MATRIX_SELECT_TEST (the kWarp* algorithms exercising this) runs
-   on GPU.
+   wave64. select_k MATRIX_SELECT_TEST (matrix/select_k.cu, the kWarp* + radix
+   algorithms, k from 1 to 1700): 607 tests, 0 failures, 0 errors on gfx90a (567
+   run + the rest gtest-SKIPPED as not-applicable combos), HIP_VISIBLE_DEVICES=1.
 4. THE ROOT-CAUSE wave64 fix -- host/device WarpSize mismatch: raft::WarpSize and
    warp_size() were 64 only when __GFX9__ is defined, which is ONLY the device
    pass; the HOST pass fell back to 32. select_warpsort computes its launch geometry
