@@ -884,3 +884,54 @@ AMD-internal account refs.
 Residual blas/sparse dispositions from the base review are resolved by this
 delta (sparse implemented, int8 closed, FreeImage on). GPU re-validation is the
 validator's next step; a missing real-GPU run at review time is not a blocker.
+
+## Validation 2026-05-31 (validator, sparse+int8+FreeImage) -- RESULT: COMPLETED (linux-gfx90a)
+
+GPU: gfx90a (MI250X), HIP_VISIBLE_DEVICES=3, ROCm 7.2.1. Fork HEAD: 3782728.
+
+Build: incremental `cmake --build build-hip -j16` -- ninja: no work to do (library +
+all 132 test binaries current at 2026-05-31T22:34, post-porter build). Build
+configuration confirmed: AF_BUILD_HIP=ON, AF_WITH_IMAGEIO=ON, CMAKE_HIP_ARCHITECTURES=gfx90a.
+libfreeimage-dev 3.18.0 present (verified via dpkg).
+
+Full `ctest -R '_cuda$' -j1` run x2: 132/132 PASS both runs, 0 failures.
+
+Commands run:
+```
+# Incremental build check
+cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip -j 16
+# Full test suite x2
+HIP_VISIBLE_DEVICES=3 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip -R '_cuda$' -j1 --output-on-failure
+HIP_VISIBLE_DEVICES=3 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip -R '_cuda$' -j1
+# Targeted: sparse (86/86), sparse_arith (123/123), sparse_convert (41/41), threading (9/9)
+HIP_VISIBLE_DEVICES=3 ctest --test-dir ... -R '^(test_sparse_cuda|test_sparse_convert_cuda|test_sparse_arith_cuda|test_threading_cuda)$' -j1 -V
+# Targeted: blas (127/127 incl. MatrixMultiply.schar), confidence_connected (36/36)
+HIP_VISIBLE_DEVICES=3 ctest --test-dir ... -R '^(test_blas_cuda|test_confidence_connected_cuda)$' -j1 -V
+# Regression: topk (110/110), nearest_neighbour (122/122), jit (1781/1781), convolve (507/507), reduce (1062/1062)
+HIP_VISIBLE_DEVICES=3 ctest --test-dir ... -R '^(test_topk_cuda|test_nearest_neighbour_cuda|test_jit_cuda|test_transpose_cuda|test_fft_cuda|test_convolve_cuda|test_reduce_cuda)$' -j1 -V
+# Third run of topk + nearest_neighbour (no LDS fault)
+HIP_VISIBLE_DEVICES=3 ctest --test-dir ... -R '^(test_topk_cuda|test_nearest_neighbour_cuda)$' -j1 -V
+```
+
+Sparse path verification (all NEW, all PASS):
+- sparse: 86/86
+- sparse_arith: 123/123
+- sparse_convert: 41/41
+- threading: 9/9 (Threading.Sparse PASS -- af::sparse works on hipSPARSE)
+
+blas int8 verification: MatrixMultiply.schar OK -- blas 127/127 (was 126/127).
+
+FreeImage: confidence_connected 36/36 (was AF_ERR_NOT_CONFIGURED; now loads images and runs GPU algorithm).
+
+Regression suites (no LDS-fault recurrence):
+- topk: 110/110 (3 independent runs)
+- nearest_neighbour: 122/122 (3 independent runs)
+- jit: 1781/1781
+- convolve: 507/507
+- reduce: 1062/1062
+- fft: 108/108
+- transpose: 140/140
+
+Zero failures. All 6 prior residuals closed by this porter commit. No new failures introduced.
+
+State transition: review-passed -> completed. validated_sha = 3782728.
