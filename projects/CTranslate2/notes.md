@@ -1,5 +1,49 @@
 # CTranslate2 notes
 
+## Validation 2026-05-31 (linux-gfx1100, gfx1100/W7800, ROCm 7.2.1) -- PASS
+
+Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (unchanged, no follower fork push)
+GPU: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). Tested on HIP_VISIBLE_DEVICES=0.
+Compiler: amdclang++ 22.0.0 (roc-7.2.1), cmake 3.31
+
+Build command (gfx1100, adapted from lead):
+```
+cmake -S projects/CTranslate2/src -B projects/CTranslate2/build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=amdclang -DCMAKE_CXX_COMPILER=amdclang++ \
+  -DWITH_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DWITH_MKL=OFF -DWITH_OPENBLAS=ON -DOPENMP_RUNTIME=COMP \
+  -DBUILD_TESTS=ON -DBUILD_CLI=OFF \
+  -DCMAKE_CXX_FLAGS="-Wno-deprecated-literal-operator" \
+  -DCMAKE_HIP_FLAGS="-Wno-deprecated-literal-operator"
+bash utils/timeit.sh CTranslate2 compile -- cmake --build projects/CTranslate2/build -j 16
+```
+Result: compile CLEAN in 119.5s. Only -Wnodiscard on benchmark_ops (same as lead).
+
+Code-object arch evidence (roc-obj-ls on libctranslate2.so):
+All bundles: `hipv4-amdgcn-amd-amdhsa--gfx1100` (no gfx90a present). Confirmed via roc-obj-ls.
+
+GPU test (CUDA/* filter, HIP_VISIBLE_DEVICES=0):
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh CTranslate2 test -- \
+  projects/CTranslate2/build/tests/ctranslate2_test \
+  projects/CTranslate2/src/tests/data --gtest_filter='CUDA/*'
+```
+Result: 164 PASSED, 3 SKIPPED (Conv1DGroupNoBiasQuantized x3 dtypes). MATCHES gfx90a bar.
+
+Full suite (filter out Conv1DGroupNoBiasQuantized CPU abort):
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh CTranslate2 test -- \
+  projects/CTranslate2/build/tests/ctranslate2_test \
+  projects/CTranslate2/src/tests/data "--gtest_filter=-*Conv1DGroupNoBiasQuantized*"
+```
+Result: 350 PASSED, 1 SKIPPED (CPU/OpDeviceFPTest.Conv1DDilation). MATCHES gfx90a bar. No non-GPU regressions.
+
+Determinism (wave32, agent_space/ct2_determinism_gfx1100.cc):
+softmax/log_softmax/layer_norm/rms_norm across widths {15,32,96,1023,2048} run twice each on GPU: ALL BIT-IDENTICAL (20/20).
+
+State transition: port-ready -> completed. validated_sha = dfa0d30. Fork untouched (no commit, no push).
+
 ## Validation 2026-05-31 (linux-gfx90a, gfx90a/MI250X, ROCm 7.2.1) -- PASS
 
 Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1
