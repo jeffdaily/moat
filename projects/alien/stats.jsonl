@@ -4,3 +4,6 @@
 {"kind":"phase","ts":"2026-05-31T01:05:32Z","phase":"compile","seconds":20.532,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
 {"kind":"phase","ts":"2026-05-31T01:07:22Z","phase":"compile","seconds":47.503,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
 {"kind":"phase","ts":"2026-05-31T01:08:46Z","phase":"compile","seconds":5.321,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:58:14Z","phase":"compile","seconds":41.800,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16 --target EngineKernels EngineImpl cli EngineTests"}
+{"kind":"phase","ts":"2026-05-31T02:01:42Z","phase":"compile","seconds":12.724,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16 --target EngineKernels EngineImpl cli EngineTests"}
+{"kind":"phase","ts":"2026-05-31T02:28:42Z","phase":"test","seconds":1602.897,"exit":0,"cmd":"bash agent_space/alien_reval/run_enginetests_graph.sh"}
