@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/chrxh/alien",
   "default_branch": "develop",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "cmake",
   "base_sha": null
 }
