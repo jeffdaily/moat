@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "gaussian_splatting",
   "upstream_url": "https://github.com/joeyan/gaussian_splatting",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/gaussian_splatting",
   "fork_default_branch": "main",
   "priority": 3.571,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-05-31T23:25:37Z",
+  "updated_at": "2026-05-31T23:28:52Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-31T23:28:52Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T23:25:37Z",
+      "updated_at": "2026-05-31T23:28:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
