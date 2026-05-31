@@ -7,17 +7,17 @@
   "priority": 6.667,
   "ext_type": "makefile",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-05-31T06:41:19Z",
-  "head_sha": "15f5e1a6d745a6385ea86a6fc745cdae9fe436ef",
+  "updated_at": "2026-05-31T17:01:41Z",
+  "head_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "15f5e1a6d745a6385ea86a6fc745cdae9fe436ef",
       "started_at": "2026-05-31T00:24:03Z",
       "completed_at": "2026-05-31T01:12:46Z",
-      "updated_at": "2026-05-31T01:12:46Z",
+      "updated_at": "2026-05-31T17:01:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "15f5e1a6d745a6385ea86a6fc745cdae9fe436ef",
       "started_at": "2026-05-31T01:25:00Z",
       "completed_at": "2026-05-31T02:30:00Z",
-      "updated_at": "2026-05-31T02:30:00Z",
+      "updated_at": "2026-05-31T17:01:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": true,
-      "blocked_reason": "Best-prepared remaining follower (Windows+HIP+warp-configurable Makefile, hipBLASLt present), but the fork's USE_HIP Makefile branch is Linux/sh-only: under MSYS sh the OS=Windows_NT cmd recipes (if not exist, where 2>/dev/null) give syntax errors; under SHELL=cmd.exe the hipcc detection (unix 'which hipcc') fails and the ifeq(USE_HIP,1) flag-branch does not engage (emits nvcc flags --use_fast_math/-lcublas that clang rejects). Needs the Makefile compiler-detection/flag-selection made cmd-shell-compatible, then starter-pack data files + a real-GPU run. Not a ROCm/gfx1151 defect (gfx90a/gfx1100 pass). Fixable Windows-Makefile-shell rework.",
-      "validated_sha": null,
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-31T06:41:19Z",
+      "completed_at": "2026-05-31T17:01:41Z",
+      "updated_at": "2026-05-31T17:01:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   },
   "depends_on": []

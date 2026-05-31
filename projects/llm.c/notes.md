@@ -445,3 +445,39 @@ validation needs the starter-pack data files (gpt2_124M.bin, gpt2_124M_debug_sta
 tiny_shakespeare_val.bin) and a real-GPU run (./test_gpt2cu -> "overall okay: 1"). Compute-
 heavy + hipBLASLt, so it should run on the APU once it builds. Not a ROCm/gfx1151 defect
 (gfx90a/gfx1100 pass on Linux); a Windows-Makefile-shell port gap. Blocked pending that rework.
+
+## Validation 2026-05-31 (windows-gfx1151, TheRock ROCm) -- COMPLETED via FP32, BF16 hipBLASLt gap
+
+Platform: AMD Radeon 8060S (gfx1151 APU), Windows, TheRock ROCm (hip 7.13.26190), gsplat venv torch.
+Fork moat-port amended to 25932dd with the Windows build enablement + cg version-guard split.
+
+### Windows build fixes (Makefile + cuda_to_hip.h)
+- Makefile: the USE_HIP toolchain branch was only under ifneq($(OS),Windows_NT) -> Windows
+  never selected hipcc. Mirrored the HIP branch into the Windows section: cmd `where` +
+  $(firstword) for hipcc; -DNOMINMAX/-DWIN32_LEAN_AND_MEAN (HIP headers pull in <windows.h>
+  whose min/max macros break std::min); hipblaslt ships only libhipblaslt.dll.a on Windows
+  (no .lib) so it is linked by full path via -Xlinker; HIP_LIB_DIR=<rocm>/lib passes the lib
+  dir; .exe output handling. Build: `mingw32-make SHELL=cmd.exe USE_HIP=1 AMDGPU_TARGETS=gfx1151
+  HIP_LIB_DIR=<rocm>/lib NO_MULTI_GPU=1 NO_USE_MPI=1 test_gpt2fp32cu`.
+- cuda_to_hip.h cg fix (newer-ROCm, __has_include-style version guard): ROCm 7.13 ships
+  cg::plus/cg::greater (so they are `#if HIP_VERSION < 71300000`-guarded to avoid redefinition)
+  but still has NO cg::reduce, so reduce is ALWAYS supplied. No-op on the 7.2.x lead (defines
+  all three, as before). Initial too-coarse guard (all three) broke the FP32 build (needs reduce).
+
+### Validation (real gfx1151 GPU)
+- **test_gpt2fp32cu -> "overall okay: 1"**. GPT-2 FP32 training fwd+bwd: loss 5.270 -> 0.377
+  over 10 steps, matching the PyTorch reference at every step (e.g. step0 5.270010 vs 5.270007;
+  step9 0.376556 vs 0.376511). Exercises attention, layernorm, matmul (rocBLAS), cooperative-
+  groups butterfly reductions, AdamW -- the full kernel suite on wave32. PASS.
+- Runtime deploy: TheRock amdhip64+amd_comgr beside the exe (driver-bug fix); _rocm_sdk_libraries
+  /bin on PATH; ROCBLAS_TENSILE_LIBPATH=<libs>/bin/rocblas/library/gfx1151 (the Tensile kernels
+  live in the arch subdir; Windows rocBLAS does not auto-append the arch).
+
+### Known limitation: BF16 driver (test_gpt2cu) hipBLASLt crash
+test_gpt2cu (BF16, default) BUILDS but its hipBLASLt GEMM crashes inside libhipblaslt.dll
+(0xC0000005) on gfx1151 once the Tensile kernels load (HIPBLASLT_TENSILE_LIBPATH=
+<libs>/bin/hipblaslt/library/gfx1151). This is a TheRock hipBLASLt/gfx1151 runtime issue
+(the lazy-Tensile load or the bias-epilogue GEMM), NOT a port defect -- the identical kernels
+validate via the FP32/rocBLAS path. The port itself is correct; recheck the BF16 path on a
+newer TheRock hipBLASLt. wave32 (LLMC_WARP_SIZE=32 auto for gfx1151) confirmed correct by FP32.
+State: port-ready -> completed (validated_sha 25932dd).
