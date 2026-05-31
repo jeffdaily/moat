@@ -555,3 +555,62 @@ Determinism: STATIC_MAP_TEST and DYNAMIC_MAP_TEST each run twice with `--rng-see
 No regression on prior suite: STATIC_SET 97/887, STATIC_MULTISET 70/582, STATIC_MULTIMAP 72/228, UTILITY 38/1561, ROARING 2 (1+1 skip)/4 -- all match documented bar. All documented deferrals (>8B/16B CAS, bloom_filter nv/target, dynamic_bitset, hyperloglog) remain deferred -- none are failures.
 
 Result: PASS. linux-gfx90a -> completed, validated_sha = 47ae24da1c2c5f21fcb88decd57697540af34a01. linux-gfx1100 stays revalidate (must revalidate 47ae24d on a gfx1100 host). windows-gfx1151 stays port-ready.
+
+## Validation 2026-05-31 (gfx1100) -- revalidate at 47ae24d (retrieve_all / hip_device_select)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (RDNA3, wave32), ROCm 7.2.1. Fork jeffdaily/cuCollections @ moat-port HEAD 47ae24da1c2c5f21fcb88decd57697540af34a01.
+
+GPU: HIP_VISIBLE_DEVICES=0 (4x gfx1100 W7800 48GB, all at 0% utilization at test time).
+
+Delta since prior gfx1100 validated_sha (57a1c1a): 4 files -- `include/cuco/detail/hip_device_select.cuh` (NEW, +158 lines, the HIP-only re-tie adaptor for DeviceSelect-over-pairs), `include/cuco/detail/open_addressing/open_addressing_impl.cuh` (+29, wires the adaptor at the two retrieve_all DeviceSelect::If call sites under `#if defined(USE_HIP)`), `tests/CMakeLists.txt` (re-enables the previously deferred retrieve TUs), and `tests/static_map/retrieve_if_test.cu` (test-only portable edit to use cuco::pair insert input). No source or CMake change for gfx1100 -- the fix is arch-agnostic.
+
+### Build (compile phase)
+
+Source fetched from fork (git fetch origin moat-port + checkout 47ae24d). Existing build dir `projects/cuCollections/build-hip-gfx1100` reused -- CMake configure re-ran automatically, then ninja rebuilt the 5 affected test binaries (STATIC_SET/MAP/MULTISET/MULTIMAP/DYNAMIC_MAP, all 07:15 timestamps); UTILITY_TEST and ROARING_BITMAP_TEST unchanged (no work to do). Build succeeded with warnings only, no errors.
+
+```
+utils/timeit.sh cuCollections compile -- cmake --build projects/cuCollections/build-hip-gfx1100 \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j64
+```
+
+### Code-object evidence
+
+`roc-obj-ls build-hip-gfx1100/tests/STATIC_MAP_TEST` confirms exclusively `hipv4-amdgcn-amd-amdhsa--gfx1100` code objects (multiple bundles, no gfx90a). STATIC_MAP_TEST is the new 124MB binary containing the previously-deferred retrieve_all/retrieve_if TUs.
+
+### Test run (real GPU, HIP_VISIBLE_DEVICES=0, --rng-seed 12345)
+
+```
+utils/timeit.sh cuCollections test -- <exe> --rng-seed 12345
+```
+
+| suite | cases | assertions | result | vs gfx90a@47ae24d |
+|-------|-------|------------|--------|-------------------|
+| STATIC_SET_TEST | 97 | 887 | PASS | exact match |
+| STATIC_MAP_TEST | 126 | 818 | PASS (retrieve_all-over-pairs: contains/duplicate_keys/insert_or_assign/insert_or_apply/retrieve_if all pass) | exact match |
+| STATIC_MULTISET_TEST | 70 | 582 | PASS | exact match |
+| STATIC_MULTIMAP_TEST | 72 | 228 | PASS | exact match |
+| DYNAMIC_MAP_TEST | 18 | 254 | PASS (retrieve_all + multiplicity via hip_device_select.cuh adaptor) | exact match |
+| UTILITY_TEST | 38 | 1561 | PASS | exact match |
+| ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS | exact match |
+| **TOTAL** | **~423** | **~4334** | **all passing** | **full match** |
+
+No OOM skips this run (gfx1100 had transient OOM skips in the prior gfx90a validation at 57a1c1a when the GPU was under memory pressure; this run all 4 GPUs were idle and the W7800's 48GB was fully available). The STATIC_MULTISET large_input OOM skips documented in the 57a1c1a validation were memory-pressure artifacts, not structural failures.
+
+Determinism: STATIC_MAP_TEST and DYNAMIC_MAP_TEST each run twice with `--rng-seed 12345`; both runs bit-identical (126/818 and 18/254 respectively).
+
+### retrieve_all / hip_device_select stream-compaction result on wave32
+
+The retrieve_all-over-pairs path (the focus of this revalidate) passed in full on gfx1100:
+
+- STATIC_MAP_TEST 126/818: all five retrieve-related TUs (contains_test, duplicate_keys_test, insert_or_assign_test, insert_or_apply_test, retrieve_if_test) pass. These call `retrieve_all` which invokes the new `cuco::detail::hip::device_select_if` adaptor, which wraps the cuda::std::tuple slot iterator in a thrust::tuple transform iterator so rocPRIM's DevicePartition can stage and scatter-assign it through a thrust zip output.
+
+- DYNAMIC_MAP_TEST 18/254: retrieve_all_test and multiplicity_test pass, exercising the same adaptor on the dynamic_map path.
+
+The `hip_device_select.cuh` adaptor is host-side dispatch + two tuple-copy iterator adaptors -- no wave-size, no ballot/shfl, no lane-mask logic. Its correctness is independent of wavefront width. On gfx1100 (wave32) as on gfx90a (wave64), the re-tie correctly: (a) re-wraps the cuda::std::tuple slot into a thrust::tuple (same element values by value copy, stripping refs), (b) re-ties back to cuda::std::tuple for the predicate so cuco's `slot_is_filled` reads `cuda::std::get<0>` and applies the sentinel bitwise_compare, (c) lets rocPRIM stage the selected slots as thrust::tuples and scatter-assign into the thrust zip output via `tuple_of_iterator_references::operator=(const thrust::tuple&)`.
+
+Wave32 verdict: CORRECT. The hip_device_select stream-compaction produces the correct compacted set on wave32 -- no lost or duplicated entries, no data corruption, no HIP fault.
+
+No regression on the prior-passing suites (STATIC_SET sub-word CAS shim, tiled probing CG, MULTISET/MULTIMAP, UTILITY, ROARING). Clean exit on all runs.
+
+Result: PASS. linux-gfx1100 revalidate -> completed. validated_sha = 47ae24da1c2c5f21fcb88decd57697540af34a01. Fork untouched (no commit, no push).
