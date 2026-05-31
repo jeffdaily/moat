@@ -181,3 +181,109 @@ Conv-SE coverage now adequate: the maia-1100 conv-residual-SE net (NETWORK_SE, 6
 Commit hygiene (HEAD 1a6c3e3): title 53 chars, `[ROCm]` prefix, body mentions Claude, has a Test Plan, no noreply trailer, no em-dash, no AMD-internal account. Body updated to describe the `__CUDA_ARCH__` fix accurately.
 
 Safe to proceed to GPU validation.
+
+## Validation 2026-05-31 (validator, linux-gfx90a) -- PASSED
+
+Platform: gfx90a (MI250X), ROCm 7.2.1, GPU 3 (HIP_VISIBLE_DEVICES=3). Fork HEAD 1a6c3e3597b96153e733de94eda576cc2fc6ae88.
+
+### Build
+
+Removed stale .hip.o (not present; clean slate), then incremental ninja. fp16_kernels.hip.o = 2.2MB; `nm -C` shows non-empty SE_Layer_NHWC<C,K> instantiations (32, 64, 128, 192... filter sizes). Build clean -- warnings only (nodiscard, same as prior passing builds).
+
+```
+rm -f /var/lib/jenkins/moat/projects/lc0/src/build-hip/common_kernels.hip.o \
+       /var/lib/jenkins/moat/projects/lc0/src/build-hip/fp16_kernels.hip.o
+bash /var/lib/jenkins/moat/utils/timeit.sh lc0 compile -- \
+  ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-hip -j16
+```
+
+### CPU gtest (non-GPU regression)
+
+```
+bash /var/lib/jenkins/moat/utils/timeit.sh lc0 test -- \
+  meson test -C /var/lib/jenkins/moat/projects/lc0/src/build-hip
+```
+
+Result: 8/8 OK (FP16, HashCat, OptionsParserTest, PositionTest, EncodePositionForNN, SyzygyTest, EngineTest, ChessBoard). 0 failures.
+
+### maia-1100 conv-SE fp32 cross-check (THE gate)
+
+Net: maia-1100 (NETWORK_SE, 6 SE blocks, 64 filters, conv policy). Drives SE_Layer_NHWC (the previously-empty path).
+
+```
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+```
+
+Result: 222/222 "Check passed", 0 ERROR, across batch sizes 1-55 (including 32, 53, 55). fp32 hip-vs-blas exact at atol=1e-3.
+
+### maia-1100 conv-SE fp16 cross-check
+
+```
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip-fp16(),blas(),mode=check,atol=1.1e-1,rtol=2e-1,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+```
+
+Result: 222/222 passed, 0 ERROR. Display mode at batch=32: value abs err 8.6e-05, policy abs err 1.1e-03 -- well within fp16 envelope. Bestmoves match fp32.
+
+### Attention testnet regression (fp32 + fp16)
+
+```
+# fp32
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/testnet.pb.gz \
+  --start-batch-size=1 --max-batch-size=32 --batches=4
+
+# fp16
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip-fp16(),blas(),mode=check,atol=2.5e-2,rtol=1e-1,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/testnet.pb.gz \
+  --start-batch-size=1 --max-batch-size=32 --batches=4
+```
+
+fp32: 130/130 passed, 0 ERROR. fp16: 130/130 passed, 0 ERROR.
+
+### Benchmark (fault-free, batch 1-256)
+
+```
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=hip --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz --batches=3
+
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=hip-fp16 --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz --batches=3
+```
+
+Both fp32 and fp16 ran batch 1-256 without fault. No crash, no illegal instruction, no GPU hang.
+
+### Device dispatch (AMD_LOG_LEVEL=3)
+
+Named lc0 kernels confirmed on device: copyTypeConverted_kernel, filterTransform_kernel, InputTransform_kernel_192, OutputTransform_kernel_192 (with SE=true template param), expandPlanes_kernel, policyMap_kernel, addBias_NCHW_kernel; rocBLAS Cijk_* MFMA kernels (ISA90a) interleaved. Real GPU dispatch confirmed.
+
+### Determinism
+
+Run-to-run at batch=8: value abs err stable at 6.0e-08, policy at 6.3e-07 (fp32 hip-vs-blas display mode across 2 repeated runs). No reduction race.
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| CPU gtest 8/8 | PASS |
+| maia-1100 fp32 conv-SE check (222 batches) | PASS |
+| maia-1100 fp16 conv-SE check (222 batches) | PASS |
+| attention testnet fp32 check (130 batches) | PASS |
+| attention testnet fp16 check (130 batches) | PASS |
+| backendbench fp32 batch 1-256 | PASS (no fault) |
+| backendbench fp16 batch 1-256 | PASS (no fault) |
+| Device dispatch confirmed | PASS |
+| Run-to-run determinism | PASS |
+
+validated_sha = 1a6c3e3597b96153e733de94eda576cc2fc6ae88. Transition: review-passed -> completed.
