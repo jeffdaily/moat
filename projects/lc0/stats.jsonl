@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-05-31T01:42:58Z","phase":"compile","seconds":15.845,"exit":1,"cmd":"ninja -C projects/lc0/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:43:45Z","phase":"compile","seconds":21.459,"exit":1,"cmd":"ninja -C projects/lc0/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:44:14Z","phase":"compile","seconds":5.078,"exit":1,"cmd":"ninja -C projects/lc0/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:45:13Z","phase":"compile","seconds":7.807,"exit":1,"cmd":"ninja -C projects/lc0/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:45:37Z","phase":"compile","seconds":5.361,"exit":1,"cmd":"ninja -C projects/lc0/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:15:26Z","phase":"test","seconds":86.026,"exit":0,"cmd":"meson test -C projects/lc0/src/build-hip"}
