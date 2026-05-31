@@ -27,3 +27,6 @@
 {"kind":"phase","ts":"2026-05-30T05:29:52Z","phase":"compile","seconds":0.275,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
 {"kind":"phase","ts":"2026-05-30T09:28:17Z","phase":"compile","seconds":5.484,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON"}
 {"kind":"phase","ts":"2026-05-30T09:28:58Z","phase":"compile","seconds":37.012,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-31T11:30:18Z","phase":"compile","seconds":5.643,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON"}
+{"kind":"phase","ts":"2026-05-31T11:31:02Z","phase":"compile","seconds":37.519,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-31T11:31:17Z","phase":"test","seconds":0.582,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/popsift/src/build-hip/Linux-x86_64/popsift-demo -i /var/lib/jenkins/moat/agent_space/popsift_imgs/scene.png"}

@@ -522,3 +522,56 @@ downsampling (config.setDownsampling(0)) and/or cap image size. Not a port defec
 texture-dimension limit. wave32 32-lane orientation/extrema histograms are correct (the
 fork's wave64 handling covers it); no wave-size change needed for gfx1151.
 State: port-ready -> completed (validated_sha 3bffbf7).
+
+## Validation 2026-05-31 -- gfx90a revalidate at gfx1151-advanced tip (3bffbf7): PASS
+
+Trigger: windows-gfx1151 validator amended one source fix to cuda_to_hip.h and advanced
+the shared fork HEAD from 0ec6f02 to 3bffbf7, flipping linux-gfx90a completed -> revalidate.
+This run re-confirms gfx90a at the new tip on real GPU (AMD Instinct MI250X, gfx90a, ROCm 7.2.1,
+HIP clang 22.0.0). HIP_VISIBLE_DEVICES=0.
+
+### Delta (git diff 0ec6f02..3bffbf7 --stat)
+
+- `.gitignore` +2 lines (adds build-hip/ ignore entry)
+- `src/popsift/cuda_to_hip.h` +14 lines: force-include `<hip/hip_bf16.h>` before the
+  `__shfl_*_sync` compat macros, guarded by `__has_include`. On ROCm 7.2.x this header
+  exists but defines no `__shfl_*_sync` functions, so the include is a harmless no-op here.
+  No source/kernel edits to any .cu or .h that affects codegen.
+
+### Build
+
+Clean configure + build at 3bffbf7 (stale build-hip/ wiped first):
+
+```
+cmake -S projects/popsift/src -B projects/popsift/src/build-hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release \
+  -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON
+cmake --build projects/popsift/src/build-hip -j
+```
+
+Result: 100% built, libpopsift.so + popsift-demo + popsift-match linked. Only the pre-existing
+benign -Wunused-value (222x, debug_macros nodiscard) and -Wdeprecated-declarations (2x rocThrust::identity)
+warnings. The bf16 include compiled clean -- no new errors or warnings introduced by it.
+
+roc-obj-ls confirms a single embedded `hipv4-amdgcn-amd-amdhsa--gfx90a` code object
+(size 9833696), no other arch. Identical to the 0ec6f02 build.
+
+### GPU validation (HIP_VISIBLE_DEVICES=0, scene.png 1052x744)
+
+```
+HIP_VISIBLE_DEVICES=0 popsift-demo -i agent_space/popsift_imgs/scene.png   # x5
+HIP_VISIBLE_DEVICES=0 popsift-demo --log -i .../scene.png                  # dump descriptors
+```
+
+- Determinism: 895 feature points / 1494 descriptors, IDENTICAL across 5/5 runs.
+- No NaN/Inf: 0 NaN, 0 Inf in all 191232 descriptor values (1494 x 128); 0 all-zero descriptors.
+- Computed L2 norm range: [0.9993, 1.0009] (RootSift ~1.0), mean 1.0000.
+- Bin values: [0.0000, 0.3470], mean 0.0629.
+- Keypoint x: [59.05, 996.47], y: [34.96, 676.35] (within 1052x744).
+- Scale: [0.0004, 1.3815], all finite.
+
+All values are bit-for-bit equivalent to the 0ec6f02 reference (the bf16 no-op include
+leaves gfx90a/ROCm 7.2.1 output unchanged, as expected). NO REGRESSION.
+
+linux-gfx90a: revalidate -> completed; validated_sha = 3bffbf7dccaa488cb5e8cc17019806b7f74c88fc.
