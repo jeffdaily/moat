@@ -48,6 +48,13 @@ wave32 -- the warp-size fixes below are arch-unified and correct for both 32 and
 
 ## Fault classes -- status
 
+### Monolith compile progress (whole-tree .cu under HIP)
+A keep-going `ninja -k 0` of all 220 .cu objects drove the fault-finding. Starting from
+138/220 compiling with just the compat header, the fixes below cleared the bulk; the
+genuinely-deferred cuDNN/cuBLASLt/wmma TUs (~12) are list(FILTER EXCLUDE)-ed from the HIP
+monolith glob in cmake/oneflow.cmake. The 30-TU ep/cuda/primitive validation slice all
+compiles as HIP.
+
 ### CLEARED (validated by compiling the ep/cuda/primitive slice as HIP, 30/30 TUs)
 1. wave64 warp size. `kWarpSize`/`kCudaWarpSize` were hardcoded 32 in
    core/cuda/{softmax,layer_norm,rms_norm}.cuh and core/device/cuda_util.h. Fixed to
@@ -72,9 +79,31 @@ wave32 -- the warp-size fixes below are arch-unified and correct for both 32 and
 4. Missing symbol aliases surfaced by compiling: cuComplex/cuDoubleComplex + conversions,
    cuComplexFloatToDouble/DoubleToFloat, CUDART_INF/INF_F/NAN/NAN_F, __trap, the cufft/
    cusolver enums and types.
-5. cuda_pseudo_half.h redefinition. HIP's __half (hip_fp16.h) already ships the full
-   operator/intrinsic set the file emulates for pre-sm53 CUDA; with __CUDA_ARCH__=1 it would
-   redefine them and clash. Gated the body with `&& !defined(USE_HIP)`.
+5. cuda_pseudo_half.h / cuda_pseudo_bfloat16.h redefinition. HIP's __half (hip_fp16.h) and
+   __hip_bfloat16 (hip_bf16.h) already ship the full operator/intrinsic set these files
+   emulate for pre-sm53/pre-sm80 CUDA; with __CUDA_ARCH__=1 they would redefine them and
+   clash ("__device__ function cannot overload __host__ __device__ function"). Gated both
+   bodies with `&& !defined(USE_HIP)`.
+6. bf16 type identity. HIP has two bf16 structs: __hip_bfloat16 (modern, what
+   __float2bfloat16 etc. return) and hip_bfloat16 (legacy). oneflow's nv_bfloat16/
+   __nv_bfloat16 must both alias __hip_bfloat16 so functor return/param types match the
+   conversion results (else "no viable conversion from __hip_bfloat16 to hip_bfloat16").
+7. More 32-bit shfl/ballot masks tree-wide: layer_norm_gpu_kernel.cu, data_shuffle_kernel.cu
+   (per-arch kWarpSize + OF_SHFL_FULL_MASK), batch_norm_kernel_utils.h (WARP_SIZE per-arch +
+   WARP_SHFL_XOR default mask 64-bit), lru_cache.cu (kept 32 ways = 32 lanes; 64-bit ballot
+   folded with __ffsll/__popcll, lanes 32-63 idle). Also CUDART_INF/NAN, __trap->abort,
+   cuComplex* + conversions, CUDA_VERSION defined to 11080, bare curand->hiprand,
+   CUDNN_BN_MIN_EPSILON (numeric bound), cufft/cusolver enums.
+8. clang strictness: `dst.template Mut(i)` where Mut is non-template -> drop the spurious
+   `.template` (the -Wmissing-template-arg-list-after-template-kw family). The cub shim must
+   make `cub` a real namespace (`namespace cub { using namespace hipcub; }`) not an alias,
+   because ndarray_reduce_impl.cu REOPENS namespace cub to add its own functors.
+   layer_norm.cuh MaximizeDynamicSharedMemorySize casts the kernel ptr to const void* for
+   hipFuncGetAttributes/hipFuncSetAttribute (gsplat lesson).
+9. Host GPU .cpp TUs (ep/cuda/*.cpp, device/cuda_util.cpp, ...) compile as CXX not hipcc, so
+   they get the compat header force-included + shim dir + /opt/rocm/include + warp-size macro
+   PER oneflow target (set_compile_options_to_oneflow_target), NOT globally -- a global
+   force-include leaks into third-party subdir builds (TBB) which lack the ROCm include path.
 
 ### Third-party bringup fixes (not HIP-specific, needed for the monolith)
 - flatbuffers 1.12.0 hardcodes -Werror; gcc-13 -Wstringop-overflow on libstdc++
