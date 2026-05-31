@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/OpenNMT/CTranslate2",
   "default_branch": "master",
   "fork_url": null,
-  "ext_type": "unknown",
-  "base_sha": null
+  "ext_type": "cmake",
+  "base_sha": "5dfc5d8"
 }
