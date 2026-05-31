@@ -215,3 +215,50 @@ gfx1100 is wave32. The bitonic sorter's `threadIdx.x & -32` / `^ (32-1)` / `l+32
 State: port-ready -> completed. validated_sha = d2ca74ba91d0e1d3f9c0aabaa2152492c461750d.
 All three atomicCAS workarounds (A/B/C) confirmed correct on gfx1100/RDNA3 wave32.
 No new failures vs gfx90a baseline. Fork untouched (no source change, no CI workflow added).
+
+## Validation 2026-05-31 (windows-gfx1151, ROCm 7.14.0a TheRock)
+
+Platform: AMD Radeon 8060S Graphics (gfx1151, RDNA3.5 APU), Windows 11. AMD clang
+23.0.0git (rocm-sdk 7.14.0a20260531). Validate-first follower: NO source changes
+(fork HEAD d2ca74b, same sha as gfx90a + gfx1100).
+
+### Build (Windows all-clang)
+enable_language(HIP) forces the all-clang toolchain on Windows (Clang-HIP + MSVC-CXX
+is refused). Script: agent_space/cudakdtree_build.sh.
+```
+cmake -S . -B build-win-gfx1151 -G Ninja \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_HIP_COMPILER=clang++ \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_PREFIX_PATH=<rocm-root> \
+  -DBUILD_ALL_TESTS=ON -DCUKD_ENABLE_STATS=ON \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win-gfx1151 -j16    # 167/167, 0 errors, 83 test exes
+```
+Windows-only build-invocation deltas (NOT source changes): all-clang trio;
+CMAKE_HIP_STANDARD=17 (Windows HIP TUs default below C++17, which rocPRIM rejects --
+"rocPRIM requires at least C++17", 'auto' in template param, std::variant missing);
+POLICY_VERSION_MINIMUM=3.5 (min 3.18 vs cmake 4.3); NOMINMAX.
+
+### Runtime
+TheRock runtime deployed beside the exes (agent_space/deploy_therock_runtime.sh:
+amdhip64_7.dll + amd_comgr) so the loader does not pick System32's device-lib-
+mismatched Adrenalin amdhip64. amdhip64_7.dll also needs rocm_kpack.dll (resolved
+via _rocm_sdk_devel/bin on PATH). Test exes parse numPoints POSITIONALLY (no -n
+flag; an unknown arg throws -> abort, which MSYS reports as exit 127 -- not a load
+failure). Use `<exe> <numPoints> -v -nq <numQueries>` for a fast verify.
+
+### Results (HIP_VISIBLE_DEVICES=0)
+- Regular-tree verify sweep (50000 pts, -nq 3000): 12/12 PASS across
+  float{2,3,4} x {fcp,knn} x {stackBased,stackFree,cct} x {regular,xd}.
+  Each prints "** verify: tree checked, and valid k-d tree" then
+  "verification succeeded... done." (CPU brute-force oracle, rel err <= 1e-6).
+- Spatial trees: in-tree `-v` segfaults (host checkTree derefs device-pool memory
+  not host-accessible -- documented harness limitation, identical on CUDA, NOT a
+  port bug). Validated instead by CHECKSUM identity vs the regular tree (same
+  input): float3-fcp-spatial-stackBased and -cct both MATCH the regular-tree
+  CHECKSUM exactly.
+- CTest: 14/15 PASS. The 1 failure cukdTestBuildersSameResult is the pre-existing
+  host-vs-device widest-split-dim tie-break on the explicit-dim case (the 3 DEVICE
+  builders agree; only the HOST builder hash differs; identical on CUDA).
+
+RESULT: PASS. Matches gfx90a + gfx1100 exactly. windows-gfx1151 -> completed.
