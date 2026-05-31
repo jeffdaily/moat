@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "LichtFeld-Studio",
   "upstream_url": "https://github.com/MrNeRF/LichtFeld-Studio",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/LichtFeld-Studio",
   "fork_default_branch": "master",
   "priority": 6.263,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-31T00:59:02Z",
+  "updated_at": "2026-05-31T01:11:33Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-31T01:11:33Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T00:59:02Z",
+      "updated_at": "2026-05-31T01:11:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

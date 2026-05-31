@@ -2,7 +2,7 @@
   "full_name": "MrNeRF/LichtFeld-Studio",
   "upstream_url": "https://github.com/MrNeRF/LichtFeld-Studio",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/LichtFeld-Studio",
   "ext_type": "cmake",
   "base_sha": null
 }
