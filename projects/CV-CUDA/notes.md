@@ -226,3 +226,36 @@ RESIDUAL-A JUDGMENT (InterpolationVarShapeWrap.correct_shift, 6-8/run): ACCEPT l
 RESIDUAL-B JUDGMENT (TypeTraitsMakeTypeVectorTest/3): ACCEPT. Metaprogramming.hpp:96-104 sets BaseType<charN>=char on HIP because HIP_vector_type<char,N> members are plain `char`, and a `signed char&` reference accessor (GetElement) will not bind to a `char` member. Forcing signed char would require a non-canonical HIP_vector_type<signed char,N> family threaded through GetElement/MathOps/SaturateCast/make_* (HIP ships vector operators only for the char variant), diverging the HIP type system from CUDA and breaking arithmetic. `char` vs `signed char` are distinct C++ types with identical representation; the HIP report is correct for HIP. Genuine upstream-HIP-header type-identity deferral, not a CV-CUDA-side fixable issue.
 
 Note: a missing real-GPU run is NOT a review blocker (the validator stage provides it); the porter's reported gate (cvcuda_test_system 0 failures / 2608 pass; nvcv_test_cudatools_system 1116/1123 with 7 dispositioned non-defects) is the analysis under review and is internally consistent with the code.
+
+## Validation 2026-05-31 (linux-gfx90a)
+
+RESULT: PASS -> completed. validated_sha = 74c53d865108945e970e14b0104c4167c8542acf. Followers unblocked: linux-gfx1100, windows-gfx1151 -> port-ready.
+
+### Device
+
+GPU: HIP_VISIBLE_DEVICES=1 (gfx90a / MI250X GCD 1). Concurrent sibling builds on host (cudf, arrayfire). Build reused (binaries from porter session at 18:15; HEAD confirmed 74c53d86 at validation time).
+
+### cvcuda_test_system (operator-correctness gate)
+
+Commands:
+```
+HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system
+```
+
+Run 1: 2608 PASSED, 11 SKIPPED, 0 FAILED -- exit 0
+Run 2: 2608 PASSED, 11 SKIPPED, 0 FAILED -- exit 0
+
+Deterministically green across both runs. Gate: PASS.
+
+### nvcv_test_cudatools_system (residual characterization)
+
+Commands:
+```
+HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system
+```
+
+Run 1: 1117 PASSED, 6 FAILED (indices 0,6,7,11,12 of InterpolationVarShapeWrapTest.correct_shift + TypeTraitsMakeTypeVectorTest/3)
+Run 2: 1117 PASSED, 6 FAILED (indices 0,5,6,11,18 of InterpolationVarShapeWrapTest.correct_shift + TypeTraitsMakeTypeVectorTest/3)
+Run 3: 1116 PASSED, 7 FAILED (indices 0,5,6,7,11,19 of InterpolationVarShapeWrapTest.correct_shift + TypeTraitsMakeTypeVectorTest/3)
+
+Across all 3 runs: every failure is confined to exactly the two documented residual clusters. The InterpolationVarShapeWrapTest.correct_shift count (6-7) and index set vary run-to-run as documented (nondeterministic freed-buffer async-copy UB in the test fixture). TypeTraitsMakeTypeVectorTest/3 is deterministically 1 per run. No new or unexplained failures. Gate: PASS (residuals are reviewer-accepted non-defects).
