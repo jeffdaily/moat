@@ -14,3 +14,14 @@
 {"kind":"phase","ts":"2026-05-31T20:08:01Z","phase":"compile","seconds":103.480,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}
 {"kind":"phase","ts":"2026-05-31T20:08:20Z","phase":"test","seconds":0.144,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=2 ctest -R _cuda$ -j1 --output-on-failure"}
 {"kind":"phase","ts":"2026-05-31T20:12:45Z","phase":"test","seconds":251.277,"exit":8,"cmd":"env HIP_VISIBLE_DEVICES=2 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip -R _cuda$ -j1 --output-on-failure"}
+{"kind":"phase","ts":"2026-05-31T20:26:40Z","phase":"compile","seconds":18.274,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/af_build-hip-gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T20:32:58Z","phase":"compile","seconds":361.844,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/af_build-hip-gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T20:50:47Z","phase":"test","seconds":1049.535,"exit":8,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -R '_cuda$' -j1 --output-on-failure 2>&1"}
+{"kind":"phase","ts":"2026-05-31T21:11:08Z","phase":"compile","seconds":0.115,"exit":1,"cmd":"cmake --build build-hip-gfx1100 -j 16 --target afcuda cholesky_dense_cuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:11:22Z","phase":"compile","seconds":9.422,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target afcuda cholesky_dense_cuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:13:27Z","phase":"compile","seconds":7.038,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target afcuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:14:04Z","phase":"compile","seconds":7.058,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target afcuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:17:50Z","phase":"compile","seconds":9.474,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target afcuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:25:53Z","phase":"compile","seconds":161.280,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target afcuda where_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:30:26Z","phase":"compile","seconds":5.129,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16 --target cholesky_dense_cuda"}
+{"kind":"phase","ts":"2026-05-31T21:38:24Z","phase":"test","seconds":434.486,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -R '_cuda$' -j1 --output-on-failure > /var/lib/jenkins/moat/agent_space/ctest_full_gfx1100.log 2>&1; echo EXIT=$?"}

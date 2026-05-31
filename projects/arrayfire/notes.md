@@ -668,3 +668,79 @@ validator does the real-GPU validation next).
   even templates that launcher does not instantiate. NVRTC only phase-2-instantiates the
   requested one; clang/hipRTC does phase-1 lookup on all of them. Symptom: "use of undeclared
   identifier THREADS_X" from a sibling/bcast launcher. -- arrayfire
+- The JIT POD complex types (cuFloatComplex/cuDoubleComplex under __CUDACC_RTC__ in the
+  cuComplex.h shim) live in the GLOBAL namespace, but arrayfire's complex ==/!= (and the other
+  complex operators) are in namespace arrayfire::cuda (math.hpp). A JIT kernel that compares a
+  complex value from ANOTHER namespace -- e.g. common::Transform<cuFloatComplex,uint,af_notzero_t>
+  (in namespace arrayfire::common), which `where` over a complex array instantiates -- cannot reach
+  arrayfire::cuda::operator!= by ADL (the POD's only associated namespace is global), so overload
+  resolution fails ("invalid operands to binary expression"). hipRTC/COMGR reports this as
+  HIPRTC_ERROR_COMPILATION and the runtime sees AF_ERR_INTERNAL; at AMD_LOG_LEVEL=3 COMGR also
+  prints the misleading "Failing to compile to realloc". It is NOT a COMGR codegen crash and NOT
+  arch-specific: a standalone hiprtc repro of the exact dumped source + headers fails IDENTICALLY
+  for --offload-arch=gfx90a and gfx1100. Fix (arch-unified): define the complex ==/!= in the
+  GLOBAL namespace beside the POD in the shim so ADL finds them from any namespace, and drop the
+  arrayfire::cuda complex ==/!= on the RTC path (#ifndef __CUDACC_RTC__ in math.hpp) so the two
+  do not tie. To find the crashing instantiation, temporarily instrument compile_module.cpp to
+  dump sources[0] + the 30 header blobs + the options + name expressions on the failing module,
+  then replay them through a tiny standalone hiprtcCompileProgram driver -- the standalone log
+  shows the REAL C++ error that COMGR's wrapper message hides. -- arrayfire
+
+## Delta-port 2026-05-31 (porter, gfx1100 follower) -- RESULT: delta-ported at fork 2378586
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1.
+Fixed the 2 new gfx1100 failures the validator found (where, cholesky_dense cfloat large).
+Fork HEAD 86fbbbe -> 2378586 (amended the single curated commit, --force-with-lease).
+
+IMPORTANT correction to the validator's diagnosis: NEITHER failure was the gfx1100-only COMGR
+compiler bug that was hypothesized. The validator's recommended workaround (bump the where
+scan_first threads_x from 32 to 64 to dodge a DIMX==32 instantiation) does NOT work -- I tried
+it and COMGR still failed, now on the DIMX==64 instantiation. The real cause is below.
+
+Fix 1 -- where cfloat/cdouble AF_ERR_INTERNAL (a C++ name-lookup bug, arch-INDEPENDENT):
+- Root cause: the count-scan in where.hpp instantiates scan_first<cuFloatComplex,uint,
+  af_notzero_t,...>, whose common::Transform<cuFloatComplex,uint,af_notzero_t>::operator() does
+  `in != scalar<Ti>(0.)`. On the JIT path cfloat aliases the GLOBAL-namespace POD cuFloatComplex
+  (cuComplex.h shim), but arrayfire's operator!=(cfloat,cfloat) is in namespace arrayfire::cuda
+  (math.hpp). From arrayfire::common, ADL on the global POD never reaches arrayfire::cuda, so the
+  compile fails overload resolution. COMGR surfaces this as "Failing to compile to realloc" at
+  AMD_LOG_LEVEL=3, which looked like a codegen crash but is just the wrapper for a normal compile
+  error. Proven via a standalone hiprtc repro (dumped the exact source + 30 header blobs + opts):
+  the same compile FAILS IDENTICALLY for gfx90a and gfx1100. So the gfx90a "where 56/56" the
+  earlier validation reported was not a genuine pass of this path (stale JIT disk cache or the
+  case not actually exercised); the head advance re-validates gfx90a and `where` will now pass.
+- Fix (arch-unified, HIP-backend-only files): src/backend/hip/nvrtc_shims/cuComplex.h defines
+  operator==/operator!= for the POD cuFloatComplex/cuDoubleComplex in the GLOBAL namespace (beside
+  the type, so ADL reaches them from any namespace); src/backend/hip/math.hpp guards its
+  arrayfire::cuda complex ==/!= under #ifndef __CUDACC_RTC__ (kept on the compiled host path where
+  the PODs are namespaced; dropped on the RTC path so the shim's global ones are the single,
+  unambiguous definition). CUDA backend untouched (separate src/backend/cuda/math.hpp; the
+  nvrtc_shims are HIP-only). Result: where 56/56 (Where/2.BasicC cfloat + Where/3.BasicC cdouble
+  now pass). No regression: scan 50/50, scan_by_key 55/55, reduce 1062/1062, ireduce 62/62,
+  convolve 507/507, approx1 104/104, approx2 103/103, complex 19/19; where x2 + scan x2 identical.
+
+Fix 2 -- cholesky_dense cfloat large-matrix tolerance (genuine RDNA3 FP32 drift):
+- Verified it is precision, not a bug: built the test's positive-definite matrix in cfloat AND
+  cdouble, factored both; the cfloat factor matches the cdouble reference to FP32 precision
+  (|f32-f64| = 3.9e-5 on a matrix of scale ~10965, i.e. relative factor error ~3.6e-9). The 0.073
+  error is the reconstruction matmul(out.H(),out) accumulating FP32 rounding over a 1024-length
+  complex dot product (relative ~6.7e-6); the same reconstruction in FP64 gives 4.7e-11. Only the
+  n=1024 (MultipleOfTwoLarge) cfloat cases exceed 0.05; n=1000 (Large) cfloat and float/double/
+  cdouble all pass. Genuine RDNA3 (vs CDNA) FMA/accumulation-order drift.
+- Fix: test/cholesky_dense.cpp adds choleskyEps<T>(base) that returns 0.1 ONLY for c32 when the
+  active backend is AF_BACKEND_CUDA and the device compute major >= 10 (RDNA; gfx90a is 9, RDNA3
+  is 11), used by the two MultipleOfTwoLarge cases. float/double/cdouble and CUDA/gfx90a keep the
+  strict 0.05. Result: cholesky_dense 32/32 (was 30/32). Margin: 0.1 vs the worst observed 0.073.
+
+Local gfx1100 full validation (the bar: same 6 residuals, no new failures):
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir build-hip-gfx1100 -R '_cuda$' -j1 --output-on-failure
+```
+126/132 PASS. The 6 failures are EXACTLY the documented residuals, same as gfx90a:
+blas (schar int8 8I->32F), confidence_connected (FreeImage off), sparse + sparse_arith +
+sparse_convert (AF_ERR_NOT_SUPPORTED stubs), threading (calls af::sparse). NO new failures.
+JIT disk-cache keys are gfx1100 (KER*_HIP_gfx1100_AF_310.bin). Build: incremental ninja, exit 0.
+
+State: linux-gfx1100 validation-failed -> delta-ported (routes to reviewer). head_sha advanced
+2378586, flipping linux-gfx90a completed -> revalidate (the fixes are arch-unified + HIP-only
+files, so gfx90a rebuilds identically and `where` now genuinely passes there too).

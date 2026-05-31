@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T20:19:33Z",
-  "head_sha": "86fbbbe57b303a4d720e61255aab1ae4cb4049a4",
+  "updated_at": "2026-05-31T21:41:40Z",
+  "head_sha": "2378586c5842963cf507300b87c101cc96f41b34",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
-      "blocked_reason": "REVIEW-PASSED at fork 86fbbbe (reviewer APPROVE, full /pr-review). Two fold-in fixes applied on top of the ported 1802a81 and folded into the single curated commit: (1) common/half.hpp -- the hipRTC std-shim block (integral_constant/is_integral/is_signed/numeric_limits/std::isnan|isinf) sub-gated from the shared __CUDACC_RTC__ guard to __HIP_RTC__ only (inert for HIP, removed from the untested NVRTC path), matching the AF_CONSTEXPR precedent; (2) hip/device_manager.cpp compute2cores() returns a neutral per-CU lane count (64) on __HIP_PLATFORM_AMD__ instead of aliasing gfx90a major=9 onto the NVIDIA sm_90 entry (cosmetic; only feeds an AF_TRACE line + a same-arch flops sort). Single-TU compile sanity (device_manager+transpose+jit, embedded JIT half blob regenerated) PASS, exit 0. Full CUDA.* gtest suite GPU-validated on gfx90a (HIP_VISIBLE_DEVICES=2, ctest -R _cuda$ -j1) = 126/132 binaries pass; the entire validatable core is green (hipRTC JIT engine jit 1781/1781, transpose/scan/scan_by_key/fft/reduce incl ragged+by-key/ireduce, cholesky/lu/qr/svd dense, blas 126/127, complex, math all half transcendentals, norm/binary/approx/convolve/medfilt, random/rng_quality, sort/set/dot/reorder/join/moddims/index/assign/lookup, CV ops fast/harris/orb/sift/homography, nearest_neighbour 122/122, hamming, topk 110/110). The 6 residual failures are accepted dispositions, NOT port defects: sparse+sparse_arith+sparse_convert+threading (sparse hipSPARSE scoped deferral -> clean AF_ERR_NOT_SUPPORTED; threading aborts only because it calls af::sparse), confidence_connected (FreeImage/headless build-config; AF_WITH_IMAGEIO=OFF), schar int8-gemm subcase (rocBLAS HIPBLAS_STATUS_NOT_SUPPORTED for 8I->32F library gap). Next: validator real-GPU validation. See notes.md Review 2026-05-31 + Session 3.",
+      "blocked_reason": "revalidate at fork 2378586 (head advanced by the gfx1100 delta-port). The two delta fixes are arch-unified and live in HIP-backend-only files (src/backend/hip/math.hpp, src/backend/hip/nvrtc_shims/cuComplex.h) plus a runtime-guarded test eps in test/cholesky_dense.cpp; the CUDA backend is byte-for-byte unchanged. The where complex ==/!= ADL fix is a genuine fix for gfx90a too (the where cfloat JIT compile was failing overload resolution on gfx90a as well), so this revalidate is expected to come back 126/132 with where now passing. Previously completed at 86fbbbe (126/132).",
       "validated_sha": "86fbbbe57b303a4d720e61255aab1ae4cb4049a4",
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": "2026-05-31T20:19:33Z",
-      "updated_at": "2026-05-31T20:19:33Z",
+      "updated_at": "2026-05-31T21:41:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "validation-failed",
+      "state": "delta-ported",
       "blocked": false,
-      "blocked_reason": "validation-failed: 124/132 PASS (8 failures vs 6 on gfx90a). 2 new failures on gfx1100 ROCm 7.2.1: (1) cholesky_dense cfloat large-matrix subtests -- FP32 precision difference RDNA3 vs MI250X, max error 0.073 > eps 0.05; (2) where cfloat/cdouble -- scan_first<cuFloatComplex,uint,notzero,false,32,true> JIT compile triggers COMGR internal error 'Failing to compile to realloc' on gfx1100, not a port defect but a ROCm/COMGR compiler bug. JIT engine itself works (jit 1781/1781). Static code: roc-obj-ls confirms hipv4-amdgcn-amd-amdhsa--gfx1100. Topk 110/110 x2 deterministic, nearest_neighbour 122/122 x2. Fork untouched (no commit made). Porter needs to analyze and fix the 2 new failures.",
+      "blocked_reason": "delta-ported at fork 2378586 (porter fixed the 2 gfx1100 follower failures). Both root causes turned out NOT to be the gfx1100-only COMGR bug the validator hypothesized: (1) where cfloat/cdouble AF_ERR_INTERNAL was a host-set C++ name-lookup bug, NOT a COMGR codegen crash and NOT arch-specific -- a standalone hiprtc repro shows the scan_first<cuFloatComplex,uint,af_notzero_t,...> JIT compile fails overload resolution IDENTICALLY on gfx90a AND gfx1100 (the COMGR \"Failing to compile to realloc\" message merely wraps that compile error). Root cause: the JIT POD cuFloatComplex/cuDoubleComplex live in the GLOBAL namespace but arrayfire complex ==/!= were in namespace arrayfire::cuda (math.hpp), unreachable by ADL from common::Transform. Fix is ARCH-UNIFIED (correct on both waves): cuComplex.h shim defines the complex ==/!= in the global namespace beside the POD; math.hpp drops its arrayfire::cuda complex ==/!= on the RTC path to avoid ambiguity. CUDA backend untouched (separate files). (2) cholesky_dense cfloat large is genuine RDNA3 FP32 accumulation drift (verified: recovered factor matches a double reference to FP32 precision, relative factor error ~3e-9; the 0.073 is the matmul reconstruction over a 1024-len complex dot product) -- test/cholesky_dense.cpp widens ONLY the cfloat large eps to 0.1 on the RDNA HIP backend (runtime compute-major check), gfx90a/CUDA keep 0.05. Local gfx1100 (W7800) full CUDA.* ctest = 126/132, the SAME 6 documented residuals (blas schar, confidence_connected, sparse x3, threading), NO new failures. where 56/56 (was 54/56), cholesky_dense 32/32 (was 30/32); where x2 + scan x2 deterministic; scan/scan_by_key/reduce/ireduce/convolve/approx/complex unchanged. Next: reviewer. See notes.md gfx1100 delta-port entry.",
       "validated_sha": null,
       "started_at": "2026-05-31T21:00:00Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T21:30:00Z",
+      "updated_at": "2026-05-31T21:41:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +54,7 @@
         "first_session_at": "2026-05-31T21:00:00Z",
         "last_session_at": "2026-05-31T21:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "porter"
     },
     "windows-gfx1151": {
       "state": "port-ready",
