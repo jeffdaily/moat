@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "name": "faiss",
+  "upstream_url": "https://github.com/facebookresearch/faiss",
+  "fork_url": null,
+  "fork_default_branch": "main",
+  "priority": 0.0,
+  "ext_type": "unknown",
+  "adopted_at": "2026-05-31T16:36:35Z",
+  "updated_at": "2026-05-31T16:36:35Z",
+  "head_sha": null,
+  "depends_on": [],
+  "platforms": {
+    "linux-gfx90a": {
+      "state": "unclaimed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-05-31T16:36:35Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "linux-gfx1100": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-05-31T16:36:35Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1151": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-05-31T16:36:35Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    }
+  }
+}
