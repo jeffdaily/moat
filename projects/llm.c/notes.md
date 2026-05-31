@@ -419,3 +419,29 @@ wave32 warp reductions are correct. BF16: 16/16 tensors TENSOR OK (better than g
 wave32 RNG seed matches NVIDIA baseline). CPU regression clean (test_outlier_detector
 pre-existing upstream issue unchanged). No fork change required. Validated SHA: 15f5e1a.
 State: port-ready -> completed.
+
+## Windows gfx1151 attempt 2026-05-30 -- BLOCKED (USE_HIP Makefile branch is sh-only, needs cmd-shell rework)
+
+Platform: gfx1151 APU, Windows, TheRock ROCm. llm.c is the best-prepared remaining follower:
+the Makefile is Windows-aware (_WIN32 guards in dataloader.h/utils.h/zero.cuh; OS=Windows_NT
+mkdir branch) AND HIP-aware (USE_HIP=1 branch) AND warp-configurable (gfx1151 auto -> warp 32).
+hipBLASLt is present in the TheRock wheel.
+
+BUT the fork's USE_HIP Makefile branch was authored/tested on Linux (sh shell) and does not
+engage under the Windows cmd shell that the Makefile's own OS=Windows_NT recipes require:
+- Run under MSYS sh (default mingw32-make): the Windows recipes (`if not exist ... mkdir`,
+  `where ... 2>nul`) are cmd syntax -> "syntax error: unexpected end of file".
+- Run with SHELL=cmd.exe: parses, but the USE_HIP branch's hipcc detection uses unix
+  `which hipcc` (line ~93), which cmd lacks -> empty; and even forcing HIPCC=hipcc.bat
+  NVCC=hipcc.bat, the build still emits the NVIDIA flag set (--threads=0 --use_fast_math
+  -lcublas -lcublasLt) instead of the HIP flags (--offload-arch=gfx1151 -lhipblas -lhipblaslt)
+  -> clang rejects --use_fast_math. The ifeq($(USE_HIP),1) flag-branch is not taking effect
+  under cmd.
+
+So the Makefile's USE_HIP/compiler-detection/flag-selection needs to be made cmd-shell-
+compatible (cross-platform hipcc detection via the existing where/which find-command helper,
+and ensure the USE_HIP flag-branch engages under cmd) before it builds on Windows. Then the
+validation needs the starter-pack data files (gpt2_124M.bin, gpt2_124M_debug_state.bin,
+tiny_shakespeare_val.bin) and a real-GPU run (./test_gpt2cu -> "overall okay: 1"). Compute-
+heavy + hipBLASLt, so it should run on the APU once it builds. Not a ROCm/gfx1151 defect
+(gfx90a/gfx1100 pass on Linux); a Windows-Makefile-shell port gap. Blocked pending that rework.
