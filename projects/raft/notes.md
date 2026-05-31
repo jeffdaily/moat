@@ -879,10 +879,10 @@ EpsNeighRbcTestFI Dense+Sparse+SparseRbcMaxK 42). ball_cover KNN two-run
 deterministic (18/18 each run). No regression: DISTANCE 11/11, FUSED_NN 12/12,
 LINALG 2017/2018 (same pre-existing DotTestF), LABEL 14/14, CORE subset 171/172
 (same pre-existing InterruptibleOpenMP), UTILS subset 177/177, RANDOM subset
-148/148. (MATRIX_SELECT_TEST is unchanged by this work -- it depends on neither the
-faiss_select nor the ball_cover headers touched here -- and remains at its prior 607
-result; the full 607-case binary takes >15 min to run on this box.) head_sha ->
-640bdb187159a52e5506fd17767d80f7d3887f3d.
+148/148. MATRIX_SELECT_TEST re-confirmed 607 (567 pass + 40 gtest-skip), rc=0,
+~15.2 min uncontended -- unchanged by this work (it depends on neither the
+faiss_select nor the ball_cover headers touched here), matching the prior 607.
+head_sha -> 640bdb187159a52e5506fd17767d80f7d3887f3d.
 
 ## Review 2026-05-31 (neighbors-wave64 finish, reviewer)
 
