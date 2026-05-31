@@ -121,3 +121,44 @@ cg::reduce active-lane hardening: CORRECT, and the analysis is now sound. Verifi
 Nits all resolved: reduce.h comment no longer claims lane compaction ("slices the wavefront into fixed 32-lane tiles ... no lane repacking"); cuda_to_hip.h comment now names add_compile_options($<$<COMPILE_LANGUAGE:HIP|CXX>:-include ...>) instead of the wrong CMAKE_HIP_FLAGS/CMAKE_CXX_FLAGS text (the HIP|CXX shorthand is a faithful summary of the two separate COMPILE_LANGUAGE:HIP and :CXX add_compile_options calls at CMakeLists.txt:73-74); commit-message Test Plan now lists BOTH known-acceptable failures.
 
 GPU re-validation evidence (EngineTests 2973/2978 byte-identical to baseline in both -d and graph paths, cli energy conserved at 82500.0) is exactly what the bit-identity proof predicts. Safe to proceed to GPU validation toward completed. No blocking findings; no new nits.
+
+## Validation 2026-05-31 (validator; linux-gfx90a -> completed)
+
+Fork: jeffdaily/alien @ dac18fc0a93310a11ef6ad31e01651431a4af24c (moat-port). GPU: AMD Instinct MI250X GCD 2 (HIP_VISIBLE_DEVICES=2, confirmed idle via rocm-smi before run). ROCm 7.2.1. Incremental build (cmake --build with -j16) was a near-no-op (only GUI .cpp TUs rebuilt due to timestamps; all HIP TUs already up to date at dac18fc0a).
+
+### Commands run
+
+```
+# Incremental build
+cmake --build /var/lib/jenkins/moat/projects/alien/src/build -j 16
+
+# Non-GPU regression: EngineInterfaceTests
+HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/EngineInterfaceTests --gtest_filter=-GeometryTests.*
+
+# Non-GPU regression: PersisterTests
+HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/PersisterTests
+
+# CLI smoke (graph path, headless)
+HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/cli \
+  -i /var/lib/jenkins/moat/agent_space/alien_gen/smoke.sim \
+  -o /tmp/alien_smoke_out_val.sim -t 1000
+
+# EngineTests full suite, graph path (GeometryTests + NeuronPerformanceTests filtered)
+HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/EngineTests \
+  --gtest_filter=-GeometryTests.*:-NeuronPerformanceTests.*
+```
+
+### Results
+
+- EngineInterfaceTests: 153/153 PASSED (no regression)
+- PersisterTests: 64/64 PASSED (no regression)
+- CLI smoke (graph path): 1000 timesteps, 450.2 TPS, device AMD Instinct MI250X / MI250, fault-free, total energy conserved at 82500.0 for all 1000 steps
+- EngineTests graph path (full suite, incl. all 3 heavy long-runners): 2978 ran, **2973 PASSED**, 3 SKIPPED, **2 FAILED** (wall time 1575566 ms / ~26.3 min)
+  - Heavy long-runners all PASSED: BalanceTests.longRunning_smallCreatures_vs_largeCreatures_fewDigestionCapabilities, BalanceTests.longRunning_smallCreatures_vs_largeCreatures_highDigestionCapabilities (both 20000 steps), ConstructorTests.regressionTestMassiveReplicationsWithSeeds (10000 steps, ConstructorTests total 1299482 ms)
+  - 2 FAILED (documented non-bugs, NOT regressions):
+    - CommunicatorTests.sender_signalPriority_lowerNumTimesSentWins (upstream last-writer-wins race, block-order-dependent, AMD vs NVIDIA ordering)
+    - DataTransferTests.multipleCells_genome_multipleGenes_multipleNodes (exact-float == on cell pos, ~1 ULP HIP rounding, no simulation steps)
+  - GeometryTests: scoped out (GL context, headless validator)
+  - NeuronPerformanceTests: filtered (micro-benchmarks, not a correctness gate)
+
+VERDICT: PASS. Tally is byte-identical to the porter's documented baseline (2973/2978, same 2 documented non-bugs, energy conserved at 82500.0). No third failure. Transition: review-passed -> completed.

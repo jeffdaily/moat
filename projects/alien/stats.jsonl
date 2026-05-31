@@ -7,3 +7,6 @@
 {"kind":"phase","ts":"2026-05-31T01:58:14Z","phase":"compile","seconds":41.800,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16 --target EngineKernels EngineImpl cli EngineTests"}
 {"kind":"phase","ts":"2026-05-31T02:01:42Z","phase":"compile","seconds":12.724,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16 --target EngineKernels EngineImpl cli EngineTests"}
 {"kind":"phase","ts":"2026-05-31T02:28:42Z","phase":"test","seconds":1602.897,"exit":0,"cmd":"bash agent_space/alien_reval/run_enginetests_graph.sh"}
+{"kind":"phase","ts":"2026-05-31T02:40:53Z","phase":"compile","seconds":38.866,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:41:03Z","phase":"test","seconds":0.027,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/EngineInterfaceTests --gtest_filter=-GeometryTests.* 2>&1"}
+{"kind":"phase","ts":"2026-05-31T02:41:09Z","phase":"test","seconds":0.254,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/PersisterTests 2>&1"}
