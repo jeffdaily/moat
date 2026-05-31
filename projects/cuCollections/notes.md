@@ -304,3 +304,41 @@ Verdict: review-passed. /pr-review (local-branch mode) against moat-port @ 57a1c
 
 One non-blocking documentation gap (not a defect; the behavior is already GPU-validated):
 - include/cuco/detail/utility/cuda.cuh:45 -- cuco::detail::warp_size() hardcodes `return 32;` and is left unmodified on the HIP path. It is used as a cooperative-groups TILE SIZE, not a wave width: open_addressing_ref_impl.cuh:1256 (flushing_tile_size in retrieve_impl) and bloom_filter/kernels.cuh:38 (tile_size). On gfx90a this makes a cg::tiled_partition<32> sub-tile of the 64-lane wave. This is correct and wave64-safe because HIP's static thread_block_tile<N>::shfl/ballot/shfl_xor forward with numThreads (the tile size) as the explicit width (/opt/rocm/include/hip/amd_detail/amd_hip_cooperative_groups.h:851-864), so every op in retrieve_impl is tile-relative to the 32-lane sub-tile; default_block_size()=128 divides evenly by 32; and static_set/retrieve_test (97/97) + static_multiset/retrieve_test (70/70) exercise this path and pass deterministically on real gfx90a. Action (doc only, no code change): note in the "Cooperative groups + wave64" section that warp_size() intentionally stays 32 on HIP as a tile-relative sub-wave tile size, so a future reader/follower does not mistake it for an un-ported hardcoded-32, and so the deferred bloom_filter follow-up knows its tile_size is a 32-lane tile on wave64.
+
+## Validation 2026-05-31 (validator, linux-gfx90a)
+
+Platform: linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1. Fork jeffdaily/cuCollections @ moat-port, validated_sha = 57a1c1a31a9e681a3de5572a1306d5041497e8f0.
+
+GPU: HIP_VISIBLE_DEVICES=2 (4 GCDs visible; GCD 1 busy at 100%, GCDs 0/2/3 free; GCD 2 selected).
+
+### Build (compile phase)
+
+```
+cmake --build projects/cuCollections/build-hip \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j 16
+# ninja: no work to do (all targets up to date from prior porter build at same HEAD)
+```
+
+Wrapped: `utils/timeit.sh cuCollections compile -- cmake --build ...`
+
+### Test run (real GPU, HIP_VISIBLE_DEVICES=2)
+
+Commands: `utils/timeit.sh cuCollections test -- <exe> --rng-seed 12345`
+
+| suite | exe | cases | assertions | result |
+|-------|-----|-------|------------|--------|
+| STATIC_SET_TEST | build-hip/tests/STATIC_SET_TEST | 97 | 887 | PASS |
+| STATIC_MAP_TEST | build-hip/tests/STATIC_MAP_TEST | 82 | 526 | PASS |
+| STATIC_MULTISET_TEST | build-hip/tests/STATIC_MULTISET_TEST | 70 | 582 | PASS |
+| STATIC_MULTIMAP_TEST | build-hip/tests/STATIC_MULTIMAP_TEST | 72 | 228 | PASS |
+| DYNAMIC_MAP_TEST | build-hip/tests/DYNAMIC_MAP_TEST | 12 | 144 | PASS |
+| UTILITY_TEST | build-hip/tests/UTILITY_TEST | 38 | 1561 | PASS |
+| ROARING_BITMAP_TEST | build-hip/tests/ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS |
+| **TOTAL** | | **~373** | **~3932** | **all passing** |
+
+Determinism: STATIC_SET_TEST run twice with `--rng-seed 12345`; both runs: 97/97, 887 assertions, identical.
+
+No regression vs documented bar. All documented deferrals (rocPRIM pair DeviceSelect, >8B/16B CAS, bloom_filter nv/target, dynamic_bitset) remain deferred -- none are failures.
+
+Result: PASS. linux-gfx90a -> completed. linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
