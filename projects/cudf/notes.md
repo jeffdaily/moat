@@ -133,11 +133,42 @@ stencil predicates, sort_merge_join thrust::get) are all still needed and are in
 bec85ee; the cast_fn fix is the new one that makes the reductions CORRECT, not
 just compiling.
 
-## State: linux-gfx90a -> ported (fork c4b9b5b). Core fully links: ONLY the 2 binary_operation JIT symbols are undefined; the find_package(cudf) export contract works and is GPU-verified
+## Validation 2026-05-31 (validator, linux-gfx90a, fork c4b9b5b)
+
+Device: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1.
+
+Build reused (intact build-hip/libcudf.so, 586,646,592 B, 151 gfx90a code objects confirmed via llvm-objdump --offloading). git rev-parse HEAD == c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4.
+
+Undefined cudf-internal symbols confirmed: 6 total (2 binary_operation JIT overloads + 4 scan_inclusive<DeviceMin|Max> for strings/structs). The `nm -D -u | grep 'U cudf'` filter misses the 4 scan_inclusive symbols because their demangled form starts with `std::unique_ptr<cudf::column>` not `cudf::` -- use `grep "scan_inclusive\|binary_operation" | grep "cudf::"` to see all 6.
+
+GPU test run (x2 for determinism):
+```
+source /var/lib/jenkins/moat/agent_space/cudf_build_env.sh
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST
+```
+Run 1: 18/18 PASS (9047 ms)
+Run 2: 18/18 PASS (9107 ms)
+
+All 18 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile.
+
+valid_if divergent-tail disposition: valid_if_kernel (valid_if.cuh:58, HIP path `while (i < size)`) is correctly coded -- exited tail lanes contribute 0 to tile.ballot(), matching the CUDA active_mask result. The 18 smoke tests do NOT directly exercise valid_if_kernel with a partial null mask (the tdigest path that calls valid_if only fires when nulls are present, which none of the tests trigger; distinct/apply_boolean_mask use their own cuco/stencil paths). The partial-tail path is thinly stressed by this suite; analysis of the code is sound. Noted as a follow-on coverage gap for a broader suite; does not block completion.
+
+find_package(cudf) consumer confirmed:
+```
+HIP_VISIBLE_DEVICES=0 LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/cudf/install/lib:$LD_LIBRARY_PATH" /var/lib/jenkins/moat/agent_space/cudf_consumer/build/consumer
+# -> cudf consumer linked; column size=8 (exit 0)
+```
+cudf::cudf target resolves, libcudf.so loads, make_numeric_column runs on gfx90a.
+
+Deferred-symbol count corrected from "EXACTLY 2" to 6 (2 binary_operation JIT + 4 scan_inclusive<DeviceMin|Max>). cugraph/cuml porter should expect all 6 in libcudf.so.
+
+State: completed. validated_sha = c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4.
+
+## State: linux-gfx90a -> completed (fork c4b9b5b). Core fully links: 6 cudf-internal deferred symbols (2 binary_operation JIT + 4 scan_inclusive<DeviceMin|Max>); find_package(cudf) export contract GPU-verified
 
 This session (fork ae6edc8 -> c4b9b5b) brought up the remaining ~15 non-JIT
 modules behind the prior 17-symbol residual and drove the cudf-internal
-undefined closure to EXACTLY 2 (the binary_operation JIT pair). Modules added to
+undefined closure to EXACTLY 6 (2 binary_operation JIT pair + 4 scan_inclusive<DeviceMin|Max>). Modules added to
 cudf_hip_sources.cmake (9 new TUs): stream_compaction/distinct_count.cu,
 quantiles/quantile.cu, quantiles/tdigest/{tdigest.cu, tdigest_aggregation.cu,
 tdigest_column_view.cpp}, groupby/sort/group_quantiles.cu, filling/repeat.cu,
