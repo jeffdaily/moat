@@ -185,17 +185,17 @@ by a documented gap:
 - SPARSE: more NVIDIA PTX (`__ldcg`, `=l` asm in sparse/distance/detail/utils),
   `atomicAdd_block`, and `thrust::cuda::par` in the test sources.
 - SOLVERS: cusolverSp batched-QR + cusolverDnXsyevd (no hipSOLVER equivalent).
-- NEIGHBORS: faiss_select `static_assert(WarpSize==32)` (a hard wave32
-  assumption). The CUTLASS fused-distance dependency is RESOLVED -- the fused
-  distance + 1-NN now has a CK MFMA reducing-epilogue path (see the CK fused-NN
-  section); ball_cover's FAISS KeyValueBlockSelect wave64 reconvergence is the
-  one remaining neighbors blocker.
+- NEIGHBORS: RESOLVED and GPU-validated (RAFT_TEST_NEIGHBORS=ON). faiss_select
+  (raft's vendored FAISS gpu/utils top-k) and ball_cover are now wave64-correct
+  via the FAISS-ROCm select port + the ball_cover eps wave64-mask fixes (see the
+  "faiss warp-select" and "ball_cover" sections). HaversineKNNTestF, the full
+  BallCover{AllKNN,KNNQuery} KNN suite, and the full EpsNeighRbc (Dense/Sparse/
+  SparseRbcMaxK) suite all pass on gfx90a.
 - DISTANCE: the expanded L2 / cosine pairwise distances AND the fused
   distance + 1-NN (fusedL2NN/fusedCosineNN) now build AND are GPU-validated on
   HIP via the CK MFMA path + SIMT fallback (RAFT_TEST_DISTANCE / RAFT_TEST_FUSED_NN,
   see the CK sections). The full distance + fused-NN CUTLASS->CK deliverable is
-  complete; ball_cover's FAISS KeyValueBlockSelect is the only remaining
-  CK/neighbors item.
+  complete.
 
 ROCm path for the CUTLASS-based items above (DISTANCE / NEIGHBORS, and the
 MATRIX/STATS distance epilogue): CUTLASS does NOT port to ROCm. These kernels
@@ -464,14 +464,31 @@ a correct kernel look broken.
    Confirmed: same top-k inputs that coredumped now return identical, correct
    results across immediate/filtered/distributed (probe agent_space/raft_select_probe).
 
-### faiss warp-select (knn_brute_force / ball_cover / fused_l2_knn) -- partial
+### faiss warp-select (knn_brute_force / ball_cover / fused_l2_knn) -- COMPLETE (FAISS-ROCm port)
 
-NEIGHBORS now BUILDS under hipcc and the haversine + L2 brute-force top-k paths are
-wave64-correct and GPU-validated; ball_cover's FAISS KeyValueBlockSelect path is the
-one remaining wave64 correctness blocker (precise next step below).
+raft's `neighbors/detail/faiss_select/` is a VENDORED COPY of FAISS's `gpu/utils/`
+select files (Select.cuh, MergeNetworkWarp/Block/Utils.cuh, key_value_block_select.cuh,
+StaticUtils.h, Comparators.cuh, DistanceUtils.h) -- the CUDA (wave32) version. Upstream
+FAISS (facebookresearch/faiss) has a ROCm/HIP GPU port that made exactly these files
+wave64-correct, so the fix is to port FAISS-ROCm's adaptations into raft's copies (NOT
+reinvent). A shallow FAISS clone lives in projects/faiss/src as the reference.
 
-The FAISS BlockSelect/WarpSelect (Select.cuh / key_value_block_select.cuh) is more
-deeply wave32-coupled than select_warpsort. Two distinct issues:
+How FAISS-ROCm handles the warp width (the actual mechanism, read from the real source):
+- kWarpSize: DeviceDefs.cuh sets `kWarpSize = rocprim::arch::wavefront::max_size()` on
+  ROCm 7+ (64 on gfx90a) vs 32 on CUDA. ALL select/merge logic is parameterized by
+  kWarpSize; there is no hardcoded 32. raft's vendored copy already uses `raft::WarpSize`
+  for this (host-correct via RAFT_HOST_WARP_SIZE).
+- The bitonic merge networks add ONE extra log2 stage on wave64 (6 stages 1,2,4,8,16,32
+  vs 5 on wave32), guarded `if constexpr (kWarpSize == 64)`: the single-warp sort
+  (BitonicSortStep<...,1>::sort) AND the merge base case (BitonicMergeStep<...,1,...,true>
+  ::merge, which must merge a size-32 run, not size-16) plus `warpMergeAnyRegisters`'s
+  `shfl_xor(.., kWarpSize - 1)`.
+- THE KEY MASK MECHANISM: FAISS-ROCm's WarpShuffles.cuh uses the MASKLESS warp builtins
+  on ROCm -- `__shfl`/`__shfl_xor`/`__shfl_up`/`__shfl_down` and `__any` with NO `_sync`
+  and NO mask. The maskless builtins operate over exactly the live lanes, so a bitonic
+  merge reached from a DIVERGENT region is well-defined; there is no mask to mismatch.
+
+Three issues in raft's copy, all fixed FAISS-ROCm-style (CUDA path unchanged):
 
 1. Warp-queue capacity. `kNumWarpQRegisters = NumWarpQ / WarpSize` collapses to 0
    (zero-length register arrays, `warpMergeAnyRegisters` no-match) when a kernel
@@ -483,12 +500,31 @@ deeply wave32-coupled than select_warpsort. Two distinct issues:
    (block_rbc_kernel_registers) + pass_two (compute_final_dists_registers), and
    the fused_l2_knn WarpSelect typedef. raft::WarpSize is a host-correct constexpr
    (64 via RAFT_HOST_WARP_SIZE), so this is arch-unified and compile-time.
-2. 32-bit masks. `__any_sync(0xffffffff,...)` / `__ballot_sync(0xffffffffu,...)` /
-   `__shfl_up_sync(0xffffffffu,...)` static_assert on HIP (mask must be 64-bit) and
-   truncate lanes 32-63. FIX (shipped): route through the wave-width-correct
-   warp_primitives helpers (raft::any / raft::ballot -> raft::WarpMask /
-   raft::shfl_up / raft::ffs_mask / raft::lane_bit) in Select.cuh,
-   key_value_block_select.cuh, and fused_l2_knn-inl.cuh.
+2. The wave64 extra merge stage. MergeNetworkWarp.cuh: BitonicSortStep<...,1>::sort
+   already had the `if constexpr (WarpSize == 64) warpBitonicMergeLE16<...,32,...>`
+   6th stage, but the BitonicMergeStep<...,1,...,true>::merge base case (reached via
+   warpMergeAnyRegisters with N1==1) was still hardcoded to a size-16 merge -- so on
+   wave64 it merged only the low 32 lanes and dropped lanes 32-63. FIX (shipped):
+   the base case now merges size-32 on wave64 (matching FAISS-ROCm), so the full
+   64-lane run is bitonic.
+3. THE __hip_check_mask ABORT (the canonical thing FAISS-ROCm fixes). raft's vendored
+   bitonic networks call unqualified `shfl_xor`/`shfl`/`any`, which resolved to
+   `raft::shfl_xor`/`raft::any` (warp_primitives.cuh) -- the `_sync` intrinsics with a
+   default full `RAFT_LANE_MASK_ALL`. ball_cover's block_rbc_kernel_registers reaches
+   the heap's mergeWarpQ from a DIVERGENT region (a per-lane `if (cur_R_dist > 3 *
+   min_R_dist) return;` Cayton prune + the `if (i < R_size)` tail), so the merge runs
+   on a partial wavefront; `__shfl_xor_sync(RAFT_LANE_MASK_ALL,..)` then asserts
+   `mask == __ballot(true)` and traps (the HSA_STATUS_ERROR_EXCEPTION 0x1016 abort, and
+   under NDEBUG mis-sorts by reading dead lanes). FIX (shipped): a faiss-local
+   WarpShuffles.cuh (mirroring FAISS-ROCm's) gives the faiss_select namespace its own
+   `shfl`/`shfl_xor`/`shfl_up`/`shfl_down` (scalar + a KeyValuePair overload) and `any`
+   that on HIP use the MASKLESS `__shfl*`/`__any` builtins and on CUDA forward to
+   `raft::shfl*`/`raft::any` (byte-identical). The unqualified calls in the bitonic
+   networks + the `any(needSort)` in checkThreadQ now resolve to these, so the merge
+   tolerates the partial wavefront. Scoped to faiss_select; the generic raft::shfl* used
+   by distance/fused-NN/cagra/select_warpsort is untouched (no regression). This is the
+   approach FAISS-ROCm itself uses; it replaces the earlier (incomplete) "route through
+   the raft::_sync helpers" attempt that still aborted in ball_cover.
 
 Two minor gaps (shipped): ball_cover.cu uses `CUDART_PI_F` -> added to the compat
 math_constants.h; fused_l2_knn-inl.cuh:431 `{colId, acc}` narrows long->uint32 ->
@@ -521,48 +557,57 @@ backend" pattern raft uses on pre-Ampere NVIDIA. fusedL2kNN still compiles (mask
 faissWarpQ) but is not launched on wave64. Validated: HaversineKNNTestF.Fit passes;
 the brute_force::knn ball_cover baseline (L2) runs via the tiled path.
 
-### ball_cover FAISS KeyValueBlockSelect on wave64 -- the remaining blocker
+### ball_cover on wave64 -- RESOLVED (FAISS select abort + eps wave64-mask)
 
-GPU-validated state (gfx90a, HIP_VISIBLE_DEVICES, NEIGHBORS_TEST): HaversineKNNTestF
-PASS. BallCoverAllKNNTest / BallCoverKNNQueryTest FAIL on wave64. EpsNeigh
-(eps_neighbors_l2sq + ball_cover eps kernels, no FAISS select) builds and runs but
-its RBC brute-force correctness baselines are slow under the multi-tenant box and
-were not timed-out-clean this session (re-run isolated).
+GPU-validated state (gfx90a, HIP_VISIBLE_DEVICES=1, NEIGHBORS_TEST): HaversineKNNTestF
+1/1, BallCoverAllKNNTest 9/9, BallCoverKNNQueryTest 9/9, EpsNeighRbcTestFI
+(DenseRbc + SparseRbc + SparseRbcMaxK) 42/42, EpsNeighTestFI brute-force 14/14. The
+two independent ball_cover wave64 bugs are fixed:
 
-Root cause (confirmed two ways): in a DEBUG build (no NDEBUG, the MOAT default,
-CMAKE_BUILD_TYPE empty) `block_rbc_kernel_registers` aborts (SIGABRT) inside
-`__shfl_xor_sync<unsigned long, float>` via HIP's `__hip_check_mask`, which asserts
-`mask == __ballot(true)` -- i.e. the FAISS warp-collective bitonic sort runs with a
-PARTIAL-warp EXEC mask while passing a full (RAFT_LANE_MASK_ALL) mask. Rebuilt with
--DNDEBUG -O2 the abort disappears but the results are WRONG (top-k distances off on
-nearly every row, e.g. 0.7545 vs ref 0.8024), so the partial-warp shuffles return
-undefined lane data and corrupt the sort -- a real correctness bug, not just a debug
-assert. Contrast: haversine uses the SAME FAISS BlockSelect + bitonic network and
-PASSES in the debug build, so the wave64 bitonic sort itself (incl. the prior
-session's stride-32 merge step) is correct WHEN fully converged. The divergence is a
-property of block_rbc_kernel_registers leaving the wavefront partially active at the
-heap's warp-collective -- an AMD reconvergence artifact (clang does not reconverge a
-divergent region as implicitly as nvcc / Volta's full-mask shuffle does; the FAISS
-`addThreadQ` per-lane `if` and the kernel's early-`return`/`if (i < R_size)` tail are
-the divergence sources, and reconvergence before `mergeWarpQ` is not guaranteed).
+1. FAISS KeyValueBlockSelect abort (the KNN path). `block_rbc_kernel_registers` /
+   `compute_final_dists_registers` reach the heap's `mergeWarpQ` from a divergent
+   region (the `if (cur_R_dist > 3 * min_R_dist) return;` Cayton prune + the
+   `if (i < R_size)` tail), so the FAISS bitonic merge runs on a partial wavefront.
+   The earlier reading called this a "reconvergence artifact"; the real, concrete
+   cause is that raft's vendored faiss_select shuffled through `raft::shfl_xor`'s
+   `__shfl_xor_sync(RAFT_LANE_MASK_ALL,..)`, whose full mask != the live-lane set ->
+   `__hip_check_mask` traps (HSA exception 0x1016), and under NDEBUG reads dead lanes
+   and mis-sorts. FIX = the FAISS-ROCm maskless-shuffle port (faiss_select section,
+   issue 3): the faiss-local WarpShuffles.cuh uses maskless `__shfl*`/`__any` on HIP,
+   so a partial-wavefront merge is well-defined. haversine (same FAISS path) stays
+   green; this is the canonical FAISS-ROCm fix, not a wave_barrier hack and not a
+   select_k reroute.
+2. ball_cover eps wave64-mask (the eps_nn / RBC path; a SEPARATE bug, no FAISS
+   select). The 4 eps kernels (block_rbc_kernel_eps_dense / _csr_pass / _csr_pass_xd
+   / _max_k, registers-inl.cuh) iterate the per-landmark ballot with the wave32 idiom
+   `int lane_mask = raft::ballot(..); lane_mask = __brev(lane_mask); k = __clz(..);
+   lane_mask &= (0x7fffffff >> k)` and write CSR positions with
+   `(1u<<lid)-1` + `__popc(mask & lid_mask)`. On wave64 the `int`/`__brev`/`__clz`/
+   32-bit-literal drop landmarks 32-63 of each group (undercount: vd 143 vs 300), and
+   `(1<<lid)-1` is UB for lid>=32. FIX (arch-unified): `raft::WarpMask lane_mask`,
+   iterate the lowest set bit via `raft::ffs_mask(m)-1` then `m &= m-1` (same order
+   and remaining-bit set as `__clz(__brev())` on a 32-bit mask, so CUDA is unchanged),
+   `lid_mask = raft::lane_bit(lid) - 1`, and `raft::popc_mask`. THREE further wave64
+   host/kernel-geometry fixes were needed for the sparse/max_k paths: (a) the CSR and
+   max_k kernels are launched as `<<<ceildiv(n,2), 64>>>` (2 queries/block, one per
+   warp) -- the literal `2` is `tpb(64)/wave32(32)`; on wave64 a 64-thread block is
+   ONE warp so only 1 query/block fits and half the queries were dropped. Grid is now
+   `ceildiv(n, 64 / raft::WarpSize)` (= ceildiv(n,2) on wave32, ceildiv(n,1) on
+   wave64). (b) `block_rbc_kernel_eps_max_k_copy` is launched with tpb=32 threads but
+   used `Pow2<WarpSize>::roundDown(num_cols)` (WarpSize=64): the round-down-to-64 tail
+   left up to 63 elements that only 32 threads cover, dropping adj_ja entries once
+   num_cols-roundDown > 32 (manifested as `actual=0 @row,pos`, only for n_row>=~1500
+   where max_k=300 -> tail 44 > 32; n_row=1400 tail 24 passed). Fixed to
+   `Pow2<tpb>::roundDown` (a pure block-partitioned memcpy, correct on any wave size).
 
-Next concrete step (pick one, do NOT regress haversine which shares the FAISS path):
-- (a) Force reconvergence in the FAISS warp-collective on HIP: insert a
-  `__builtin_amdgcn_wave_barrier()` / full `__syncwarp()` at the top of
-  KeyValueBlockSelect::mergeWarpQ (and BlockSelect::mergeWarpQ) so EXEC is full
-  before the bitonic shuffles. Verify it fixes ball_cover AND keeps haversine green;
-  measure cost. This is the smallest change but must be proven not to perturb the
-  already-passing convergent path.
-- (b) Route ball_cover's k-select through the validated `matrix::select_k` (the
-  select_warpsort/radix path, 607 tests green) instead of the inline FAISS
-  KeyValueBlockSelect, mirroring the brute_force->tiled_brute_force_knn approach:
-  have block_rbc_kernel_registers write candidate (dist, idx) to a per-query buffer
-  and select_k the top-k. Larger refactor, but reuses a known-correct wave64 top-k
-  and sidesteps the FAISS reconvergence question entirely.
-RAFT_TEST_NEIGHBORS stays OFF in the committed cmake until ball_cover passes (the
-binary bundles ball_cover, so it cannot be a passing gate yet); select_k
-(MATRIX_SELECT) remains the validated neighbors-top-k surface and haversine + the
-tiled L2 brute force are the validated neighbors distance/kNN surface.
+Diagnostic sequence: 41 eps RBC failures (baseline) -> 28 after the lane_mask fix
+(DenseRbc green) -> 6 after the CSR grid fix (SparseRbc green) -> 0 after the copy
+round-by-tpb fix (SparseRbcMaxK green). All deterministic across two runs.
+
+RAFT_TEST_NEIGHBORS can now be turned on as a passing gate (the cmake option default
+stays OFF; enable with -DRAFT_TEST_NEIGHBORS=ON). select_k (MATRIX_SELECT) remains the
+separate warp-sort/radix top-k surface; ball_cover is now a fully validated wave64
+neighbors algorithm rather than a deferral.
 
 ## Install as a dependency
 

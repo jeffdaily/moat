@@ -54,3 +54,10 @@
 {"kind":"phase","ts":"2026-05-31T06:27:42Z","phase":"test","seconds":1.031,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
 {"kind":"phase","ts":"2026-05-31T06:27:52Z","phase":"test","seconds":0.339,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LABEL_TEST"}
 {"kind":"phase","ts":"2026-05-31T06:42:35Z","phase":"test","seconds":1380.691,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/NEIGHBORS_TEST --gtest_filter=HaversineKNNTestF.*:EpsNeighTests/*"}
+{"kind":"phase","ts":"2026-05-31T22:19:56Z","phase":"compile","seconds":92.822,"exit":0,"cmd":"cmake --build projects/raft/build -j16 --target NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-05-31T22:29:07Z","phase":"compile","seconds":93.141,"exit":0,"cmd":"ninja -C projects/raft/build -j16 CMakeFiles/NEIGHBORS_TEST.dir/tests/neighbors/ball_cover.cu.o"}
+{"kind":"phase","ts":"2026-05-31T22:30:56Z","phase":"compile","seconds":90.511,"exit":0,"cmd":"ninja -C projects/raft/build -j16 NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-05-31T22:31:49Z","phase":"test","seconds":31.449,"exit":0,"cmd":"projects/raft/build/gtests/NEIGHBORS_TEST --gtest_filter=*BallCover*"}
+{"kind":"phase","ts":"2026-05-31T22:36:45Z","phase":"compile","seconds":93.643,"exit":0,"cmd":"ninja -C projects/raft/build -j16 NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-05-31T22:40:35Z","phase":"compile","seconds":92.361,"exit":0,"cmd":"ninja -C projects/raft/build -j16 NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-05-31T23:11:46Z","phase":"test","seconds":1422.902,"exit":0,"cmd":"projects/raft/build/gtests/NEIGHBORS_TEST"}
