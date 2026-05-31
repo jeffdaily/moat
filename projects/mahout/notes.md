@@ -326,3 +326,55 @@ Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests, 11.9s):
 
 Transition: review-passed -> completed (validated_sha = 2b0544a).
 Followers unblocked: linux-gfx1100, windows-gfx1151 -> port-ready.
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1) -- PASS
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1.
+Fork: jeffdaily/mahout @ moat-port HEAD 2b0544a40bcaf60d35539ba8be62cf791e6c0846 -- no fork interaction, no source change.
+
+Build commands:
+```
+curl https://sh.rustup.rs -sSf | sh -s -- -y --profile minimal && . "$HOME/.cargo/env"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1100 ROCM_PATH=/opt/rocm
+cd projects/mahout/src/qdp
+cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+maturin build --features hip --profile dev --manifest-path qdp/qdp-python/Cargo.toml --out <wheeldir> --compatibility linux
+pip install --no-deps --force-reinstall <wheeldir>/qumat_qdp-0.2.0-cp312-cp312-linux_x86_64.whl
+```
+Both steps exit 0. Wheel imports cleanly (import qumat_qdp ok, QdpEngine/NativeQuantumTensor present).
+
+gfx1100 code-object evidence (llvm-objdump --offloading on libkernels.a):
+All 6 kernel TUs target `hipv4-amdgcn-amd-amdhsa--gfx1100`, no gfx90a:
+  amplitude.cu, basis.cu, angle.cu, validation.cu, iqp.cu, phase.cu -> gfx1100.
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1):
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- qdp-core lib: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 64/64, gpu_validation 8/8.
+- Non-GPU suites: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- 0 failures total. Matches gfx90a baseline exactly.
+- Async-pipeline tests pass: test_amplitude_encoding_async_pipeline,
+  test_angle_encoding_async_pipeline (gpu_api_workflow),
+  test_angle_batch_f32_async_pipeline_path (gpu_angle_encoding).
+
+Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+- 301 passed, 12 skipped, 0 failed. Matches gfx90a baseline exactly.
+- Skips: 2 multi-GPU, 1 tensorflow-absent, 1 loader path-timing,
+  5 torch_ref sm_-arch (sm_110 on gfx1100 vs sm_-cap list; Triton/torch ref path, not native engine),
+  2 AmdQdpEngine-not-built, 1 NVIDIA-ref-absent -- all pre-existing/legit.
+
+Wave32 / L2-norm warp-reduction verdict -- CORRECT on gfx1100:
+- gpu_norm_f32 (2/2) and amplitude_encode L2-norm tests (10/10 l2_norm* variants in
+  test_l2_norm_single_kernel{,_f32}, test_l2_norm_batch_kernel_{f32,odd,stream,zero_*})
+  all pass on wave32.
+- The arch-unified fix (warp_id = threadIdx.x / warpSize == >>5 on wave32, ==>>6 on wave64)
+  places the per-warp partial in the correct shared[warp_id] slot on both widths.
+  __shared__ shared[32] holds up to 32 warps; 1024 threads / warpSize=32 = 32 warps
+  exactly on gfx1100, with no slot overflow. The QDP_FULL_WARP_MASK=0xffffffffffffffff
+  (64-bit) has upper 32 bits zero on wave32, behaving identically to 0xffffffff.
+- Determinism: L2-norm tests re-run independently -> 10/10 identical pass.
+
+Transition: port-ready -> completed (validated_sha = 2b0544a40bcaf60d35539ba8be62cf791e6c0846).
