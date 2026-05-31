@@ -485,3 +485,40 @@ NO REGRESSION from the gfx1100 delta. The configurable-arch CMake change leaves 
 wave64 output bit-for-bit equivalent in behavior. linux-gfx90a transitioned `revalidate` ->
 `completed`; validated_sha = 0ec6f0258855b2fd46b318d433de155cc869f1b2 (the rebuilt HEAD).
 Validation-only; no push to the fork.
+
+## Validation 2026-05-30 (windows-gfx1151, TheRock ROCm) -- root-caused, COMPLETED
+
+Platform: AMD Radeon 8060S (gfx1151 APU), Windows 11, TheRock ROCm (hip 7.13.26190).
+Fork moat-port amended to 3bffbf7 (one source change: the bf16-header include below).
+
+### Source fix (newer-ROCm, not Windows-specific; guarded so 7.2.x is a no-op)
+cuda_to_hip.h force-includes <hip/hip_bf16.h> BEFORE popsift's __shfl_*_sync compat
+macros. Newer ROCm's amd_hip_bf16.h defines real __shfl_*_sync<...> functions; pulled
+in after the macros (via rocThrust), the function-like macros mangle them ("use of
+undeclared identifier 'mask'"). Guarded with __has_include -> harmless no-op on the
+ROCm 7.2.x lead. This is the kind of 7.2.x->7.13 backward delta to watch.
+
+### Build (all-clang HIP; library, examples off)
+cmake -DUSE_HIP=ON -DPopSift_BUILD_EXAMPLES=OFF -DCMAKE_C/CXX/HIP_COMPILER=clang
+  -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_PREFIX_PATH=<rocm> -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+  # -fgpu-rdc link: CMake 4.3's Windows-Clang emits -fuse-ld=lld-link which AMD clang
+  # rejects under --hip-link; inject a custom linker type emitting -fuse-ld=lld:
+  -DCMAKE_LINKER_TYPE=LLDFIX -DCMAKE_{HIP,CXX,C}_USING_LINKER_LLDFIX=-fuse-ld=lld
+Builds popsift.dll (RDC device link works on Windows). These are build-invocation flags,
+not source changes.
+
+### Validation (real gfx1151 GPU; Boost-free harness agent_space/popsift_validate.cpp + OpenCV)
+SIFT (VLFeat gauss / RootSift) on a real photo (capped to 960px, native downsampling):
+187 features / 221 descriptors, **deterministic across 3 runs**, 0 NaN/Inf, 0 all-zero
+descriptors, RootSift mean L2 = 1.000, keypoints in image bounds. PASS. (popsift has no
+CPU reference; same acceptance as gfx90a/gfx1100.) Runtime: TheRock amdhip64+amd_comgr
+deployed beside the exe (System32 Adrenalin driver is device-lib-mismatched -- see rmm /
+gfx1151-apu-runtime-gaps).
+
+### gfx1151 limitation (documented)
+maxTexture2DLayered is smaller on the gfx1151 APU than gfx90a/CUDA, so popsift's default
+2x upscale overflows the layered-surface limit for larger images; use native-resolution
+downsampling (config.setDownsampling(0)) and/or cap image size. Not a port defect; a device
+texture-dimension limit. wave32 32-lane orientation/extrema histograms are correct (the
+fork's wave64 handling covers it); no wave-size change needed for gfx1151.
+State: port-ready -> completed (validated_sha 3bffbf7).
