@@ -1,5 +1,38 @@
 # CTranslate2 notes
 
+## Validation 2026-05-31 (linux-gfx90a, gfx90a/MI250X, ROCm 7.2.1) -- PASS
+
+Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1
+GPU arch: gfx90a (MI250X), device 2 (HIP_VISIBLE_DEVICES=2, 0% load at test time)
+Compiler: amdclang++ 22.0.0 (roc-7.2.1), cmake 3.31
+
+Compile:
+```
+cmake --build projects/CTranslate2/build -j 16
+```
+Result: all targets rebuilt from cache (no source change), compile CLEAN (0 errors, -Wnodiscard only on benchmark_ops, suppressed in build).
+
+GPU test (CUDA/* filter, device 2):
+```
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh CTranslate2 test -- \
+  projects/CTranslate2/build/tests/ctranslate2_test \
+  projects/CTranslate2/src/tests/data --gtest_filter='CUDA/*'
+```
+Result: 164 PASSED, 3 SKIPPED (Conv1DGroupNoBiasQuantized x3 dtypes -- intentional feature gap). MATCHES DOCUMENTED BAR.
+
+Full suite (filter out Conv1DGroupNoBiasQuantized CPU abort):
+```
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh CTranslate2 test -- \
+  projects/CTranslate2/build/tests/ctranslate2_test \
+  projects/CTranslate2/src/tests/data "--gtest_filter=-*Conv1DGroupNoBiasQuantized*"
+```
+Result: 350 PASSED, 1 SKIPPED (CPU/OpDeviceFPTest.Conv1DDilation -- intentional). MATCHES DOCUMENTED BAR. No non-GPU regressions.
+
+Determinism (wave64 bar, agent_space/ct2_determinism.cc):
+softmax/log_softmax/layer_norm/rms_norm/quantize_scale across widths {15,32,96,1023,2048} run twice each on GPU: ALL BIT-IDENTICAL (25/25).
+
+State transition: review-passed -> completed. validated_sha = dfa0d30.
+
 ## Disposition: VERIFY/MODERNIZE -- mature upstream HIP backend, first CDNA2 (gfx90a/wave64) GPU validation
 
 CTranslate2 ships a mature Strategy-A ROCm/HIP backend (WITH_HIP=ON: enable_language(HIP) +
