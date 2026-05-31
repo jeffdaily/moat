@@ -575,3 +575,8 @@ All values are bit-for-bit equivalent to the 0ec6f02 reference (the bf16 no-op i
 leaves gfx90a/ROCm 7.2.1 output unchanged, as expected). NO REGRESSION.
 
 linux-gfx90a: revalidate -> completed; validated_sha = 3bffbf7dccaa488cb5e8cc17019806b7f74c88fc.
+
+
+## Validation 2026-05-31 (gfx1100) -- carry-forward at 3bffbf7 (bf16-header no-op on ROCm 7.2.1)
+
+Revalidate triggered by the bf16-header forward-compat delta 0ec6f02 -> 3bffbf7. The two-dot diff is 2 files: .gitignore (a build-hip/ entry, cosmetic) and src/popsift/cuda_to_hip.h, which adds a __has_include-guarded include of hip/hip_bf16.h BEFORE the shfl_sync macros so that on NEWER ROCm (where that header defines real shfl_sync functions) the macros do not clobber them. On ROCm 7.2.1 (this host) that header has no such functions, so the early include is a documented NO-OP -- no kernel/logic/ballot change, and it does not touch popsift's wave32-sensitive code (extrema ballot, orientation, descriptor reductions). The same delta was already re-validated at 3bffbf7 on BOTH linux-gfx90a (same Linux ROCm 7.2.1) and windows-gfx1151 (same wave32/RDNA), so the prior gfx1100 real-GPU SIFT validation at 0ec6f02 (2421 features stable across 5 runs, 0 -nan descriptors, wave64-fix degenerates correctly to wave32) applies unchanged. validated_sha -> 3bffbf7. No GPU re-run (no-op on this platform), no fork change.
