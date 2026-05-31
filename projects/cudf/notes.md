@@ -11,13 +11,108 @@ Fork: jeffdaily/cudf @ `moat-port`. The port is a standalone HIP CMake build
 reached by a top-of-CMakeLists `if(USE_HIP) include(cmake/hip/cudf_hip.cmake)
 return()` guard; the CUDA build is untouched.
 
-## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates (107 TUs); dispatch closure collapsed ~209 -> 1
+## RESOLVED: the libcudf.so relocation wall -- `--offload-compress` shrinks the device fatbin ~55x
 
-A scoped libcudf core (107 TUs, fork HEAD 5be894c) compiles for gfx90a and
-links libcudf.so with a real gfx90a code object. The focused GPU gtest passes
-8/8 on MI250X (stable, repeated runs): the 4 wave64 null-mask tests, the 2
-tuple-key radix-sort tests, PLUS 2 cuco-backed tests (DistinctCucoStaticSet,
-ApplyBooleanMask).
+The prior "NEXT WALL" (reductions/aggregation/join/groupby do not fit a single
+libcudf.so without -mcmodel=large) is RESOLVED, and NOT by a structural split.
+Root cause was that the HIP offload bundle is stored UNCOMPRESSED by default, so
+each rocPRIM reduce TU embeds a ~159 MB device fatbin (the full type x op ISA
+matrix); 15+ reductions push the host image past the +/-2 GiB x86-64 relocation
+reach. nvcc fatbins are compact, which is why the CUDA build never hits this.
+
+`--offload-compress` (a documented ROCm 7.2.1 clang HIP flag: "Compress offload
+device binaries (HIP only)") stores the embedded device bundle in the compressed
+CCOB format; the HIP runtime decompresses on load. Controlled A/B measurement on
+`reductions/sum.cu` @ gfx90a (same compile line, flag stripped vs present):
+
+| metric        | uncompressed | compressed | shrink |
+|---------------|--------------|------------|--------|
+| object (.o)   | 207.8 MB     | 52.1 MB    | 3.99x  |
+| `.hip_fatbin` | 158.6 MB     | 2.89 MB    | 54.9x  |
+
+(fatbin drops from 76.3% to 5.6% of the object; 155.7 MB removed per TU). The
+device-bundle 55x is the headline: the rocPRIM type x op ISA matrix is hugely
+redundant, so it compresses extremely well. Wired in cudf_hip.cmake as
+`target_compile_options(cudf PRIVATE $<$<COMPILE_LANGUAGE:HIP>:--offload-compress>)`.
+cudf compiles each TU non-RDC (no -fgpu-rdc device-link), so the per-TU compile
+is the only place the bundle is formed -- there is no separate device-link to
+also flag. This is what lets the broad algorithm surface (reductions +
+aggregation + join + groupby) link the SINGLE libcudf.so with NO -mcmodel=large
+and NO multi-.so split.
+
+### LINK VERDICT (fork bec85ee): YES -- single libcudf.so, no split, no -mcmodel=large
+
+With --offload-compress the broad algorithm surface (reductions + aggregation +
+hash/sort groupby + hash/sort-merge join, ~44 new TUs on top of the core) links
+into ONE libcudf.so: host image ~540 MB (566,964,928 B), far under the +/-2 GiB
+x86-64 relocation reach. `llvm-objdump --offloading libcudf.so` shows exactly
+144 embedded code objects, ALL `hipv4-amdgcn-amd-amdhsa--gfx90a` and nothing
+else (gfx90a-only, no multi-arch fatbin bloat). The three documented relocation
+overflow classes (PC32, TLS, .eh_frame) do not appear -- the compressed bundle
+keeps the image small enough that none is reached. The single-.so approach jeff
+wanted is achieved; NO structural split, NO -mcmodel=large.
+
+Undefined cudf-internal symbols grew 1 -> 17 (the broad surface references more
+deferred-dispatch entries): the 2 binary_operation overloads (JIT), plus
+quantile/group_quantiles, the tdigest group+reduce set, repeat/tile,
+lists::distinct + distinct_count, and scan_inclusive<DeviceMax/Min> for
+strings/structs. None is exercised by the validated tests; each is the next
+module to bring up. The smoke test links with --unresolved-symbols=
+ignore-in-shared-libs so these are tolerated (not referenced at runtime).
+
+### GPU VALIDATION (gfx90a / MI250X, GCD 0): 12/12 PASS
+
+The 8-test baseline still passes (no regression) PLUS 4 new broad-surface gates:
+- ReduceSumMinMaxProduct: cudf::reduce sum/min/max/product over int32 == host.
+- ReduceFloatingMean: cudf::reduce mean/sum/max over float + double == host.
+- HashInnerJoin: cudf::inner_join (cuco static_multimap) matched (l,r) pairs ==
+  host inner join of the key sets.
+- HashGroupbySum: cudf::groupby hash SUM per INT32 key == host fold (arbitrary
+  group order, compared as a key->sum map).
+So reductions, hash join, AND hash groupby all execute correctly on real gfx90a;
+the compressed device bundle decompresses and runs.
+
+### Reduction correctness bug found + fixed: cast_fn dangling reference (cast_functor.cuh)
+
+The first GPU run of the new reduction tests FAILED in a precise pattern: int
+min returned INT32_MIN, int max returned INT32_MAX (the seeded identities), and
+double sum/mean/max returned nan/0 -- while int sum and int product (and the
+groupby SUM) were correct. The discriminator was exactly `OutputType ==
+ElementType`: min/max keep the input type, and a double-column sum outputs
+double; an int32 column summed to INT64 (output != element) worked. Root cause:
+`cudf::detail::cast_fn<T>` (the element transformer applied to dcol->begin<T>()
+before every simple reduction) had a same-type overload `operator()(T&&) ->
+T&&` that returns a reference to elide a copy. When OutputType==ElementType that
+overload is selected; as the transform of a thrust::transform_iterator feeding
+hipCUB DeviceReduce::Reduce it returns a reference into EXPIRED iterator
+storage, and rocPRIM block-loads the dangling reference -> garbage. This is UB
+that nvcc/CUB tolerate. Fix (USE_HIP-guarded, correct on CUDA too): the same-type
+overload returns BY VALUE.
+
+Localization method (worth reusing): reduce the SAME int32 column three ways in
+the test -- (1) cudf::reduce MIN, (2) raw-pointer hipCUB DeviceReduce::Min, (3)
+thrust::reduce with cudf::DeviceMin over dcol->begin<int32>(). (2) and (3) both
+returned -4 (correct) while (1) returned INT32_MIN, which isolated the bug to
+the cudf reduce wrapper (the cast_fn transform + DeviceReduce::Reduce with a
+custom op), NOT the column iterator, the DeviceMin operator, or rocPRIM. A
+standalone microbench of DeviceReduce::Reduce + transform_iterator + the
+dangling cast_fn did NOT reproduce it (the dangle only manifests through cudf's
+nested column_device_view iterator instantiation), so the in-test three-way
+probe was the decisive tool. The five edits the prior session staged for the
+reductions bring-up (ewm.cu narrowing casts, device_atomics typename T::duration,
+compute_aggregations SetType::template ref_type, the join/groupby copy_if
+stencil predicates, sort_merge_join thrust::get) are all still needed and are in
+bec85ee; the cast_fn fix is the new one that makes the reductions CORRECT, not
+just compiling.
+
+## State: PORTING on linux-gfx90a -- libcudf core + reductions/aggregation/join/groupby COMPILE + GPU-validate (single .so); JIT binaryop is the lone remaining internal symbol of interest
+
+(Superseded baseline below, kept for the fault-class history; the 107-TU core is
+now subsumed by the broad-surface build above at fork bec85ee.) A scoped libcudf
+core (107 TUs, fork HEAD 5be894c) compiles for gfx90a and links libcudf.so with
+a real gfx90a code object. The focused GPU gtest passes 8/8 on MI250X (stable,
+repeated runs): the 4 wave64 null-mask tests, the 2 tuple-key radix-sort tests,
+PLUS 2 cuco-backed tests (DistinctCucoStaticSet, ApplyBooleanMask).
 
 THE HEADLINE RESULT this session: the cudf-INTERNAL type-erased dispatch
 link-closure collapsed from ~209 undefined symbols (at the 83-TU core) to
@@ -42,7 +137,14 @@ DeviceSelect adaptor), NOT the older 57a1c1a. DistinctCucoStaticSet exercises
 distinct() -> cuco::static_set insert_and_find + retrieve_all on real GPU
 through that adaptor; GPU-validated.
 
-### NEXT WALL (hard, characterized): the libcudf.so x86-64 relocation scale limit
+### [RESOLVED by --offload-compress -- see the top section] the libcudf.so x86-64 relocation scale limit
+
+NOTE: this wall is RESOLVED at fork bec85ee. The analysis below is the original
+characterization (kept for the record). The fix was NOT a split or
+-mcmodel=large; it was --offload-compress, which shrinks each reduce TU's
+embedded device bundle ~55x (158.6 MB -> 2.89 MB), so the whole broad-surface
+libcudf.so stays at ~540 MB, well under 2 GiB. See the top "RESOLVED" + "LINK
+VERDICT" sections.
 
 Reductions + aggregation were attempted on top (build_2/build_3) and REVERTED:
 they do not fit. The reduction TUs are pathologically large on rocPRIM --
@@ -262,9 +364,11 @@ elsewhere).
    device_merge_sort, device_radix_sort, device_segmented_sort, warp_reduce in
    addition to the initial set).
 
-## What COMPILES + GPU-validates (the 107-TU scoped core, fork 5be894c)
+## What COMPILES + GPU-validates (historical: the 107-TU core, fork 5be894c)
 
-(+24 over the prior 83.) The 83-TU foundational core PLUS, this session: table
+(SUPERSEDED at fork bec85ee, which adds reductions + aggregation + groupby +
+join on top and GPU-validates 12/12 -- see the top sections. This section is the
+107-TU-core record.) (+24 over the prior 83.) The 83-TU foundational core PLUS, this session: table
 row_operators + primitive_row_operators (experimental::row lexicographic/
 equality machinery); stream_compaction apply_boolean_mask + distinct +
 distinct_helpers + stable_distinct (cuco static_set + retrieve_all);
@@ -292,34 +396,32 @@ ctor + hipMemcpyAsync).
 - **jitify/NVRTC JIT** kernels (binaryop-JIT, transform-JIT, rolling-JIT). The
   jitify->hiprtc plan is a separate effort (jitify_hiprtc_plan.md, owned
   elsewhere). `binaryop/binaryop.cpp` pulls jitify (15 includes).
-- **the broad algorithm modules** (groupby, join, reductions, full
-  lists/strings/dictionary/structs algorithm sets, text, interop-to-arrow,
-  transform, rolling, datetime, etc.) -- not yet in the source list. The
-  dispatch CLOSURE for the foundational core is satisfied (only binary_operation
-  remains), so these modules are no longer needed to LINK the core; they extend
-  the GPU-validated API surface. They are gated by the .so SCALE wall below, not
-  by undefined symbols.
+- **reductions + aggregation + hash/sort groupby + hash/sort-merge join are NOW
+  IN SCOPE** (fork bec85ee) -- they link the single .so (--offload-compress) and
+  GPU-validate. STILL scoped out: full lists/strings/dictionary/structs
+  algorithm sets, text, interop-to-arrow, transform (non-JIT parts), rolling,
+  datetime, quantiles/tdigest, lists::distinct. These extend the API surface;
+  none is gated by a structural wall now (the SCALE wall is resolved), only by
+  not-yet-being-in the source list. group_quantiles is the one groupby TU
+  omitted (it pulls quantiles/, scoped out) -- groupby/sort/group_quantiles.cu.
 
 ## The next concrete walls (precise blocked_reason material)
 
 The dispatch-closure wall (prior wall 1, "~209 deferred symbols") is CLOSED to
 1 (see the State header). What remains:
 
-1. **The libcudf.so x86-64 relocation SCALE wall (the new hard wall).** Adding
-   the reductions module (the obvious next high-value cuco/cub-backed set)
-   over-inflates the single libcudf.so past the +/-2 GiB x86-64 relocation reach.
-   Root cause + the three escalating relocation classes (PC32 -> -mcmodel=large;
-   then TLS R_X86_64_TLSGD/TLSLD/__tls_get_addr; then .eh_frame PC offset) are
-   documented in full in the State header "NEXT WALL" block. The fix is
-   STRUCTURAL: split libcudf into multiple shared objects (so no single image
-   exceeds 2 GiB) or cap the per-TU device fatbin (the reduction type matrix).
-   Until then, the 107-TU core is the validated ceiling for a single .so on this
-   toolchain. join/groupby will hit the identical ceiling.
-   - DO NOT re-attempt reductions by just adding -mcmodel=large: it clears PC32
-     but the TLS + .eh_frame overflow remain (confirmed in build_3). Reverted.
+1. **The libcudf.so x86-64 relocation SCALE wall -- RESOLVED (fork bec85ee).**
+   --offload-compress shrinks the per-TU device bundle ~55x, so reductions +
+   aggregation + join + groupby all fit the single libcudf.so (~540 MB, gfx90a
+   only) with no split and no -mcmodel=large; the three relocation classes never
+   trigger. GPU-validated 12/12. See the top "RESOLVED" / "LINK VERDICT" /
+   "GPU VALIDATION" sections.
 2. then the **JIT** wall (binaryop/transform/rolling) -- the jitify->hipRTC plan
    is written (jitify_hiprtc_plan.md) and the hipRTC PoC is proven; it is a
-   separate phase. binary_operation (the 1 remaining undefined symbol) lives here.
+   separate phase. binary_operation (2 of the 17 remaining undefined symbols)
+   lives here. The other 15 (quantile/tdigest/repeat/tile/lists::distinct/
+   strings+structs scan_inclusive) are non-JIT modules simply not yet in the
+   source list -- straightforward next bring-ups, gated by nothing structural.
 
 ### cuco-backed bring-up adaptations that WORKED (reusable, in 5be894c)
 
@@ -410,8 +512,9 @@ so a follower (gfx1100/gfx1151) builds the scoped core with only
 ## Validation (gfx90a / MI250X, ROCm 7.2.1; run on a FREE GCD)
 
 ```
-# pick a free GCD from `rocm-smi` (4 GCDs 0-3 on this box); this session used 2
-HIP_VISIBLE_DEVICES=2 ctest --test-dir projects/cudf/build-hip --output-on-failure
+# pick a free GCD from `rocm-smi` (4 GCDs 0-3 on this box; siblings may use
+# 1/2). The bec85ee broad-surface run used GCD 0 and passed 12/12.
+HIP_VISIBLE_DEVICES=0 ctest --test-dir projects/cudf/build-hip --output-on-failure
 # (LD_LIBRARY_PATH must include $CONDA_PREFIX/lib for libspdlog and
 #  _deps/cudf-rmm/install/lib for librmm/librapids_logger -- sourced via
 #  agent_space/cudf_build_env.sh)

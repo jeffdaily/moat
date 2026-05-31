@@ -7,17 +7,17 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T08:52:56Z",
-  "head_sha": "5be894c8dcc93cde086aabd629a750c9f2b39764",
+  "updated_at": "2026-05-31T20:19:11Z",
+  "head_sha": "bec85ee6ee472db00ad52afcfbc999b98b0f4aaf",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": false,
-      "blocked_reason": "PORTING. Scoped libcudf core now 107 TUs (fork 5be894c, real gfx90a code object); GPU 8/8 on MI250X (4 wave64 null-mask + 2 tuple-key radix + 2 NEW cuco-backed: DistinctCucoStaticSet, ApplyBooleanMask). HEADLINE: the cudf-INTERNAL type-erased dispatch link-closure COLLAPSED from ~209 undefined symbols (at the 83-TU core) to EXACTLY 1 -- the only remaining cudf-internal undefined symbol is cudf::detail::binary_operation(column,scalar), the jitify->hipRTC binaryop JIT path (next phase). Verified by nm -D -u libcudf.so | c++filt | grep 'U cudf'; the prior-flagged deferred symbols (match_dictionaries, build_lists_child_column_recursive, preprocessed_table::create) are all DEFINED now. Closure was closed by bringing up ~24 modules: table row_operators+primitive_row_operators (experimental::row machinery), stream_compaction distinct/apply_boolean_mask/distinct_helpers/stable_distinct (cuco static_set+retrieve_all via the refreshed cuco dep 47ae24d hip_device_select.cuh), full hashing set, search contains_column/table, structs/lists utilities + lists dremel + scatter_helper + dictionary set_keys + transform encode. Reusable cuco-bringup fixes (in 5be894c): cuco_allocator stream-aware adaptor (CCCL 2-arg allocate vs rmm 1-arg), modern mixed_multimap_type spelling. NEXT WALL (hard, characterized + REVERTED an attempt): reductions + aggregation do NOT fit a single libcudf.so -- each rocPRIM reduce_impl TU is 200-234 MB (~190 MB device fatbin from the full type x op matrix); 15 reductions push cudf.dir to 2.5 GB and the host image past the +/-2 GiB x86-64 relocation reach. Three escalating overflow classes: PC32 (.text->.rodata.str) is fixed by -mcmodel=large on the HIP host pass (relink PASSED), but that then EXPOSES R_X86_64_TLSGD/TLSLD/__tls_get_addr (thread_local in stream_pool.cpp+host_memory.cpp) AND .eh_frame PC-offset overflow in column.cu -- neither covered by the large code model. FIX is structural: split libcudf into multiple .so, or cap the per-TU device fatbin. join/groupby will hit the same ceiling. The 107-TU core links FINE without -mcmodel=large (libcudf.so ~408 MB, under 2 GiB) and is the validated pushed baseline. Then the JIT phase (jitify_hiprtc_plan.md). src/io (nvCOMP/KvikIO) stays scoped out. See notes.md + PORTING_GUIDE.",
+      "blocked_reason": "PORTED (fork bec85ee, real gfx90a code object). The libcudf.so x86-64 relocation SCALE wall is RESOLVED by --offload-compress (NOT a split, NOT -mcmodel=large): the HIP offload bundle is uncompressed by default, so each rocPRIM reduce TU embeds a ~159 MB device fatbin; --offload-compress (documented ROCm 7.2.1 clang flag) stores it CCOB-compressed and the runtime decompresses on load. Measured A/B on reductions/sum.cu: object 207.8 MB -> 52.1 MB (3.99x), .hip_fatbin 158.6 MB -> 2.89 MB (54.9x). The broad algorithm surface (reductions + aggregation + hash/sort groupby + hash/sort-merge join, ~44 new TUs) now links the SINGLE libcudf.so (~540 MB host image, well under 2 GiB; llvm-objdump --offloading shows 144 embedded code objects, ALL gfx90a, no multi-arch bloat). GPU 12/12 on MI250X (GCD 0): the 8-test baseline (no regression) + ReduceSumMinMaxProduct (int32), ReduceFloatingMean (float/double), HashInnerJoin (cuco static_multimap), HashGroupbySum (hash groupby). Found+fixed a real reduction correctness bug: cast_functor.cuh cast_fn's same-type overload returned T&& (a reference into expired transform_iterator storage that rocPRIM block-loaded as garbage -> min/max returned the seeded identity, double sum returned nan); the bug appeared exactly when OutputType==ElementType. Fix: return by value (UB on CUDA too; nvcc tolerated it). 17 cudf-internal symbols remain undefined: the 2 binary_operation overloads (jitify->hipRTC JIT, a documented follow-on) + 15 non-JIT modules not yet in the source list (quantile/tdigest/repeat/tile/lists::distinct/strings+structs scan_inclusive) -- none structural. src/io (nvCOMP/KvikIO) stays scoped out. See notes.md + PORTING_GUIDE.",
       "validated_sha": null,
       "started_at": "2026-05-30T20:28:26Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T08:52:56Z",
+      "updated_at": "2026-05-31T20:19:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -30,7 +30,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

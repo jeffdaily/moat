@@ -3,3 +3,20 @@
 {"kind":"phase","ts":"2026-05-31T00:18:35Z","phase":"compile","seconds":150.060,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T01:55:53Z","phase":"compile","seconds":1.284,"exit":0,"cmd":"bash -c cd '/var/lib/jenkins/moat/projects/cudf/build-hip' && ninja -j 16"}
 {"kind":"phase","ts":"2026-05-31T02:24:41Z","phase":"compile","seconds":0.032,"exit":0,"cmd":"bash -c cd '/var/lib/jenkins/moat/projects/cudf/build-hip' && ninja -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:10:34Z","phase":"compile","seconds":43.632,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:27:01Z","phase":"compile","seconds":664.253,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:46:20Z","phase":"compile","seconds":745.099,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:51:19Z","phase":"compile","seconds":218.789,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T17:05:31Z","phase":"compile","seconds":811.269,"exit":1,"cmd":"cmake --build projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T17:18:55Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build projects/cudf/build-hip -j 16 -k 0"}
+{"kind":"phase","ts":"2026-05-31T17:27:58Z","phase":"compile","seconds":1.840,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T17:29:56Z","phase":"compile","seconds":20.126,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T17:30:09Z","phase":"test","seconds":0.153,"exit":8,"cmd":"ctest --test-dir projects/cudf/build-hip --output-on-failure"}
+{"kind":"phase","ts":"2026-05-31T17:30:38Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake --build projects/cudf/build-hip -j 16 -k 0"}
+{"kind":"phase","ts":"2026-05-31T17:53:40Z","phase":"compile","seconds":132.980,"exit":1,"cmd":"cmake --build projects/cudf/build-hip -j 12"}
+{"kind":"phase","ts":"2026-05-31T18:10:06Z","phase":"compile","seconds":886.111,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j 12"}
+{"kind":"phase","ts":"2026-05-31T18:15:47Z","phase":"compile","seconds":983.431,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j 8"}
+{"kind":"phase","ts":"2026-05-31T18:21:46Z","phase":"test","seconds":10.248,"exit":8,"cmd":"ctest --test-dir projects/cudf/build-hip --output-on-failure"}
+{"kind":"phase","ts":"2026-05-31T19:02:35Z","phase":"compile","seconds":138.004,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T19:47:47Z","phase":"compile","seconds":654.507,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
+{"kind":"result","ts":"2026-05-31T20:20:00Z","platform":"linux-gfx90a","state":"ported","fork_head":"bec85ee6ee472db00ad52afcfbc999b98b0f4aaf","note":"offload-compress resolves the libcudf.so 2GiB relocation wall: sum.cu fatbin 158.6MB->2.89MB (54.9x), object 207.8MB->52.1MB. Broad surface (reductions+aggregation+groupby+join) links single 540MB .so, gfx90a-only (144 code objects), no split, no -mcmodel=large. GPU 12/12 on MI250X GCD0. Fixed cast_fn dangling-reference reduction bug (min/max identity, double sum nan when out==elem type)."}
