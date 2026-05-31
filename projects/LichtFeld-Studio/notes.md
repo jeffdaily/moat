@@ -290,3 +290,75 @@ All 3 failures are test/impl design mismatches in the upstream test source, not 
 
 ### Verdict: PASS (lead linux-gfx90a)
 validated_sha = e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Arch: gfx1100 (AMD Radeon Pro W7800 48GB, RDNA3, wave32). HIP_VISIBLE_DEVICES=0.
+Fork tip validated: e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e (moat-port). No fork push.
+
+### Build
+
+Deps fetched (absent on this host): glm 1.0.1 to /var/lib/jenkins/moat/_deps/glm-1.0.1;
+args.hxx (Taywee) to /var/lib/jenkins/moat/_deps/lfs_args; nlohmann-json3-dev and
+other apt deps installed (were missing from this host, same package list as gfx90a).
+
+```
+export CMAKE_PREFIX_PATH="<torch-cmake>:<gtest-cmake>:/opt/conda/envs/py_3.12:/usr"
+cmake -S projects/LichtFeld-Studio/src -B build-hip-gfx1100 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+  -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release \
+  -DTorch_DIR=/opt/conda/envs/py_3.12/lib/python3.12/site-packages/torch/share/cmake/Torch \
+  -DLFS_GLM_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/glm-1.0.1 \
+  -DLFS_ARGS_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/lfs_args
+cmake --build build-hip-gfx1100 --target lfs_compute_tests -j16
+```
+
+Result: 177/177 targets built, lfs_compute_tests linked. ZERO source edits (follower,
+no code change needed; -DCMAKE_HIP_ARCHITECTURES=gfx1100 only).
+
+### gfx1100 code-object evidence
+
+roc-obj-ls on lfs_compute_tests: ALL bundles are hipv4-amdgcn-amd-amdhsa--gfx1100.
+No gfx90a object present. Confirmed with `roc-obj-ls build-hip-gfx1100/cmake/hip_tests/lfs_compute_tests`.
+
+### GPU test results
+
+```
+HIP_VISIBLE_DEVICES=0 ./build-hip-gfx1100/cmake/hip_tests/lfs_compute_tests
+```
+
+Run 1: 914 tests from 48 suites ran (~9.0 s). 912 passed, 2 failed.
+Run 2: 914 tests from 48 suites ran (~8.8 s). 912 passed, 2 failed.
+BIT-IDENTICAL across both runs (determinism confirmed).
+
+vs gfx90a bar (911/3 failed): gfx1100 is BETTER (912/2 failed). The Canny
+FP-boundary test (ImageKernelsTest.FusedCannyUInt8MatchesNormalizedFloatInput) PASSES
+on gfx1100 -- the wave32 FP rounding lands on the passing side of the NMS hysteresis
+discontinuity. Wave64/wave32 difference in float arithmetic order; both are correct
+(wave-agnostic stencil kernel, no shfl/ballot; as documented in gfx90a notes this
+test is a cross-input FP-decision-boundary sensitivity, not a kernel bug).
+
+### Failures (2 total, same documented non-bugs as gfx90a)
+
+1. MCMCTest.RemoveGaussiansSoftDeletesRows -- DOCUMENTED (pre-existing). Raw uint8
+   quant exp_avg read as float; zero-point=128 means "0.0" stored as 0x80808080 (NaN
+   as float). EXPECT_EQ(raw, 0.0f) vs zero-point=128. Pure integer quantization design
+   mismatch in test vs impl; identical on any GPU. NOT a wave32 issue.
+2. MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows -- DOCUMENTED
+   (pre-existing). Same class: EXPECT_GT(total_momentum, 0.0f) fails because raw uint8
+   quant bytes interpreted as float give NaN. NOT a HIP/wave32 defect.
+
+Wave32-critical subset run (--gtest_filter="*GSplat*:*Rasterize*:*Projection*:*Intersect*:*WarpReduce*:*BlockReduce*:*TensorReduction*:*SSIM*:*MCMC*:*Sort*"): 128/130 pass (2 MCMC quant non-bugs only). All splatting/reduction kernels PASS on wave32.
+
+### Wave32 verdict on splatting and cooperative-groups reductions
+
+The gsplat vendored backend (projection, intersect/tile, rasterize fwd/bwd, SH) and
+the warp/block reduction kernels (kWarpSize=32 on gfx1100 as expected, butterfly
+cg::reduce shim on cg::thread_block_tile<32> = exactly one wavefront on wave32) all
+pass the libtorch parity oracle on gfx1100. The cooperative-groups tiled_partition<32>
+is wave-agnostic; on gfx1100 it maps to a single 32-lane wavefront. Correct.
+
+### Verdict: PASS (follower linux-gfx1100)
+validated_sha = e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e

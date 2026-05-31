@@ -8,3 +8,6 @@
 {"kind":"phase","ts":"2026-05-31T02:49:07Z","phase":"test","seconds":0.143,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip -R lfs_compute_tests --output-on-failure --no-compress-output -j1"}
 {"kind":"phase","ts":"2026-05-31T02:49:26Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./cmake/hip_tests/lfs_compute_tests --gtest_output=xml:/tmp/lfs_run1.xml"}
 {"kind":"phase","ts":"2026-05-31T02:49:46Z","phase":"test","seconds":15.700,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip/cmake/hip_tests/lfs_compute_tests --gtest_output=xml:/tmp/lfs_run1.xml"}
+{"kind":"phase","ts":"2026-05-31T03:06:03Z","phase":"compile","seconds":2.743,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/lfs_build_gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T03:09:41Z","phase":"compile","seconds":166.615,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/lfs_build_gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T03:10:18Z","phase":"test","seconds":10.771,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip-gfx1100/cmake/hip_tests/lfs_compute_tests"}
