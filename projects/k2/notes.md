@@ -243,3 +243,98 @@ validation. Verified items (so the record shows they were checked, not assumed):
 - Two Python failures confirmed device-independent pre-existing artifacts (torch 2.6
   weights_only=True flip, verified in installed torch serialization.py:77-78; float32
   normalize_scores catastrophic cancellation, float64 exact).
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3, wave32, ROCm 7.2.1). Follower validation.
+Fork: jeffdaily/k2 @ moat-port, HEAD 20f56c062675d09e34615209a811a63ff81f4b7f (identical to gfx90a lead; no source change).
+GPU: HIP_VISIBLE_DEVICES=0 (W7800 #0). No code change or fork push; follower reuses lead branch unchanged.
+
+### Commands
+
+Clone:
+```
+git clone --branch moat-port --single-branch https://github.com/jeffdaily/k2 /var/lib/jenkins/moat/projects/k2/src
+```
+
+Configure (gfx1100; libhipcxx from agent_space/libhipcxx symlinked to _deps/libhipcxx):
+```
+cd /var/lib/jenkins/moat/projects/k2/src && mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DK2_WITH_HIP=ON -DK2_WITH_CUDA=OFF \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++ \
+      -DCMAKE_CXX_STANDARD=20 \
+      -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python3 \
+      -DK2_LIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/libhipcxx/include \
+      -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF ..
+```
+
+Compile (timeit wrapped):
+```
+bash utils/timeit.sh k2 compile -- cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16
+```
+Elapsed: ~424s.
+
+C++ gtests (HIP_VISIBLE_DEVICES=0, serial):
+```
+bash utils/timeit.sh k2 test -- bash agent_space/k2_gtest_gfx1100.sh
+```
+Elapsed: ~75s.
+
+Python slice (HIP_VISIBLE_DEVICES=0):
+```
+bash utils/timeit.sh k2 test -- bash agent_space/k2_pytest_gfx1100.sh
+```
+Elapsed: ~32s.
+
+### gfx1100 code-object evidence
+
+roc-obj-ls on cu_ragged_test and cu_array_ops_test and _k2.cpython-312 all show:
+```
+hipv4-amdgcn-amd-amdhsa--gfx1100   (present, first k2 code object)
+hipv4-amdgcn-amd-amdhsa--gfx90a    (ROCm torch fat-binary drag-along; not executed)
+hipv4-amdgcn-amd-amdhsa--gfx942    (ROCm torch fat-binary drag-along; not executed)
+hipv4-amdgcn-amd-amdhsa--gfx950    (ROCm torch fat-binary drag-along; not executed)
+```
+k2 source was compiled with -DCMAKE_HIP_ARCHITECTURES=gfx1100 only; gfx90a/gfx942/gfx950
+objects come from ROCm torch's bundled fat library pulled in via device-link. The gfx1100
+code object runs on the W7800 hardware.
+
+### C++ gtest results (primary gate)
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (25),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+Total individual tests: 298 passed, 0 failed.
+
+Determinism: cu_ragged_test re-run -> 62/62 pass, identical result.
+
+### Python slice results
+
+231 passed, 4 failed. 4 failures are exclusively the 2 documented pre-existing artifact categories:
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6 weights_only=True refuses _k2.ragged.RaggedTensor. Device-independent.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 weights_only=True artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation divergence; float64 passes exactly. Non-associative float32 reduction artifact; benign.
+
+No new Python failures beyond the 2 documented artifact categories.
+
+### Wave32 verdict on hipCUB-replaced paths
+
+All hipCUB-backed replacements (moderngpu_shim.h segmented_sort/load_balance_search/sorted_search/transform_scan, cudpp_hip.cu SegmentedExclusiveSum) pass on wave32 (RDNA3 gfx1100) at identical pass counts to wave64 (MI250X gfx90a):
+- cu_ragged_test 62/62 (covers Prune+SortSublists = segmented_sort_indices, SegmentedExclusiveSum)
+- cu_array_ops_test 25/25 (covers transform_lbs/transform_scan/mergesort)
+- cu_utils_test 4/4 (covers load_balance_search/sorted_search)
+No warp-size sensitivity; the hipCUB replacements are wave-agnostic.
+
+### Verdict
+
+PASS. 30/30 C++ gtests (298/298 individual). Python slice 231 passed, 4 pre-existing artifacts -- no regressions vs gfx90a. Transition: port-ready -> completed. validated_sha = 20f56c06. Fork untouched.

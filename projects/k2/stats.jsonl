@@ -12,3 +12,7 @@
 {"kind":"phase","ts":"2026-05-31T08:27:40Z","phase":"compile","seconds":206.077,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
 {"kind":"phase","ts":"2026-05-31T08:29:26Z","phase":"test","seconds":87.325,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_run_gfx90a_val.sh"}
 {"kind":"phase","ts":"2026-05-31T08:32:48Z","phase":"test","seconds":183.161,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_run_gfx90a_val.sh"}
+{"kind":"phase","ts":"2026-05-31T08:47:30Z","phase":"compile","seconds":424.157,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T08:49:42Z","phase":"test","seconds":75.307,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T08:50:21Z","phase":"test","seconds":2.677,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
+{"kind":"phase","ts":"2026-05-31T08:52:06Z","phase":"test","seconds":31.486,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
