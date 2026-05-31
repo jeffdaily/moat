@@ -116,3 +116,37 @@ Verified (no problems):
 - Commit hygiene: title `[ROCm] Port gtsam_points GPU library to HIP (gfx90a)` = 52 chars (<=72), `[ROCm]` prefix, mentions Claude, no Co-Authored-By noreply trailer, ASCII (uses `--`), Test Plan with fenced commands. `master` == base 85d0f4c (clean upstream mirror, no port commits). All work under jeffdaily; no AMD-internal account references.
 
 Note for the validator (carried from the porter, not a review blocker): the CUDA Graph path (cuda_graph.cu / cuda_graph_exec.cu) compiles but is not exercised by the GPU gate (VGICP drives streams + hipCUB directly, not graph capture) -- compile-only at validation time. The GTSAM 4.3a0 source-build dependency is a build-env matter (documented above), not a code issue.
+
+## Validation 2026-05-31 (validator, linux-gfx90a)
+
+Device: AMD Instinct MI250X gfx90a, ROCm 7.2.53211 (HIP 7.2.53211.e1a6bc5663, Direct Dispatch: 1), HIP_VISIBLE_DEVICES=3.
+
+GTSAM dep: reused source-built borglab/gtsam @ 4.3a0 at /var/lib/jenkins/moat/_deps/gtsam/install (libgtsam.so.4.3a0, libgtsam_unstable.so.4.3a0, libmetis-gtsam.so, libcephes-gtsam.so all present).
+
+Build: reused intact build_hip/ at HEAD 09346fdeaa9e179e45ba23c8264356ab59884e50 (ninja: no work to do).
+
+Commands:
+```
+export LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/gtsam/install/lib:/opt/rocm/lib
+export HIP_VISIBLE_DEVICES=3
+# compile check (no-op, build was current)
+utils/timeit.sh gtsam_points compile -- ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16
+# run 1
+utils/timeit.sh gtsam_points test -- ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1
+# run 2 (determinism)
+ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1
+```
+
+Results (both runs): 87/87 passed, 0 failed, ~39 s total.
+
+GPU gate results:
+- test_matching_cost_factors VGICP_CUDA_NONE, VGICP_CUDA_OMP: PASSED both runs. Convergence EXPECT_LT(rot, 0.015 rad) and EXPECT_LT(trans, 0.15 m) held across FORWARD/BACKWARD/UNARY/MULTI_FRAME (no EXPECT failures in output). Porter-measured: rot 0.0004-0.0025 rad, trans 0.008-0.050 m -- reproduced within tolerance on both runs.
+- test_voxelmap VoxelMapGPU, VoxelMapGPU_Intensity (atomicMax on hipMallocAsync fine-grained memory -- intensity path accumulates correctly, no coarse-grained drop), VoxelMapGPU_IO: all PASSED.
+- test_types TestPointCloudGPU: PASSED.
+- Device dispatch confirmed: AMD_LOG_LEVEL=3 shows ShaderName records for gtsam_points kernels (voxel_coord_kernel, voxel_bucket_assignment_kernel, accumulate_points_kernel, finalize_voxels_kernel via rocThrust) on gfx90a GCD 3. All hipPeekAtLastError/hipGetLastError calls returned hipSuccess.
+
+Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_compact_mahalanobis, test_continuous_time, test_continuous_trajectory, test_global_registration, test_headers, test_kdtree, test_loam_factors, test_voxel_raycaster -- all PASSED, no regression.
+
+CUDA Graph path (cuda_graph.cu / cuda_graph_exec.cu): compile-only at this validation, as noted by porter. Not exercised by the GPU gate.
+
+State: linux-gfx90a -> completed (validated_sha: 09346fdeaa9e179e45ba23c8264356ab59884e50). Followers linux-gfx1100 and windows-gfx1151 unblocked to port-ready.

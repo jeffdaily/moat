@@ -1,0 +1,5 @@
+{"kind":"phase","ts":"2026-05-31T23:06:53Z","phase":"compile","seconds":7.476,"exit":2,"cmd":"cmake --build projects/ElasticFusion/src/build-hip --target efusion -j16"}
+{"kind":"phase","ts":"2026-05-31T23:08:37Z","phase":"compile","seconds":0.152,"exit":1,"cmd":"cmake --build build-hip --target efusion -j16"}
+{"kind":"phase","ts":"2026-05-31T23:08:50Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -C build-hip efusion -j16"}
+{"kind":"phase","ts":"2026-05-31T23:09:31Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -C build-hip efusion -j16"}
+{"kind":"phase","ts":"2026-05-31T23:10:16Z","phase":"test","seconds":0.212,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/ef_glprobe/build && HIP_VISIBLE_DEVICES=2 ./kernel_harness"}
