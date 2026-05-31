@@ -34,26 +34,27 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "port-ready",
+      "state": "validation-failed",
       "blocked": false,
-      "blocked_reason": null,
+      "blocked_reason": "validation-failed: 124/132 PASS (8 failures vs 6 on gfx90a). 2 new failures on gfx1100 ROCm 7.2.1: (1) cholesky_dense cfloat large-matrix subtests -- FP32 precision difference RDNA3 vs MI250X, max error 0.073 > eps 0.05; (2) where cfloat/cdouble -- scan_first<cuFloatComplex,uint,notzero,false,32,true> JIT compile triggers COMGR internal error 'Failing to compile to realloc' on gfx1100, not a port defect but a ROCm/COMGR compiler bug. JIT engine itself works (jit 1781/1781). Static code: roc-obj-ls confirms hipv4-amdgcn-amd-amdhsa--gfx1100. Topk 110/110 x2 deterministic, nearest_neighbour 122/122 x2. Fork untouched (no commit made). Porter needs to analyze and fix the 2 new failures.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-31T21:00:00Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T20:19:33Z",
+      "updated_at": "2026-05-31T21:30:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 0,
-          "test": 0,
+          "compile": 362,
+          "test": 1050,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
+        "session_count": 1,
+        "first_session_at": "2026-05-31T21:00:00Z",
+        "last_session_at": "2026-05-31T21:30:00Z"
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

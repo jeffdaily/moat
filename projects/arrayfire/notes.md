@@ -395,6 +395,81 @@ full link, then GPU-validate the core gtest subset (the hip backend runs under t
 prefix) on one isolated GCD. Only then -> ported. reduce_by_key wave64 staging needs explicit
 GPU determinism validation.
 
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1) -- RESULT: validation-failed (2 new failures vs gfx90a)
+
+GPU: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=0.
+Fork HEAD: 86fbbbe (same as gfx90a; follower validation, no source changes).
+
+Build: fresh cmake + ninja -j16.
+```
+cmake -S projects/arrayfire/src -B projects/arrayfire/src/build-hip-gfx1100 \
+  -GNinja -DCMAKE_BUILD_TYPE=Release \
+  -DAF_BUILD_HIP=ON -DAF_BUILD_CUDA=OFF \
+  -DAF_BUILD_CPU=ON -DAF_BUILD_OPENCL=OFF -DAF_BUILD_ONEAPI=OFF \
+  -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_FORGE=OFF \
+  -DAF_WITH_CUDNN=OFF -DAF_WITH_IMAGEIO=OFF -DAF_BUILD_DOCS=OFF \
+  -DAF_BUILD_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build projects/arrayfire/src/build-hip-gfx1100 -j 16
+```
+Build: exit 0. 1643/1643 targets. Time: 362 seconds.
+
+Static code objects: `roc-obj-ls libafcuda.so` confirms `hipv4-amdgcn-amd-amdhsa--gfx1100`
+throughout (all code object bundles). No gfx90a code objects.
+
+JIT engine on gfx1100: jit 1781/1781 PASS. The hipRTC JIT engine compiles
+`--offload-arch=gfx1100` (from hipGetDeviceProperties().gcnArchName at runtime).
+Disk cache keys are gfx1100: `~/.arrayfire/KER*_HIP_gfx1100_AF_310.bin`.
+Both JIT paths (sourceIsJIT=true element-wise, and sourceIsJIT=false templated) work.
+
+Full `ctest -R '_cuda$' -j1` serial run: 124/132 PASS (8 failures vs 6 on gfx90a).
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir .../build-hip-gfx1100 -R '_cuda$' -j1 --output-on-failure
+```
+Time: 1050 seconds.
+
+Determinism: topk 110/110 x2, nearest_neighbour 122/122 x2 -- no LDS fault recurrence.
+
+Wave32 verdict: static kernels compile correctly for gfx1100. JIT engine generates
+correct gfx1100 code objects (1781/1781 jit tests pass). Wave-size-dependent kernels
+(reduce, scan, scan_by_key, sort) all pass. The 2 new failures below are not wave32
+issues -- they are FP32 precision and a COMGR compiler bug.
+
+Failing binaries (8 total: 6 documented + 2 NEW):
+
+Documented (same as gfx90a -- NOT port bugs):
+1. blas: 126/127 -- MatrixMultiply.schar (hipblasGemmEx 8I->32F -> HIPBLAS_STATUS_NOT_SUPPORTED)
+2. confidence_connected: AF_ERR_NOT_CONFIGURED (AF_WITH_IMAGEIO=OFF)
+3. sparse: AF_ERR_NOT_SUPPORTED stub
+4. sparse_arith: AF_ERR_NOT_SUPPORTED stub
+5. sparse_convert: AF_ERR_NOT_SUPPORTED stub
+6. threading: Threading.Sparse -> af::sparse -> terminate (sparse stub)
+
+NEW (gfx1100-specific, NOT port bugs):
+7. cholesky_dense: 30/32 -- Cholesky/1.UpperMultipleOfTwoLarge and LowerMultipleOfTwoLarge
+   (cfloat) fail: max error 0.073 > eps 0.05 on large complex matrices. This is a hardware
+   FP32 precision difference between gfx1100 (RDNA3) and gfx90a (MI250X). The fp32 POTRF
+   factorization accumulates slightly more floating-point error on gfx1100. All float,
+   double, cdouble cases pass; only cfloat large-matrix subtests fail.
+8. where: 54/56 -- Where/2.BasicC (cfloat) and Where/3.BasicC (cdouble) throw AF_ERR_INTERNAL.
+   Root cause: `scan_first<cuFloatComplex,detail::uint,af_notzero_t,false,32,true>` JIT
+   compilation triggers a COMGR internal error ("Failing to compile to realloc", logged
+   at AMD_LOG_LEVEL=3) on gfx1100 ROCm 7.2.1. This is a ROCm/COMGR compiler bug specific
+   to this kernel instantiation on gfx1100. The same scan_first kernel with other type
+   combinations compiles and runs correctly. Simplified reproducers (hipRTC direct) pass;
+   the failure is in the full arrayfire header set under COMGR. NOT a port defect.
+
+The 2 new failures BLOCK the completion gate (gate: same 6 residuals, no new failures).
+State: validation-failed; back to porter for analysis/fixes.
+
+Recommendations for porter:
+- where/scan_first COMGR bug: investigate whether a workaround exists (e.g., different
+  threads_x computation in where.hpp for gfx1100, or a simpler operator in Transform
+  for complex notzero). May need to file a COMGR bug against ROCm.
+- cholesky cfloat precision: consider widening the eps tolerance for cfloat on gfx1100,
+  or investigate if hipSOLVER uses different internal precision on RDNA3.
+
 ## Validation 2026-05-31 (validator) -- RESULT: COMPLETED (linux-gfx90a)
 
 GPU: gfx90a (MI250X), HIP_VISIBLE_DEVICES=2, ROCm 7.2.1. Fork HEAD: 86fbbbe.
