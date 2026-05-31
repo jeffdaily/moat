@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-05-31T00:58:57Z","phase":"compile","seconds":5.129,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:02:41Z","phase":"compile","seconds":5.110,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:04:41Z","phase":"compile","seconds":15.013,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:05:32Z","phase":"compile","seconds":20.532,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:07:22Z","phase":"compile","seconds":47.503,"exit":1,"cmd":"cmake --build projects/alien/src/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T01:08:46Z","phase":"compile","seconds":5.321,"exit":0,"cmd":"cmake --build projects/alien/src/build -j 16"}
