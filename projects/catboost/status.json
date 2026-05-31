@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "catboost",
   "upstream_url": "https://github.com/catboost/catboost",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/catboost",
   "fork_default_branch": "master",
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-31T00:17:18Z",
-  "head_sha": null,
+  "updated_at": "2026-05-31T02:18:33Z",
+  "head_sha": "b3ee4ccb3612fec93d16da0e40a9e3af1ff7b0d4",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-31T00:31:43Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T00:17:18Z",
+      "updated_at": "2026-05-31T00:31:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

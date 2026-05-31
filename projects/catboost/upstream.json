@@ -2,7 +2,7 @@
   "full_name": "catboost/catboost",
   "upstream_url": "https://github.com/catboost/catboost",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/catboost",
   "ext_type": "cmake",
   "base_sha": null
 }
