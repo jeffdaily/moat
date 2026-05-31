@@ -517,6 +517,13 @@
     "note": "graphics shader language; AMD via SPIR-V/Vulkan",
     "reason": "not-a-target"
   },
+  "shi-labs/natten": {
+    "decided": "2026-05-31T02:43:08Z",
+    "disposition": "skip",
+    "full_name": "SHI-Labs/NATTEN",
+    "note": "libnatten is 100% CUTLASS/CuTe (Ampere/xFormers FNA+FMHA, Hopper wgmma/TMA, Blackwell); naive & CPU CUDA kernels deleted upstream (CHANGELOG: 'Dropped unfused / CPU backends in libnatten'; na{1,2,3}d_{qk,qkrpb,av} removed). CUTLASS does not port to ROCm per PORTING_GUIDE; no non-CUTLASS GPU kernel remains as a first slice. AMD already works via the Flex (torch.nn.attention.flex_attention -> Triton) backend, which is explicitly ROCm-aware (checks.py is_rocm).",
+    "reason": "cant-port"
+  },
   "shocker-0x15/gfxexp": {
     "decided": "2026-05-30T03:40:13Z",
     "disposition": "skip",
