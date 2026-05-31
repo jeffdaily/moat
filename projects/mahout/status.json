@@ -7,17 +7,17 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T01:42:31Z",
-  "head_sha": "79a257cd97fcadefe1b454bb72028d0e6c61ad03",
+  "updated_at": "2026-05-31T01:54:09Z",
+  "head_sha": "2b0544a40bcaf60d35539ba8be62cf791e6c0846",
   "platforms": {
     "linux-gfx90a": {
-      "state": "changes-requested",
+      "state": "review-passed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-05-31T01:00:42Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T01:42:31Z",
+      "updated_at": "2026-05-31T01:54:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

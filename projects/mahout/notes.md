@@ -240,3 +240,62 @@ handles is satisfied: CudaSlice (Drop guards ptr!=0) and CudaStream (Drop guards
 destroyed. Commit hygiene is clean: `[ROCm]` title (<=72), Test Plan present,
 Claude disclosed, no noreply trailer, no ghstack, author is the jeffdaily user
 identity (no AMD-internal account), single curated commit on moat-port.
+
+## Porter fix 2026-05-31 (changes-requested -> review-passed) -- fork @ 2b0544a
+
+Addressed all 4 review findings; nothing else touched (the wave64 fixes, cudarc
+displacement, DLPack, and the CUDA default path are left as-is). Default CUDA
+build still binds cudarc (`cargo check -p qdp-core -p qdp-kernels` with default
+features type-checks; the QDP_NO_CUDA=1 only skips nvcc kernel compilation).
+
+1. (behavior) cuda_ffi.rs hip_rt: cudaMemcpyAsync now maps to hipMemcpyAsync (the
+   exact 1:1 enqueue-and-return, ROCm 7.x hip_runtime_api.h:5037), not
+   hipMemcpyWithStream (which synchronizes the stream and blocks the host). The
+   old mapping silently serialized the dual-stream H2D overlap pipeline
+   (pipeline.rs async_copy_to_device, line 461). Correctness was never affected
+   (the copy-done event + wait_for_copy still order copy->compute), so the
+   validated results stand; this restores the non-blocking behavior the native
+   engine's headline feature depends on.
+   - GPU RE-VALIDATION of the async path (HIP_VISIBLE_DEVICES=3, gfx90a):
+     * A direct libamdhip64 latency probe on a 256MB pinned H2D copy: hipMemcpyAsync
+       returns to the host in ~11 us (transfer 18.64 ms proceeds on the stream);
+       hipMemcpyWithStream blocks ~18.63 ms (the full transfer) before returning
+       -- 1694x longer. Confirms hipMemcpyAsync is genuinely non-blocking.
+     * The dual-stream async-pipeline tests pass with QDP_ENABLE_OVERLAP_TRACKING=1:
+       test_amplitude_encoding_async_pipeline, test_angle_encoding_async_pipeline
+       (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path
+       (gpu_angle_encoding). The H2D-vs-compute overlap timeline records cleanly
+       through hipMemcpyAsync (no "invalid resource handle"/event-lifecycle
+       errors); a 32MB / 4-chunk multi-chunk pipeline runs and the OverlapTracker
+       reports per-chunk overlap, with correct encoder output.
+2. (latent safety) device.rs htod_sync_copy_into: added
+   `assert_eq!(dst.len(), src.len())` and a `+ DeviceSlice<T>` bound on the
+   destination type param, matching cudarc's contract. Both call sites (the
+   internal htod_sync_copy at device.rs:300 and encoding/basis.rs:149 via a
+   slice_mut view) already satisfy it; this turns a future length mismatch from a
+   silent device-buffer OOB write into a clean panic. gpu_memory_safety (4) still
+   passes.
+3. (style) cuda_ffi.rs:55,120: section dividers changed from Unicode box-drawing
+   glyphs to ASCII `// ---- ... ----`.
+4. (doc) kernel_compat.h:19: comment corrected from "Included by every kernel
+   translation unit" to "Included by the kernel TUs that use warp intrinsics
+   (amplitude.cu)".
+
+Regression re-validation (HIP_VISIBLE_DEVICES=3, gfx90a, ROCm 7.2.1) -- all GREEN,
+identical to the prior validation:
+- qdp-kernels: amplitude 21, angle 10.
+- qdp-core lib 77; GPU suites gpu_angle 12, gpu_api_workflow 8, gpu_basis 7,
+  gpu_dlpack 9, gpu_fidelity 17, gpu_iqp 22, gpu_memory_safety 4, gpu_norm_f32 2,
+  gpu_ptr_encoding 64, gpu_validation 8; non-GPU arrow 5, null 6, numpy 4,
+  parquet 8, preprocessing 14, tensorflow 9, torch 3, types 6. 0 failures.
+- Python parity (dev-profile HIP wheel, pip --no-deps into the ROCm-torch env;
+  testing/qdp + testing/qdp_python + qdp/qdp-python/tests): 301 passed, 12
+  skipped, 0 failed. Skips are pre-existing/legit (2 multi-GPU, 1 tensorflow,
+  1 loader path-timing, 5 torch_ref sm_-arch check, 2 AmdQdpEngine-not-built,
+  1 NVIDIA-ref-absent). NOTE: the full `testing/` tree also has
+  testing/qumat/test_amazon_braket_backend.py, which fails COLLECTION (no
+  `braket` module) -- that is the qumat quantum-backend layer, orthogonal to the
+  QDP native engine and unrelated to this port; scope parity to testing/qdp*.
+
+Fork HEAD: 2b0544a40bcaf60d35539ba8be62cf791e6c0846 (amended single curated
+commit, force-with-lease pushed to jeffdaily/mahout @ moat-port).
