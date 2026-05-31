@@ -2,7 +2,7 @@
   "full_name": "LMCache/LMCache",
   "upstream_url": "https://github.com/LMCache/LMCache",
   "default_branch": "dev",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/LMCache",
   "ext_type": "torch-extension",
   "base_sha": "7eb57ad"
 }
