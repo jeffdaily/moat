@@ -269,3 +269,74 @@ Finding (non-blocking, comment-only -- fold into the validator's SHA-update amen
 - cmake/Open3DSetGlobalProperties.cmake:106 comment claims "The compat header defines __CUDACC__ (Open3D's device-guard requirement)". This is factually wrong and contradicts CUDAToHIP.h:29 ("We do NOT fake __CUDACC__ for HIP"); grep confirms __CUDACC__ is never #defined anywhere. The real mechanism is extending each __CUDACC__ guard to ||__HIPCC__, and THRUST_DEVICE_SYSTEM=5 (line 113) is set precisely BECAUSE __CUDACC__ is absent and rocThrust's auto-detect must be pinned. The code is correct; only the comment's premise is wrong and will mislead. Reword to: rocThrust's compiler.h would otherwise auto-detect the wrong backend, so pin THRUST_DEVICE_SYSTEM=5 (HIP).
 
 Safe to proceed to GPU validation. The missing GPU run at review time is expected (validator stage runs the real gfx90a tests next).
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+GPU: 4x AMD Radeon Pro W7800 48GB (gfx1100, wave32); HIP_VISIBLE_DEVICES=0 (all idle).
+Fork HEAD: 9eb3704d07b4b6c65cd46ac5805b0654a39e7250 (moat-port branch, untouched -- no fork commit).
+
+### Build
+
+Host dep install (not present, installed via apt): libwayland-bin libwayland-dev libxkbcommon-dev (GLFW needs wayland-scanner and xkbcommon to configure even with BUILD_GUI=OFF; the gfx90a box had these pre-installed). No source change.
+
+Configure command (same as gfx90a recipe, only CMAKE_HIP_ARCHITECTURES differs):
+```
+cmake -S projects/Open3D/src -B projects/Open3D/src/build \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm \
+  -DBUILD_PYTORCH_OPS=OFF -DBUILD_TENSORFLOW_OPS=OFF \
+  -DBUILD_GUI=OFF -DBUILD_WEBRTC=OFF -DBUILD_EXAMPLES=OFF \
+  -DBUILD_BENCHMARKS=OFF -DBUILD_PYTHON_MODULE=OFF \
+  -DBUILD_UNIT_TESTS=ON -DBUILD_ISPC_MODULE=OFF \
+  -DWITH_IPP=OFF \
+  -DCMAKE_BUILD_TYPE=Release -DDEVELOPER_BUILD=ON
+cmake --build projects/Open3D/src/build -j16 --target tests
+```
+
+Build: PASS (~227 s including full 3rdparty fetch and HIP compilation of all 25 TUs).
+
+### gfx1100 code-object evidence
+
+roc-obj-ls on build/bin/tests: 25 x hipv4-amdgcn-amd-amdhsa--gfx1100 code objects; 0 gfx90a. Arch confirmed.
+
+### GPU test results (gfx1100, wave32)
+
+Test commands (same filter as gfx90a lead, SlabHash excluded via USE_HIP guard in test source):
+```
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests \
+  --gtest_filter='*Tensor*:*Reduction*:*MemoryManager*'
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests \
+  --gtest_filter='*NearestNeighbor*:*KnnIndex*:*FixedRadiusIndex*:*Knn*:*Hybrid*:*Registration*:*Feature*'
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests \
+  --gtest_filter='*HashMap*:*VoxelBlockGrid*'
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests \
+  --gtest_repeat=10 --gtest_break_on_failure \
+  --gtest_filter='*HashMapPermuteDevices.Reserve*:*HashMapPermuteDevices.InsertComplexKeys*:*HashMapPermuteDevices.MultivalueInsertion*:*HashMapPermuteDevices.HashSet*'
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests \
+  --gtest_filter='*NearestNeighbor*:*KnnIndex*:*FixedRadiusIndex*'
+```
+
+Results:
+- Tensor + Reduction + MemoryManager: 421/421 PASS (1 SYCL skip -- matches gfx90a exactly)
+- NearestNeighborSearch (FAISS warp-select wave32) / KNN / FixedRadius / Hybrid + Registration ICP + FPFH Feature: 44/45 PASS (1 fail = RGBDOdometryMultiScaleHybrid, NPP scoped-out -- matches gfx90a exactly)
+- HashMap (stdgpu backend only, Slab excluded by USE_HIP guard): 20/20 PASS
+- VoxelBlockGrid (TSDF integrate / ray casting / IO): 14/14 PASS
+- HashMap dedup stability (4 dedup-heavy tests x 10 repeats = 80 device runs): 0 FAIL
+- NNS determinism re-run: 15/15 PASS
+
+Total validated gfx1100: 421 + 44 + 34 = 499 passing GPU tests. Exactly matches gfx90a.
+Scoped-out NPP failure (1): RGBDOdometryMultiScaleHybrid -- expected, documented above.
+
+### Wave32 verdict
+
+FAISS warp-select (kWarpSize=32): CORRECT on native wave32. On gfx1100 kWarpSize=32 IS the wavefront width -- no subgroup split needed. All NNS/KNN/FixedRadius tests pass. The arch-unified kWarpSize=32 design is confirmed correct for both wave64 (two 32-lane halves model) and wave32 (direct one-to-one).
+
+Tensor reductions (OPEN3D_REDUCE_FULL_WARP_MASK, 64-bit mask, runtime warpSize=32 on gfx1100): CORRECT. Reduction tree runs over 32 lanes as expected; 421/421 Tensor+Reduction tests pass.
+
+HashMap stdgpu dedup: CORRECT on gfx1100 (20/20, stable). SlabHash skipped per established protocol (non-default backend, wave-incorrect, scoped out of port scope).
+
+No HIP faults, no NaN, clean exit on all runs.
+
+State: linux-gfx1100 -> `completed` at validated_sha 9eb3704.
+Fork untouched (no commit pushed; no source change required).
