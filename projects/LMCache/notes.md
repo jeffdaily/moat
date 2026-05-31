@@ -263,3 +263,25 @@ Non-GPU regression:
 
 No fork interaction: moat-port head e1d94420 untouched; no CI workflow added.
 Transition: port-ready -> completed (validated_sha = e1d94420).
+
+## Windows gfx1151 attempt 2026-05-30 -- BLOCKED (never Windows-ported; non-ROCm POSIX host porting out of scope)
+
+Platform: gfx1151 APU, Windows, TheRock ROCm (gsplat venv torch 2.12+rocm). The ROCm/HIP
+GPU surface is fine: setup.py's BUILD_WITH_HIP hipify runs cleanly ("Successfully
+preprocessed all matching files", 0 unsupported CUDA calls), and torch builds the c_ops
+HIP extension path. The blocker is NOT ROCm and NOT gfx1151 -- LMCache has NEVER been
+ported to Windows (even for CUDA): grep of csrc/ finds ZERO _WIN32/_MSC_VER guards. Its
+host C++ is pervasively POSIX:
+- csrc/storage_manager/bitmap.cpp used GCC builtins __builtin_popcount/__builtin_ctz (no
+  MSVC equiv) -- fixed with an _MSC_VER shim (see windows-partial-fixes.patch).
+- csrc/storage_backends/redis/* (event_notifier.h) needs <unistd.h>/eventfd -- POSIX sockets.
+- **csrc/mem_alloc.cpp (the c_ops host allocator, the layer memory_management.py calls via
+  alloc_pinned_numa_ptr / alloc_hugepage_pinned_ptr / alloc_shm_pinned_ptr) needs
+  <sys/mman.h> + <unistd.h>** (mmap, hugepages, shm) -- no Windows equivalent without a
+  VirtualAlloc/large-page/Win32-shared-memory port.
+
+So GPU validation on Windows requires porting LMCache's POSIX host layer (NUMA/hugepage/shm
+pinned allocators + redis/fs storage backends) to Win32 -- a substantial Windows-CUDA
+portability effort that is SEPARATE from the ROCm/HIP port and out of scope here. The ROCm
+HIP kernels themselves (mem_kernels.hip) are unaffected (they hipify). gfx90a/gfx1100 (Linux)
+pass. Blocked; revisit if/when LMCache gains a Windows host-allocator/networking port upstream.
