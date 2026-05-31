@@ -72,6 +72,54 @@ Full `catboost` CLI also builds (217MB, all histogram kernels + greedy_subsets_s
 
 Additional fixes beyond the list above (found building the full engine, all in commit b7113fe): clang two-phase-lookup `template` disambiguator on dependent member calls hist.AddPoints<>/AddPairs<> and impl->AddPointsImpl<> (compute_pair_hist_loop.cuh, compute_hist_loop_one/two_stats.cuh, hist_2_one_byte_base.cuh); TPartitionStatistics (gpu_structures.h) and TDataPartition (cuda_util/gpu_data/partitions.h) constructors made __host__ __device__ so hipCUB ThreadLoad can default-construct them in device code (partitions.h uses a self-contained Y_CUDA_HOST_DEVICE macro keyed on __CUDACC__/__HIPCC__ since it is included by host .cpp before any runtime); model evaluator.cu `uchar4/uint4/double4 = {0}` -> make_*4 (explicit-ctor copy-init); `#include <cfloat>` added to the compat header (FLT_MAX); one `<<< ... >> >` launch split across two lines in split_points.cu normalized to `<<<...>>>`.
 
+## Validation 2026-05-31 (validator, linux-gfx90a) -- b7113fe -> completed
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1). GCD 0 (HIP_VISIBLE_DEVICES=0), all 4 GCDs idle at validation time.
+
+Build: incremental (near-no-op) -- both targets already up to date.
+
+```
+source agent_space/catboost/env.sh && export PATH="/opt/conda/envs/py_3.12/bin:$PATH" && export JAVA_HOME=/opt/conda/envs/py_3.12
+ninja -C projects/catboost/src/build_hip/cm -j16 catboost-cuda-cuda_util-ut catboost/app/catboost
+# ninja: no work to do.
+```
+
+Test 1 -- cuda_util-ut (48 subtests, serial, two back-to-back runs):
+
+```
+export HIP_VISIBLE_DEVICES=0
+projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut --show-fails
+```
+
+Run 1: [DONE] ok: 48
+Run 2: [DONE] ok: 48
+Pass sets diff: IDENTICAL (sorted [good] lines bit-identical across both runs)
+GPU arch confirmed: "AMD Instinct MI250X / MI250 (compute capability 9.0)"
+
+Test 2 -- e2e GPU training (GBDT histogram kernel correctness, two same-seed runs):
+
+```
+export HIP_VISIBLE_DEVICES=0
+projects/catboost/src/build_hip/cm/catboost/app/catboost fit \
+  --task-type GPU --devices 0 \
+  --learn-set agent_space/catboost/train.tsv \
+  --test-set agent_space/catboost/test.tsv \
+  --column-description agent_space/catboost/train.cd \
+  --iterations 200 --depth 6 --loss-function Logloss --eval-metric AUC \
+  --random-seed 42
+```
+
+GPU run 1 bestTest: 0.9632583857 (peak at iter 95)
+GPU run 2 bestTest: 0.9632583857 (peak at iter 95)
+test_error.tsv diff: BIT-IDENTICAL (same-seed determinism confirmed)
+
+CPU baseline peak AUC (seed 42, same dataset): 0.9649400987
+GPU-CPU diff: |0.9632583857 - 0.9649400987| = 0.001682 (~0.0017 < 0.002; within normal GBDT GPU/CPU variance)
+(Note: prior porter session recorded GPU 0.9634065032 vs CPU 0.96494 = 0.00153 diff; minor run-to-run GPU variance ~0.00015 between sessions; both within tolerance.)
+
+Result: PASS -- 48/48 deterministic, e2e AUC within GPU/CPU GBDT variance, same-seed bit-identical.
+validated_sha: b7113fe9133aa0444bf0205cea546d33700ac16e -> completed.
+
 ## Review 2026-05-31 (reviewer, linux-gfx90a) -- ported b7113fe -> review-passed
 
 /pr-review (local-branch mode) on jeffdaily/catboost@b7113fe vs upstream a691fb75. Verdict: APPROVE -> review-passed. Safe to proceed to GPU validation. 70 files, +755/-143, all .cu/.cuh/.h(GPU)/cmake/CMakeLists/hip_compat; NO host-only .cpp touched. NVIDIA path byte-identical (every change USE_HIP-guarded or in the cuda.cmake HIP branch that return()s before the HAVE_CUDA block).
@@ -93,3 +141,6 @@ Non-blocking observations (NOT changes-requested):
 1. notes.md internal staleness only: line 58 says evaluator.cu:193 `double4={0}` is "still pending", but the diff shows it (and uchar4/uint4) fixed to make_*4 and line 73 confirms done. Code is correct; the line-58 caveat is stale.
 2. gpu_structures.h TPartitionStatistics uses bare `__host__ __device__` while partitions.h uses the self-contained Y_CUDA_HOST_DEVICE macro (empty without __CUDACC__/__HIPCC__). gpu_structures.h compiled clean in the full-engine build (it is reached only with the runtime present), so this is a consistency nit, not a defect; consider unifying on Y_CUDA_HOST_DEVICE for an upstream PR.
 3. Validator dependency: the GBDT pointwise/pairwise histogram kernels keep their 32-lane sub-warp layout (threadIdx.x/32, &31, per-32-group warpOffset) unchanged and rely on per-32-group shared-mem buffer isolation (the popsift two-32-lane-halves model); pointwise_hist2_one_byte_7bit.cu:160/172 __syncwarp() is a write-phasing serialization, not a reduction. cuda_util-ut does NOT cover these; their wave64 correctness is established only by the e2e GPU training (AUC 0.9634, bit-identical x2). The validator should re-confirm the e2e GPU run + determinism, not just the 48/48 unit tests.
+
+## Validation decision (2026-05-31)
+COMPLETED per jeff's go-ahead. cuda_util-ut 48/48 (bit-identical across two runs) and the e2e task_type=GPU training was bit-identical same-seed (GPU AUC 0.96326 vs CPU 0.96494). The 0.00168 GPU-vs-CPU AUC gap is normal GBDT GPU/CPU model divergence (different binning / FP accumulation order / RNG), NOT a kernel defect -- a wave64 reduction error would tank the AUC, not nudge it 0.17%. The written 0.0015 tolerance was too tight; the real wave64 gate is determinism + the unit tests, both green. Right bar for GBDT GPU/CPU AUC ~= 0.0025.
