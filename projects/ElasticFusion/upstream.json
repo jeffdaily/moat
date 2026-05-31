@@ -2,7 +2,7 @@
   "full_name": "mp3guy/ElasticFusion",
   "upstream_url": "https://github.com/mp3guy/ElasticFusion",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/ElasticFusion",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "e3b1a7e"
 }
