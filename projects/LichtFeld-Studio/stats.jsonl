@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-05-31T01:33:15Z","phase":"compile","seconds":0.586,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T01:33:46Z","phase":"compile","seconds":3.696,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T01:34:11Z","phase":"compile","seconds":3.382,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T01:34:32Z","phase":"compile","seconds":7.530,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T01:35:27Z","phase":"compile","seconds":7.818,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T01:36:00Z","phase":"compile","seconds":6.377,"exit":0,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
