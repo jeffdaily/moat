@@ -852,3 +852,34 @@ HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/UTILS_TEST \
 DISTANCE_TEST and FUSED_NN_TEST each re-run: both 11/11 and 12/12 PASS on the second run. No flakiness observed.
 
 validated_sha: 712eea35edf4a6c4786e2582db9d86073adf6f19. State transition: port-ready -> completed.
+
+## Neighbors finished 2026-05-31 (gfx90a) -- supersedes the ball_cover/NEIGHBORS deferral above
+
+The ball_cover / NEIGHBORS deferral recorded in the dated Review/Validation
+sections above (RAFT_TEST_NEIGHBORS OFF; ball_cover KNN + EpsNeighRbc deferred as a
+"wave64 reconvergence artifact") is now RESOLVED. The "reconvergence artifact"
+framing was imprecise; the concrete causes, and the FAISS-ROCm-faithful fixes, are
+in the rewritten "### faiss warp-select ... COMPLETE" and "### ball_cover ...
+RESOLVED" sections. Two independent bugs:
+
+1. The FAISS KeyValueBlockSelect __hip_check_mask abort (ball_cover KNN) was raft's
+   vendored faiss_select routing its bitonic-merge shuffles through raft::shfl_xor's
+   full-mask __shfl_xor_sync on a divergent (partial) wavefront. Fixed by porting
+   FAISS-ROCm's MASKLESS-shuffle approach into a faiss-local WarpShuffles.cuh (plus
+   the missing wave64 size-32 merge base case).
+2. The EpsNeighRbc undercount (ball_cover eps_nn) was a SEPARATE wave32-mask set in
+   the eps kernels (int ballot + __brev/__clz/0x7fffffff + (1<<lid)-1 + __popc) and
+   two host-geometry wave32 bakes (CSR/max_k grid ceildiv(n,2); copy kernel rounding
+   by Pow2<WarpSize=64> with a 32-thread block). Fixed arch-unified.
+
+GPU-validated on gfx90a (MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=1), full
+NEIGHBORS_TEST with RAFT_TEST_NEIGHBORS=ON: 75/75 PASS (HaversineKNNTestF 1,
+BallCoverAllKNNTest 9, BallCoverKNNQueryTest 9, EpsNeighTestFI brute-force 14,
+EpsNeighRbcTestFI Dense+Sparse+SparseRbcMaxK 42). ball_cover KNN two-run
+deterministic (18/18 each run). No regression: DISTANCE 11/11, FUSED_NN 12/12,
+LINALG 2017/2018 (same pre-existing DotTestF), LABEL 14/14, CORE subset 171/172
+(same pre-existing InterruptibleOpenMP), UTILS subset 177/177, RANDOM subset
+148/148. (MATRIX_SELECT_TEST is unchanged by this work -- it depends on neither the
+faiss_select nor the ball_cover headers touched here -- and remains at its prior 607
+result; the full 607-case binary takes >15 min to run on this box.) head_sha ->
+640bdb187159a52e5506fd17767d80f7d3887f3d.
