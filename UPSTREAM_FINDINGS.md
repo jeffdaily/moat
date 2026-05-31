@@ -144,6 +144,23 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   hipSPARSE docs note (low priority); same class as the hipBLAS/hipSOLVER void*
   handles. Report decision: PENDING (low priority, docs/robustness only).
 
+### B6. raft lanczos -- cuSOLVER *Host / Fortran-LAPACK symbols not in ROCm aliases
+- raft defers its 4 lanczos TUs (RAFT_COMPILE_LANCZOS=OFF). CONSEQUENTIAL: cuvs's
+  eigen_solvers.cuh includes raft/sparse/solver/lanczos.cuh (spectral clustering +
+  spectral_embedding), so cuvs's spectral path is unbuildable on ROCm without it.
+  This is the same consequential-deferral class as raft neighbors (now fixed).
+- The blocker is NOT an absent hipSOLVER device kernel (the reviewer corrected the
+  earlier csrqrsvBatched/Xsyevd characterization -- those are not called). The
+  eigensolve core is HOST LAPACK: Lapack<T>::sterf/steqr/geqrf -> Fortran sgeqrf_/
+  dgeqrf_ plus cusolverDn*Host helpers (spectral/detail/lapack.hpp). The ROCm math
+  aliases cover the DEVICE cusolverDn* but not the *Host / Fortran symbols -- that
+  is the real link blocker. WORKABLE via OpenBLAS/LAPACK Fortran directly or a
+  hipSOLVER device syevd; not a hard wall.
+- Action: port raft lanczos (write the host-LAPACK glue) BEFORE porting cuvs (a
+  prerequisite). cuvs is parked, so deferred for now. Report decision: N/A as an
+  upstream bug (it's our glue to write); tracked here as a consequential
+  cuvs-prerequisite deferral so it is not lost.
+
 ---
 
 ## Build-config / environment (not bugs; for completeness)
