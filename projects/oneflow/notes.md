@@ -111,18 +111,37 @@ compiles as HIP.
 - kineto auto-enables a roctracer backend on ROCm and demands ROCTRACER_LIBRARY from a wrong
   path; LIBKINETO_NOROCTRACER=ON under USE_HIP (profiler is off anyway).
 
-### DEFERRED (excluded from the first slice; documented for a continuation)
-- cuDNN -> MIOpen (NOT a drop-in: different descriptor/algo-find API). The conv/pool/
-  batchnorm/normalization primitives that call cuDNN. cuda_util.h gates `<cudnn.h>` and the
-  cudnn error-string helper behind `!USE_HIP`; the handle type is aliased so cuda_stream.h
-  parses, but the operations are not. These TUs need real MIOpen adaptation.
-- cuSOLVER -> hipSOLVER (handle/stream aliased; the getrf/getri dense ops in the few
-  cusolver kernels deferred).
-- cuBLASLt fused-MLP / grouped-GEMM kernels (cublas_fused_mlp*, fused_matmul_bias*) --
-  hipBLASLt API differs; deferred.
+### Compile tally (whole oneflow/ .cu tree, gfx90a)
+203 of 220 .cu compile as HIP. The 17 deferred TUs (list(FILTER EXCLUDE) in
+cmake/oneflow.cmake, each with a genuine library/API gap -- not a mechanical port):
+- cuDNN, no MIOpen drop-in: grid_sample_kernel_util.cu (spatial-transformer),
+  normalization_kernel.cu (cuDNN batchnorm). cuda_util.h/cudnn_util.h gate `<cudnn.h>` and
+  the cudnn error-string helper behind `!USE_HIP`; the handle type is aliased so
+  cuda_stream.h parses, but the operations are not. cudnn_conv_util.cpp also deferred.
+- cuBLASLt fused-MLP / grouped-GEMM / matmul-bias family: cublas_fused_mlp_kernel.cu,
+  cublas_fused_mlp_grad_kernel.cu, cublas_bias_add_relu_matmul_grad_kernel.cu,
+  cublas_fused_matmul_bias_add_grad.cu, fused_matmul_bias_kernel.cu,
+  fused_matmul_bias_add_relu_dropout.cu, grouped_matmul_bias.cu (hipBLASLt descriptor
+  surface + hipblasGemmStridedBatchedEx signature differ from cuBLASLt).
+- cuSOLVER: lu_decomposition_kernel.cu (getrf/getrs; deferred to hipSOLVER).
+- CUTLASS/CuTe + wmma + TensorRT-flash: fused_dot_feature_interaction_kernel.cu (wmma),
+  fused_self_attention_query_mul_key_and_value_kernel.cu (cublasGemmStridedBatchedEx),
+  fused_attention_kernels/fused_glu_kernel/fused_multi_head_attention_inference (CUTLASS,
+  already -DWITH_CUTLASS=OFF). CUTLASS does not port to ROCm (CK/ck_tile reimplementation).
+- libcu++: lru_cache.cu (`cuda::std::semaphore`, no ROCm equivalent).
+- P2P/IPC embedding shuffle: one_embedding_embedding_shuffle_p2p_kernel.cu,
+  one_embedding_embedding_gradient_shuffle_p2p_kernel.cu.
 - nvjpeg/npp image decode (NVIDIA-only) -- gated behind `!USE_HIP`.
-- CUTLASS/flash-attention fused kernels -- `-DWITH_CUTLASS=OFF` (already #ifdef-guarded);
-  CUTLASS does not port to ROCm (would be a CK/ck_tile reimplementation).
+The fixable-but-not-fixed bf16x2 broadcast (__float2bfloat162_rn -> a HIP helper in the
+compat header) was added, clearing dropout_kernel.cu.
+
+### REMAINING WORK to a linked liboneflow.so (continuation)
+The 203 .cu compile; the host .cpp GPU TUs (ep/cuda/*.cpp etc.) get the per-target compat
+flags but have not yet been driven to a clean compile + link of the full liboneflow.so.
+Next steps for a continuation: (1) build the `oneflow` target to surface host-.cpp and
+link faults (the host TUs reference the excluded ops via registries -- may need the
+excluded kernels stubbed or their registrations guarded); (2) once liboneflow.so + the
+oneflow_internal pybind module link, run the slice autotests on GPU.
 
 ## GPU validation (test oracle = PyTorch ROCm)
 torch 2.13 ROCm (torch.cuda.is_available()==True on HIP) is importable as the autotest

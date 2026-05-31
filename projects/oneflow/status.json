@@ -7,17 +7,17 @@
   "priority": 6.236,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T02:40:10Z",
-  "head_sha": "2c7eb13a7221b2d9484e4e44d6e5dcb26656415f",
+  "updated_at": "2026-05-31T02:48:26Z",
+  "head_sha": "1b29b2468681509d224f45e57e2650a61a1dc87c",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": false,
-      "blocked_reason": null,
+      "blocked_reason": "porting in progress (not yet ported): HIP plumbing + compat header + fault-class fixes land; 203/220 .cu compile as HIP incl. the full ep/cuda/primitive validation slice (30/30). 17 .cu are list(FILTER EXCLUDE)-ed from the monolith glob (genuine library gaps: cuDNN grid_sample/normalization, cuBLASLt fused-MLP/grouped-GEMM family, cuSOLVER lu_decomposition, CUTLASS+wmma fused attention/glu, libcu++ cuda::std::semaphore lru_cache, P2P embedding shuffle). RESUME: build the `oneflow` target to surface host-.cpp + link faults (the excluded ops' REGISTER_USER_KERNEL registrations likely need guarding/stubbing for liboneflow.so to link), then run slice autotests on GPU. Fork head 1b29b24.",
       "validated_sha": null,
       "started_at": "2026-05-31T01:37:32Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T01:37:32Z",
+      "updated_at": "2026-05-31T02:48:26Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
