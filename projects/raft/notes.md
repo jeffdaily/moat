@@ -162,6 +162,7 @@ MI250X). The crashing/blocked groups (below) are excluded via the
 | UTILS (sub)   | 36/36 PASS        | integer_utils, pow2, device_atomics, cudart_utils, seive |
 | LINALG (sub)  | 149/150 PASS      | element-wise (add/sub/mul/div/sqrt/pow/unary/binary/ternary), map, transpose 24, cuBLAS gemv 10 / dot 14 / axpy 14; 1 DotTestF float-tolerance fail |
 | DISTANCE      | 11/11 PASS        | `-DRAFT_TEST_DISTANCE=ON`; L2Expanded/L2SqrtExpanded/CosineExpanded via the public `pairwise_distance`, CK MFMA path (aligned) + SIMT fallback (unaligned) vs CPU ref, with a per-case backend-routing assertion |
+| FUSED_NN      | 12/12 PASS        | `-DRAFT_TEST_FUSED_NN=ON`; fused L2/L2Sqrt/cosine 1-NN via public `fusedL2NNMinReduce`/`fusedDistanceNN`, CK MFMA reducing-epilogue (aligned) + SIMT fallback (unaligned) vs CPU per-row argmin ref; argmin index EXACT + min-dist within fp32 tol, per-case backend-routing assertion |
 | MATRIX_SELECT | 607 (567+40 skip) | `-DRAFT_TEST_MATRIX_SELECT=ON`; select_k warp-sort + radix, k 1..1700, wave64 |
 
 Total: ~614 gtest cases pass on gfx90a. find_package(raft)+raft::raft also
@@ -184,11 +185,17 @@ by a documented gap:
 - SPARSE: more NVIDIA PTX (`__ldcg`, `=l` asm in sparse/distance/detail/utils),
   `atomicAdd_block`, and `thrust::cuda::par` in the test sources.
 - SOLVERS: cusolverSp batched-QR + cusolverDnXsyevd (no hipSOLVER equivalent).
-- NEIGHBORS: CUTLASS fused-distance + faiss_select `static_assert(WarpSize==32)`
-  (a hard wave32 assumption).
-- DISTANCE: the expanded L2 / cosine pairwise distances now build AND are GPU-
-  validated on HIP via the CK MFMA path + SIMT fallback (RAFT_TEST_DISTANCE, see
-  the CK section). Remaining: the fused_distance_nn reducing-epilogue CK variant.
+- NEIGHBORS: faiss_select `static_assert(WarpSize==32)` (a hard wave32
+  assumption). The CUTLASS fused-distance dependency is RESOLVED -- the fused
+  distance + 1-NN now has a CK MFMA reducing-epilogue path (see the CK fused-NN
+  section); ball_cover's FAISS KeyValueBlockSelect wave64 reconvergence is the
+  one remaining neighbors blocker.
+- DISTANCE: the expanded L2 / cosine pairwise distances AND the fused
+  distance + 1-NN (fusedL2NN/fusedCosineNN) now build AND are GPU-validated on
+  HIP via the CK MFMA path + SIMT fallback (RAFT_TEST_DISTANCE / RAFT_TEST_FUSED_NN,
+  see the CK sections). The full distance + fused-NN CUTLASS->CK deliverable is
+  complete; ball_cover's FAISS KeyValueBlockSelect is the only remaining
+  CK/neighbors item.
 
 ROCm path for the CUTLASS-based items above (DISTANCE / NEIGHBORS, and the
 MATRIX/STATS distance epilogue): CUTLASS does NOT port to ROCm. These kernels
@@ -351,13 +358,74 @@ CORE math/operators 92/92; UTILS validated subset 23/23 (ReductionTest is a
 SEPARATE pre-existing wave64 miss, confirmed failing on pristine headers too --
 unchanged); haversine PASS.
 
-Remaining CK follow-up: the fused-distance-NN reducing epilogue (fusedL2NN /
-fusedCosineNN do a row-wise argmin into a KeyValuePair instead of writing the
-distance matrix). The CK shape is a GEMM with a reducing epilogue (CK
-DeviceGemmReduce / gemm + block-row reduce), writing the KeyValuePair output + the
-per-row mutex update. Not yet wired; the fused-NN dispatchers still take the SIMT
-path on HIP (correct, just not MFMA-accelerated). Design captured in the
-fused_distance_nn subsection above.
+### CK fused-distance-NN reducing epilogue WIRED INTO raft's dispatch (gfx90a) -- this pass
+
+The fused-distance-NN CK variant (the largest CUTLASS item) is now delivered and
+GPU-validated. fusedL2NN/fusedCosineNN do a row-wise argmin into a KeyValuePair
+instead of writing the distance matrix. New header:
+`distance/detail/fused_distance_nn/dispatch_fused_nn_ck.cuh`, called from
+`fusedL2NNImpl` (L2/L2Sqrt) and `fusedCosineNN` (cosine) on HIP.
+
+1. WHY NOT CK DeviceGemmReduce: CK's reduce family (DeviceGemmReduce_Xdl_CShuffle,
+   present in /opt/rocm/include) reduces SCALAR values via a ReduceOperation
+   (Min/Max/Add) and does NOT carry the argmin COLUMN index -- its reduce
+   accumulator is a scalar, and threading a (value,index) KVPair through CK's
+   threadwise-reduce + global-atomic path is not exposed. So the argmin index
+   would be lost. Chosen design instead: TWO fused steps reusing the validated CK
+   distance GEMM. (1) `DeviceGemmMultipleD_Xdl_CShuffle` (the SAME tuned XDL/MFMA
+   instance as dispatch_ck.cuh) materializes the row-major distance matrix D[M,N]
+   with a CDE epilogue; (2) a `row_argmin_kernel` (one block per row, plain
+   shared-memory tree reduction -- NO warp shuffles, so wave64-correct by
+   construction) reduces D[m,:] to the KeyValuePair{argmin col, min dist} and
+   applies raft's ReduceOpT into the output with the per-row mutex update (kept
+   for parity; uncontended with one block/row).
+2. EXACT EPILOGUE: the fused-NN CDE op reproduces `ops::l2_exp_distance_op::epilog`
+   (NOT l2_exp_cutlass_op): the non-sqrt path applies `val*(val>0)*!(clamp...)`
+   (the relu factor AND the self-neighbor round-off clamp) and the sqrt path takes
+   sqrt of that -- this is what feeds the SIMT fused-NN argmin (fusedL2NNImpl
+   constructs `l2_exp_distance_op{sqrt}`, NOT the cutlass op). Cosine is
+   `1 - dot/(||x|| ||y||)` (note: for cosine, xn/yn are the NON-squared L2 norms;
+   for L2 they are squared -- the CK path passes them straight through, identical
+   to SIMT). fin_op is identity. The argmin is numerically exact: the only fp32
+   error is the GEMM dot product (same as the validated distance path).
+3. ROUTING: `fused_nn_ck_can_dispatch<DataT,IdxT>(m,n,k,xn,yn,metric)` gates CK to
+   fp32, N%4==0, K%4==0, metric in {L2Expanded, L2SqrtExpanded, CosineExpanded}
+   with non-null norms -- the SAME aligned-regime gate as the pairwise distance.
+   Anything else (arbitrary N/K, double) falls through to raft's SIMT
+   `fusedDistanceNNkernel` (correct, just not MFMA-accelerated). Mirrors the
+   pre-Ampere-NVIDIA "force the legacy SIMT path off the fast regime" pattern.
+4. GPU-validated via a new FUSED_NN_TEST (cpp/tests/distance/ck_fused_nn.cu,
+   RAFT_TEST_FUSED_NN option): exercises the PUBLIC `fusedL2NNMinReduce` (L2/L2Sqrt)
+   and `fusedDistanceNN` (cosine) into a `KeyValuePair<int,float>` output against a
+   double-precision CPU per-row argmin reference. 12/12 PASS on gfx90a (isolated
+   GCD): 8 aligned (CK MFMA reducing epilogue) + 4 unaligned (SIMT fallback). The
+   argmin COLUMN INDEX matches EXACTLY; the min distance within fp32 GEMM tolerance
+   (max_rel < 1e-3). Each case asserts which backend handled it via
+   `fused_nn_ck_can_dispatch`, so a silent fall-through fails the test.
+5. SHARED-PATH FIX unblocked by this work (simt_kernel.cuh:115): the SIMT
+   fused-NN kernel's `KVPair tmp = {tmpkey, acc[i][j]}` narrows unsigned->IdxT
+   (a hard error under clang-as-hipcc, only a warning on nvcc) -- the same
+   narrowing class as the prior fused_l2_knn fix. Fixed with a `static_cast<IdxT>`
+   on the column key; value-identical on CUDA. This surfaced only now because the
+   prior ck_distance.cu test never instantiated `fusedDistanceNNkernel`; the new
+   unaligned FUSED_NN cases do (SIMT fallback).
+
+TEST-DATA GOTCHA (the real debugging time-sink this pass): the first FUSED_NN run
+failed every case with `got_key = ref_key + 200` and IDENTICAL distances. Root
+cause was NOT the kernel -- it was the test data generator `(i*40503+7)%1000`,
+which has period 1000 in the flat index; with the Y matrix that makes column j and
+column j+200 BYTE-IDENTICAL Y rows (row 200 == row 0 exactly: 200*65=13000=13*1000
+realigns the modular sequence), i.e. EXACT distance ties. Exact-tie argmin is
+inherently implementation-defined (the device row-reduction and a CPU left-to-right
+scan break ties differently), so it is NOT a meaningful correctness target. Fix:
+the test now generates each element from a 64-bit splitmix-style hash of (row, col,
+salt) that EMBEDS the row index, so no two distinct rows can collide -> the per-row
+argmin is unambiguous. The test additionally forgives an index disagreement ONLY
+when the reference distance at the device's chosen column is within fp32 tolerance
+of the reference min (a genuine fp near-tie the fp32 GEMM could reorder); a real
+argmin bug still fails. LESSON for the next CK reducing-epilogue/argmin port: never
+validate an argmin against a periodic/low-entropy data generator -- ties will make
+a correct kernel look broken.
 
 ### What an earlier pass delivered + GPU-validated (gfx90a, MI250X)
 
