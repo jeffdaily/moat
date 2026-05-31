@@ -175,3 +175,77 @@ Followers (gfx1100/gfx1151) reuse the same commit with only
 
 Not applicable -- ElasticFusion is a leaf application, not a base library consumed by
 other MOAT targets.
+
+## Review 2026-05-31 (reviewer, linux-gfx90a) -- PASSED
+
+Reviewed `git diff e3b1a7e...HEAD` (HEAD 85283b8) with /pr-review (ROCm-fault-class
+aware) + 4 parallel fact-check sub-agents. No changes requested. The diff is small and
+well-isolated (2 .cu TUs + compat header + 6 hip_compat shims + CMake + 1 unused-include
+guard); host .cpp and the container/types headers are untouched.
+
+Verdict: review-passed -> validator. No actionable defects found.
+
+wave64 reduction (the flagged correctness wall) -- VERIFIED CORRECT, fact-checked:
+- All 42 __shfl_down_sync sites in reduce.cu use CUDA_WARP_FULL_MASK (0xffffffffffffffffULL
+  HIP / 0xFFFFFFFFu CUDA); zero 32-bit literals remain; cudafuncs.cu has no shfl/ballot.
+- warpReduceSum loops `offset=warpSize/2..1` (warpSize-parameterized, not 32/16) at
+  reduce.cu:60/145/555.
+- blockReduceSum has a real __syncthreads() (reduce.cu:114/178/576) between the per-warp
+  shuffle and the shared[] read -- NOT an unsynced volatile-sdata warp tail (contrast
+  MPPI-Generic). No divergent early-return precedes the reduction (grid-stride loop, all
+  lanes reach blockReduceSum), so the full 64-bit mask is correct.
+- shared[32] sizing proven safe for all 4 cases: warps = blockDim.x/warpSize = {256/64=4,
+  256/32=8, 1024/64=16, 1024/32=32}; max 32, never overflows. The `threadIdx.x <
+  blockDim.x/warpSize ? shared[lane] : zero` guard holds because warp-count <= warpSize so
+  lane==threadIdx.x for passing threads, with zero-pad on the rest. Correct on wave64 AND
+  wave32 (followers need no change).
+
+__CUDACC__/EIGEN_NO_CUDA gotcha -- VERIFIED: defines emitted ONLY under `#if
+defined(__HIPCC__)` (cuda_to_hip.h:25-42), aliases outside that but inside USE_HIP, so the
+host .cpp (g++ -DUSE_HIP, no __HIPCC__) get the cuda->hip aliases but never __CUDACC__.
+Host relies on the types.cuh Eigen->mat33 ctor (RGBDOdometry.cpp:196/287/376/459), which
+is gated `!defined(__CUDACC__)` and would vanish if __CUDACC__ leaked. <cstring> on the
+HIP branch keeps ::memset viable for initTextureObjectFromArray. All confirmed.
+
+Other fault classes:
+- operators.cuh:62-72 USE_HIP-guards ONLY operator+/operator- on float3 (HIP_vector_type
+  ships them); cross/dot/norm/normalized/operator*(mat33,float3) kept on both. Correct.
+- Textures: cudaResourceTypeArray + cudaFilterModePoint + cudaReadModeElementType,
+  descriptors memset-zeroed, created+destroyed in local scope (cudafuncs.cu:59-74,370-380).
+  256B-pitch class does NOT apply (array-backed, not Pitch2D); linear-filter rejection does
+  NOT apply (point). No persistent texture handle -> no rule-of-five gap there.
+- GL-interop handle: GPUTexture cudaRes default-null (GPUTexture.h:53) + guarded destroy
+  (GPUTexture.cpp:52-53) -- the colmap rule-of-five pattern, already present upstream.
+- OOB neighbor reads guarded (computeNmapKernel NaN-returns at the last row/col;
+  SO3Reduction::getGradient caller guards x/y in [1,dim-1]). Unchanged upstream code.
+- No library swaps (no cuBLAS/cuFFT/Thrust/CUB anywhere). CMake legacy-FindCUDA else()
+  branch byte-identical to e3b1a7e (diff -w clean); HIP branch arch-defaulted-only-when-unset
+  (no literal gfx90a override). CUDA path byte-identical under USE_HIP=OFF.
+- Commit hygiene: title `[ROCm] ...` 57 chars, mentions Claude, no noreply trailer, no
+  ghstack, Test Plan present, ASCII-only, no AMD-internal account refs.
+
+KEY JUDGMENT -- validation bar (ruled explicitly): "kernels GPU-validated via the no-GL
+device-array harness on real gfx90a + full GL-SLAM validation assigned to the gfx1100
+follower" IS an acceptable gfx90a completion bar. Rationale: (a) the actual porting risk
+on gfx90a is wave64 reduction correctness, and the harness proves it on real hardware --
+the computeRgbResidual int2 device-count/sum EXACTLY equal a CPU recount, which (integer
+adds being order-independent) is a hard arithmetic proof no lane is lost or doubled, plus
+icp/so3/rgbStep are bit-identical across two runs (determinism). (b) The GL-interop code is
+host-side API mapping ported via the hip_compat shims; it is environmentally IMPOSSIBLE to
+run here (gfx90a is compute-only: radeonsi refuses a GL context, no Vulkan ICD for zink,
+llvmpipe is host-memory so hipGLGetDevices=0 / hipGraphicsGLRegisterImage=hipErrorUnknown
+-- empirically demonstrated by gl_interop_probe.cpp, a real EGL+HIP round-trip attempt).
+This is a HARDWARE limitation, not a port defect. By-inspection review of the interop
+hand-off (RGBDOdometry initICP/initICPModel/populateRGBDData) is clean: every cuda*
+interop symbol is aliased 1:1, the map->getMappedArray->consume->unmap sequence is
+preserved verbatim, and cudaArray_t==hipArray_t flows type-consistently into
+copyMaps/imageBGRToIntensity/cudaMemcpy2DFromArray. No interop risk surfaced that MUST be
+run on gfx90a (it cannot be). This mirrors prior hardware-gated validation splits.
+
+CARRY-FORWARD (validator + gfx1100 follower, NOT a gfx90a blocker): the full GL-SLAM
+pipeline (.klg replay, surfel count + trajectory vs reference, two-run determinism) is a
+gfx1100-follower REQUIREMENT -- gfx1100 has display/graphics blocks + a hardware radeonsi
+GL, so live hipGraphicsGLRegisterImage interop should work there and is the right place to
+validate the end-to-end tracking. gfx90a proves the kernels; gfx1100 must prove the live
+GL ingest. Validator: confirm the harness reproduces on gfx90a (HARNESS PASSED, 0 failures)
+and that libefusion.so links libamdhip64 with no CUDA.
