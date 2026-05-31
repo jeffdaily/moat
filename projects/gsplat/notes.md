@@ -565,3 +565,8 @@ test_external_distortion.py + test_ftheta.py:
 Result: 57 passed, 0 failed (matches gfx1100).
 
 Grand total: 312 passed (255+57), 38 failed (nerfacc-only, unchanged from prior bar).
+
+
+## Validation 2026-05-31 (gfx1100) -- carry-forward at 5cdaa15 (Windows-only delta)
+
+Revalidate triggered by the windows-gfx1151 amend c1ae9ce -> 5cdaa15. Two-dot tree diff is 3 files, none on the Linux/gfx1100 path: build.py changes are all under `if sys.platform=="win32":` plus a `*_winhip.cu` glob filter that is a no-op on Linux (no such files committed); distributed.py guards a torch.distributed import that binds as-before on Linux and is off the single-GPU test path; .gitignore is cosmetic. gfx1100 build inputs + kernels unchanged, so the prior c1ae9ce gfx1100 validation (3DGUT: 312 passed; 38 nerfacc-gated baseline; wave32 correct) applies. validated_sha -> 5cdaa15. No GPU re-run, no fork change.
