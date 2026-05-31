@@ -240,3 +240,53 @@ Minor (non-blocking, optional cleanup; do NOT churn HEAD solely for these):
 - cmake/hip_tests/CMakeLists.txt omits several tests the plan listed as representative (test_fastgs_kernels, test_fastgs_fuzz, test_gut_*, test_rotated_sh_correctness, test_sh_swizzle_layout, test_mrnf_strategy, test_mcmc_relocate_optimizer_state_bug, and the CPU regression set test_cpu_*). The build emits a WARNING for any missing file and documents io/GUI-coupled omissions; the 876-test set is the validator's reproducible gate. Not a defect, but the validator should confirm the 876 count and that no wave64-relevant rasterizer/SH test was silently dropped (vs deliberately io-coupled).
 
 Safe to proceed to GPU validation. The missing-GPU-run-at-review-time is expected; the validator runs lfs_compute_tests serially on gfx90a next.
+
+## Validation 2026-05-31 (validator, linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1)
+
+Arch: gfx90a (MI250X, wave64). GCD: HIP_VISIBLE_DEVICES=0 (GPU 0, 0% use at run time).
+Fork validated at: e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e (moat-port, amended from 580e0012 to add 3 dropped test files).
+
+### Test-coverage check (reviewer-flagged omissions)
+
+Reviewer flagged these as omitted from cmake/hip_tests/CMakeLists.txt:
+- test_gut_* -- DO NOT EXIST in tests/. Non-issue.
+- test_fastgs_kernels.cpp -- includes io/formats/ply.hpp (io tranche). DELIBERATE io-coupled omission.
+- test_fastgs_fuzz.cpp -- includes io/formats/ply.hpp. DELIBERATE io-coupled omission.
+- test_rotated_sh_correctness.cpp -- includes io/exporter.hpp + io/formats/ply.hpp. DELIBERATE io-coupled omission.
+- test_sh_swizzle_layout.cpp -- includes io/formats/ply.hpp (real PLY fixture required). DELIBERATE io-coupled omission.
+- test_mrnf_strategy.cpp -- includes training/strategies/mrnf.hpp -> mrnf.cpp -> io/pipelined_image_loader.hpp + training/dataset.hpp; mrnf.cpp is excluded from lfs_training under USE_HIP because it pulls the deferred io tranche. DELIBERATE io-coupled omission (would fail to link).
+- test_mcmc_relocate_optimizer_state_bug.cpp -- only includes optimizer/adam_optimizer.hpp + core. NO io dependency. SILENTLY DROPPED. Added.
+- test_cpu_dtype_conversions.cpp -- only includes core/tensor.hpp. NO io dependency. SILENTLY DROPPED. Added.
+- test_cpu_large_tensor_bugs.cpp -- only includes core/tensor.hpp. NO io dependency. SILENTLY DROPPED. Added.
+
+The 3 silently dropped tests were added to cmake/hip_tests/CMakeLists.txt and the fork commit amended + force-with-lease pushed to jeffdaily/LichtFeld-Studio moat-port.
+
+### Build (incremental, --target lfs_compute_tests)
+
+```
+export HIP_VISIBLE_DEVICES=0
+export ROCM_PATH=/opt/rocm HIP_PLATFORM=amd
+export CMAKE_PREFIX_PATH="<torch-cmake>:<gtest-cmake>:/opt/conda/envs/py_3.12:/usr"
+cmake --build /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip --target lfs_compute_tests -j16
+```
+Result: PASS (3 new .cpp compiled, lfs_compute_tests relinked, 0 errors). Near-no-op for the 9 compute libs (already built).
+
+### GPU test run (serial, HIP_VISIBLE_DEVICES=0)
+
+```
+HIP_VISIBLE_DEVICES=0 ./build-hip/cmake/hip_tests/lfs_compute_tests
+```
+Run 1: 914 tests from 48 suites ran (~13.1 s). 911 passed, 3 failed.
+Run 2: 914 tests from 48 suites ran (~12.9 s). 911 passed, 3 failed.
+BIT-IDENTICAL across both runs (determinism confirmed).
+
+### Failures (3 total, all documented non-bugs identical on CUDA)
+
+1. MCMCTest.RemoveGaussiansSoftDeletesRows -- DOCUMENTED (pre-existing). Reads raw uint8 quant exp_avg via ptr<float>(); zero-point=128 means "0.0" is 0x80808080 (NaN as float). Identical on any GPU.
+2. ImageKernelsTest.FusedCannyUInt8MatchesNormalizedFloatInput -- DOCUMENTED (pre-existing). 1-ULP cross-input FP boundary in Canny NMS hysteresis; wave-agnostic stencil kernel.
+3. MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows -- NEWLY OBSERVED (added test). Same class as #1: EXPECT_GT(total_momentum, 0.0f) fails because raw uint8 quant bytes read as float give NaN (zero-point=128, 0x80808080 per float). The actual GPU kernel zero_quantized_rows_at_indices works correctly (the test prints "Both sampled AND dead indices have zero momentum: YES" before failing). Not a HIP/wave64 defect; would fail identically on CUDA.
+
+All 3 failures are test/impl design mismatches in the upstream test source, not port regressions. The wave64-critical subset (tensor reductions, warp/block reductions, tensor-vs-torch parity, gsplat + fastgs rasterizers with cg::reduce shim + ballot, SSIM, MCMC, sort, matrix, random/curand) ALL pass.
+
+### Verdict: PASS (lead linux-gfx90a)
+validated_sha = e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e

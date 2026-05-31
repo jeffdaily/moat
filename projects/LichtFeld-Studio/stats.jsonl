@@ -4,3 +4,7 @@
 {"kind":"phase","ts":"2026-05-31T01:34:32Z","phase":"compile","seconds":7.530,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
 {"kind":"phase","ts":"2026-05-31T01:35:27Z","phase":"compile","seconds":7.818,"exit":1,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
 {"kind":"phase","ts":"2026-05-31T01:36:00Z","phase":"compile","seconds":6.377,"exit":0,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-05-31T02:48:56Z","phase":"compile","seconds":10.003,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip --target lfs_compute_tests -j16"}
+{"kind":"phase","ts":"2026-05-31T02:49:07Z","phase":"test","seconds":0.143,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip -R lfs_compute_tests --output-on-failure --no-compress-output -j1"}
+{"kind":"phase","ts":"2026-05-31T02:49:26Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./cmake/hip_tests/lfs_compute_tests --gtest_output=xml:/tmp/lfs_run1.xml"}
+{"kind":"phase","ts":"2026-05-31T02:49:46Z","phase":"test","seconds":15.700,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip/cmake/hip_tests/lfs_compute_tests --gtest_output=xml:/tmp/lfs_run1.xml"}
