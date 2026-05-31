@@ -13,3 +13,12 @@
 {"kind":"phase","ts":"2026-05-31T01:16:04Z","phase":"compile","seconds":5.121,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
 {"kind":"phase","ts":"2026-05-31T01:16:15Z","phase":"compile","seconds":6.461,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
 {"kind":"phase","ts":"2026-05-31T01:17:30Z","phase":"test","seconds":63.555,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 2"}
+{"kind":"phase","ts":"2026-05-31T01:44:47Z","phase":"compile","seconds":3.408,"exit":0,"cmd":"make -j12 depend -C projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-05-31T01:45:00Z","phase":"compile","seconds":8.267,"exit":0,"cmd":"make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-05-31T01:45:12Z","phase":"compile","seconds":4.537,"exit":2,"cmd":"make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-05-31T01:46:58Z","phase":"compile","seconds":1.577,"exit":2,"cmd":"make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-05-31T01:49:39Z","phase":"compile","seconds":3.372,"exit":0,"cmd":"make -j12 depend -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-05-31T01:49:50Z","phase":"compile","seconds":3.830,"exit":0,"cmd":"make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-05-31T01:50:06Z","phase":"compile","seconds":4.894,"exit":0,"cmd":"make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-05-31T01:51:47Z","phase":"test","seconds":68.654,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/run_cudamatrix_gfx1100.sh 0"}
+{"kind":"phase","ts":"2026-05-31T01:54:43Z","phase":"test","seconds":78.033,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/run_cudamatrix_gfx1100.sh 0"}

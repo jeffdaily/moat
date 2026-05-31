@@ -147,3 +147,81 @@ Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED. The wave64 _diff
 Timing: incremental configure ~0.6s, cudamatrix build ~5s, test_compile ~6.5s, 12 tests ~64s.
 
 Verdict: COMPLETED. validated_sha = cdc8d2f907f00b8fc2dc7459f3e3cb092afc0aa6. Followers linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100. GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100 / RDNA3 / wave32), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1. Fork before fix: jeffdaily/kaldi @ moat-port = cdc8d2f907f00b8fc2dc7459f3e3cb092afc0aa6; after fix (amended): e8c5613b789eefb6b0a251d8b15867bb53f1a01d.
+
+### GPU_WARP_SIZE wave32 fix
+
+hipify.h hardcoded GPU_WARP_SIZE to 64 (CDNA/wave64), which is wrong on gfx1100 (RDNA3/wave32). The fix is a 3-file change, all inside the HIP build path:
+
+- src/configure: in the configure_rocm ROCM_TARGETS loop, default ROCM_WARP_SIZE=32, set to 64 for any gfx9* target, write `ROCM_WARP_SIZE = <N>` to kaldi.mk.
+- src/makefiles/hip_64bit.mk: add `-DHIP_WARP_SIZE=$(ROCM_WARP_SIZE)` to both CXXFLAGS (host g++ path) and ROCM_FLAGS (hipcc device path).
+- src/hip/hipify.h: replace `#define GPU_WARP_SIZE 64` with arch-conditional:
+  - Device code (inside `#ifdef __HIP_DEVICE_COMPILE__`): `#if defined(__GFX9__) -> 64 else 32` -- `__GFX9__` is set by hipcc for gfx9x CDNA targets and absent on RDNA gfx11xx.
+  - Host code (else branch): `#define GPU_WARP_SIZE HIP_WARP_SIZE` -- uses the configure-injected define.
+  GPU_MAX_WARPS_PER_BLOCK derives from GPU_WARP_SIZE, so all host block-dim calculations are correct on both arches.
+
+Verified correct with compile-time static_assert: GPU_WARP_SIZE==32 for both host and device on gfx1100; GPU_WARP_SIZE==64 for both on gfx90a (no error). gfx90a backward compatibility confirmed -- the configure case matches `gfx9*`, ROCM_WARP_SIZE=64, hipify.h __GFX9__ is defined in device code.
+
+### Build commands
+
+```
+# Install deps
+sudo apt-get install -y liblapacke-dev sox
+
+# OpenFST (curl from openfst.org; openslr mirror 404s for 1.8.4)
+cd projects/kaldi/src/tools
+curl -fSL -o openfst-1.8.4.tar.gz http://www.openfst.org/twiki/pub/FST/FstDownload/openfst-1.8.4.tar.gz
+mkdir -p python && make -j12 openfst
+
+# In-tree OpenBLAS (system lapacke.h includes lapack.h with LAPACK_FORTRAN_STRLEN_END, 
+# adding hidden-length args to Fortran function decls that conflict with kaldi's call sites;
+# the in-tree OpenBLAS headers do not have this issue)
+bash extras/install_openblas.sh
+
+# Configure and build for gfx1100
+cd projects/kaldi/src/src
+./configure --use-rocm --rocm-dir=/opt/rocm --rocm-targets=gfx1100 --use-cuda=no \
+    --mathlib=OPENBLAS --openblas-root=../tools/OpenBLAS/install
+
+# Compile (wrapped)
+bash utils/timeit.sh kaldi compile -- make -j12 depend -C projects/kaldi/src/src/cudamatrix
+bash utils/timeit.sh kaldi compile -- make -j12 -C projects/kaldi/src/src/cudamatrix
+bash utils/timeit.sh kaldi compile -- make -j12 -C projects/kaldi/src/src/cudamatrix test_compile
+```
+
+### gfx1100 code-object evidence and GPU_WARP_SIZE=32 confirmation
+
+roc-obj-ls on cu-kernels.o:
+  `hipv4-amdgcn-amd-amdhsa--gfx1100` (961 KB device code; no gfx90a).
+
+kaldi.mk after configure: `ROCM_WARP_SIZE = 32`.
+Compiler invocations confirmed: `-DHIP_WARP_SIZE=32` in both the host g++ CXXFLAGS line and the hipcc ROCM_FLAGS line.
+Compile-time static_assert (external probe): `static_assert(GPU_WARP_SIZE == 32)` passes for both host and device on gfx1100.
+
+### Validation results
+
+```
+# Run 12 cudamatrix device tests serially on HIP_VISIBLE_DEVICES=0
+bash utils/timeit.sh kaldi test -- bash agent_space/run_cudamatrix_gfx1100.sh 0
+
+# Second run (determinism)
+bash utils/timeit.sh kaldi test -- bash agent_space/run_cudamatrix_gfx1100.sh 0
+```
+
+Run 1: PASS=12 FAIL=0. Run 2: PASS=12 FAIL=0 (deterministic).
+
+All 12 tests passed:
+cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-sp-matrix-test, cu-packed-matrix-test, cu-tp-matrix-test, cu-block-matrix-test, cu-array-test, cu-sparse-matrix-test, cu-device-test, cu-compressed-matrix-test.
+
+Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED (exit 0, both runs). The test exercises float+double at dim 16-2048, covering the warp-reduction-heavy _diff_lstm_nonlinearity kernel. With GPU_WARP_SIZE=32, blockDim.y = CU1DBLOCK/GPU_WARP_SIZE = 256/32 = 8 (as on NVIDIA), which gives all 5 self-repair rows (0-4) a thread to write them; no stale row 4, all rows correct. This is the definitive wave32 proof: the kernel that previously failed on wave64 (blockDim.y=4, row 4 starved) now also has blockDim.y=8 on wave32 with the correct warp size, and passes.
+
+Matches gfx90a bar: 12/12 (identical pass count, same test names).
+
+### Notes
+
+The gfx1100 configure needs the in-tree OpenBLAS (tools/extras/install_openblas.sh), not the system OpenBLAS shim. The system lapacke.h (liblapacke-dev 3.12.0) transitively includes lapack.h which defines LAPACK_FORTRAN_STRLEN_END unconditionally, adding hidden-length size_t args to Fortran function declarations (stptri_, sgesvd_, etc.) that conflict with kaldi's direct Fortran call sites in matrix/cblas-wrappers.h. The in-tree OpenBLAS 0.3.13 lapacke.h uses only LAPACKE_* wrapper prototypes and does not include lapack.h.
+
+Verdict: COMPLETED. validated_sha = e8c5613b789eefb6b0a251d8b15867bb53f1a01d. Wave32 verdict: CORRECT -- BackpropLstmNonlinearity passes on gfx1100 with GPU_WARP_SIZE=32, confirming the warp-reduction launch geometry is correct for RDNA3.
