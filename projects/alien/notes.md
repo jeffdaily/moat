@@ -60,12 +60,12 @@ Box has 4 GCDs (0-3); always check `rocm-smi` and pin a free one with `HIP_VISIB
 
 ### EngineTests tally (gfx90a, ROCm 7.2.1)
 Validated on a single MI250X GCD (HIP_VISIBLE_DEVICES pinned, serial), both the direct-launch (-d) and graph-capture paths:
-- Fast broad graph-path run (full suite minus GeometryTests, NeuronPerformanceTests, and the 3 extreme long-runners): 2975 ran, 2970 PASSED, 3 SKIPPED (gtest GTEST_SKIP, unrelated), 2 FAILED (the two analyzed below).
-- Fast broad -d run (same filter): same 2 failures, all others pass (kernels are identical to graph mode).
-- The 3 extreme long-runners pass too: the two BalanceTests.longRunning_* (20000 timesteps each) and ConstructorTests.regressionTestMassiveReplicationsWithSeeds (10000 steps, external energy 1e7 -> exploding self-replicator population, drops to ~22 TPS as it grows) all complete fault-free on a full -d run (the Constructor one has no assertions; it passes on fault-free completion but takes ~20+ min in -d). They are excluded from the fast broad runs only for turnaround time.
+- FULL -d run (entire suite minus GeometryTests + NeuronPerformanceTests, INCLUDING the 3 extreme long-runners): 2978 ran, 2973 PASSED, 3 SKIPPED (gtest GTEST_SKIP, unrelated), 2 FAILED (the two analyzed below). ~28.5 min wall (-d adds a cudaDeviceSynchronize after every kernel).
+- Fast broad graph-path run (same filter minus the 3 extreme long-runners, for turnaround): 2975 ran, 2970 PASSED, 3 SKIPPED, 2 FAILED (identical 2). A broad -d run agrees.
+- The 3 extreme long-runners pass: the two BalanceTests.longRunning_* (20000 timesteps each) and ConstructorTests.regressionTestMassiveReplicationsWithSeeds (10000 steps, external energy 1e7 -> exploding self-replicator population, drops to ~22 TPS as it grows; no assertions, passes on fault-free completion). They are included in the FULL -d run above (which is why it took ~28 min).
 - CLI smoke (graph path, headless): 1000 timesteps, ~466 TPS, fault-free, total energy conserved.
 
-So the effective result is ~2970/2972 pass in BOTH paths with the 2 documented non-bugs, all heavy tests pass, and the cli smoke completes.
+So the result is 2973/2975 pass on the FULL -d suite and 2970/2972 on the broad graph suite -- the same 2 documented non-bugs in both paths, all heavy tests pass, and the cli smoke completes.
 
 ### Two known test failures (NOT port bugs; both fit the chaotic-sim determinism bar)
 1. `CommunicatorTests.sender_signalPriority_lowerNumTimesSentWins` -- FAILS deterministically on gfx90a (receiver gets numTimesSent=4 / channel=+1 instead of the expected 2 / -1) in BOTH -d and graph paths. Root cause: `CommunicatorProcessor::tryTransmitSignal` does NOT compare priorities -- it locks the receiver and unconditionally overwrites (last-writer-wins). When two senders transmit in one timestep the winner depends purely on block execution order, which differs AMD-vs-NVIDIA. Unspecified race in the upstream algorithm; the test encodes NVIDIA's incidental ordering. Kernels are correct (no fault, invariants hold).
