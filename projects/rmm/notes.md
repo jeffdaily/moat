@@ -434,3 +434,42 @@ runtime. Resolving them needs HIP-runtime-level debugging (teardown crash, per-t
 hangs) and/or an APU memory-info workaround, with uncertain payoff -- deferred. A
 Windows host with a DISCRETE RDNA GPU (where hipMemGetInfo works) is the better target
 to validate this build-enablement.
+
+## Windows gfx1151 RE-VALIDATED 2026-05-30 -- root-caused, was a driver bug not an APU gap
+
+SUPERSEDES the "BLOCKED" section above. The earlier crashes/hangs were NOT a gfx1151-APU
+limitation; root cause is the SYSTEM Adrenalin driver's C:\WINDOWS\System32\amdhip64_7.dll
+(Feb 10) being mismatched with its device libraries: its internal rocclr blit/transfer
+kernels fail to JIT-link (`undefined hidden symbol: __ockl_dm_init_v1`, `__amd_streamOpsWrite`),
+so the device transfer manager is never created and the next kernel launch / process teardown
+SIGSEGVs. The same broken build makes hipMemGetInfo's free-memory query return
+hipErrorInvalidValue. FIX: deploy TheRock's self-consistent amdhip64_7.dll + amd_comgr*.dll
+(from the rocm-sdk wheel bin, current date) NEXT TO the test exes (the Windows loader prefers
+the exe dir over System32; PATH alone does not win). With that, hipMemGetInfo returns the real
+free memory and all the rocThrust/stream/pool work runs. (gsplat worked all along because torch
+LoadLibrary's TheRock's amdhip64 from its wheel before any HIP call.)
+
+### Result: ctest 25/27 PASS (TheRock runtime deployed; long --timeout, some tests take minutes)
+All memory resources + containers + streams pass: DEVICE_MR_REF 209 (261s), POOL_MR 10,
+ARENA 42, CUDA_ASYNC (stream-ordered pool), DEVICE_BUFFER 46, DEVICE_UVECTOR, DEVICE_SCALAR,
+THRUST_ALLOCATOR, adaptors (tracking/statistics/limiting/stream/prefetch-adaptor build),
+HOST_MR_REF, PINNED_POOL, SYSTEM_MR, multidevice, error macros, LOGGER (7/7 after the fix below).
+
+### The 2 remaining ctest failures = 3 test cases, a genuine integrated-APU managed-memory gap
+PREFETCH_TEST + PREFETCH_ADAPTOR_TEST: PrefetchTest/1.* with TypeParam=managed_memory_resource.
+After cudaMemPrefetchAsync on managed memory, the test queries
+cudaMemRangeGetAttribute(cudaMemRangeAttributeLastPrefetchLocation) (prefetch_tests.cpp:64),
+which returns hipErrorInvalidValue on the gfx1151 APU. Prefetch/prefetch-location tracking is
+meaningless on a unified-memory APU; this attribute is not supported there. NOT the driver bug
+(persists with TheRock's runtime), and the discrete gfx90a/gfx1100 pass it. Documented platform
+limitation; left as a real failure rather than masked.
+
+### Additional Windows port fix (folded into the fork commit)
+- cpp/tests/logger_tests.cpp Adaptor.STDOUT/STDERR: the test takes substr(0, find('\n')) of
+  captured stdout/stderr; on Windows that retains a trailing '\r' (CRLF), so the header compare
+  failed. Strip a trailing '\r' before comparing. Test-only, Windows-only effect; LOGGER now 7/7.
+
+### Runtime deployment note (for any Windows HIP exe on this host until the Adrenalin driver is updated)
+Copy <rocm-sdk wheel>/bin/amdhip64_7.dll and amd_comgr*.dll next to the built .exe so it does
+not load the broken System32 driver runtime. The proper long-term fix is updating the Adrenalin
+driver so System32's amdhip64 matches its device libs.

@@ -7,17 +7,17 @@
   "priority": 5.542,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:05Z",
-  "updated_at": "2026-05-30T23:02:37Z",
-  "head_sha": "1473ffc5bab2b81efd7d849db55e13a62b08822f",
+  "updated_at": "2026-05-31T00:37:08Z",
+  "head_sha": "565705bf0c67c4b1a57a87130cb54d5bf6e90ae6",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "d22baffcff708f23805a6a41f971a51418f8b8a0",
       "started_at": "2026-05-30T18:13:27Z",
       "completed_at": "2026-05-30T22:22:30Z",
-      "updated_at": "2026-05-30T22:22:30Z",
+      "updated_at": "2026-05-31T00:36:49Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "3c0e8029849ba5cae2c773207fdf271b180f9b8f",
       "started_at": null,
       "completed_at": "2026-05-30T22:07:00Z",
-      "updated_at": "2026-05-30T22:07:00Z",
+      "updated_at": "2026-05-31T00:36:49Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": true,
-      "blocked_reason": "Builds fully on Windows gfx1151 (27/27 test exes, see windows-gfx1151-build-enablement.patch) and core ops pass, but clean GPU validation is blocked by gfx1151-APU/Windows-TheRock-ROCm runtime gaps (hipMemGetInfo returns invalid argument on the integrated APU; process-teardown SIGSEGV fails otherwise-passing binaries; specific stream/buffer/thrust tests hang). Not a port-code defect (gfx90a/gfx1100 pass 658/658). Better validated on a discrete-RDNA Windows GPU.",
-      "validated_sha": null,
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "565705bf0c67c4b1a57a87130cb54d5bf6e90ae6",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-30T23:02:37Z",
+      "completed_at": "2026-05-31T00:36:50Z",
+      "updated_at": "2026-05-31T00:37:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   }
 }
