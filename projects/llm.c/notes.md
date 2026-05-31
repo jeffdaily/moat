@@ -206,3 +206,99 @@ validated targets rebuild clean under USE_HIP=1 AMDGPU_TARGETS=gfx90a
 NO_MULTI_GPU=1 NO_USE_MPI=1 (`test_gpt2fp32cu test_gpt2cu train_gpt2cu`, all
 three binaries produced, hipcc exit 0; only the pre-existing benign
 cudaGetLastError macro-redefinition warning).
+
+## Validation 2026-05-31 (validator, linux-gfx90a, moat-port @ 15f5e1a)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a), GCD 2 (HIP_VISIBLE_DEVICES=2), ROCm 7.2.1.
+Fork HEAD: 15f5e1a6d745a6385ea86a6fc745cdae9fe436ef.
+
+Build command:
+
+```
+cd projects/llm.c/src
+make USE_HIP=1 AMDGPU_TARGETS=gfx90a NO_MULTI_GPU=1 NO_USE_MPI=1 \
+     test_gpt2fp32cu test_gpt2cu train_gpt2cu -j16
+```
+
+All three binaries built clean (hipcc exit 0; only pre-existing benign
+cudaGetLastError nodiscard warnings, same as documented).
+
+### FP32 GPU test
+
+```
+HIP_VISIBLE_DEVICES=2 ./test_gpt2fp32cu
+```
+
+Result: LOGITS OK, LOSS OK (5.270007 vs ref 5.270009), all 16 gradient tensors
+TENSOR OK (at 1e-2 threshold), 10 training steps match PyTorch reference.
+`overall okay: 1`. PASS.
+
+### FP32 loss curve (dev/loss_checker_ci.py gate)
+
+Built FP32 variant of train_gpt2cu (`PRECISION=FP32 make ... train_gpt2cu`) then:
+
+```
+HIP_VISIBLE_DEVICES=2 ./train_gpt2cu -b 1 -t 64 -d 256 -l 0.0001 \
+    -v 200 -s 200 -a 1 -x 10 -r 0 -f 0 -e "gpt2_124M.bin" \
+    > /tmp/train_gpt2cu_fp32_precision.txt
+python dev/loss_checker_ci.py -f /tmp/train_gpt2cu_fp32_precision.txt \
+    -s 20 -e 28 -a 5.0
+```
+
+Result: all 10 steps within 0.05% of NVIDIA reference (max deviation -0.05% at
+steps 9-10). "Success: All values are within the allowed accuracy." PASS.
+
+### BF16 GPU test (default + variants)
+
+```
+HIP_VISIBLE_DEVICES=2 ./test_gpt2cu           # default
+HIP_VISIBLE_DEVICES=2 ./test_gpt2cu -r 0      # no recompute GeLU
+HIP_VISIBLE_DEVICES=2 ./test_gpt2cu -r 2      # recompute LN
+HIP_VISIBLE_DEVICES=2 ./test_gpt2cu -w 0      # no master weights
+HIP_VISIBLE_DEVICES=2 ./test_gpt2cu -b 32     # batch 32
+```
+
+All four variants: LOGITS OK, 14/16 tensors TENSOR OK. Two tensors exceed
+NVIDIA-bitwise-tuned BF16 thresholds on a near-zero element:
+- ln1b: max diff 5.205e-02 vs threshold 0.041 (calculated 0.062988, ref 0.010941)
+- lnfb: max diff 4.780e-02 (calculated -0.078125, ref -0.125923)
+
+These match the DOCUMENTED expected determinism shift exactly (same values
+across all four variants). Validated as expected -- not a regression:
+- Diffs are bit-identical run-to-run and invariant under -b 32 (confirmed).
+- FP32 test agrees to reference (ln1b/lnfb both TENSOR OK in FP32 above).
+- Shift is in wte_backward stochastic-rounding RNG seed (encoder.cuh:114).
+Loss curve ("loss ok" for all 10 steps) confirms algorithmic correctness.
+
+BF16 test result per the documented bar: 14/16 OK (ln1b+lnfb = expected shift).
+PASS.
+
+### BF16 tinyshakespeare smoke test
+
+```
+HIP_VISIBLE_DEVICES=2 OMP_NUM_THREADS=8 ./train_gpt2cu
+```
+
+74 steps over tinyshakespeare:
+- Train loss: 4.288 -> 3.388 (steadily decreasing, no NaN/Inf).
+- Val loss: 4.506 -> 3.676 -> 3.608 -> 3.509 -> 3.499 (monotonically decreasing).
+- Grad norm: 13.0 -> 1.28 (normalizing).
+- Text generation coherent (Shakespeare-style dialogue, no garbled output).
+- Exit 0. PASS.
+
+### CPU regression test
+
+```
+make test_gpt2 train_gpt2   # plain CPU build, no USE_HIP
+./test_gpt2
+```
+
+Result: LOGITS OK, LOSS OK (5.269998 vs 5.270009), all 16 gradient tensors
+TENSOR OK, all 10 steps "OK = 1". `overall okay: 1`. No regression. PASS.
+
+### Summary
+
+All documented validation gates met. ln1b/lnfb treated as the expected,
+documented BF16 determinism shift per CLAUDE.md mandate. No genuine regression.
+Validated SHA: 15f5e1a. State: review-passed -> completed.
+linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
