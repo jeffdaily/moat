@@ -82,3 +82,62 @@ Verified clean (no action):
 Minor non-blocking observations (NOT changes-requested; recorded for the record):
 - memory_manager.cpp:114 changes bare cudaFree(cuda_mem) -> CUDA_TRY(cudaFree(cuda_mem)) in move_raster_from_device (shared CUDA+HIP code). Strict hardening only (CUDA_TRY prints a diagnostic on an error that was previously silently dropped; happy path unchanged, no throw added) -- defensible, no CUDA behavior change on success. If a reviewer wanted zero CUDA-path delta it could be USE_HIP-guarded, but it is a strict generalization and acceptable per bc-guidelines.
 - find_dependency(hip) is belt-and-suspenders given hip::host is PRIVATE (downstream gets no transitive link requirement), but it correctly mirrors upstream's find_dependency(CUDAToolkit) and is harmless.
+
+## Validation 2026-05-31 (validator, linux-gfx90a, fork HEAD 2885611d64cedac0c563a786726f908253f5adb4)
+
+GPU: gfx90a / MI250X, ROCm 7.2.1, GCD 0 (HIP_VISIBLE_DEVICES=0, all 4 GCDs idle at validation time).
+
+Build: incremental -- all targets reported "ninja: no work to do." (core libcucim, cuslide, cumed, pybind _cucim). ELF NEEDED for libcucim.so: [libamdhip64.so.7, libstdc++.so.6, libm.so.6, libgcc_s.so.1, libc.so.6] -- zero CUDA/nvjpeg/nvimgcodec.
+
+Commands run:
+
+```
+# C++ Catch2 - core
+HIP_VISIBLE_DEVICES=0 \
+  CUCIM_TESTDATA_FOLDER=/var/lib/jenkins/moat/agent_space/cucim_testdata \
+  CUCIM_TEST_PLUGIN_PATH=.../cucim.kit.cuslide/build-rocm/lib/cucim.kit.cuslide@26.08.00.so \
+  LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/cucim/install/lib \
+  ./build-rocm/bin/cucim_tests "[test_read_region.cpp]"
+# -> All tests passed (101 assertions in 1 test case)
+
+# C++ Catch2 - cuslide
+HIP_VISIBLE_DEVICES=0 \
+  CUCIM_TESTDATA_FOLDER=/var/lib/jenkins/moat/agent_space/cucim_testdata \
+  LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/cucim/install/lib:...cuslide/build-rocm/lib \
+  .../cuslide_tests "[test_read_region.cpp]"
+# -> All tests passed (1250 assertions in 1 test case)
+
+HIP_VISIBLE_DEVICES=0 ... .../cuslide_tests "[test_read_rawtiff.cpp]"
+# -> All tests passed (2 assertions in 1 test case)
+
+# Python clara suite
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=.../python/cucim/src LD_LIBRARY_PATH=.../clara \
+  python -m pytest .../tests/unit/clara -q
+# -> 90 passed, 2 skipped (openslide-py absent; gh-626)
+
+# test_batch_decoding (GPU device path)
+HIP_VISIBLE_DEVICES=0 ... python -m pytest .../test_batch_decoding.py -v
+# -> 50 passed
+
+# Phase 1 skimage
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=.../python/cucim/src python -m pytest test_gaussian.py -q
+# -> 65 passed
+
+python -m pytest test_median.py -q
+# -> 707 passed, 4 skipped (2 warnings: histogram-median MaxBlockDimX=0 fallback -- expected)
+
+python -m pytest test_blob.py -q
+# -> 65 passed
+```
+
+Results:
+- cucim_tests [test_read_region.cpp]: 101/101 PASS
+- cuslide_tests [test_read_region.cpp]: 1250/1250 PASS
+- cuslide_tests [test_read_rawtiff.cpp]: PASS (2/2)
+- Python clara tests/unit/clara: 90 passed, 2 skipped (openslide-py + gh-626, legit)
+- test_batch_decoding (device="cuda" GPU path): 50/50 PASS
+- Phase 1 test_gaussian: 65/65 PASS
+- Phase 1 test_median: 707 passed, 4 skipped PASS
+- Phase 1 test_blob: 65 passed PASS
+
+Verdict: PASS. All bars met; no regressions. validated_sha = 2885611d64cedac0c563a786726f908253f5adb4. linux-gfx90a -> completed; followers linux-gfx1100 + windows-gfx1151 unblocked to port-ready.
