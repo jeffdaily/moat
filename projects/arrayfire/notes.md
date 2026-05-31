@@ -935,3 +935,67 @@ Regression suites (no LDS-fault recurrence):
 Zero failures. All 6 prior residuals closed by this porter commit. No new failures introduced.
 
 State transition: review-passed -> completed. validated_sha = 3782728.
+
+## Review 2026-05-31 (reviewer, /pr-review, gfx1100 delta) -- VERDICT: APPROVE (review-passed)
+
+Reviewed the full curated commit (single squashed root commit `moat-port` @ 3782728)
+as a tree-to-tree diff vs upstream base 492718b (the fork `master` mirror == 492718b,
+clean). Platform under review: linux-gfx1100 (RDNA3, wave32). Lead linux-gfx90a is
+already completed/validated 132/132 at this same sha. The gfx1100 deltas (the `where`
+ADL fix + cholesky RDNA tolerance) are folded into this commit alongside the
+sparse/int8/FreeImage closures.
+
+Minimal-footprint confirmed by tree: src/backend/{cuda,cpu,opencl,oneapi} = 0 files
+changed, src/api = 0, include = 0 (public ABI + unified dispatcher byte-for-byte
+unchanged). 380/385 changed files are under the additive src/backend/hip tree. Exactly
+5 shared edits: top-level CMakeLists.txt (AF_BUILD_HIP, default OFF, mutually exclusive
+with AF_BUILD_CUDA, arch defaulted only when unset), test/CMakeLists.txt (HIP tagged
+"cuda"), common/half.hpp, common/ArrayFireTypesIO.hpp, test/cholesky_dense.cpp.
+
+The two verdict-critical items the task called out are CORRECT:
+- `where` cfloat/cdouble ADL fix: nvrtc_shims/cuComplex.h (RTC-only, __CUDACC_RTC__)
+  defines POD cuFloatComplex/cuDoubleComplex + their ==/!= in the GLOBAL namespace so
+  ADL reaches them from arrayfire::common (the scan_first_launcher<T,uint,af_notzero_t>
+  in where.hpp:59). hip/math.hpp:476-485 keeps the arrayfire::cuda complex ==/!= under
+  #ifndef __CUDACC_RTC__: present on the compiled host path (namespaced PODs, types.hpp
+  55-72), dropped on the RTC path so the shim's global ops are the single unambiguous
+  definition. The non-RTC ==/!= for host/static code is NOT broken (present exactly
+  where needed). CUDA backend untouched: src/backend/cuda/math.hpp zero diff, keeps its
+  ==/!= at global scope (correct for NVIDIA where cfloat==cuFloatComplex==float2 is
+  global). nvrtc_shims are HIP-include-path-only.
+- cholesky RDNA tolerance: test/cholesky_dense.cpp choleskyEps<T> returns 0.1 only for
+  c32 AND AF_BACKEND_CUDA AND device compute-major>=10 (RDNA); gfx90a (compute 9.x) and
+  CUDA keep strict 0.05. Test-only, behavior-preserving for gfx90a/CUDA, genuine FP32
+  drift (factor matches double ref ~3e-9 rel; 0.073 is reconstruction over a 1024-len
+  complex dot product). Guard is sound.
+
+Other fault classes verified: hipRTC engine (cuLink/PTX genuinely gone; --offload-arch
+from runtime gcnArchName stripped of :feature suffix; disk cache keyed on gcnArchName;
+deterministicHash retained). kWarpSize (config.hpp: 64 on __GFX9__ else 32; on gfx1100
+RDNA -> 32). shfl_intrinsics 64-bit FULL_MASK on HIP. reduce_by_key fully kWarpSize-
+parameterized incl. maxResPerWarp=kWarpSize buffer sizing. reduce.hpp's hardcoded 32s
+are a deliberate width-32 cub::WarpReduce logical-warp design with __syncthreads()-synced
+trees (correct on wave32 AND wave64; validated 1062/1062 gfx90a). LookupTable1D.hpp
+byte-identical to CUDA copy, rule-of-five-correct, linear (not pitched 2D) point-sampled
+bind so no 256B-pitch / no linear-filter fault. int8 gemm if-constexpr-guarded to schar.
+convolve convMul spells out the complex product. Commit hygiene clean ([ROCm] 67-char
+title, Claude-disclosed, Test Plan, no noreply/ghstack, pure ASCII no em-dash, jeffdaily
+account, no AMD-internal refs).
+
+### Findings (both LOW severity, zero-GPU-effect, comment/cosmetic -- NOT blocking)
+1. src/backend/hip/platform.cpp:32-35 carries a now-FALSE comment ("Sparse ... is a
+   documented deferral on HIP ... every sparse op throws AF_ERR_NOT_SUPPORTED before the
+   handle is used"). Sparse is implemented on hipSPARSE (validated 86/86 + 123/123 +
+   41/41 + threading 9/9 at this sha). The prior review flagged this exact comment; the
+   gfx1100 amend did not pick it up. Comment-only.
+2. src/backend/common/ArrayFireTypesIO.hpp is an unguarded shared edit making
+   fmt::formatter::format() const (fmt v10+ in the ROCm tree requires it) and
+   refactoring the Version formatter to locals. Behavior-preserving (identical output;
+   const format() accepted by all fmt>=6, so CUDA/OpenCL builds unaffected). Acceptable
+   strict generalization; worth a one-line confirmation it compiles on the CUDA fmt.
+
+Both are zero-GPU-effect; forcing a dedicated re-amend would advance head_sha and bounce
+the completed gfx90a platform to revalidate (pure churn per PORTING_GUIDE). Fold in
+opportunistically at the next natural amend (windows-gfx1151 bring-up or any future
+delta). State: delta-ported -> review-passed (routes to validator for the gfx1100
+real-GPU re-run at 3782728).
