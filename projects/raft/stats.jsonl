@@ -38,3 +38,19 @@
 {"kind":"phase","ts":"2026-05-31T03:14:55Z","phase":"compile","seconds":50.297,"exit":0,"cmd":"cmake --build projects/raft/build --target FUSED_NN_TEST -j 16"}
 {"kind":"phase","ts":"2026-05-31T03:20:55Z","phase":"compile","seconds":66.244,"exit":0,"cmd":"cmake --build projects/raft/build --target FUSED_NN_TEST -j 16"}
 {"kind":"phase","ts":"2026-05-31T03:21:16Z","phase":"test","seconds":7.286,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 LD_LIBRARY_PATH=/var/lib/jenkins/moat/projects/raft/build:/var/lib/jenkins/moat/_deps/raft-rmm/install/lib:/opt/conda/envs/py_3.12/lib:/opt/rocm/lib /var/lib/jenkins/moat/projects/raft/build/gtests/FUSED_NN_TEST --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T03:34:12Z","phase":"compile","seconds":104.113,"exit":0,"cmd":"cmake --build projects/raft/build -j16"}
+{"kind":"phase","ts":"2026-05-31T03:34:20Z","phase":"test","seconds":0.004,"exit":127,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-05-31T03:34:45Z","phase":"test","seconds":7.567,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-05-31T03:56:25Z","phase":"test","seconds":1292.346,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:08:08Z","phase":"compile","seconds":0.172,"exit":0,"cmd":"cmake --build projects/raft/build -j16"}
+{"kind":"phase","ts":"2026-05-31T06:08:16Z","phase":"test","seconds":0.005,"exit":127,"cmd":"projects/raft/build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:08:33Z","phase":"test","seconds":6.103,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:08:45Z","phase":"test","seconds":6.668,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:23:56Z","phase":"test","seconds":904.453,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:25:10Z","phase":"test","seconds":0.413,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LABEL_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:25:14Z","phase":"test","seconds":4.158,"exit":134,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/CORE_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:25:27Z","phase":"test","seconds":17.489,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/UTILS_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:26:57Z","phase":"test","seconds":120.795,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:27:42Z","phase":"test","seconds":1.031,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
+{"kind":"phase","ts":"2026-05-31T06:27:52Z","phase":"test","seconds":0.339,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LABEL_TEST"}
+{"kind":"phase","ts":"2026-05-31T06:42:35Z","phase":"test","seconds":1380.691,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/NEIGHBORS_TEST --gtest_filter=HaversineKNNTestF.*:EpsNeighTests/*"}

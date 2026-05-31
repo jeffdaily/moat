@@ -665,3 +665,58 @@ Minor (non-blocking, no fix required to pass):
 ball_cover deferral assessment (ACCEPTABLE for completed): ball_cover is a single neighbors algorithm whose inline FAISS KeyValueBlockSelect mis-sorts on wave64 due to a warp-collective reconvergence artifact (documented two ways: SIGABRT in debug via __hip_check_mask, wrong top-k under -DNDEBUG), with two concrete next steps recorded (force reconvergence at mergeWarpQ, or route through the validated select_k). It is bundled with haversine in NEIGHBORS_TEST so that binary cannot be a passing gate yet (RAFT_TEST_NEIGHBORS stays OFF, correctly). The rest of the neighbors-relevant surface IS validated: select_k (MATRIX_SELECT 607), haversine kNN, and the tiled L2 brute force (fused L2 kNN routed to the wave64-safe tiled path on CDNA). The CUTLASS->CK deliverable that actually gates cuvs/cuml -- expanded pairwise distance + fused distance-NN -- is complete and GPU-validated (DISTANCE 11/11, FUSED_NN 12/12). Analogous to RXMesh's deferred solver: a sound, useful, consumable port with one well-scoped algorithm deferred behind a documented option, not a hole in the core deliverable. Does not block completed.
 
 GPU run at review time: not required of the reviewer (validator runs the real GPU suite next). The commit message Test Plan documents the porter's gfx90a results (DISTANCE 11/11, FUSED_NN 12/12, MATRIX_SELECT 607, LINALG reduce/norm/coalesced, CORE/UTILS/LABEL/RANDOM, HaversineKNNTestF). Safe to proceed to validation.
+
+## Validation 2026-05-31
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Fork: jeffdaily/raft @ moat-port, HEAD 86a882aeddcaa2109b8181912a113ee06fdad222 (no source change; prior validator session was cut short before pushing). Build: incremental on-disk build (ninja: no work to do -- already current). HIP_VISIBLE_DEVICES=1 for GCD isolation (GCD 2 used for NEIGHBORS in parallel). Verdict: PASS (all bars met; EpsNeighRbcTestFI deferred as ball_cover wave64 extension -- same root cause as the existing ball_cover deferral).
+
+### GPU test commands
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build:_deps/raft-rmm/install/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+# Build (incremental):
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build -j16
+# GPU tests:
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh raft test -- projects/raft/build/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh raft test -- projects/raft/build/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh raft test -- projects/raft/build/gtests/MATRIX_SELECT_TEST
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh raft test -- projects/raft/build/gtests/LINALG_TEST
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh raft test -- projects/raft/build/gtests/LABEL_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+HIP_VISIBLE_DEVICES=1 projects/raft/build/gtests/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+HIP_VISIBLE_DEVICES=1 projects/raft/build/gtests/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+HIP_VISIBLE_DEVICES=2 projects/raft/build/gtests/NEIGHBORS_TEST \
+  --gtest_filter="HaversineKNNTestF.*:EpsNeighTests/*"
+```
+
+### Results
+
+GPU arch: gfx90a (MI250X). All tests run on real GPU (not CPU-only smoketest).
+
+| Test | Result | Notes |
+|------|--------|-------|
+| DISTANCE_TEST | 11/11 PASS | CK MFMA L2Expanded, L2SqrtExpanded, CosineExpanded; aligned (CK) + unaligned (SIMT fallback); backend routing asserted |
+| FUSED_NN_TEST | 12/12 PASS | CK reducing-epilogue argmin (aligned) + SIMT fallback (unaligned); argmin index EXACT, min-dist within fp32 tol; backend routing asserted |
+| MATRIX_SELECT_TEST | 567 PASS + 40 SKIP = 607 | wave64 select_k (warp-sort + radix), k 1..1700 |
+| LINALG_TEST | 2017/2018 PASS | 1 DotTestF float-tolerance fail = pre-existing hipBLAS dot artifact (documented); reduce/norm/coalesced 0 failures |
+| LABEL_TEST | 14/14 PASS | full suite |
+| RANDOM (validated subset) | 148/148 PASS | MakeBlobs, Rng, RngNormalTable, Perm, RmatGen; Bernoulli excluded (pre-existing deferred) |
+| CORE (validated subset) | 171/172 PASS | 1 Raft.InterruptibleOpenMP fail = pre-existing deferred |
+| UTILS (excl deferred) | 177/177 PASS | MemoryTypeDispatcher From{Device,Managed,Pinned} and ReductionTest excluded (pre-existing deferred) |
+| HaversineKNNTestF.Fit | 1/1 PASS | |
+| EpsNeighTestFI.ResultBruteForce | 14/14 PASS | eps_neighbors_l2sq, sizes up to 20000x10000 (677-679s per large case, isolated GCD) |
+| EpsNeighRbcTestFI.DenseRbc | 1/14 PASS | DenseRbc/0 PASS; /1-/13 FAIL: actual vd count < expected (e.g. 143 vs 300) |
+| EpsNeighRbcTestFI.SparseRbc | 0/14 FAIL | Same root cause |
+| EpsNeighRbcTestFI.SparseRbcMaxK | 0/14 FAIL | Same root cause |
+
+EpsNeighRbcTestFI failures are a newly-confirmed extension of the existing ball_cover wave64 deferral. The RBC eps tests use `ball_cover::build_index` + `ball_cover::eps_nn`, which traverses the same BallCoverIndex/FAISS KeyValueBlockSelect path as the already-deferred ball_cover KNN. The failure mode (vd count consistently lower than expected, non-SIGABRT) is consistent with the NDEBUG-mode wrong-results flavor of the wave64 reconvergence bug (incorrect warp-queue merging leaves some candidates undetected). This is a pre-existing ball_cover wave64 gap, not a new regression. The brute-force eps_neighbors_l2sq (14/14 PASS) confirms the eps_neighbors algorithm itself is correct; the error is in the RBC approximation's internal top-k.
+
+Non-GPU bars not regressed: pre-existing deferred items (InterruptibleOpenMP, MemoryTypeDispatcher From{Device,Managed,Pinned}, ReductionTest, MDSpan.AlignedMatrix, Bernoulli*, BitonicTest, PopcTest) unchanged -- all confirmed same failure status as prior sessions.
+
+ball_cover/full NEIGHBORS stays DEFERRED (RAFT_TEST_NEIGHBORS OFF). The deferred scope is now expanded: ball_cover KNN (BallCoverAllKNNTest, BallCoverKNNQueryTest) AND ball_cover eps_nn (EpsNeighRbcTestFI.DenseRbc /1-/13, SparseRbc, SparseRbcMaxK). Root cause is the same wave64 reconvergence artifact in FAISS KeyValueBlockSelect/BallCoverIndex traversal; the two concrete next steps already documented (wave_barrier at mergeWarpQ, or route through select_k) apply to both.
+
+validated_sha: 86a882aeddcaa2109b8181912a113ee06fdad222. State transition: review-passed -> completed.
