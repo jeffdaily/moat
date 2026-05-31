@@ -516,3 +516,42 @@ DeviceSelect re-tie adaptor -- fact-checked correct (3 sub-agents, all VALID; on
 Non-blocking coverage note (not a defect; for the validator's awareness): static_multimap::retrieve_all (static_multimap.inl:547) also flows through the new shim (same open_addressing_impl::retrieve_all, cuda::std::tuple slot + thrust zip output), but no enabled static_multimap test exercises retrieve_all -- the suite uses the per-key map.retrieve path (retrieve_test.cu:67), and retrieve_all count=0 across all enabled multimap TUs. So the multimap path through the shim is compiled-but-untested-by-the-suite. This matches the documented validation scope (static_map + dynamic_map for retrieve_all) and is not a regression; flagged only so a future change to multimap retrieve_all coverage is a deliberate add.
 
 Forward-looking (informational): if a future libhipcxx flips `_THRUST_HAS_DEVICE_SYSTEM_STD` to 1, thrust::tuple would alias cuda::std::tuple and the re-tie would degrade to a harmless no-op rather than load-bearing -- the shim stays correct either way.
+
+## Validation 2026-05-31 (validator, linux-gfx90a) -- retrieve_all-over-pairs un-defer
+
+Platform: linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1. Fork jeffdaily/cuCollections @ moat-port, HEAD 47ae24da1c2c5f21fcb88decd57697540af34a01.
+
+GPU: HIP_VISIBLE_DEVICES=3 (4 GCDs visible; all 4 at 0% GPU% at run time; GCD 3 selected).
+
+### Build (compile phase)
+
+```
+cd /var/lib/jenkins/moat
+utils/timeit.sh cuCollections compile -- cmake --build projects/cuCollections/build-hip \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j 16
+# 35 TUs compiled (fresh build against 47ae24d). All targets produced, warnings only, no errors.
+```
+
+### Test run (real GPU, HIP_VISIBLE_DEVICES=3, --rng-seed 12345)
+
+```
+utils/timeit.sh cuCollections test -- <exe> --rng-seed 12345
+```
+
+| suite | exe | cases | assertions | result |
+|-------|-----|-------|------------|--------|
+| STATIC_SET_TEST | build-hip/tests/STATIC_SET_TEST | 97 | 887 | PASS |
+| STATIC_MAP_TEST | build-hip/tests/STATIC_MAP_TEST | 126 | 818 | PASS (retrieve_all-over-pairs: contains/duplicate_keys/insert_or_assign/insert_or_apply/retrieve_if all pass via hip_device_select.cuh adaptor) |
+| STATIC_MULTISET_TEST | build-hip/tests/STATIC_MULTISET_TEST | 70 | 582 | PASS |
+| STATIC_MULTIMAP_TEST | build-hip/tests/STATIC_MULTIMAP_TEST | 72 | 228 | PASS |
+| DYNAMIC_MAP_TEST | build-hip/tests/DYNAMIC_MAP_TEST | 18 | 254 | PASS (retrieve_all + multiplicity via same adaptor) |
+| UTILITY_TEST | build-hip/tests/UTILITY_TEST | 38 | 1561 | PASS |
+| ROARING_BITMAP_TEST | build-hip/tests/ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS |
+| **TOTAL** | | **~423** | **~4334** | **all passing** |
+
+Determinism: STATIC_MAP_TEST and DYNAMIC_MAP_TEST each run twice with `--rng-seed 12345`; both runs bit-identical (126/818 and 18/254 respectively).
+
+No regression on prior suite: STATIC_SET 97/887, STATIC_MULTISET 70/582, STATIC_MULTIMAP 72/228, UTILITY 38/1561, ROARING 2 (1+1 skip)/4 -- all match documented bar. All documented deferrals (>8B/16B CAS, bloom_filter nv/target, dynamic_bitset, hyperloglog) remain deferred -- none are failures.
+
+Result: PASS. linux-gfx90a -> completed, validated_sha = 47ae24da1c2c5f21fcb88decd57697540af34a01. linux-gfx1100 stays revalidate (must revalidate 47ae24d on a gfx1100 host). windows-gfx1151 stays port-ready.
