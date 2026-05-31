@@ -167,3 +167,39 @@ gfx1100 (wave32): 2D fwd_ref 5.22e-08, 2D grad 1.75e-09, 3D fwd 1.32e-08, 3D gra
 All differences between platforms are within ~1 order of magnitude and well within the asserted tolerances. The literal-32 stride in the 2D backward load is confirmed correct on wave32 (gradients pass at the same tolerance as wave64).
 
 **RESULT: PASS. linux-gfx1100 -> completed.**
+
+## Windows gfx1151 blocker: c10 inherited-ctor export (clang callee-cleanup gap)
+
+fused-ssim registers via PYBIND11_MODULE (ext.cpp). The pybind11 at::Tensor type
+caster inlines a TORCH_CHECK_VALUE -> constructs c10::ValueError(SourceLocation,
+std::string). On Windows that ctor is dllimport from c10.dll, but c10.dll (built
+with AMD clang-cl) does NOT export it -> LNK2001 __imp_??0ValueError@c10@@...
+
+Root cause (proven on this host, rocm-sdk 7.14.0a20260531, AMD clang 23.0.0git):
+clang does not export INHERITED constructors (using Error::Error) of a
+__declspec(dllexport) class when the ctor has callee-cleanup parameters, i.e. a
+non-trivially-destructible by-value param. Every c10::Error subclass ctor is
+(SourceLocation, std::string) -- std::string by value -> callee-cleanup -> dropped.
+  c10.lib DOES export ValueError's implicit copy/move ctors and the BASE
+  Error(SourceLocation,std::string); it omits only the inherited ValueError ctor.
+  Minimal repro: a dllexport Derived:Base{using Base::Base;} exports the inherited
+  ctor when the param is `int` (trivial) but NOT when it is `std::string`, with
+  warning "exporting inherited constructor is not yet supported; dllexport ignored
+  on inherited constructor with callee-cleanup parameters".
+
+Upstream state:
+- Issue pytorch/pytorch#181892 (jeffdaily) documents the class.
+- PR pytorch/pytorch#175340 (explicit-ctor workaround) was CLOSED, on the belief
+  that LLVM#182706 fixed it at the compiler level.
+- LLVM#182706 (merged 2026-03-05) fixes only TRIVIAL-param inherited ctors; the
+  by-value-std::string (callee-cleanup) case is still unsupported. So #175340 was
+  closed prematurely -- the pytorch-side explicit-ctor workaround is still needed
+  for any clang-cl-built c10 (all ROCm-on-Windows torch) until clang handles
+  callee-cleanup inherited ctors.
+
+The fused-ssim HIP port itself is correct (kernels validate on gfx90a + gfx1100).
+The Windows blocker is entirely an external torch-wheel/clang toolchain bug, out of
+port scope (cf. LMCache POSIX, llm.c makefile). Unblocks automatically when either
+(a) a TheRock torch wheel ships with #175340-style explicit ctors, or (b) clang
+gains callee-cleanup inherited-ctor export. gsplat avoids this by using
+TORCH_LIBRARY (no pybind Tensor caster instantiation).

@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "torch-wheel/clang toolchain bug: c10.dll (clang-cl) does not export inherited ctor c10::ValueError(SourceLocation,std::string) -> PYBIND11 ext LNK2001. LLVM#182706 fixes only trivial-param inherited ctors, not callee-cleanup (by-value std::string); pytorch#175340 explicit-ctor workaround still needed. Port itself correct (validates gfx90a+gfx1100).",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T07:34:36Z",
+      "updated_at": "2026-05-31T00:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
