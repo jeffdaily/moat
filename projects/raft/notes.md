@@ -720,3 +720,90 @@ Non-GPU bars not regressed: pre-existing deferred items (InterruptibleOpenMP, Me
 ball_cover/full NEIGHBORS stays DEFERRED (RAFT_TEST_NEIGHBORS OFF). The deferred scope is now expanded: ball_cover KNN (BallCoverAllKNNTest, BallCoverKNNQueryTest) AND ball_cover eps_nn (EpsNeighRbcTestFI.DenseRbc /1-/13, SparseRbc, SparseRbcMaxK). Root cause is the same wave64 reconvergence artifact in FAISS KeyValueBlockSelect/BallCoverIndex traversal; the two concrete next steps already documented (wave_barrier at mergeWarpQ, or route through select_k) apply to both.
 
 validated_sha: 86a882aeddcaa2109b8181912a113ee06fdad222. State transition: review-passed -> completed.
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32). ROCm 7.2.1. HIP clang 22.0.0. Follower validation at head_sha 712eea35edf4a6c4786e2582db9d86073adf6f19 (amended from 86a882a with two gfx1100-specific fixes described below). HIP_VISIBLE_DEVICES=0.
+
+### gfx1100-specific fixes (applied and amended into the single moat-port commit)
+
+Two issues required source changes. Per MOAT rules these are genuinely necessary build/correctness fixes (not CI/format/comments), so they are amended in.
+
+**1. CK MFMA dispatch gate.** `pairwise_matrix_ck_can_dispatch` and `fused_nn_ck_can_dispatch` (dispatch_ck.cuh, dispatch_fused_nn_ck.cuh) had no arch guard. The tuned `DeviceGemmMultipleD_Xdl_CShuffle` instance uses `MPerXDL=32, NPerXDL=32` (gfx90a MFMA). CK's `is_xdl_wmma_supported<float,float,32,32>()` returns false on gfx1100 (WMMA not MFMA; gfx11 XDL requires MPerXDL=16/NPerXDL=16). Without the gate, the dispatch functions return true for aligned fp32 on gfx1100, calling `RAFT_EXPECTS(device_op.IsSupportedArgument(argument), ...)` which aborts. Fix: add `if (!ck::is_xdl_wmma_supported<float, float, 32, 32>()) return false;` to both gates (also adds `#include <ck/host_utility/device_prop.hpp>`). On gfx1100 the gate returns false for ALL shapes; all distances/fused-NN use the SIMT fallback. The routing assertion in the tests is updated: `expected_ck = p.expect_ck && ck::is_xdl_wmma_supported<float,float,32,32>()` -- so the test correctly expects false for all shapes on gfx1100 and true for aligned shapes on gfx90a.
+
+**2. rocPRIM 4.2.0 DPP workaround.** On gfx1100, rocPRIM 4.2.0 emits wavefront-shift DPP instructions (dpp_ctrl row_bcast:15/31 = 0x142/0x143) in `warp_reduce_dpp` / `warp_scan_dpp` that the GFX10+ backend rejects ("Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+"). This blocks compilation of `MATRIX_SELECT_TEST` (which uses `cub::BlockScan<IdxT, 512>` via select_radix.cuh). `ROCPRIM_DISABLE_DPP=1` switches `warp_reduce_crosslane` to the `__shfl`-based path and fixes the `warp_reduce_dpp` portion. However, `lookback_scan_state` (used by `cub::DeviceScan` in `rng_impl.cuh`) has its own DPP calls gated separately by `ROCPRIM_HAS_PERMLANE()` and `ROCPRIM_HAS_DPP()`, and emits `DPP_ROW_SL1 (0x101)` / `DPP_WF_RL1 (0x134)` via a different code path not controlled by `ROCPRIM_DISABLE_DPP`. This is a rocPRIM 4.2.0 upstream bug; `MATRIX_SELECT_TEST` cannot be compiled on gfx1100 with ROCm 7.2.1. The cmake fix adds `ROCPRIM_DISABLE_DPP=1` for RDNA arches (gfx10/gfx11/gfx12) as a partial mitigation. `MATRIX_SELECT_TEST` is excluded from the gfx1100 build (`-DRAFT_TEST_MATRIX_SELECT=OFF`).
+
+### Build commands
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+# Install rmm (gfx1100 build already existed, just install it):
+cmake --install projects/rmm/build-gfx1100
+
+# Configure raft for gfx1100:
+cmake -S projects/raft/src/cpp -B projects/raft/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON \
+  -DRAFT_TEST_DISTANCE=ON \
+  -DRAFT_TEST_FUSED_NN=ON \
+  -DRAFT_TEST_MATRIX_SELECT=OFF \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/raft/install-gfx1100
+
+# Build (timeit wrapped):
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build-gfx1100 -j16
+# Build time: ~68s (incremental after fixes; full initial build ~360s).
+```
+
+### gfx1100 code-object evidence + WarpSize
+
+```
+llvm-objdump --offloading projects/raft/build-gfx1100/gtests/DISTANCE_TEST
+```
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1100` -- gfx1100 code object present; no gfx90a object.
+
+`RAFT_HOST_WARP_SIZE=32` confirmed in build.ninja DEFINES (from `CMAKE_HIP_ARCHITECTURES=gfx1100` matching `gfx11` pattern in raft_hip.cmake). On-device: `static const int WarpSize = 32` (non-`__GFX9__` device pass in cuda_dev_essentials.cuh).
+
+### GPU test commands
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build-gfx1100:projects/rmm/install-gfx1100/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/LINALG_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/LABEL_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+```
+
+### Results vs gfx90a
+
+| Test | gfx1100 result | gfx90a bar | Notes |
+|------|----------------|------------|-------|
+| DISTANCE_TEST | 11/11 PASS | 11/11 | ALL shapes use SIMT fallback on gfx1100 (CK gate returns false for MPerXDL=32 on gfx11). Numerically correct vs CPU reference. |
+| FUSED_NN_TEST | 12/12 PASS | 12/12 | ALL shapes use SIMT fallback on gfx1100. Argmin correct, min-dist within fp32 tol. |
+| LINALG_TEST | 2017/2018 PASS | 2017/2018 | Same 1 DotTestF pre-existing hipBLAS float-tolerance fail. |
+| LABEL_TEST | 14/14 PASS | 14/14 | |
+| RANDOM subset | 148/148 PASS | 148/148 | Same filter (no Bernoulli). |
+| CORE subset | 171/172 PASS | 171/172 | Same 1 pre-existing Raft.InterruptibleOpenMP fail. |
+| UTILS subset | 177/177 PASS | 177/177 | Deferred items excluded as on gfx90a. |
+| MATRIX_SELECT_TEST | BUILD FAIL | 607 (567+40 skip) | rocPRIM 4.2.0 DPP bug on GFX10+ (lookback_scan_state DPP_WF_RL1/ROW_SL1); upstream issue. |
+
+### Explicit wave32 and MFMA-fallback verdicts
+
+**Wave32 (RDNA3/gfx1100) correctness:** DISTANCE and FUSED_NN tests use `linalg::coalescedReduction` for per-row L2 norms (the `active_mask()` fix). Both pass 11/11 and 12/12 -- the SIMT reductions are numerically correct on wave32. LINALG_TEST 2017/2018 (same as gfx90a): the reduce/norm/coalesced tests pass, confirming the arch-aware warp primitives (WarpSize=32, warp_full_mask()=0xffffffff, 32-bit ballot) are correct on gfx1100.
+
+**MFMA-fallback (CK not dispatched on gfx1100):** On gfx1100, `pairwise_matrix_ck_can_dispatch` and `fused_nn_ck_can_dispatch` correctly return false for ALL shapes (aligned or not) because `ck::is_xdl_wmma_supported<float,float,32,32>()` is false on gfx1100. All 11 DISTANCE cases and all 12 FUSED_NN cases route to the SIMT/sm60 fallback and produce correct numerical results vs the double-precision CPU reference (max_rel < 1e-3). The routing assertion in the tests (`expected_ck = p.expect_ck && ck::is_xdl_wmma_supported<float,float,32,32>()`) confirms false for all shapes on gfx1100. No MFMA-only code path is dispatched on gfx1100.
+
+### Determinism
+
+DISTANCE_TEST and FUSED_NN_TEST each re-run: both 11/11 and 12/12 PASS on the second run. No flakiness observed.
+
+validated_sha: 712eea35edf4a6c4786e2582db9d86073adf6f19. State transition: port-ready -> completed.
