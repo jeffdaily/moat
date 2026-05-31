@@ -1,0 +1,9 @@
+{"kind":"phase","ts":"2026-05-31T22:29:15Z","phase":"compile","seconds":4.524,"exit":1,"cmd":"cmake --build projects/gtsam_points/src/build_hip --target gtsam_points_cuda -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:30:53Z","phase":"compile","seconds":15.891,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --target gtsam_points_cuda -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:33:09Z","phase":"compile","seconds":102.092,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --target gtsam_points_cuda -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:33:55Z","phase":"compile","seconds":39.064,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --target gtsam_points -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:34:28Z","phase":"compile","seconds":26.576,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:38:13Z","phase":"compile","seconds":107.840,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:38:44Z","phase":"compile","seconds":0.888,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T22:41:08Z","phase":"test","seconds":0.139,"exit":0,"cmd":"ctest --output-on-failure -j1 --timeout 900"}
+{"kind":"phase","ts":"2026-05-31T22:42:01Z","phase":"test","seconds":39.005,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1 --timeout 900"}

@@ -2,7 +2,7 @@
   "full_name": "koide3/gtsam_points",
   "upstream_url": "https://github.com/koide3/gtsam_points",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/gtsam_points",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "85d0f4c43098b1f071bbb07710692e3829347c6c"
 }
