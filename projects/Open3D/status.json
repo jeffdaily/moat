@@ -7,17 +7,17 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T01:32:38Z",
-  "head_sha": "2ae6d769fc5b8987181e03026632a32ff552a702",
+  "updated_at": "2026-05-31T07:01:34Z",
+  "head_sha": "3311036fecb5df381caf5cabfc077f099f98a32a",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": false,
-      "blocked_reason": "Core HIP build links + broadly validates on gfx90a (Tensor 398/398, Reduction 34/34, FAISS NNS/KNN/FixedRadius/Hybrid 16/16, ICP Registration + FPFH Feature pass). Remaining wall: the DEFAULT stdgpu hashmap backend's concurrent duplicate-key dedup is not wave64-correct in stdgpu's upstream experimental HIP backend (unordered_base::try_insert per-bucket lock/occupied-bit) -- 4 HashMap tests fail (Reserve, InsertComplexKeys, MultivalueInsertion, HashSet); basic Insert/Find/Erase/Clear/IO pass. NPP GPU image-filter ops are scoped out (LogError on HIP), so Image-filter / RGBD-Odometry / RGBD-pointcloud tests fail by design (use CPU). Next: patch stdgpu's HIP atomic/lock dedup for wave64, or land a wave64 SlabHash backend and select it for HashMap. VoxelBlockGrid (TSDF) correctness is gated on the hashmap.",
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-05-31T00:22:40Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T01:32:38Z",
+      "updated_at": "2026-05-31T07:01:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

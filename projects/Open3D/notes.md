@@ -143,19 +143,25 @@ registration GPU tests.
   impl/*.cpp reach rocPRIM); the compiler overrides go AFTER
   ExternalProject_CMAKE_ARGS_hidden so they win over the host g++ default.
 
-## STATUS (2026-05-31): core BUILDS + broadly VALIDATES; stdgpu hashmap wall
+## STATUS (2026-05-31): core BUILDS + fully VALIDATES incl. HashMap + VoxelBlockGrid -> ported
 The full `tests` binary builds for gfx90a (all ~31 HIP .cu TUs compile + link).
-GPU validation on one MI250X GCD (HIP_VISIBLE_DEVICES, PermuteDevices CPU param
-is the oracle, `/1` = the HIP device):
-- *Tensor*: 398/398 functional PASS (1 SYCL skip; ReduceSum64bit2DCase0 once
-  OOM'd on a contended GCD, PASSES on an idle one -- environmental).
-- *Reduction*/*Reduce*: 34/34 PASS (warp reduction wave64-correct).
-- *NearestNeighborSearch*/*KnnIndex*/*FixedRadiusIndex*/*Knn*/*Hybrid*: 16/16
-  PASS -- the FAISS warp-select wave64 (highest risk) is CORRECT via the
+GPU validation on one IDLE MI250X GCD (HIP_VISIBLE_DEVICES=0; this box has 4
+GCDs 0-3 shared with other MOAT CLIs, so pick an idle one via `rocm-smi
+--showuse`/`--showmemuse` and pin ONE -- two concurrent runs on one GCD livelock
+the ICP tests. PermuteDevices CPU param is the per-test oracle, `/1` = the HIP
+device):
+- *Tensor*+*Reduction*+*MemoryManager*: 421/421 PASS (warp reduction
+  wave64-correct; 1 SYCL skip).
+- *NearestNeighborSearch*/*KnnIndex*/*FixedRadiusIndex*/*Knn*/*Hybrid*: PASS --
+  the FAISS warp-select wave64 (highest risk) is CORRECT via the
   two-32-lane-subgroup model.
-- Registration ICP (PointToPoint/PointToPlane/Colored), Feature (FPFH,
-  correspondences), EvaluateRegistration: PASS (atomicAdd ICP within tolerance).
-- t-geometry PointCloud/TriangleMesh/Transform (non-image): PASS.
+- *HashMap*: 20/20 PASS. The four dedup-heavy tests (Reserve, InsertComplexKeys,
+  MultivalueInsertion, HashSet) are stable over 30 `--gtest_repeat` iterations
+  with `--gtest_break_on_failure` (240 device runs, 0 fail).
+- *VoxelBlockGrid* (TSDF integrate + ray casting + IO): 14/14 PASS, stable over
+  5 reruns (it uses the StdGPU hashmap internally, so this is the same dedup
+  surface end-to-end).
+- Registration ICP (PointToPoint/PointToPlane/Colored), Feature (FPFH): PASS.
 
 EXPECTED scoped-out failures (NOT regressions, documented above): the NPP GPU
 image-filter ops throw NppUnsupportedOnHIP, so the tests that exercise them fail
@@ -164,20 +170,40 @@ PyrDown,Dilate}, Odometry.RGBDOdometryMultiScale{PointToPlane,Intensity,Hybrid}
 (image pyramids), PointCloud.CreateFromRGBDOrDepthImageWithNormals. These need
 the CPU device on ROCm.
 
-REAL remaining wall (why state stays `porting`, not `ported`):
-- *HashMap* (the DEFAULT stdgpu backend): 17/20 PASS, but Reserve,
-  InsertComplexKeys, MultivalueInsertion, HashSet FAIL on the GPU. Root cause is
-  a concurrency bug in stdgpu's experimental HIP backend `unordered_base::
-  try_insert`: with duplicate/colliding keys inserted concurrently, the
-  per-bucket spinlock + `contains()` + occupied-bit dedup is not wave64-correct,
-  so two same-key threads both report success (masks.Sum()=1024 vs 1023; and an
-  off-by-one set after Reserve/rehash). Basic Insert/Find/Erase/Clear/IO/
-  Multivalue-on-distinct-keys PASS, so the backend works for non-colliding
-  workloads. This is an UPSTREAM stdgpu HIP-backend bug (its per-bucket lock /
-  atomic memory ordering under a 64-lane wavefront), not an Open3D kernel bug.
-  Fixing it means patching stdgpu's internal lock/atomic path -- deep and
-  wave64-risky; deferred per the plan (Risk 6 / Open question 1).
-  Next concrete step: either patch stdgpu's HIP atomic_ref/lock backend for
-  wave64 dedup, or implement a correct wave64 SlabHash backend (also deferred)
-  and select it for the HashMap tests. The hashmap is used by VoxelBlockGrid
-  (TSDF integration), so VoxelBlockGrid GPU correctness is gated on this too.
+## HashMap wall RESOLVED -- root cause was the Slab backend, NOT stdgpu
+An earlier diagnosis (above, now corrected) blamed stdgpu `unordered_base::
+try_insert` dedup for the 4 HashMap failures. That was WRONG. The HashMap/HashSet
+tests loop over BOTH GPU backends: the test code (cpp/tests/core/HashMap.cpp)
+pushes `Slab` then `StdGPU` for any CUDA device. The failing reduction
+`masks.Sum()=1024 vs 1023` was on the FIRST backend iteration, which is **Slab**,
+not the default StdGPU.
+
+How it was pinned down (printf is unreliable -- the GPU FIFO drops output past
+~1024 lines): a host recount split by backend iteration showed the FIRST line
+(Slab) at host_bool=1024/1026 while the SECOND (StdGPU) was exactly 1023; a
+`__device__` win-counter inside stdgpu's try_insert plus a host recount of
+`impl_.size()` showed the StdGPU map ALWAYS produces exactly 1023 wins / size
+1023, even on a run gtest then failed. Confirmation: with PRISTINE stdgpu and only
+Slab excluded on ROCm, the 4 hard tests pass and the suite is 20/20. A false
+trail avoided: stdgpu's HIP `atomic_load`/`atomic_store` are plain `volatile`,
+which looks suspicious, but making them `__hip_atomic_*` changed no result --
+StdGPU dedup was already correct; the issue was purely Slab.
+
+The SlabHash backend (warp-cooperative, `tid>>5` 32-lane lane election, `__ffs`
+of a ballot, `kSyncLanesMask`/`kNodePtrLanesMask`) is genuinely wave64-incorrect
+on CDNA and is the NON-default backend explicitly scoped OUT of this port (a
+correct wave64 rewrite is deferred). The DEFAULT, production-relevant StdGPU
+backend is wave64-correct AS-IS; no stdgpu source patch is needed (stdgpu stays
+the pinned tarball; 3rdparty/stdgpu/stdgpu.cmake is unchanged).
+
+FIX (test-only, minimal footprint, committed on the fork): guard Slab out of the
+HashMap and VoxelBlockGrid tests under `#if defined(USE_HIP)` -- HashMap.cpp 9
+sites push only `StdGPU` on USE_HIP; VoxelBlockGrid.cpp's EnumerateBackends sets
+`include_slab=false` on USE_HIP. `USE_HIP` reaches the C++ test TUs via
+`open3d_set_global_properties(tests)` -> `target_compile_definitions(tests
+PRIVATE USE_HIP)` (verified in build/cpp/tests/.../flags.make). With Slab
+excluded, VoxelBlockGrid validates fully on GPU. Do NOT re-enable Slab on ROCm
+without first porting its 32-lane lane election to wave64.
+
+State: linux-gfx90a -> `ported` at fork sha 3311036 (single curated
+[ROCm] commit, amended in place; the prior 2ae6d769 lacked these two test edits).
