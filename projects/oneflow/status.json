@@ -7,17 +7,17 @@
   "priority": 6.236,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T02:48:26Z",
-  "head_sha": "1b29b2468681509d224f45e57e2650a61a1dc87c",
+  "updated_at": "2026-05-31T09:20:43Z",
+  "head_sha": "68718f03829384b530ba97c32b18e5937629ec09",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": false,
-      "blocked_reason": "porting in progress (not yet ported): HIP plumbing + compat header + fault-class fixes land; 203/220 .cu compile as HIP incl. the full ep/cuda/primitive validation slice (30/30). 17 .cu are list(FILTER EXCLUDE)-ed from the monolith glob (genuine library gaps: cuDNN grid_sample/normalization, cuBLASLt fused-MLP/grouped-GEMM family, cuSOLVER lu_decomposition, CUTLASS+wmma fused attention/glu, libcu++ cuda::std::semaphore lru_cache, P2P embedding shuffle). RESUME: build the `oneflow` target to surface host-.cpp + link faults (the excluded ops' REGISTER_USER_KERNEL registrations likely need guarding/stubbing for liboneflow.so to link), then run slice autotests on GPU. Fork head 1b29b24.",
+      "blocked_reason": "ported + GPU-validated. liboneflow.so (1.3GB) and the _oneflow_internal pybind module LINK; the ep/cuda/primitive slice GPU-validates vs PyTorch-ROCm (device='cuda' == HIP backend, fwd+bwd): test_add/cast/where/masked_fill/broadcast_ops/transpose/softmax/layer_norm = 64 passed, matmul core = 9 passed. Monolith built with the ROCm clang; hip::host+roc::rccl linked (not hip::device); 17 .cu deferred (cuDNN/cuBLASLt/cuSOLVER/CUTLASS+wmma/libcu++/P2P) with their host registrations guarded or stubbed (NewLruCache, GridSampleKernelUtil<kCUDA> -> CPU-only). GPU faults fixed: hipblasSetMathMode no-op on CDNA, __launch_bounds__(1024) on the norm block kernels, CUDNN_BN_MIN_EPSILON=0.0, and the wave64 LayerNormParamGrad reduction (tile/launch/shared/width all 32, width-confined shfl). Fork 68718f0.",
       "validated_sha": null,
       "started_at": "2026-05-31T01:37:32Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T02:48:26Z",
+      "updated_at": "2026-05-31T09:20:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

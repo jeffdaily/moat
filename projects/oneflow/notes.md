@@ -135,17 +135,90 @@ cmake/oneflow.cmake, each with a genuine library/API gap -- not a mechanical por
 The fixable-but-not-fixed bf16x2 broadcast (__float2bfloat162_rn -> a HIP helper in the
 compat header) was added, clearing dropout_kernel.cu.
 
-### REMAINING WORK to a linked liboneflow.so (continuation)
-The 203 .cu compile; the host .cpp GPU TUs (ep/cuda/*.cpp etc.) get the per-target compat
-flags but have not yet been driven to a clean compile + link of the full liboneflow.so.
-Next steps for a continuation: (1) build the `oneflow` target to surface host-.cpp and
-link faults (the host TUs reference the excluded ops via registries -- may need the
-excluded kernels stubbed or their registrations guarded); (2) once liboneflow.so + the
-oneflow_internal pybind module link, run the slice autotests on GPU.
+### LINKED + GPU-VALIDATED (continuation session 2)
+liboneflow.so (1.3 GB) and the _oneflow_internal pybind module LINK and load; the
+ep/cuda/primitive slice GPU-validates against the PyTorch-ROCm oracle. Key decision: the
+whole monolith now compiles with the ROCm clang (CC=clang, CXX=clang++) instead of g++ --
+oneflow's data_type.h / cuda_stream.h pull the HIP half/bf16/library handle headers (clang
+builtins) into thousands of host .cpp, which only parse under clang. cuda.cmake links
+hip::host (NOT hip::device, whose -x hip INTERFACE option would recompile every host .cpp
+as device code) and roc::rccl (the nccl* collective-comm symbols).
 
-## GPU validation (test oracle = PyTorch ROCm)
-torch 2.13 ROCm (torch.cuda.is_available()==True on HIP) is importable as the autotest
-oracle. 4 MI250X GCDs; run on one free GCD via HIP_VISIBLE_DEVICES (rocm-smi to pick).
-Slice autotests (after monolith links): test_add, test_cast, test_where, test_masked_fill,
-test_softmax, test_layer_norm, test_matmul, test_broadcast_ops, test_permute, run SERIALLY
-(pytest, not -n) on one GCD.
+### CLEARED in session 2 (host-.cpp + link + GPU faults)
+1. Toolchain: build the monolith with the ROCm clang for C/C++/HIP (build_rocm.sh). The
+   clang-only HIP math/library headers are gated on __clang__ in cuda_to_hip.h; the
+   platform macro __HIP_PLATFORM_AMD__ is selected for the plain-C++ pass.
+2. Eigen 3.90 + clang: Transpositions.h friend operator* calls trt.derived() on a class
+   with no derived() -- g++ never instantiates it, clang rejects it. PATCH_COMMAND in
+   cmake/third_party/eigen.cmake rewrites it to pass the Transpose directly. Not
+   HIP-specific; any clang build needs it.
+3. LLVM ABI-breaking-checks mismatch: ROCm clang ships llvm/Config/abi-breaking.h with
+   LLVM_ENABLE_ABI_BREAKING_CHECKS=0 on its builtin path (ahead of oneflow's vendored
+   LLVM headers =1), so every TU referenced llvm::DisableABIBreakingChecks while the
+   linked libLLVMSupport (=1) defines EnableABIBreakingChecks -> liboneflow.so failed to
+   load. Fix: LLVMSupportWithHeader INTERFACE_COMPILE_DEFINITIONS
+   LLVM_DISABLE_ABI_BREAKING_CHECKS_ENFORCING=1 (LLVM's sanctioned escape hatch).
+4. CPython 3.12: imp module removed -> importlib in framework/unittest.py + sysconfig.py
+   (the autotest harness import path). _PyFrameEvalFunction frame param changed to
+   _PyInterpreterFrame* in 3.11; custom_eval_frame.c casts the stale-typed hook at the
+   registration site (the stack getter is off by default).
+5. Excluded-op host references: NewLruCache (lru_cache.cu excluded) guarded under USE_HIP
+   in embedding/cache.cpp (kFull cache still works); GridSampleKernelUtil<kCUDA> (excluded
+   grid_sample_kernel_util.cu) -> grid_sample_kernel.cpp registers only kCPU on HIP. These
+   were the only two dangling symbols (verified via nm -DC scan; everything else is proto,
+   resolved by libof_protoobj.so at load).
+6. Host cuda* symbols: cuda_util.cpp CudaDriverGetPrimaryCtxActive reimplemented with the
+   native HIP driver API (hipDeviceGet/hipDevicePrimaryCtxGetState); CUBLAS_STATUS_LICENSE_ERROR
+   and CUDART_VERSION handled; cuda_stream.cpp CheckCublasVersion no-op on HIP (no
+   hipblasGetVersion / CUBLAS_VER_MAJOR); cuDNN/cuSOLVER/cuBLASLt/nvjpeg/NVTX host refs
+   guarded under !USE_HIP in cuda_stream/env_global_objects_scope/profiler/image_decoder.
+7. .template disambiguation (clang -Wmissing-template-arg-list-after-template-kw):
+   add_n_kernel.cpp, one_embedding.cpp (pybind array::data).
+8. clip_by_value_kernel.cpp: __double2half is device-only on HIP -> __float2half on host.
+9. .cuh standalone-compile: oneflow's glob compiles every .cuh as a TU; fused_softmax.cuh,
+   one_embedding_data_shuffle.cuh, cublas_fused_mlp_util.cuh are not self-contained (use
+   their .cu includer's prior includes) -> excluded from the HIP glob (their code still
+   builds inside the .cu that include them).
+
+### CLEARED GPU CORRECTNESS faults (found by running the slice on GPU)
+A. hipblasSetMathMode NOT_SUPPORTED on CDNA: hipblas accepts only HIPBLAS_DEFAULT_MATH;
+   TENSOR_OP_MATH and DISALLOW_REDUCED_PRECISION_REDUCTION return status 7 and
+   OF_CUBLAS_CHECK aborted (fp16 matmul + fp16 reduce). CublasMathModeGuard::SetMathMode is
+   a no-op on HIP (rocBLAS picks precision from the data/compute types; no NVIDIA math-mode
+   equivalent). cuda_util.cpp.
+B. block-SMEM kernels missing __launch_bounds__: LayerNorm/RmsNorm/Softmax Block(SMem|
+   Uncached)Impl and the LayerNorm/RmsNorm grad variants are launched at up to 1024
+   threads via an occupancy heuristic; on gfx90a, without __launch_bounds__(1024) the
+   register allocation is too large and the 1024-thread launch faults (HIP's occupancy API
+   still returns >0). Added __launch_bounds__(1024) to all of them (the LayerNorm Uncached
+   kernel already had it -- the others were an upstream oversight). core/cuda/{layer_norm,
+   rms_norm,softmax}.cuh.
+C. CUDNN_BN_MIN_EPSILON: the compat header hardcoded the pre-cuDNN-7.5 floor 1e-5;
+   CHECK_GE(epsilon, CUDNN_BN_MIN_EPSILON) then aborted on the common eps=1e-6 layer norm.
+   cuDNN 8 (CUDA 11.x, oneflow's target) uses 0.0 -> match it. cuda_to_hip.h.
+D. WAVE64 reduction bug (the important one): layer_norm_gpu_kernel.cu LayerNormParamGrad
+   (gamma/beta gradient) had an INCONSISTENT session-1 fix -- tile_size was tied to
+   OF_GPU_WARP_SIZE (64) while block_dim_x, the launch dim3(32,...), and the shared
+   transpose [32][33] all stayed 32, so WarpReduce butterflied from 32 and folded the
+   neighbouring threadIdx.y row on a 64-lane wavefront -> weight_grad garbage (max abs diff
+   ~21 vs torch). Fix: tile_size is a 32-wide tiling constant (NOT the warp width);
+   WarpReduce reduces block_dim_x(=32) lanes via the 4-arg __shfl_down_sync(...,width=32),
+   correct on wave32 AND wave64. Lesson: arch-unify the WHOLE kernel (launch dims + shared
+   sizes + reduction width), never just the reduction constant.
+
+## GPU validation (test oracle = PyTorch ROCm), session 2 RESULTS
+torch 2.13 ROCm (torch.cuda.is_available()==True on HIP) is the oracle. 4 MI250X GCDs; run
+SERIALLY on one free GCD via HIP_VISIBLE_DEVICES (rocm-smi --showmemuse to pick). From the
+repo python/ tree with `source build/source.sh` (PYTHONPATH=.../python). Build first with
+`./build_rocm.sh` then `cmake --build build -j16` (the default target builds liboneflow.so
++ _oneflow_internal + copies the module into python/oneflow/).
+PASS (device="cuda" == HIP, fwd+bwd vs torch): test_add (11), test_cast, test_where,
+test_masked_fill, test_broadcast_ops, test_transpose, test_softmax, test_layer_norm (4) =
+64 passed; test_matmul core (fp32/mm/mv/broadcast/batch/tf32) = 9 passed.
+KNOWN NON-ROCm test artifacts (not GPU-correctness): test_matmul fp16 subcase -- the GPU
+result is BIT-IDENTICAL to torch (max abs diff 0.0 on controlled input), the pytest fails
+only on a numpy/oneflow `__bool__` dtype-interop quirk (np.allclose returns a oneflow
+scalar); test_matmul int subcase -- CPU path, op_kernel_not_found (oneflow has no int32
+matmul primitive kernel; unrelated to GPU/ROCm).
+RUN: cd python/oneflow/test/modules; HIP_VISIBLE_DEVICES=<free> python3 -m pytest
+test_add.py ... test_layer_norm.py -q -p no:cacheprovider  (serial, never -n).
