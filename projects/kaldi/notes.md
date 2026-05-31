@@ -107,3 +107,43 @@ Fork HEAD pushed: jeffdaily/kaldi @ moat-port = cdc8d2f907f00b8fc2dc7459f3e3cb09
 agent_space/kaldi_build/{build_kaldi.sh (configure|depend|build), run_cudamatrix_tests.sh <gcd>}. OpenBLAS in-tree
 install at tools/OpenBLAS/install (built by tools/extras/install_openblas.sh). OpenFst 1.8.4 fetched from
 openfst.org (the openslr mirror 404s).
+
+## Review 2026-05-31 (linux-gfx90a, moat-port cdc8d2f vs e02e35f) -- reviewer
+Verdict: review-passed. No defects found; safe to proceed to GPU validation. Diff is 5 files +47/-15, every functional edit inside __IS_HIP_COMPILE__ / HIP_VERSION / the #else of a HIP guard / the HIP makefile, or the arch-unified kernel fix. NVIDIA/CPU path byte-identical (verified line-by-line). Findings: none (problems-only per skill philosophy). Verifications recorded so a re-review need not redo them:
+- wave64 LSTM fix (cu-kernels.cu:3806-3816): CU1DBLOCK=256 (cu-matrixdim.h:57), launch dimBlock.y=CU1DBLOCK/GPU_WARP_SIZE (cu-math.cc:821-822) = 8 wave32 / 4 wave64; gridDim is 1D (cu-math.cc:828) so i0==threadIdx.y. update_sr[] (cu-kernels.cu:3675-3680) is a function of column j only (deriv_sum_in[i*stride+j] < sr_config[i]*count), lane-independent. Old `i0<5` had lane s write row s; new `threadIdx.y==0` writes all 5 in an unrolled loop -- identical bytes on wave32/NVIDIA, fixes the starved row 4 on wave64. self_repair write touches no smem and is bracketed by __syncthreads, so no new race. value_sum_out/deriv_sum_out rows use the tid<warpSize reduction-leader pattern (not i0<5), so they were never starved -- self_repair was the only defective site; fix is complete.
+- __CUDA_ARCH__ moved after hipcub includes (cu-kernels.cu:44, feature-online-cmvn-cuda.cu:25): headers between old/new position (hip_runtime, hipcub, block_reduce, cu-kernels-ansi.h, hipify.h) consume no __CUDA_ARCH__ (grep clean); value stays 800; only guard in cu-kernels.cu body is `#if __CUDA_ARCH__ < 600` at 988 (dead, below define); cmvn `#if __CUDA_ARCH__ == 750` at line 50 is below define at 25 -> 800==750 false -> __launch_bounds__(1024,2), same as before. Behavior preserved.
+- hipBLAS v2 drift: on installed ROCm 7.2.1 hipblasDatatype_t is REMOVED (grep -rl empty), HIPBLAS_COMPUTE_32F/_FAST_16F/_FAST_TF32 + hipblasComputeType_t exist in hipblas-common/hipblas-common.h (hipblas.h:40 includes it), HIPBLAS_R_32F still = HIP_R_32F. hipify.h aliases now resolve; ivector .cc KALDI_GEMMEX_COMPUTE_32F = HIPBLAS_COMPUTE_32F (HIP) / CUDA_R_32F (NVIDIA, genuine cudaDataType -- the local CUDA_R_32F redefine is inside the HIP branch only) -> NVIDIA GemmStridedBatchedEx call byte-identical.
+- OPENFST_VER: OPENFSTVER=10804 (kaldi.mk:21); host CXXFLAGS already pass -DOPENFST_VER (linux_openblas.mk:25) and nvcc does too (cuda_64bit.mk:11); kaldi-types.h:42 `#if OPENFST_VER >= 10800` else <fst/types.h> (dropped in OpenFst 1.8.x). HIP compile lacked it -> took the dead branch. Fix adds it to ROCM_FLAGS, matching host/nvcc. Sound.
+- __syncwarp shim guarded `#if HIP_VERSION < 60200000` (hipify.h, inside #ifdef __HIPCC__, with #include <hip/hip_version.h>); native wave-correct builtin used on 7.2.1. Preexisting Unicode in the untouched shim comment correctly left alone.
+- C++17 bump HIP-only (hip_64bit.mk ROCM_FLAGS); host/CUDA std untouched.
+- Hygiene: title 68 chars [ROCm]-prefixed; Claude-disclosed; Test Plan with fenced commands; no Co-Authored-By/noreply/ghstack; ASCII, no em-dash; author jeff.daily@amd.com (user's own public email, jeffdaily fork -- not an AMD-internal account). kaldi.mk.bak is gitignored (.gitignore:80), untracked, NOT in the commit.
+Note for validator: validated_sha is null; this review does not gate on the GPU run (expected to be pending at review time). The decisive gate remains the 12 cudamatrix tests incl. cu-math-test BackpropLstmNonlinearity on gfx90a.
+
+## Validation 2026-05-31 (linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1)
+
+Platform: linux-gfx90a. Fork: jeffdaily/kaldi @ moat-port = cdc8d2f907f00b8fc2dc7459f3e3cb092afc0aa6. GPU: gfx90a (MI250X), HIP_VISIBLE_DEVICES=2 (selected as idle GCD; 4 GCDs enumerated 0-3, GCD 2 chosen at 0% utilization, 0% VRAM).
+
+Commands run (all from /var/lib/jenkins/moat):
+
+```
+# Incremental configure (near-no-op):
+bash utils/timeit.sh kaldi compile -- bash agent_space/kaldi_build/build_kaldi.sh configure
+
+# Incremental build (cudamatrix only):
+bash utils/timeit.sh kaldi compile -- make -j16 -C projects/kaldi/src/src/cudamatrix
+
+# Build test binaries:
+bash utils/timeit.sh kaldi compile -- make -j16 -C projects/kaldi/src/src/cudamatrix test_compile
+
+# Run 12 correctness tests serially on GCD 2:
+bash utils/timeit.sh kaldi test -- bash agent_space/kaldi_build/run_cudamatrix_tests.sh 2
+```
+
+Results: PASS=12 FAIL=0. All 12 cudamatrix correctness tests passed:
+cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-sp-matrix-test, cu-packed-matrix-test, cu-tp-matrix-test, cu-block-matrix-test, cu-array-test, cu-sparse-matrix-test, cu-device-test, cu-compressed-matrix-test.
+
+Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED. The wave64 _diff_lstm_nonlinearity fix (threadIdx.y==0 writes all 5 self-repair rows) is verified correct on gfx90a wavefront-64. UnitTestBackpropLstmNonlinearity ran float+double at dim 16-1024 without error.
+
+Timing: incremental configure ~0.6s, cudamatrix build ~5s, test_compile ~6.5s, 12 tests ~64s.
+
+Verdict: COMPLETED. validated_sha = cdc8d2f907f00b8fc2dc7459f3e3cb092afc0aa6. Followers linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
