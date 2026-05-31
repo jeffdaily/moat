@@ -83,8 +83,13 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   result type), NOT a hard library wall. Reclassified from "library gap" to
   "wrong-compute-type in our port + a docs/clarity gap in rocBLAS error messaging."
 - Upstream target: rocBLAS (low priority; mostly a clarity issue). Report decision: PENDING.
-- Action item: fix arrayfire's int8 gemm to use int32 accumulate (closes the last
-  `blas` subcase) -- see arrayfire follow-on.
+- Action item: DONE. arrayfire's HIP gemmDispatch now routes the schar (int8)
+  path through hipblasGemmEx with HIP_R_8I inputs + HIP_R_32I output +
+  HIPBLAS_COMPUTE_32I (int32 accumulate), then casts the int32 result into the
+  f32 output array (s8's out_type). MatrixMultiply.schar passes on gfx90a;
+  blas 126/127 -> 127/127. The `if constexpr (is_same<Ti,schar>)` guard keeps the
+  int32 cast out of the float/complex instantiations. Confirms int8->int32 GEMM
+  is supported on gfx90a; only int8->float32 was the (correct) rejection.
 
 ### B3. rocPRIM BlockRadixSort -- TempStorage union-aliasing causes LDS corruption
 - Symptom: putting `BlockRadixSort::TempStorage` in a `union` with another in-use
@@ -101,11 +106,43 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   (hit in CV-CUDA bicubic ~1 ULP). Workaround: pin `-ffp-contract=on`.
 - Report decision: N/A (expectation/documentation note, not a defect).
 
-### B5. hipSPARSE coverage (pending)
-- To be populated by the arrayfire sparse-on-hipSPARSE port: any cuSPARSE feature
-  with no hipSPARSE equivalent in ROCm 7.2.1. Per jeff, surfacing these gaps is an
-  explicit goal of that port.
-- Report decision: PENDING (awaiting the sparse port's findings).
+### B5. hipSPARSE coverage (arrayfire sparse-on-hipSPARSE port) -- NO GAPS FOUND
+- Scope: the cuSPARSE surface arrayfire's sparse subsystem uses, ported to
+  hipSPARSE 4.2.0 (ROCm 7.2.x) for the gfx90a backend. Per jeff, surfacing any
+  cuSPARSE feature with no hipSPARSE equivalent was an explicit deliverable.
+- RESULT: hipSPARSE 4.2.0 covers EVERY cuSPARSE entry point arrayfire uses, with
+  exact 1:1 naming (cusparse* -> hipsparse*, CUSPARSE_* -> HIPSPARSE_*) and
+  matching signatures. No silent stub was needed; the three sparse binaries +
+  threading all pass on real gfx90a (sparse 86/86, sparse_convert 41/41,
+  sparse_arith 123/123, threading 9/9). The full coverage map (all present):
+  - Generic API: cusparseCreateCsr / CreateCsc / CreateCoo / CreateDnVec /
+    CreateDnMat / DestroySpMat / DestroyDnVec / DestroyDnMat, SpMV +
+    SpMV_bufferSize, SpMM + SpMM_bufferSize, DenseToSparse_bufferSize /
+    _analysis / _convert, SparseToDense + _bufferSize, SpMatGetSize,
+    CsrSetPointers / CscSetPointers. (in internal/generic/, internal/conversion/.)
+  - Legacy / sort / coordinate: Xcsrsort + _bufferSizeExt, Xcoosort_bufferSizeExt
+    + XcoosortByRow, Xcsr2coo, Xcoo2csr, CreateIdentityPermutation,
+    CreateMatDescr / SetMatType / SetMatIndexBase / DestroyMatDescr.
+  - csrgeam2 (typed S/D/C/Z) + _bufferSizeExt + Xcsrgeam2Nnz (sparse+sparse add/sub).
+  - Enums: INDEX_32I, INDEX_BASE_ZERO, ORDER_COL, MATRIX_TYPE_GENERAL,
+    DIRECTION_ROW/COLUMN, OPERATION_{NON_,}TRANSPOSE / CONJUGATE_TRANSPOSE,
+    DENSETOSPARSE_ALG_DEFAULT, SPARSETODENSE_ALG_DEFAULT, SPMV_CSR_ALG1 /
+    SPMV_ALG_DEFAULT, SPMM_CSR_ALG1, all status codes.
+- Two NON-gap porting notes (differences, not missing features), both handled in
+  the fork and documented in arrayfire notes.md / PORTING_GUIDE.md:
+  1. void*-aliasing: hipsparseDnVecDescr_t and hipsparseDnMatDescr_t (and
+     hipsparseHandle_t / hipsparseMatDescr_t) are all `typedef void*`
+     (hipsparseSpMatDescr_t is a distinct struct ptr). The shared type-keyed
+     unique_handle<T> machinery redefines ResourceHandler<void*> when one TU
+     pulls two of them -- the amgcl gotcha. Fixed with the tag-keyed TaggedHandle.
+  2. SpMV/SpMM take the compute type as a hipDataType (getType<T>()), NOT a
+     hipblasComputeType_t. Trivial; the dense-gemm getComputeType<T>() in the same
+     backend returns hipblasComputeType_t for hipblasGemmEx, a different enum
+     family, so sparse must use getType<T>() there.
+- Report decision: NOT NEEDED as a gap report (hipSPARSE is complete here). The
+  void*-typedef descriptor aliasing is a recurring portability hazard worth a
+  hipSPARSE docs note (low priority); same class as the hipBLAS/hipSOLVER void*
+  handles. Report decision: PENDING (low priority, docs/robustness only).
 
 ---
 

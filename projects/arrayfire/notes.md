@@ -744,3 +744,67 @@ JIT disk-cache keys are gfx1100 (KER*_HIP_gfx1100_AF_310.bin). Build: incrementa
 State: linux-gfx1100 validation-failed -> delta-ported (routes to reviewer). head_sha advanced
 2378586, flipping linux-gfx90a completed -> revalidate (the fixes are arch-unified + HIP-only
 files, so gfx90a rebuilds identically and `where` now genuinely passes there too).
+
+## Sparse-on-hipSPARSE + int8 + FreeImage (porter, gfx90a) -- 2026-05-31
+
+Extended the completed core (was revalidate at 2378586) with the deferred sparse
+subsystem and the two remaining non-sparse residuals. Fork HEAD advanced.
+
+### Sparse subsystem (PRIMARY) -- ported cleanly, NO hipSPARSE gaps
+The CUDA backend's sparse path (the AF_USE_NEW_CUSPARSE_API generic API + a few
+legacy sort/conversion calls) ports near-1:1 to hipSPARSE 4.2.0. Files:
+- nvrtc_shims/cusparse_v2.h (NEW): forwarding shim -- includes
+  <hipsparse/hipsparse.h>, #defines every cusparse*/CUSPARSE_* the sparse code
+  uses -> hipsparse*/HIPSPARSE_*, and #defines CUSPARSE_VERSION 11400 so the
+  project's `#if CUSPARSE_VERSION >= 11300/11000` branches pick the generic-API +
+  csrgeam2 paths. Lives in nvrtc_shims/ (HIP include path only), so the .cu stay
+  in cuSPARSE spelling (colmap minimal footprint). The CUDA backend never sees it.
+- cusparse.hpp (rewritten): dropped the getCusparsePlugin() dlopen indirection
+  (the HIP build links roc::hipsparse directly). createSpMatDescr calls
+  hipsparseCreateCsr/Csc/Coo directly. Descriptor RAII is the void*-aliasing fix:
+  DnVec and DnMat are BOTH `typedef void*` in hipSPARSE (only SpMat is a distinct
+  struct ptr), so the shared type-keyed common::unique_handle<T> would redefine
+  ResourceHandler<void*> -- use tag-keyed TaggedHandle (DEFINE_HIP_HANDLE):
+  SparseDescriptorRAII (matdescr), SparseDnVecRAII, SparseDnMatRAII, SparseSpMatRAII.
+- cusparse.cpp (rewritten): errorString over the hipsparseStatus_t enum.
+- cusparse_descriptor_helpers.hpp (rewritten): cusparseDescriptor/denVecDescriptor/
+  denMatDescriptor return the tagged RAII types via make_tagged_handle.
+- hip_unique_handle.hpp: added a make_handle<TaggedHandleT>(args...) convenience.
+- sparse.cu / sparse_arith.cu / sparse_blas.cu (replaced the AF_ERR_NOT_SUPPORTED
+  stubs with the ported CUDA implementations). sparse_blas uses getType<T>() (NOT
+  getComputeType<T>()) for the SpMV/SpMM compute type (hipSPARSE wants hipDataType;
+  getComputeType returns hipblasComputeType_t for the dense gemm Ex path).
+  sparse_arith csrgeam2 dispatches the typed S/D/C/Z funcs directly, reinterpret_
+  casting complex pointers to hipComplex*/hipDoubleComplex* (cfloat/cdouble are
+  distinct layout-compatible PODs on the compiled path). matB in DenseToStorage is
+  created raw and hipsparseDestroySpMat'd before returning (both branches).
+- CMakeLists.txt: added cusparse.cpp/.hpp + cusparse_descriptor_helpers.hpp to the
+  source list (the .cu were already listed).
+
+Two JIT-kernel fixes in the dense-broadcast sparse arith path (kernel/sparse_arith.*):
+- kernel/sparse_arith.hpp: every launcher now passes DefineValue(TX), DefineValue(TY),
+  DefineValue(THREADS) -- the 4 kernel templates in sparse_arith.cuh split their
+  defines (csrArith* use TX/TY, cooArith* use THREADS), and clang/hipRTC phase-1-
+  parses all of them, so each launcher must define all three (the documented gotcha).
+- kernel/sparse_arith.cuh: arith_op<T,op>::operator() tagged __device__ (was
+  unattributed -> HOST under hipRTC -> "no matching function" from the device kernel).
+
+hipSPARSE COVERAGE MAP: NO GAPS. Every cuSPARSE entry point arrayfire uses exists
+in hipSPARSE 4.2.0 with exact 1:1 naming. Full map in UPSTREAM_FINDINGS.md B5.
+
+### int8 gemm (SECONDARY 1) -- CLOSED. blas 126/127 -> 127/127
+blas.cu gemmDispatch: the schar branch now computes int8 x int8 -> int32 (HIP_R_8I
+in, HIP_R_32I out, HIPBLAS_COMPUTE_32I) into a temp Array<int>, then copyArray<int,To>
+casts to the f32 output. `if constexpr (is_same<Ti,schar>)` keeps the int32 cast out
+of the float/complex instantiations. MatrixMultiply.schar PASSES. (UPSTREAM_FINDINGS B2.)
+
+### FreeImage (SECONDARY 2) -- CLOSED. confidence_connected 36/36
+apt-get install libfreeimage-dev (3.18.0); reconfigured -DAF_WITH_IMAGEIO=ON. No
+source change (build-config only). confidence_connected loads its image and the GPU
+algorithm runs/passes. (imageio_cuda also becomes testable.)
+
+### Build / validate
+build-hip.sh unchanged EXCEPT reconfigure with -DAF_WITH_IMAGEIO=ON:
+  cmake -S . -B build-hip -DAF_WITH_IMAGEIO=ON   # in-place, picks up FreeImage
+  cmake --build build-hip -j16                   # afcuda + test binaries
+Validate on gfx90a GCD 2: HIP_VISIBLE_DEVICES=2 ctest -R '_cuda$' -j1.
