@@ -1,0 +1,7 @@
+{"kind":"phase","ts":"2026-05-31T08:19:36Z","phase":"misc","seconds":20.233,"exit":1,"cmd":"bash projects/arrayfire/src/build-hip.sh config"}
+{"kind":"phase","ts":"2026-05-31T08:19:56Z","phase":"misc","seconds":4.543,"exit":0,"cmd":"bash projects/arrayfire/src/build-hip.sh config"}
+{"kind":"phase","ts":"2026-05-31T08:20:08Z","phase":"compile","seconds":5.297,"exit":1,"cmd":"bash projects/arrayfire/src/build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T08:24:43Z","phase":"compile","seconds":11.710,"exit":1,"cmd":"bash projects/arrayfire/src/build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T08:29:06Z","phase":"compile","seconds":0.006,"exit":127,"cmd":"bash build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T08:30:55Z","phase":"compile","seconds":0.255,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}
+{"kind":"phase","ts":"2026-05-31T08:35:38Z","phase":"compile","seconds":114.691,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/arrayfire/src/build-hip.sh"}

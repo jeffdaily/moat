@@ -7,13 +7,13 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T02:52:22Z",
-  "head_sha": "260285364a00602162a15d1df5772908c299981e",
+  "updated_at": "2026-05-31T11:15:10Z",
+  "head_sha": "96edd3a2696e3bf6071e620144c3ec970b2f5180",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": false,
-      "blocked_reason": "In progress (largest MOAT port, ~42K LOC). Phase 0 hipRTC go/no-go is GO (GPU-proven on gfx90a); the NVRTC->hipRTC JIT engine (compile_module.cpp), the wave64 shfl_intrinsics fix, the JIT-source HIP shims, the hip_compat header, and the AF_BUILD_HIP CMake wiring are landed at fork 2602853 and verified standalone on GPU. NOT yet a full compiling backend: device_manager.cpp NVML port, ~26 CUDA-library swap files (hipBLAS/hipSOLVER/hipSPARSE/hipFFT/rocThrust), the afhip add_library source list + force-include in src/backend/hip/CMakeLists.txt, and the reduce/scan wave64 staging (deferred to GPU validation) remain. Full roadmap in notes.md (Session 1 progress). Resume there; -> ported only after the gtest core passes on gfx90a.",
+      "blocked_reason": "Largest MOAT port (~42K LOC). FULL afcuda shared library + all 132 CUDA-tagged gtest binaries BUILD and LINK for gfx90a at fork 96edd3a. The hipRTC runtime-JIT engine is GPU-validated (jit 1779/1781), and the core ops reduce sum/min/max/all/any (120/120, after the wave64 reduce.hpp rework), random (513), set, dot, moddims, reorder (233/334), sort/join partial PASS on gfx90a. Library swaps (hipBLAS/hipSOLVER/hipFFT/rocThrust) + the void* tag-keyed handles + POD complex + wave64 staging landed. STILL porting (core not fully green): the biggest remaining wall is JIT ops whose runtime source pulls common/half.hpp's half<->int CONVERSIONS, which fail to hipRTC-compile with a __device__-intrinsic-from-__host__ attribute mismatch -> AF_ERR_INTERNAL (blocks transpose/scan/fft); plus a strided-gemm blas core dump, reduce-by-key/ragged wave64 correctness, and the deferred sparse/CV-kernel/convolveNN follow-ons. Precise next-step fix + full results in notes.md (Session 2 FINAL). -> ported only after the JIT-half wall is cleared and the gtest core passes.",
       "validated_sha": null,
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": null,
