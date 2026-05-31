@@ -208,6 +208,53 @@ without first porting its 32-lane lane election to wave64.
 State: linux-gfx90a -> `ported` at fork sha 3311036 (single curated
 [ROCm] commit, amended in place; the prior 2ae6d769 lacked these two test edits).
 
+## Validation 2026-05-31 (validator, linux-gfx90a, ROCm 7.2.1, MI250X)
+
+GPU: HIP_VISIBLE_DEVICES=3 (one idle GCD, 4 GCDs total on this box).
+Fork HEAD after comment fix amend: 9eb3704d07b4b6c65cd46ac5805b0654a39e7250.
+Incremental build (comment-only change, no codegen impact): PASS.
+
+### Comment fix folded in
+cmake/Open3DSetGlobalProperties.cmake:106 comment corrected to state that
+__CUDACC__ is deliberately NOT defined (CUDAToHIP.h explains why) and
+THRUST_DEVICE_SYSTEM=5 is set to pin rocThrust because __CUDACC__ is absent.
+Old text falsely claimed the compat header defines __CUDACC__.
+Amended into the single curated [ROCm] commit; pushed --force-with-lease.
+
+### GPU test results (gfx90a, GCD 3)
+
+Build command (incremental):
+```
+cmake --build projects/Open3D/src/build -j16 --target tests
+```
+
+Test commands:
+```
+HIP_VISIBLE_DEVICES=3 ./build/bin/tests \
+  --gtest_filter='*Tensor*:*Reduction*:*MemoryManager*'
+HIP_VISIBLE_DEVICES=3 ./build/bin/tests \
+  --gtest_filter='*NearestNeighbor*:*KnnIndex*:*FixedRadiusIndex*:*Knn*:*Hybrid*:*Registration*:*Feature*'
+HIP_VISIBLE_DEVICES=3 ./build/bin/tests \
+  --gtest_filter='*HashMap*:*VoxelBlockGrid*'
+HIP_VISIBLE_DEVICES=3 ./build/bin/tests --gtest_repeat=30 --gtest_break_on_failure \
+  --gtest_filter='*HashMapPermuteDevices.Reserve*:*HashMapPermuteDevices.InsertComplexKeys*:*HashMapPermuteDevices.MultivalueInsertion*:*HashMapPermuteDevices.HashSet*'
+```
+
+Results:
+- Tensor + Reduction + MemoryManager: 421/421 PASS (1 SYCL skip, expected)
+- NearestNeighborSearch (FAISS warp-select wave64) / KNN / FixedRadius / Hybrid
+  + Registration ICP + FPFH Feature: 44/45 (1 fail = RGBDOdometryMultiScaleHybrid,
+  NPP-scoped-out as documented; see notes above)
+- HashMap (stdgpu backend only, Slab excluded): 20/20 PASS
+- VoxelBlockGrid (TSDF integrate / ray casting / IO): 14/14 PASS
+- HashMap dedup stability (4 dedup-heavy tests x 30 repeats = 240 device runs): 0 FAIL
+
+Total validated: 421 + 44 + 34 = 499 passing GPU tests.
+Scoped-out NPP failure (1): RGBDOdometryMultiScaleHybrid -- expected, documented above.
+
+State: linux-gfx90a -> `completed` at validated_sha 9eb3704.
+Followers unblocked: linux-gfx1100 -> port-ready, windows-gfx1151 -> port-ready.
+
 ## Review 2026-05-31 (reviewer, /pr-review local-branch @ 3311036)
 Verdict: review-passed. Strategy A is correct for this pure-CMake project; the diff is additive and USE_HIP-gated (778+/121-, single [ROCm] commit), and the NVIDIA path is byte-identical (the only host .cu/.cpp touched are CUDAUtils.cpp -- a behavior-neutral static_cast<void>(cudaGetLastError()) -- ReductionCUDA.cu whose non-HIP default mask stays unsigned int 0xffffffffu, and NPPImage.cpp wrapped #if USE_HIP/#else original/#endif). Commit hygiene clean: title 54 chars, Claude-disclosed, Test Plan present, no noreply/ghstack/AMD-internal refs.
 
