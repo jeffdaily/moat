@@ -3,6 +3,8 @@
 # ensures it). See utils/merge_status.py.
 projects/*/status.json merge=moat-status
 
-# Append-only docs: on concurrent edits keep both sides instead of conflicting.
+# Append-only docs + per-project timing logs: on concurrent edits keep both
+# sides instead of conflicting (multiple platforms append to the same file).
 projects/*/notes.md merge=union
+projects/*/stats.jsonl merge=union
 PORTING_GUIDE.md merge=union

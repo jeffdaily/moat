@@ -1,0 +1,4 @@
+{"kind":"phase","ts":"2026-05-30T09:51:58Z","phase":"compile","seconds":20.735,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/cupoch_build_gfx1100 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j64"}
+{"kind":"phase","ts":"2026-05-30T09:54:58Z","phase":"compile","seconds":131.758,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/cupoch_build_gfx1100 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j64"}
+{"kind":"phase","ts":"2026-05-30T09:58:51Z","phase":"test","seconds":0.235,"exit":141,"cmd":"/var/lib/jenkins/moat/agent_space/cupoch_validate_gfx1100/build/validate"}
+{"kind":"phase","ts":"2026-05-30T09:59:47Z","phase":"test","seconds":0.395,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cupoch_validate_gfx1100/build/validate"}

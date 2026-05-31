@@ -1,0 +1,5 @@
+{"kind":"phase","ts":"2026-05-30T07:36:03Z","phase":"compile","seconds":4.302,"exit":0,"cmd":"cmake -S projects/amgcl/src -B projects/amgcl/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DAMGCL_BUILD_EXAMPLES=ON -DCMAKE_PREFIX_PATH=/opt/rocm"}
+{"kind":"phase","ts":"2026-05-30T07:36:32Z","phase":"compile","seconds":24.995,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/amgcl/src/build-hip -j --target solver"}
+{"kind":"phase","ts":"2026-05-30T07:36:55Z","phase":"compile","seconds":18.652,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/amgcl/src/build-hip -j --target solver_hip"}
+{"kind":"phase","ts":"2026-05-30T07:37:08Z","phase":"test","seconds":0.830,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/amgcl/src/build-hip/examples/solver_hip -n 64"}
+{"kind":"phase","ts":"2026-05-30T07:37:15Z","phase":"test","seconds":1.136,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/amgcl/src/build-hip/examples/solver_hip -n 64 -p precond.relax.type=ilu0"}

@@ -1,0 +1,1 @@
+{"kind":"phase","ts":"2026-05-30T08:12:37Z","phase":"compile","seconds":91.696,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudaKDTree/src/build-hip-gfx1100 -j 64"}
