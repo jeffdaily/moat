@@ -1,0 +1,10 @@
+{"kind":"phase","ts":"2026-05-31T00:37:02Z","phase":"misc","seconds":0.636,"exit":0,"cmd":"bash agent_space/kaldi_build/build_kaldi.sh configure"}
+{"kind":"phase","ts":"2026-05-31T00:37:31Z","phase":"misc","seconds":15.389,"exit":0,"cmd":"bash agent_space/kaldi_build/build_kaldi.sh depend"}
+{"kind":"phase","ts":"2026-05-31T00:38:47Z","phase":"compile","seconds":3.560,"exit":2,"cmd":"make -C projects/kaldi/src/src -j12"}
+{"kind":"phase","ts":"2026-05-31T00:42:26Z","phase":"compile","seconds":30.098,"exit":2,"cmd":"make -C projects/kaldi/src/src -j12"}
+{"kind":"phase","ts":"2026-05-31T00:52:45Z","phase":"compile","seconds":360.114,"exit":0,"cmd":"make -C projects/kaldi/src/src -j12"}
+{"kind":"phase","ts":"2026-05-31T00:53:21Z","phase":"compile","seconds":0.033,"exit":2,"cmd":"make -C projects/kaldi/src/src/cudamatrix -j12 test-compile"}
+{"kind":"phase","ts":"2026-05-31T00:53:45Z","phase":"compile","seconds":6.443,"exit":0,"cmd":"make -C projects/kaldi/src/src/cudamatrix -j12 test_compile"}
+{"kind":"phase","ts":"2026-05-31T00:54:51Z","phase":"test","seconds":55.404,"exit":1,"cmd":"bash agent_space/kaldi_build/run_cudamatrix_tests.sh 2"}
+{"kind":"phase","ts":"2026-05-31T01:02:39Z","phase":"test","seconds":56.554,"exit":0,"cmd":"bash agent_space/kaldi_build/run_cudamatrix_tests.sh 2"}
+{"kind":"phase","ts":"2026-05-31T01:04:42Z","phase":"compile","seconds":17.907,"exit":0,"cmd":"make -C projects/kaldi/src/src -j12"}

@@ -78,3 +78,32 @@ calls those raw Fortran symbols, so `-lopenblas` alone satisfies CBLAS + LAPACK 
   3-line hipcub TU compiles with __CUDA_ARCH__ defined-after, errors with defined-before). kaldi's own
   `#if __CUDA_ARCH__ >= 600` native-fp64-atomicAdd branches still fire. chain-kernels.cu pulls no hipcub so its
   define is left in place. ROCm 5.x rocPRIM had no such arch gate, so this only bites modern ROCm.
+
+## WAVE64 CORRECTNESS BUG fixed (cu-kernels.cu _diff_lstm_nonlinearity self_repair_sum_out)
+Surfaced by cu-math-test's UnitTestBackpropLstmNonlinearity (the ONLY cudamatrix test that failed pre-fix; the
+other 11 passed). Root cause: the kernel wrote the 5 self-repair-sum rows with `if (i0 < 5)` where
+i0 = blockIdx.y*blockDim.y + threadIdx.y (gridDim.y==1, so == threadIdx.y), requiring blockDim.y >= 5. The host
+launch (cu-math.cc:821-822) sets `dimBlock(GPU_WARP_SIZE, CU1DBLOCK/GPU_WARP_SIZE)`, i.e. blockDim.y =
+256/warpSize = 8 on a 32-lane warp (NVIDIA, RDNA) but only 4 on a 64-lane wavefront (CDNA gfx90a). So row 4
+(c_t self-repair) had NO thread to write it and was read back stale -> ~50% Frobenius error on that one row
+(input/params/value/deriv derivs were all ~1e-7, only self_repair was 0.4969). FIX (arch-unified, NVIDIA-safe):
+update_sr[] depends only on the column j, not on threadIdx.y, so the threadIdx.y==0 lane writes all 5 rows in a
+loop. Correct on wave32 (was 8 lanes) and wave64 (was 4 lanes); identical values on NVIDIA. This is the
+canonical warp-size fault class: a `blockDim.y = blockSize/warpSize` derivation that silently shrinks the y-extent
+below a hardcoded count on wave64.
+
+## GPU validation (gfx90a / MI250X / ROCm 7.2.1) -- PASSED
+Ran on one isolated GCD via HIP_VISIBLE_DEVICES (HIP enumerates 4 gfx90a devices 0-3 on this host, each warpSize 64).
+- cudamatrix: `make -j12 test_compile` then each test run serially. ALL 12 correctness tests PASS:
+  cu-vector/matrix/math/test/sp-matrix/packed-matrix/tp-matrix/block-matrix/array/sparse-matrix/device/compressed-matrix.
+  Covers hipBLAS L1/L3, hipSPARSE CSR SpMM + csr2csc, hipSOLVER Cholesky, hipRAND, hipCUB BlockReduce, bespoke kernels.
+  The 4 speed tests (cu-{matrix,vector,sp-matrix,rand}-speed-test) run without error.
+- cudafeat: exercised on-device -- cudafeatbin/compute-mfcc-feats-cuda computed MFCC features from a 16kHz wav,
+  selected the MI250X, "Done 1 out of 1 utterances", valid numeric output.
+- cudadecoder: batched-wav-nnet3-cuda{,2,-online} build and load the HIP runtime cleanly.
+Fork HEAD pushed: jeffdaily/kaldi @ moat-port = cdc8d2f907f00b8fc2dc7459f3e3cb092afc0aa6.
+
+## Repeatable build/test scripts
+agent_space/kaldi_build/{build_kaldi.sh (configure|depend|build), run_cudamatrix_tests.sh <gcd>}. OpenBLAS in-tree
+install at tools/OpenBLAS/install (built by tools/extras/install_openblas.sh). OpenFst 1.8.4 fetched from
+openfst.org (the openslr mirror 404s).
