@@ -11,17 +11,69 @@ Fork: jeffdaily/cudf @ `moat-port`. The port is a standalone HIP CMake build
 reached by a top-of-CMakeLists `if(USE_HIP) include(cmake/hip/cudf_hip.cmake)
 return()` guard; the CUDA build is untouched.
 
-## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates (83 TUs)
+## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates (107 TUs); dispatch closure collapsed ~209 -> 1
 
-A scoped libcudf core (83 TUs) compiles for gfx90a and links libcudf.so with a
-real gfx90a code object. A focused GPU gtest passes 6/6 on MI250X (stable over
-20 repeated runs): the 4 wave64 null-mask tests PLUS 2 new tuple-key radix-sort
-tests (SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim). This
-supersedes the prior "BLOCKED on cuCollections" verdict: cuCollections is now
-ported (jeffdaily/cuCollections @ moat-port) and the foundational column core
-(which the prior run could not compile at all) builds clean. The remaining work
-to a FULL core is the rest of the type-erased dispatch link-closure (the
-cuco-backed algorithms) + the JIT phase, not a fundamental blocker.
+A scoped libcudf core (107 TUs, fork HEAD 5be894c) compiles for gfx90a and
+links libcudf.so with a real gfx90a code object. The focused GPU gtest passes
+8/8 on MI250X (stable, repeated runs): the 4 wave64 null-mask tests, the 2
+tuple-key radix-sort tests, PLUS 2 cuco-backed tests (DistinctCucoStaticSet,
+ApplyBooleanMask).
+
+THE HEADLINE RESULT this session: the cudf-INTERNAL type-erased dispatch
+link-closure collapsed from ~209 undefined symbols (at the 83-TU core) to
+EXACTLY 1. Bringing up ~24 modules (table row_operators +
+primitive_row_operators -> the experimental::row machinery; stream_compaction
+distinct/apply_boolean_mask/distinct_helpers/stable_distinct; the full hashing
+set; search contains_column/table; structs/lists utilities + lists dremel +
+scatter_helper + dictionary set_keys + transform encode) DEFINED essentially
+every symbol the foundational core referenced. Verified by `nm -D -u
+libcudf.so | c++filt | grep 'U cudf'`: the ONLY remaining cudf-internal
+undefined symbol is `cudf::detail::binary_operation(column, scalar)` -- the
+jitify->hipRTC binaryop JIT path (the next phase). The prior-flagged symbols
+(dictionary::detail::match_dictionaries, lists::detail::
+build_lists_child_column_recursive, experimental::row::lexicographic::
+preprocessed_table::create) are all DEFINED now (nm shows T). Every other
+undefined symbol in the .so is the normal external shared-library surface
+(rmm, rapids_logger, libstdc++, libc, hip runtime), resolved at load.
+
+cuCollections refresh: the cuco dep MUST be the CURRENT moat-port HEAD
+(47ae24d, with include/cuco/detail/hip_device_select.cuh -- the retrieve_all
+DeviceSelect adaptor), NOT the older 57a1c1a. DistinctCucoStaticSet exercises
+distinct() -> cuco::static_set insert_and_find + retrieve_all on real GPU
+through that adaptor; GPU-validated.
+
+### NEXT WALL (hard, characterized): the libcudf.so x86-64 relocation scale limit
+
+Reductions + aggregation were attempted on top (build_2/build_3) and REVERTED:
+they do not fit. The reduction TUs are pathologically large on rocPRIM --
+reductions/std.cu and var.cu are 234 MB EACH, mean/sum/product/sum_of_squares
+~200 MB each, dominated by a ~190 MB `.hip_fatbin` per TU (rocPRIM instantiates
+the cub/rocPRIM `reduce_impl` over the FULL type x DeviceSum/Min/Max matrix;
+the device ISA for every instantiation is embedded). Adding the 15 simple
+reductions + aggregation pushed the cudf.dir objects to 2.5 GB and the linked
+libcudf.so host image past the +/-2 GiB reach of x86-64 32-bit relocations.
+Three distinct relocation classes overflow, in escalating order:
+  1. R_X86_64_PC32 (`.text` -> `.rodata.str`/`.data`): the FIRST overflow.
+     FIXABLE with `-mcmodel=large` on the HIP host pass (64-bit data refs); the
+     amdgcn device pass is unaffected. Confirmed: with -mcmodel=large the
+     libcudf.so relink PASSED (ninja [121]->[122], 0 PC32 errors).
+  2. BUT -mcmodel=large then exposes R_X86_64_TLSGD / R_X86_64_TLSLD /
+     R_X86_64_PLT32-to-__tls_get_addr in stream_pool.cpp + host_memory.cpp
+     (the thread_local `event_for_thread()::thread_events` and rmm's
+     `stream_ordered_memory_resource::get_event()::events_tls`). The large CODE
+     model does NOT imply a large TLS model, and clang has no large-TLS x86-64
+     model that covers a >2 GiB TLS-block-relative access, so these still
+     overflow.
+  3. AND `.eh_frame` "PC offset is too large" in column.cu (the unwinder's
+     32-bit PC-relative FDE offsets).
+So -mcmodel=large alone is NOT sufficient; reductions need a structural fix:
+either SPLIT libcudf into multiple .so (e.g. libcudf_reductions.so) so no single
+image exceeds 2 GiB, or shrink the per-TU device fatbin (limit the reduction
+type matrix). This is the concrete next wall -- a build-scale problem, not a
+HIP-correctness one. The cuco-backed join/groupby modules will hit the same
+scale ceiling and likely need the same split. The 107-TU core (5be894c) stays
+the validated, pushed baseline; it links FINE without -mcmodel=large (it is
+under 2 GiB: libcudf.so ~408 MB).
 
 ### This session cleared the 3 documented "next walls" (rocPRIM tuple, array, ballot)
 
@@ -210,24 +262,27 @@ elsewhere).
    device_merge_sort, device_radix_sort, device_segmented_sort, warp_reduce in
    addition to the initial set).
 
-## What COMPILES (the 83-TU scoped core)
+## What COMPILES + GPU-validates (the 107-TU scoped core, fork 5be894c)
 
-(+4 over the prior 79: sort/sort_radix.cu, sort/sorted_order_radix.cu,
-strings/case.cu, strings/copying/concatenate.cu -- the 3 cleared walls above.)
+(+24 over the prior 83.) The 83-TU foundational core PLUS, this session: table
+row_operators + primitive_row_operators (experimental::row lexicographic/
+equality machinery); stream_compaction apply_boolean_mask + distinct +
+distinct_helpers + stable_distinct (cuco static_set + retrieve_all);
+the full hashing set (md5, murmurhash3_x86_32/x64_128, sha1/224/256/384/512,
+xxhash_32/64); search contains_column + contains_table; structs/utilities;
+dictionary set_keys; lists utilities + dremel + copying/scatter_helper;
+transform/encode. Plus the original 83: column, table, scalar, bitmask,
+utilities, unary, copying, filling, replace, search (contains_scalar/
+search_ordered), sort (incl. the rocPRIM tuple-key radix path), and the
+foundational nested-type column views + factories + detail ops.
 
+libcudf.so links with a real gfx90a code object and leaves exactly ONE
+cudf-internal symbol undefined (binary_operation, the JIT path). GPU 8/8:
+DistinctCucoStaticSet + ApplyBooleanMask added to the prior 6.
 
-column, table, scalar, bitmask, utilities (cuda/grid_1d/stream_pool/traits/
-type_dispatcher/type_checks/host_memory/prefetch/logger/...), unary
-(cast/math/nan/null ops), copying (concatenate/copy/copy_range/gather/get_element/
-reverse/sample/scatter/shift/slice/split/segmented_shift/purge_nonempty_nulls),
-filling (fill/sequence), replace (replace/nulls), search (contains_scalar/
-search_ordered), sort (sort/sort_column/stable_sort/stable_sort_column/is_sorted/
-rank), and the foundational nested-type column views + factories + a slice of
-their detail ops (strings/lists/dictionary/structs column_view + factories,
-strings copy_range/shift/fill/utilities/concatenate(combine)/replace_nulls/
-find_replace, lists copying gather/concatenate, dictionary add_keys/search/
-encode/replace/concatenate, structs concatenate). libcudf.so links (shared libs
-tolerate the residual undefined dispatch symbols).
+GPU-validation helpers added to the gtest (core_smoke_test.cu): make_int32_column
+and device_int32_to_host (host<->device INT32 round-trip via rmm::device_buffer
+ctor + hipMemcpyAsync).
 
 ## Scoped OUT (guarded via the source list; files NOT deleted)
 
@@ -237,39 +292,66 @@ tolerate the residual undefined dispatch symbols).
 - **jitify/NVRTC JIT** kernels (binaryop-JIT, transform-JIT, rolling-JIT). The
   jitify->hiprtc plan is a separate effort (jitify_hiprtc_plan.md, owned
   elsewhere). `binaryop/binaryop.cpp` pulls jitify (15 includes).
-- **the broad algorithm modules** (groupby, join, reductions, stream_compaction
-  distinct/unique, hashing top-level, lists/strings/dictionary/structs full
-  algorithm sets, text, interop-to-arrow, transform, rolling, datetime, etc.) --
-  not yet in the source list. These are the cuco-backed and heavy-template
-  algorithms; bring-up is incremental from here.
+- **the broad algorithm modules** (groupby, join, reductions, full
+  lists/strings/dictionary/structs algorithm sets, text, interop-to-arrow,
+  transform, rolling, datetime, etc.) -- not yet in the source list. The
+  dispatch CLOSURE for the foundational core is satisfied (only binary_operation
+  remains), so these modules are no longer needed to LINK the core; they extend
+  the GPU-validated API surface. They are gated by the .so SCALE wall below, not
+  by undefined symbols.
 
 ## The next concrete walls (precise blocked_reason material)
 
-Walls 1-3 from the prior session (rocPRIM tuple-key radix sort,
-cuda::std::array, the strings-concatenate ballot) are CLEARED this session (see
-"This session cleared the 3 walls" above). The reusable rocPRIM tuple-key shim
-(radix_tuple_key.cuh) is the key result -- it dissolves the same gap for cuco
-retrieve_all and raft too. What remains to a FULLY-linking standalone libcudf
-and a broad GPU gtest suite:
+The dispatch-closure wall (prior wall 1, "~209 deferred symbols") is CLOSED to
+1 (see the State header). What remains:
 
-1. **The remaining type-erased dispatch link-closure (the broad algorithm
-   modules).** `column.cu`/`column_factories.cu` reference per-type detail ops
-   that transitively pull strings/lists/dictionary/structs FULL algorithm sets,
-   plus the cuco-backed algorithms (join/groupby/hashing/stream_compaction
-   distinct/reductions). libcudf.so currently has ~209 undefined deferred-dispatch
-   symbols (e.g. `dictionary::detail::match_dictionaries`,
-   `experimental::row::lexicographic::preprocessed_table::create`,
-   `lists::detail::build_lists_child_column_recursive`); the scoped core links
-   the .so fine (shared libs tolerate them) and the GPU tests never call them,
-   but a FULL link needs these modules brought up. cuco is now available, so the
-   cuco-backed ones are reachable; bring-up is incremental (add modules to
-   cudf_hip_sources.cmake, fix the per-TU clang/wave64/library issues, extend the
-   GPU gtest). Expect more wave64 ballots in the broader kernels (json_path.cu,
-   merge.cu, rolling.cuh, conditional_join_kernels.cuh) -- same ballot_32
-   treatment.
+1. **The libcudf.so x86-64 relocation SCALE wall (the new hard wall).** Adding
+   the reductions module (the obvious next high-value cuco/cub-backed set)
+   over-inflates the single libcudf.so past the +/-2 GiB x86-64 relocation reach.
+   Root cause + the three escalating relocation classes (PC32 -> -mcmodel=large;
+   then TLS R_X86_64_TLSGD/TLSLD/__tls_get_addr; then .eh_frame PC offset) are
+   documented in full in the State header "NEXT WALL" block. The fix is
+   STRUCTURAL: split libcudf into multiple shared objects (so no single image
+   exceeds 2 GiB) or cap the per-TU device fatbin (the reduction type matrix).
+   Until then, the 107-TU core is the validated ceiling for a single .so on this
+   toolchain. join/groupby will hit the identical ceiling.
+   - DO NOT re-attempt reductions by just adding -mcmodel=large: it clears PC32
+     but the TLS + .eh_frame overflow remain (confirmed in build_3). Reverted.
 2. then the **JIT** wall (binaryop/transform/rolling) -- the jitify->hipRTC plan
    is written (jitify_hiprtc_plan.md) and the hipRTC PoC is proven; it is a
-   separate phase that depends on this core compiling (done).
+   separate phase. binary_operation (the 1 remaining undefined symbol) lives here.
+
+### cuco-backed bring-up adaptations that WORKED (reusable, in 5be894c)
+
+- **cuco_allocator stream-aware adaptor** (detail/cuco_helpers.hpp, USE_HIP):
+  the ROCm cuco port is a NEWER cuco generation than cudf v25.08 pins on CUDA,
+  and drives stream-ordered storage allocation through the CCCL 2-arg
+  `allocate(num, cuda::stream_ref)` / `deallocate(ptr, num, cuda::stream_ref)`
+  interface; rmm's stream_allocator_adaptor exposes only the single-arg standard
+  C++ form (fixed stream bound at construction). Fix: on HIP make cuco_allocator
+  a thin subclass of rmm::mr::stream_allocator_adaptor<polymorphic_allocator<T>>
+  that adds the 2-arg overloads (forwarding the caller's stream to the underlying
+  polymorphic_allocator via rmm::cuda_stream_view{stream.get()}) while keeping the
+  1-arg form via `using base::allocate/deallocate`. CUDA keeps the plain alias.
+- **mixed_multimap_type modern spelling** (join/join_common_utils.hpp, USE_HIP):
+  the ROCm cuco port carries only `cuco::static_multimap` (modern template order
+  Key,T,Extent,Scope,KeyEqual,ProbingScheme,Allocator,Storage), NOT
+  `cuco::legacy::static_multimap`. Re-spell the alias for the modern type so
+  headers that pull it parse; the mixed-join TUs that instantiate it stay scoped
+  out anyway (scale wall).
+- **const operator() on the reduction binary functors** (device_operators.cuh
+  DeviceSum/Min/Max/Product/Count; cast_functor.cuh cast_functor_fn): rocPRIM's
+  DeviceReduce invokes the binary op through a const wrapper
+  (convert_binary_result_type_wrapper) where CUB tolerates a non-const operator;
+  const is correct on CUDA too. (Compiled fine; only the reductions LINK failed
+  on the scale wall.)
+- **dependent-template `::template`** (reduction_operators.cuh): clang two-phase
+  lookup needs `typename Derived::template transformer<R>` /
+  `Derived::template intermediate<R>` (nvcc accepts the bare form). Same family
+  as the existing typename-on-dependent-type fixes.
+  These four header edits are coupled to the reductions bring-up; they are
+  REVERTED in 5be894c along with the reductions (kept here so the re-attempt,
+  once the .so is split, does not re-derive them).
 
 ## rmm-as-a-dependency: WORKED (refreshed)
 
