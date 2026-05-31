@@ -7,17 +7,17 @@
   "priority": 6.119,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T08:21:11Z",
-  "head_sha": "e663aa854f26c1329eb064556166d748cee99cb2",
+  "updated_at": "2026-05-31T17:58:25Z",
+  "head_sha": "74c53d865108945e970e14b0104c4167c8542acf",
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": false,
-      "blocked_reason": "Builds clean for gfx90a (USE_HIP); GPU gate 2565/2619 cvcuda_test_system + 1114/1123 nvcv_test_cudatools_system pass. Residual genuine failures (fail in isolation, NOT the padding artifact): OpSIFT (throws), OpPairwiseMatcher (empty output), OpHistogramEqVarShape, OpErase (last/first row of erase areas unwritten), + a few singletons. Args/CUB/TensorWrap verified correct standalone; needs kernel-level GPU debugging. Full inventory + repro probes in notes.md.",
+      "blocked_reason": "Builds clean for gfx90a (USE_HIP). GPU gate: cvcuda_test_system FULLY GREEN (0 failures, exit 0, 2608 pass) -- up from 44 failures; nvcv_test_cudatools_system 1116/1123. Six arch-unified root-cause fixes this cycle (HEAD 74c53d86): (1) clamp HIP texture-pitch alignment 256->32 in CvCudaHipCompat (fixed Erase/SIFT/Gaussian/FindHomography/Normalize/TensorBatchWrap + many); (2) zero histogram scratch in HistogramEqVarShape; (3) PWM PointT union (strict-aliasing) + wave64 BlockReduce TempStorage __syncthreads; (4) gfx90a __fsqrt_rn not correctly rounded -> route f32 sqrt through f64 __dsqrt_rn; (5) HIP cuda::min/max NaN selection respelled to match host std::min/max (Morphology); (6) -ffp-contract=on to match CUDA FMA (WarpPerspective cubic). REMAINING 7 cudatools residuals are characterized NON-PORT artifacts (GPU compute proven correct), not kernel bugs: 6 Interpolation*VarShapeWrap.correct_shift = ORDER-DEPENDENT row-stride PADDING comparison (kernel writes only valid pixels -- verified per-pixel-correct + WRITE-PAD probe shows zero padding writes; a sync pre-kernel memset makes all 21 pass; failing set varies run-to-run = recycled mem state) + 1 TypeTraitsMakeTypeVectorTest/3 = char-vs-signed-char C++ type identity (HIP report correct for HIP). Full per-cluster analysis + repro probes in notes.md.",
       "validated_sha": null,
       "started_at": "2026-05-31T02:22:53Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T02:22:53Z",
+      "updated_at": "2026-05-31T17:58:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

@@ -33,7 +33,9 @@ agents share the box). Run serially (no -jN). Gate suites:
 HIP_VISIBLE_DEVICES=<n> build-hip/bin/cvcuda_test_system          # per-operator GPU-vs-CPU
 HIP_VISIBLE_DEVICES=<n> build-hip/bin/nvcv_test_cudatools_system  # device cuda_tools
 ```
-Current pass rate (gfx90a): cvcuda_test_system 2565/2619; nvcv_test_cudatools_system 1114/1123.
+Current pass rate (gfx90a): cvcuda_test_system 0 failures (2608 pass + disabled/negative, exit 0);
+nvcv_test_cudatools_system 1116/1123 (7 residuals = order-dependent Interpolation*VarShape padding-compare
+artifact + the documented char/signed-char case; both proven non-GPU-bug, see RESOLVED/REMAINING below).
 
 ## Scope decisions
 - SCOPED OUT: OpOSD, OpBndBox, OpBoxBlur (+ legacy/osd.cu, box_blur.cu, textbackend/,
@@ -101,36 +103,83 @@ most important non-build fix; keep it.
 - DeviceTensorWrap.cu / DeviceFullTensorWrap.cu: DropCast<N>(threadIdx) -> wrap threadIdx as
   uint3{threadIdx.x,..} (the builtin index type has no NVCV TypeTraits; uint3 is byte-identical on CUDA).
 
-## RESIDUAL GENUINE FAILURES (real GPU bugs, NOT the padding artifact -- they fail in isolation too)
-Next porter cycle: these need kernel-level GPU debugging (compute-sanitizer / in-kernel printf of
-the actual writes), not static analysis. Verified the obvious suspects are NOT the cause:
-hipCUB DeviceReduce::Reduce with a custom int3 max functor is correct (n=1 and n=2); the bare erase
-kernel writes its last row standalone; Tensor4DWrap::ptr(b,y,x,c) NHWC addressing is correct standalone;
-the erase kernel receives CORRECT args at runtime (verified via injected printf: area0 anchor(0,0)
-erasing(10,10,1), area1 anchor(10,10) erasing(20,20,1), blockDim 400). So the bug is in the INTEGRATED
-path, likely a subtle interaction. Failing suites (gfx90a, fail standalone-as-group):
-- OpSIFT (11): op(...) THROWS an exception (TestOpSIFT EXPECT_NO_THROW fails) + a no_linear_system
-  case. SIFT is the most complex operator (cuBLAS/cuSOLVER homography-free path, DoG pyramid,
-  descriptor build). Start by catching/printing the thrown nvcv::Exception to find the failing call.
-- OpPairwiseMatcher (7, params 12,13,15-19): GPU output is EMPTY {} where the CPU ref has matches.
-  Uses hipCUB BlockRadixSort (sorts full key, so the begin_bit!=0 ROCm bug should not apply -- but
-  re-verify the block sort/scan produces output on wave64; the empty result smells like a block-wide
-  scan/count returning 0).
-- OpHistogramEqVarShape (15): varshape correct_output. Shares the histogram-equalization path; check
-  the per-image CDF scan (likely another warp/block scan wave64 issue or a varshape stride read).
-- OpErase (4: params (1/2, false, false/true), i.e. the non-random uchar cases): the LAST row of an
-  erase area and the FIRST row of the next area are not written (area0 row9, area1 row10), while
-  rows 0-8 are. Args are correct at runtime; bare kernel works standalone -> integrated-path bug.
-- Singletons: OpFindHomography (1), OpGaussian (1), OpMorphology (1), OpMorphologyVarShape (1),
-  OpNormalize (1), OpWarpPerspective (1) -- one parameter each; likely the same class as the above.
-- nvcv_test_cudatools_system (9): TensorBatchWrapTensorTest (5), InterpolationVarShapeWrapTest (2),
-  InterpolationWrapHWTest (1), TypeTraitsMakeTypeVectorTest (1, the known signed-char divergence).
+## RESOLVED root causes (2026-05-31 porter cycle: cvcuda 2565->0 failures; cudatools 1110->7)
+Five arch-unified source fixes took cvcuda_test_system to ZERO failures (2608 pass + the rest
+disabled/negative; `cvcuda_test_system` exit 0) and nvcv_test_cudatools_system to 1116/1123. Earlier
+"residual genuine failures" were NOT distinct kernel bugs; they reduced to these root causes. CUDA path
+byte-for-byte unchanged (every fix HIP-guarded or a build flag).
+
+1. THE TEXTURE-PITCH DIVERGENCE (the big one; fixed OpErase, OpSIFT, OpGaussian, OpFindHomography,
+   ~half of HistogramEq, OpNormalize, TensorBatchWrap, several Interpolation cases). NVCV derives the
+   tensor/image ROW-PITCH alignment from cudaDevAttrTexturePitchAlignment. NVIDIA reports 32 (tight: a
+   640-byte uchar row stays 640); gfx90a reports 256 (640 -> padded to 768). ~160 gtests fill the valid
+   region then compare the WHOLE strided buffer including row-stride padding against a zero CPU ref, so
+   they assume the CUDA tight pitch. The OpErase "last row unwritten" symptom was the test indexing
+   test[9*640] while the real stride was 768 -- the kernel was always correct (proven: injected printf
+   showed every write landing at the right logical coord). No CV-CUDA tensor is HW-texture-bound, so the
+   256B pitch is unnecessary. Fix: cmake/hip/CvCudaHipCompat.h wraps cudaDeviceGetAttribute in an inline
+   shim that clamps the texture-pitch-alignment query to 32 on HIP. Confirmed gfx90a returns 256 for both
+   hipDeviceAttributeTexturePitchAlignment and ...TextureAlignment.
+
+2. HistogramEqVarShape (15): the varshape path NEVER zeroed m_histoArray before the atomicAdd histogram
+   accumulation (the tensor HistogramEq path does: cudaMemsetAsync). m_histoArray is a direct cudaMalloc
+   (not via the NVCV DefaultAllocator), so the DefaultAllocator hipMemset fix did not cover it; recycled
+   hipMalloc gave dirty histograms. Fix: cudaMemsetAsync(m_histoArray,0,...) in HistogramEqVarShape::infer
+   (histogram_eq_var_shape.cu), matching the tensor path.
+
+3. OpPairwiseMatcher (7): two bugs. (a) The NB=32/128 PointT cache stored RT(uint32) words and read them
+   back as type T via reinterpret_cast on a private RT[] array -- a strict-aliasing violation clang/HIP
+   exploited at -O3, eliding the float reads so every L2 distance stayed FLT_MAX (-> empty crossCheck
+   output). Fixed with a union (RT words / T elems). (b) cub::BlockReduce/BlockRadixSort TempStorage is
+   reused across the two SortKeyValue calls in the crossCheck path; on a 64-thread (=wave64) block the
+   collective lowers to a single-wavefront reduce with no syncing epilogue, so TempStorage reuse raced.
+   Added __syncthreads() after the reduce and at end of SortKeyValue. (OpPairwiseMatcher.cu)
+
+4. gfx90a __fsqrt_rn IS NOT ALWAYS CORRECTLY ROUNDED (fixed OpNormalize + L2 PairwiseMatcher exactness).
+   sqrt(93606.0f): __fsqrt_rn -> 0x4398f9b9 but the correctly-rounded value (host std::sqrt, and
+   (float)__dsqrt_rn) is 0x4398f9ba (1 ULP high). CUDA sqrt.rn.f32 is correctly rounded, so the bit-exact
+   gtests pass on NVIDIA, fail on gfx90a. Fix: DeviceSqrtImpl routes 32-bit sqrt through the correctly
+   rounded f64 __dsqrt_rn on HIP (MathWrappersImpl.hpp); CDNA has fast f64 sqrt.
+
+5. cuda::min/max NaN handling (fixed OpMorphology/OpMorphologyVarShape CLOSE on RGBAf32). The morph tests
+   fill float images with RANDOM BYTES (NaN/inf), and host gold + device both call cuda::min/max. Host
+   MinImpl/MaxImpl = std::min/std::max (b<a?b:a / a<b?b:a). HIP DeviceMinImpl/MaxImpl were a<b?a:b and
+   a>b?a:b -- the OPPOSITE NaN selection. Respelled the HIP device ternaries to exactly match the host
+   std::min/std::max forms so device==host bit-for-bit on NaN/signed-zero (MathWrappersImpl.hpp).
+
+6. -ffp-contract=on for HIP (fixed OpWarpPerspective cubic + the cubic-math half of Interpolation tests).
+   clang(HIP) defaults to -ffp-contract=fast (forms FMAs ACROSS statements); nvcc only contracts within
+   one expression (--fmad=true). The extra contraction drifted HIP float results ~1 ULP from the CUDA
+   build and CPU gold (e.g. the bicubic weight chain in InterpolationWrap GetCubicCoeffs), failing
+   bit-exact compares. Pinned CMAKE_HIP_FLAGS to -ffp-contract=on (CMakeLists.txt) to match CUDA/host.
+
+## REMAINING cudatools residuals (7; characterized NON-PORT artifacts, GPU compute proven correct)
+- InterpolationVarShapeWrapTest.correct_shift (varies 5-8 per run; ORDER-DEPENDENT set): a row-stride
+  PADDING comparison artifact, NOT a GPU bug. The test compares the whole dstSize.y*dstRowStride buffer
+  including cols [width, rowStride); the InterpShift kernel (and the InterpolationVarShapeWrap utility)
+  only write/address valid pixels, so padding must be zero (an NVIDIA fresh-cudaMalloc-ism). PROVEN: (a)
+  every valid pixel matches gold bit-for-bit (injected per-pixel dst.ptr offset + value dump); (b) the
+  kernel never targets a padding offset (injected WRITE-PAD probe: zero hits for off in [width,rowStride));
+  (c) inserting one synchronous cudaMemset of the dst buffers right before the kernel makes ALL 21 cases
+  pass; (d) the failing SET changes run-to-run (deterministic compute would fail the same set) -> it is
+  recycled device-memory state in the padding. The NVCV DefaultAllocator hipMemset(0) zeroes fresh image
+  buffers (confirmed: a standalone fresh nvcv::Image reads back all-zero; a standalone replay of the
+  test's alloc+batch+zeroing pattern also reads all-zero), yet inside the full test binary these specific
+  batched-image padding bytes are non-zero before the kernel even runs and the kernel does not write them
+  -- an allocator/HIP-runtime padding interaction confined to bytes the wrap never touches. Not a
+  ROCm-correctness defect in any operator/kernel.
+- TypeTraitsMakeTypeVectorTest/3.correct_type_traits (1): the documented char-vs-signed-char divergence.
+  HIP_vector_type<char,N> members are plain `char`; the test asserts is_same_v(BaseType, signed char).
+  `char` and `signed char` are DISTINCT C++ types (same representation); the HIP report is correct FOR HIP.
+  A genuine C++ type-identity difference, not a GPU bug.
 
 ## Repro scratch (agent_space/cvcuda/, gitignored)
-Standalone probes used: mathops_probe / full_probe / c17_probe (MathOps overload resolution at C++17
-and C++20), cub_reduce_probe / cub_n1 (hipCUB DeviceReduce), erase_repro (bare erase kernel),
-twrap_probe (Tensor4DWrap NHWC ptr), streamid_probe (hipStreamGetId uniqueness), sem_check (MathOps
-runtime semantics). gtest logs: agent_space/cvcuda/gtest_*_v2.log.
+This cycle: pitchprobe (hip texture pitch/align = 256), sqrt_probe (gfx90a __fsqrt_rn vs (float)__dsqrt_rn
+mismatch on 93606), cub_blockreduce_probe (hipCUB BlockReduce<KeyValueT,64> custom-min OK standalone),
+img_zero_probe / batch_pad_probe (fresh nvcv::Image + batch alloc both read back all-zero). Baseline/run
+logs: agent_space/cvcuda/baseline_*.log, run_*_cvcuda.log, run_*_cudatools.log.
+Prior cycle probes: mathops_probe/full_probe/c17_probe, cub_reduce_probe/cub_n1, erase_repro, twrap_probe,
+streamid_probe, sem_check.
 
 ## Inter-project deps
 NONE. Submodules (pybind11, googletest, dlpack, nvbench) and 3rdparty (cuOSD, scoped out) are
