@@ -175,3 +175,68 @@ Validation installed the dev cdylib directly into the conda env's _qdp pkg.
 ## Inter-project deps
 None. Do not set `depends_on`. (No "Install as a dependency" section: nothing
 in MOAT consumes QDP.)
+
+## Review 2026-05-31 (reviewer, linux-gfx90a) -- CHANGES REQUESTED
+
+Verdict: the port is structurally sound and the wave64 fault-class analysis is
+correct and verified, but two cheap, genuine defects should land before GPU
+validation. Reviewed `git diff ac30a8c...HEAD` (36 files, +953/-115) on
+moat-port @ 79a257cd. Findings are problems only.
+
+1. (must-fix, behavior) qdp-core/src/gpu/cuda_ffi.rs:181-189 -- the HIP shim maps
+   `cudaMemcpyAsync` to `hipMemcpyWithStream`, which synchronizes the stream and
+   blocks the host before returning. The sole call site (pipeline.rs:112, via
+   async_copy_to_device) is the dual-stream overlap path whose explicit intent is
+   "true async copy ... non-blocking" (pipeline.rs:98, 442-443). A host-blocking
+   copy silently serializes the pipeline, defeating the dual-stream overlap on
+   AMD -- the very native-engine feature that justifies this port over the
+   existing Triton backend (plan.md). The exact 1:1 of cudaMemcpyAsync is
+   `hipMemcpyAsync` (present in ROCm 7.x hip_runtime_api.h alongside
+   hipMemcpyWithStream). Fix: bind/wrap `hipMemcpyAsync` instead. Correctness is
+   not affected (the copy-done event + stream-wait still order things), so the
+   validated test results stand; this is a behavior/perf regression of the port's
+   headline feature. Re-validate on GPU after the swap since it changes the H2D
+   path the pipeline tests exercise.
+
+2. (must-fix, latent safety) qdp-kernels/src/device.rs:318-336 --
+   `htod_sync_copy_into` copies `size_of_val(src)` bytes into `dst` without
+   checking `dst`'s length, whereas cudarc's `htod_sync_copy_into` asserts
+   `src.len() == dst.len()`. Safe today only because the single external caller
+   (encoding/basis.rs:146-149) builds `indices_cpu` to exactly `samples_in_chunk`
+   (indices_cpu.clear() at basis.rs:108 then one push per chunk element) and
+   slices the dst view to the same length. But the dropped invariant turns a
+   future length mismatch from a cudarc panic into a silent device-buffer
+   overflow (OOB write). Fix: assert dst.len() (DeviceSlice::len) == src.len() in
+   the shim to match cudarc semantics.
+
+3. (must-fix, trivial/style) qdp-core/src/gpu/cuda_ffi.rs:55 and :120 -- the new
+   section-divider comments use Unicode box-drawing characters (the long bar
+   glyphs around "CUDA backend"/"HIP backend"). CLAUDE.md requires ASCII-only in
+   new comments. Replace with ASCII (e.g. `// ---- CUDA backend ... ----`).
+
+4. (minor, doc) qdp-kernels/src/kernel_compat.h:19 -- the header comment says
+   "Included by every kernel translation unit", but only amplitude.cu includes it
+   (confirmed by grep; it is the only kernel with warp intrinsics). Reword to
+   "Included by the kernel TUs that use warp intrinsics (amplitude.cu)".
+
+Verified sound (no action): the amplitude.cu wave64 fixes are correct and match
+the AutoDock-GPU lessons -- 64-bit QDP_FULL_WARP_MASK keyed on
+__HIP_PLATFORM_AMD__ (not wave width) and warp_id = threadIdx.x / warpSize
+(== >>5 on wave32, >>6 on wave64), with __shared__[32] still a valid upper bound
+(<=16 warps at 1024 threads on wave64); the CUDA path is byte-identical
+(0xffffffffu, /32). The Cargo feature gating makes cudarc optional and keeps the
+default `cuda` build binding cudarc; every host change is a pure
+`cudarc::driver::` -> `crate::gpu_rt::` / `qdp_kernels::device::` import swap with
+byte-identical bodies. DLPack tags kDLROCM=10 via NATIVE_GPU_DEVICE_TYPE
+(feature-gated; kDLCUDA on CUDA) and the two device-type tests are correctly made
+arch-aware (not weakened). The cuda_ffi.rs cuda_rt mod is byte-identical to the
+original extern block under `all(cuda, not(hip))`. The metrics.rs download
+helpers switch from cudarc's driver-API cuMemcpyDtoH_v2 to the runtime-API
+cudaMemcpy (D2H) -- a semantically-equivalent swap in a test/validation helper,
+needed to leave cudarc's sys layer; it does touch the CUDA path, so the validator
+should confirm the NVIDIA build still passes there. Rule-of-five on the shim
+handles is satisfied: CudaSlice (Drop guards ptr!=0) and CudaStream (Drop guards
+!is_null), both move-only, no Clone/Copy, no default-constructed handle is
+destroyed. Commit hygiene is clean: `[ROCm]` title (<=72), Test Plan present,
+Claude disclosed, no noreply trailer, no ghstack, author is the jeffdaily user
+identity (no AMD-internal account), single curated commit on moat-port.
