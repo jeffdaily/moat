@@ -1,0 +1,4 @@
+{"kind":"phase","ts":"2026-05-31T00:35:01Z","phase":"compile","seconds":158.131,"exit":0,"cmd":"cmake --build projects/CTranslate2/build -j 16"}
+{"kind":"phase","ts":"2026-05-31T00:36:06Z","phase":"test","seconds":1.901,"exit":0,"cmd":"./projects/CTranslate2/build/tests/ctranslate2_test /var/lib/jenkins/moat/projects/CTranslate2/src/tests/data --gtest_filter=CUDA/*"}
+{"kind":"phase","ts":"2026-05-31T00:36:33Z","phase":"test","seconds":5.430,"exit":134,"cmd":"./projects/CTranslate2/build/tests/ctranslate2_test /var/lib/jenkins/moat/projects/CTranslate2/src/tests/data"}
+{"kind":"phase","ts":"2026-05-31T00:36:59Z","phase":"test","seconds":3.396,"exit":0,"cmd":"./projects/CTranslate2/build/tests/ctranslate2_test /var/lib/jenkins/moat/projects/CTranslate2/src/tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized*"}
