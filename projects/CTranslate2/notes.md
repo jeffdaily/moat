@@ -146,3 +146,43 @@ gfx1100 (RDNA3, wave32) and gfx1151 (RDNA3.5, wave32) are arches upstream ALREAD
 wheels for. They build the same source with only -DCMAKE_HIP_ARCHITECTURES changed. On wave32 the
 C10_WARP_SIZE 32 partition matches the hardware warp exactly (the historically-tested path), so no
 new wave64 concern. Validate on their own hardware per MOAT follower flow.
+
+## Review 2026-05-31 (reviewer, lead linux-gfx90a) -- PASS, no changes requested
+
+Reviewed moat-port HEAD dfa0d30 vs upstream base 5dfc5d8 via /pr-review (local-branch mode).
+No problems found. Verdict: review-passed; safe to proceed to GPU validation toward completed.
+
+Verification trail (all load-bearing claims independently re-derived from the fork tree):
+- Minimal footprint CONFIRMED: `git diff 5dfc5d8...HEAD` touches exactly 2 files, 1 line each --
+  docker/Dockerfile_rocm:70 and python/tools/prepare_build_environment_linux_rocm.sh:43, each
+  prepending `gfx90a;` to an RDNA-only list. src/ include/ CMakeLists.txt cmake/ third_party/ diff
+  is empty: library source byte-identical to upstream.
+- NVIDIA + RDNA builds unperturbed: docker `ARG HIP_ARCHITECTURES` (line 69) precedes the `ENV ...:-`
+  default (line 70), so the new value is only a fallback default; any build passing --build-arg or a
+  CUDA build (separate CMAKE_CUDA_ARCHITECTURES path) is unaffected. Change is additive (prepend), no
+  prior target dropped. Windows ROCm prepare script (line 22) correctly left RDNA-only.
+- block_reduce/C10_WARP_SIZE=32 wave64 analysis VALID. Only two callers of the hand-rolled
+  cuda::block_reduce: softmax_gpu.cu:222/228 and quantize_gpu.cu:70, both launching blockDim =
+  get_block_size() (power of two, >=32, <=max_threads=1024 -> blockDim.x/32 in [1,32]) with smem
+  sized blockDim.x*sizeof(float). First-warp loop covers smem[0,blockDim.x) exactly (no gap/overlap/
+  OOB); all inputs read from shared memory after the line-422 __syncthreads (no __shfl in the
+  function) so the VALUE is wave-width-independent. The one genuine intra-wavefront WaR hazard (lane
+  0 reading smem[1..N-1] at :433 vs lanes 1..N-1 writing smem[lane] at :436, all within the first 32
+  lanes = first half of one wave64 wavefront) IS correctly ordered by __syncwarp(mask) at :435 with
+  mask=(1<<(blockDim.x/32))-1 naming exactly those active lanes. So the tail must be KEPT (an
+  MPPI-style "drop the __syncwarp" fix would reintroduce that race); leaving it is correct. On HIP
+  __syncwarp(MaskT) (amd_warp_sync_functions.h:176) takes the uint64_t mask and syncs the wavefront,
+  so it cannot under-synchronize. Keying C10_WARP_SIZE on __GFX9__ would break the host get_block_size
+  (host has no __GFX9__) -> host/device split; the unconditional 32 is the correct shared abstraction.
+- Other reduction-surface ops (rms_norm/layer_norm/topk/multinomial/mean) use cub::BlockReduce, and
+  utils.h:15 `#define cub hipcub` routes them to rocPRIM (wave-size-aware by construction) -- no
+  hardcoded-32 or hand-rolled shuffle path there. Library swaps correct (find_package hipblas/hiprand/
+  rocprim/rocthrust/hipcub; Strategy A `set_source_files_properties(... LANGUAGE HIP)`).
+- Out-of-scope exclusions are upstream's existing HIP CMake (unchanged by the fork): WITH_TENSOR_PARALLEL
+  and WITH_FLASH_ATTN -> FATAL_ERROR, AWQ/CUTLASS sources REMOVE_ITEM'd. Consistent with the notes.
+- Commit hygiene CLEAN: title "[ROCm] Add gfx90a (CDNA2/MI250X) to the ROCm build arch lists" = 61
+  chars; body discloses Claude (Anthropic); Test Plan with literal commands; no Co-Authored-By/noreply,
+  no ghstack, no AMD-internal account ref (author jeff.daily@amd.com is the user's own public commit
+  identity, permitted). Fork Actions disabled ("enabled":false).
+- GPU run not re-executed at review (validator's stage, per PORTING_GUIDE 2026-05-30); porter recorded
+  CUDA/* 164/167 +3 skip, full 350/351 +1 skip, determinism bit-identical. Not a blocker for review.
