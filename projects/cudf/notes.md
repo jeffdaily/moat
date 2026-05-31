@@ -1,84 +1,218 @@
 # cudf notes (ROCm/HIP port)
 
 Kept for the automation exercise; upstreaming unlikely (NVIDIA-affiliated
-RAPIDS). `depends_on: [rmm]` (rmm is COMPLETED). cudf is itself a dependency of
-cugraph and cuml, so a future successful port needs a `## Install as a
-dependency` section -- NOT written yet because the port is BLOCKED (see below).
+RAPIDS). `depends_on: [rmm, cuCollections]` (both COMPLETED/ported). cudf is
+itself a dependency of cugraph and cuml.
 
-Pinned upstream: tag `v25.08.00` (in `projects/cudf/src`, gitignored), matching
-the rmm v25.08.00 line.
+Pinned upstream: tag `v25.08.00` (commit 6cea374, in `projects/cudf/src`,
+gitignored), matching the rmm/raft/cuCollections v25.08 line.
 
-## State: BLOCKED on linux-gfx90a
+Fork: jeffdaily/cudf @ `moat-port`. The port is a standalone HIP CMake build
+reached by a top-of-CMakeLists `if(USE_HIP) include(cmake/hip/cudf_hip.cmake)
+return()` guard; the CUDA build is untouched.
 
-Reason (one line): libcudf core cannot reach a GPU-validatable HIP build in a
-focused run -- it hard-depends on **cuCollections** (a CCCL-native concurrent
-hash-table library with NO ROCm fork) for nearly every non-trivial algorithm,
-on **jitify/NVRTC** for binaryop/transform/rolling, and the 404-file C++20
-monolithic core triggers a header-tree-wide `__CUDACC__`/`CUDF_HOST_DEVICE`
-macro cascade that fails to compile at the very FIRST/foundational TU. Arrow is
-NOT the blocker (see below).
+## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates
 
-## External-dependency assessment (the feasibility gate)
+A scoped libcudf core (79 TUs) compiles for gfx90a and links libcudf.so with a
+real gfx90a code object. A focused GPU gtest for the wave64 null-mask path
+passes 4/4 on MI250X. This supersedes the prior "BLOCKED on cuCollections"
+verdict: cuCollections is now ported (jeffdaily/cuCollections @ moat-port) and
+the foundational column core (which the prior run could not compile at all) now
+builds clean. The remaining work to a FULL core is the type-erased dispatch
+link-closure + a few library walls (below), not a fundamental blocker.
 
-cudf's `cpp/CMakeLists.txt` (deps block lines 247-330) pulls, in order:
+## MACRO-CASCADE VERDICT (jeff's question): the 1-line fix DID clear it
 
-| Dependency        | How fetched                          | HIP disposition |
-|-------------------|--------------------------------------|-----------------|
-| CUDAToolkit       | `rapids_find_package REQUIRED`       | -> HIP runtime (the core CUDA->HIP work) |
-| ZLIB, Threads     | system / conda                       | OK (host libs)  |
-| rapids_logger     | rapids-cpm                           | OK (proven portable by rmm: PORTING_GUIDE.md:209) |
-| jitify            | get_jitify.cmake                     | **NVRTC JIT, no HIP drop-in** (binaryop/transform/rolling; 12 files) |
-| NVTX              | get_nvtx.cmake                       | stub-able / rocTX; pervasive (226 files include it) |
-| **nvCOMP**        | get_nvcomp.cmake, **proprietary binary** | **UNPORTABLE** -- NVIDIA-only `.so`; GPU compression. Confined to `src/io/` (13 files), so disabling cuIO removes it cleanly |
-| CCCL              | get_cccl.cmake (rapids-cpm)          | redirect to rocThrust/hipCUB/libhipcxx (rmm pattern, PORTING_GUIDE.md:207) |
-| rmm               | get_rmm.cmake                        | DONE (consumed via find_package, works -- see below) |
-| flatbuffers       | get_flatbuffers.cmake                | OK (host lib)   |
-| dlpack            | get_dlpack.cmake                     | OK (header)     |
-| **cuCollections** | get_cucollections.cmake (rapids-cpm) | **NO ROCm fork; CCCL-native concurrent hashtable**. Used by join/groupby/hash/stream_compaction/search/reductions (23 core files). A major sub-port. |
-| gtest             | get_gtest.cmake                      | OK (conda)      |
-| KvikIO            | get_kvikio.cmake                     | GPUDirect Storage (cuFile); confined to `src/io/` (4 files) |
-| **nanoarrow**     | get_nanoarrow.cmake                  | OK -- small vendored C lib (apache/arrow-nanoarrow), NOT Apache Arrow C++ |
-| thread_pool, zstd | get_*.cmake                          | OK (host libs)  |
+Ground truth confirmed: `CUDF_HOST_DEVICE` is DEFINED once
+(`cpp/include/cudf/types.hpp:23`, gated `#ifdef __CUDACC__`) and USED at 331
+sites across 43 files. Changing that ONE definition to
+`#if defined(__CUDACC__) || defined(__HIPCC__)` restored `__host__ __device__`
+at all use sites and **cleared the entire column_device_view.cu -> string_view
+"call to __host__ from __device__" cascade (the 71-header wall) in one edit**.
+Verified by compiling `cpp/src/column/column_device_view.cu` standalone as HIP:
+before, the cascade; after the 1-line fix, only a SEPARATE, smaller issue
+remained -- `type_dispatcher.hpp` `base_type_to_id` explicit specializations
+(the `CUDF_TYPE_MAPPING` macro + the `char` specialization) are declared
+WITHOUT `CUDF_HOST_DEVICE` while the primary now HAS it; clang (unlike nvcc)
+rejects the host/device-attribute mismatch ("no function template matches").
+Adding `CUDF_HOST_DEVICE` to those 2 specialization definitions cleared it, and
+column_device_view.cu then compiled with ZERO errors. So: the macro cascade was
+real and the 1-line root fix dissolved it; the prior "46 guard site cascade"
+framing was an overcount (it conflated the single definition with its 331 uses
+plus the unrelated nv-pragma guards). Do NOT blanket-`#define __CUDACC__` (the
+prior dead-end: it wrongly activates CUDA template paths in type_dispatcher and
+elsewhere).
 
-### Arrow is NOT the blocker (key finding)
+### How the __CUDACC__ / __CUDA_ARCH__ sites were actually handled
 
-The widely-assumed "libcudf needs Apache Arrow C++" wall does **not** apply at
-v25.08. `cpp/cmake/thirdparty/get_arrow.cmake` exists but is **dead** -- the
-main `cpp/CMakeLists.txt` does NOT `include()` it (verified: no
-`get_arrow`/`find_package(Arrow)`/`rapids_find_package(Arrow)` anywhere in
-cpp/CMakeLists.txt). The interop layer (to_arrow/from_arrow) is built on
-**nanoarrow** -- a tiny standalone C library vendored via CPM and namespaced
-`cudf` -- which builds with plain CMake and has no CUDA content, so it is
-satisfiable for a HIP build. cudf migrated off heavyweight libarrow to
-nanoarrow before this release. So Arrow does not gate the port; the gate is
-cuCollections + jitify + the CCCL/macro cascade + the 404-file C++20 scale.
+- `CUDF_HOST_DEVICE` / `CUDF_KERNEL` definition gate (types.hpp:19): root fix
+  `|| defined(__HIPCC__)`. This is the whole cascade.
+- Real `__device__`-code `#ifdef __CUDACC__` guards (4 sites, genuine device
+  functions): `|| defined(__HIPCC__)` so the device fn is declared on HIP --
+  `utilities/bit.hpp` (set_bit), `column/column_device_view_base.cuh`
+  (set_valid), `src/jit/span.cuh` (is_valid_nocheck/is_valid).
+- NVCC-only `#pragma nv_exec_check_disable` guards (the OTHER ~11 `#ifdef
+  __CUDACC__` sites in type_dispatcher.hpp / column_view.hpp / aggregation.hpp /
+  device_scalar.hpp / quantiles_util.hpp): LEFT `__CUDACC__`-only. clang neither
+  has nor needs that pragma; adding `|| __HIPCC__` would make clang choke on an
+  unknown pragma. This per-site discrimination is exactly why the blanket define
+  fails.
+- `__CUDA_ARCH__` (30 sites, all presence/absence -- NO numeric `>= N` gates in
+  cudf): the raft fault-class-1 fix -- define `__CUDA_ARCH__ 800` in the HIP
+  DEVICE pass only (compat header, guarded by `__HIP_DEVICE_COMPILE__`). Every
+  `#ifndef __CUDA_ARCH__` (host-only error-throw branch) and `#ifdef
+  __CUDA_ARCH__` (device direct-memory branch) then selects correctly in each
+  pass. No NVIDIA intrinsics are newly activated (cudf has no `__CUDA_ARCH__ >=
+  N` comparisons), so no per-site `&& !defined(USE_HIP)` guards were needed
+  (unlike raft, which had __dp4a/__nanosleep/PTX behind numeric gates).
 
-### The two genuinely unportable / unported deps
+## Architecture of the HIP build
 
-1. **nvCOMP** -- NVIDIA proprietary binary (`rapids_cpm_nvcomp(... USE_PROPRIETARY_BINARY)`),
-   no AMD build exists. GPU (de)compression for Parquet/ORC/text. ENTIRELY
-   inside `src/io/` (0 includes outside io/), so it is cleanly removable by
-   disabling cuIO -- it is NOT a core blocker, it is a cuIO blocker.
-2. **cuCollections** -- `github.com/NVIDIA/cuCollections`, header-only but
-   built ENTIRELY on libcudacxx (`cuda::atomic` thread-scoped RMW,
-   `cuda::std::atomic_ref`, cooperative-group probing, `cuda::std` everywhere).
-   **No `ROCm/cuCollections` fork exists** (checked: repo not found). cudf uses
-   `cuco::static_set` (19), `static_map` (8), `static_multimap` (4), with
-   `cuco::op`, `*_ref` types, `thread_scope_block/device/thread`,
-   `insert_and_find`, `linear_probing`, `extent`, `pair`. This is used by
-   join (1), groupby (7), hash, stream_compaction (2), search (1),
-   reductions (1), text (3) -- i.e. essentially every interesting algorithm.
-   Porting cuco to HIP is a substantial project in its own right (comparable to
-   a separate MOAT target), NOT something to inline here. This is the dominant
-   blocker for a meaningful core.
+- `cpp/CMakeLists.txt`: 6-line `option(USE_HIP)` + guard at the very top.
+- `cpp/cmake/hip/cudf_hip.cmake`: standalone HIP build. find_package(hip),
+  find_package(rmm) (carries vendored libhipcxx cuda::std/cuda::mr +
+  rapids_logger + the rmm compat force-include + USE_HIP/__HIP_PLATFORM_AMD__/
+  LIBCUDACXX_ENABLE_EXPERIMENTAL_MEMORY_RESOURCE defs), add_subdirectory the
+  ported cuCollections with USE_HIP (gives cuco::cuco header-only INTERFACE; its
+  BUILD_TESTS is force-OFF so cudf's BUILD_TESTS does not pull cuco's Catch2
+  tests), NVTX3 from a vendored header dir, gtest from conda. Generates
+  version_config.hpp + logger_macros.hpp (rapids-logger template; logger ns is
+  `cudf::default_logger()`, NOT `cudf::detail::`). Marks the scoped sources
+  LANGUAGE HIP, force-includes the cudf compat header, links rmm::rmm +
+  cuco::cuco + hip::host.
+- `cpp/cmake/hip/cudf_hip_sources.cmake`: the curated in-scope source list (the
+  knob that grows the core). Files NOT listed are scoped out, not deleted.
+- `cpp/cmake/hip/cudf_hip_tests.cmake`: builds the focused GPU gtest.
+- `cpp/include/cudf/detail/hip/cuda_to_hip.h`: the cudf compat header
+  (force-included on every HIP TU). Adds the 4 cuda* runtime symbols rmm's
+  compat does not cover (cudaGetSymbolAddress, cudaPeekAtLastError,
+  cudaStreamDefault, cudaOccupancyMaxActiveBlocksPerMultiprocessor) and the
+  `__CUDA_ARCH__ 800` device-pass define. Most of cudf's cuda* runtime surface
+  is already aliased by rmm's compat (force-included first via rmm::rmm).
+- `cpp/hip_compat/`: forwarding shims on the HIP include path (BEFORE) --
+  `cuda_runtime.h`/`cuda_runtime_api.h`/`cuda.h` -> the compat header; `cub/*`
+  -> hipCUB (cub.cuh + the 12 specific cub headers cudf includes, each
+  `namespace cub = hipcub;`); `cooperative_groups.h` + `cooperative_groups/
+  reduce.h` -> HIP CG + a tile-relative cg::reduce shim (copied from the cuco
+  port). On NVIDIA this dir is absent so the real toolkit headers win.
+- `cpp/include/cudf/detail/utilities/hip/warp_primitives.cuh`: the wave64
+  ballot helper (below). Included by `detail/utilities/cuda.cuh` under USE_HIP.
 
-## rmm-as-a-dependency recipe: WORKED (no gaps)
+## Fault classes fixed (all arch-unified; NVIDIA path byte-for-byte unchanged)
 
-The `projects/rmm/notes.md` "## Install as a dependency" recipe worked exactly
-as written and validates the MOAT dependency mechanism end-to-end:
+1. **wave64 null-mask ballot** (the central correctness gate). cudf builds a
+   32-bit validity word per warp via `__ballot_sync(0xFFFF'FFFFu, pred)` and has
+   the lane-0 leader write it to `output[word_index(i)]`. On AMD this (a) does
+   not COMPILE (HIP `__ballot_sync` static_asserts a 64-bit mask) and (b) is
+   semantically wrong on a 64-lane wavefront (64 lanes straddle two 32-bit
+   words). cudf's bitmask granularity is genuinely 32 bits/word, so the fix
+   KEEPS the logical warp at 32 lanes: `ballot_32(pred)` uses
+   `cg::tiled_partition<32>(block).ballot(pred)` -- tile-relative on any wave
+   width (the cuCollections/gsplat lesson), so the two 32-lane tiles of a wave64
+   wavefront each produce their own 32-bit word matching `word_index`. Routed at
+   all in-scope sites: `detail/valid_if.cuh` (x2), `detail/copy_range.cuh`,
+   `detail/copy_if_else.cuh`, `src/copying/concatenate.cu` (x2),
+   `src/replace/replace.cu`, `src/replace/nulls.cu`, each `#if defined(USE_HIP)`
+   guarded. `warp_size` stays 32 (do NOT bump to 64 -- it is the bitmask word
+   width, not the hardware wave width). GPU-validated: see Test results.
+2. **HIP cooperative_groups gaps**: `grid_group::block_rank()` does not exist in
+   HIP CG -> replaced (USE_HIP) with the explicit row-major linear block index
+   (`blockIdx.x + blockIdx.y*gridDim.x + ...`), identical to CUDA's value
+   (null_mask.cu set_null_masks_kernel). `cg::reduce`/`cg::plus` absent -> the
+   tile-relative shfl_xor shim (hip_compat/cooperative_groups/reduce.h).
+3. **clang-vs-nvcc strictness** (clang stricter): (a) hash-functor explicit
+   specializations must match the constexpr primary's constexpr-ness
+   (murmurhash3_x86_32/x64_128, xxhash_32/64 -- added `constexpr`; the two
+   unreachable list_view/struct_view specializations also need a
+   `-Winvalid-constexpr` pragma + an unreachable `return`, HIP-only); (b)
+   `typename` on dependent type names (`cast_ops.cu`
+   `cuda::std::chrono::floor<typename TargetT::duration>`); (c) a nested type's
+   forward-declaration access must match its definition (list_device_view.cuh
+   pair_accessor/pair_rep_accessor -- made the definitions public to match the
+   public forward decls); (d) thrust::iterator_facade hooks called from
+   `__host__ __device__` helpers must themselves be host+device
+   (`row_operators.cuh` strong_index_iterator increment/advance/equal/
+   dereference/distance_to -> CUDF_HOST_DEVICE); (e) gather.cuh bounds_checker
+   ctor was `__device__`-only but thrust constructs it host-side ->
+   CUDF_HOST_DEVICE.
+4. **missing transitive includes that only libhipcxx exposes**: `cuda/std/bit`
+   for `cuda::std::popcount`/`countl_zero` (null_mask.cuh, null_mask.cu --
+   CUDA's CCCL pulled it transitively, libhipcxx does not); assert.cuh for
+   `CUDF_UNREACHABLE` (integer_utils.hpp, now reachable in the device pass since
+   __CUDA_ARCH__ is defined there). All are correct on CUDA too (explicit deps).
+5. **missing cub headers**: shimmed (block_load, device_histogram,
+   device_merge_sort, device_radix_sort, device_segmented_sort, warp_reduce in
+   addition to the initial set).
+
+## What COMPILES (the 79-TU scoped core)
+
+column, table, scalar, bitmask, utilities (cuda/grid_1d/stream_pool/traits/
+type_dispatcher/type_checks/host_memory/prefetch/logger/...), unary
+(cast/math/nan/null ops), copying (concatenate/copy/copy_range/gather/get_element/
+reverse/sample/scatter/shift/slice/split/segmented_shift/purge_nonempty_nulls),
+filling (fill/sequence), replace (replace/nulls), search (contains_scalar/
+search_ordered), sort (sort/sort_column/stable_sort/stable_sort_column/is_sorted/
+rank), and the foundational nested-type column views + factories + a slice of
+their detail ops (strings/lists/dictionary/structs column_view + factories,
+strings copy_range/shift/fill/utilities/concatenate(combine)/replace_nulls/
+find_replace, lists copying gather/concatenate, dictionary add_keys/search/
+encode/replace/concatenate, structs concatenate). libcudf.so links (shared libs
+tolerate the residual undefined dispatch symbols).
+
+## Scoped OUT (guarded via the source list; files NOT deleted)
+
+- **all of src/io** (89 files: cuIO csv/json/parquet/orc/avro/text + comp) --
+  home of the unportable **nvCOMP** (NVIDIA proprietary binary) and **KvikIO**
+  (GPUDirect Storage). Cleanly separable (0 nvCOMP includes outside io/).
+- **jitify/NVRTC JIT** kernels (binaryop-JIT, transform-JIT, rolling-JIT). The
+  jitify->hiprtc plan is a separate effort (jitify_hiprtc_plan.md, owned
+  elsewhere). `binaryop/binaryop.cpp` pulls jitify (15 includes).
+- **the broad algorithm modules** (groupby, join, reductions, stream_compaction
+  distinct/unique, hashing top-level, lists/strings/dictionary/structs full
+  algorithm sets, text, interop-to-arrow, transform, rolling, datetime, etc.) --
+  not yet in the source list. These are the cuco-backed and heavy-template
+  algorithms; bring-up is incremental from here.
+
+## The next concrete walls (precise blocked_reason material)
+
+A FULLY-linking standalone libcudf (and a broad GPU gtest suite) needs the
+type-erased dispatch link-closure resolved. `column.cu` / `column_factories.cu`
+reference `make_strings_column` / `make_structs_column` / `gather` /
+`sorted_order` / `slice` / `get_element` / per-type detail ops, so even the
+foundational core transitively pulls a large fraction of strings/lists/
+dictionary/structs + sort + binaryop. Closing it hits, in order:
+
+1. **rocPRIM radix sort over `cuda::std::tuple` keys**: `sort/sort_radix.cu` and
+   `sort/sorted_order_radix.cu` instantiate rocPRIM `DeviceRadixSort` over a
+   `cuda::std::tuple<int&,float&>`-style key; rocPRIM's `extract_digit` /
+   `decode_inplace` / `is_tuple_of_references` only accept `rocprim::tuple`, not
+   `cuda::std::tuple` (`tuple_size<cuda::std::tuple<...>>` undefined; same
+   rocPRIM-tuple family cuCollections hit with DeviceSelect-over-cuco::pair).
+   Likely fix: a rocPRIM<->cuda::std::tuple adaptor, or route radix sort through
+   the comparison-sort path on HIP.
+2. **`cuda::std::array<unsigned,100>` absent from the vendored libhipcxx**:
+   `strings/case.cu` uses `cuda::std::array<unsigned,100>` for its
+   special-casing table; the vendored ROCm/libhipcxx (amd-develop) has no
+   `<cuda/std/array>` with that instantiation. Fix: vendor/extend libhipcxx, or
+   swap to `cuda::std::array` -> a plain C array / thrust on HIP.
+3. **unconverted wave64 ballots in the broader strings/json/merge/rolling/join
+   kernels** (`strings/copying/concatenate.cu`, `json_path.cu`, `merge.cu`,
+   `rolling.cuh`, `conditional_join_kernels.cuh`): same `ballot_32` treatment as
+   the in-scope sites, not yet applied.
+4. then the **JIT** wall (binaryop/transform/rolling) and the **cuco-backed
+   algorithms** (join/groupby/hash/distinct) -- the latter now have cuco
+   available, so they are reachable once 1-3 and the broader compile are done.
+
+## rmm-as-a-dependency: WORKED (refreshed)
+
+The cudf-rmm dep MUST be the CURRENT jeffdaily/rmm @ moat-port (now d22baff),
+NOT the older 1473ffc: the older install exported a malformed force-include path
+(`<prefix>//rmm/...`, missing `include/`, because CMAKE_INSTALL_INCLUDEDIR was
+empty at export) that broke every cudf HIP TU. d22baff uses
+`$<INSTALL_PREFIX>/include/rmm/...`. Recipe (per projects/rmm/notes.md):
 
 ```
-git clone --depth 1 -b moat-port https://github.com/jeffdaily/rmm _deps/cudf-rmm/src
+# rmm dep clone updated to fork HEAD, rebuilt+installed into _deps/cudf-rmm/install
 export CONDA_PREFIX=/opt/conda/envs/py_3.12
 cmake -S _deps/cudf-rmm/src/cpp -B _deps/cudf-rmm/build -GNinja \
   -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
@@ -86,77 +220,71 @@ cmake -S _deps/cudf-rmm/src/cpp -B _deps/cudf-rmm/build -GNinja \
   -DCMAKE_PREFIX_PATH="/opt/rocm;$CONDA_PREFIX" \
   -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
   -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
-  -DBUILD_TESTS=OFF \
-  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cudf-rmm/install
-cmake --build _deps/cudf-rmm/build --target install -j$(nproc)
+  -DBUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cudf-rmm/install
+cmake --build _deps/cudf-rmm/build --target install -j16
 ```
 
-Result: clean configure (2.5s) + build/install (exit 0). `rmm::rmm` exported in
-`_deps/cudf-rmm/install/lib/cmake/rmm/`; vendored libhipcxx (`include/cuda/`)
-and rapids_logger bundled into the prefix as documented; `librmm.so` +
-`librapids_logger.so` present. A cudf HIP build would consume it with
-`find_package(rmm)` + `-DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/cudf-rmm/install;/opt/rocm;$CONDA_PREFIX`.
-No gaps in the rmm dependency contract. The clone went into a CONSUMER-PRIVATE
-prefix (`_deps/cudf-rmm/`), NOT shared `_deps/rmm/`, because a concurrent RAPIDS
-port (raft) is using `_deps/raft-rmm/` -- the per-consumer prefix convention
-works.
+## Vendored deps a build needs (stable locations)
 
-## Empirical wall (probe evidence, gfx90a, ROCm 7.2.1)
+- rmm install: `_deps/cudf-rmm/install` (jeffdaily/rmm @ moat-port, built above).
+- cuCollections: `_deps/cudf-cuco/src` (`git clone --depth 1 -b moat-port
+  https://github.com/jeffdaily/cuCollections`). Header-only; passed via
+  `-DCUDF_CUCO_SOURCE_DIR`.
+- libhipcxx: `agent_space/libhipcxx/include` (ROCm/libhipcxx amd-develop).
+- rapids_logger: `agent_space/rapids_logger` (rapidsai/rapids-logger 0.2.0).
+- NVTX3: `agent_space/nvtx3_include` (vendored from pytorch's third_party/NVTX;
+  pure host C++, no CUDA device content). Passed via `-DCUDF_NVTX3_INCLUDE_DIR`.
 
-Probed the SINGLE SMALLEST, most foundational core TU --
-`cpp/src/column/column_device_view.cu` (176 lines; `column_device_view` is the
-base type every cudf operation builds on). Compiled standalone as HIP against
-the rmm install + libhipcxx + rocThrust on the include path
-(`agent_space/cudf_probe/`):
+## Build script (lead, gfx90a)
 
-1. First wall: `CUDF_HOST_DEVICE` (cudf's own `__host__ __device__` macro,
-   `cpp/include/cudf/types.hpp:19`) is gated on `#ifdef __CUDACC__`. hipcc
-   defines `__HIPCC__`, NOT `__CUDACC__`, so the macro expands to EMPTY ->
-   every host/device member (e.g. all `string_view` ctors) becomes host-only ->
-   "call to __host__ function from __device__ function" pulled in transitively
-   via column_device_view -> string_view. Reaches 71 headers. Same fault family
-   as PORTING_GUIDE.md:157 (define __CUDACC__ when __HIPCC__).
-2. Applying the blanket `#define __CUDACC__ 1` workaround (prelude) clears that
-   but CASCADES: `type_dispatcher.hpp` `base_type_to_id` template
-   specializations then take a CUDA-specific path and fail ("no function
-   template matches", ~20 errors) -- the MPPI-Generic lesson
-   (PORTING_GUIDE.md:158) that defining __CUDACC__/__CUDA_ARCH__ for HIP has
-   cascading effects requiring per-site guards, not a blanket define.
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cudf/src/cpp -B projects/cudf/build-hip -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/cudf-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCUDF_CUCO_SOURCE_DIR=/var/lib/jenkins/moat/_deps/cudf-cuco/src \
+  -DCUDF_NVTX3_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/nvtx3_include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON
+cmake --build projects/cudf/build-hip -j 16   # CAP at -j16: C++20 templates are
+                                              # memory-hungry; OOM risk otherwise
+```
 
-There are **46 `__CUDACC__`/`__CUDA_ARCH__` guard sites across 22 headers**, each
-needing the HIP-aware `|| __HIP_DEVICE_COMPILE__` / `|| __HIPCC__` treatment by
-hand. And that is just layer 1 -- below it sit the cuda:: libcudacxx reach
-(270 files), cooperative_groups (31 files; HIP CG lacks cg::reduce /
-labeled_partition / memcpy_async per PORTING_GUIDE.md:185,203), and then
-cuCollections, before any algorithm compiles.
+Arch flows from `CMAKE_HIP_ARCHITECTURES` (defaults to gfx90a only when unset),
+so a follower (gfx1100/gfx1151) builds the scoped core with only
+`-DCMAKE_HIP_ARCHITECTURES=<arch>` and no source/CMake edit.
 
-Conclusion: not even the trivial column core compiles within a focused run;
-the dominant blocker (cuCollections, no ROCm port) makes the interesting core
-(join/groupby/hash/reductions) unreachable regardless. This is the documented
-"blocked on X" good outcome.
+## Validation (gfx90a / MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=3)
 
-## Scale (for the record)
+```
+HIP_VISIBLE_DEVICES=3 ctest --test-dir projects/cudf/build-hip --output-on-failure
+# (LD_LIBRARY_PATH must include $CONDA_PREFIX/lib for libspdlog and
+#  _deps/cudf-rmm/install/lib for librmm/librapids_logger)
+```
 
-- `cpp/src`: **493 source files** in the single monolithic `add_library(cudf ...)`
-  (cpp/CMakeLists.txt:339-830) -- 404 `.cu` + 89 `.cpp`.
-- Of those, `src/io/` (cuIO: csv/json/parquet/orc/avro/text + comp) is **89
-  files** and the home of nvCOMP+KvikIO -- the natural module to disable first.
-- C++20, `CXX_EXTENSIONS ON`, heavy template metaprogramming, NVTX in 226 files.
+libcudf.so built with a gfx90a code object (roc-obj-ls:
+`hipv4-amdgcn-amd-amdhsa--gfx90a`). **MOAT_CORE_SMOKE_TEST: 4/4 PASS** on real
+gfx90a:
+- `CountSetBitsWave64`: device `count_set_bits` over known masks == host count,
+  sizes {1,31,32,33,63,64,65,127,128,129,1000,4096,100000} (crossing 32-bit-word
+  AND 64-lane-wavefront boundaries). This is the wave64 ballot gate.
+- `SegmentedCountSetBits`: segmented reduce over uneven segments == host.
+- `CreateNullMask`: ALL_VALID -> n set bits, ALL_NULL -> 0, on device.
+- `CountIsDeterministic`: 3x repeated device count bit-identical (the wave64 CG
+  ballot/reduce has no nondeterminism).
 
-## If resumed later (path to unblock)
+The smoke test links the cudf objects with `--unresolved-symbols=ignore-all`
+(the scoped core still references the deferred dispatch closure symbols above;
+the null-mask path the test exercises is fully defined and pulled). A broader
+GPU suite (gather/sort/etc.) needs the link-closure walls 1-3 resolved first.
 
-Prerequisite ordering for a real cudf HIP port:
-1. Port **cuCollections** to ROCm/HIP first (its own MOAT target): static_set/
-   static_map/static_multimap + refs on libhipcxx `cuda::atomic`/`cuda::std`.
-   This is the long pole. Without it only a tiny non-hashing subset is buildable.
-2. Replace **jitify** (NVRTC) usage with hiprtc, or build those kernels AOT, or
-   defer binaryop-JIT/transform-JIT/rolling-JIT.
-3. Apply the rmm standalone-HIP bypass (`option(USE_HIP) ... include(cmake/hip/cudf_hip.cmake) return()`)
-   so the rapids-cmake/CPM CCCL fetch is skipped; satisfy CCCL from /opt/rocm
-   (rocThrust/hipCUB) + the rmm-bundled libhipcxx; consume rmm via find_package.
-4. Make `CUDF_HOST_DEVICE` / `CUDF_KERNEL` (types.hpp) and all 46
-   `__CUDACC__`/`__CUDA_ARCH__` guard sites HIP-aware
-   (`__CUDACC__||__HIPCC__`, `__CUDA_ARCH__||__HIP_DEVICE_COMPILE__`).
-5. Disable cuIO (drop the 89 `src/io/` files + nvCOMP + KvikIO + zstd-comp) and
-   scope to column/table/copying/sort/reductions/unary/etc. for first GPU
-   validation; nanoarrow interop is fine to keep (no Arrow C++ needed).
+## Install as a dependency
+
+NOT written yet. cudf is consumed by cugraph/cuml, which need the broad
+algorithm core (groupby/join/etc.), not just the foundational TUs here. Defer
+the `find_package(cudf)` export contract until a fully-linking core exists
+(after the link-closure walls above). The build wiring (cmake/hip/cudf_hip.cmake)
+already exports a `cudf` target shape to model it on.
