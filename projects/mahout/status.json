@@ -5,19 +5,19 @@
   "fork_url": null,
   "fork_default_branch": "main",
   "priority": 6.322,
-  "ext_type": "unknown",
+  "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-30T00:04:57Z",
+  "updated_at": "2026-05-31T00:55:51Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "unclaimed",
+      "state": "planned",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:04:57Z",
+      "updated_at": "2026-05-31T00:55:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -30,7 +30,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "planner"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
