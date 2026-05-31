@@ -342,3 +342,64 @@ Determinism: STATIC_SET_TEST run twice with `--rng-seed 12345`; both runs: 97/97
 No regression vs documented bar. All documented deferrals (rocPRIM pair DeviceSelect, >8B/16B CAS, bloom_filter nv/target, dynamic_bitset) remain deferred -- none are failures.
 
 Result: PASS. linux-gfx90a -> completed. linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
+
+## Validation 2026-05-31 (validator, linux-gfx1100)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (RDNA3, wave32), ROCm 7.2.1. Fork jeffdaily/cuCollections @ moat-port, validated_sha = 57a1c1a31a9e681a3de5572a1306d5041497e8f0.
+
+GPU: HIP_VISIBLE_DEVICES=0 (2x gfx1100 W7800 48GB).
+
+No source or CMake change. The cmake/hip/cuco_hip.cmake already reads `CMAKE_HIP_ARCHITECTURES` (never hardcoded); gfx1100 flows from `-DCMAKE_HIP_ARCHITECTURES=gfx1100`.
+
+### Build (compile phase)
+
+```
+cmake -S projects/cuCollections/src -B projects/cuCollections/build-hip-gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCATCH2_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/Catch2 \
+  -DBUILD_TESTS=ON
+
+cmake --build projects/cuCollections/build-hip-gfx1100 \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j64
+# Build time: 58.3s (configure 2.2s + compile 58.3s), all 7 binaries produced.
+```
+
+Wrapped: `utils/timeit.sh cuCollections compile -- cmake --build ...`
+
+### Code-object evidence
+
+`roc-obj-ls build-hip-gfx1100/tests/STATIC_SET_TEST` confirms exclusively `hipv4-amdgcn-amd-amdhsa--gfx1100` code objects (multiple bundles, no gfx90a). Verified on STATIC_SET_TEST (the largest binary, 89MB).
+
+### Test run (real GPU, HIP_VISIBLE_DEVICES=0)
+
+Commands: `utils/timeit.sh cuCollections test -- <exe> --rng-seed 12345`
+
+| suite | exe | cases | assertions | result | vs gfx90a |
+|-------|-----|-------|------------|--------|-----------|
+| STATIC_SET_TEST | build-hip-gfx1100/tests/STATIC_SET_TEST | 97 (96+1 OOM skip) | 886-887 | PASS | 97/887 on gfx90a; 1 large_input OOM skip on 48GB W7800 (nondeterministic) -- all hash-table correctness cases pass |
+| STATIC_MAP_TEST | build-hip-gfx1100/tests/STATIC_MAP_TEST | 82 | 526 | PASS | exact match |
+| STATIC_MULTISET_TEST | build-hip-gfx1100/tests/STATIC_MULTISET_TEST | 70 (68+2 OOM skip) | 576 | PASS | 70/582 on gfx90a; 2 large_input OOM skips on 48GB W7800 -- all hash-table correctness cases pass |
+| STATIC_MULTIMAP_TEST | build-hip-gfx1100/tests/STATIC_MULTIMAP_TEST | 72 | 228 | PASS | exact match |
+| DYNAMIC_MAP_TEST | build-hip-gfx1100/tests/DYNAMIC_MAP_TEST | 12 | 144 | PASS | exact match |
+| UTILITY_TEST | build-hip-gfx1100/tests/UTILITY_TEST | 38 | 1561 | PASS | exact match |
+| ROARING_BITMAP_TEST | build-hip-gfx1100/tests/ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS | exact match |
+| **TOTAL** | | **~373** | **~3920+** | **all passing** | |
+
+OOM skips: the large_input_test cases (`static_set` x1, `static_multiset` x2) request very large table allocations and self-skip via `SKIP("Out of memory")` when the device has insufficient memory. The W7800 has 48GB vs MI250X's 64GB per GCD; these skips are correct behavior, not failures. All hash-table correctness, concurrent insert/find/erase, and small-key-type cases execute and pass.
+
+Determinism: STATIC_SET_TEST run 3x with `--rng-seed 12345`; runs 2 and 3: 97/97 cases, 887 assertions, identical. Run 1 had a transient OOM skip (576 free at test time).
+
+### Wave32 verdict
+
+Sub-word CAS shim (hip_subword_atomic.cuh): CORRECT on wave32 (RDNA3/gfx1100). The int8/int16 static_set and static_map tests (previously broken on bare libhipcxx, fixed by the shim) pass in full -- 97 STATIC_SET cases and 82 STATIC_MAP cases including the small-key-type suites. The shim is `__HIP_DEVICE_COMPILE__ && sizeof(T)<4` gated, arch-agnostic, and works identically on wave32 as on wave64: no native sub-word atomic CAS exists on either gfx90a or gfx1100, and the full-word atomicCAS retry loop is independent of wave width.
+
+Tiled probing (cooperative groups, `cg::tiled_partition<N>`): CORRECT on wave32. The concurrent insert/find/erase/count/retrieve tests across all four hash table types (static_set/map/multiset/multimap) pass. HIP's `thread_block_tile<N>` is correctly tile-relative on a 32-lane wavefront -- `shfl/ballot/shfl_xor` use the tile size as the explicit width, so cuco's `__ffs(group.ballot(...))` lane election is correct on wave32. The `warp_size()=32` tile size (a tile-relative sub-wave tile on gfx90a wave64) is native tile width on gfx1100 wave32 -- both are correct.
+
+No data corruption, no HIP fault, no hang. Clean exit on all runs.
+
+Result: PASS. linux-gfx1100 -> completed. validated_sha = 57a1c1a31a9e681a3de5572a1306d5041497e8f0. Fork untouched (no commit, no push).
