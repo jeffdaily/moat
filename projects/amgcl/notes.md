@@ -249,3 +249,16 @@ so the GPU and those libraries work; the gap is specific to rocSPARSE on the APU
 Better validated on a discrete-RDNA Windows GPU where rocSPARSE works. No fork change was
 needed (the port compiles clean on Windows), so nothing to preserve as a patch.
 State: set blocked=true; no source/sha change.
+
+## Windows gfx1151 root-cause CORRECTION 2026-05-30
+
+The earlier "rocSPARSE segfaults on the APU" was the System32 Adrenalin driver blit-JIT bug
+(see rmm notes / gfx1151-apu-runtime-gaps). With TheRock's runtime deployed beside the exe the
+segfault becomes a clean error, and the PRECISE root cause is: TheRock's rocm-sdk-libraries
+wheel (7.14.0a20260519) is MISSING the rocSPARSE gfx1151 device-code kpack. The wheel's
+.kpack/ dir ships blas_lib_gfx1151.kpack, fft_lib_gfx1151.kpack, rand_lib_gfx1151.kpack (and
+torch_gfx1151.kpack) but NO sparse_lib_gfx1151.kpack, so hipSPARSE init/SpMV fails with
+kpack_load_code_object error 13 (hipErrorInvalidImage) -- rocSPARSE has no gfx1151 kernels to
+load. NOT an APU hardware limit and NOT the driver bug: the amgcl HIP backend compiles clean
+and the CPU builtin backend solves. This is a TheRock PACKAGING gap; recheck on a newer nightly
+that ships sparse_lib_gfx1151.kpack (or build rocSPARSE for gfx1151). Still blocked until then.

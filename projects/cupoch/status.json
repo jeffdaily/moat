@@ -7,7 +7,7 @@
   "priority": 5.284,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-30T23:35:11Z",
+  "updated_at": "2026-05-31T00:40:23Z",
   "head_sha": "8fd480654b900040a1fa03140435916bcbd93d47",
   "platforms": {
     "linux-gfx90a": {
@@ -59,11 +59,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "CORE_ONLY configure succeeds (all-clang) but the build fails: the vendored stdgpu 1.3.0 submodule is not Windows-ported -- it forces -fPIC onto HIP TUs (rejected on the windows-msvc target) plus C++17-standard and <variant>/cudaStream_t errors under clang-Windows in stdgpu/flann. Needs substantial dependency-level Windows porting of stdgpu. Even built, validation (VoxelDownSample+EstimateNormals) is heavy thrust::device_vector + stdgpu GPU containers -- the workload class that hung on this gfx1151 APU for rmm. Not a cupoch defect (gfx90a/gfx1100 pass). Better on a discrete-RDNA Windows GPU.",
+      "blocked_reason": "Blocked on the BUILD only: the vendored stdgpu 1.3.0 submodule is not Windows-ported (forces -fPIC on the windows-msvc target; C++17/<variant>/cudaStream_t errors under clang-Windows in stdgpu/flann) -- a dependency-level Windows build port. The earlier 'APU thrust runtime gap' concern was wrong: rocThrust runs fine on gfx1151 with TheRock's runtime (see rmm root-cause). Not a cupoch defect (gfx90a/gfx1100 pass).",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T23:35:11Z",
+      "updated_at": "2026-05-31T00:40:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

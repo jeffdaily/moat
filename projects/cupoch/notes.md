@@ -269,3 +269,13 @@ stdgpu build ported, GPU validation would likely hit the APU thrust runtime gap.
 
 Set blocked. Better tackled on a discrete-RDNA Windows GPU, and needs a dedicated
 stdgpu-on-Windows build port first. Not a cupoch-port-code defect (gfx90a/gfx1100 pass).
+
+## Windows gfx1151 root-cause CORRECTION 2026-05-30
+
+The earlier note speculated the validation would hit an "APU thrust runtime gap." That was
+WRONG: rocThrust (device_vector, reduce, sort, transform) runs correctly on gfx1151 once
+TheRock's amdhip64 runtime is used instead of the broken System32 driver (see rmm notes /
+gfx1151-apu-runtime-gaps). So cupoch's ONLY blocker is the BUILD: the vendored stdgpu 1.3.0
+submodule is not Windows-ported (forces -fPIC on the windows-msvc target; C++17/<variant>/
+cudaStream_t errors under clang-Windows in stdgpu/flann). That is a real dependency-level
+Windows build port, independent of the runtime. Block reason narrowed to the stdgpu build.
