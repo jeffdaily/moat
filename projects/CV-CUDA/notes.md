@@ -34,8 +34,11 @@ HIP_VISIBLE_DEVICES=<n> build-hip/bin/cvcuda_test_system          # per-operator
 HIP_VISIBLE_DEVICES=<n> build-hip/bin/nvcv_test_cudatools_system  # device cuda_tools
 ```
 Current pass rate (gfx90a): cvcuda_test_system 0 failures (2608 pass + disabled/negative, exit 0);
-nvcv_test_cudatools_system 1116/1123 (7 residuals = order-dependent Interpolation*VarShape padding-compare
-artifact + the documented char/signed-char case; both proven non-GPU-bug, see RESOLVED/REMAINING below).
+nvcv_test_cudatools_system 1116/1123 (7 residuals, both clusters ROOT-CAUSED to non-port artifacts:
+6 InterpolationVarShapeWrap.correct_shift = a TEST-FIXTURE use-after-free on an async copy source
+(freed per-iteration dstVec, exposed by HIP's truly-async pageable hipMemcpy2DAsync; production op +
+allocator proven correct) + 1 char/signed-char type-identity dictated by the upstream HIP vector header.
+Neither is a ROCm/operator defect; see REMAINING below. No source change was needed this cycle.
 
 ## Scope decisions
 - SCOPED OUT: OpOSD, OpBndBox, OpBoxBlur (+ legacy/osd.cu, box_blur.cu, textbackend/,
@@ -153,25 +156,45 @@ byte-for-byte unchanged (every fix HIP-guarded or a build flag).
    build and CPU gold (e.g. the bicubic weight chain in InterpolationWrap GetCubicCoeffs), failing
    bit-exact compares. Pinned CMAKE_HIP_FLAGS to -ffp-contract=on (CMakeLists.txt) to match CUDA/host.
 
-## REMAINING cudatools residuals (7; characterized NON-PORT artifacts, GPU compute proven correct)
-- InterpolationVarShapeWrapTest.correct_shift (varies 5-8 per run; ORDER-DEPENDENT set): a row-stride
-  PADDING comparison artifact, NOT a GPU bug. The test compares the whole dstSize.y*dstRowStride buffer
-  including cols [width, rowStride); the InterpShift kernel (and the InterpolationVarShapeWrap utility)
-  only write/address valid pixels, so padding must be zero (an NVIDIA fresh-cudaMalloc-ism). PROVEN: (a)
-  every valid pixel matches gold bit-for-bit (injected per-pixel dst.ptr offset + value dump); (b) the
-  kernel never targets a padding offset (injected WRITE-PAD probe: zero hits for off in [width,rowStride));
-  (c) inserting one synchronous cudaMemset of the dst buffers right before the kernel makes ALL 21 cases
-  pass; (d) the failing SET changes run-to-run (deterministic compute would fail the same set) -> it is
-  recycled device-memory state in the padding. The NVCV DefaultAllocator hipMemset(0) zeroes fresh image
-  buffers (confirmed: a standalone fresh nvcv::Image reads back all-zero; a standalone replay of the
-  test's alloc+batch+zeroing pattern also reads all-zero), yet inside the full test binary these specific
-  batched-image padding bytes are non-zero before the kernel even runs and the kernel does not write them
-  -- an allocator/HIP-runtime padding interaction confined to bytes the wrap never touches. Not a
-  ROCm-correctness defect in any operator/kernel.
-- TypeTraitsMakeTypeVectorTest/3.correct_type_traits (1): the documented char-vs-signed-char divergence.
-  HIP_vector_type<char,N> members are plain `char`; the test asserts is_same_v(BaseType, signed char).
-  `char` and `signed char` are DISTINCT C++ types (same representation); the HIP report is correct FOR HIP.
-  A genuine C++ type-identity difference, not a GPU bug.
+## REMAINING cudatools residuals (7; ROOT-CAUSED to NON-PORT artifacts, GPU compute proven correct)
+Both residual clusters were ROOT-CAUSED to non-production artifacts in the 2026-05-31 (b) porter cycle.
+No production fix is warranted; no source change was needed. cvcuda_test_system stays 0 failures.
+
+- InterpolationVarShapeWrapTest.correct_shift (6-8 per run; non-deterministic SET): a TEST-FIXTURE
+  USE-AFTER-FREE on an async copy source, NOT a GPU/operator/allocator bug. ROOT CAUSE (this cycle,
+  conclusive): in TestInterpolationVarShapeWrap.cpp the dst-fill loop declares `std::vector<uint8_t>
+  dstVec(...,0)` as a PER-ITERATION LOCAL and issues `cudaMemcpy2DAsync(dstBasePtr, ..., dstVec.data(),
+  ..., stream)` -- then dstVec is DESTROYED at the end of the iteration while the async H2D copy is still
+  pending. On NVIDIA cudaMemcpy2DAsync from PAGEABLE memory is effectively synchronous (driver stages it
+  before returning), so the copy finishes before the free -> works. On ROCm hipMemcpy2DAsync from pageable
+  memory can be genuinely async, so it reads dstVec's freed/reused memory and writes garbage into the dst.
+  The kernel overwrites valid pixels but not the row-stride padding [width,rowStride), so the garbage
+  survives there and the full-strided compare against a zeroed CPU ref mismatches; the failing set varies
+  run-to-run because freed-buffer contents are nondeterministic.
+  PROOF (instrumented probes, all reverted): (a) an ALLOC-PROBE inside DefaultAllocator::doAllocCudaMem
+  read back every fresh device buffer right after its hipMemset(0): postMemsetNZ=0 ALWAYS (the production
+  zero-init IS complete -- it covers the full padded buffer, e.g. 768B for a w13 h18 Y8 image with rs=32);
+  (b) a PRE-kernel probe (after cudaStreamSynchronize) found padNZ>0 BEFORE the kernel launches (e.g.
+  case0: row0 cols 13/14/15 = 0xb0/0xd7/0x97), and POST-kernel padding == PRE-kernel padding (kernel never
+  writes padding); (c) keeping dstVec alive (push to a kept vector, NO sync change) makes ALL 21 cases pass
+  3/3 runs; (d) syncing after each async fill also makes all 21 pass 3/3 runs; (e) baseline (freed dstVec)
+  fails a varying 6-8 set. (c) isolates the variable to BUFFER LIFETIME, not stream ordering (prefill,
+  kernel, readback are all on the same stream and thus ordered regardless). => production op + allocator
+  are correct; the dirt is the test's own freed-buffer async read. A genuine test-side artifact: the test
+  relies on CUDA's pageable-async-is-synchronous behavior. Operator-correctness gate (cvcuda_test_system)
+  is green. Do NOT edit the test; this is upstream test-fixture UB exposed by HIP semantics.
+- TypeTraitsMakeTypeVectorTest/3.correct_type_traits (1): char-vs-signed-char type IDENTITY, dictated by
+  the upstream HIP vector-types header. MakeType<signed char,4> -> char4 = HIP_vector_type<char,4> (members
+  `char`); the test asserts is_same_v(signed char, BaseType<that>). The port MUST set BaseType<charN>=char
+  on HIP (a `signed char&` reference accessor will not bind to a `char` member). Assessed this cycle whether
+  CV-CUDA could close it cleanly: HIP_vector_type<signed char,4> IS a distinct, instantiable type (probe:
+  is_same vs char4 == 0, members are signed char), so MakeType could in principle map signed char ->
+  HIP_vector_type<signed char,N>. REJECTED as a per-platform hack: the canonical 8-bit-signed vector across
+  CUDA+HIP is charN; all of GetElement/MathOps/SaturateCast/make_* and the operator kernels key on charN,
+  HIP ships vector operators only for HIP_vector_type<char,N>, and a parallel signed-char family would
+  diverge the HIP type system from CUDA and break arithmetic. `char`/`signed char` are distinct C++ types
+  (identical representation, SCHAR_MIN..SCHAR_MAX). True upstream-header type-identity deferral, not a GPU
+  bug. 1122/1123 with B excluded.
 
 ## Repro scratch (agent_space/cvcuda/, gitignored)
 This cycle: pitchprobe (hip texture pitch/align = 256), sqrt_probe (gfx90a __fsqrt_rn vs (float)__dsqrt_rn
