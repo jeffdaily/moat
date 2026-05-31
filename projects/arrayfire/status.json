@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-05-31T21:41:40Z",
+  "updated_at": "2026-05-31T22:11:00Z",
   "head_sha": "2378586c5842963cf507300b87c101cc96f41b34",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "porting",
       "blocked": false,
-      "blocked_reason": "revalidate at fork 2378586 (head advanced by the gfx1100 delta-port). The two delta fixes are arch-unified and live in HIP-backend-only files (src/backend/hip/math.hpp, src/backend/hip/nvrtc_shims/cuComplex.h) plus a runtime-guarded test eps in test/cholesky_dense.cpp; the CUDA backend is byte-for-byte unchanged. The where complex ==/!= ADL fix is a genuine fix for gfx90a too (the where cfloat JIT compile was failing overload resolution on gfx90a as well), so this revalidate is expected to come back 126/132 with where now passing. Previously completed at 86fbbbe (126/132).",
+      "blocked_reason": "porter EXTENDING the completed core (was revalidate at 2378586): implementing the sparse subsystem on hipSPARSE (sparse.cu/sparse_arith.cu/sparse_blas.cu + cusparse helpers, replacing the AF_ERR_NOT_SUPPORTED stubs) plus closing the last two non-sparse residuals -- int8 gemm (int32-accumulate path, B2) and confidence_connected (FreeImage installed, AF_WITH_IMAGEIO=ON). Targeting ~132/132. Will advance head_sha and re-flow reviewer->validator->completed.",
       "validated_sha": "86fbbbe57b303a4d720e61255aab1ae4cb4049a4",
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": "2026-05-31T20:19:33Z",
-      "updated_at": "2026-05-31T21:41:40Z",
+      "updated_at": "2026-05-31T22:11:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "delta-ported",
