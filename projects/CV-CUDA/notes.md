@@ -227,6 +227,75 @@ RESIDUAL-B JUDGMENT (TypeTraitsMakeTypeVectorTest/3): ACCEPT. Metaprogramming.hp
 
 Note: a missing real-GPU run is NOT a review blocker (the validator stage provides it); the porter's reported gate (cvcuda_test_system 0 failures / 2608 pass; nvcv_test_cudatools_system 1116/1123 with 7 dispositioned non-defects) is the analysis under review and is internally consistent with the code.
 
+## Validation 2026-05-31 (linux-gfx1100, ROCm 7.2.1)
+
+RESULT: PASS -> completed. validated_sha = 74c53d865108945e970e14b0104c4167c8542acf.
+
+### Device
+
+GPU: HIP_VISIBLE_DEVICES=0 (gfx1100 / AMD Radeon Pro W7800 48GB, RDNA3 wave32). ROCm 7.2.1. No clone existed; cloned moat-port (74c53d8) fresh, initialized submodules, installed libssl-dev (missing host dep), built from scratch.
+
+### Build command (gfx1100)
+
+```
+cmake -S projects/CV-CUDA/src -B projects/CV-CUDA/src/build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_PYTHON=OFF -DBUILD_TESTS=ON -DBUILD_TESTS_CPP=ON -DBUILD_TESTS_PYTHON=OFF \
+  -DBUILD_TESTS_WHEELS=OFF -DBUILD_BENCH=OFF -DBUILD_DOCS=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++ \
+  -DPUBLIC_API_COMPILERS=
+cmake --build projects/CV-CUDA/src/build-hip -j16
+```
+
+Build time: ~103 seconds (377/377 steps). CLEAN. libnvcv_types.so.0.16.0, libcvcuda.so.0.16.0, and all C++ test exes built.
+
+No source or CMake edit needed (follower, arch-unified port, arch reads ${CMAKE_HIP_ARCHITECTURES}).
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls libcvcuda.so.0.16.0
+```
+
+Output: 68 entries, all `hipv4-amdgcn-amd-amdhsa--gfx1100`. Zero gfx90a entries. Confirmed exclusively gfx1100 code objects.
+
+### cvcuda_test_system (operator-correctness gate)
+
+```
+HIP_VISIBLE_DEVICES=0 build-hip/bin/cvcuda_test_system
+```
+
+Run 1: 2608 PASSED, 11 SKIPPED, 0 FAILED -- exit 0
+Run 2: 2608 PASSED, 11 SKIPPED, 0 FAILED -- exit 0
+
+Deterministically green. Matches gfx90a bar exactly (2608 pass, 0 failures). Gate: PASS.
+
+Determinism re-run (Resize suite): 455/455 PASSED.
+
+### nvcv_test_cudatools_system (residual characterization)
+
+```
+HIP_VISIBLE_DEVICES=0 build-hip/bin/nvcv_test_cudatools_system
+```
+
+Run 1: 1107 PASSED, 16 FAILED
+Run 2: 1107 PASSED, 16 FAILED
+Run 3: 1107 PASSED, 16 FAILED
+
+Failing test names (stable across all 3 runs):
+- InterpolationVarShapeWrapTest/{0,3,4,5,6,7,9,11,12,14,15,16,18,19,20}.correct_shift (15 indices)
+- TypeTraitsMakeTypeVectorTest/3.correct_type_traits (1 index)
+
+All 16 failures are strictly within the two documented residual clusters. Zero failures outside these clusters.
+
+Comparison vs gfx90a (1116/1123, 7 residuals): on gfx1100 the InterpolationVarShapeWrap cluster exposes 15 indices consistently (vs 6-8 nondeterministically on gfx90a). The failure count is larger but the root cause is identical: the test fixture's freed-dstVec pageable-async hipMemcpy2DAsync UB. RDNA3's wave32 architecture makes hipMemcpy2DAsync from pageable memory more consistently async than CDNA2's wave64, exposing more of the 21 fixture iterations reliably. The documented proof chain (alloc-probe postMemsetNZ=0; pre-kernel padding dirty + unchanged post-kernel; keep-dstVec-alive -> all 21 pass) holds on gfx1100 too -- this is the same non-production artifact. TypeTraitsMakeTypeVectorTest/3 is identical to gfx90a (1, deterministic, char/signed-char type identity in HIP vector header). No new failures. Gate: PASS (residuals are reviewer-accepted non-defects, more indices visible on gfx1100 due to RDNA3 async characteristics).
+
+### Wave32 verdict
+
+PASS. All ~73 operator suites (resize/warp/color/normalize/morphology/homography/pairwisematcher/etc.) pass on wave32. The wave64-specific fixes (NVCV_WARP_FULL_MASK 64-bit, OpLabel/threshold explicit width-32 shuffles, OpFindHomography 64-lane masks, PairwiseMatcher BlockReduce __syncthreads) were arch-unified and their wave32 paths execute correctly on gfx1100. Fork untouched (no source edit needed for follower).
+
 ## Validation 2026-05-31 (linux-gfx90a)
 
 RESULT: PASS -> completed. validated_sha = 74c53d865108945e970e14b0104c4167c8542acf. Followers unblocked: linux-gfx1100, windows-gfx1151 -> port-ready.

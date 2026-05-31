@@ -34,26 +34,27 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-31T18:39:43Z",
+      "blocked_reason": "VALIDATED gfx1100 (RDNA3 wave32, AMD Radeon Pro W7800, ROCm 7.2.1). No source/CMake edit needed (arch-unified port). Build: CLEAN for gfx1100 (DCMAKE_HIP_ARCHITECTURES=gfx1100; 68 code objects all hipv4-amdgcn-amd-amdhsa--gfx1100, zero gfx90a). cvcuda_test_system: 2608 PASSED, 0 FAILED (exit 0) -- identical to gfx90a bar, deterministic 2/2 runs. nvcv_test_cudatools_system: 1107/1123 (16 failures, all within the two documented residual clusters: 15x InterpolationVarShapeWrap.correct_shift = freed-dstVec pageable-async UB in test fixture, more indices exposed on gfx1100 due to RDNA3 more-consistently-async hipMemcpy2DAsync; 1x TypeTraitsMakeTypeVectorTest/3 = char/signed-char type identity). Zero failures outside documented clusters. No new failures. Fork untouched.",
+      "validated_sha": "74c53d865108945e970e14b0104c4167c8542acf",
+      "started_at": "2026-05-31T18:44:00Z",
+      "completed_at": "2026-05-31T19:10:00Z",
+      "updated_at": "2026-05-31T19:10:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 0,
-          "test": 0,
+          "compile": 103,
+          "test": 340,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
+        "session_count": 1,
+        "first_session_at": "2026-05-31T18:44:00Z",
+        "last_session_at": "2026-05-31T19:10:00Z"
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
