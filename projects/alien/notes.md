@@ -59,13 +59,14 @@ Box has 4 GCDs (0-3); always check `rocm-smi` and pin a free one with `HIP_VISIB
 - CLI smoke (graph path, headless): generate a sim with the throwaway generator in `agent_space/alien_gen/gen_sim.cpp` (energy particles + cells-as-creatures), then `HIP_VISIBLE_DEVICES=<n> build/cli -i smoke.sim -o out.sim -t 1000`. PASSED: 1000 steps, 466 TPS, fault-free, total energy conserved at 82500 across the run, cells 25->10 (plausible decay). NOTE: free `ObjectDesc()` cells with no creature trip `unordered_map::at` in DescConverter (creatureIdByTOIndex) -- a sim-input requirement, not a port bug; use `addCreature(...)`.
 
 ### EngineTests tally (gfx90a, ROCm 7.2.1)
-Validated on a single MI250X GCD (HIP_VISIBLE_DEVICES pinned, serial), both the direct-launch (-d) and graph-capture paths:
-- FULL -d run (entire suite minus GeometryTests + NeuronPerformanceTests, INCLUDING the 3 extreme long-runners): 2978 ran, 2973 PASSED, 3 SKIPPED (gtest GTEST_SKIP, unrelated), 2 FAILED (the two analyzed below). ~28.5 min wall (-d adds a cudaDeviceSynchronize after every kernel).
-- Fast broad graph-path run (same filter minus the 3 extreme long-runners, for turnaround): 2975 ran, 2970 PASSED, 3 SKIPPED, 2 FAILED (identical 2). A broad -d run agrees.
-- The 3 extreme long-runners pass: the two BalanceTests.longRunning_* (20000 timesteps each) and ConstructorTests.regressionTestMassiveReplicationsWithSeeds (10000 steps, external energy 1e7 -> exploding self-replicator population, drops to ~22 TPS as it grows; no assertions, passes on fault-free completion). They are included in the FULL -d run above (which is why it took ~28 min).
+Validated on a single MI250X GCD (HIP_VISIBLE_DEVICES pinned, serial). Both the direct-launch (-d) and graph-capture paths were run over the ENTIRE suite (minus GeometryTests + NeuronPerformanceTests) and match exactly:
+- FULL -d run (incl. the 3 extreme long-runners): 2978 ran, 2973 PASSED, 3 SKIPPED (gtest GTEST_SKIP, unrelated), 2 FAILED (the two analyzed below). ~28.5 min wall (-d adds a cudaDeviceSynchronize after every kernel).
+- FULL graph-path run (incl. the 3 extreme long-runners): 2978 ran, 2973 PASSED, 3 SKIPPED, 2 FAILED -- byte-for-byte the same tally and the same 2 failing tests. ~26.8 min.
+- (Broad runs that skip the 3 long-runners for quick turnaround agree: 2975 ran, 2970 PASSED, 2 FAILED, in both -d and graph.)
+- The 3 extreme long-runners pass: the two BalanceTests.longRunning_* (20000 timesteps each) and ConstructorTests.regressionTestMassiveReplicationsWithSeeds (10000 steps, external energy 1e7 -> exploding self-replicator population, drops to ~22 TPS as it grows; no assertions, passes on fault-free completion).
 - CLI smoke (graph path, headless): 1000 timesteps, ~466 TPS, fault-free, total energy conserved.
 
-So the result is 2973/2975 pass on the FULL -d suite and 2970/2972 on the broad graph suite -- the same 2 documented non-bugs in both paths, all heavy tests pass, and the cli smoke completes.
+So both paths pass the full 2978-test suite identically (2973 passed, 3 skipped, the same 2 documented non-bugs), all heavy tests pass, and the cli smoke completes.
 
 ### Two known test failures (NOT port bugs; both fit the chaotic-sim determinism bar)
 1. `CommunicatorTests.sender_signalPriority_lowerNumTimesSentWins` -- FAILS deterministically on gfx90a (receiver gets numTimesSent=4 / channel=+1 instead of the expected 2 / -1) in BOTH -d and graph paths. Root cause: `CommunicatorProcessor::tryTransmitSignal` does NOT compare priorities -- it locks the receiver and unconditionally overwrites (last-writer-wins). When two senders transmit in one timestep the winner depends purely on block execution order, which differs AMD-vs-NVIDIA. Unspecified race in the upstream algorithm; the test encodes NVIDIA's incidental ordering. Kernels are correct (no fault, invariants hold).
