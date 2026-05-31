@@ -808,3 +808,79 @@ build-hip.sh unchanged EXCEPT reconfigure with -DAF_WITH_IMAGEIO=ON:
   cmake -S . -B build-hip -DAF_WITH_IMAGEIO=ON   # in-place, picks up FreeImage
   cmake --build build-hip -j16                   # afcuda + test binaries
 Validate on gfx90a GCD 2: HIP_VISIBLE_DEVICES=2 ctest -R '_cuda$' -j1.
+
+## Review 2026-05-31 (reviewer, /pr-review) -- sparse + int8 + FreeImage delta -- VERDICT: APPROVE
+
+Scoped to the delta that adds the sparse subsystem (hipSPARSE), int8 gemm, and
+FreeImage. Fork HEAD 3782728. NOTE: 86fbbbe is NOT an ancestor (single squashed
+curated commit), so `git diff 86fbbbe..3782728` is a tree-to-tree diff that also
+folds in the prior gfx1100 where-fix (math.hpp + nvrtc_shims/cuComplex.h global
+complex ==/!=). That part was reviewed/validated as the gfx1100 delta; sanity-
+checked here and correct (RTC-path-only, ADL-reachable, math.hpp guards its
+arrayfire::cuda ==/!= under #ifndef __CUDACC_RTC__ so the two do not tie).
+
+The sparse port is a faithful near-1:1 translation of src/backend/cuda
+(sparse.cu / sparse_arith.cu / sparse_blas.cu / cusparse.{hpp,cpp} /
+cusparse_descriptor_helpers.hpp), verified function-by-function. The four
+fault-class items the task called out are all CORRECT:
+- void*-aliasing: TaggedHandle<Raw,Tag> (hip_unique_handle.hpp) is a faithful
+  reimpl of common::unique_handle with a per-logical-handle tag, so two void*
+  descriptors (DnVec/DnMat/MatDescr all `typedef void*`; only SpMatDescr is a
+  distinct struct ptr) get two distinct C++ types and cannot collide at a call
+  site. create()/reset()/move/operator-const-Raw& semantics match upstream; the
+  move-assignment is actually more correct than upstream's (resets + returns).
+- SpMV/SpMM compute type uses getType<T>() (hipDataType), NOT getComputeType<T>()
+  (hipblasComputeType_t). Correct; matches the documented delta.
+- int8 gemm: int8 x int8 -> int32 (HIP_R_8I in, HIP_R_32I out, COMPUTE_32I) then
+  copyArray<int,float> casts to the f32 output (verified copyArray two-type does
+  an element-wise static_cast kernel, and copyArray<int,float> is explicitly
+  instantiated in copy.cpp). out_type for s8 is f32 (api/c/blas.cpp:182,222).
+  if-constexpr guards the int32 cast to the schar instantiation only.
+- JIT fixes: arith_op<T,op>::operator() -> __device__; every sparse_arith.hpp
+  launcher now passes DefineValue(TX/TY/THREADS). Consistent with the base port.
+
+Commit hygiene clean: title 67 chars [ROCm], no noreply trailer, ASCII (no
+em-dash), mentions Claude, Test Plan with literal commands. master mirror at
+492718b (upstream). No FreeImage source changed (build-config only). No
+AMD-internal account refs.
+
+### Findings (all MINOR; none blocks -- port is behavior-preserving and validated)
+
+1. COO descriptor row/col argument order DIVERGES from the CUDA backend.
+   src/backend/hip/cusparse.hpp:61 passes hipsparseCreateCoo(..., getRowIdx,
+   getColIdx, ...) (row in the cooRowInd slot), whereas src/backend/cuda/
+   cusparse.hpp:53 passes cusparseCreateCoo(..., getColIdx, getRowIdx, ...) (col
+   in the cooRowInd slot). cuSPARSE and hipSPARSE CreateCoo have identical
+   parameter order (cooRowInd then cooColInd), so this is a real semantic change,
+   not a mechanical port. BENIGN because the COO createSpMatDescr branch is
+   effectively dead on both backends: sparse matmul asserts CSR only
+   (src/api/c/blas.cpp:83), and sparseConvertStorageToDense<COO> is
+   template-specialized to the coo2dense kernel (sparse.cu:154,293), so
+   cusparseDescriptor() is only ever called with CSR. The HIP order is arguably
+   the more natural one. ACTION (optional): either match the CUDA backend's
+   (getColIdx,getRowIdx) for exact parity, or add a one-line comment that the COO
+   branch is unreached and the order is the natural row/col mapping.
+
+2. int8 alpha/beta truncated to int (blas.cu:232-233: static_cast<int>(*alpha/
+   *beta)) for the COMPUTE_32I path, where the CUDA backend keeps float alpha/beta
+   with COMPUTE_32F. Required by the int32 contract and exact for the af_matmul
+   case (alpha=1,beta=0) and the schar test; only diverges if a user calls
+   af_gemm with a FRACTIONAL alpha/beta on an int8 input (an ill-defined case).
+   Documented in UPSTREAM_FINDINGS B2. ACTION (optional): a one-line comment that
+   fractional scalars are not representable on the int8->int32 path.
+
+3. Stale comment OUTSIDE the delta: src/backend/hip/platform.cpp:32-35 still says
+   sparse is "a documented deferral on HIP ... every sparse op throws
+   AF_ERR_NOT_SUPPORTED before the handle is used." That is now false (sparse is
+   implemented; cusparseManager creates a real hipsparseCreate handle). Not in
+   this diff, but the porter should refresh it on the next amend.
+
+4. csrgeam2 wrappers (sparse_arith.cu) collapse the CUDA backend's three separate
+   MatDescr args (ldesc/rdesc/odesc) into a single `desc` for the bufferSizeExt +
+   typed geam2 calls (the Xcsrgeam2Nnz call still passes all three). Behavior-
+   identical: all three descriptors are default GENERAL/ZERO and csrgeam2 only
+   reads MatType/IndexBase. Noted for completeness; no action needed.
+
+Residual blas/sparse dispositions from the base review are resolved by this
+delta (sparse implemented, int8 closed, FreeImage on). GPU re-validation is the
+validator's next step; a missing real-GPU run at review time is not a blocker.
