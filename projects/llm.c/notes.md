@@ -117,7 +117,16 @@ Run on an idle GCD, e.g. `HIP_VISIBLE_DEVICES=2`.
 9. layernorm_backward_kernel10 temp-shared reservation. The launcher reserved
    `2*(block_size - 32)*f128::size` but the kernel bases the dbias/dweight temp
    regions at `WARP_SIZE*f128::size` offsets. Changed the literal 32 to WARP_SIZE
-   so host and device agree (on wave64 the kernel's skipped warp is 64 lanes).
+   to match the host reservation to the kernel's WARP_SIZE-based footprint
+   (`2*rounded_C + 2*(block_size - WARP_SIZE)*f128::size` floats). This is
+   over-allocation correctness/consistency hygiene, NOT a corruption fix: a
+   literal 32 on wave64 reserves `2*(64-32)*f128::size = 64*f128::size` floats
+   MORE than the device uses -- a harmless over-allocation (worst case a slightly
+   larger dynamic-smem request), never aliasing or dbias corruption. The kernel's
+   tmp base offsets are driven by the device WARP_SIZE (already 64), independent
+   of the launcher literal. ln1b/lnfb is fully explained by the documented BF16
+   determinism shift (the wte_backward stochastic-rounding seed at encoder.cuh:114
+   contains WARP_SIZE), not by this reservation.
 10. Streaming load/store. HIP has no `__ldcs`/`__stcs`/`__stcg`; the compat header
     provides generic templated versions (plain load/store -- the cache hint is
     advisory). Covers int4 (Packed128), float, bf16, half, unsigned short.
@@ -166,3 +175,34 @@ Problems (each cites the fork branch):
 4. Out-of-scope target breaks under USE_HIP: Makefile:327 (profile_gpt2cu) passes nvcc-only -lineinfo to $(NVCC)=hipcc; clang rejects it. Not in the documented/validated HIP target set (non-blocking), but `make USE_HIP=1 profile_gpt2cu` errors. Either guard -lineinfo out of the HIP branch or note profile_gpt2cu is unsupported on HIP.
 
 Verified correct (no action): NVIDIA path unchanged (WARP_SIZE/MAX_1024_THREADS_BLOCKS fall to original literals under #else; cudaFuncSetAttribute((const void*)k,...) selects an equivalent public CUDA overload; HIP branch fully USE_HIP-gated; -ffast-math removal scoped to the HIP Makefile branch only). All 6 shfl mask sites use WARP_REDUCE_MASK (64-bit on HIP); no missed shuffle/ballot/activemask sites in the whole .cu/.cuh tree. warpReduce offset WARP_SIZE/2 and blockReduce kMaxWarpsPerBlock=1024/32 are correct upper bounds for both wave sizes. LLMC_WARP_SIZE reaches both hipcc passes via a single compile invocation per .cu (host/device agree -- recurring trap avoided). kernel4 (OC/warp_width stride) and kernel9 (block_dim.y=WARP_SIZE/4 vs assert(blockDim.y==bdy)) match the kernel source. hipBLASLt SCALE_TYPE correctly !USE_HIP-guarded. cg::reduce shim over tile<32> correct on both wave sizes (g.size()=32; block_acc[32] zero-initialized); test_gpt2fp32cu passing confirms it. BF16 ln1b/lnfb is a genuine determinism shift: wte_backward seeds stochastic rounding with seed + bucket*WARP_SIZE + threadIdx.x + k (encoder.cuh:114), and FP32-agrees-1e-4 + bit-identical-run-to-run + invariant-under-`-b 32` rules out an algorithmic defect. Commit hygiene clean: [ROCm] title 49 chars, Claude-disclosed, Test Plan present, no noreply/ghstack/co-authored, ASCII-only, all jeffdaily.
+
+### Curation fixes resolved 2026-05-31 (porter, moat-port @ 15f5e1a)
+
+All four review findings were curation-only (no kernel behavior, mask, launch
+dim, or WARP_SIZE-substitution change); the reviewer had already cleared GPU
+correctness and the byte-for-byte NVIDIA build, so no re-review is needed for
+these comment/notes/commit-body/Makefile-scope edits. State moved
+changes-requested -> review-passed; cleared for GPU validation.
+
+1. (must-fix) Rewrote the fix-#9 rationale in all three places (the comment at
+   llmc/layernorm.cuh, fix #9 above, and the curated [ROCm] commit body). The
+   literal 32 on wave64 is a harmless OVER-allocation (`2*(64-32)*f128::size =
+   64*f128::size` floats more than the device uses), never corruption/aliasing;
+   the WARP_SIZE substitution is host/device-consistency hygiene. Removed the
+   false "corrupts dbias/ln1b/lnfb on wave64" claim -- ln1b/lnfb is fully the
+   documented BF16 determinism shift (wte_backward seed at encoder.cuh:114 carries
+   WARP_SIZE). The WARP_SIZE substitution itself is KEPT.
+2. llmc/hip_shims/cuda_profiler_api.h comment now says cudaProfilerStart/Stop map
+   to hipSuccess no-ops (was: hipProfilerStart/Stop).
+3. llmc/cuda_to_hip.h streaming-shim comment now states HIP lacks __stcs/__stcg
+   and provides __ldcs only for half/half2; the non-template half/half2 overloads
+   win and the template covers the rest.
+4. (non-blocking) Makefile profile_gpt2cu: -lineinfo moved behind a LINEINFO var
+   (empty under USE_HIP, `-lineinfo` otherwise) so `make USE_HIP=1 profile_gpt2cu`
+   no longer feeds the nvcc-only flag to hipcc; the NVIDIA recipe is unchanged.
+
+Compile-only re-check (no GPU; reviewer already cleared correctness): the three
+validated targets rebuild clean under USE_HIP=1 AMDGPU_TARGETS=gfx90a
+NO_MULTI_GPU=1 NO_USE_MPI=1 (`test_gpt2fp32cu test_gpt2cu train_gpt2cu`, all
+three binaries produced, hipcc exit 0; only the pre-existing benign
+cudaGetLastError macro-redefinition warning).
