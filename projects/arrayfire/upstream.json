@@ -2,7 +2,7 @@
   "full_name": "arrayfire/arrayfire",
   "upstream_url": "https://github.com/arrayfire/arrayfire",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/arrayfire",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "492718b5a256d4a9d5198fdce89d8fd21772bfda"
 }
