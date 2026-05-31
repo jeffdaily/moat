@@ -65,3 +65,16 @@ calls those raw Fortran symbols, so `-lopenblas` alone satisfies CBLAS + LAPACK 
 - src/cudafeat/feature-online-batched-ivector-cuda.cc: that file locally redefines CUDA_R_32F to HIPBLAS_R_32F
   and passed CUDA_R_32F in the GemmStridedBatchedEx COMPUTE-type slot (v2 wants hipblasComputeType_t there).
   Added a HIP-only KALDI_GEMMEX_COMPUTE_32F = HIPBLAS_COMPUTE_32F (else CUDA_R_32F on NVIDIA) for that one slot.
+- src/hip/hipify.h __syncwarp ambiguity: ROCm 7.2.1 HIP now ships a native wave-correct __syncwarp
+  (amd_detail/amd_warp_sync_functions.h: fence + __builtin_amdgcn_wave_barrier, no-arg + 64-bit-mask template),
+  so hipify.h's own `__syncwarp(unsigned mask=0xffffffff)` makes a bare __syncwarp() call ambiguous. Guarded the
+  shim with `#include <hip/hip_version.h>` + `#if HIP_VERSION < 60200000` (native version arrived in ROCm 6.2);
+  on 7.2.1 HIP's builtin is used (stronger semantics than the old s_nop, and correct on wave32 AND wave64).
+- rocPRIM arch-detection vs `#define __CUDA_ARCH__ 800`: on ROCm 7.2.1 rocprim/config.hpp keys ROCPRIM_TARGET_CDNA2
+  on the compiler's __gfx90a__ macro. cu-kernels.cu / feature-online-cmvn-cuda.cu defined __CUDA_ARCH__ 800 BEFORE
+  including <hipcub/hipcub.hpp>, which suppresses __gfx90a__ in the device pass -> rocprim falls through to its
+  "support for 128-bit atomics not implemented for current architecture" #error (atomic.hpp). Fix: move the
+  `#define __CUDA_ARCH__ 800` to AFTER the hipcub/hipify includes in those two files (verified empirically: a
+  3-line hipcub TU compiles with __CUDA_ARCH__ defined-after, errors with defined-before). kaldi's own
+  `#if __CUDA_ARCH__ >= 600` native-fp64-atomicAdd branches still fire. chain-kernels.cu pulls no hipcub so its
+  define is left in place. ROCm 5.x rocPRIM had no such arch gate, so this only bites modern ROCm.
