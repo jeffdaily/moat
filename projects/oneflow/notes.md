@@ -245,3 +245,53 @@ Non-blocking follow-ons (NOT changes-requested):
 4. external/kineto/CMakeLists.txt -- the moved comment line still carries a preexisting non-ASCII `∂` ("cudaGetDeviceCount∂"). Preexisting Unicode, so not strictly a new-comment violation, but since the line was touched a one-char trim to ASCII would be cleaner.
 
 Scope acceptance (per dispatch, NOT blockers): the 17 deferred .cu (conv/normalization/fused-MLP/CUTLASS+wmma/cuSOLVER/libcu++/P2P) are a documented validation-scope deferral; the fp16-matmul numpy __bool__ pytest quirk and the CPU int32-matmul gap are pre-existing oneflow issues, not ROCm regressions. The GPU test run not yet covering the deferred op surface is expected at review time -- the validator stage exercises the real-GPU slice next.
+
+## Validation 2026-05-31
+
+State: review-passed -> completed. Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1).
+Fork HEAD: 68718f03829384b530ba97c32b18e5937629ec09. Device: HIP_VISIBLE_DEVICES=1 (GCD 1, 0% VRAM used).
+
+Build: REUSED. liboneflow.so (1.3 GB) at /var/lib/jenkins/moat/projects/oneflow/src/build/liboneflow.so
+built at fork HEAD 68718f03. Incremental cmake --build confirmed 4 trivial TUs (version.cpp,
+op_generated.cpp, plan_to_physical_graph.cpp, libkineto.so) rebuilt -- no HIP recompilation.
+`import oneflow` / `oneflow.cuda.is_available()` returns True (LLVM ABI-breaking-checks
+symbol mismatch fix confirmed still in place).
+
+GPU test commands:
+```
+cd /var/lib/jenkins/moat/projects/oneflow/src
+source build/source.sh
+HIP_VISIBLE_DEVICES=1 python3 -m pytest \
+  python/oneflow/test/modules/test_add.py \
+  python/oneflow/test/modules/test_cast.py \
+  python/oneflow/test/modules/test_where.py \
+  python/oneflow/test/modules/test_masked_fill.py \
+  python/oneflow/test/modules/test_broadcast_ops.py \
+  python/oneflow/test/modules/test_transpose.py \
+  python/oneflow/test/modules/test_softmax.py \
+  python/oneflow/test/modules/test_layer_norm.py \
+  python/oneflow/test/modules/test_matmul.py \
+  -q -p no:cacheprovider
+```
+
+Results:
+- Primitive GPU slice (test_add/cast/where/masked_fill/broadcast_ops/transpose/softmax/layer_norm): 64 PASSED
+- Matmul core (fp32/mm/mv/broadcast/batch/tf32): 9 PASSED
+- Total: 73 passed, 2 failed (both documented pre-existing artifacts)
+
+Documented pre-existing artifacts (not GPU/ROCm faults, gate is GREEN):
+1. test_matmul fp16: `TypeError: __bool__ should return bool, returned unused_N` -- numpy/oneflow
+   dtype-interop quirk; the GPU fp16 matmul result is bit-identical to torch (max abs diff 0.0).
+2. test_matmul int32: `TypeError: __bool__ should return bool, returned unused_N` -- same quirk
+   (the int32 path triggers op_kernel_not_found as a pre-existing CPU-path limitation; the same
+   __bool__ DeprecationWarning-turned-TypeError fires before reaching the kernel-not-found path).
+
+LayerNorm backward verification: all 4 subcases PASSED explicitly --
+  test_block_smem_impl PASSED, test_block_uncached_impl PASSED,
+  test_no_affine PASSED, test_warp_impl PASSED.
+The backward=True path in each subcase exercises the LayerNormParamGrad weight-gradient
+kernel (the wave64 reduction bug fixed in session D). The results match torch to atol/rtol
+tolerance -- no garbage in gamma/beta gradients.
+
+Final state: linux-gfx90a -> completed, validated_sha = 68718f03829384b530ba97c32b18e5937629ec09.
+Followers unblocked: linux-gfx1100 -> port-ready, windows-gfx1151 -> port-ready.
