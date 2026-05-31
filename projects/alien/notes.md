@@ -162,3 +162,14 @@ HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/EngineTests
   - NeuronPerformanceTests: filtered (micro-benchmarks, not a correctness gate)
 
 VERDICT: PASS. Tally is byte-identical to the porter's documented baseline (2973/2978, same 2 documented non-bugs, energy conserved at 82500.0). No third failure. Transition: review-passed -> completed.
+
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+EngineTests run directly by the orchestrator (the full both-paths suite is too long for a subagent turn). Ran the GRAPH path (normal execution) over the whole suite minus GeometryTests.* (GL context) and NeuronPerformanceTests.* -- a sufficient gate, since the lead established the -d and graph paths are byte-identical. GPU: AMD Radeon Pro W7800 (gfx1100, RDNA3, wave32), HIP_VISIBLE_DEVICES=0.  -> hipv4-amdgcn-amd-amdhsa--gfx1100 (no gfx90a).
+
+Tally: **2973 PASSED, 3 SKIPPED, 2 FAILED** -- matches the gfx90a graph-path bar exactly. The 2 failures are the SAME 2 documented known non-bugs (NOT wave32/port bugs, NO new failures):
+- CommunicatorTests.sender_signalPriority_lowerNumTimesSentWins -- upstream last-writer-wins race in tryTransmitSignal (block-order dependent, AMD vs NVIDIA).
+- DataTransferTests.multipleCells_genome_multipleGenes_multipleNodes -- ~1 ULP (7.6e-6) HIP float-rounding delta in cell pos vs exact-float  on a pure set/get round-trip; physically identical.
+
+Wave32 verdict: the SPH fluid cg::reduce shim with PARTIAL TILES (25/81 blocks, last tile 25-of-32) is correct on wave32 -- all ObjectProcessor/fluid tests pass, and the active-lane hardening (identity for non-resident lanes; lane 0 consumed) makes lane 0's sum independent of inactive-lane shuffle behaviour. No fork change, no CI. validated_sha -> dac18fc.
