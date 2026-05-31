@@ -15,3 +15,12 @@
 {"kind":"phase","ts":"2026-05-31T00:28:06Z","phase":"test","seconds":1.517,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100/tests/STATIC_MAP_TEST --rng-seed 12345"}
 {"kind":"phase","ts":"2026-05-31T00:28:10Z","phase":"test","seconds":3.669,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100/tests/STATIC_MULTISET_TEST --rng-seed 12345"}
 {"kind":"phase","ts":"2026-05-31T00:28:16Z","phase":"test","seconds":13.089,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100/tests/STATIC_SET_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:20:07Z","phase":"compile","seconds":51.156,"exit":1,"cmd":"cmake --build projects/cuCollections/build-hip --target STATIC_MAP_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T06:26:53Z","phase":"compile","seconds":70.124,"exit":0,"cmd":"cmake --build projects/cuCollections/build-hip --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T06:27:16Z","phase":"test","seconds":1.137,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/STATIC_MAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:36Z","phase":"test","seconds":0.863,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/DYNAMIC_MAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:52Z","phase":"test","seconds":9.774,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/STATIC_SET_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:58Z","phase":"test","seconds":5.488,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/STATIC_MULTISET_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:58Z","phase":"test","seconds":0.528,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/STATIC_MULTIMAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:59Z","phase":"test","seconds":0.195,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/UTILITY_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-05-31T06:27:59Z","phase":"test","seconds":0.188,"exit":0,"cmd":"projects/cuCollections/build-hip/tests/ROARING_BITMAP_TEST --rng-seed 12345"}

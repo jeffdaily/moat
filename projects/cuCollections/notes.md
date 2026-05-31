@@ -159,28 +159,73 @@ headers + tests use (all 1:1 except the rmm-style enum-spelling deltas:
 atomicAdd` (HIP has no `_block` suffix) and the two wave64 CG fixups above.
 Forwarding shims `cuda_runtime_api.h` etc. are present for completeness.
 
+## rocPRIM DeviceSelect over cuco::pair (retrieve_all-over-pairs): FIXED with a re-tie adaptor
+
+`static_map`/`dynamic_map` `retrieve_all` compacts paired (key+value) slots via
+`cub::DeviceSelect::If`: the input iterator's `value_type` is a `cuco::pair` (a
+`cuda::std::tuple<Key, Value>`, produced by `open_addressing_ns::get_slot`), and
+the output is a thrust `zip_iterator` over the caller's key + value buffers.
+hipCUB forwards `DeviceSelect::If` to rocPRIM's `DevicePartition`, which stages
+the selected values in a `rocprim::detail::raw_storage<ValueType>` and then
+scatter-assigns them to the output iterator's reference. rocPRIM is built on
+thrust's tuple family: the zip iterator's reference is a
+`thrust::tuple_of_iterator_references`, whose `operator=` accepts a
+`thrust::tuple` / `thrust::pair` / `thrust::reference` but NOT a
+`cuda::std::tuple` (`device_partition.hpp:584` `get<0>(output)[i] =
+scatter_storage[i]` -> "no viable operator=", and `partition_scatter` overload
+resolution fails on a `cuda::std::tuple` `ValueType`). CCCL's cub/thrust
+interoperate with `cuda::std`; rocThrust does not. `static_set` is unaffected
+(its slot is a scalar key).
+
+**Fix (HIP-only, NVIDIA path byte-identical):** a reusable re-tie adaptor in
+`include/cuco/detail/hip_device_select.cuh`
+(`cuco::detail::hip::device_select_if`), the DeviceSelect analogue of the cudf
+radix-sort decomposer adaptor. When the input value is a `cuda::std::tuple`, it
+wraps the input iterator in a `thrust::transform_iterator` that re-ties the
+tuple's SAME element values into a `thrust::tuple` (rocPRIM's native staged
+type), and wraps the predicate to re-tie back to `cuda::std::tuple` before
+calling cuco's `slot_is_filled` (whose `is_cuda_std_pair_like` branch reads
+`cuda::std::get<0>`); rocPRIM then stages a `thrust::tuple` and its
+scatter-assign into the thrust zip output resolves through the existing
+`tuple_of_iterator_references::operator=(const thrust::tuple&)`. The scalar
+(static_set) path forwards verbatim. Wired in at the two `retrieve_all`
+`DeviceSelect::If` calls under `#if defined(USE_HIP)`; the `#else` branch is the
+upstream code unchanged, and the shim header is included only under `USE_HIP`,
+so the NVIDIA build is byte-for-byte unaffected. The header knows only
+`cuda::std::tuple` <-> `thrust::tuple` (not cuco), so it lifts verbatim into any
+CCCL-native ROCm port that compacts a `cuda::std::tuple` through
+`cub::DeviceSelect`/`DevicePartition` (raft, cudf).
+
+Un-deferred and GPU-validated on gfx90a (counts below): static_map
+contains/duplicate_keys/insert_or_assign/insert_or_apply/retrieve_if and
+dynamic_map retrieve_all/multiplicity. One test-only edit rode along:
+`retrieve_if_test.cu` built its insert input as a `thrust::make_zip_iterator`
+(reference is a `thrust::tuple`, which cuco's insert reads `.first` from);
+switched to a `cuco::pair`-producing `cuda::make_transform_iterator` (matches
+`find_test.cu`; NVIDIA-safe). This is the documented thrust-zip-insert test
+family, NOT the DeviceSelect gap.
+
 ## Library-level walls (NOT cuco-port defects; documented, scoped out of the validated subset)
 
-1. **rocPRIM `DeviceSelect`/`DeviceTransform`/partition over `cuco::pair`**:
-   `static_map`/`dynamic_map` `retrieve_all` compacts paired (key+value) slots
-   via `cub::DeviceSelect::If` over a `cuco::pair` (a `cuda::std::tuple`).
-   rocPRIM's `partition_scatter` cannot assign `cuda::std::tuple` through its zip
-   output (`no viable operator=` / `no type named value_type in
-   iterator_traits<cuda::std::tuple<...>>`). `static_set` is unaffected (scalar
-   slot -> retrieve_all works). Blocks the map TUs that call `retrieve_all`
-   (contains_test, duplicate_keys, insert_or_assign, insert_or_apply,
-   retrieve_if, dynamic_map retrieve_all/multiplicity) and hyperloglog
-   (DeviceTransform over tuple iterators).
-2. **>8-byte atomic CAS**: `static_map::insert_and_find` for a >8B non-packable
+1. **>8-byte atomic CAS**: `static_map::insert_and_find` for a >8B non-packable
    slot spin-waits on the payload (needs ITS); cuco `static_assert`s it out on
    pre-Volta and CDNA2 has no ITS, so the assert correctly fires. Likewise a
    16-byte composite key (`key_pair<int64>` in static_multimap
    heterogeneous_lookup) lowers to LLVM "unsupported cmpxchg" on gfx90a (no
    128-bit atomic CAS; that is sm_90+).
-3. **libhipcxx `<nv/target>` `NV_DISPATCH_TARGET`**: the bloom_filter
+2. **libhipcxx `<nv/target>` `NV_DISPATCH_TARGET`**: the bloom_filter
    `default_filter_policy_impl` host-side input-validation block inside
    `NV_DISPATCH_TARGET(NV_IS_HOST, (...))` mis-parses under libhipcxx's nv/target
    port (`type name does not allow constexpr specifier`). Blocks BLOOM_FILTER.
+3. **hyperloglog `#ifndef __CUDA_ARCH__` throw + `cuda::stream_ref`**: HLL is
+   NOT blocked by DeviceSelect (it does not compact tuples). Its blocker is the
+   `__CUDA_ARCH__`-undefined-on-HIP family: `hyperloglog_impl.cuh` guards its
+   host-side `CUCO_EXPECTS` (which can `throw`) with `#ifndef __CUDA_ARCH__`, so
+   on HIP the `throw` lands in a `__host__ __device__` ctor and clang rejects it
+   ("cannot use 'throw' in __host__ __device__ function"); plus a
+   `cuda::stream_ref` vs CG `thread_rank` mismatch. A separate host/device-guard
+   port (extend to `__HIP_DEVICE_COMPILE__`), out of scope for the retrieve_all
+   adaptor. HLL was never in the validated suite.
 
 ## Test-harness fix (Catch2 + clang, not a cuco issue)
 
@@ -193,8 +238,11 @@ fail). A handful of test-only edits were also applied for rocThrust/clang
 strictness (portable, NVIDIA-safe): `thrust::get` instead of `cuda::std::get` on
 zip-iterator derefs, variadic `thrust::make_zip_iterator(a,b)` instead of
 `make_zip_iterator(cuda::std::tuple{a,b})`, `cuco::pair<...>(a,b)` paren-init
-instead of brace-init (clang narrowing), and `.template retrieve_if<N>` on
-dependent refs.
+instead of brace-init (clang narrowing), `.template retrieve_if<N>` on dependent
+refs, and building map insert input as a `cuco::pair`-producing
+`cuda::make_transform_iterator` rather than a `thrust::make_zip_iterator` (whose
+`thrust::tuple` reference lacks the `.first` cuco's insert reads --
+`retrieve_if_test.cu`).
 
 ## Validation (gfx90a / MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=2)
 
@@ -212,21 +260,23 @@ structures):
 | test exe              | cases | assertions | result |
 |-----------------------|-------|------------|--------|
 | STATIC_SET_TEST       | 97    | 887        | PASS (FULL incl int8/int16 -- was 86/97 before the sub-word shim) |
-| STATIC_MAP_TEST       | 82    | 526        | PASS (FULL incl int8/int16 -- was 72 core before the sub-word shim) |
+| STATIC_MAP_TEST       | 126   | 818        | PASS (FULL: + retrieve_all-over-pairs TUs contains/duplicate_keys/insert_or_assign/insert_or_apply/retrieve_if via the DeviceSelect re-tie adaptor -- was 82/526) |
 | STATIC_MULTISET_TEST  | 70    | 582        | PASS (full) |
 | STATIC_MULTIMAP_TEST  | 72    | 228        | PASS |
-| DYNAMIC_MAP_TEST      | 12    | 144        | PASS (core: insert/find/erase) |
+| DYNAMIC_MAP_TEST      | 18    | 254        | PASS (+ retrieve_all + multiplicity via the same adaptor -- was 12/144 core) |
 | UTILITY_TEST          | 38    | 1561       | PASS (hash, probing_scheme, extent, storage, fast_int, next_prime) |
 | ROARING_BITMAP_TEST   | 2     | 4          | PASS (1 skipped -- needs test-data download) |
-| **TOTAL**             | **~373** | **~3932** | **all passing** |
+| **TOTAL**             | **~423** | **~4334** | **all passing** |
 
-Determinism confirmed (static_set incl. small keys bit-identical across runs,
-`--rng-seed 12345` x2). Deferred:
-the rocPRIM-pair-DeviceSelect TUs (retrieve_all-over-pairs), the >8B/16B atomic
-CAS TUs, the libhipcxx-nv/target bloom_filter, and DYNAMIC_BITSET (separate
-non-get_wrapper compile error, not investigated -- a trie bitset, off the
-hashtable core path). The four CCCL-native concurrent hashtables cudf needs
-(static_set/map/multiset/multimap) are GPU-validated.
+Determinism confirmed (static_set incl. small keys, and static_map/dynamic_map
+incl. the new retrieve_all-over-pairs TUs, bit-identical across runs,
+`--rng-seed 12345` x2). Deferred: the >8B/16B atomic CAS TUs, the
+libhipcxx-nv/target bloom_filter, hyperloglog (`__CUDA_ARCH__`/throw +
+stream_ref, NOT DeviceSelect), and DYNAMIC_BITSET (separate non-get_wrapper
+compile error, not investigated -- a trie bitset, off the hashtable core path).
+retrieve_all-over-pairs is no longer deferred (fixed by the DeviceSelect re-tie
+adaptor). The four CCCL-native concurrent hashtables cudf needs
+(static_set/map/multiset/multimap) plus dynamic_map are GPU-validated.
 
 ## Install as a dependency
 
@@ -403,3 +453,50 @@ Tiled probing (cooperative groups, `cg::tiled_partition<N>`): CORRECT on wave32.
 No data corruption, no HIP fault, no hang. Clean exit on all runs.
 
 Result: PASS. linux-gfx1100 -> completed. validated_sha = 57a1c1a31a9e681a3de5572a1306d5041497e8f0. Fork untouched (no commit, no push).
+
+## Porter 2026-05-31 (porter, linux-gfx90a) -- un-defer retrieve_all-over-pairs
+
+Re-opened the completed lead to un-defer the documented retrieve_all-over-pairs
+item. Fork jeffdaily/cuCollections @ moat-port advanced 57a1c1a -> 47ae24d
+(curated [ROCm] commit amended + force-with-lease). gfx90a completed ->
+porting -> ported (reviewer/validator to re-confirm); the cross-platform
+regression guard flipped linux-gfx1100 completed -> revalidate (it had validated
+57a1c1a; must revalidate 47ae24d). windows-gfx1151 stays port-ready.
+
+Adaptor: rocPRIM cannot scatter-assign a cuda::std::tuple (the cuco::pair map
+slot) through a thrust zip output -- thrust::tuple_of_iterator_references (the
+zip reference) only accepts thrust::tuple/pair/reference, and rocPRIM stages the
+DeviceSelect value in raw_storage<ValueType> then does `get<0>(output)[i] =
+scatter_storage[i]` (device_partition.hpp:584). Fix is a reusable HIP-only re-tie
+adaptor include/cuco/detail/hip_device_select.cuh
+(cuco::detail::hip::device_select_if): wrap the DeviceSelect input iterator with
+a transform that re-ties the cuda::std::tuple slot to a thrust::tuple (same
+element values), and wrap the predicate to re-tie back to cuda::std::tuple for
+cuco's slot_is_filled; the scalar (static_set) path forwards verbatim to
+cub::DeviceSelect::If. Wired at the two retrieve_all DeviceSelect::If sites under
+`#if defined(USE_HIP)`; the `#else` is the upstream code unchanged. Library-
+agnostic (cuda::std::tuple <-> thrust::tuple only) -- lifts into raft/cudf. The
+re-tie probe (agent_space/cuco_fix/probe_select.cu) confirmed 4/4 pairs scatter
+correctly through a thrust zip output on real gfx90a before wiring it in.
+
+Un-deferred TUs (re-enabled in tests/CMakeLists.txt) + GPU-validated:
+- static_map: contains_test, duplicate_keys_test, insert_or_assign_test,
+  insert_or_apply_test (all call retrieve_all over pair slots), retrieve_if_test.
+  STATIC_MAP_TEST 82/526 -> 126 cases / 818 assertions PASS.
+- dynamic_map: retrieve_all_test, multiplicity_test. DYNAMIC_MAP_TEST 12/144 ->
+  18 cases / 254 assertions PASS.
+retrieve_if_test needed a portable test-only edit (cuco::pair insert input
+instead of a thrust zip iterator; matches find_test.cu) -- its real blocker was
+the thrust-zip-insert family, not DeviceSelect.
+
+No regression on the prior suite (one isolated GCD, HIP_VISIBLE_DEVICES=3;
+rocm-smi showed GCDs 2 busy, 0/3 free): STATIC_SET 97/887, STATIC_MULTISET
+70/582, STATIC_MULTIMAP 72/228, UTILITY 38/1561, ROARING 2 (1+1 skip)/4 -- all
+unchanged. Determinism: STATIC_MAP and DYNAMIC_MAP each run twice with
+--rng-seed 12345, bit-identical (126/818 and 18/254).
+
+Out of scope, left deferred (verified still walls, not touched): >8B/16B atomic
+CAS (CDNA2 has no 128-bit atomic CAS; cuco's pre-Volta static_assert is correct),
+bloom_filter (libhipcxx nv/target parse), dynamic_bitset, and hyperloglog (its
+blocker is `#ifndef __CUDA_ARCH__` throw landing on device under HIP + a
+cuda::stream_ref/thread_rank mismatch, NOT DeviceSelect -- confirmed by build).
