@@ -12,3 +12,11 @@
 {"kind":"phase","ts":"2026-05-31T01:02:47Z","phase":"compile","seconds":59.684,"exit":0,"cmd":"cmake --build projects/raft/build --target NEIGHBORS_TEST -j 16"}
 {"kind":"phase","ts":"2026-05-31T01:03:14Z","phase":"test","seconds":2.339,"exit":141,"cmd":"projects/raft/build/gtests/NEIGHBORS_TEST"}
 {"kind":"phase","ts":"2026-05-31T01:27:01Z","phase":"compile","seconds":142.383,"exit":0,"cmd":"cmake --build projects/raft/build --target MATRIX_SELECT_TEST CORE_TEST UTILS_TEST LINALG_TEST LABEL_TEST RANDOM_TEST -j 12"}
+{"kind":"phase","ts":"2026-05-31T02:10:12Z","phase":"compile","seconds":61.474,"exit":0,"cmd":"cmake --build projects/raft/build --target DISTANCE_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:10:32Z","phase":"test","seconds":3.688,"exit":141,"cmd":"env HIP_VISIBLE_DEVICES=2 projects/raft/build/gtests/DISTANCE_TEST --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T02:19:54Z","phase":"compile","seconds":52.312,"exit":0,"cmd":"cmake --build projects/raft/build --target DISTANCE_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:20:06Z","phase":"test","seconds":6.022,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=2 projects/raft/build/gtests/DISTANCE_TEST --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T02:22:07Z","phase":"compile","seconds":97.464,"exit":0,"cmd":"cmake --build projects/raft/build --target MATRIX_SELECT_TEST NEIGHBORS_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:27:41Z","phase":"compile","seconds":62.599,"exit":0,"cmd":"cmake --build projects/raft/build --target CORE_TEST UTILS_TEST LINALG_TEST RANDOM_TEST LABEL_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:29:44Z","phase":"compile","seconds":49.843,"exit":0,"cmd":"cmake --build projects/raft/build --target UTILS_TEST -j 16"}
+{"kind":"phase","ts":"2026-05-31T02:37:41Z","phase":"test","seconds":924.881,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=2 projects/raft/build/gtests/MATRIX_SELECT_TEST --gtest_color=no"}

@@ -113,6 +113,18 @@ raft compat header, and exports `raft::raft` / `raft::raft_lib` /
    `eigDC_legacy` path (hipsolverDn{S,D}syevd) which computes the identical
    eigendecomp. hipSOLVER's device ::sincos is double-only -> route float to
    ::sincosf (math.hpp).
+7. Warp-collective shuffle mask on a partially-active wavefront
+   (util/reduction.cuh, warp_primitives.cuh). HIP's `__shfl_*_sync` assert (non-
+   NDEBUG) that the passed mask equals the live-lane set `__ballot(true)`. The
+   thin `linalg::coalescedReduction` (the per-row L2 norm feeding every expanded
+   distance) early-`return`s out-of-range rows BEFORE its `logicalWarpReduce` /
+   `logicalWarpReduceVector` butterfly, so a partial wavefront reaches the shuffle
+   and the blanket `RAFT_LANE_MASK_ALL` aborts (SIGABRT for any odd row count with
+   D>=128). Fix: a new `raft::active_mask()` (= `__activemask()` on HIP,
+   `RAFT_LANE_MASK_ALL` on CUDA) is passed as the shuffle mask in both logical-warp
+   reductions; each active logical warp still has all lanes present so values are
+   identical. Surfaced by the DISTANCE GPU bring-up; it is a SHARED-path bug (the
+   SIMT-fallback distance shapes hit it too), not CK-specific.
 
 ## Build (lead, gfx90a) -- repeatable script
 
@@ -149,6 +161,8 @@ MI250X). The crashing/blocked groups (below) are excluded via the
 | CORE (sub)    | 165/165 PASS      | MathDevice 17, OperatorsDevice 29, MathHost 17, OperatorsHost 29, Span/GPUSpan 27, NumPySerializer, MemoryType, BitmapTest 24, sparse-matrix containers, coordinate structure |
 | UTILS (sub)   | 36/36 PASS        | integer_utils, pow2, device_atomics, cudart_utils, seive |
 | LINALG (sub)  | 149/150 PASS      | element-wise (add/sub/mul/div/sqrt/pow/unary/binary/ternary), map, transpose 24, cuBLAS gemv 10 / dot 14 / axpy 14; 1 DotTestF float-tolerance fail |
+| DISTANCE      | 11/11 PASS        | `-DRAFT_TEST_DISTANCE=ON`; L2Expanded/L2SqrtExpanded/CosineExpanded via the public `pairwise_distance`, CK MFMA path (aligned) + SIMT fallback (unaligned) vs CPU ref, with a per-case backend-routing assertion |
+| MATRIX_SELECT | 607 (567+40 skip) | `-DRAFT_TEST_MATRIX_SELECT=ON`; select_k warp-sort + radix, k 1..1700, wave64 |
 
 Total: ~614 gtest cases pass on gfx90a. find_package(raft)+raft::raft also
 validated end-to-end via a standalone consumer (agent_space/raft_consumer:
@@ -172,7 +186,9 @@ by a documented gap:
 - SOLVERS: cusolverSp batched-QR + cusolverDnXsyevd (no hipSOLVER equivalent).
 - NEIGHBORS: CUTLASS fused-distance + faiss_select `static_assert(WarpSize==32)`
   (a hard wave32 assumption).
-- DISTANCE: CUTLASS-based (fused_distance_nn) -- the largest single port item.
+- DISTANCE: the expanded L2 / cosine pairwise distances now build AND are GPU-
+  validated on HIP via the CK MFMA path + SIMT fallback (RAFT_TEST_DISTANCE, see
+  the CK section). Remaining: the fused_distance_nn reducing-epilogue CK variant.
 
 ROCm path for the CUTLASS-based items above (DISTANCE / NEIGHBORS, and the
 MATRIX/STATS distance epilogue): CUTLASS does NOT port to ROCm. These kernels
@@ -283,7 +299,67 @@ epilogue`. ck_tile is still preferred for greenfield work; for THIS port the
 classic DeviceGemmMultipleD is the robust choice on the installed ROCm. The
 ck_tile route remains open once the system headers and examples realign.
 
-### What this pass delivered + GPU-validated (gfx90a, MI250X)
+### CK distance WIRED INTO raft's dispatch (gfx90a, MI250X) -- this pass
+
+The standalone CK kernel below (agent_space/ck_l2) is now a raft header,
+`distance/detail/pairwise_matrix/dispatch_ck.cuh`, called from
+`pairwise_matrix_dispatch` (dispatch-inl.cuh) on HIP. Coverage + validation:
+
+1. CK MFMA path NOW BACKS L2Expanded, L2SqrtExpanded, AND CosineExpanded in the
+   live dispatch (not just standalone). The CDE element op reproduces
+   `ops::l2_exp_cutlass_op` exactly (incl. the self-neighbor round-off clamp and
+   the sqrt variant) and `ops::cosine_cutlass_op` (1 - dot/(||x|| ||y||)), so the
+   CK output matches raft's SIMT/CPU reference numerically (no tolerance change).
+   The `fin_op` (FinOpT) is applied inside the CDE op as `fin_op(distance, 0)`,
+   mirroring the SIMT store_output and the CUTLASS epilogue param.
+2. Alignment dispatch (mirrors raft's CUDA veclen dispatch): a runtime
+   `pairwise_matrix_ck_can_dispatch<OpT>(params)` gate routes to CK only for
+   fp32, row-major, N%4==0, K%4==0 (the tuned CShuffle/A/B vector width 4);
+   ANY other shape (arbitrary N or K, double, col-major) falls through to the
+   SIMT/sm60 kernel. So the CK path is the fast path for the aligned regime and
+   the SIMT twin is the correctness fallback for everything else -- exactly the
+   pre-Ampere-NVIDIA pattern, now with CK instead of CUTLASS as the fast path.
+3. GPU-validated via a new DISTANCE_TEST (cpp/tests/distance/ck_distance.cu,
+   RAFT_TEST_DISTANCE option) exercising the PUBLIC `raft::distance::pairwise_distance`
+   against a double-precision CPU reference: 11/11 PASS on gfx90a (HIP_VISIBLE_DEVICES
+   isolated GCD). Aligned shapes (CK) and unaligned shapes (SIMT) both match the
+   reference (max rel < 1e-3 for the fp32 GEMM); each case also asserts which
+   backend handled it (`pairwise_matrix_ck_can_dispatch`), so a silent
+   fall-through to SIMT on an aligned shape fails the test. NOTE: raft v25.08
+   migrated the dense distance gtest to cuVS, so this test is authored fresh
+   (the ext_headers test only checks header compilation).
+4. Shared-path wave64 fix unblocked by this work (util/reduction.cuh +
+   warp_primitives.cuh): `linalg::coalescedReduction`'s thin kernel computes the
+   per-row L2 norms feeding EVERY expanded distance. It early-`return`s
+   out-of-range rows before its `logicalWarpReduce`/`logicalWarpReduceVector`
+   butterfly; on HIP that leaves a partial-wavefront at the `__shfl_xor_sync`,
+   and the blanket `RAFT_LANE_MASK_ALL` trips HIP's `__hip_check_mask` (mask must
+   equal `__ballot(true)`) -> SIGABRT in a non-NDEBUG build. Reproduced precisely:
+   ANY odd row count with D>=128 (the rpw=1 thin policy) aborted; even N or D<128
+   did not. Fix is arch-unified: a new `raft::active_mask()` returns
+   `__activemask()` on HIP (and `RAFT_LANE_MASK_ALL` on CUDA, byte-identical), and
+   the two logical-warp reductions pass it as the shuffle mask. Each active
+   logical warp still has all its lanes present, so values are unchanged --
+   confirmed by rowNorm vs CPU (max_rel ~1e-7) and LINALG reduce/norm 1147/1147.
+   This was the actual blocker that surfaced when DISTANCE first ran on GPU; it is
+   NOT a CK bug (the SIMT-fallback shapes hit it identically).
+
+Regression (this pass, all gfx90a isolated GCD): MATRIX_SELECT 607 (567 pass + 40
+gtest-skipped, 0 fail) -- the reduction-mask change does not perturb the wave64
+top-k; LINALG reduce/norm/coalesced 1147/1147; LABEL 14/14; RANDOM subset 396/396;
+CORE math/operators 92/92; UTILS validated subset 23/23 (ReductionTest is a
+SEPARATE pre-existing wave64 miss, confirmed failing on pristine headers too --
+unchanged); haversine PASS.
+
+Remaining CK follow-up: the fused-distance-NN reducing epilogue (fusedL2NN /
+fusedCosineNN do a row-wise argmin into a KeyValuePair instead of writing the
+distance matrix). The CK shape is a GEMM with a reducing epilogue (CK
+DeviceGemmReduce / gemm + block-row reduce), writing the KeyValuePair output + the
+per-row mutex update. Not yet wired; the fused-NN dispatchers still take the SIMT
+path on HIP (correct, just not MFMA-accelerated). Design captured in the
+fused_distance_nn subsection above.
+
+### What an earlier pass delivered + GPU-validated (gfx90a, MI250X)
 
 1. DISTANCE/NEIGHBORS BUILD unblocked on ROCm: the `#include <cutlass/...>` wall in
    the 5 CUTLASS files (pairwise_distance_cutlass_base, dispatch_sm80,
