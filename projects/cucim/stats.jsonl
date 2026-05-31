@@ -1,1 +1,9 @@
 {"kind":"phase","ts":"2026-05-31T03:05:23Z","phase":"test","seconds":0.497,"exit":4,"cmd":"python -m pytest src/cucim/skimage/filters/tests src/cucim/skimage/feature/tests -q -x"}
+{"kind":"phase","ts":"2026-05-31T07:00:26Z","phase":"compile","seconds":0.167,"exit":0,"cmd":"cmake --build projects/cucim/src/build-rocm --target cucim -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:02:04Z","phase":"compile","seconds":2.385,"exit":0,"cmd":"cmake -S projects/cucim/src -B projects/cucim/src/build-rocm -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCUCIM_SUPPORT_GDS=OFF -DCUCIM_SUPPORT_NVTX=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cucim/install"}
+{"kind":"phase","ts":"2026-05-31T07:02:10Z","phase":"compile","seconds":0.168,"exit":0,"cmd":"cmake --build projects/cucim/src/build-rocm --target cucim -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:14:44Z","phase":"compile","seconds":13.611,"exit":0,"cmd":"cmake --build projects/cucim/src/cpp/plugins/cucim.kit.cuslide/build-rocm --target cucim.kit.cuslide -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:15:22Z","phase":"compile","seconds":9.628,"exit":0,"cmd":"cmake --build projects/cucim/src/cpp/plugins/cucim.kit.cuslide/build-rocm --target cuslide_tests -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:15:32Z","phase":"compile","seconds":10.068,"exit":0,"cmd":"cmake --build projects/cucim/src/build-rocm --target cucim_tests -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:19:14Z","phase":"compile","seconds":25.138,"exit":0,"cmd":"cmake --build projects/cucim/src/python/build-rocm --target cucim -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:21:22Z","phase":"compile","seconds":5.380,"exit":0,"cmd":"cmake --build projects/cucim/src/cpp/plugins/cucim.kit.cumed/build-rocm --target cucim.kit.cumed -j 16"}
