@@ -144,3 +144,87 @@ Non-blocking observations (NOT changes-requested):
 
 ## Validation decision (2026-05-31)
 COMPLETED per jeff's go-ahead. cuda_util-ut 48/48 (bit-identical across two runs) and the e2e task_type=GPU training was bit-identical same-seed (GPU AUC 0.96326 vs CPU 0.96494). The 0.00168 GPU-vs-CPU AUC gap is normal GBDT GPU/CPU model divergence (different binning / FP accumulation order / RNG), NOT a kernel defect -- a wave64 reduction error would tank the AUC, not nudge it 0.17%. The written 0.0015 tolerance was too tight; the real wave64 gate is determinism + the unit tests, both green. Right bar for GBDT GPU/CPU AUC ~= 0.0025.
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1) -- follower linux-gfx1100
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1. HIP_VISIBLE_DEVICES=0 (GPU 0, 48GB, compute capability 11.0).
+
+### Wave32 analysis before build
+
+Examined the full kernel_helpers.cuh (both library/cpp/cuda/wrappers/ and catboost/cuda/cuda_util/kernel/) and all tiled_partition/TTileReducer usage.
+
+1. FastInBlockReduce/BlockReduceN/SharedReduce4/8 (USE_HIP path): full __syncthreads tree to size 1, no warp-synchronous tail. Wave-size-agnostic. CORRECT on wave32.
+2. CB_FULL_WARP_MASK = 0xffffffffffffffffULL (64-bit). On wave32 the upper 32 bits address no lanes. SAFE.
+3. 32-lane histogram layout (tiled_partition<8/16/32>, per-32-lane sub-histograms): wavefront on gfx1100 IS 32 lanes. This is the native layout. CORRECT -- no special-casing needed, unlike the gfx90a wave64 case.
+4. TTileReducer<64>: the USE_HIP specialization calls tiled_partition<64>, which is INVALID on wave32. HOWEVER: TTileReducer<64> is never instantiated -- grep of all .cu/.cuh shows zero call sites for TTileReducer with N=64. Dead template, never emitted to the ISA. SAFE.
+5. WarpReduceN (shuffle-based): called only from the #else (CUDA) branch of BlockReduceN. Not compiled on HIP. SAFE.
+6. All live tiled_partition instantiations: sizes 8, 16, 32 (max). All <= wave32 width. CORRECT.
+7. WarpReduce4 / ShuffleReduce: WarpReduce4 is defined but never called from any .cu. ShuffleReduce is called only from dcg.cu:371 with LogicalWarpSize <= 32. SAFE.
+
+No code change required. The commit at b7113fe is correct for wave32.
+
+### Build
+
+Fork branch: moat-port, HEAD b7113fe. Clone into projects/catboost/src/. One-time conan install, then cmake configured for gfx1100:
+
+```
+export PATH="/opt/conda/envs/py_3.12/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:$PATH"
+export JAVA_HOME="/opt/conda/envs/py_3.12"
+
+cd projects/catboost/src
+conan install . --output-folder=build_hip --build=missing -s build_type=Release -s compiler.cppstd=20
+
+cmake -G Ninja -S . -B build_hip/cm \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DHAVE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_STANDARD_LIBRARIES="-lc -lm" \
+  -DCMAKE_HIP_STANDARD_LIBRARIES="-lc -lm" \
+  -DCMAKE_PROJECT_TOP_LEVEL_INCLUDES=cmake/conan_provider.cmake \
+  -DCMAKE_PREFIX_PATH=/opt/rocm
+
+bash /var/lib/jenkins/moat/utils/timeit.sh catboost compile -- \
+  ninja -C build_hip/cm -j16 catboost-cuda-cuda_util-ut
+```
+
+Build: SUCCESS (1172/1172 targets, no errors; only nodiscard warning on hipGetDevice).
+
+### Code-object evidence
+
+```
+roc-obj-ls build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut
+```
+
+Every code object: hipv4-amdgcn-amd-amdhsa--gfx1100. No gfx90a present. Confirmed gfx1100 target.
+
+Device reported at runtime: "AMD Radeon Pro W7800 48GB (compute capability 11.0)"
+
+### Test run
+
+```
+export HIP_VISIBLE_DEVICES=0
+bash /var/lib/jenkins/moat/utils/timeit.sh catboost test -- \
+  build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut --show-fails
+```
+
+Run 1: [DONE] ok: 48 (all 48 subtests pass)
+Run 2: [DONE] ok: 48 (all 48 subtests pass)
+Pass sets: IDENTICAL -- all 48 [good] lines bit-identical across both runs.
+No [bad] results, no HIP fault, clean exit.
+
+Subtests passed (all 48): TCompressionGpuTest (5), TCompressionTest (1), TFillTest (2), TMvsThresholdCalculationTest (3), TReduceTest (7: TestReduce/TestSegmentedReduce/TestUpdatePartProps/TestUpdatePartPropsPerformance/TestSegmentedReducePerformance2/TestSegmentedReducePerformance/TestStatsInLeavesPerformance), TReorderTest (1), TScanTest (4), TSegmentedScanTest (8), TSegmentedSortTest (4: incl. TestSegmentedSortNonContinous), TSortTest (4), TTransformTest (9).
+
+Matches gfx90a bar: 48/48 (gfx90a also 48/48). Deterministic (bit-identical pass sets x2 runs).
+
+### Wave32 verdict
+
+- FastInBlockReduce/BlockReduceN/SharedReduce4/8: wave-size-agnostic __syncthreads tree. CORRECT on wave32. CONFIRMED by TReduceTest (7/7) and TSegmentedScanTest (8/8).
+- CB_FULL_WARP_MASK 64-bit mask: benign on wave32 (upper 32 bits address no lanes). CORRECT.
+- 32-lane histogram layout: NATIVE on wave32 -- no gfx90a-style split required. CORRECT.
+- TTileReducer<64>: dead code (never instantiated in any kernel). No ISA emission for tiled_partition<64>. SAFE.
+- All live tiled_partition sizes (8/16/32): <= wave32 width. CORRECT.
+
+No delta-port required. Result: PASS.
+
+validated_sha: b7113fe9133aa0444bf0205cea546d33700ac16e -> completed.
