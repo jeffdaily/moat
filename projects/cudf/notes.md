@@ -11,15 +11,81 @@ Fork: jeffdaily/cudf @ `moat-port`. The port is a standalone HIP CMake build
 reached by a top-of-CMakeLists `if(USE_HIP) include(cmake/hip/cudf_hip.cmake)
 return()` guard; the CUDA build is untouched.
 
-## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates
+## State: PORTING on linux-gfx90a -- scoped core COMPILES + GPU-validates (83 TUs)
 
-A scoped libcudf core (79 TUs) compiles for gfx90a and links libcudf.so with a
-real gfx90a code object. A focused GPU gtest for the wave64 null-mask path
-passes 4/4 on MI250X. This supersedes the prior "BLOCKED on cuCollections"
-verdict: cuCollections is now ported (jeffdaily/cuCollections @ moat-port) and
-the foundational column core (which the prior run could not compile at all) now
-builds clean. The remaining work to a FULL core is the type-erased dispatch
-link-closure + a few library walls (below), not a fundamental blocker.
+A scoped libcudf core (83 TUs) compiles for gfx90a and links libcudf.so with a
+real gfx90a code object. A focused GPU gtest passes 6/6 on MI250X (stable over
+20 repeated runs): the 4 wave64 null-mask tests PLUS 2 new tuple-key radix-sort
+tests (SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim). This
+supersedes the prior "BLOCKED on cuCollections" verdict: cuCollections is now
+ported (jeffdaily/cuCollections @ moat-port) and the foundational column core
+(which the prior run could not compile at all) builds clean. The remaining work
+to a FULL core is the rest of the type-erased dispatch link-closure (the
+cuco-backed algorithms) + the JIT phase, not a fundamental blocker.
+
+### This session cleared the 3 documented "next walls" (rocPRIM tuple, array, ballot)
+
+- **rocPRIM radix sort over cuda::std::tuple keys -- SOLVED with a reusable
+  shim, NO rocPRIM modification.** cudf's float fast-sort
+  (sort/sort_radix.cu SortKeys, sort/sorted_order_radix.cu SortPairs) packs
+  {int32 nan-bias, float} into a struct and sorts with a "decomposer" returning
+  `cuda::std::tuple<size_type&, F&>`. hipCUB forwards the decomposer to rocPRIM,
+  whose radix codec for a CUSTOM key only recognizes `rocprim::tuple`
+  (`rocprim/type_traits.hpp` codec<Key,Desc,false>: `is_tuple_of_references` /
+  `for_each_in_tuple` / `rocprim::tuple_size` / the internal
+  `extract_digit_from_key_impl(const rocprim::tuple<Args...>&)` ALL pattern-match
+  rocprim::tuple; `type_traits_functions.hpp` `is_tuple_of_references` primary
+  even `static_assert(sizeof(T)==0,"only implemented for rocprim::tuple")`). Fix:
+  `cpp/include/cudf/detail/utilities/hip/radix_tuple_key.cuh` -- a decomposer
+  ADAPTOR that calls the user decomposer then re-`rocprim::tie`s the SAME lvalue
+  references into a `rocprim::tuple<Refs...>` (the references point into the live
+  key, safe across the wrapper). rocPRIM's existing, validated codec then drives
+  the sort. Applied at the 2 float-path decomposer sites under `#if USE_HIP`
+  (CUDA byte-for-byte unchanged). The header is library-agnostic (knows only
+  cuda::std::tuple + rocprim::tuple, not cudf) -- LIFTABLE VERBATIM into
+  cuCollections retrieve_all and raft, which hit the identical gap. GPU-proven:
+  the standalone shim sorts 100000 floats correctly via
+  hipcub::DeviceRadixSort::SortKeys, and the in-tree GPU gtest sorts FLOAT32
+  columns asc+desc (sizes 1..100000) == host std::sort. So the rocPRIM tuple-key
+  wall is NOT infeasible -- the shim clears it without touching rocPRIM, and the
+  per-project packed-key fallback is NOT needed.
+  - sorted_order_radix.cu ALSO needed a second fix: its zip-iterator transform
+    functor `float_to_pair_and_seq` returned `cuda::std::pair<float_pair,size_type>`,
+    and rocThrust's zip-iterator reference (a thrust::tuple) does not assign from
+    a cuda::std::pair (CCCL thrust does; rocThrust does not). Changed to return
+    `thrust::tuple` on HIP (USE_HIP-guarded).
+- **cuda::std::array<unsigned,100> -- NOT a real wall (the prior finding was
+  stale).** strings/case.cu uses `__constant__ cuda::std::array<uint32_t,100>`
+  with an aggregate initializer; the type IS fully supported by the current
+  vendored ROCm/libhipcxx (a standalone __constant__ + thrust::binary_search
+  probe compiles). case.cu simply never `#include`d `<cuda/std/array>` (it relied
+  on CCCL pulling it transitively, which libhipcxx does not). Fix: add the
+  explicit include (correct on CUDA too -- same fault class as the cuda/std/bit
+  missing-transitive-include).
+- **wave64 ballot in strings/copying/concatenate.cu -- converted** to the
+  tile-relative `ballot_32` helper (warp_primitives.cuh), identical arch-unified
+  treatment as the in-scope valid_if sites. `fused_concatenate_string_offset_kernel`
+  dropped the carried `active_mask` dance (tiled_partition<32>::ballot() ballots
+  only active lanes). COMPILES; this specific kernel is not yet exercised by the
+  GPU test (covered by the identical, GPU-validated valid_if pattern).
+
+### Validation gotcha burned this session (cost ~hours): OOB in the TEST, not the port
+
+The first version of the sort gtest crashed nondeterministically (~70% SIGSEGV/
+SIGABRT) -- but ONLY in the gtest binary, never in any standalone libcudf-linked
+repro (sort_radix/sorted_order_radix called hundreds of times = clean). Root
+cause was a HEAP BUFFER OVERFLOW in the TEST's own input helper: `mixed_floats(n)`
+wrote `h[10]/h[20]/h[100]/h[200]` unconditionally, which is OOB of the
+std::vector for the small sizes (n=1,33,64,65) in the size loop, smashing the
+host heap -> later malloc/free or the ROCm-runtime atexit finalizer crashed.
+The cudf sort + shim were CORRECT throughout (which is exactly why every
+standalone repro that built its input array correctly was clean). LESSON: when a
+GPU test crashes intermittently in libamdhip64/libhsa host alloc or
+__cxa_finalize but a standalone repro of the same library calls is clean,
+suspect the TEST harness (an OOB host write, a bad index) before the port; guard
+every fixed index against the parametrized size. Do NOT paper over it with an
+rmm pool or _exit() (both "fixed" the symptom by changing heap layout and masked
+the real bug).
 
 ## MACRO-CASCADE VERDICT (jeff's question): the 1-line fix DID clear it
 
@@ -144,7 +210,11 @@ elsewhere).
    device_merge_sort, device_radix_sort, device_segmented_sort, warp_reduce in
    addition to the initial set).
 
-## What COMPILES (the 79-TU scoped core)
+## What COMPILES (the 83-TU scoped core)
+
+(+4 over the prior 79: sort/sort_radix.cu, sort/sorted_order_radix.cu,
+strings/case.cu, strings/copying/concatenate.cu -- the 3 cleared walls above.)
+
 
 column, table, scalar, bitmask, utilities (cuda/grid_1d/stream_pool/traits/
 type_dispatcher/type_checks/host_memory/prefetch/logger/...), unary
@@ -175,33 +245,31 @@ tolerate the residual undefined dispatch symbols).
 
 ## The next concrete walls (precise blocked_reason material)
 
-A FULLY-linking standalone libcudf (and a broad GPU gtest suite) needs the
-type-erased dispatch link-closure resolved. `column.cu` / `column_factories.cu`
-reference `make_strings_column` / `make_structs_column` / `gather` /
-`sorted_order` / `slice` / `get_element` / per-type detail ops, so even the
-foundational core transitively pulls a large fraction of strings/lists/
-dictionary/structs + sort + binaryop. Closing it hits, in order:
+Walls 1-3 from the prior session (rocPRIM tuple-key radix sort,
+cuda::std::array, the strings-concatenate ballot) are CLEARED this session (see
+"This session cleared the 3 walls" above). The reusable rocPRIM tuple-key shim
+(radix_tuple_key.cuh) is the key result -- it dissolves the same gap for cuco
+retrieve_all and raft too. What remains to a FULLY-linking standalone libcudf
+and a broad GPU gtest suite:
 
-1. **rocPRIM radix sort over `cuda::std::tuple` keys**: `sort/sort_radix.cu` and
-   `sort/sorted_order_radix.cu` instantiate rocPRIM `DeviceRadixSort` over a
-   `cuda::std::tuple<int&,float&>`-style key; rocPRIM's `extract_digit` /
-   `decode_inplace` / `is_tuple_of_references` only accept `rocprim::tuple`, not
-   `cuda::std::tuple` (`tuple_size<cuda::std::tuple<...>>` undefined; same
-   rocPRIM-tuple family cuCollections hit with DeviceSelect-over-cuco::pair).
-   Likely fix: a rocPRIM<->cuda::std::tuple adaptor, or route radix sort through
-   the comparison-sort path on HIP.
-2. **`cuda::std::array<unsigned,100>` absent from the vendored libhipcxx**:
-   `strings/case.cu` uses `cuda::std::array<unsigned,100>` for its
-   special-casing table; the vendored ROCm/libhipcxx (amd-develop) has no
-   `<cuda/std/array>` with that instantiation. Fix: vendor/extend libhipcxx, or
-   swap to `cuda::std::array` -> a plain C array / thrust on HIP.
-3. **unconverted wave64 ballots in the broader strings/json/merge/rolling/join
-   kernels** (`strings/copying/concatenate.cu`, `json_path.cu`, `merge.cu`,
-   `rolling.cuh`, `conditional_join_kernels.cuh`): same `ballot_32` treatment as
-   the in-scope sites, not yet applied.
-4. then the **JIT** wall (binaryop/transform/rolling) and the **cuco-backed
-   algorithms** (join/groupby/hash/distinct) -- the latter now have cuco
-   available, so they are reachable once 1-3 and the broader compile are done.
+1. **The remaining type-erased dispatch link-closure (the broad algorithm
+   modules).** `column.cu`/`column_factories.cu` reference per-type detail ops
+   that transitively pull strings/lists/dictionary/structs FULL algorithm sets,
+   plus the cuco-backed algorithms (join/groupby/hashing/stream_compaction
+   distinct/reductions). libcudf.so currently has ~209 undefined deferred-dispatch
+   symbols (e.g. `dictionary::detail::match_dictionaries`,
+   `experimental::row::lexicographic::preprocessed_table::create`,
+   `lists::detail::build_lists_child_column_recursive`); the scoped core links
+   the .so fine (shared libs tolerate them) and the GPU tests never call them,
+   but a FULL link needs these modules brought up. cuco is now available, so the
+   cuco-backed ones are reachable; bring-up is incremental (add modules to
+   cudf_hip_sources.cmake, fix the per-TU clang/wave64/library issues, extend the
+   GPU gtest). Expect more wave64 ballots in the broader kernels (json_path.cu,
+   merge.cu, rolling.cuh, conditional_join_kernels.cuh) -- same ballot_32
+   treatment.
+2. then the **JIT** wall (binaryop/transform/rolling) -- the jitify->hipRTC plan
+   is written (jitify_hiprtc_plan.md) and the hipRTC PoC is proven; it is a
+   separate phase that depends on this core compiling (done).
 
 ## rmm-as-a-dependency: WORKED (refreshed)
 
@@ -257,29 +325,40 @@ Arch flows from `CMAKE_HIP_ARCHITECTURES` (defaults to gfx90a only when unset),
 so a follower (gfx1100/gfx1151) builds the scoped core with only
 `-DCMAKE_HIP_ARCHITECTURES=<arch>` and no source/CMake edit.
 
-## Validation (gfx90a / MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=3)
+## Validation (gfx90a / MI250X, ROCm 7.2.1; run on a FREE GCD)
 
 ```
-HIP_VISIBLE_DEVICES=3 ctest --test-dir projects/cudf/build-hip --output-on-failure
+# pick a free GCD from `rocm-smi` (4 GCDs 0-3 on this box); this session used 2
+HIP_VISIBLE_DEVICES=2 ctest --test-dir projects/cudf/build-hip --output-on-failure
 # (LD_LIBRARY_PATH must include $CONDA_PREFIX/lib for libspdlog and
-#  _deps/cudf-rmm/install/lib for librmm/librapids_logger)
+#  _deps/cudf-rmm/install/lib for librmm/librapids_logger -- sourced via
+#  agent_space/cudf_build_env.sh)
 ```
 
 libcudf.so built with a gfx90a code object (roc-obj-ls:
-`hipv4-amdgcn-amd-amdhsa--gfx90a`). **MOAT_CORE_SMOKE_TEST: 4/4 PASS** on real
-gfx90a:
+`hipv4-amdgcn-amd-amdhsa--gfx90a`). **MOAT_CORE_SMOKE_TEST: 6/6 PASS** on real
+gfx90a (stable over 20 repeated runs; use a free GCD -- rocm-smi showed 0,1,2,3,
+this session used HIP_VISIBLE_DEVICES=2):
 - `CountSetBitsWave64`: device `count_set_bits` over known masks == host count,
   sizes {1,31,32,33,63,64,65,127,128,129,1000,4096,100000} (crossing 32-bit-word
-  AND 64-lane-wavefront boundaries). This is the wave64 ballot gate.
+  AND 64-lane-wavefront boundaries). The wave64 ballot gate.
 - `SegmentedCountSetBits`: segmented reduce over uneven segments == host.
 - `CreateNullMask`: ALL_VALID -> n set bits, ALL_NULL -> 0, on device.
-- `CountIsDeterministic`: 3x repeated device count bit-identical (the wave64 CG
-  ballot/reduce has no nondeterminism).
+- `CountIsDeterministic`: 3x repeated device count bit-identical.
+- `SortRadixFloatTupleKeyShim`: `detail::sort_radix` on no-null FLOAT32 columns
+  (the decomposer path through the rocPRIM tuple-key shim), asc AND desc, device
+  result == host std::sort, sizes 1..100000. The tuple-key shim gate.
+- `SortedOrderRadixFloatTupleKeyShim`: `detail::sorted_order_radix` produces the
+  sort permutation; gathering the input by it == host std::sort (the SortPairs
+  decomposer path + the thrust::tuple zip-iterator functor).
 
-The smoke test links the cudf objects with `--unresolved-symbols=ignore-all`
-(the scoped core still references the deferred dispatch closure symbols above;
-the null-mask path the test exercises is fully defined and pulled). A broader
-GPU suite (gather/sort/etc.) needs the link-closure walls 1-3 resolved first.
+The smoke test links libcudf.so (cudf is a SHARED lib) with
+`--unresolved-symbols=ignore-in-shared-libs` + `-z lazy`: the .so carries the
+deferred dispatch-closure symbols (above), the test never calls them, and this
+linkage tolerates unresolved symbols FROM the .so while still erroring on any
+unresolved symbol in the test's own objects (tighter than the old ignore-all). A
+broader GPU suite (gather/groupby/join/etc.) needs the remaining link-closure
+(wall 1) resolved first.
 
 ## Install as a dependency
 
