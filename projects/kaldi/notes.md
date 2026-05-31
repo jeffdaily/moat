@@ -225,3 +225,55 @@ Matches gfx90a bar: 12/12 (identical pass count, same test names).
 The gfx1100 configure needs the in-tree OpenBLAS (tools/extras/install_openblas.sh), not the system OpenBLAS shim. The system lapacke.h (liblapacke-dev 3.12.0) transitively includes lapack.h which defines LAPACK_FORTRAN_STRLEN_END unconditionally, adding hidden-length size_t args to Fortran function declarations (stptri_, sgesvd_, etc.) that conflict with kaldi's direct Fortran call sites in matrix/cblas-wrappers.h. The in-tree OpenBLAS 0.3.13 lapacke.h uses only LAPACKE_* wrapper prototypes and does not include lapack.h.
 
 Verdict: COMPLETED. validated_sha = e8c5613b789eefb6b0a251d8b15867bb53f1a01d. Wave32 verdict: CORRECT -- BackpropLstmNonlinearity passes on gfx1100 with GPU_WARP_SIZE=32, confirming the warp-reduction launch geometry is correct for RDNA3.
+
+## Validation 2026-05-31 (linux-gfx90a revalidate, moat-port e8c5613b)
+
+Platform: linux-gfx90a. Prior validated_sha: cdc8d2f. New HEAD: e8c5613b789eefb6b0a251d8b15867bb53f1a01d (gfx1100 delta: per-arch GPU_WARP_SIZE + in-tree OpenBLAS sourcing). GPU: 4x AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1.
+
+Purpose: confirm the gfx1100 follower delta did not regress gfx90a.
+
+### Gfx90a invariants verified at e8c5613b
+
+Tree at new HEAD: `git reset --hard e8c5613b` confirmed (`git rev-parse HEAD == e8c5613b789eefb6b0a251d8b15867bb53f1a01d`).
+
+OpenBLAS path: in-tree OpenBLAS (tools/OpenBLAS/install), same as gfx1100. The configure call is `./configure --use-rocm --rocm-dir=/opt/rocm --rocm-targets=gfx90a --use-cuda=no --mathlib=OPENBLAS --openblas-root=.../tools/OpenBLAS/install`. The system lapacke.h conflict (LAPACK_FORTRAN_STRLEN_END) that forced in-tree OpenBLAS on gfx1100 applies equally on gfx90a at this HEAD; in-tree OpenBLAS is now universal for both arches.
+
+ROCM_WARP_SIZE: configure sets `ROCM_WARP_SIZE = 64` for gfx90a (the `gfx9*` case in the configure_rocm loop). kaldi.mk confirmed: `ROCM_WARP_SIZE = 64`. Compiler flags confirmed in both host CXXFLAGS and ROCM_FLAGS: `-DHIP_WARP_SIZE=64`.
+
+Device GPU_WARP_SIZE: hipify.h `#ifdef __HIP_DEVICE_COMPILE__ / #if defined(__GFX9__) #define GPU_WARP_SIZE 64` -- __GFX9__ is set by hipcc for gfx90a, so device code sees 64. Static_assert-equivalent: confirmed by the gfx1100 delta notes and per-arch compile logic.
+
+Code object: `roc-obj-ls cu-kernels.o` -> `hipv4-amdgcn-amd-amdhsa--gfx90a` (1018 KB device code; no gfx1100 object). Correct.
+
+### Commands
+
+```
+cd /var/lib/jenkins/moat/projects/kaldi/src
+git fetch jeffdaily moat-port
+git reset --hard e8c5613b789eefb6b0a251d8b15867bb53f1a01d
+
+# Configure (regenerates kaldi.mk with ROCM_WARP_SIZE = 64)
+bash utils/timeit.sh kaldi compile -- bash agent_space/kaldi_build/build_kaldi.sh configure
+
+# Depend + build cudamatrix + test_compile
+cd projects/kaldi/src/src && make -j12 depend
+bash utils/timeit.sh kaldi compile -- make -j12 -C projects/kaldi/src/src/cudamatrix
+bash utils/timeit.sh kaldi compile -- make -j12 -C projects/kaldi/src/src/cudamatrix test_compile
+
+# Run 1
+bash utils/timeit.sh kaldi test -- bash agent_space/kaldi_build/run_cudamatrix_tests.sh 0
+
+# Run 2 (determinism)
+bash utils/timeit.sh kaldi test -- bash agent_space/kaldi_build/run_cudamatrix_tests.sh 0
+```
+
+### Results
+
+Run 1: PASS=12 FAIL=0. Run 2: PASS=12 FAIL=0 (deterministic).
+
+All 12 tests passed both runs: cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-sp-matrix-test, cu-packed-matrix-test, cu-tp-matrix-test, cu-block-matrix-test, cu-array-test, cu-sparse-matrix-test, cu-device-test, cu-compressed-matrix-test.
+
+Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED (exit 0, both runs). The wave64 _diff_lstm_nonlinearity fix (threadIdx.y==0 writes all 5 self-repair rows) continues to be correct on gfx90a wave64 at e8c5613b. The gfx1100 delta (warp-size conditionalization in hipify.h/__GFX9__) does not change device code for gfx90a: __GFX9__ is set, GPU_WARP_SIZE=64, blockDim.y=CU1DBLOCK/64=4 -- same as before the delta, same fix, same correctness.
+
+No regression introduced by the gfx1100 follower delta.
+
+Verdict: COMPLETED. validated_sha = e8c5613b789eefb6b0a251d8b15867bb53f1a01d.
