@@ -164,3 +164,43 @@ Results:
 **Fork:** NOT touched. No source change needed, no fork push, head_sha unchanged at `6a41e0b`.
 
 **Result: PASS.**
+
+## Validation 2026-05-31 (windows-gfx1151, ROCm 7.14.0a TheRock)
+
+Platform: AMD Radeon 8060S Graphics (gfx1151, RDNA3.5 APU), Windows 11. AMD clang
+23.0.0git (rocm-sdk 7.14.0a20260531). Validate-first follower: NO source change
+(fork HEAD 6a41e0b, same sha as gfx90a + gfx1100). Build script: agent_space/fpie_build.sh.
+
+### Build (Windows all-clang)
+enable_language(HIP) forces the all-clang toolchain on Windows. Built only the
+core_cuda target against venv-gsplat Python 3.13:
+```
+cmake -S <src> -B build-win-gfx1151 -G Ninja \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_HIP_COMPILER=clang++ \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_PREFIX_PATH=<rocm-root> \
+  -DPYTHON_EXECUTABLE=<py> -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win-gfx1151 --target core_cuda -j16   # [5/5] core_cuda.cp313-win_amd64.pyd
+```
+Windows-only build-invocation deltas (NOT source changes): all-clang trio;
+POLICY_VERSION_MINIMUM=3.5 (min 3.5 vs cmake 4.3); HIP_STANDARD=17; NOMINMAX. The
+gfx1151 code object is embedded (strings -> gfx1151 only); .pyd 374 KB (NO_EXTRAS
+LTO pitfall avoided).
+
+### Runtime / harness
+process.py does `from fpie import core_cuda`, so the .pyd must sit at fpie/core_cuda.*.pyd
+(directly under fpie/, NOT fpie/core/cuda/). TheRock runtime deployed beside it
+(amdhip64_7.dll + amd_comgr + rocm_kpack.dll). Deps: numpy + opencv-python-headless
+(no numba/taichi/openmp needed for the cuda+numpy path).
+
+### Results (HIP_VISIBLE_DEVICES=0)
+- core_cuda init: "Found 1 CUDA devices, Device 0: AMD Radeon(TM) 8060S Graphics, 20 SMs".
+- cuda vs numpy (agent_space/validate_fpie_win.py, 64x64 random src/tgt, random mask,
+  500 Jacobi iters):
+    Equ  : max|cuda-numpy| = 0 (bit-identical), deterministic (run1==run2) -> PASS
+    Grid : max|cuda-numpy| = 0 (bit-identical), deterministic               -> PASS
+- Upstream smoke suite `pytest tests/test_smoke.py`: 7 passed, 1 skipped (the skip is
+  the OpenMP-vs-numpy CPU test; openmp not built). Identical to gfx90a + gfx1100.
+
+RESULT: PASS. Matches gfx90a + gfx1100 exactly. windows-gfx1151 -> completed.

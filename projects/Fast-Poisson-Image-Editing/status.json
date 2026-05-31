@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-30T07:18:07Z",
+      "completed_at": "2026-05-31T00:00:00Z",
+      "updated_at": "2026-05-31T00:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   }
 }
