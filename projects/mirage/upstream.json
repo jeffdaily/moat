@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/mirage-project/mirage",
   "default_branch": "mpk",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "cmake-cython",
   "base_sha": null
 }

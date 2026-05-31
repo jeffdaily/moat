@@ -398,6 +398,13 @@
     "note": "GPU backend immature/WIP; README 'AMD' = Zen CPU SIMD, not GPU",
     "reason": "verify"
   },
+  "mirage-project/mirage": {
+    "decided": "2026-05-31T01:40:26Z",
+    "disposition": "skip",
+    "full_name": "mirage-project/mirage",
+    "note": "CUTLASS/CuTe-centric tensor superoptimizer + NVIDIA-arch-locked megakernel codegen (PTX mma/wgmma/TMA/cp.async, sm_80/sm_90a/sm_100a, NVSHMEM, NVRTC); no tractable correctness-first HIP target -- AMD support would be a ground-up CK/ck_tile+HIP backend, not a mechanical port",
+    "reason": "cant-port"
+  },
   "mrshaw01/software-engineer": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
