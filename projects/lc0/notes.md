@@ -287,3 +287,110 @@ Run-to-run at batch=8: value abs err stable at 6.0e-08, policy at 6.3e-07 (fp32 
 | Run-to-run determinism | PASS |
 
 validated_sha = 1a6c3e3597b96153e733de94eda576cc2fc6ae88. Transition: review-passed -> completed.
+
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1, hipcc clang 19. HIP_VISIBLE_DEVICES=0. Fork HEAD 1a6c3e3597b96153e733de94eda576cc2fc6ae88. Follower validation -- zero source changes, no fork push.
+
+### Build
+
+```
+cd /var/lib/jenkins/moat/projects/lc0/src
+meson setup build-hip \
+  -Dhip=true -Damd_gfx=gfx1100 \
+  -Dplain_cuda=false -Dcudnn=false -Dcutlass=false -Dnvcc=false \
+  -Dgtest=true -Dblas=true -Dopencl=false -Donnx=false \
+  -Db_lto=false -Dnative_arch=false \
+  -Dhip_libdirs=/opt/rocm/lib -Dhip_include=/opt/rocm/include
+bash /var/lib/jenkins/moat/utils/timeit.sh lc0 compile -- \
+  ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-hip -j16
+```
+
+Result: 321/321 targets built, warnings only (nodiscard), clean link.
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0
+```
+
+Output: two code objects, both `hipv4-amdgcn-amd-amdhsa--gfx1100` (sizes 1.1MB and 2.1MB). No gfx90a anywhere. fp16_kernels.hip.o = 2.3MB; `nm -C` shows non-empty SE_Layer_NHWC<C,K> instantiations (C=64,128,192,256,320,352,384; K=16,32,64) -- confirming the __CUDA_ARCH__ fix is intact and the SE bodies compiled in for gfx1100.
+
+### CPU gtest (non-GPU regression)
+
+```
+bash /var/lib/jenkins/moat/utils/timeit.sh lc0 test -- \
+  meson test -C /var/lib/jenkins/moat/projects/lc0/src/build-hip
+```
+
+Result: 8/8 OK (FP16, HashCat, OptionsParserTest, PositionTest, EncodePositionForNN, SyzygyTest, EngineTest, ChessBoard). 0 failures. Matches gfx90a exactly.
+
+### maia-1100 conv-SE fp32 cross-check (THE gate)
+
+Net: maia-1100 (NETWORK_SE, 6 SE blocks, 64 filters, conv policy). Exercises SE_Layer_NHWC on wave32.
+
+```
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+```
+
+Result: 222/222 "Check passed", 0 ERROR, across batch sizes 1-55 (including odd sizes 53, 55). Identical to gfx90a.
+
+### maia-1100 conv-SE fp16 cross-check
+
+```
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip-fp16(),blas(),mode=check,atol=1.1e-1,rtol=2e-1,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+```
+
+Result: 222/222 passed, 0 ERROR. At batch=32: check passed within fp16 envelope. Bestmoves match fp32.
+
+### Attention testnet regression (fp32 + fp16)
+
+```
+# fp32
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/testnet.pb.gz \
+  --start-batch-size=1 --max-batch-size=32 --batches=4
+
+# fp16
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench \
+  --backend=check \
+  "--backend-opts=hip-fp16(),blas(),mode=check,atol=2.5e-2,rtol=1e-1,freq=1.0" \
+  --weights=/var/lib/jenkins/moat/agent_space/testnet.pb.gz \
+  --start-batch-size=1 --max-batch-size=32 --batches=4
+```
+
+fp32: 130/130 passed, 0 ERROR. fp16: 130/130 passed, 0 ERROR. Matches gfx90a.
+
+### Benchmark (fault-free, batch 1-256)
+
+Both `--backend=hip` and `--backend=hip-fp16` on maia-1100 ran batch 1-256 without crash, illegal instruction, or GPU hang. No NaN. Clean exit.
+
+### Wave32 verdict on SE/conv reduction
+
+SE_Layer_NHWC uses pure shared-memory reduction (`__syncthreads()` + `sharedData[c]`), no warp shuffles at all -- entirely wave-size-agnostic. The warpReduce / warpMax shuffles in common_kernels.cu use `LC0_FULL_WARP_MASK = __activemask()` on HIP (exact active set on any wave size) with a 32-lane butterfly (masks 16..1); on wave32 each wavefront IS 32 lanes, so activemask == 0xFFFFFFFF and the butterfly is exactly correct. The `&0x1F` / `>>5` / `/32` lane indexing is self-consistent for wave32. subgroupBroadcast0 uses `width=32` which on wave32 is a plain lane-0 broadcast. Wave32 is CORRECT by construction for all reductions. The 222/222 fp32 + 222/222 fp16 conv-SE backendbench passes on real hardware confirm no wave32 reduction defect.
+
+### Summary
+
+| Test | gfx90a | gfx1100 |
+|------|--------|---------|
+| CPU gtest 8/8 | PASS | PASS |
+| maia-1100 fp32 conv-SE check (222 batches) | PASS | PASS |
+| maia-1100 fp16 conv-SE check (222 batches) | PASS | PASS |
+| attention testnet fp32 check (130 batches) | PASS | PASS |
+| attention testnet fp16 check (130 batches) | PASS | PASS |
+| backendbench fp32 batch 1-256 | PASS | PASS |
+| backendbench fp16 batch 1-256 | PASS | PASS |
+| gfx1100 code-object confirmed | n/a | PASS |
+| Wave32 SE/conv reduction correct | n/a | PASS |
+
+validated_sha = 1a6c3e3597b96153e733de94eda576cc2fc6ae88. Transition: port-ready -> completed.

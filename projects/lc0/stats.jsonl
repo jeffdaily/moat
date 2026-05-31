@@ -16,3 +16,5 @@
 {"kind":"phase","ts":"2026-05-31T03:09:53Z","phase":"compile","seconds":51.091,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-hip -j16"}
 {"kind":"phase","ts":"2026-05-31T03:11:39Z","phase":"test","seconds":89.493,"exit":0,"cmd":"meson test -C /var/lib/jenkins/moat/projects/lc0/src/build-hip"}
 {"kind":"phase","ts":"2026-05-31T03:14:00Z","phase":"test","seconds":29.249,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/lc0/src/build-hip/lc0 backendbench --backend=check '--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0' --weights=/var/lib/jenkins/moat/agent_space/maia1100.pb.gz --start-batch-size=1 --max-batch-size=55 --batches=4 2>&1 | grep -vE 'Cijk|Cannot find|hip_code|hip_module'"}
+{"kind":"phase","ts":"2026-05-31T05:48:19Z","phase":"compile","seconds":50.013,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T05:49:27Z","phase":"test","seconds":52.833,"exit":0,"cmd":"meson test -C /var/lib/jenkins/moat/projects/lc0/src/build-hip"}

@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-31T03:35:39Z",
+      "validated_sha": "1a6c3e3597b96153e733de94eda576cc2fc6ae88",
+      "started_at": "2026-05-31T05:46:00Z",
+      "completed_at": "2026-05-31T06:05:00Z",
+      "updated_at": "2026-05-31T06:05:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -50,10 +50,11 @@
           "test": 0,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
+        "session_count": 1,
+        "first_session_at": "2026-05-31T05:46:00Z",
+        "last_session_at": "2026-05-31T06:05:00Z"
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
