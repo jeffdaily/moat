@@ -340,3 +340,33 @@ No HIP faults, no NaN, clean exit on all runs.
 
 State: linux-gfx1100 -> `completed` at validated_sha 9eb3704.
 Fork untouched (no commit pushed; no source change required).
+
+## Windows gfx1151 follower: CONFIGURES, build blocked on host 3rdparty (out of ROCm scope)
+
+Configure SUCCEEDS on Windows with the all-clang toolchain for gfx1151:
+  cmake -G Ninja -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
+        -DCMAKE_HIP_COMPILER=clang++ -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151
+        -DCMAKE_PREFIX_PATH=<rocm-root> -DCMAKE_TLS_VERIFY=OFF
+        -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN"
+        <same module-OFF flags as the gfx90a build> -DBUILD_UNIT_TESTS=ON
+  (script: agent_space/open3d_win.sh; "Configuring done (85.5s)". enable_language(HIP)
+  forces the all-clang toolchain on Windows -- Clang-HIP + MSVC-CXX is refused.)
+  CMAKE_TLS_VERIFY=OFF is needed because cmake's bundled curl uses Windows schannel
+  whose chain is incomplete for github; FetchContent deps are URL_HASH-pinned so
+  integrity is preserved.
+
+Build (`--target tests`) reaches ninja step 185/813, then blocks on building Open3D's
+BUNDLED HOST 3rdparty under Windows-clang -- NOT the HIP port:
+- ext_stdgpu (the HIP-backend dep, the only ROCm-relevant one) configures fine.
+- ext_turbojpeg: libjpeg-turbo cmakescripts/BuildPackages.cmake:106 references a missing
+  win/projectTargets-release.cmake.in (a libjpeg-turbo Windows-packaging bug).
+- ext_curl: FindOpenSSL fails -- bundled boringssl (OPENSSL_ROOT_DIR) is not built (curl
+  configure runs before/without boringssl under Windows-clang).
+
+These are host I/O/TLS libraries (JPEG, curl, boringssl), required only to LINK the
+monolithic `tests` binary, not by the GPU core port. On Linux they build from source
+cleanly; the Windows-clang builds need per-library patching (libjpeg-turbo packaging,
+boringssl/curl). That is host-3rdparty Windows-build porting, out of ROCm-port scope
+(cf. LMCache POSIX, llm.c makefile). The HIP/ROCm port itself is sound (validated on
+gfx90a + gfx1100). Unblocks when those bundled host libs are made to build on
+Windows-clang (or pre-supplied as prebuilt), then re-run the build + GPU tests.

@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Configures cleanly on Windows all-clang for gfx1151 (HIP/stdgpu side fine); `tests` build blocked at ninja 185/813 on BUNDLED HOST 3rdparty Windows-clang builds: libjpeg-turbo BuildPackages.cmake missing win/projectTargets-release.cmake.in, and curl FindOpenSSL fails (boringssl unbuilt). Host I/O/TLS libs needed only to link the monolithic tests binary, not the GPU port -- out of ROCm-port scope (cf. LMCache/llm.c). Port validated on gfx90a+gfx1100.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-31T09:10:00Z",
+      "updated_at": "2026-05-31T00:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
