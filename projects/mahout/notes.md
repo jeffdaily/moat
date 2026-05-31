@@ -299,3 +299,30 @@ identical to the prior validation:
 
 Fork HEAD: 2b0544a40bcaf60d35539ba8be62cf791e6c0846 (amended single curated
 commit, force-with-lease pushed to jeffdaily/mahout @ moat-port).
+
+## Validation 2026-05-31 (validator, linux-gfx90a, MI250X, ROCm 7.2.1) -- PASS
+
+Platform: linux-gfx90a, GCD: HIP_VISIBLE_DEVICES=2 (MI250X gfx90a), ROCm 7.2.1.
+Fork: jeffdaily/mahout @ moat-port HEAD 2b0544a40bcaf60d35539ba8be62cf791e6c0846.
+Build: `cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16` -- exit 0 (cached, 0.16s).
+
+Rust tests (HIP_VISIBLE_DEVICES=2, --test-threads=1, 10.3s):
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- qdp-core lib: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 64/64, gpu_validation 8/8.
+- Non-GPU suites: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- 0 failures total.
+Async-pipeline tests confirmed passing: test_amplitude_encoding_async_pipeline,
+test_angle_encoding_async_pipeline (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path (gpu_angle_encoding) -- all via hipMemcpyAsync (non-blocking H2D).
+
+Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests, 11.9s):
+- 301 passed, 12 skipped, 0 failed.
+- Skips: 2 multi-GPU, 1 tensorflow-absent, 1 loader path-timing, 5 torch_ref sm_-arch check
+  (Triton/torch CUDA reference path; not native engine), 2 AmdQdpEngine-not-built,
+  1 NVIDIA-ref-absent -- all pre-existing/legit.
+
+Transition: review-passed -> completed (validated_sha = 2b0544a).
+Followers unblocked: linux-gfx1100, windows-gfx1151 -> port-ready.
