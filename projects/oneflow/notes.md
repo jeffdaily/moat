@@ -246,6 +246,82 @@ Non-blocking follow-ons (NOT changes-requested):
 
 Scope acceptance (per dispatch, NOT blockers): the 17 deferred .cu (conv/normalization/fused-MLP/CUTLASS+wmma/cuSOLVER/libcu++/P2P) are a documented validation-scope deferral; the fp16-matmul numpy __bool__ pytest quirk and the CPU int32-matmul gap are pre-existing oneflow issues, not ROCm regressions. The GPU test run not yet covering the deferred op surface is expected at review time -- the validator stage exercises the real-GPU slice next.
 
+## Validation 2026-05-31 (gfx1100, ROCm 7.2.1)
+
+State: port-ready -> completed. Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32, ROCm 7.2.1).
+Fork HEAD: 68718f03829384b530ba97c32b18e5937629ec09. No fork commit needed (follower, zero churn). Device: HIP_VISIBLE_DEVICES=0.
+
+Build: FRESH clone of moat-port branch at 68718f03. Configure+tp+oneflow from scratch (no ccache on this host); 19 min total. Build log: agent_space/oneflow_build_gfx1100.log.
+
+Build command:
+```
+CMAKE_HIP_ARCHITECTURES=gfx1100 bash /var/lib/jenkins/moat/projects/oneflow/src/build_rocm.sh all
+```
+(no ccache, no -DCMAKE_*_LAUNCHER flags; ROCM_CLANG auto-detected at /opt/rocm/lib/llvm/bin/clang++)
+
+Configure confirmed:
+- CMAKE_HIP_ARCHITECTURES: gfx1100
+- OF_GPU_WARP_SIZE: 32  (gfx11xx matches the `!gfx9xx` branch in cmake/cuda.cmake -> warp=32)
+- OF_GPU_WARP_SIZE=32 in CMakeFiles/oneflow.dir/flags.make DEFINES (all TUs, both host and device)
+- CMakeFiles/oneflow.dir/flags.make: -DOF_GPU_WARP_SIZE=32 present
+
+Artifacts:
+- liboneflow.so: 1.2 GB at build/liboneflow.so; 190 gfx1100 code objects confirmed via roc-obj-ls
+- _oneflow_internal: 16 MB at python/oneflow/_oneflow_internal.cpython-312-x86_64-linux-gnu.so
+
+gfx1100 code-object proof:
+```
+$ roc-obj-ls liboneflow.so | grep gfx | head -2
+1  hipv4-amdgcn-amd-amdhsa--gfx1100  ...offset=97603584
+2  hipv4-amdgcn-amd-amdhsa--gfx1100  ...offset=97648640
+```
+Total: 190 gfx1100 code objects (vs 190 on gfx90a).
+
+GPU test commands:
+```
+cd /var/lib/jenkins/moat/projects/oneflow/src
+export PYTHONPATH=python:$PYTHONPATH
+HIP_VISIBLE_DEVICES=0 python3 -m pytest \
+  python/oneflow/test/modules/test_add.py \
+  python/oneflow/test/modules/test_cast.py \
+  python/oneflow/test/modules/test_where.py \
+  python/oneflow/test/modules/test_masked_fill.py \
+  python/oneflow/test/modules/test_broadcast_ops.py \
+  python/oneflow/test/modules/test_transpose.py \
+  python/oneflow/test/modules/test_softmax.py \
+  python/oneflow/test/modules/test_layer_norm.py \
+  python/oneflow/test/modules/test_matmul.py \
+  -q -p no:cacheprovider
+```
+
+Results (gfx1100 vs gfx90a lead):
+- Primitive GPU slice: 64 PASSED (same as gfx90a)
+- Matmul core (fp32/mm/mv/broadcast/batch/tf32): 9 PASSED (same as gfx90a)
+- Total: 73 passed, 2 failed (same as gfx90a -- both pre-existing artifacts)
+
+Pre-existing artifacts (NOT GPU faults, gate is GREEN):
+1. test_matmul fp16: TypeError __bool__ should return bool -- numpy/oneflow dtype-interop quirk; GPU fp16 result is correct.
+2. test_matmul int32: same __bool__ quirk (int32 CPU path; no int32 matmul kernel in oneflow).
+
+Warp-reduction op explicit verification on wave32:
+- softmax (8x32x256, dim=-1): max_abs_diff=1.49e-08  -> PASS
+- layer_norm fwd (4x64x64): all finite, matches numpy reference -> PASS
+- layer_norm bwd gamma/beta grad (LayerNormParamGrad wave64-fix site): no NaN -> PASS
+- rms_norm fwd+bwd (RmsNormParamGrad, kWarpSize/2 butterfly): no NaN -> PASS
+- matmul fp32 (64x64): max_abs_diff=5.72e-06 -> PASS
+
+Wave32 verdict: kWarpSize=32 (OF_GPU_WARP_SIZE=32) is native on RDNA3. The arch-unified
+warp reductions (softmax WarpAllReduce, layer_norm WarpReduce block_dim_x=32, rms_norm
+WarpReduceSum from kWarpSize/2) all produce correct results on gfx1100. No source changes
+required. The LayerNormParamGrad wave64 fix (session-2 fault D) is equally correct on wave32
+-- tile_size=32 and block_dim_x=32 match the hardware warp width on RDNA.
+
+Determinism check (softmax + layer_norm bit-identical over two runs): PASS.
+
+Fork: untouched (no commit needed for follower-only validation).
+
+Final state: linux-gfx1100 -> completed, validated_sha = 68718f03829384b530ba97c32b18e5937629ec09.
+
 ## Validation 2026-05-31
 
 State: review-passed -> completed. Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1).
