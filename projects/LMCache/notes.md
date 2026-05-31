@@ -134,3 +134,53 @@ Non-GPU regression (must not regress; all PASS):
 NONE. The c_ops extension has no build dependency on any other MOAT-ported
 CUDA library (no cuBLAS/cuFFT/cuSPARSE/Thrust/CUB/CUTLASS/cuCollections/rmm/
 raft). cupy-rocm-7-0 and vLLM-ROCm are pip/runtime deps, not build deps.
+
+## Review 2026-05-31
+
+Reviewed jeffdaily/LMCache @ moat-port (HEAD e1d94420) vs base 7eb57ad via the
+/pr-review skill (local-branch mode). The diff is a single setup.py edit (9+/5-)
+in rocm_extension(): the ROCm cxx flag -std=c++17 -> -std=c++20, plus comments.
+
+No problems found. Independently verified:
+- Scope: only rocm_extension()'s cxx changed. cuda_extension (setup.py:246),
+  sycl_extension (setup.py:354), and _common_cpp_extensions (189/197/205) stay
+  c++17 byte-identical to base; mooncake was already c++20 (132). CUDA and SYCL
+  paths are untouched.
+- C++20 root cause confirmed against the installed torch
+  (2.13.0a0+gitb5e90ff, hip 7.2.53211): c10/core/TensorImpl.h:2516 is
+  `template <typename T> requires std::is_integral_v<T> bool SetDimsTemplate(...)`,
+  a C++20 requires-clause; a .cpp TU including <torch/all.h> at c++17 fails with
+  "unknown type name 'requires'". Matching the .cpp TUs to the .hip TUs' c++20 is
+  the minimal correct fix.
+- Arch surface: no gfx literal or --offload-arch in setup.py's build path; arch
+  is env-driven via PYTORCH_ROCM_ARCH. The only gfx942/gfx950 literals are the
+  ARG defaults in docker/Dockerfile.rocm{,-lightweight} (off the build path);
+  leaving them untouched is correct minimal-footprint (editing would churn HEAD
+  and force follower revalidation).
+- wave64 no-op confirmed by inspection: zero warp intrinsics
+  (__shfl/__ballot/__activemask), zero atomics, zero textures/surfaces, zero
+  cooperative groups in csrc. The names warp_scan (ac_enc.cu:90) and warp_copy
+  (mp_mem_kernels.cu:152) are misleading but their bodies are wave-size-agnostic:
+  warp_scan is a block-wide Hillis-Steele scan over blockDim.x synced by
+  __syncthreads(); warp_copy is a blockDim.x-stride copy. All `32` literals are
+  uint32 bit-widths (ac_enc.cu:28/46/65/70), switch(block_size) template-dispatch
+  cases, or a perf cap thread_dim_x=min(elements_per_head,32) (mp_mem_kernels.cu:345)
+  -- none assume warpSize, and the cap is unguarded so CUDA and ROCm match. All
+  block dims are min(...,128/512) or template tile sizes with stride loops.
+- Hugepage path: mem_alloc.cpp alloc_hugepage_pinned_ptr (49) calls _mmap_anon
+  (51) which mmap(MAP_HUGETLB|MAP_HUGE_2MB) (24-26) and throws on failure (28)
+  BEFORE cudaHostRegister (53). On a host with 0 reserved hugepages it fails at
+  mmap, not at hipHostRegister, so the register path is HIP-clean; the same
+  register call on NUMA (149) and shm (209) memory is reached and was validated.
+- Hygiene: title [ROCm] ... 62 chars (<=72); body has root cause + Test Plan +
+  Claude disclosure; no Co-Authored-By/noreply, no ghstack, no signed-off, no
+  AMD-internal GitHub account (fork is jeffdaily/LMCache); ASCII, no em-dash.
+- Commit is setup.py-only: hipify mirrors (/csrc/*.hip, /csrc/*_hip.*, /csrc_hip)
+  are gitignored (.gitignore 119-123) and none are tracked; working tree carries
+  only the uncommitted MOAT helper build_rocm_gfx90a.sh (intentionally not in the
+  fork).
+
+Verdict: review-passed. The GPU test suite (parity 105, mem-kernels 56,
+mp-mem 40, memory-mgmt 47/3-skip, recorders 17, CacheGen 5/5 bit-exact) is the
+load-bearing evidence; the porter ran it but the validator stage re-runs it on
+real GPU next, which is the gate. Safe to proceed to GPU validation.
