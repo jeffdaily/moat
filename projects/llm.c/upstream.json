@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/karpathy/llm.c",
   "default_branch": "master",
   "fork_url": null,
-  "ext_type": "unknown",
-  "base_sha": null
+  "ext_type": "makefile",
+  "base_sha": "f1e2ace651495b74ae22d45d1723443fd00ecd3a"
 }
