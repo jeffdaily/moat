@@ -1,0 +1,30 @@
+{"kind":"phase","ts":"2026-05-31T02:44:02Z","phase":"compile","seconds":3.808,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T02:45:48Z","phase":"compile","seconds":4.252,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T02:48:13Z","phase":"compile","seconds":5.040,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T02:58:20Z","phase":"compile","seconds":12.042,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:01:32Z","phase":"compile","seconds":1.428,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:26:17Z","phase":"compile","seconds":23.309,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:29:19Z","phase":"compile","seconds":52.550,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:31:41Z","phase":"compile","seconds":21.806,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:33:22Z","phase":"compile","seconds":68.207,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:37:32Z","phase":"compile","seconds":7.102,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:41:34Z","phase":"compile","seconds":146.577,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:49:20Z","phase":"compile","seconds":201.740,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:50:47Z","phase":"compile","seconds":11.008,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:52:46Z","phase":"compile","seconds":57.750,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T03:56:44Z","phase":"compile","seconds":201.905,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-05-31T07:04:47Z","phase":"compile","seconds":15.687,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:08:28Z","phase":"compile","seconds":136.289,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:12:23Z","phase":"compile","seconds":24.465,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:16:54Z","phase":"compile","seconds":34.680,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:28:38Z","phase":"compile","seconds":7.361,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:35:43Z","phase":"compile","seconds":234.369,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:42:58Z","phase":"compile","seconds":165.342,"exit":1,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:46:49Z","phase":"compile","seconds":62.329,"exit":0,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16"}
+{"kind":"phase","ts":"2026-05-31T07:51:46Z","phase":"test","seconds":175.370,"exit":1,"cmd":"projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T07:57:15Z","phase":"test","seconds":496.432,"exit":1,"cmd":"projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T08:04:07Z","phase":"compile","seconds":1.606,"exit":0,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16 --target nvcv_types"}
+{"kind":"phase","ts":"2026-05-31T08:04:08Z","phase":"compile","seconds":0.867,"exit":0,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16 --target cvcuda_test_system"}
+{"kind":"phase","ts":"2026-05-31T08:04:27Z","phase":"compile","seconds":0.330,"exit":0,"cmd":"cmake --build projects/CV-CUDA/src/build-hip -j 16 --target nvcv_test_cudatools_system"}
+{"kind":"phase","ts":"2026-05-31T08:06:39Z","phase":"test","seconds":142.252,"exit":1,"cmd":"projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system --gtest_color=no"}
+{"kind":"phase","ts":"2026-05-31T08:10:50Z","phase":"test","seconds":382.088,"exit":1,"cmd":"projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system --gtest_color=no"}
