@@ -329,6 +329,95 @@ Skip set identical to prior gfx90a run: AsyncMRFabricTest (1), System/DEVICE_MR_
 
 PASS. State: revalidate -> completed (validated_sha = 565705bf0c67c4b1a57a87130cb54d5bf6e90ae6). Real GPU allocation confirmed on gfx90a MI250X.
 
+## Validation 2026-05-31 (gfx1100) -- revalidate at 565705b (arena/async-alloc change)
+
+Revalidation triggered because head_sha moved 3c0e802 -> 565705b (the gfx90a already completed at 565705b; windows-gfx1151 also completed at 565705b). The diff 3c0e802..565705b includes real source changes: `arena.hpp` LLP64 UL->ULL, `runtime_async_alloc.hpp` WIN32 guard, both hip cmake files (WINDOWS_EXPORT_ALL_SYMBOLS + dlfcn guard + Threads::Threads), and 3 test files (`byte_literals.hpp`, `device_scalar_tests.cpp`, `logger_tests.cpp`). All changes are Windows-guarded or LP64-compatible; no Linux/HIP logic altered.
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32). ROCm 7.2.1. Fork untouched (no commits, no CI added).
+
+### Build
+
+Fetched and checked out 565705bf0c67c4b1a57a87130cb54d5bf6e90ae6 from jeffdaily/rmm moat-port. Re-ran cmake configure (0.1 s) + incremental build (43 targets rebuilt, warnings only, no errors).
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/rmm/src/cpp -B projects/rmm/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/opt/rocm;/opt/conda/envs/py_3.12" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/projects/rmm/install-gfx1100 \
+  -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+bash utils/timeit.sh rmm compile -- cmake --build projects/rmm/build-gfx1100 -j$(nproc)
+```
+
+gfx1100 code-object confirmed:
+```
+roc-obj-ls projects/rmm/build-gfx1100/gtests/DEVICE_BUFFER_TEST
+hipv4-amdgcn-amd-amdhsa--gfx1100  ...#offset=282624&size=3035920
+```
+No gfx90a code object present.
+
+### Test results
+
+```
+bash utils/timeit.sh rmm test -- bash -c \
+  "HIP_VISIBLE_DEVICES=0 ctest --test-dir projects/rmm/build-gfx1100 --output-on-failure -j1"
+```
+
+Result: **100% tests passed, 0 tests failed out of 27** (66.81 s wall time).
+
+Full gtest counts (all 27 binaries):
+
+| Test binary                  | Passed | Skipped | Failed |
+|------------------------------|--------|---------|--------|
+| ADAPTOR_TEST                 | 32     | 0       | 0      |
+| ALIGNED_TEST                 | 9      | 0       | 0      |
+| ARENA_MR_TEST                | 42     | 0       | 0      |
+| BINNING_MR_TEST              | 2      | 0       | 0      |
+| CALLBACK_MR_TEST             | 2      | 0       | 0      |
+| CONTAINER_MULTIDEVICE_TEST   | 12     | 0       | 0      |
+| CUDA_ASYNC_MR_TEST           | 3      | 1       | 0      |
+| CUDA_STREAM_TEST             | 12     | 0       | 0      |
+| DEVICE_BUFFER_TEST           | 46     | 0       | 0      |
+| DEVICE_MR_REF_TEST           | 204    | 5       | 0      |
+| DEVICE_SCALAR_TEST           | 56     | 0       | 0      |
+| DEVICE_UVECTOR_TEST          | 100    | 0       | 0      |
+| ERROR_MACROS_TEST            | 11     | 0       | 0      |
+| FAILURE_CALLBACK_TEST        | 2      | 0       | 0      |
+| HOST_MR_REF_TEST             | 23     | 0       | 0      |
+| LIMITING_TEST                | 5      | 0       | 0      |
+| LOGGER_TEST                  | 7      | 0       | 0      |
+| PINNED_POOL_MR_TEST          | 6      | 0       | 0      |
+| POLYMORPHIC_ALLOCATOR_TEST   | 10     | 0       | 0      |
+| POOL_MR_TEST                 | 10     | 0       | 0      |
+| PREFETCH_ADAPTOR_TEST        | 5      | 0       | 0      |
+| PREFETCH_TEST                | 6      | 0       | 0      |
+| STATISTICS_TEST              | 7      | 0       | 0      |
+| STREAM_ADAPTOR_TEST          | 8      | 0       | 0      |
+| SYSTEM_MR_TEST               | 1      | 4       | 0      |
+| THRUST_ALLOCATOR_TEST        | 12     | 6       | 0      |
+| TRACKING_TEST                | 9      | 0       | 0      |
+| **TOTAL**                    | **642**| **16**  | **0**  |
+
+Total: 658 gtest cases (642 passed + 16 skipped + 0 failed). Matches gfx90a@565705b (658 total); minor per-binary deltas (DEVICE_MR_REF_TEST 204 vs 203, THRUST_ALLOCATOR_TEST 12 vs 11) are device-topology differences (single gfx1100 vs multi-GCD gfx90a MI250X), not failures.
+
+### Skip set
+
+Identical to prior gfx1100 and gfx90a runs -- no new skips or failures:
+- AsyncMRFabricTest.FabricHandlesSupport (CUDA_ASYNC_MR_TEST, 1 skip)
+- ResourceTests/mr_ref_test.*/System (DEVICE_MR_REF_TEST, 5 skips)
+- SystemMRTest.* (SYSTEM_MR_TEST, 4 skips)
+- ThrustAllocatorTests/allocator_test.multi_device/* (THRUST_ALLOCATOR_TEST, 6 skips)
+- CudaStreamDeathTest.TestSyncNoThrow: guarded out under USE_HIP at source level
+
+The arena (42 cases), device_scalar (56 cases), logger (7 cases), and async-alloc (3+1skip) tests -- the ones touched in the diff -- all pass on gfx1100.
+
+### Verdict
+
+PASS. State: revalidate -> completed (validated_sha = 565705bf0c67c4b1a57a87130cb54d5bf6e90ae6). Real GPU allocation/stream-ordered ops confirmed on AMD Radeon Pro W7800 (gfx1100).
+
 ## Install as a dependency
 
 This is the contract raft/cudf/cuvs/cugraph/cuml consume. rmm is header-heavy:
