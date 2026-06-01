@@ -375,3 +375,70 @@ hardening pass.
 
 Verdict: clean. Stage 2 (OptiX->HIPRT) remains out of scope. Handing to the
 validator.
+
+## Validation 2026-06-01 (linux-gfx90a, GCD 1, HIP_VISIBLE_DEVICES=1) -- PASS
+
+Fork: jeffdaily/rmagine moat-port HEAD 3d098d5. Clean build from source; build dir
+agent_space/rmcl_valclean_build (scratch, gitignored). GPU: AMD Instinct MI250X /
+MI250, gfx90a:sramecc+:xnack-.
+
+### Configure
+
+```
+cmake -S projects/rmcl/rmagine_src \
+      -B agent_space/rmcl_valclean_build \
+      -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
+      -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON \
+      -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON \
+      -DRMAGINE_BUILD_TOOLS=OFF
+```
+
+### Build
+
+```
+cmake --build agent_space/rmcl_valclean_build -j$(nproc)
+```
+
+74/74 targets built cleanly (HIP compiler: clang++ 22.0.0 / ROCm 7.2). No errors;
+only pre-existing nodiscard warnings on hipMemset macro expansions (unchanged from
+upstream behavior).
+
+### Test results
+
+```
+export HIP_VISIBLE_DEVICES=1
+ctest --test-dir agent_space/rmcl_valclean_build --output-on-failure -R '^cuda_'
+# Run 1: 7/7 PASS (2.22 s)
+# Run 2: 7/7 PASS (2.23 s)  -- determinism confirmed
+ctest --test-dir agent_space/rmcl_valclean_build --output-on-failure -R '^core_'
+# 12/12 PASS (3.14 s)  -- host path no regression
+```
+
+Tests passing:
+- cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd,
+  cuda_math_statistics, cuda_math_reduction (pre-existing suite)
+- cuda_math_reduction_correctness (new asserting gate added by porter)
+- core_math, core_memory, core_memory_slicing, core_quaternion, core_math_svd,
+  core_math_statistics, core_math_cov_transform, core_math_gaussians,
+  core_math_matrix_slicing, core_math_reduction, core_math_cholesky, core_math_lie
+
+### GPU dispatch confirmed (AMD_LOG_LEVEL=3)
+
+```
+AMD_LOG_LEVEL=3 ./bin/rmagine_tests_cuda_math_reduction_correctness
+```
+
+ShaderName lines confirm dispatch of:
+- `void rmagine::cuda::sum_kernel<1024u, rmagine::Vector3_<float>>(...)`
+- `void rmagine::cuda::cov_kernel<1024u>(...)`
+on device `amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`. Test exits with:
+`PASS: rm::sum/mean/cov match CPU reference and are deterministic`
+
+### Remaining work
+
+Stage 2 (OptiX->HIPRT MCL backend) is a separate future stage; scope and plan
+documented in "Stage 2 (OptiX->HIPRT MCL backend)" section above. Not in scope
+for this validation.
