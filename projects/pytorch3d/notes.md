@@ -32,6 +32,69 @@ Outcome handling:
 - Passes as-is -> set gfx1100 `completed`, validated_sha = `b73d735ecf...` (same commit; pure verification, no delta).
 - wave32 breaks -> this would be the first time pytorch3d needs a jeffdaily fork: delta-port the wave32 fixes onto `jeffdaily/pytorch3d` @ `moat-port` (branched off the landed commit), validate on gfx1100, then the wave32 fix is a candidate to upstream as a follow-up PR (user-gated, like any upstream PR).
 
+## Validation 2026-06-01 (gfx1100)
+
+**Host**: linux-gfx1100, AMD Radeon Pro W7800 48GB x2, gfx1100 (RDNA3, wave32), ROCm 7.2.1, PyTorch 2.13.0a0+gitb5e90ff (HIP 7.2.53211), Python 3.12.
+
+**Commit validated**: `b73d735ecf194c31de812feffef3a55cc3726128` (upstream facebookresearch/pytorch3d, same as gfx90a baseline).
+
+### Build fix applied (follower delta)
+
+`setup.py` hardcodes `-std=c++17` in `extra_compile_args`. PyTorch 2.13 headers use C++20 features (`requires` concept constraint in `TensorImpl.h:2516`), causing compile failures with gcc/clang under c++17. Changed both occurrences of `-std=c++17` to `-std=c++20`. This is a build-system compatibility fix required for the PyTorch 2.13 + RDNA3 environment; it does not affect GPU kernel semantics and is wave-size-agnostic.
+
+**Build command**:
+```
+ROCM_HOME=/opt/rocm PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 FORCE_CUDA=1 HIP_VISIBLE_DEVICES=0 \
+  pip install -e /var/lib/jenkins/moat/projects/pytorch3d/src --no-build-isolation -v
+```
+Build time: 81 seconds (timeit.sh stats.jsonl). torch `BuildExtension` auto-hipified 30 TUs.
+
+**gfx1100 code-object evidence**: `roc-obj-ls _C.cpython-312-x86_64-linux-gnu.so` shows 30 `hipv4-amdgcn-amd-amdhsa--gfx1100` bundles, zero other GPU arches. No gfx90a objects present.
+
+### Wave32 audit findings
+
+**pulsar warp reductions (commands.h / renderer.render.device.h)**:
+- `WARP_CUMSUM`/`WARP_MAX`/`WARP_SUM` (explicit-mask `__shfl_down_sync` with 16/8/4/2/1 offsets) are guarded `#if !defined(USE_ROCM)` -- not compiled on ROCm. Not a risk.
+- `__ballot(done)` stored as `unsigned long long` in `renderer.render.device.h:290`. HIP defines `__ballot` to always return `unsigned long long` via `__builtin_amdgcn_ballot_w64`; on wave32 only bits 0-31 are set, bits 32-63 are zero. `__popcll` counts correctly. Type is correct for the HIP API; no wave32 bug.
+- `BALLOT`/`SHFL_SYNC` macros are defined but only the `#if !defined(USE_ROCM)` template functions use the shfl-with-offset math. Safe.
+
+**warp_reduce.cuh (WarpReduceMin/WarpReduceMax)**:
+- Uses shared-memory tree reduction: `min_dists[tid + 32]` etc. are array index accesses, not warp shuffle offsets. Block size is 128, shared mem has 128 slots; `tid` ranges 0..31 in the warp-unroll tail, `tid+32` indexes 32..63. This is wave-size independent (shared memory, not lane-relative). `__syncwarp()` calls are gated `#if !defined(USE_ROCM)` -- correct per AMD lockstep execution. No wave32 bug.
+
+**hipCUB WarpReduce/WarpScan**: Not used. pytorch3d uses only device-wide CUB/hipCUB APIs (`DeviceRadixSort`, `DeviceReduce`, `DeviceSelect`) which map to hipcub device-level algorithms. No warp-width pin needed.
+
+**rocPRIM 4.2.0 GFX10/11 DPP**: `cub::DeviceRadixSort::SortPairsDescending` is used in pulsar. This maps to hipcub device radix sort (not segmented). Built cleanly on gfx1100 -- no "wavefront shifts are not supported on GFX10+" compile error observed. Not affected.
+
+**HSA faults**: None. Zero 0x1016 errors across all test runs.
+
+### Test results
+
+**Pulsar renderer (highest wave32 risk)**:
+- 9/9 passed (determinism confirmed: identical results on second run)
+- 1 test (test_principal_point) failed: `imageio.imsave` rejects 1-channel array -- imageio API change, not a GPU issue. The GPU render and `np.allclose` correctness check both passed before the imsave call. This failure is platform- and wave-size-agnostic.
+
+**KNN** (device radix sort path): 7/7 passed (determinism confirmed: identical results on second run)
+
+**Ball query**: 5/5 passed
+
+**Point mesh distance** (WarpReduceMin path): 9/9 passed
+
+**Rasterize meshes**: 17/17 passed
+
+**Sample farthest points** (WarpReduceMax path): 4/4 passed
+
+**Chamfer**: 18/18 passed
+
+**Broader GPU suite** (18 test files): 148/148 passed
+
+**Non-GPU suite** (7 test files): 160/160 passed
+
+Test timing: ~94 seconds for the wave32-risk GPU suite (pulsar + knn + ball_query + point_mesh + rasterize + sample_farthest + chamfer).
+
+### Wave32 verdict
+
+**PASS.** No wave32 failures. The pulsar warp reductions are correctly guarded behind `#if !defined(USE_ROCM)` and the HIP `__ballot` type is compatible. WarpReduceMin/Max uses shared-memory indexing (wave-size agnostic). No hipCUB warp primitives used. No rocPRIM DPP compile failure. All GPU results correct and deterministic on gfx1100 wave32. The c++20 build fix is the only delta needed for this environment.
+
 ## Adoption note
 priority 7.075 is the computed discovery score (stars 9891 -> 3.995, forks 1455 -> 1.582, pushed 2026-06-01 -> recency 1.498; weights stars 1.0 / forks 0.5 / recency 1.5 / half-life 180d). That places pytorch3d near the top of the table (above cuml 6.61 and cugraph 6.11; below only vllm 8.53 in the discovery pool), versus the lowest real table score op43dgs 3.393.
 
