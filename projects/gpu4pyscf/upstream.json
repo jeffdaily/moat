@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/pyscf/gpu4pyscf",
   "default_branch": "master",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "cmake-cupy-plugin",
   "base_sha": null
 }
