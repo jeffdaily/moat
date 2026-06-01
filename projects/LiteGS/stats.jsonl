@@ -14,3 +14,8 @@
 {"kind":"phase","ts":"2026-06-01T00:01:16Z","phase":"test","seconds":7.158,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier2b.py"}
 {"kind":"phase","ts":"2026-06-01T00:04:29Z","phase":"test","seconds":7.373,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier3.py"}
 {"kind":"phase","ts":"2026-06-01T00:05:07Z","phase":"test","seconds":9.860,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier3.py"}
+{"kind":"phase","ts":"2026-06-01T00:23:25Z","phase":"test","seconds":8.010,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier1.py"}
+{"kind":"phase","ts":"2026-06-01T00:24:08Z","phase":"test","seconds":7.209,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier2.py"}
+{"kind":"phase","ts":"2026-06-01T00:24:23Z","phase":"test","seconds":7.458,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier2b.py"}
+{"kind":"phase","ts":"2026-06-01T00:26:17Z","phase":"test","seconds":8.631,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier3.py"}
+{"kind":"phase","ts":"2026-06-01T00:26:34Z","phase":"test","seconds":8.401,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/litegs_tier3.py"}

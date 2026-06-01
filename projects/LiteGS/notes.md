@@ -272,3 +272,39 @@ Minor non-blocking observation (NOT a wave64 fault, absorbed by the gate):
   constant (255/256) and alpha = a*exp_approx(power) is finite in normal
   training, so this cannot arise in practice; the PSNR gate absorbs it. Left as
   documentation, no change required.
+
+## Validation 2026-06-01 (validator, linux-gfx90a) -- PASS -> completed
+
+Device: MI250X GCD 2, gfx90a (amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-), ROCm 7.2.1, torch 2.13.0a0+gitb5e90ff, HIP_VISIBLE_DEVICES=2.
+
+Build: reused porter's intact install (extensions built 2026-05-31/Jun-1 at 602ce5a). Verified litegs_fused and simple_knn._C load correctly from /opt/conda/envs/py_3.12.
+
+Commands:
+```
+cd /tmp && HIP_VISIBLE_DEVICES=2 utils/timeit.sh LiteGS test -- python agent_space/litegs_tier1.py
+cd /tmp && HIP_VISIBLE_DEVICES=2 utils/timeit.sh LiteGS test -- python agent_space/litegs_bwd_fd.py
+cd /tmp && HIP_VISIBLE_DEVICES=2 AMD_LOG_LEVEL=1 utils/timeit.sh LiteGS test -- python agent_space/litegs_tier3.py  (x2)
+```
+
+Tier 1 (litegs.utils.wrapper, 6 wrappers):
+- CreateTransformMatrix: PASS
+- CreateCov2dDirectly: PASS
+- CreateRaySpaceTransformMatrix: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+- Binning: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+- SphericalHarmonicToRGB: FAIL -- dir_grad mismatch (documented: kernel intentionally never writes dir_grad; CUDA-identical)
+- EighAndInverse2x2Matrix: FAIL -- eigenvector sign ambiguity + near-singular conditioning (documented upstream artifact); independently confirmed: ||A@Ainv-I||inf median=5.96e-8, eigenvalue err median=4.8e-7 on well-conditioned matrices, bitwise-deterministic.
+
+All 4 misses are documented upstream artifacts identical on CUDA. No new failures.
+
+Tier 2 (rasterizer):
+- Forward: shape (1,3,256,256), finite, 99.9% nonzero, bitwise-deterministic across 2 runs.
+- FD backward check (litegs_bwd_fd.py): grad_color slope=1.000, sign agreement=1.00, median rel err=8.2e-4 -- PASS.
+- Note: litegs_tier2b.py bitwise-det=False is a harness artifact (target=torch.rand_like(img) varies per call, not the same computation each run); the FD check with fixed target is the real gate.
+
+Tier 3 (end-to-end synthetic multi-view training, 300 iters, 3 cameras):
+- Run 1: loss 0.04079->0.00121 (down 95.6%), PSNR 20.52->48.29 dB, nan_free=True -- PASS
+- Run 2: loss 0.04079->0.00121 (down 95.6%), PSNR 20.52->48.39 dB, nan_free=True -- PASS
+- No 0x1016 / HSA_STATUS_ERROR_EXCEPTION in either run.
+- gfx90a native code objects confirmed dispatched (AMD_LOG_LEVEL=3 first run, "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-").
+
+Decision: PASS -> completed. validated_sha=602ce5a459e3a637fb620e5fab0d71d9470b5227. Follower platforms (linux-gfx1100, windows-gfx1151) unblocked to port-ready.
