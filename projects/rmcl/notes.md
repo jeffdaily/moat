@@ -312,3 +312,66 @@ message and notes to state that the fix is spec/wave-size hardening (not an
 observed miscompute), justify why the unguarded exported kernels are acceptable,
 and remove or annotate the dead statistics.cu sum_kernel. The functional port is
 otherwise GPU-clean on gfx90a.
+
+## Review 2026-06-01 (reviewer DELTA re-review, linux-gfx90a) -- REVIEW PASSED
+
+Focused delta re-review of 100e713 -> 3d098d5 (5 files: math_batched.cu,
+memory_math.cu, statistics.cu, tests/cuda/CMakeLists.txt + the new
+tests/cuda/math_reduction_correctness.cpp). The compat header, multNx1 OOB fix,
+__CUDACC__/__HIPCC__ re-key, and commit hygiene were cleared in the prior pass
+and are unchanged in the delta. Rebuilt fresh in agent_space and ran on real
+gfx90a (GCD 1, HIP_VISIBLE_DEVICES=1): ctest -R '^cuda_' = 7/7 PASS (incl. the
+new cuda_math_reduction_correctness), ctest -R '^core_' = 12/12 PASS.
+
+All four prior findings resolved; the NaN-seed fix it surfaced is correct.
+
+1. Wave-tail hardening now consistent across the exported reduction API. The
+   USE_HIP-guarded full-`__syncthreads`-tree-to-s>0 form is applied to
+   cov_kernel<1024> (memory_math.cu:447-474, backs rm::cov) and sum_kernel<1024>
+   (memory_math.cu:1470-1501, backs rm::sum/rm::mean) with the CUDA s>32 +
+   warpReduce tail preserved in the #else. No exported warp-tail reduction
+   remains unguarded. sum_kernel_test was already a full s>0 tree (no warp tail),
+   confirmed -- the prior review's line number was approximate; nothing to change
+   there. CUDA path is byte-identical (the new code is strictly inside the
+   USE_HIP/`__HIP_PLATFORM_AMD__` branch).
+
+2. Prose re-scoped honestly. The commit body, the notes "Wave-size hardening"
+   paragraph, and the in-source comments (statistics.cu:42-49,
+   memory_math.cu:448-451 / 1471-1474, math_batched.cu x4) now describe an
+   unsynchronized-warp-tail assumption not guaranteed on a 64-lane wave, "not
+   observed to miscompute on gfx90a today" -- no false claim of reproduced
+   corruption/nondeterminism.
+
+3. Dead code annotated. statistics.cu:16-20 marks sum_kernel as unused (no
+   callers, no header decl) and points to the load-bearing memory_math.cu
+   kernels.
+
+4. Real asserting test. math_reduction_correctness.cpp builds 4099 (non-power-of-
+   two) Vector pairs, runs rm::sum/rm::mean/rm::cov, and check_rel() THROWS
+   (uncaught -> non-zero exit -> ctest fail) on >1e-4 rel error or on NaN
+   (`got != got`); the determinism block uses exact `==` across two runs. It
+   genuinely gates the fixed sum_kernel<1024>/cov_kernel<1024> (porter confirmed
+   dispatch via AMD_LOG_LEVEL=3, and the test failed with -nan before the seed
+   fix). This is a real assert, not print-only.
+
+5. NaN-seed fix verified correct. `sdata[tid] *= 0.0` (read of uninitialized LDS,
+   NaN/Inf-prone on AMD) replaced by a true typed zero `sdata[tid] = data[0];
+   sdata[tid] -= data[0];` at every prior `*= 0.0` site: sum_kernel
+   (memory_math.cu:1458-1459) and all four chunk_sums kernels (math_batched.cu).
+   Vector is Vector3_<float> with operator-= (Vector3.hpp:214), int trivially, so
+   data[0]-data[0] is a correct component-wise zero for every reduced type.
+   cov_kernel never had the bug (it seeds via setZeros(), memory_math.cu:427) and
+   correctly was not touched by the seed change. The fix is unconditional (the
+   `*= 0.0` was UB on CUDA too) and does not alter CUDA numerics (a true zero is
+   what `*= 0.0` was always intended to produce).
+
+Minor (non-blocking, no action): the new seed reads `data[0]` unconditionally on
+every lane, so an empty reduction (N==0) would read OOB where the old `*= 0.0`
+did not dereference data. This path was already meaningless under the old code
+(the accumulate loop ran zero times and returned uninitialized LDS), no
+in-tree/rmcl caller passes an empty buffer, and the in-source comment scopes the
+guarantee to "non-empty reduction input." Acceptable; flagging only for a future
+hardening pass.
+
+Verdict: clean. Stage 2 (OptiX->HIPRT) remains out of scope. Handing to the
+validator.
