@@ -308,3 +308,79 @@ Tier 3 (end-to-end synthetic multi-view training, 300 iters, 3 cameras):
 - gfx90a native code objects confirmed dispatched (AMD_LOG_LEVEL=3 first run, "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-").
 
 Decision: PASS -> completed. validated_sha=602ce5a459e3a637fb620e5fab0d71d9470b5227. Follower platforms (linux-gfx1100, windows-gfx1151) unblocked to port-ready.
+
+## Validation 2026-06-01 (linux-gfx1100, ROCm 7.2.1)
+
+Device: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1, torch 2.13.0a0+gitb5e90ff / HIP 7.2.53211. Follower validation; no source change, no fork push.
+
+### Build (gfx1100, clean rebuild)
+
+Fork cloned to projects/LiteGS/src at 602ce5a (head_sha matches linux-gfx90a). Submodule updated. Build artifacts cleaned (no stale .hip mirrors). Commands from moat repo root:
+
+```
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 \
+  utils/timeit.sh LiteGS compile -- \
+  /opt/conda/envs/py_3.12/bin/python -m pip install \
+  /var/lib/jenkins/moat/projects/LiteGS/src/litegs/submodules/simple-knn --no-build-isolation
+# repeat for fused_ssim, gaussian_raster
+```
+
+gfx1100 code objects confirmed (roc-obj-ls on installed .so files):
+- simple_knn/_C*.so: `hipv4-amdgcn-amd-amdhsa--gfx1100`
+- litegs_fused*.so: 4 x `hipv4-amdgcn-amd-amdhsa--gfx1100` (one per .cu: raster, transform, binning, compact)
+
+All three extensions import cleanly after `import torch` (libc10 must be loaded first; the conda env links against torch/lib/libc10.so at Python init time).
+
+### Validation commands
+
+```
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh LiteGS test -- \
+  python agent_space/litegs_tier1.py
+
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=1 utils/timeit.sh LiteGS test -- \
+  python agent_space/litegs_bwd_fd.py
+
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=1 utils/timeit.sh LiteGS test -- \
+  python agent_space/litegs_tier3.py   # run twice
+```
+
+### Tier 1 (wrapper kernel-vs-reference, 6 wrappers)
+
+- CreateTransformMatrix: PASS
+- CreateCov2dDirectly: PASS
+- CreateRaySpaceTransformMatrix: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+- Binning: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+- SphericalHarmonicToRGB: PASS (validates OK on gfx1100, unlike gfx90a where a FAIL was logged)
+- EighAndInverse2x2Matrix: PASS (validates OK on gfx1100)
+
+No new failures vs gfx90a baseline. All 4 documented upstream artifacts still CUDA-identical.
+
+### Tier 2 (rasterizer fwd+bwd, the wave32 gate)
+
+Direct call to GaussiansRasterFunc with 1024 gaussians at z=2-3 m, 256x256 output, tile=(16,16).
+
+- Forward (run 1): shape=[1,3,256,256], finite=True, nonzero_frac=1.0000, range [0.5981, 0.6714]
+- Forward (run 2): bitwise-deterministic (torch.equal=True)
+- Backward: color_grad finite=True nonzero=0.0098 max=1.43e+04; opacity_grad finite=True nonzero=0.0098 max=1.23e+03
+- FD check (top-20 visible gaussians, eps=0.1): slope=1.000, sign_agree=0.80, median_rel_err=5.75e-04
+
+NO HSA_STATUS_ERROR_EXCEPTION / no 0x1016 abort in either run. AMD_LOG_LEVEL=1 showed only Tensile kernel-selection cache misses (normal first-run behavior, not errors).
+
+### Wave32 verdict on tile_any/tile-reduction blend loop
+
+On gfx1100 (wave32) a 32-lane tile IS the entire wavefront. The tile_any call (`v |= __shfl_xor(v,o,32)`) evaluates with all 32 lanes at the same program counter (the blend-loop condition) -- fully converged, no divergent collective. The tile-width reductions (`tile_warp_reduce_add<T>` / `tile_warp_reduce_max`, width-32 __shfl_xor butterfly) likewise operate on all 32 lanes of the wavefront simultaneously. No fault, correct.
+
+The cudf lesson (divergent 32-lane-tile collectives fault on wave32) does NOT apply here because LiteGS's tile_any is called only at the per-tile blend-loop condition -- a point where all 32 lanes of the (gfx1100 native) wavefront are on the same branch. The fix is sound on wave32.
+
+### Tier 3 (end-to-end synthetic training, 300 iters, 3 cameras)
+
+Synthetic scene: 1024 learnable gaussians initialized near z=3 m, 3 translation-only cameras (slightly offset x/y), 128x128, Adam lr=5e-3.
+
+- Run 1: loss 0.00091->0.00028 (down 69.1%), PSNR 27.65->36.29 dB, nan_free=True -- PASS
+- Run 2: loss 0.00091->0.00035 (down 61.5%), PSNR 27.65->36.13 dB, nan_free=True -- PASS
+- Run-to-run variation: ~8% in loss drop, ~0.2 dB in PSNR -- stochastic training, matches gfx90a behavior (fp16 atomicAdd reorder in backward).
+- No 0x1016 / HSA_STATUS_ERROR_EXCEPTION in either run.
+
+Note on gfx90a vs gfx1100 comparison: gfx90a Tier 3 used a larger synth scene (3DGS wrapper path, 300 iter, loss 0.0408->0.0012, PSNR 20.5->48.3 dB -- higher absolute PSNR because that scene had more gaussians and higher opacity). gfx1100 Tier 3 uses the same pipeline with a simpler camera rig (translation-only) to avoid the behind-camera culling trap from ring cameras; PSNR 27.7->36.3 dB is sane convergence for this setup.
+
+Decision: PASS -> completed. validated_sha=602ce5a459e3a637fb620e5fab0d71d9470b5227.
