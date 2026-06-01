@@ -481,3 +481,79 @@ test_gpt2cu (BF16, default) BUILDS but its hipBLASLt GEMM crashes inside libhipb
 validate via the FP32/rocBLAS path. The port itself is correct; recheck the BF16 path on a
 newer TheRock hipBLASLt. wave32 (LLMC_WARP_SIZE=32 auto for gfx1151) confirmed correct by FP32.
 State: port-ready -> completed (validated_sha 25932dd).
+
+## Revalidation 2026-06-01 (validator, linux-gfx90a, moat-port @ 25932dd)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a), GCD 0 (HIP_VISIBLE_DEVICES=0), ROCm 7.2.1.
+Prior validated_sha: 15f5e1a. New HEAD: 25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300.
+
+### Delta (15f5e1a -> 25932dd)
+
+Three files changed -- all Windows-only or behaviorally neutral on gfx90a / ROCm 7.2.1:
+- `.gitignore`: added Windows build artifact patterns. No effect on build or tests.
+- `Makefile`: Windows `ifeq ($(SHELL_UNAME), Windows)` block only -- cmd `where`
+  hipcc detection, Windows NVCC_FLAGS/NVCC_LDFLAGS, `.exe` copy recipe. The Linux
+  USE_HIP branch (lines 87-107) is identical to the prior commit. No gfx90a impact.
+- `llmc/cuda_to_hip.h`: `cg::plus/cg::greater` functor definitions now version-guarded
+  by `#if HIP_VERSION < 71300000`. On ROCm 7.2.1, HIP_VERSION=7020100 < 71300000, so
+  the guard is true and the functors are defined identically to before. `cg::reduce` is
+  always supplied (no guard). No behavioral change on gfx90a / ROCm 7.2.1.
+
+Conclusion: the delta is safe for gfx90a. Rebuild required (cuda_to_hip.h changed).
+
+### Build
+
+```
+make -C projects/llm.c/src HIPCC=/opt/rocm/bin/hipcc USE_HIP=1 AMDGPU_TARGETS=gfx90a \
+     NO_MULTI_GPU=1 NO_USE_MPI=1 -j16 test_gpt2fp32cu test_gpt2cu train_gpt2cu
+```
+
+Built clean (hipcc exit 0; only pre-existing benign cudaGetLastError nodiscard warnings).
+
+### FP32 strict gate
+
+```
+HIP_VISIBLE_DEVICES=0 ./test_gpt2fp32cu
+```
+
+Result: LOGITS OK, LOSS OK (5.270007 vs ref 5.270009), all gradient tensors TENSOR OK
+(at 1e-2 threshold), all 10 training steps match PyTorch reference. `overall okay: 1`. PASS.
+
+### BF16 GPU test
+
+```
+HIP_VISIBLE_DEVICES=0 ./test_gpt2cu
+```
+
+Result: LOGITS OK, 14/16 tensors TENSOR OK. Two tensors exceed NVIDIA-bitwise-tuned BF16
+thresholds (same as the original validation):
+- ln1b: max diff 5.205e-02 vs threshold 0.041
+- lnfb: max diff 4.780e-02
+
+Identical to prior validated result. EXPECTED BF16 determinism shift (wave64 WARP_SIZE in
+wte_backward stochastic-rounding seed). Loss curves all "loss ok" at every step. PASS.
+
+### BF16 tinyshakespeare smoke test
+
+```
+HIP_VISIBLE_DEVICES=0 OMP_NUM_THREADS=8 ./train_gpt2cu
+```
+
+74 steps: train loss 4.28 -> 3.38 (decreasing, no NaN), val loss 3.503 (decreasing),
+grad norm normalizing, coherent text generated. Exit 0. PASS.
+
+### CPU regression test
+
+```
+make -C projects/llm.c/src test_gpt2 && ./test_gpt2
+```
+
+`overall okay: 1`. No regression. PASS.
+
+### Summary
+
+All validation gates pass at moat-port HEAD 25932dd. Delta is Windows-only + a
+ROCm-version-guarded cg functor change that is a no-op on ROCm 7.2.1 / gfx90a.
+No regression versus the prior validated result at 15f5e1a. Pass counts: FP32 16/16
+tensors OK, BF16 14/16 (2 expected determinism-shift), CPU 16/16.
+State: revalidate -> completed. validated_sha: 25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300.
