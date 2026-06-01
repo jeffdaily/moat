@@ -76,3 +76,9 @@
 {"kind":"phase","ts":"2026-06-01T00:46:21Z","phase":"test","seconds":6.092,"exit":0,"cmd":"projects/raft/build/gtests/DISTANCE_TEST"}
 {"kind":"phase","ts":"2026-06-01T00:46:36Z","phase":"test","seconds":6.868,"exit":0,"cmd":"projects/raft/build/gtests/FUSED_NN_TEST"}
 {"kind":"phase","ts":"2026-06-01T01:01:55Z","phase":"test","seconds":908.668,"exit":0,"cmd":"projects/raft/build/gtests/MATRIX_SELECT_TEST"}
+{"kind":"phase","ts":"2026-06-01T01:16:11Z","phase":"compile","seconds":27.387,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/raft/build-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-01T01:35:31Z","phase":"compile","seconds":8.046,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/raft/build-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-01T01:35:55Z","phase":"test","seconds":0.236,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-01T01:36:13Z","phase":"test","seconds":1.988,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-01T01:36:20Z","phase":"test","seconds":2.147,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-01T01:37:41Z","phase":"test","seconds":75.921,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}

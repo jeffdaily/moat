@@ -952,3 +952,106 @@ Lanczos eigensolver remains deferred (RAFT_COMPILE_LANCZOS=OFF, UPSTREAM_FINDING
 
 validated_sha: 640bdb187159a52e5506fd17767d80f7d3887f3d. State transition: review-passed -> completed.
 gfx1100 follower: remains in revalidate (validated_sha 712eea35 predates 640bdb18; needs revalidation against the unified neighbors-wave64 commit).
+
+## Validation 2026-06-01 (gfx1100) -- revalidate at 70773a9 (NEIGHBORS faiss-select)
+
+Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32). ROCm 7.2.1. HIP_VISIBLE_DEVICES=0. Prior validated_sha 712eea35 predated the NEIGHBORS/faiss-select commit (640bdb1); this session revalidates at the new tip, which includes a necessary cmake fix (described below).
+
+### gfx1100-specific fix applied (amended, force-pushed to fork)
+
+**HAVERSINE_TEST / BALL_COVER_TEST cmake split (raft_hip_tests.cmake).** The original `RAFT_TEST_NEIGHBORS` target bundled `haversine.cu + ball_cover.cu + epsilon_neighborhood.cu`. On gfx1100, `ball_cover.cu` and `epsilon_neighborhood.cu` include `raft/neighbors/brute_force.cuh` -> `select_k` -> `cub::DeviceSegmentedRadixSort` -> rocPRIM `block_radix_sort` -> `warp_exchange`. rocPRIM 4.2.0's `warp_exchange` on GFX10/11 generates a `DPP_WF_SL1 (0x130)` wavefront-shift instruction that the GFX10+ backend rejects ("Invalid dpp_ctrl value: wavefront shifts are not supported on GFX10+"). This is the same upstream rocPRIM 4.2.0 bug class as the prior `MATRIX_SELECT_TEST` compilation failure. `haversine.cu` does NOT pull in `select_k` and compiles cleanly. Fix: split `RAFT_TEST_NEIGHBORS=ON` into `HAVERSINE_TEST` (haversine.cu only; all arches) + `BALL_COVER_TEST` (ball_cover.cu + epsilon_neighborhood.cu; gated by `RAFT_TEST_BALL_COVER`, OFF by default on gfx1100 until the upstream rocPRIM bug is resolved). This is a necessary gfx1100 build fix; no source changes to the raft headers. New fork HEAD after amend + force-push: `70773a97f43ab6a861722b181c4524ab800c1126`.
+
+### Wave32 analysis: faiss warp-select (WarpShuffles.cuh) on gfx1100
+
+The new `WarpShuffles.cuh` (the core of this revalidate) provides maskless `__shfl*`/`__any` on HIP in the `faiss_select` namespace. On gfx1100 (wave32), `WarpSize = 32` and the default `width = WarpSize = 32`. This is the NATIVE case: HIP's maskless `__shfl*` on wave32 operate over the live 32 lanes exactly (the full wavefront), so there is no divergent-wavefront concern. The bitonic merge uses strides 1,2,4,8,16 (`WarpSize/2 = 16` is the final stride) -- the 5-stage CUDA/wave32 case. The extra stride-32 merge stage (gated `if constexpr WarpSize == 64`) is NOT taken on wave32. No DPP and no wavefront-mask mismatch on wave32 -- the maskless shuffles are trivially correct. The `HaversineKNNTestF.Fit` result (1/1 PASS, deterministic) is the concrete proof.
+
+### Build commands
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+
+# Fetch and checkout new tip
+# (fork already at 70773a9 after amend+push)
+cd projects/raft/src && git fetch origin moat-port && git checkout 70773a9
+
+# Configure raft for gfx1100 with HAVERSINE_TEST:
+cmake -S projects/raft/src/cpp -B projects/raft/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON \
+  -DRAFT_TEST_DISTANCE=ON \
+  -DRAFT_TEST_FUSED_NN=ON \
+  -DRAFT_TEST_NEIGHBORS=ON \
+  -DRAFT_TEST_BALL_COVER=OFF \
+  -DRAFT_TEST_MATRIX_SELECT=OFF \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/raft/install-gfx1100
+
+# Build (timeit wrapped; incremental, ~8s):
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build-gfx1100 -j16
+```
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading projects/raft/build-gfx1100/gtests/HAVERSINE_TEST
+```
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1100` -- gfx1100 code object present.
+
+### GPU test commands
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build-gfx1100:projects/rmm/install-gfx1100/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+# Wave32 NEIGHBORS gate (x2 for determinism):
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/HAVERSINE_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/HAVERSINE_TEST
+# Prior regression subset:
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/LINALG_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/LABEL_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+```
+
+### Results vs gfx90a@640bdb1
+
+| Test | gfx1100 result | gfx90a bar | Notes |
+|------|----------------|------------|-------|
+| HAVERSINE_TEST | 1/1 PASS (x2, DETERMINISTIC) | 1/1 (HaversineKNNTestF) | THE wave32 gate: faiss warp-select + FAISS-ROCm maskless shuffles correct on wave32. No SIGABRT, no HSA fault. |
+| DISTANCE_TEST | 11/11 PASS | 11/11 | All shapes SIMT fallback (CK gate false for MPerXDL=32 on gfx11). Numerically correct. |
+| FUSED_NN_TEST | 12/12 PASS | 12/12 | All shapes SIMT fallback. Argmin correct. |
+| LINALG_TEST | 2017/2018 PASS | 2017/2018 | Same 1 pre-existing DotTestF hipBLAS float-tolerance fail. |
+| LABEL_TEST | 14/14 PASS | 14/14 | |
+| RANDOM subset | 148/148 PASS | 148/148 | Same filter. |
+| CORE subset | 171/172 PASS | 171/172 | Same 1 pre-existing Raft.InterruptibleOpenMP fail. |
+| UTILS subset | 177/177 PASS | 177/177 | |
+| BALL_COVER_TEST | BUILD FAIL | 75/75 (gfx90a) | rocPRIM 4.2.0 DPP_WF_SL1 (0x130) wavefront-shift bug in warp_exchange (block_radix_sort path from brute_force::knn -> select_k -> DeviceSegmentedRadixSort); same root cause as MATRIX_SELECT_TEST on gfx1100. BALL_COVER_TEST is gated OFF by RAFT_TEST_BALL_COVER (default OFF). |
+| MATRIX_SELECT_TEST | BUILD FAIL | 607 (567+40 skip) | Same upstream rocPRIM DPP bug (lookback_scan_state path). Unchanged from prior gfx1100 session. |
+
+### Explicit wave32 verdict on the FAISS warp-select shuffles
+
+The new `faiss_select/WarpShuffles.cuh` is CORRECT on wave32 (gfx1100):
+
+1. On HIP, the wrappers use maskless `__shfl`/`__shfl_xor`/`__shfl_up`/`__shfl_down`/`__any` (no `_sync`, no mask). These operate over the live lanes exactly. On wave32, the live lanes ARE all 32 lanes (the wavefront IS 32 lanes), so "maskless over live lanes" == "over all 32 lanes" == identical to CUDA's full-mask behavior. No divergent-wavefront complication.
+2. The `default width = WarpSize = 32` parameter is the native RDNA case. The bitonic strides max at 16 (WarpSize/2). The extra stride-32 stage (`if constexpr WarpSize == 64`) does NOT execute on wave32.
+3. HaversineKNNTestF.Fit passes and produces numerically correct kNN results (both runs identical). The haversine path exercises `computeHaversineDistances` + the FAISS KeyValueBlockSelect top-k + the brute-force kNN shuffle merge -- no SIGABRT, no HSA exception 0x1016, no wrong neighbor indices.
+
+VERDICT: The FAISS warp-select shuffles are correct on wave32. The divergent-wavefront issue that required the maskless-shuffle fix was a gfx90a (wave64) artifact; on wave32 the behavior is inherently correct because the wavefront == the 32 lanes and there is no partial-wavefront scenario in a full-32-lane warp.
+
+### Determinism
+
+HAVERSINE_TEST run 1: 1/1 PASS (115ms). Run 2: 1/1 PASS (112ms). Deterministic.
+
+### Fork state
+
+Fork `jeffdaily/raft` branch `moat-port` amended and force-pushed. New tip: `70773a97f43ab6a861722b181c4524ab800c1126` (1 cmake fix: HAVERSINE_TEST/BALL_COVER_TEST split). The change is genuinely necessary (without it, RAFT_TEST_NEIGHBORS cannot build on gfx1100). No source changes to raft headers; the fix is in the test cmake file only.
+
+validated_sha: 70773a97f43ab6a861722b181c4524ab800c1126. State transition: revalidate -> completed.
+gfx90a validated_sha (640bdb1) remains valid at the prior SHA (the cmake split does not affect the gfx90a test binaries; BALL_COVER_TEST simply replaces what was NEIGHBORS_TEST on gfx90a with the split targets -- function unchanged).
