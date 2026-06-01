@@ -207,6 +207,44 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   build/test recipe live in agent_space/raft_lanczos/ for a follow-up. The raft
   fork tip stays at 70773a9 (neighbors/distance/CK, already validated).
 
+### B6 UPDATE (2026-06-01, second pass) -- ROOT CAUSE ISOLATED: upstream host-side async-copy race (AMD-exposed)
+
+Source-only investigation (no build; GPUs busy). Findings supersede the "root
+cause not isolated" note above.
+
+- NOT A PORT BUG. agent_space/raft_lanczos lanczos.cuh is byte-for-byte identical
+  to upstream rapidsai/raft branch-25.08 (our base; diff modulo comments empty).
+  Our B6 changes never touched this file. The divergence is upstream code.
+- The M={1,2,3,4,5,6} scaffolding is harmless DEAD CODE, refuted as the cause:
+  `out` is never read; the gemv is in-bounds (OP_N reads 3*2=6 from a 6-elt 2x3
+  M_dev) and uses the same HOST pointer mode + per-call cublasSetStream as the
+  real gemv, so it corrupts no shared handle/stream state. Upstream PR #2918
+  "Lanczos remove dead code" deletes exactly this block (gone from main).
+- ROOT CAUSE: a host-vs-stream data race in lanczos_aux. It does
+  raft::copy(&b/&alpha_i_host, <device beta/alpha>, 1, stream) (cudaMemcpyAsync
+  into HOST scalars, no sync) then feeds &alpha_i_host/&b to cublasaxpy in the
+  DEFAULT host pointer mode, which dereferences them on the HOST at enqueue. NVIDIA
+  masks this (small pageable D2H is host-synchronous on CUDA); ROCm's
+  hipMemcpyAsync to pageable host memory is not, so axpy reads a STALE beta and the
+  three-term recurrence loses orthogonality and explodes on the second restart
+  (race => fp32==fp64 identical, all SA/LA/SM/LM). Surfaces on the 2nd restart
+  because the i=0 carried beta index is still 0 (a stale read reads ~0, looks fine)
+  until nonzero betas populate.
+- FIX (ours, narrow, UNTESTED): a USE_HIP-guarded resource::sync_stream(handle,
+  stream) between those two raft::copy calls and the axpy (staged in
+  agent_space/raft_lanczos/.../lanczos.cuh). CUDA path byte-identical. Not pushed
+  (would move HEAD to a non-validatable tip and force gfx90a/gfx1100 revalidate).
+- SECONDARY upstream fragility (independent of the race): the hardcoded SM/LM
+  eigenvalue tolerances are flaky on NVIDIA TOO -- rapidsai/raft #3021 fails
+  LanczosTestD_SM on A100/cuda13.2 (actual 0.013678 != expected 0.013692 @ approx
+  1e-5); upstream mitigation was PR #3046 "Relax threshold lanczos SM gtests"
+  (merged 2026-06-01). See also #2485/#2519 (hardcoded test data). Expect SM/LM to
+  stay tolerance-sensitive on AMD even after the race fix; SA/LA should pass.
+- Upstream report: the async-copy race is worth filing against rapidsai/raft
+  sparse/solver/detail/lanczos.cuh (same lines PR #2918 left intact), but DO NOT
+  open upstream issues/PRs/comments without jeff's approval. Details +
+  evidence in projects/raft/notes.md "## Lanczos divergence investigation 2026-06-01".
+
 ### B7. NVIDIA OptiX has no ROCm equivalent (the OptiX -> HIP-RT cluster)
 - Class: a fundamental ROCm ecosystem gap, not a bug. OptiX (the NVIDIA
   ray-tracing API: `optixAccelBuild` GAS/BVH, `optixTrace`, the

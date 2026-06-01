@@ -296,6 +296,108 @@ already-validated gfx90a/gfx1100 to revalidate a broken tip. The fork stays at
 reference Lanczos step-by-step on the same matrix; suspect the ritz gemm /
 transpose ordering or a missing reorthogonalization correction), then push.
 
+## Lanczos divergence investigation 2026-06-01
+
+VERDICT: This is NOT a port bug. lanczos.cuh in agent_space/raft_lanczos is
+byte-for-byte identical to upstream rapidsai/raft branch-25.08 (diff modulo
+comments = empty). Our B6 changes never touched lanczos.cuh; they touched
+spectral/detail/lapack.hpp + cmake + the SpMV enum aliases. The thick-restart
+divergence comes from upstream raft code, amplified on AMD by an upstream
+host-side async-copy race. Two parts:
+
+### Part A -- the M={1,2,3,4,5,6} scaffolding is harmless dead code (refuted as cause)
+
+At lanczos.cuh ~2006 (lanczos_smallest restart loop): `std::vector M={1..6}` ->
+2x3 M_dev, vec_dev(2), out(3), then `gemv(CUBLAS_OP_N, m=3, n=2, &one, M_dev,
+lda=3, vec_dev, 1, &zero, out, 1, stream)`.
+- `out` is never read anywhere downstream (grep: out/M_dev/vec_dev appear ONLY at
+  lines 2009-2027). Pure dead code.
+- Dimensions are self-consistent and IN BOUNDS: OP_N reads lda*n = 3*2 = 6 from a
+  6-element M_dev; x len = n = 2 = vec_dev; y = out len = m = 3. No OOB read.
+- No shared-state corruption: this gemv resolves to the raw-pointer overload
+  gemv(handle, bool trans_a, m, n, ...) -- CUBLAS_OP_N (=0) converts to
+  trans_a=false -- with DevicePointerMode=false (default), so HOST pointer mode,
+  same as the real V_k gemv. cublasgemv calls cublasSetStream(handle, stream)
+  itself every call, so no stream leak. Pointer mode is never switched. Confirmed
+  upstream-acknowledged dead code: rapidsai/raft PR #2918 "Lanczos remove dead
+  code" (merged 2026-01-16) deletes exactly this block; it is gone from `main`
+  (799-line refactor) but still present in branch-25.08 (our base, 2176 lines).
+  Removing it changes nothing numerically.
+
+### Part B -- ROOT CAUSE: upstream host-side async-copy race in lanczos_aux
+
+In lanczos_aux (lanczos.cuh ~1692, identical upstream):
+```
+raft::copy(&b,           beta.data_handle()  + ((i-1+ncv)%ncv)*stride, 1, stream);
+raft::copy(&alpha_i_host, alpha.data_handle() + i*stride,             1, stream);
+raft::linalg::axpy(handle, n, &alpha_i_host, v, 1, vv, 1, stream);   // HOST ptr mode
+raft::linalg::axpy(handle, n, &b,            V, 1, vv, 1, stream);   // HOST ptr mode
+```
+raft::copy is cudaMemcpyAsync(...,stream) (cudart_utils.hpp:168) into HOST stack
+scalars b/alpha_i_host, with NO sync before the values are consumed. cublasaxpy
+runs in the DEFAULT host pointer mode and dereferences `*alpha` / `*beta` on the
+HOST at enqueue time. So the host reads b/alpha_i_host that a stream-ordered D2H
+memcpy is supposed to fill -- a host-vs-stream data race.
+- On NVIDIA this is masked: cudaMemcpyAsync D2H of a tiny (<=64KB) transfer into
+  PAGEABLE host memory is effectively synchronous on the host, so b/alpha_i_host
+  are valid by the time axpy reads them.
+- On ROCm/gfx90a hipMemcpyAsync to pageable host memory is not guaranteed to
+  block the host the same way, so axpy can read a STALE b/alpha_i_host. A wrong
+  beta carried into the Lanczos three-term recurrence (vv = alpha_i*v + b*V_prev,
+  u -= vv) breaks orthogonality; the error compounds and the restart explodes
+  (alpha/beta 1e8 -> 1e23 -> NaN). This is why it is fp32==fp64 identical (a race,
+  not a precision effect) and hits all SA/LA/SM/LM variants. It surfaces on the
+  second restart, not the first, because for the very first column (i=0) the
+  carried beta index ((0-1+ncv)%ncv = ncv-1) is still 0, so an early stale read
+  reads ~0 and looks benign; once nonzero betas populate, the stale reads diverge.
+
+This is genuinely an upstream raft latent bug (the code assumes synchronous small
+D2H), exposed by AMD's async-copy semantics. It is fixable in our port.
+
+### Numerical fragility (secondary, also upstream)
+
+Even with the race fixed, the SM eigenvalue tolerance is fragile: upstream's OWN
+CI fails LanczosTestD_SM on NVIDIA A100 under cuda 13.2 -- rapidsai/raft issue
+#3021 shows `actual=0.013678 != expected=0.013691776 @1` against CompareApprox
+1e-5, with tol=1e-15 in the solver config; the upstream "fix" was PR #3046 "Relax
+threshold lanczos SM gtests" (merged 2026-06-01, today). The expected eigenvalues
+are hardcoded and known-fragile (issues #2485, #2519). So expect the SM/LM cases
+to remain tolerance-sensitive on AMD even after the race fix; SA/LA should pass
+once the recurrence is correct.
+
+### PROPOSED FIX (UNTESTED -- cannot build, GPUs busy)
+
+Force the two host-bound scalar copies in lanczos_aux to complete before the
+host-pointer-mode axpy reads them. Minimal, USE_HIP-guarded (CUDA path stays
+byte-identical so the already-validated NVIDIA behavior is untouched), staged in
+agent_space/raft_lanczos/cpp/include/raft/sparse/solver/detail/lanczos.cuh right
+after the two raft::copy(&b ...)/(&alpha_i_host ...) calls:
+```
+#if defined(USE_HIP) || defined(__HIP_PLATFORM_AMD__)
+    // hipMemcpyAsync D2H to pageable host memory is not host-synchronous the way
+    // CUDA's small-pageable D2H is; b/alpha_i_host are read on the host by the
+    // host-pointer-mode axpy below, so the stream copy must complete first.
+    resource::sync_stream(handle, stream);
+#endif
+```
+A correct-but-broader alternative is to keep device-pointer-mode axpy (pass the
+device beta/alpha pointers via the device_scalar gemv/axpy overload) so no D2H is
+needed at all; that is a larger change and also belongs upstream. Recommend the
+narrow sync_stream guard for the port. UNTESTED: stage only; do not push to the
+fork (would move HEAD to a non-validatable tip and force gfx90a/gfx1100 revalidate).
+
+### Disposition
+
+- Ours to mitigate now in the port: yes -- the USE_HIP sync_stream guard above.
+  It is a legitimate ROCm portability fix and keeps CUDA byte-identical.
+- Genuinely upstream: yes, twice over. (1) The host-vs-stream async-copy race in
+  lanczos_aux (relies on synchronous small pageable D2H) -- a portability/
+  correctness latent bug worth reporting to rapidsai/raft (file against
+  sparse/solver/detail/lanczos.cuh; reference the same lines that PR #2918 left
+  intact). (2) The fragile hardcoded SM eigenvalue tolerances (already tracked
+  upstream as #3021 / #2485 / #2519, partially mitigated by #3046). Do NOT open
+  these upstream without jeff's approval (upstream-visible action).
+
 ### Install-as-dependency impact (when lanczos lands)
 
 Dependents that compile the lanczos headers (cuvs spectral) will need host LAPACK
