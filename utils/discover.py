@@ -175,7 +175,7 @@ def code_search(query, page, per_page=100):
     rate-limit (HTTP 403 / secondary/abuse limit) it retries with exponential
     backoff rather than giving up, so a transient throttle does not silently
     truncate the query (which is what loses high-signal mid-page repos)."""
-    backoffs = [30, 60, 120, 240]
+    backoffs = [30, 60, 120, 240, 300, 300]
     for attempt in range(len(backoffs) + 1):
         r = subprocess.run(
             ["gh", "api", "-X", "GET", "search/code",
@@ -361,7 +361,12 @@ def run_code_search_pass(cfg, out_path):
         else:
             meta = fetch_repo_meta(fn)
             meta_cache[fn] = meta
-            time.sleep(0.1)
+            # ~1 req/s: GitHub's secondary (abuse) rate limit trips on bursty
+            # request rates well before the primary 5000/hr core budget is
+            # spent. 0.1s here triggered 403s, especially when porter agents
+            # hit the API concurrently. The disk cache means this throttle is
+            # only paid once per repo.
+            time.sleep(1.0)
         if (i + 1) % 100 == 0:
             _save_cache(disk)
             sys.stderr.write(f"discover: code-search progress {i + 1}/{len(new_repos)}\n")
