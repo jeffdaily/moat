@@ -161,6 +161,52 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   upstream bug (it's our glue to write); tracked here as a consequential
   cuvs-prerequisite deferral so it is not lost.
 
+### B6 UPDATE (2026-06-01) -- LINK GAP CLOSED; a SEPARATE upstream runtime divergence remains
+- The host-LAPACK/cuSOLVER-*Host link gap is CLOSED. In spectral/detail/lapack.hpp,
+  the cuSOLVER *Host helpers (cusolverDnS{gemm,sterf,steqr}Host + D) are
+  USE_HIP-guarded out and the private Lapack<T> helpers route directly to Fortran
+  LAPACK/BLAS: sgemm_/dgemm_, ssterf_/dsterf_, ssteqr_/dsteqr_ (geqrf/ormqr/geev
+  already called the Fortran symbols on both paths). The HIP build now sets
+  RAFT_COMPILE_LANCZOS=ON, finds LAPACK (find_package(LAPACK) -> OpenBLAS +
+  reference LAPACK; the system resolves a MKL+openblas mix that exports every
+  Fortran symbol), and links LAPACK::LAPACK into raft_lib (so raft::compiled
+  propagates it) + the lanczos test. Two further HIP build gaps surfaced and were
+  fixed under USE_HIP: (1) spectral/detail/matrix_wrappers.hpp included
+  thrust/system/cuda/execution_policy.h (pulls the missing
+  cub/detail/detect_cuda_runtime.cuh) and named thrust::cuda_cub::
+  execute_on_stream_nosync_base -> swapped to thrust/system/hip/execution_policy.h
+  + thrust::hip_rocprim::execute_on_stream_nosync_base; (2) three cuSPARSE SpMV
+  enum aliases were missing from raft_mathlib_aliases.inc (CUSPARSE_SPMV_ALG_DEFAULT
+  / SPMV_CSR_ALG1 / SPMV_CSR_ALG2 -> the HIPSPARSE_* values that already exist).
+  With these, libraft (4 rmat + 4 lanczos TUs) and a narrow LANCZOS_TEST both
+  compile + link cleanly on gfx90a.
+- The device eigensolve (raft::linalg::eig_dc -> hipsolverDn{S,D}syevd via the
+  USE_HIP eigDC_legacy path) is CORRECT: a standalone probe confirms info=0,
+  ascending eigenvalues, and orthonormal eigenvectors matching A*v=lam*v to ~1e-7
+  on gfx90a. The other primitives the iteration uses were each verified correct
+  against CPU references on gfx90a (raft norm ALONG_ROWS on a (1,n) row ~1e-8;
+  gemv CUBLAS_OP_T; gemm col/col/col).
+- SEPARATE, STILL-OPEN issue (NOT the B6 host-LAPACK gap, NOT a wave64 fault in our
+  changes): raft's thick-restart Lanczos (sparse/solver/detail/lanczos.cuh) DIVERGES
+  at runtime on gfx90a. The first ncv-step factorization and the first restart are
+  numerically sane; the SECOND restart's lanczos_aux blows up exponentially
+  (alpha/beta ~1e8, then 1e23, 1e40, ... -> NaN), so hipSOLVER syevd eventually
+  reports non-convergence (dev_info>0) and the test throws. The divergence is
+  IDENTICAL in fp32 AND fp64 (so not a tol=1e-15-in-fp32 artifact) and reproduces
+  for all variants (SA/LA/SM/LM), with every device primitive individually proven
+  correct above. The file carries leftover hardcoded debug scaffolding (a
+  gemv on M={1,2,3,4,5,6} into an unused buffer) indicating experimental/
+  unvalidated upstream code; the restart reorthogonalization (the gemv Gram-Schmidt
+  + the V_T@eigenvectors_k ritz gemm + the transpose) corrupts the carried basis
+  between restarts. Root cause not isolated to a single primitive; it looks like an
+  upstream algorithm/code defect (or an fp path that only happens to terminate on
+  NVIDIA). Report decision: candidate upstream bug report (rapidsai/raft) once
+  isolated, distinct from the (now-closed) ROCm library gap. The lanczos port was
+  therefore NOT pushed to the fork (it would move HEAD and force the passing
+  platforms to revalidate a non-validatable tip); the working-tree port + the
+  build/test recipe live in agent_space/raft_lanczos/ for a follow-up. The raft
+  fork tip stays at 70773a9 (neighbors/distance/CK, already validated).
+
 ### B7. NVIDIA OptiX has no ROCm equivalent (the OptiX -> HIP-RT cluster)
 - Class: a fundamental ROCm ecosystem gap, not a bug. OptiX (the NVIDIA
   ray-tracing API: `optixAccelBuild` GAS/BVH, `optixTrace`, the

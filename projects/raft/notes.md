@@ -205,7 +205,104 @@ from CK's in-repo examples. This is the real gate for cuvs/cuml, not a CUTLASS
 port.
 
 The compiled lanczos solvers (4 of libraft's stock 8 TUs) are deferred behind
-`RAFT_COMPILE_LANCZOS=OFF` for the same cusolverSp/Xsyevd reasons.
+`RAFT_COMPILE_LANCZOS=OFF` for the same cusolverSp/Xsyevd reasons. UPDATE
+(2026-06-01): the host-LAPACK BUILD/LINK gap is now closed (RAFT_COMPILE_LANCZOS
+can be ON); a separate runtime divergence in raft's thick-restart Lanczos
+remains. See "## Lanczos host-LAPACK port (B6)" below. This work is NOT on the
+fork tip yet (it would force the passing platforms to revalidate a
+non-validatable tip); it lives in agent_space/raft_lanczos/.
+
+## Lanczos host-LAPACK port (B6) -- 2026-06-01
+
+GOAL: enable RAFT_COMPILE_LANCZOS on HIP so cuvs spectral clustering /
+spectral_embedding can build. The B6 link blocker (cuSOLVER *Host /
+Fortran-LAPACK symbols absent from the ROCm aliases) is the host-side
+tridiagonal eigensolve + small dense GEMM the lanczos solver runs via
+raft's Lapack<T> helpers (spectral/detail/lapack.hpp).
+
+### Decision: host LAPACK/BLAS (OpenBLAS + reference LAPACK), not hipSOLVER
+
+The Lapack<T> ops (sterf/steqr for the symmetric-tridiagonal eig, gemm for the
+Householder bulge-chase, geqrf/ormqr/geev) are small CPU-side dense ops on the
+tridiagonal/projected matrices. On CUDA they wrap cuSOLVER's *Host CPU routines
+(cusolverDnS{gemm,sterf,steqr}Host); those have no hipSOLVER alias. Chosen path:
+route them directly to the Fortran LAPACK/BLAS symbols (sgemm_/dgemm_,
+ssterf_/dsterf_, ssteqr_/dsteqr_) under USE_HIP -- byte-identical CUDA path
+preserved. (geqrf/ormqr/geev already called the Fortran symbols sgeqrf_ etc. on
+both paths, so they needed no change.) apt already has liblapack/libopenblas.
+
+### Changes (all USE_HIP-guarded; CUDA path byte-identical)
+
+1. spectral/detail/lapack.hpp: `#ifndef USE_HIP` the cuSOLVER *Host extern "C"
+   decls; under USE_HIP declare the Fortran sgemm_/dgemm_/ssterf_/dsterf_/
+   ssteqr_/dsteqr_ and route the private lapack_gemm/lapack_sterf/lapack_steqr
+   helpers to them (char trans passed straight through; compz cast to char).
+2. cmake/hip/raft_hip.cmake: RAFT_COMPILE_LANCZOS default ON; find_package(LAPACK
+   REQUIRED) when ON; link LAPACK::LAPACK PUBLIC into raft_lib (so raft::compiled
+   propagates it to dependents that compile the lanczos headers).
+3. spectral/detail/matrix_wrappers.hpp: the thrust::cuda::par exec-policy delta --
+   include thrust/system/hip/execution_policy.h and use
+   thrust::hip_rocprim::execute_on_stream_nosync_base under USE_HIP (the CUDA
+   header pulls the missing cub/detail/detect_cuda_runtime.cuh).
+4. util/hip/raft_mathlib_aliases.inc: add CUSPARSE_SPMV_ALG_DEFAULT /
+   SPMV_CSR_ALG1 / SPMV_CSR_ALG2 -> HIPSPARSE_* (the SpMV enums the lanczos
+   sparse matvec uses; the SpMM ones were already aliased).
+5. cmake/hip/raft_hip_tests.cmake: a narrow RAFT_TEST_LANCZOS option building only
+   sparse/solver/lanczos.cu (header-only path, no raft::compiled/EXPLICIT needed)
+   + link LAPACK; also link LAPACK into the full SOLVERS_TEST when present.
+
+### Build + test recipe (gfx90a, fresh clone, narrow)
+
+```
+git clone --branch moat-port https://github.com/jeffdaily/raft.git agent_space/raft_lanczos
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S agent_space/raft_lanczos/cpp -B agent_space/raft_lanczos/build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/raft-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DRAFT_COMPILE_LANCZOS=ON -DBUILD_TESTS=ON \
+  -DRAFT_TEST_CORE=OFF -DRAFT_TEST_UTILS=OFF -DRAFT_TEST_LABEL=OFF \
+  -DRAFT_TEST_LINALG=OFF -DRAFT_TEST_RANDOM=OFF -DRAFT_TEST_LANCZOS=ON
+cmake --build agent_space/raft_lanczos/build --target raft_lib LANCZOS_TEST -j32
+# build CLEAN: libraft.so now carries the 4 lanczos TUs (nm -D | grep -c lanczos > 0)
+HIP_VISIBLE_DEVICES=1 LD_LIBRARY_PATH=<build>:<rmm>/lib:$CONDA_PREFIX/lib:/opt/rocm/lib \
+  ./agent_space/raft_lanczos/build/gtests/LANCZOS_TEST
+```
+
+### STATUS: builds + links clean; GPU validation FAILS (separate upstream bug)
+
+LANCZOS_TEST: 0/11 PASS on gfx90a. The failure is NOT the host-LAPACK glue and
+NOT a wave64 issue in our changes. Diagnosis (instrumented, then removed):
+- raft::linalg::eig_dc (-> hipsolverDn{S,D}syevd, the USE_HIP eigDC_legacy path)
+  is CORRECT: probe shows info=0, ascending eigenvalues, orthonormal eigenvectors
+  matching A*v=lam*v to ~1e-7 on gfx90a (agent_space/syevd_probe).
+- raft norm ALONG_ROWS on a (1,n) row ~1e-8, gemv CUBLAS_OP_T, gemm col/col/col
+  all match CPU references on gfx90a (agent_space/norm_probe).
+- The thick-restart Lanczos itself DIVERGES: the first factorization + first
+  restart are sane (alpha/beta O(1)); the SECOND restart's lanczos_aux explodes
+  exponentially (alpha/beta 1e8 -> 1e23 -> 1e40 -> NaN), identically in fp32 AND
+  fp64 (so not a tol=1e-15-in-fp32 artifact), for all SA/LA/SM/LM variants. The
+  restart reorthogonalization (gemv Gram-Schmidt + V_T@eigenvectors_k ritz gemm +
+  transpose) corrupts the carried basis between restarts. The code carries
+  leftover hardcoded debug scaffolding (a gemv on M={1,2,3,4,5,6} into an unused
+  buffer) -- experimental/unvalidated upstream code. Root cause not isolated to a
+  single primitive; tracked in UPSTREAM_FINDINGS.md B6 UPDATE as a candidate
+  upstream raft bug, distinct from the now-closed ROCm library gap.
+
+NOT PUSHED: moving the fork HEAD to a non-validatable lanczos tip would force the
+already-validated gfx90a/gfx1100 to revalidate a broken tip. The fork stays at
+70773a9. Follow-up: isolate the restart divergence (compare alpha/beta to a CPU
+reference Lanczos step-by-step on the same matrix; suspect the ritz gemm /
+transpose ordering or a missing reorthogonalization correction), then push.
+
+### Install-as-dependency impact (when lanczos lands)
+
+Dependents that compile the lanczos headers (cuvs spectral) will need host LAPACK
+on the link line: raft_lib links LAPACK::LAPACK PUBLIC, so raft::compiled carries
+it, but a dependent using the header-only raft::raft target for the lanczos
+templates must add find_package(LAPACK) + LAPACK::LAPACK itself. Update the
+"## Install as a dependency" section to add LAPACK once lanczos is validated.
 
 ## CUTLASS distance/neighbors -> CK design (gfx90a)
 
