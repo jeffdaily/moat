@@ -7,17 +7,17 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-01T00:43:09Z",
+  "updated_at": "2026-06-01T19:21:54Z",
   "head_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": "COMPLETED at fork c4b9b5b (real gfx90a code object, 18/18 GPU tests x2 runs). This session brought up the remaining ~15 non-JIT modules behind the prior 17-symbol residual and drove the cudf-internal undefined closure to EXACTLY 6: the 2 cudf::detail::binary_operation JIT overloads (jitify->hipRTC is the documented separate effort) PLUS 4 scan_inclusive<DeviceMin|Max> for strings/structs (scoped-out .cu files referenced by the in-scope reductions/scan dispatch; same deferred-dispatch class). Note: nm -D -u | grep 'U cudf' shows only 2 (the scan_inclusive symbols demangle with std::unique_ptr<cudf::column> prefix, not cudf::); use grep on scan_inclusive|binary_operation to see all 6. 9 new TUs added to cudf_hip_sources.cmake: stream_compaction/distinct_count.cu, quantiles/quantile.cu, quantiles/tdigest/{tdigest.cu,tdigest_aggregation.cu,tdigest_column_view.cpp}, groupby/sort/group_quantiles.cu, filling/repeat.cu, reshape/tile.cu, lists/stream_compaction/distinct.cu. libcudf.so = 559.46 MB (586,646,592 B), 151 embedded code objects ALL gfx90a, no -mcmodel=large, no split (--offload-compress stays on). GPU 18/18 on MI250X (GCD 0) x2 runs, stable. find_package(cudf) dependency-export contract GPU-verified. This unblocks cugraph/cuml (also needs raft). src/io (nvCOMP/KvikIO) + the binaryop/transform/rolling JIT stay scoped out. See notes.md + PORTING_GUIDE.",
-      "validated_sha": "c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4",
+      "validated_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
       "started_at": "2026-05-30T20:28:26Z",
-      "completed_at": "2026-05-31T23:53:58Z",
-      "updated_at": "2026-06-01T00:41:33Z",
+      "completed_at": "2026-06-01T19:21:54.535620Z",
+      "updated_at": "2026-06-01T19:21:54.535629Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

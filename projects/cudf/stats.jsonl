@@ -31,3 +31,6 @@
 {"kind":"phase","ts":"2026-06-01T00:39:09Z","phase":"test","seconds":7.604,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
 {"kind":"phase","ts":"2026-06-01T00:39:26Z","phase":"test","seconds":7.705,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
 {"kind":"phase","ts":"2026-06-01T00:39:26Z","phase":"test","seconds":0.551,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/agent_space/cudf_valid_if_harness/build_fix/valid_if_test"}
+{"kind":"phase","ts":"2026-06-01T19:06:19Z","phase":"compile","seconds":814.476,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j16"}
+{"kind":"phase","ts":"2026-06-01T19:19:52Z","phase":"test","seconds":0.005,"exit":127,"cmd":"/var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST"}
+{"kind":"phase","ts":"2026-06-01T19:20:21Z","phase":"test","seconds":11.042,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST"}

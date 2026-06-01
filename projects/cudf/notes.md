@@ -1,5 +1,55 @@
 # cudf notes (ROCm/HIP port)
 
+## Validation 2026-06-01 (linux-gfx90a, MI250X, ROCm 7.2.1) -- fork 7d743ae REVALIDATED, wave32 fix clean on wave64
+
+Device: AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1 HIP clang 22.0.0.
+
+Revalidation after the gfx1100 porter fixed the wave32 divergent-ballot issue (commit 7d743ae). The fix restructured 6 ballot kernels to converged tile-level loops; this confirms it does NOT regress the wave64 platform.
+
+### Build
+
+Fork clone: jeffdaily/cudf @ moat-port (7d743ae2205d12a99ac4639317099cd40e3746cb).
+
+Dependencies: rmm (jeffdaily/rmm @ moat-port 565705b, installed to _deps/rmm/install), cuCollections (jeffdaily/cuCollections @ moat-port 47ae24d, source-only), libhipcxx (ROCm/libhipcxx amd-develop), rapids_logger (rapidsai/rapids-logger 0.2.0).
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cudf/src/cpp -B projects/cudf/build-hip -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCUDF_CUCO_SOURCE_DIR=/var/lib/jenkins/moat/projects/cuCollections/src \
+  -DCUDF_NVTX3_INCLUDE_DIR=/var/lib/jenkins/pytorch/third_party/NVTX/c/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON
+cmake --build projects/cudf/build-hip -j16
+```
+
+Configure output: "CUDF HIP: arch=gfx90a sources=204 (scoped core)". Build: 207/207 targets, warnings only (zero errors). libcudf.so = 588,578,176 B (561 MB), slightly larger than the prior validated c4b9b5b build (559.46 MB) due to the wave32 fix code additions.
+
+Code-object verification: `llvm-objdump --offloading build-hip/libcudf.so` -> 151 embedded code objects, ALL `hipv4-amdgcn-amd-amdhsa--gfx90a`, zero non-gfx90a (--offload-compress working, no multi-arch bloat).
+
+### GPU test (in-scope subset)
+
+```
+source agent_space/cudf_build_env_gfx90a.sh  # sets LD_LIBRARY_PATH for rmm + conda libs
+HIP_VISIBLE_DEVICES=0 ./build-hip/gtests/MOAT_CORE_SMOKE_TEST
+```
+
+Run 1: **18/18 PASS** (10154 ms).
+Run 2: **18/18 PASS** (8238 ms).
+
+All 18 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile.
+
+Deterministic (two runs identical pass). No regression vs prior validated c4b9b5b (same 18 tests, same pass).
+
+### Result
+
+The wave32 fix (converged tile-level ballot loops with `tile_any_32` guard + active-lane short-circuit predicates) is CORRECT on wave64. The restructure produces identical ballot results on gfx90a (exited lanes contribute 0, leader writes the correct word). The 6 fixed kernels (valid_if_kernel, concatenate_masks_kernel, fused_concatenate_kernel, fused_concatenate_string_offset_kernel, replace_kernel, replace_nulls) all execute correctly on MI250X gfx90a.
+
+State: linux-gfx90a revalidate -> completed. validated_sha = 7d743ae2205d12a99ac4639317099cd40e3746cb.
+
 ## Porter 2026-06-01 (linux-gfx1100, ROCm 7.2.1) -- wave32 divergent-ballot fix, fork 7d743ae
 
 Fixes the gfx1100 VALIDATION-FAILED below. The validator's diagnosis was exactly
