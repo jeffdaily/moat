@@ -204,3 +204,55 @@ untracked. GPU validation is the validator's next stage (not a review blocker).
 Minor (non-blocking, not a change-request): each setup.py drops one trailing space
 from the upstream LICENSE comment line -- cosmetic, zero behavioral effect, in a
 file already edited for the monkeypatch.
+
+## Validation 2026-06-01 (validator, linux-gfx90a)
+
+Fork moat-port @ 9430d42. GPU: AMD Instinct MI250X / MI250 (GCD 2, HIP_VISIBLE_DEVICES=2).
+Build reused from porter's intact HIP build (all four .so link libamdhip64.so.7, built
+same day). Porter's builds installed via pip --no-build-isolation --no-deps.
+
+Commands run (all with HIP_VISIBLE_DEVICES=2,
+LD_LIBRARY_PATH=.../torch/lib:/opt/rocm/lib, harnesses in agent_space/op43dgs/):
+
+```
+utils/timeit.sh op43dgs test -- python val_simpleknn.py
+utils/timeit.sh op43dgs test -- python tier1_forward.py pinhole
+utils/timeit.sh op43dgs test -- python tier2_backward.py pinhole
+utils/timeit.sh op43dgs test -- python tier3_train.py pinhole
+# install fisheye variant
+utils/timeit.sh op43dgs test -- python tier1_forward.py fisheye
+utils/timeit.sh op43dgs test -- python tier2_backward.py fisheye
+utils/timeit.sh op43dgs test -- python fish_fit.py fisheye
+# install panorama variant
+utils/timeit.sh op43dgs test -- python tier1_forward.py panorama
+utils/timeit.sh op43dgs test -- python tier2_backward.py panorama
+utils/timeit.sh op43dgs test -- python fish_fit.py panorama
+```
+
+Results:
+
+simple-knn distCUDA2 (N=50000): finite=True nonneg=True bitwise_deterministic=True. PASS.
+
+pinhole Tier 1 forward: shape (3,128,128), finite=True, coverage=0.2394, bitwise_det=True. PASS.
+pinhole Tier 2 backward:
+  grad-sum run-to-run rel diff: means=2.82e-10, opac=2.54e-10, sh=2.46e-10, scales=2.68e-11 (all stable)
+  opac: n=40 slope=0.984 sign=1.00 [gate slope~1.0] PASS
+  sh: n=40 slope=1.000 sign=1.00 [gate slope~1.0] PASS
+  scales: n=40 slope=0.969 sign=1.00 [gate slope~1.0] PASS
+  means: n=40 slope=0.157 sign=0.98 [gate sign~1.0; slope scaled by design] PASS
+pinhole Tier 3 training: loss 0.01151->0.00053 (>30% reduction), PSNR 25.74->49.89 dB. PASS.
+GPU kernel dispatch confirmed: multiple hipLaunchKernel hipSuccess in AMD_LOG_LEVEL=3 stderr;
+  rasterizer prints "CUDA Kernel: Optimal GS (pinhole)" on load.
+
+fisheye Tier 1: finite=True, coverage=0.1605, bitwise_det=True. PASS.
+fisheye Tier 2: opac slope=0.983 sign=1.00; sh slope=0.994 sign=1.00;
+  scales sign=1.00 (slope=0.712, sign-gated); means sign=0.92 (>0.90 gate). PASS.
+fisheye single-cam fit: loss 0.01790->0.00778, PSNR 22.28->29.14 dB. CONVERGES. PASS.
+
+panorama Tier 1: finite=True, coverage=0.0135, bitwise_det=True. PASS.
+panorama Tier 2: opac slope=1.000 sign=1.00; sh slope=0.999 sign=1.00;
+  scales sign=1.00 (slope=0.988); means sign=1.00 (slope=1.768, sign-gated). PASS.
+panorama single-cam fit: loss 0.00154->0.00013, PSNR 32.65->45.26 dB. CONVERGES. PASS.
+
+All gates satisfied. State: linux-gfx90a completed, validated_sha=9430d42b5d2a2b3c6f6359694c4c5be601d07b38.
+Followers linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
