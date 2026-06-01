@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "3DGS-LM",
   "upstream_url": "https://github.com/lukasHoel/3DGS-LM",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/3DGS-LM",
   "fork_default_branch": "main",
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-01T00:35:40Z",
-  "head_sha": null,
+  "updated_at": "2026-06-01T01:45:42Z",
+  "head_sha": "d5a69846ea4b526e6c1e63ebfb708adab3057420",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-01T00:55:34Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T00:35:40Z",
+      "updated_at": "2026-06-01T01:45:42Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
