@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-06-01T23:14:41Z","phase":"compile","seconds":4.049,"exit":1,"cmd":"ninja -C agent_space/cuvs_build -j16 cuvs"}
+{"kind":"phase","ts":"2026-06-01T23:16:05Z","phase":"compile","seconds":23.971,"exit":1,"cmd":"ninja -C agent_space/cuvs_build -j16 cuvs"}
+{"kind":"phase","ts":"2026-06-01T23:20:15Z","phase":"compile","seconds":24.284,"exit":0,"cmd":"ninja -C agent_space/cuvs_build -j16 cuvs"}
+{"kind":"phase","ts":"2026-06-01T23:20:49Z","phase":"compile","seconds":13.579,"exit":1,"cmd":"ninja -C agent_space/cuvs_build -j16 DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-01T23:22:00Z","phase":"compile","seconds":26.937,"exit":0,"cmd":"ninja -C agent_space/cuvs_build -j16 DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-01T23:37:11Z","phase":"test","seconds":900.065,"exit":124,"cmd":"timeout 900 agent_space/cuvs_build/gtests/DISTANCE_TEST"}
