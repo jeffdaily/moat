@@ -174,6 +174,27 @@ faiss/gpu/utils/{Select,WarpShuffles,PtxUtils,DeviceDefs}.* on the moat-port bra
 - Python bindings (swig) and benchs/demos: not built (Python OFF; gflags satisfies perf_tests).
 </content>
 
+## Validation 2026-06-01 (validator, linux-gfx90a) -> completed
+
+Device: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=1, ROCm 7.2.1
+Build: reused porter build at a5c47343e73cb528bcc620e9d51cf948206383cb (intact, binaries from 2026-05-31)
+
+TestGpuSelect (de-risking gate, run twice for determinism):
+- Run 1: 6/6 PASSED (7203 ms)
+- Run 2: 6/6 PASSED (6645 ms) -- deterministic
+
+GPU index suite via ctest (per-process, serial, -j1, OPENBLAS_NUM_THREADS=1):
+- ctest -R "TestGpu|TestCodePacking": 108/108 PASSED (407.97 s total)
+  Includes: TestGpuIndexFlat (18, incl LargeIndex+UnifiedMemory), TestGpuIndexIVFFlat (21),
+  TestGpuIndexIVFPQ (13), TestGpuIndexBinaryFlat (4), TestGpuMemoryException (1),
+  TestGpuIndexIVFScalarQuantizer (12), TestGpuResidualQuantizer (1),
+  TestGpuDistance (28, BF16 subtests self-skip as documented), TestGpuSelect (6),
+  TestCodePacking (4)
+- TestGpuIcmEncoder (7/7, run direct -- parameterized test names not matched by ctest -R)
+
+State: completed. validated_sha = a5c47343e73cb528bcc620e9d51cf948206383cb
+Followers auto-unblocked: linux-gfx1100, windows-gfx1151 -> port-ready
+
 ## Review 2026-06-01 (reviewer, linux-gfx90a) -> review-passed
 Verdict: review-passed. The code change is sound; one notes-only accuracy fix to record (does not block validation, does not touch the fork HEAD).
 
