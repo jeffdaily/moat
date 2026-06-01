@@ -203,6 +203,11 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
 - REAL UPSTREAM HIPRT BUG: the device name "AMD Instinct MI250X / MI250" contains a `/`, which std::filesystem::path treats as a directory separator, so HIPRT's JIT-cache file write fails (it never creates the implied subdir). One-line fix: sanitize `/` in the cache name. Without it HIPRT cannot run on ANY `/`-containing AMD device name. Reportable to GPUOpen/HIPRT (Report decision: PENDING). Probe + patch (gitignored): agent_space/hiprt_probe/.
 - jeff's decision (2026-06-01): DEFER the OptiX-gated ports for now; HIPRT is proven feasible, so EnvGS Stage 2 is the recommended first reimplementation when revisited.
 
+### B7 REFERENCE -- PBRT-v4 OptiX->HIPRT port (jeff + Daniel Meister, 2023): the exemplar
+- jeff (jeffdaily) and Daniel Meister (first author of the HIPRT paper) did a real OptiX->HIPRT port of PBRT-v4 in 2023. It demonstrates the full reimplementation on a substantial renderer: the SBT -> functor-table restructure, the BVH build/traverse mapping, and the build wiring. Unmerged (Matt Pharr is at NVIDIA -- he tried), so it lives as a PR/branch, not in mmp/pbrt-v4 main.
+- ACTION: when reimplementing the deferred OptiX-gated ports (EnvGS Stage 2 first, then rmcl), FEED THIS PR to the porter as the reference -- the same lever FAISS-ROCm was for raft's neighbors.
+- URL: TBD. gh search / gh pr list on mmp/pbrt-v4 did not surface it (no jeffdaily-authored PR, no HIPRT match). Obtain the exact PR/branch from jeff, or search jeffdaily/pbrt-v4 fork branches + Daniel Meister's account.
+
 ---
 
 ## Build-config / environment (not bugs; for completeness)
