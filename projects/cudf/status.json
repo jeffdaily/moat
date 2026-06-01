@@ -7,17 +7,17 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-01T00:30:00Z",
-  "head_sha": "c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4",
+  "updated_at": "2026-06-01T00:43:09Z",
+  "head_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": "COMPLETED at fork c4b9b5b (real gfx90a code object, 18/18 GPU tests x2 runs). This session brought up the remaining ~15 non-JIT modules behind the prior 17-symbol residual and drove the cudf-internal undefined closure to EXACTLY 6: the 2 cudf::detail::binary_operation JIT overloads (jitify->hipRTC is the documented separate effort) PLUS 4 scan_inclusive<DeviceMin|Max> for strings/structs (scoped-out .cu files referenced by the in-scope reductions/scan dispatch; same deferred-dispatch class). Note: nm -D -u | grep 'U cudf' shows only 2 (the scan_inclusive symbols demangle with std::unique_ptr<cudf::column> prefix, not cudf::); use grep on scan_inclusive|binary_operation to see all 6. 9 new TUs added to cudf_hip_sources.cmake: stream_compaction/distinct_count.cu, quantiles/quantile.cu, quantiles/tdigest/{tdigest.cu,tdigest_aggregation.cu,tdigest_column_view.cpp}, groupby/sort/group_quantiles.cu, filling/repeat.cu, reshape/tile.cu, lists/stream_compaction/distinct.cu. libcudf.so = 559.46 MB (586,646,592 B), 151 embedded code objects ALL gfx90a, no -mcmodel=large, no split (--offload-compress stays on). GPU 18/18 on MI250X (GCD 0) x2 runs, stable. find_package(cudf) dependency-export contract GPU-verified. This unblocks cugraph/cuml (also needs raft). src/io (nvCOMP/KvikIO) + the binaryop/transform/rolling JIT stay scoped out. See notes.md + PORTING_GUIDE.",
       "validated_sha": "c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4",
       "started_at": "2026-05-30T20:28:26Z",
       "completed_at": "2026-05-31T23:53:58Z",
-      "updated_at": "2026-05-31T23:54:00Z",
+      "updated_at": "2026-06-01T00:41:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "validation-failed",
+      "state": "ported",
       "blocked": false,
-      "blocked_reason": "VALIDATION-FAILED (gfx1100, wave32). Build and 18/18 smoke tests PASS; but the targeted wave32 valid_if_kernel partial-tail check FAILS. Root cause: valid_if_kernel (valid_if.cuh:58) calls tiled_partition<32>::ballot(pred) inside a per-lane while(i<size) loop. For a partial tail (size%32!=0), exited tail lanes do NOT call ballot -- the call is divergent within the 32-lane tile. On gfx1100 (wave32) this causes HSA_STATUS_ERROR_EXCEPTION (hardware exception code 0x1016). On gfx90a (wave64), the 32-lane tile is a sub-wave of the 64-lane wavefront; all lanes execute in lockstep and the ballot is converged at the hardware level. Fix: restructure valid_if_kernel to call ballot_32 unconditionally for all tile members (out-of-range lanes vote false), with the output write guarded by active status. See notes.md 'Validation 2026-06-01' and agent_space/cudf_valid_if_harness/ballot_diverge.cu for the reproducer.",
+      "blocked_reason": "PORTED at fork 7d743ae (delta-fix for the wave32 divergent-ballot VALIDATION-FAILED). Root cause was broader than first diagnosed: SIX per-lane grid-stride ballot kernels (valid_if_kernel; concatenate_masks_kernel + fused_concatenate_kernel in copying/concatenate.cu; fused_concatenate_string_offset_kernel in strings/copying/concatenate.cu; replace_kernel in replace/replace.cu; replace_nulls in replace/nulls.cu) called ballot_32 from inside a per-lane while(i<size) loop, so a partial final tile (size%32!=0) ballots divergently on wave32 (HSA_STATUS_ERROR_EXCEPTION 0x1016); benign-by-accident on wave64. Fixed arch-unified on the HIP path with a new tile_any_32 helper driving a converged tile-level loop (all lanes reach ballot_32 at one PC, OOB lanes short-circuit to false, write+leader-count guarded by active; the strings terminal-offset write captured pre-loop as writes_terminal). CUDA path byte-for-byte unchanged. valid_if_n_kernel/copy_range_kernel/copy_if_else_kernel are warp/block-uniform (already converged), left as-is. GPU re-test on gfx1100 (W7800): valid_if partial-tail harness 24/24 PASS no-crash (sizes 1..100001, all %32!=0, incl 1000+1057) null mask+count == host ref; MOAT_CORE_SMOKE_TEST 18/18 PASS, both x2 deterministic. libcudf.so 555.8 MB, 151 gfx1100 code objects. See notes.md 'Porter 2026-06-01'.",
       "validated_sha": null,
       "started_at": "2026-06-01T00:00:00Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T00:30:00Z",
+      "updated_at": "2026-06-01T00:41:59Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +54,7 @@
         "first_session_at": "2026-06-01T00:00:00Z",
         "last_session_at": "2026-06-01T00:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "porter"
     },
     "windows-gfx1151": {
       "state": "port-ready",

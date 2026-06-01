@@ -25,3 +25,9 @@
 {"kind":"phase","ts":"2026-05-31T23:10:32Z","phase":"test","seconds":9.723,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cudf/build-hip --output-on-failure"}
 {"kind":"phase","ts":"2026-06-01T00:08:21Z","phase":"compile","seconds":545.095,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100 -j16"}
 {"kind":"phase","ts":"2026-06-01T00:09:07Z","phase":"test","seconds":9.195,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:37:22Z","phase":"compile","seconds":378.384,"exit":0,"cmd":"cmake --build projects/cudf/build-hip-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-01T00:38:43Z","phase":"test","seconds":0.005,"exit":127,"cmd":"env HIP_VISIBLE_DEVICES=0 ./build_fix/valid_if_test"}
+{"kind":"phase","ts":"2026-06-01T00:38:50Z","phase":"test","seconds":0.563,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/agent_space/cudf_valid_if_harness/build_fix/valid_if_test"}
+{"kind":"phase","ts":"2026-06-01T00:39:09Z","phase":"test","seconds":7.604,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:39:26Z","phase":"test","seconds":7.705,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:39:26Z","phase":"test","seconds":0.551,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/agent_space/cudf_valid_if_harness/build_fix/valid_if_test"}

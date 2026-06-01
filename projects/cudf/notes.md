@@ -1,5 +1,107 @@
 # cudf notes (ROCm/HIP port)
 
+## Porter 2026-06-01 (linux-gfx1100, ROCm 7.2.1) -- wave32 divergent-ballot fix, fork 7d743ae
+
+Fixes the gfx1100 VALIDATION-FAILED below. The validator's diagnosis was exactly
+right about the mechanism but UNDERCOUNTED the sites: the per-lane-divergent
+grid-stride ballot is NOT unique to valid_if_kernel. `grep -rn ballot_32` over the
+in-scope sources shows SIX kernels with the identical `while (i < size)` (or
+`while (tidx < N)`) per-lane loop that exits tail lanes before the leader's
+ballot_32:
+
+1. detail/valid_if.cuh `valid_if_kernel` (the diagnosed one)
+2. src/copying/concatenate.cu `concatenate_masks_kernel` (`while (tidx < number_of_mask_bits)`)
+3. src/copying/concatenate.cu `fused_concatenate_kernel` (`while (output_index < output_size)`)
+4. src/strings/copying/concatenate.cu `fused_concatenate_string_offset_kernel` (same)
+5. src/replace/replace.cu `replace_kernel` (`while (tid < nrows)`)
+6. src/replace/nulls.cu `replace_nulls` (`while (i < nrows)`)
+
+All six carry an `__ballot_sync(active_mask, ...)` mask across iterations on CUDA
+(so the partial final tile ballots only still-active lanes); the HIP port had
+dropped the mask and called `ballot_32` from inside the per-lane loop. On wave64
+that is benign (the 32-lane tile is a sub-wave of the 64-lane wavefront; exited
+lanes still run the collective in lockstep), which is why gfx90a passed by
+accident. On wave32 the 32-lane tile IS the wavefront, so divergent-tile
+`tile.ballot()` -> HSA_STATUS_ERROR_EXCEPTION (0x1016) for any size % 32 != 0.
+
+The notes claim that "valid_if_kernel is the only genuinely divergent-loop site"
+(Review 2026-05-31 + the 2026-05-31 validator entry) was WRONG: it conflated
+these per-lane loops with `valid_if_n_kernel` / `copy_range_kernel` /
+`copy_if_else_kernel`, which ARE converged (their loop variable is
+warp/block-uniform: `block_offset = blockIdx.x*blockDim.x`, `mask_idx =
+begin_mask_idx + warp_id`, `warp_cur = warp_begin + warp_id` -- all 32 lanes of a
+warp share it and enter/exit together). Those three are left UNCHANGED. The
+wave32 GPU only crashed where it was genuinely divergent.
+
+### The fix (arch-unified, HIP-path only; CUDA byte-for-byte unchanged)
+
+New helper `tile_any_32(bool)` in warp_primitives.cuh (mirrors `ballot_32`):
+`cg::tiled_partition<32>(...).any(pred)`. Each of the six kernels' HIP path is
+restructured into a CONVERGED tile-level loop:
+
+```cpp
+while (cudf::detail::tile_any_32(i < size)) {   // tile stays in until ALL lanes done
+  bool const active   = i < size;
+  bitmask_type ballot = cudf::detail::ballot_32(active && p(*(begin + i)));  // 1 PC, all lanes
+  if (active && lane_id == leader_lane) {        // OOB lanes vote false; write guarded by active
+    output[cudf::word_index(i)] = ballot;
+    warp_valid_count += __popc(ballot);
+  }
+  i += stride;
+}
+```
+
+Key correctness points:
+- The predicate `active && p(*(begin+i))` short-circuits, so OOB lanes never
+  dereference `begin+i` (the "clamp OOB neighbor reads" fault class). Same for the
+  is_valid / upper_bound lookups in the concatenate/replace kernels -- guarded by
+  `if (active) {...}`.
+- `ballot_32` is at ONE program point reached by every tile member (no longer
+  inside the `if (i<size)` body), so the collective is converged on wave32.
+- `warp_valid_count` is accumulated only under `if (active && leader)`. This is
+  EXACT, not an approximation: `single_lane_block_sum_reduce<block_size, 0>` reads
+  `lane_values[warp_id]` written only by the leader lane, so only the leader's
+  count is ever consumed (verified in cuda.cuh). fused_concatenate_kernel +
+  fused_concatenate_string_offset_kernel originally accumulated outside the leader
+  guard; moving it under the leader produces the identical lane-0 total.
+- strings `fused_concatenate_string_offset_kernel` has a post-loop
+  `if (output_index == output_size) output_data[output_size] = ...`. The converged
+  loop runs `output_index` PAST output_size for every lane, so that test no longer
+  identifies the right thread. Captured before the loop as
+  `writes_terminal = output_index <= output_size && (output_size - output_index) %
+  stride == 0` (the lane whose trajectory lands exactly on output_size) -- exact
+  equivalent of the original per-lane terminal condition.
+
+### Build + GPU re-test (gfx1100, Radeon Pro W7800, RDNA3 wave32, HIP_VISIBLE_DEVICES=0)
+
+Incremental rebuild (the two header touches -- valid_if.cuh + warp_primitives.cuh
+-- plus the 4 .cu): 91 TUs, exit 0, warnings only. libcudf.so = 582,819,512 B
+(555.8 MB), `llvm-objdump --offloading` = 151 code objects ALL gfx1100
+(--offload-compress intact). Build/test env: agent_space/cudf_build_env_gfx1100.sh.
+
+```
+source agent_space/cudf_build_env_gfx1100.sh
+utils/timeit.sh cudf compile -- cmake --build projects/cudf/build-hip-gfx1100 -j16
+# valid_if partial-tail harness (validator's, drives cudf::detail::valid_if):
+HIP_VISIBLE_DEVICES=0 agent_space/cudf_valid_if_harness/build_fix/valid_if_test
+# smoke suite:
+HIP_VISIBLE_DEVICES=0 projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST
+```
+
+- valid_if partial-tail harness: **24/24 PASS, NO crash** (x2 runs deterministic).
+  Sizes 1, 31, 33, 63, 65, 97, 1000, 1057, 4097, 100001 (all size % 32 != 0) with
+  scattered nulls; device null mask + null count == host reference for every case.
+  Before the fix this harness crashed with HSA_STATUS_ERROR_EXCEPTION on the first
+  partial-tail size. The requested 1000- and 1057-row cases are in the set.
+- MOAT_CORE_SMOKE_TEST: **18/18 PASS** (x2 runs deterministic), no regression.
+
+State: linux-gfx1100 -> ported (porter -> reviewer). head_sha 7d743ae;
+advance-head flipped linux-gfx90a completed -> revalidate (formality; the
+restructure is correct on wave64). windows-gfx1151 was port-ready (unchanged).
+The fix harness build dir: agent_space/cudf_valid_if_harness/build_fix (uses
+-Drmm_DIR=<rmm install>/lib/cmake/rmm and -DCMAKE_PREFIX_PATH including the rmm
+gfx1100 install; the env-var form of CMAKE_PREFIX_PATH is NOT picked up, pass -D).
+
 ## Validation 2026-06-01 (linux-gfx1100, ROCm 7.2.1) -- VALIDATION-FAILED
 
 Device: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1 HIP clang 22.0.0. HIP_VISIBLE_DEVICES=0.
