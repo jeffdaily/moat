@@ -171,36 +171,56 @@ def cuda_bytes(full_name, cache):
 
 def code_search(query, page, per_page=100):
     """One REST code-search call. Returns (items, total_count). The `gh search
-    code` CLI returns [] for these queries, so we hit the API directly. Backs
-    off on rate-limit (HTTP 403 / secondary limit)."""
-    r = subprocess.run(
-        ["gh", "api", "-X", "GET", "search/code",
-         "-f", f"q={query}", "-f", f"per_page={per_page}", "-f", f"page={page}"],
-        capture_output=True, text=True)
-    if r.returncode != 0:
+    code` CLI returns [] for these queries, so we hit the API directly. On a
+    rate-limit (HTTP 403 / secondary/abuse limit) it retries with exponential
+    backoff rather than giving up, so a transient throttle does not silently
+    truncate the query (which is what loses high-signal mid-page repos)."""
+    backoffs = [30, 60, 120, 240]
+    for attempt in range(len(backoffs) + 1):
+        r = subprocess.run(
+            ["gh", "api", "-X", "GET", "search/code",
+             "-f", f"q={query}", "-f", f"per_page={per_page}", "-f", f"page={page}"],
+            capture_output=True, text=True)
+        if r.returncode == 0:
+            try:
+                d = json.loads(r.stdout or "{}")
+                return d.get("items", []), d.get("total_count")
+            except json.JSONDecodeError:
+                return [], None
         err = r.stderr.lower()
+        is_rl = "rate limit" in err or "403" in err or "abuse" in err
         sys.stderr.write(f"discover: code-search failed (p{page}): {query}\n{r.stderr.strip()}\n")
-        if "rate limit" in err or "403" in err or "abuse" in err:
-            time.sleep(30)
-        return [], None
-    try:
-        d = json.loads(r.stdout or "{}")
-        return d.get("items", []), d.get("total_count")
-    except json.JSONDecodeError:
+        if is_rl and attempt < len(backoffs):
+            wait = backoffs[attempt]
+            sys.stderr.write(f"discover: rate-limited, backoff {wait}s "
+                             f"(attempt {attempt + 1}/{len(backoffs)})\n")
+            time.sleep(wait)
+            continue
         return [], None
 
 
-def code_search_repos(cfg):
+def code_search_repos(cfg, disk=None, save=None):
     """Run every [code_search] query, page up to the cap, dedupe by
     repository.full_name (preserving first-seen order). Returns an ordered list
-    of (full_name, matched_query) -- matched_query is the first query that hit
-    the repo. Throttles between every API call."""
+    of [full_name, matched_query] -- matched_query is the first query that hit
+    the repo. Throttles between every API call.
+
+    Resumable: completed queries are recorded in disk['cs_done'] and the
+    accumulated order in disk['cs_order'], persisted via save() after each
+    query, so a run killed by a wall-clock limit resumes without re-spending
+    the code-search rate budget on finished queries."""
     cs = cfg["code_search"]
     page_cap = int(cs.get("page_cap", 10))
     throttle = float(cs.get("throttle_seconds", 7))
-    seen = {}
-    order = []
+    if disk is None:
+        disk = {}
+    done = set(disk.get("cs_done", []))
+    order = [tuple(x) for x in disk.get("cs_order", [])]
+    seen = {fn.lower() for fn, _ in order}
     for q in cs["queries"]:
+        if q in done:
+            sys.stderr.write(f"discover: code-search '{q}': cached, skipping\n")
+            continue
         pages_done = 0
         for page in range(1, page_cap + 1):
             items, total = code_search(q, page)
@@ -214,11 +234,16 @@ def code_search_repos(cfg):
                     continue
                 key = fn.lower()
                 if key not in seen:
-                    seen[key] = fn
+                    seen.add(key)
                     order.append((fn, q))
             # Stop early once this query is exhausted (fewer than a full page).
             if len(items) < 100:
                 break
+        done.add(q)
+        disk["cs_done"] = sorted(done)
+        disk["cs_order"] = [list(x) for x in order]
+        if save:
+            save(disk)
         sys.stderr.write(f"discover: code-search '{q}': {pages_done} page(s), "
                          f"{len(order)} unique repos cumulative\n")
     return order
@@ -260,11 +285,31 @@ def adopted_projects():
     return {p.name.lower() for p in proot.iterdir() if p.is_dir()}
 
 
+CODE_CACHE = DATA / ".code_search_cache.json"
+
+
+def _load_cache():
+    if CODE_CACHE.exists():
+        try:
+            return json.loads(CODE_CACHE.read_text())
+        except json.JSONDecodeError:
+            return {}
+    return {}
+
+
+def _save_cache(cache):
+    CODE_CACHE.write_text(json.dumps(cache))
+
+
 def run_code_search_pass(cfg, out_path):
     """Surface candidates by CUDA SOURCE (the discovery blind spot), merge them
     into the existing candidates.json, re-sort, and report. Existing records
     are preserved; only repos not already in candidates.json and not already an
-    adopted project are evaluated."""
+    adopted project are evaluated.
+
+    A disk cache (data/.code_search_cache.json) memoizes the per-repo metadata
+    and Cuda-bytes results so a long fetch loop interrupted by a wall-clock
+    limit resumes cheaply -- re-running the pass skips already-fetched repos."""
     s = cfg["search"]
     excl_orgs = {o.lower() for o in s.get("exclude_orgs", [])}
     excl_substr = [x.lower() for x in s.get("exclude_org_substrings", [])]
@@ -275,7 +320,14 @@ def run_code_search_pass(cfg, out_path):
     known = {r["full_name"].lower() for r in existing}
     adopted_names = adopted_projects()
 
-    surfaced = code_search_repos(cfg)
+    disk = _load_cache()
+    all_done = set(disk.get("cs_done", [])) >= set(cfg["code_search"]["queries"])
+    if all_done and disk.get("cs_order"):
+        surfaced = [tuple(x) for x in disk["cs_order"]]
+        sys.stderr.write(f"discover: reusing cached code-search surfacing "
+                         f"({len(surfaced)} repos)\n")
+    else:
+        surfaced = code_search_repos(cfg, disk=disk, save=_save_cache)
     n_unique = len(surfaced)
 
     # Partition: skip repos already known (in candidates.json) or already adopted.
@@ -299,12 +351,20 @@ def run_code_search_pass(cfg, out_path):
             f"max_new_repo_fetches={max_fetches}; deferring {truncated} (NOT silent)\n")
         new_repos = new_repos[:max_fetches]
 
-    cache = {}
+    meta_cache = disk.setdefault("meta", {})   # full_name -> meta dict or None
+    cb_cache = disk.setdefault("cuda_bytes", {})  # full_name -> int
     new_recs = []
     n_fork = n_org = n_filter = n_nocuda = n_meta = 0
-    for fn, q in new_repos:
-        meta = fetch_repo_meta(fn)
-        time.sleep(0.1)
+    for i, (fn, q) in enumerate(new_repos):
+        if fn in meta_cache:
+            meta = meta_cache[fn]
+        else:
+            meta = fetch_repo_meta(fn)
+            meta_cache[fn] = meta
+            time.sleep(0.1)
+        if (i + 1) % 100 == 0:
+            _save_cache(disk)
+            sys.stderr.write(f"discover: code-search progress {i + 1}/{len(new_repos)}\n")
         if meta is None:
             n_meta += 1
             continue
@@ -318,7 +378,7 @@ def run_code_search_pass(cfg, out_path):
         if not passes(meta, cfg):
             n_filter += 1
             continue
-        cb = cuda_bytes(meta["fullName"], cache)
+        cb = cuda_bytes(meta["fullName"], cb_cache)
         meta["_cuda_bytes"] = cb
         if cb < threshold:
             n_nocuda += 1
@@ -326,11 +386,19 @@ def run_code_search_pass(cfg, out_path):
         meta["matched_queries"] = [f"code:{q}"]
         new_recs.append(to_record(meta, cfg))
 
+    _save_cache(disk)
     merged = existing + new_recs
     merged.sort(key=lambda r: (-r["priority"], r["full_name"].lower()))
     with open(out_path, "w") as f:
         json.dump(merged, f, indent=2)
         f.write("\n")
+
+    # Durable side-channel: the new records alone, so a concurrent rebase that
+    # clobbers candidates.json on the shared working tree cannot lose this run's
+    # findings -- they can be re-merged from here. agent_space/ is gitignored.
+    snap = REPO_ROOT / "agent_space" / "new_records_postrun.json"
+    if snap.parent.is_dir():
+        snap.write_text(json.dumps(new_recs, indent=2) + "\n")
 
     stats = {
         "queries": len(cfg["code_search"]["queries"]),
