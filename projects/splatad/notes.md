@@ -248,3 +248,67 @@ butterfly shfl_xor reductions (#4) and the match_any LabeledGroup (#5) are corre
 too (gsplat validated the identical shims on gfx1100 + gfx1151). Followers build with
 PYTORCH_ROCM_ARCH=gfx1100 / gfx1151 against the same moat-port commit and validate first;
 only delta-port on a real failure.
+
+## Review 2026-06-01 (reviewer, linux-gfx90a, moat-port @ e337891 vs base 6e31ad7)
+Verdict: PASS (review-passed). The port is correct; the fault-class shims are sound and
+empirically verified on gfx90a (GCD 0). One documentation-accuracy finding for the porter
+to correct on the next touch (not a code defect, does not block the validator).
+
+Scope reviewed: git diff 6e31ad7...HEAD, 6 files (setup.py, .gitignore, bindings.h,
+helpers.cuh, projection.cu, rasterization.cu). All kernel fixes guarded by USE_ROCM; the
+CUDA path is byte-identical (CUDA nvcc flags resolve to `-O3 --use_fast_math
+--expt-relaxed-constexpr`, same as upstream; the hipify monkeypatch returns early on
+non-HIP torch before importing hipify_python, so it is a true no-op off ROCm).
+
+Empirically verified on gfx90a / MI250X (HIP_VISIBLE_DEVICES=0), all load-bearing claims:
+- LabeledGroup match_any lowering (helpers.cuh:43-71, the gradient-critical shim): a
+  standalone wave64 probe over a 256-thread block (labels spread across tiles and both
+  wavefront halves, including a label straddling the 32-lane tile boundary) confirmed the
+  shim sums same-label lanes PER 32-LANE TILE and elects exactly ONE rank-0 lane per
+  (wavefront, tile, label) -> exactly one atomicAdd per distinct label per tile. That is
+  precisely the scope of CUDA's cg::labeled_partition(tiled_partition<32>, label) (a
+  labeled partition sub-divides the parent 32-tile; it never spans tiles on CUDA either),
+  so the shim matches CUDA's atomic granularity exactly -- NOT a per-lane fan-out. The
+  raw `__shfl(val, src, 32)` in all_reduce_sum (helpers.cuh:55) takes a tile-relative src
+  from match_any and a width-32 group, so it indexes the correct absolute lane in each
+  tile on wave64. Gradient-correctness claim CONFIRMED.
+- warpReduceMax<int> butterfly (helpers.cuh:85-95, the two warp_bin_final sites
+  rasterization.cu:3038, 3960): standalone wave64 probe confirmed per-32-tile max is
+  exact; max is order-independent so it always equals cg::reduce(greater). Sound.
+- warpReduceSum/Max use warp.size() (=32 on the tile, both archs) for the butterfly stride
+  and __shfl width 32 = the tile width, not a wavefront-size literal. No hardcoded-32
+  lane-math; arch-unified for wave32 followers by construction.
+- Built csrc.so carries only gfx90a (roc-obj-ls: 4 gfx90a code objects, no other arch);
+  no per-arch #if hack in shared code. Working tree clean; the validated .so was built
+  from the reviewed source (so mtime > helpers.cuh mtime).
+- Tests reproduced (GCD 0): camera math 26 or 27 (see finding), lidar math 14, camera
+  rasterization 24, lidar rasterization 3, test_strategy 1 -- all match the porter's log.
+- Commit hygiene clean: title `[ROCm] HIP port for gfx90a/gfx1100/gfx1151 (SplatAD
+  camera+lidar)` 65 chars; mentions Claude; has Test Plan; no Co-Authored-By/noreply, no
+  ghstack, no em-dash, no AMD-internal account ref. fork/main == origin/main == base
+  6e31ad7 (clean upstream mirror); moat-port is base + exactly 1 commit. Actions disabled
+  on the fork (enabled:false).
+
+FINDING (documentation accuracy, porter to correct on next touch -- NOT a code defect):
+- notes.md lines ~191-197 pin the documented run-to-run flap to
+  test_quat_scale_to_covar_preci[False] (1 v_scales element). The actual flapper in the
+  porter's own camera-math command is tests/test_basic.py::test_projection[True-True-False]
+  (use_velocities=True, calc_compensations=True, fused=False), which fails ~30% of runs on
+  the v_viewmats gradient (1-2 of 48 elements, greatest relative diff ~2e-3 vs the rtol=1e-3
+  at test_basic.py:393 -- the tightest gradient tolerance in the suite; indices move
+  run-to-run; passed 4/5 then 27/27 on reruns here). The fault-class analysis is CORRECT
+  (this IS float-atomicAdd-accumulation-order boundary noise on the v_viewmats/v_R/v_t
+  reduction, exactly the gradient the LabeledGroup protects, and which I proved the shim
+  lowers correctly -- a real wave64 reduction bug would fail systematically on many
+  elements every run, scaling with size; this does not). Only the test attribution in the
+  notes is imprecise. The "26-27 passed" headline is honest and reproduced exactly (26+1
+  flap, or 27 clean). Do NOT loosen the upstream tolerance (PORTING_GUIDE determinism
+  policy). Action: update the notes NOTE block to name test_projection[True-True-False] /
+  v_viewmats as the (or an additional) documented flapper so the validator is not surprised
+  by a non-test_quat_scale flap.
+
+Note for the validator: expect test_projection[True-True-False] to flap on v_viewmats
+across repeats; this is the documented atomic-order noise, not a regression. The
+nerfacc-gated lidar rasterize_to_points fwd/bwd reference cannot run (nerfacc CUDA _C is
+None on ROCm); the porter's independent compositor + finite-difference + 80-step Adam
+check substitutes (same gap class as the completed gsplat port).
