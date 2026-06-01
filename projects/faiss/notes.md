@@ -195,6 +195,55 @@ GPU index suite via ctest (per-process, serial, -j1, OPENBLAS_NUM_THREADS=1):
 State: completed. validated_sha = a5c47343e73cb528bcc620e9d51cf948206383cb
 Followers auto-unblocked: linux-gfx1100, windows-gfx1151 -> port-ready
 
+## Validation 2026-06-01 (validator, linux-gfx1100) -> completed
+
+Device: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wavefront=32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1
+Build: fresh clone of jeffdaily/faiss@moat-port (a5c47343e73c), cmake configure + build on this host
+GPU arch in libfaiss.so: hipv4-amdgcn-amd-amdhsa--gfx1100 (168 code objects, confirmed via llvm-objdump --offloading)
+
+Configure command (gfx1100):
+```
+cmake -S projects/faiss/src -B projects/faiss/src/build \
+  -DFAISS_ENABLE_GPU=ON -DFAISS_ENABLE_ROCM=ON -DFAISS_ENABLE_CUVS=OFF \
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_ENABLE_C_API=ON \
+  -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON \
+  -DFAISS_OPT_LEVEL=generic -DFAISS_ENABLE_MKL=OFF -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++ \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+```
+hipify ran cleanly at configure (the hipify.sh device_functions.h doubled-prefix fix applied).
+
+Warp-size resolution on gfx1100 (THE wave32 question):
+- DeviceDefs.cuh (ROCm 7+): `constexpr __device__ int kWarpSize = rocprim::arch::wavefront::max_size()`
+- rocprim::arch::wavefront::max_size() -> min_size() when __HIP_DEVICE_COMPILE__ -> 32u when ROCPRIM_NAVI=1
+- ROCPRIM_NAVI=1 when __GFX11__ (gfx1100 kernel compile). Therefore kWarpSize=32 on gfx1100.
+- WarpShuffles.cuh USE_AMD_ROCM branch: maskless __shfl/__shfl_xor (no 0xffffffff mask); all shfl widths default to kWarpSize=32.
+- MergeNetworkWarp.cuh: BitonicMergeStep uses `if constexpr (kWarpSize == 32)` -> takes the 32-lane branch natively.
+  BitonicSortStep: `if constexpr (kWarpSize == 64)` -> skipped on gfx1100 (correct for 32-lane sort).
+- No wave64-only path exists. No __GFX9__-gated code. The kWarpSize-parameterized select code handles
+  both wave widths via constexpr branches -- gfx1100 natively matches NVIDIA warp=32, no adaptation needed.
+
+TestGpuSelect (warp-select de-risking gate, run twice for determinism):
+- Run 1: 6/6 PASSED (6959 ms) -- testWarp + test1Warp + testExactWarp (WarpSelectKernel), test + test1 + testExact (BlockSelectKernel)
+- Run 2: 6/6 PASSED (7105 ms) -- deterministic, no HSA faults
+
+GPU index suite via ctest (per-process, serial, -j1, HIP_VISIBLE_DEVICES=0, OPENBLAS_NUM_THREADS=1):
+- ctest -R "TestGpu|TestCodePacking": 108/108 PASSED (412.40 s total)
+  Includes: TestGpuIndexFlat (18, incl LargeIndex+UnifiedMemory), TestGpuIndexIVFFlat (21),
+  TestGpuIndexIVFPQ (13), TestGpuIndexBinaryFlat (4), TestGpuMemoryException (1),
+  TestGpuIndexIVFScalarQuantizer (12), TestGpuResidualQuantizer (1),
+  TestGpuDistance (28, BF16 subtests self-skip as documented), TestGpuSelect (6),
+  TestCodePacking (4)
+- TestGpuIcmEncoder: 7/7 PASSED (direct run, parameterized names not matched by ctest -R)
+
+Verdict: warp-select CORRECT on wave32, no HSA 0x1016, no NaN, no wrong neighbors/distances.
+No fork changes: gfx1100 validated at a5c47343e73c with zero source delta (cmake -DCMAKE_HIP_ARCHITECTURES=gfx1100 only).
+Result: 108/108 matches gfx90a (108/108) exactly.
+
+State: completed. validated_sha = a5c47343e73cb528bcc620e9d51cf948206383cb
+
 ## Review 2026-06-01 (reviewer, linux-gfx90a) -> review-passed
 Verdict: review-passed. The code change is sound; one notes-only accuracy fix to record (does not block validation, does not touch the fork HEAD).
 
