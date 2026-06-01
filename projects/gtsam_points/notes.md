@@ -150,3 +150,68 @@ Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_c
 CUDA Graph path (cuda_graph.cu / cuda_graph_exec.cu): compile-only at this validation, as noted by porter. Not exercised by the GPU gate.
 
 State: linux-gfx90a -> completed (validated_sha: 09346fdeaa9e179e45ba23c8264356ab59884e50). Followers linux-gfx1100 and windows-gfx1151 unblocked to port-ready.
+
+## Validation 2026-06-01 (gfx1100, ROCm 7.2.1)
+
+Device: AMD Radeon Pro W7800 48GB gfx1100 (RDNA3, wave32), ROCm 7.2.1 (HIP 7.2.53211-e1a6bc5663), HIP_VISIBLE_DEVICES=0.
+
+GTSAM dep: built borglab/gtsam @ 4.3a0 from source into /var/lib/jenkins/moat/_deps/gtsam/install. Libraries present: libgtsam.so.4.3a0, libgtsam_unstable.so.4.3a0, libmetis-gtsam.so, libcephes-gtsam.so. CMake configure of gtsam 4.3a0:
+```
+cmake -S /var/lib/jenkins/moat/_deps/gtsam/src -B /var/lib/jenkins/moat/_deps/gtsam/build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/gtsam/install \
+  -DGTSAM_BUILD_UNSTABLE=ON \
+  -DGTSAM_BUILD_TESTS=OFF -DGTSAM_BUILD_EXAMPLES_ALWAYS=OFF \
+  -DGTSAM_BUILD_DOCS=OFF -DGTSAM_BUILD_PYTHON=OFF \
+  -DGTSAM_INSTALL_MATLAB_TOOLBOX=OFF \
+  -DGTSAM_WITH_TBB=OFF -DGTSAM_BUILD_WITH_MARCH_NATIVE=OFF \
+  -DGTSAM_USE_SYSTEM_EIGEN=ON
+cmake --build /var/lib/jenkins/moat/_deps/gtsam/build -j 16 && cmake --install /var/lib/jenkins/moat/_deps/gtsam/build
+```
+
+Build (gfx1100): fresh clone of jeffdaily/gtsam_points@09346fd (moat-port) into projects/gtsam_points/src, configured with gfx1100 only:
+```
+cmake -S /var/lib/jenkins/moat/projects/gtsam_points/src \
+  -B /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DBUILD_WITH_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/gtsam/install \
+  -DBUILD_WITH_OPENMP=ON -DBUILD_WITH_TBB=OFF -DBUILD_TESTS=ON \
+  -DBUILD_DEMO=OFF -DBUILD_EXAMPLE=OFF -DBUILD_TOOLS=OFF
+export LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/gtsam/install/lib:/opt/rocm/lib
+utils/timeit.sh gtsam_points compile -- ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16
+```
+Build: 114 targets, all succeeded (timeit: 89 s).
+
+Code-object verification (roc-obj-ls libgtsam_points_cuda.so): 6 ELF bundles, all hipv4-amdgcn-amd-amdhsa--gfx1100. Zero gfx90a objects. No source change required; -DCMAKE_HIP_ARCHITECTURES=gfx1100 was sufficient (CMakeLists.txt reads ${CMAKE_HIP_ARCHITECTURES}).
+
+Commands:
+```
+export LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/gtsam/install/lib:/opt/rocm/lib
+export HIP_VISIBLE_DEVICES=0
+# run 1
+utils/timeit.sh gtsam_points test -- ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1
+# run 2 (determinism)
+ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1
+```
+
+Results (both runs): 87/87 passed, 0 failed, ~30 s total. Matches gfx90a 100%/0-failed out of 87.
+
+GPU gate results:
+- test_matching_cost_factors VGICP_CUDA_NONE, VGICP_CUDA_OMP: PASSED both runs. VGICP_CUDA_TBB self-skips (BUILD_WITH_TBB=OFF, same as gfx90a). IntegratedVGICPFactorGPU converged across FORWARD/BACKWARD/UNARY/MULTI_FRAME with no EXPECT_LT failures (rot < 0.015 rad, trans < 0.15 m all held). Porter-measured range on gfx90a: rot 0.0004-0.0025 rad, trans 0.008-0.050 m; gfx1100 results within same coarse tolerance range (no ULP-level divergence visible at this tolerance).
+- test_voxelmap VoxelMapGPU, VoxelMapGPU_Intensity (atomicMax on hipMallocAsync fine-grained device memory -- correct on gfx1100, no coarse-grained drop), VoxelMapGPU_IO: all PASSED.
+- test_types TestPointCloudGPU: PASSED.
+- No NaN/HIP fault, clean exit on both runs.
+
+Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_compact_mahalanobis, test_continuous_time, test_continuous_trajectory, test_global_registration, test_headers, test_kdtree, test_loam_factors, test_voxel_raycaster -- all PASSED, no regression vs gfx90a.
+
+Determinism: both runs 87/87, timing within 1%. Two VGICP_CUDA runs agree to tolerance.
+
+CUDA Graph path (cuda_graph.cu / cuda_graph_exec.cu): compile-only at this validation, consistent with gfx90a (VGICP drives streams + hipCUB directly, not graph capture).
+
+No fork interaction. No CI change. No source change needed; same commit 09346fd validated unchanged on gfx1100 with only -DCMAKE_HIP_ARCHITECTURES=gfx1100 at configure time.
+
+State: linux-gfx1100 -> completed (validated_sha: 09346fdeaa9e179e45ba23c8264356ab59884e50).
