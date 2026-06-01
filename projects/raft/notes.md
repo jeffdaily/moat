@@ -481,6 +481,93 @@ saw 1 GPU agent; GCD0's concurrent raft build untouched).
 
 Not pushed to jeffdaily/raft; raft status.json unchanged (per task scope).
 
+### Device-eigensolver fix 2026-06-01
+
+VERDICT: a DEVICE-side eigensolver swap (rocSOLVER Jacobi, syevj) does converge
+and produces the CORRECT eigenvalues -- but it does NOT get SA/LA green, because a
+THIRD upstream bug (the thick-restart Lanczos loop itself) corrupts the result
+after the eigensolve. So: device eigensolver = YES, fully on GPU, converges to the
+exact reference on the initial factorization; SA/LA green = NO, blocked by an
+upstream restart-divergence bug that is downstream of (and independent of) the
+eigensolve. The "stedc non-convergence" wall is removed; the wall moved one step
+further downstream into upstream raft's restart machinery.
+
+The routine and why it converges where STEDC did not: the prior HIP path routed
+eig_dc -> eigDC_legacy -> hipsolverDn{S,D}syevd, which rocSOLVER implements as
+STEDC (divide-and-conquer on the tridiagonalized matrix). STEDC's d&c merge is
+fragile on the clustered/near-degenerate spectra Lanczos produces and returned
+dev_info != 0. The fix keeps eig_dc -> eigDC_legacy but, under USE_HIP only,
+swaps the syevd call for the Jacobi eigensolver hipsolverDn{S,D}syevj
+(rocsolver_{s,d}syevj). Jacobi is an iterative one-sided rotation method that does
+not tridiagonalize/divide-and-conquer; it is robust on clustered eigenvalues and
+converges where STEDC's merge failed. Same dense ncv x ncv symmetric T, same call
+site, same dev_info==0 ASSERT contract. The change is USE_HIP-guarded; the CUDA
+#else branch is byte-identical to upstream (still cusolverDnsyevd). syevjInfo
+params: tol 1e-7, maxSweeps 100. All syevj wrappers + aliases
+(cusolverDnsyevj/_bufferSize, CreateSyevjInfo, XsyevjSetTolerance/SetMaxSweeps,
+syevjInfo_t) already existed in cusolver_wrappers.hpp and raft_mathlib_aliases.inc
+(they were carried for eigJacobi); no new aliases were needed.
+
+Device dispatch confirmed (AMD_LOG_LEVEL=3): rocsolver::syevj_small_kernel<float>
+launches on gfx90a; ZERO stedc_*/sytd2 kernels remain. The eigensolve is entirely
+on-device; no host LAPACK fallback. Deterministic: identical bit patterns across
+runs.
+
+Decisive isolation (agent_space/lanczos_probe, a standalone harness that calls
+lanczos_compute_smallest_eigenvectors on the LanczosTestF_SA input and reads back
+eigenvalues, plus temporary in-loop instrumentation, now removed):
+```
+[DBG] PRE-LOOP iter=34 res=4.24e-05 ev0=-2.03697   <- initial factorization+syevj: CORRECT (ref -2.0369630)
+[DBG] iter=66        res=2.60e+09  ev0=-1.21e+09   <- first restart: EXPLODES
+[DBG] iter=98        res=-nan      ev0=-1.28e+19   <- second restart: NaN
+computed eigenvalues: -1.28e19 -3.99e17 (ref SA: -2.0369630 -1.7673520)
+```
+The initial Lanczos factorization + the new syevj eigensolve land EXACTLY on the
+reference (-2.03697 == -2.0369630). Because res=4.24e-05 > tol=1e-15, the upstream
+`while (res > tol ...)` restart loop runs; the FIRST restart corrupts the carried
+basis (alpha/beta blow up to 1e9) and the second goes NaN. This is the same
+upstream thick-restart divergence documented in "## Lanczos divergence
+investigation" Part B (raft #3021 family) -- NOT the eigensolve, NOT a tolerance
+miss, NOT the async-copy NaN race (already fixed; the explosion here is
+deterministic, not NaN-nondeterministic). Note: on the larger Rmat case the
+diverged (1e19/Inf) T then re-trips the eig.cuh dev_info ASSERT because syevj is
+handed overflowed input -- a consequence of the upstream divergence, not an
+eigensolver failure.
+
+Per-variant (gfx90a, GCD1, run1 == run2, deterministic):
+- LanczosTestF/D (base)        FAIL -- correct pre-loop eig, then upstream restart divergence
+- LanczosTestF/D _SA           FAIL -- same (initial ev0 == reference, restart corrupts)
+- LanczosTestF/D _LA           FAIL -- same
+- LanczosTestF/D _SM           FAIL -- same (cannot reach the #3021 tolerance check)
+- LanczosTestF/D _LM           FAIL -- same
+- RmatLanczosTestF             FAIL -- restart divergence -> Inf T -> eig.cuh ASSERT on overflowed input
+
+CLASSIFICATION of the residual failure: upstream thick-restart Lanczos divergence
+(convergence/orthogonality bug in the restart loop), surfaced now that both the
+async-copy race AND the eigensolver convergence wall are removed. The remaining
+fix is upstream (the restart reorthogonalization in lanczos_smallest, candidate
+raft #3021 / the #2918 dead-code-adjacent path), not a ROCm library gap.
+
+Build + test (GCD1, narrow):
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export HIP_VISIBLE_DEVICES=1
+cmake --build agent_space/raft_lanczos/build --target raft_lib LANCZOS_TEST -j32
+cd agent_space/raft_lanczos/build
+LD_LIBRARY_PATH=$PWD:/var/lib/jenkins/moat/_deps/raft-rmm/install/lib:$CONDA_PREFIX/lib:/opt/rocm/lib \
+  ctest --output-on-failure -R LANCZOS   # run twice; identical
+AMD_LOG_LEVEL=3 ... ./gtests/LANCZOS_TEST --gtest_filter='*LanczosTestF_SA*' \
+  2>&1 | grep syevj   # shows rocsolver::syevj_small_kernel, no stedc
+```
+(build dir was already configured with the flags in "### Build + test recipe"
+above.)
+
+Staged only in agent_space/raft_lanczos; NOT pushed to jeffdaily/raft;
+status.json unchanged (pushing would force the passing platforms to revalidate a
+non-green lanczos tip -- jeff's call). The eig.cuh syevj swap is a correct,
+necessary, fully-on-device improvement and should ride along whenever the upstream
+restart fix lands and lanczos can actually go green.
+
 ### Install-as-dependency impact (when lanczos lands)
 
 Dependents that compile the lanczos headers (cuvs spectral) will need host LAPACK

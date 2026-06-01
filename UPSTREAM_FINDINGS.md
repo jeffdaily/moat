@@ -288,6 +288,58 @@ an AMD_LOG_LEVEL=3 dispatch check). Outcome:
   classification are in projects/raft/notes.md "### Fix validation 2026-06-01
   (gfx90a)".
 
+### B6 UPDATE (2026-06-01, fourth pass) -- DEVICE eigensolver (rocSOLVER syevj) converges and is CORRECT; the remaining wall is an upstream thick-restart Lanczos divergence
+
+Built + ran on real gfx90a (GCD1, narrow). Swapped the stedc wall for a device
+Jacobi eigensolver and isolated the residual failure with a standalone probe.
+
+- THE EIGENSOLVE WALL IS REMOVED, fully on device. eigDC_legacy's USE_HIP branch
+  now calls hipsolverDn{S,D}syevj (rocSOLVER one-sided Jacobi, rocsolver_{s,d}syevj)
+  instead of syevd/STEDC, on the same dense ncv x ncv symmetric T. AMD_LOG_LEVEL=3
+  confirms rocsolver::syevj_small_kernel dispatching and ZERO stedc_*/sytd2 kernels.
+  No host LAPACK fallback -- the eigensolve stays entirely on GPU, per the CUDA
+  intent (cusolverDnSsyevd is also a device d&c solver). The dev_info != 0
+  non-convergence ASSERT no longer fires for the well-formed T. CUDA #else branch
+  byte-identical (still cusolverDnsyevd). All syevj wrappers/aliases pre-existed
+  (carried for eigJacobi); no new aliases needed. tol 1e-7, maxSweeps 100.
+- WHY syevj converges where stedc didn't: STEDC's divide-and-conquer merge is
+  fragile on the clustered/near-degenerate tridiagonal spectra Lanczos produces;
+  Jacobi is iterative one-sided rotations (no d&c merge) and robust on clustered
+  eigenvalues.
+- BUT lanczos is still 0/11. Standalone probe (agent_space/lanczos_probe) +
+  temporary in-loop instrumentation proved the eigensolve is now CORRECT and the
+  failure is a THIRD-and-final wall in the UPSTREAM thick-restart loop, downstream
+  of the eigensolve:
+    PRE-LOOP (initial factorization + syevj): ev0 = -2.03697, EXACTLY the SA
+      reference -2.0369630; res = 4.24e-05.
+    1st restart: ev0 explodes to -1.21e9 (alpha/beta blow up).
+    2nd restart: NaN. Final computed = -1.28e19 (vs ref -2.0369630).
+  Because res=4.24e-05 > tol=1e-15 the upstream `while (res > tol ...)` restart
+  loop runs, and its reorthogonalization corrupts the carried basis on the FIRST
+  restart. Deterministic (identical bit patterns run-to-run; NOT the async-copy
+  NaN race, which is already fixed -- this explosion is deterministic). On the
+  larger Rmat case the diverged 1e19/Inf T then re-trips the eig.cuh ASSERT, but
+  that is overflowed INPUT to syevj, not an eigensolver fault.
+- CLASSIFICATION: the remaining bug is the upstream thick-restart Lanczos
+  divergence already described in the second-pass note (Part B / restart
+  reorthogonalization), now the SOLE blocker after both the async-copy race and the
+  stedc convergence wall are removed. It is an upstream raft algorithm/code defect
+  (candidate rapidsai/raft #3021 family; the restart loop in lanczos_smallest), NOT
+  a ROCm library gap and NOT the eigensolver. SM/LM tolerance (#3021) is still
+  masked -- the restart never produces a comparable result.
+- CORRECTION to the third-pass note: "rocSOLVER stedc non-convergence is an
+  AMD-library bug" -- the practical fix is NOT a rocSOLVER report but a one-line
+  raft change (use the device Jacobi eigensolver for this solve on HIP). stedc is
+  simply the wrong rocSOLVER routine for these spectra; syevj is the right one and
+  converges. The true remaining upstream bug is the restart divergence, not stedc.
+- The eig.cuh syevj swap is correct, necessary, and fully on-device; it should ride
+  along whenever the upstream restart fix lands and lanczos can go green. Staged in
+  agent_space/raft_lanczos only; jeffdaily/raft HEAD (70773a9) and raft status.json
+  UNCHANGED (pushing would force the passing platforms to revalidate a non-green
+  tip -- jeff's call). Per-variant table, probe trace, and build/test commands in
+  projects/raft/notes.md "### Device-eigensolver fix 2026-06-01". Do NOT open
+  anything upstream without jeff's approval.
+
 ### B7. NVIDIA OptiX has no ROCm equivalent (the OptiX -> HIP-RT cluster)
 - Class: a fundamental ROCm ecosystem gap, not a bug. OptiX (the NVIDIA
   ray-tracing API: `optixAccelBuild` GAS/BVH, `optixTrace`, the
