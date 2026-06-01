@@ -118,3 +118,36 @@ Stale-golden vs port-bug ruling (anchored on the gradchecks): the 8 non-passing 
 Fault-class sweep (whole src/ tree, all clean): no raw warp intrinsics / warpSize / lane masks / PTX / half2 / textures / surfaces / cudaArray / managed memory / atomicMin/Max / cub / thrust / cuBLAS / __CUDA_ARCH__ / std::min-max / GLM / math_constants.h. Only atomicAdd (float/double leader-only in render_backward.cu; one int counter tile_culling.cu:171) on plain torch device tensors (not managed) -> atomicMin/Max-silent-drop class N/A. setup.py is a torch CUDAExtension with only `-O3 -std=c++17` (no --use_fast_math) and is unedited -> Strategy B correct; the `__expf` (depth.cu:94, render.cu:138, render_backward.cu:181) is a runtime fast-exp kernel arg, not a compiler flag. render_backward.cu is genuinely the only file needing a source fix.
 
 Commit hygiene: clean. Title 54 chars, `[ROCm]` prefix; body discloses Claude ("Authored with assistance from the Claude agent (MOAT porter)"); no Co-Authored-By/noreply trailer; ASCII-only (-> arrows are ASCII); Test Plan with fenced commands. `.hip`/`_hip.cuh` artifacts gitignored and untracked (git check-ignore confirms; `git ls-files` shows none committed). Fork main == upstream 8ddaa79 (clean mirror); moat-port = 1 commit on top of base. No AMD-internal codenames/hosts/customers in the diff or message; author is the user's own public identity; fork is the public jeffdaily/gaussian_splatting.
+
+## Validation 2026-06-01
+
+Platform: linux-gfx90a. Device: AMD Instinct MI250X / MI250 (HIP_VISIBLE_DEVICES=3). Fork HEAD: a4d8b9aa308b23ba46a10d9734817237fd2474fd.
+
+Build: fresh (`rm -rf build *.egg-info src/*.hip` then `PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 pip install -e . --no-build-isolation --no-deps`). Strategy B (torch auto-hipify). Completed successfully; `.so` at `src/splat_cuda.cpython-312-x86_64-linux-gnu.so`.
+
+Commands:
+```
+# Build
+bash utils/timeit.sh gaussian_splatting compile -- bash agent_space/gsplat_build.sh
+
+# Decisive gate (run twice)
+cd projects/gaussian_splatting/src
+HIP_VISIBLE_DEVICES=3 python -m unittest test.test_rasterize_autograd test.test_cuda_autograd_functions -v
+
+# Full suite
+HIP_VISIBLE_DEVICES=3 python -m unittest discover test -v
+```
+
+Decisive gate (16 float64 gradchecks):
+- Run 1: test_rasterize_autograd 8/8 PASS, test_cuda_autograd_functions 8/8 PASS. Ran 16 tests in 78.4s -- OK
+- Run 2: test_rasterize_autograd 8/8 PASS, test_cuda_autograd_functions 8/8 PASS. Ran 16 tests in 80.3s -- OK
+- Deterministic across both runs.
+
+Full suite (33 tests): FAILED (failures=5, errors=3). Non-passing tests verified to be exactly the pre-documented stale-golden/missing-dataset set -- no new regressions:
+- FAIL test_rasterize_full_sh_use_precompute, test_rasterize_full_sh_use_per_pixel_viewdir: stale SH goldens
+- FAIL test_project_points, test_compute_projection_jacobian: places=4 tighter than float32 epsilon
+- FAIL test_compute_rays_world_frame: places=7 tighter than float32 epsilon
+- ERROR test_dataloader (3): hardcoded missing path /home/joe/Downloads/garden (CPU-only, dataset absent)
+- All other GPU tests PASS: test_rasterize_no_sh, test_depth, test_tile_culling, test_structs, test_cuda_autograd_functions, test_rasterize_autograd, test_projection (other), test_utils (other)
+
+Decision: PASS -> completed. validated_sha = a4d8b9aa308b23ba46a10d9734817237fd2474fd. Followers linux-gfx1100 and windows-gfx1151 auto-unblocked to port-ready.
