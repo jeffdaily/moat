@@ -442,3 +442,84 @@ on device `amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`. Test exits with:
 Stage 2 (OptiX->HIPRT MCL backend) is a separate future stage; scope and plan
 documented in "Stage 2 (OptiX->HIPRT MCL backend)" section above. Not in scope
 for this validation.
+
+## Validation 2026-06-01 (linux-gfx1100, HIP_VISIBLE_DEVICES=0) -- PASS
+
+Fork: jeffdaily/rmagine moat-port HEAD 3d098d5 (identical to gfx90a validated SHA 3d098d58eb59). No source change. GPU: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+
+### Configure
+
+```
+cmake -S /var/lib/jenkins/moat/projects/rmcl/rmagine_src \
+      -B /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build \
+      -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
+      -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON \
+      -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON \
+      -DRMAGINE_BUILD_TOOLS=OFF
+```
+
+### Build
+
+```
+cmake --build /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build -j$(nproc)
+```
+
+74/74 targets built cleanly (HIP compiler: clang++ 22.0.0 / ROCm 7.2.1). No errors; only pre-existing nodiscard warnings on hipMemset macro expansions.
+
+### Code-object arch evidence
+
+```
+roc-obj-ls lib/librmagine-cuda.so.2.4.2
+```
+
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1100` (833688 bytes). No gfx90a code object present.
+
+### Test results
+
+```
+export HIP_VISIBLE_DEVICES=0
+# Run 1
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build --output-on-failure -R '^cuda_'
+# 7/7 PASS (1.85 s)
+# Run 2 (determinism)
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build --output-on-failure -R '^cuda_'
+# 7/7 PASS (1.87 s)
+# Host regression check
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build --output-on-failure -R '^core_'
+# 12/12 PASS (2.60 s)
+```
+
+Tests passing (same set as gfx90a):
+- cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd,
+  cuda_math_statistics, cuda_math_reduction (pre-existing suite)
+- cuda_math_reduction_correctness (asserting gate for rm::sum/mean/cov vs CPU reference)
+- core_math, core_memory, core_memory_slicing, core_quaternion, core_math_svd,
+  core_math_statistics, core_math_cov_transform, core_math_gaussians,
+  core_math_matrix_slicing, core_math_reduction, core_math_cholesky, core_math_lie
+
+### GPU dispatch confirmed (AMD_LOG_LEVEL=3)
+
+```
+AMD_LOG_LEVEL=3 ./bin/rmagine_tests_cuda_math_reduction_correctness
+```
+
+ShaderName lines confirm dispatch on `amdgcn-amd-amdhsa--gfx1100` of:
+- `void rmagine::cuda::sum_kernel<1024u, rmagine::Vector3_<float>>(...)`
+- `void rmagine::cuda::cov_kernel<1024u>(...)`
+Test exits with: `PASS: rm::sum/mean/cov match CPU reference and are deterministic`
+
+### Wave32 verdict
+
+The full-`__syncthreads`-tree-to-s>0 reduction (USE_HIP-guarded) is correct on the
+32-lane wavefront of gfx1100. With wave32 the original warp-tail concern is even
+sharper (only 32 lanes execute in lockstep, not 64), but the fix runs the
+complete block-wide tree so no warp-synchronous tail is exercised at all. No
+leftover unsynchronized warp tail remains in the HIP path. No HSA 0x1016, no HIP
+error, no NaN, no hang. Results match the CPU reference within documented
+tolerance (~1e-4 rel) and are bit-identical run-to-run. Matches gfx90a@3d098d5.
+
+No source change from the gfx90a-validated HEAD (follower validate-first; no
+delta port needed).
