@@ -1,0 +1,12 @@
+{"kind":"phase","ts":"2026-06-01T00:29:25Z","phase":"compile","seconds":49.497,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/envgs/build_variant.sh diff-surfel-rasterization-wet"}
+{"kind":"phase","ts":"2026-06-01T00:31:14Z","phase":"compile","seconds":49.679,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/envgs/build_variant.sh diff-surfel-rasterization-wet"}
+{"kind":"phase","ts":"2026-06-01T00:33:32Z","phase":"compile","seconds":52.332,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/envgs/build_variant.sh diff-surfel-rasterization-wet"}
+{"kind":"phase","ts":"2026-06-01T00:35:08Z","phase":"compile","seconds":50.696,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/envgs/build_variant.sh diff-surfel-rasterization-wet-ch05"}
+{"kind":"phase","ts":"2026-06-01T00:36:05Z","phase":"compile","seconds":51.248,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/envgs/build_variant.sh diff-surfel-rasterization-wet-ch07"}
+{"kind":"phase","ts":"2026-06-01T00:38:11Z","phase":"test","seconds":3.633,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:38:39Z","phase":"test","seconds":4.519,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:39:42Z","phase":"test","seconds":4.717,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:40:17Z","phase":"test","seconds":4.781,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:41:25Z","phase":"test","seconds":4.542,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:42:08Z","phase":"test","seconds":4.707,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-01T00:43:51Z","phase":"test","seconds":27.158,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/train_converge.py"}

@@ -161,6 +161,41 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   upstream bug (it's our glue to write); tracked here as a consequential
   cuvs-prerequisite deferral so it is not lost.
 
+### B7. NVIDIA OptiX has no ROCm equivalent (the OptiX -> HIP-RT cluster)
+- Class: a fundamental ROCm ecosystem gap, not a bug. OptiX (the NVIDIA
+  ray-tracing API: `optixAccelBuild` GAS/BVH, `optixTrace`, the
+  `__raygen__`/`__anyhit__`/`__closesthit__`/`__miss__` program model compiled
+  to OptiX-IR/PTX and loaded at runtime via `optixModuleCreate` + SBT) has NO
+  drop-in ROCm/HIP equivalent. hipify does not touch it (no symbol mappings);
+  there is no `hipOptix`. The AMD analogue is HIP-RT (BVH build/update +
+  traversal + custom intersection callbacks) or a hand-written HIP BVH-traversal
+  kernel -- a different API and program model, so any OptiX-based renderer needs
+  a backend REWRITE, not a mechanical port.
+- First seen: EnvGS (`submodules/diff-surfel-tracing`), the environment-Gaussian
+  REFLECTION path. It builds a triangle-GAS from 2DGS surfel disks and traces
+  reflected rays with custom anyhit alpha-compositing + a differentiable
+  backward traversal pass; loaded from PTX. There is NO software/CPU tracing
+  fallback, and the reflection feature is wired ONLY through OptiX
+  (`HardwareRendering`), so reflections cannot be produced on AMD at all without
+  the rewrite. EnvGS's DIFFUSE/rasterized path (the diff-surfel-rasterizations
+  2DGS rasterizer) is independent of OptiX and IS ported + GPU-validated on
+  gfx90a; only the reflection tracer is deferred (Stage 2). See
+  projects/EnvGS/notes.md "Stage 2 deferred".
+- Cluster: this is a recurring pattern, not an EnvGS one-off. Other MOAT
+  candidates likely share the OptiX-bound-renderer wall and should be triaged
+  for the same Stage-1-rasterizer / Stage-2-tracer split or a HIP-RT backend:
+  **rmcl** and **splatad** are flagged as probable OptiX users. Any "3DGS/2DGS
+  with hardware-traced reflections/secondary-rays" project is suspect.
+- Open question (decides port-vs-defer for the whole cluster): HIP-RT
+  availability + maturity on ROCm 7.2.x, and whether it can express a
+  DIFFERENTIABLE tracer (forward + a backward through traversal). On this host
+  `import hiprt` fails and no OptiX SDK is installed. Until HIP-RT is proven to
+  cover differentiable surfel tracing, OptiX reflection paths are unvalidatable
+  by construction.
+- Report decision: N/A as an upstream bug (the gap is the ROCm ecosystem's, not
+  the CUDA project's). Tracked here so the OptiX wall is a known, named cluster
+  rather than re-discovered per project.
+
 ---
 
 ## Build-config / environment (not bugs; for completeness)

@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "EnvGS",
   "upstream_url": "https://github.com/zju3dv/EnvGS",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/EnvGS",
   "fork_default_branch": "main",
   "priority": 4.133,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-01T00:04:32Z",
-  "head_sha": null,
+  "updated_at": "2026-06-01T00:50:13Z",
+  "head_sha": "135ab0ad76fdba89ae7f44b808b36300b19f7caf",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-01T00:24:48Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T00:04:32Z",
+      "updated_at": "2026-06-01T00:50:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
