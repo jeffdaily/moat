@@ -70,3 +70,9 @@
 {"kind":"phase","ts":"2026-05-31T07:53:31Z","phase":"test","seconds":75.652,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}
 {"kind":"phase","ts":"2026-05-31T07:55:00Z","phase":"test","seconds":0.282,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LABEL_TEST"}
 {"kind":"phase","ts":"2026-05-31T07:55:53Z","phase":"test","seconds":0.898,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
+{"kind":"phase","ts":"2026-05-31T23:58:22Z","phase":"compile","seconds":51.631,"exit":0,"cmd":"cmake --build projects/raft/build -j16"}
+{"kind":"phase","ts":"2026-06-01T00:22:08Z","phase":"test","seconds":1419.909,"exit":0,"cmd":"projects/raft/build/gtests/NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:46:00Z","phase":"test","seconds":1418.388,"exit":0,"cmd":"projects/raft/build/gtests/NEIGHBORS_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:46:21Z","phase":"test","seconds":6.092,"exit":0,"cmd":"projects/raft/build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-01T00:46:36Z","phase":"test","seconds":6.868,"exit":0,"cmd":"projects/raft/build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-01T01:01:55Z","phase":"test","seconds":908.668,"exit":0,"cmd":"projects/raft/build/gtests/MATRIX_SELECT_TEST"}

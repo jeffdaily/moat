@@ -914,3 +914,41 @@ Recommendation: KEEP lanczos deferred for this pass (it does not block the neigh
 UPSTREAM_FINDINGS action: add a class-B item -- "raft lanczos/spectral eigensolver host-LAPACK + cuSOLVER *Host glue unported on HIP (blocks cuvs spectral clustering + spectral_embedding); workable via host LAPACK / hipSOLVER syevd, not an absent device kernel." Correct the raft notes' lanczos deferral reason to the host-LAPACK characterization. Neither blocks this neighbors pass.
 
 (Non-blocking, no action required.) The four MergeNetworkWarp warpBitonicMergeLE16 static_assert message strings still read "must be <= 16" though the bound is now WarpSize/2 (32 on wave64); pre-existing wording, harmless.
+
+## Validation 2026-06-01 (neighbors-wave64 finish, gfx90a re-validation)
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Fork: jeffdaily/raft @ moat-port, HEAD 640bdb187159a52e5506fd17767d80f7d3887f3d. HIP_VISIBLE_DEVICES=0 (GCD 0, isolated from sibling porters on GCDs 1/2/3). Build: incremental on-disk build (cmake --build projects/raft/build -j16, 51.6s -- minor DISTANCE_TEST re-link, no source recompile). State: review-passed -> completed.
+
+### GPU test commands
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build:_deps/raft-rmm/install/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+# NEIGHBORS_TEST x2 (determinism gate):
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/NEIGHBORS_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/NEIGHBORS_TEST
+# No-regression tests:
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/MATRIX_SELECT_TEST
+```
+
+### Results
+
+GPU arch: gfx90a (MI250X). All tests run on real GPU.
+
+| Test | Run 1 | Run 2 | Notes |
+|------|-------|-------|-------|
+| NEIGHBORS_TEST | 75/75 PASS (1419.9s) | 75/75 PASS (1418.4s) | DETERMINISTIC; BallCoverKNNQueryTest Fit/0 (k=11 Haversine) CLEAN -- no SIGABRT, no HSA exception 0x1016 |
+| DISTANCE_TEST | 11/11 PASS (6.1s) | -- | No regression; CK MFMA aligned + SIMT fallback unaligned |
+| FUSED_NN_TEST | 12/12 PASS (6.9s) | -- | No regression; CK reducing-epilogue (aligned) + SIMT fallback (unaligned) |
+| MATRIX_SELECT_TEST | 607 (567+40 skip) PASS (908.7s) | -- | No regression; wave64 warp-sort + radix, k 1..1700 |
+
+NEIGHBORS_TEST composition: HaversineKNNTestF 1, BallCoverAllKNNTest 9, BallCoverKNNQueryTest 9, EpsNeighTestFI brute-force 14, EpsNeighRbcTestFI (DenseRbc+SparseRbc+SparseRbcMaxK) 42. The previously-ABORTING BallCoverKNNQueryTest/Fit/0 (k=11 Haversine, block_rbc_kernel_registers divergent wavefront) is now CLEAN on both runs -- the FAISS-ROCm maskless WarpShuffles.cuh fix eliminates the __hip_check_mask trap. All 42 EpsNeighRbcTestFI cases pass (the wave32-mask + host-geometry fixes resolve the prior undercount).
+
+raft's neighbors primitives are now wave64-complete on gfx90a. The faiss_select FAISS-ROCm maskless-shuffle port (ball_cover KNN) and the eps_nn RBC wave64-mask + grid-geometry fixes (ball_cover eps) close the last remaining neighbors gap. This is the cuvs/cuml dependency gate: raft neighbors (kNN, eps_nn, RBC approximations) all validated on gfx90a.
+
+Lanczos eigensolver remains deferred (RAFT_COMPILE_LANCZOS=OFF, UPSTREAM_FINDINGS B6): the blocking gap is host-LAPACK/cuSOLVER-*Host glue (Lapack<T> sterf/steqr/geqrf helpers), not an absent hipSOLVER device kernel -- a follow-up can port via OpenBLAS or hipSOLVER syevd. This does not block the neighbors deliverable or the cuvs/cuml kNN dependency, but does gate cuvs spectral clustering + spectral_embedding (documented in UPSTREAM_FINDINGS).
+
+validated_sha: 640bdb187159a52e5506fd17767d80f7d3887f3d. State transition: review-passed -> completed.
+gfx1100 follower: remains in revalidate (validated_sha 712eea35 predates 640bdb18; needs revalidation against the unified neighbors-wave64 commit).
