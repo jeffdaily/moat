@@ -34,3 +34,11 @@ Outcome handling:
 
 ## Adoption note
 priority 7.075 is the computed discovery score (stars 9891 -> 3.995, forks 1455 -> 1.582, pushed 2026-06-01 -> recency 1.498; weights stars 1.0 / forks 0.5 / recency 1.5 / half-life 180d). That places pytorch3d near the top of the table (above cuml 6.61 and cugraph 6.11; below only vllm 8.53 in the discovery pool), versus the lowest real table score op43dgs 3.393.
+
+## windows-gfx1151 progress 2026-06-01 (validator, in-progress -- NOT yet a fork)
+
+Build env on this host WORKS: venv-gsplat torch 2.12.0+rocm7.14.0a (hip 7.14), torch.cuda.is_available()=True on AMD Radeon 8060S (gfx1151). Cloned upstream @ b73d735 into projects/pytorch3d/src (shallow). Build script: agent_space/pytorch3d/win_build.sh (sources gsplat_buildenv.sh; PYTORCH_ROCM_ARCH=gfx1151; `python setup.py build_ext --inplace`).
+
+First Windows blocker (the gsplat fault, NOT wave32): the pulsar host C++ TUs `pytorch3d/csrc/pulsar/pytorch/{util,tensor_util,renderer}.cpp` (and their torch-generated `*_hip.cpp` variants) include c10/cuda (-> c10/hip) headers and are compiled by MSVC cl.exe, which cannot parse the HIP types (`c10/hip/HIPFunctions.h: error C2146: syntax error before 'WarningState'/'memcpy_and_sync'/'stream_synchronize'` -- amd_hip_vector_types.h GCC attributes). FIX (gsplat lesson [[gsplat-windows-port]]): route these host TUs through hipcc by giving them a `.cu` extension (or otherwise force the HIP compiler). This is a Windows-only build delta, so pytorch3d will need its FIRST jeffdaily fork (jeffdaily/pytorch3d @ moat-port, branched off the upstream landed b73d735) per the gfx1100 plan's "wave32 breaks -> fork" note -- here triggered by the host-compiler issue rather than wave32.
+
+After that delta, continue: rebuild, then audit wave32 (pulsar warp reductions / shfl masks / hipCUB WarpReduce 64-wide default / rocPRIM GFX10+ DPP compile bug per the plan), then run tests/ incl. pulsar on real gfx1151. Deploy TheRock runtime beside any test exe if needed (torch loads its own amdhip64). Next session resumes here.
