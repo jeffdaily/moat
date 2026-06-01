@@ -32,15 +32,40 @@ Key pieces:
   does not leak to plain-C++ consumers), drop the cublas/cusolver link refs (no
   call sites), default CMAKE_HIP_ARCHITECTURES=gfx90a only when unset.
 
-### Root cause: wave64 warp-synchronous reduction tail (the decisive fix)
-`statistics.cu` sum_kernel and the four `math_batched.cu` chunk_sums kernels ran
-the `__syncthreads` tree only to s>32, then a 32-lane `volatile` warpReduce tail
-with no `__syncwarp`. On gfx90a (wave64) the low 32 lanes of a 64-lane wavefront
-are not lockstep across those unsynced +32..+1 steps -> wrong, run-to-run
-nondeterministic sums (NaN/garbage covariance). Fix (USE_HIP-guarded, CUDA
-unchanged): drop the warp tail, run the full block-wide `__syncthreads` tree to
-s>0. The statistics_p2p/p2l/objectwise_p2l kernels already ran the full tree
-(s>0), so they needed no change.
+### Wave-size hardening: warp-synchronous reduction tail (USE_HIP-guarded)
+`statistics.cu` sum_kernel, the four `math_batched.cu` chunk_sums kernels, and
+`memory_math.cu` cov_kernel<1024> / sum_kernel<1024> ran the `__syncthreads`
+tree only to s>32, then a 32-lane `volatile` warpReduce tail with no
+`__syncwarp`. That tail assumes a 32-lane lockstep wavefront. On gfx90a a
+64-lane wavefront executes the low 32 lanes in lockstep in practice, so this is
+NOT observed to miscompute on this hardware today (the reviewer's covtest and
+this run's new asserting test both show ~1e-9..1e-4 rel match to a CPU
+reference and bit-identical results run-to-run). The fix is wave-size
+hardening, not a reproduced-corruption fix: the unsynchronized tail is not
+guaranteed correct on a 64-lane wave. Fix (USE_HIP-guarded, CUDA byte-identical):
+drop the warp tail, run the full block-wide `__syncthreads` tree to s>0. Applied
+consistently to every warp-tail reduction in the exported reduction API
+(rm::sum / rm::mean / rm::cov / sumBatched). The statistics_p2p/p2l/
+objectwise_p2l kernels already ran the full tree (s>0), so they needed no change.
+
+DEAD CODE: `statistics.cu:17 sum_kernel<blockSize,T>` has zero callers and is
+not declared in any header. The load-bearing reductions are `memory_math.cu`
+sum_kernel<1024> (backs rm::sum/rm::mean) and cov_kernel<1024> (backs rm::cov),
+plus the math_batched chunk_sums set (backs sumBatched). The statistics.cu
+sum_kernel was annotated as unused in-source and hardened only so all warp-tail
+reductions in that TU read consistently; its fix is not functionally
+load-bearing. `sum_kernel_test` (memory_math.cu) already ran the full s>0 tree
+with no warp tail, so it needed no change.
+
+### THE actually-decisive AMD fix: NaN-seed in the reduction kernels
+The reduction kernels seeded shared memory with `sdata[tid] *= 0.0`, which reads
+uninitialized LDS first. On AMD that garbage is routinely NaN/Inf and survives
+the multiply (nan*0 = nan), poisoning the sum: rm::sum / rm::mean over Vector
+and sumBatched returned NaN on gfx90a. (This is the hazard the plan flagged; the
+reviewer's covtest got lucky LDS and did not hit it because cov_kernel uses
+setZeros(), and rm::sum<int> cannot NaN.) Fix (unconditional -- UB on CUDA too):
+seed each lane with a true typed zero `data[0] - data[0]` before accumulating.
+The new asserting test (below) is what surfaced this.
 
 ### Two more AMD-surfaced bugs (also UB on CUDA, fixed unconditionally)
 - `memory_math.cu` multNx1(Quaternion,Quaternion) called multNxN_kernel, which
@@ -64,7 +89,7 @@ pre-CUDA-13 `cuCtxCreate` form taken when CUDA_VERSION is undefined under HIP.
 
 ```
 cd projects/rmcl/rmagine_src   # jeffdaily/rmagine @ moat-port
-export HIP_VISIBLE_DEVICES=0
+export HIP_VISIBLE_DEVICES=1   # this host: GCD 1 only (others busy)
 cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
   -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
   -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
@@ -77,21 +102,30 @@ gfx1151). No source change -- the wave64 fix (full __syncthreads tree) is
 wave-agnostic and correct on wave32 too. Deps: ROCm 7.2, Eigen3, TBB, Boost,
 assimp (apt: libboost-all-dev libassimp-dev).
 
-## Validation (real gfx90a / MI250X, GCD 0) -- PASS
+## Validation (real gfx90a / MI250X, GCD 1, HIP_VISIBLE_DEVICES=1) -- PASS
 
 ```
-cd build && ctest --output-on-failure -R '^cuda_'   # 6/6 PASS
+cd build && ctest --output-on-failure -R '^cuda_'   # 7/7 PASS
 ctest --output-on-failure -R '^core_'               # 12/12 PASS (host unchanged)
 ```
 - cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd,
-  cuda_math_statistics, cuda_math_reduction all PASS.
-- cuda_math_reduction and cuda_math_statistics dispatch the fixed sum_kernel /
-  statistics kernels (confirmed AMD_LOG_LEVEL=3) and assert no NaN in the
-  cross-statistics mean/covariance.
-- Determinism: two runs of cuda_math_statistics are bit-identical; reduction
-  values identical run-to-run (only concurrent printf interleave differs).
+  cuda_math_statistics, cuda_math_reduction, cuda_math_reduction_correctness
+  all PASS.
+- NEW asserting gate `cuda_math_reduction_correctness`
+  (tests/cuda/math_reduction_correctness.cpp): computes rm::sum / rm::mean /
+  rm::cov over 4099 (non-power-of-two) Vector pairs, compares each component to
+  a double-precision CPU reference to ~1e-4 rel (throws on mismatch/NaN), and
+  asserts the GPU result is bit-identical across two runs. This is the real
+  correctness/determinism gate for the reduction hardening + NaN-seed fix; the
+  pre-existing cuda_math* tests only PRINT their reduction outputs (no assert),
+  so they did not gate the reductions. Confirmed via AMD_LOG_LEVEL=3 that it
+  dispatches the fixed sum_kernel<1024> and cov_kernel<1024> on MI250X.
+- Before the NaN-seed fix this test FAILED with `sum = -nan` (and cuda_math
+  sumBatched printed nan), proving the `*= 0.0` LDS-seed bug was real on AMD.
 - hipRAND is not bitwise-identical to cuRAND (expected); the noise/random paths
   are validated statistically, not bitwise.
+- Build dir for this run: agent_space/rmcl_build (scratch, gitignored). GCD 1
+  only (HIP_VISIBLE_DEVICES=1).
 
 ### Gotchas (for followers / future passes)
 - The compat header comment must not contain a literal end-of-comment marker
@@ -246,6 +280,27 @@ cov result against a CPU reference so the reduction fix has a real gate.
 - Commit hygiene: [ROCm] title 65 chars, Claude disclosed, no noreply/coauthor/
   ghstack/em-dash; fork origin/main == upstream 6b93e86 (clean mirror); fork
   Actions disabled. No AMD-internal account references.
+
+### Porter response 2026-06-01 (re-review, HEAD 3d098d5) -- all 4 items addressed
+1. Wave-tail hardening extended to the three exported kernels: cov_kernel<1024>
+   and sum_kernel<1024> (memory_math.cu) now USE_HIP-guarded full-tree like the
+   other five. sum_kernel_test was ALREADY full-tree (s>0, no warpReduce) so it
+   needed no change (reviewer line-number was approximate).
+2. Re-scoped all prose (commit body + notes "Wave-size hardening" + the in-source
+   comments in statistics.cu/math_batched.cu/memory_math.cu) from
+   "races/WRONG/NaN/nondeterministic" to "wave-size hardening: removes an
+   unsynchronized-warp-tail assumption not guaranteed on a 64-lane wave; not
+   observed to miscompute on gfx90a today." Honest.
+3. statistics.cu sum_kernel annotated in-source as unused/dead (zero callers, no
+   header decl); notes "DEAD CODE" paragraph added. Its fix is not load-bearing.
+4. Added tests/cuda/math_reduction_correctness.cpp -- an ASSERTING gate on
+   rm::sum/mean/cov vs a CPU double reference + 2-run determinism. Wired into
+   ctest (cuda_math_reduction_correctness). Running it surfaced a REAL
+   AMD-specific NaN-seed bug (`sdata[tid] *= 0.0` on uninitialized LDS) that the
+   reviewer's covtest missed; fixed unconditionally with a true typed zero
+   (data[0]-data[0]) in sum_kernel + the four chunk_sums kernels. multNx1 OOB
+   fix and shared_functions.h macro fix left as-is (reviewer confirmed correct).
+Re-validated on gfx90a (GCD 1): cuda_ 7/7 PASS, core_ 12/12 PASS.
 
 ### Required before re-review
 Address items 1-4: either (a) extend the USE_HIP-guarded full-tree fix to
