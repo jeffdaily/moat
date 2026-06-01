@@ -151,3 +151,41 @@ Full suite (33 tests): FAILED (failures=5, errors=3). Non-passing tests verified
 - All other GPU tests PASS: test_rasterize_no_sh, test_depth, test_tile_culling, test_structs, test_cuda_autograd_functions, test_rasterize_autograd, test_projection (other), test_utils (other)
 
 Decision: PASS -> completed. validated_sha = a4d8b9aa308b23ba46a10d9734817237fd2474fd. Followers linux-gfx1100 and windows-gfx1151 auto-unblocked to port-ready.
+
+## Validation 2026-06-01 (gfx1100)
+
+Platform: linux-gfx1100. Device: AMD Radeon Pro W7800 48GB (HIP_VISIBLE_DEVICES=0). Fork HEAD: a4d8b9aa308b23ba46a10d9734817237fd2474fd. Fork cloned fresh from jeffdaily/gaussian_splatting@moat-port; no submodules.
+
+Build: fresh (`rm -rf build *.egg-info src/*.hip` then `PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e . --no-build-isolation --no-deps`). Strategy B (torch auto-hipify). Completed in 39.8s. `.so` at `src/splat_cuda.cpython-312-x86_64-linux-gnu.so`.
+
+gfx1100 code-object evidence: `llvm-objdump --offloading splat_cuda.cpython-312-x86_64-linux-gnu.so` shows 7 bundles all `amdgcn-amd-amdhsa--gfx1100`; no gfx90a.
+
+Commands:
+```
+# Build
+bash utils/timeit.sh gaussian_splatting compile -- bash agent_space/gauss_splatting_build_gfx1100.sh
+
+# Decisive gate (run twice)
+bash utils/timeit.sh gaussian_splatting test -- bash agent_space/gauss_splatting_test_gfx1100.sh
+
+# Full suite
+bash utils/timeit.sh gaussian_splatting test -- bash agent_space/gauss_splatting_test_full_gfx1100.sh
+```
+
+Decisive gate (16 float64 gradchecks):
+- Run 1: test_rasterize_autograd 8/8 PASS, test_cuda_autograd_functions 8/8 PASS. Ran 16 tests in 63.0s -- OK
+- Run 2: test_rasterize_autograd 8/8 PASS, test_cuda_autograd_functions 8/8 PASS. Ran 16 tests in 61.1s -- OK
+- Deterministic across both runs.
+
+Full suite (33 tests): FAILED (failures=5, errors=3). Non-passing tests are exactly the pre-documented gfx90a set -- no new regressions on gfx1100:
+- FAIL test_rasterize_full_sh_use_precompute, test_rasterize_full_sh_use_per_pixel_viewdir: stale SH goldens
+- FAIL test_project_points, test_compute_projection_jacobian: places=4 tighter than float32 epsilon
+- FAIL test_compute_rays_world_frame: places=7 tighter than float32 epsilon
+- ERROR test_dataloader (3): hardcoded missing path /home/joe/Downloads/garden (CPU-only, dataset absent)
+- All other GPU tests PASS: test_rasterize_no_sh, test_depth, test_tile_culling, test_structs, test_cuda_autograd_functions (8/8), test_rasterize_autograd (8/8), test_projection (other 2/4), test_utils (other 2/3)
+
+wave32 verdict: The fix uses `cg::thread_block_tile<32>` with `shfl_xor` butterfly (warpReduceSum template). On wave32 (gfx1100), a `thread_block_tile<32>` maps exactly one-to-one onto the hardware wavefront, so each tile's 32-lane XOR butterfly is a complete all-reduce of the entire wavefront. No cross-tile contamination, no lane-math needed. The 16/16 float64 gradchecks (forward+backward consistency via torch.autograd.gradcheck) confirm the warpReduceSum is numerically exact on gfx1100. No HSA 0x1016, no HIP errors, no NaN/Inf in any output.
+
+No source edits needed for gfx1100. The fix is wave-agnostic as predicted: `shfl_xor` with `tile.size()=32` is correct on both wave64 (gfx90a, 2 independent 32-lane segments per wavefront) and wave32 (gfx1100, 1 exact 32-lane wavefront). No fork amendment.
+
+Decision: PASS -> completed. validated_sha = a4d8b9aa308b23ba46a10d9734817237fd2474fd.
