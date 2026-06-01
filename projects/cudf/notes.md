@@ -1,5 +1,70 @@
 # cudf notes (ROCm/HIP port)
 
+## Validation 2026-06-01 (gfx1100) -- wave32 divergent-tile-collective fix on GPU
+
+Device: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1 HIP clang 22.0.0. HIP_VISIBLE_DEVICES=0. Fork 7d743ae2205d12a99ac4639317099cd40e3746cb.
+
+### Build
+
+Reused porter's existing build at projects/cudf/build-hip-gfx1100 (commit 7d743ae, CMake configured with -DCMAKE_HIP_ARCHITECTURES=gfx1100). libcudf.so = 582,819,512 B (555.8 MB). No rebuild required (binary verified against the correct commit).
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cudf/src/cpp -B projects/cudf/build-hip-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCUDF_CUCO_SOURCE_DIR=/var/lib/jenkins/moat/projects/cuCollections/src \
+  -DCUDF_NVTX3_INCLUDE_DIR=/var/lib/jenkins/pytorch/third_party/NVTX/c/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON
+cmake --build projects/cudf/build-hip-gfx1100 -j16
+```
+
+Code-object verification: `llvm-objdump --offloading libcudf.so` -> 151 embedded code objects, ALL `hipv4-amdgcn-amd-amdhsa--gfx1100`, zero non-gfx1100. CMakeCache.txt confirms `CMAKE_HIP_ARCHITECTURES:UNINITIALIZED=gfx1100`.
+
+### GPU test (MOAT_CORE_SMOKE_TEST -- 18 tests covering all 6 fixed kernels indirectly)
+
+```
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100/lib:${CONDA_PREFIX}/lib:/opt/rocm/lib"
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh cudf test -- projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST
+```
+
+Run 1: **18/18 PASS** (7180 ms). Run 2: **18/18 PASS** (6952 ms). Run 3 (timeit): **18/18 PASS** (6915 ms).
+
+All 18 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile.
+
+### GPU test (valid_if partial-tail harness -- the size%32!=0 divergent-tail gate)
+
+```
+HIP_VISIBLE_DEVICES=0 agent_space/cudf_valid_if_harness/build_fix/valid_if_test
+```
+
+Run 1: **24/24 PASS**. Run 2: **24/24 PASS** (deterministic).
+
+Sizes tested (all size%32!=0): 1, 31, 33, 63, 65, 97, 1000, 1057, 4097, 100001; multiple strides per size (2,3,5,7). Device null mask + null count match host reference for every case. Includes the specific 1000-row and 1057-row cases identified as the critical divergent-tail sizes.
+
+Before the fix this harness crashed with HSA_STATUS_ERROR_EXCEPTION (0x1016) on the first partial-tail case. With the fix: zero crashes, zero HSA exceptions on all 24 cases across two runs.
+
+### Explicit verdicts
+
+- **0x1016 fault GONE**: No HSA_STATUS_ERROR_EXCEPTION observed in any run. The `while (tile_any_32(idx < n))` converged loop keeps all 32 tile lanes in lockstep through ballot_32; OOB lanes short-circuit to false and never dereference. The collective is at one PC reached by all tile members.
+- **Null-mask correctness**: Device null counts and bitmasks match host reference exactly for every partial-tail size. Lane k's vote lands at bit k = intra_word_index(idx); leader (lane 0) writes word_index(idx). Bit alignment is exact.
+- **Deterministic**: Three smoke runs and two harness runs all produce identical pass results.
+- **No regression vs gfx90a@7d743ae**: Same 18 tests, same pass (gfx90a recorded 18/18 x2 in the revalidation above).
+
+### Kernels exercised
+
+- valid_if_kernel (valid_if.cuh): exercised directly by the partial-tail harness; 24/24 PASS across all size%32!=0 cases.
+- concatenate_masks_kernel, fused_concatenate_kernel (copying/concatenate.cu): exercised indirectly via RepeatTable, TileTable, ListsDistinct (which concatenate column segments with nulls).
+- fused_concatenate_string_offset_kernel (strings/copying/concatenate.cu): exercised indirectly via ListsDistinct (lists of strings path).
+- replace_kernel (replace/replace.cu), replace_nulls (replace/nulls.cu): exercised indirectly via QuantileLinear, TDigestReducePercentile (replace/fill paths with nulls).
+
+### Result
+
+PASS. The wave32 divergent-tile-collective fix (6 kernels, tile_any_32 converged loop pattern) is correct on gfx1100 (RDNA3, wave32). No HSA 0x1016 fault, no wrong null masks, no hang, fully deterministic. State: linux-gfx1100 review-passed -> completed. validated_sha = 7d743ae2205d12a99ac4639317099cd40e3746cb.
+
 ## Review 2026-06-01 (reviewer, linux-gfx1100, wave32 divergent-ballot fix, fork 7d743ae)
 
 Verdict: review-passed. ROCm fault-class-aware /pr-review (local-branch) of the wave32 delta c4b9b5b..7d743ae (6 files, +193/-50): warp_primitives.cuh (tile_any_32), valid_if.cuh, copying/concatenate.cu (concatenate_masks_kernel + fused_concatenate_kernel), strings/copying/concatenate.cu, replace/replace.cu, replace/nulls.cu. The full port vs upstream was already review-passed at c4b9b5b; this reviews only the delta. No defects found; the validator runs the gfx1100 GPU next.
