@@ -7,6 +7,14 @@ every CUDA repo. GitHub repo search caps at 1000 results per query;
 C++/Python repos that merely contain .cu files); `topic:cuda` only catches
 self-tagged repos. Coverage grows by adding queries in config/discover.toml.
 
+The metadata pass has a hard blind spot: `gh search repos` indexes only
+name+description+topics, so a CUDA library is invisible if its dominant
+language is not Cuda AND none of those fields contains "cuda" (exemplar:
+facebookresearch/pytorch3d -- Python-dominant, empty topics, no "cuda" in
+description, yet 328 KB of .cu). The `--code-search` pass closes this by
+querying the REST code-search API on CUDA SOURCE (config `[code_search]`) and
+merging new repos into candidates.json.
+
 Output: data/candidates.json (ranked, filtered) and data/candidates.raw.jsonl
 (every unique hit before filtering, for audit). Adopt rows with
 `python3 utils/moatlib.py scaffold <owner/repo>`."""
@@ -161,14 +169,203 @@ def cuda_bytes(full_name, cache):
     return cb
 
 
+def code_search(query, page, per_page=100):
+    """One REST code-search call. Returns (items, total_count). The `gh search
+    code` CLI returns [] for these queries, so we hit the API directly. Backs
+    off on rate-limit (HTTP 403 / secondary limit)."""
+    r = subprocess.run(
+        ["gh", "api", "-X", "GET", "search/code",
+         "-f", f"q={query}", "-f", f"per_page={per_page}", "-f", f"page={page}"],
+        capture_output=True, text=True)
+    if r.returncode != 0:
+        err = r.stderr.lower()
+        sys.stderr.write(f"discover: code-search failed (p{page}): {query}\n{r.stderr.strip()}\n")
+        if "rate limit" in err or "403" in err or "abuse" in err:
+            time.sleep(30)
+        return [], None
+    try:
+        d = json.loads(r.stdout or "{}")
+        return d.get("items", []), d.get("total_count")
+    except json.JSONDecodeError:
+        return [], None
+
+
+def code_search_repos(cfg):
+    """Run every [code_search] query, page up to the cap, dedupe by
+    repository.full_name (preserving first-seen order). Returns an ordered list
+    of (full_name, matched_query) -- matched_query is the first query that hit
+    the repo. Throttles between every API call."""
+    cs = cfg["code_search"]
+    page_cap = int(cs.get("page_cap", 10))
+    throttle = float(cs.get("throttle_seconds", 7))
+    seen = {}
+    order = []
+    for q in cs["queries"]:
+        pages_done = 0
+        for page in range(1, page_cap + 1):
+            items, total = code_search(q, page)
+            pages_done += 1
+            time.sleep(throttle)
+            if page == 1:
+                sys.stderr.write(f"discover: code-search '{q}': total_count={total}\n")
+            for it in items:
+                fn = it.get("repository", {}).get("full_name")
+                if not fn:
+                    continue
+                key = fn.lower()
+                if key not in seen:
+                    seen[key] = fn
+                    order.append((fn, q))
+            # Stop early once this query is exhausted (fewer than a full page).
+            if len(items) < 100:
+                break
+        sys.stderr.write(f"discover: code-search '{q}': {pages_done} page(s), "
+                         f"{len(order)} unique repos cumulative\n")
+    return order
+
+
+def fetch_repo_meta(full_name):
+    """Repo metadata via the REST API, mapped to the same shape gh search repos
+    returns (so passes()/to_record() reuse works unchanged). None on error."""
+    r = subprocess.run(["gh", "api", f"repos/{full_name}"],
+                       capture_output=True, text=True)
+    if r.returncode != 0:
+        return None
+    try:
+        d = json.loads(r.stdout)
+    except json.JSONDecodeError:
+        return None
+    return {
+        "fullName": d.get("full_name") or full_name,
+        "url": d.get("html_url") or f"https://github.com/{full_name}",
+        "defaultBranch": d.get("default_branch"),
+        "stargazersCount": d.get("stargazers_count") or 0,
+        "forksCount": d.get("forks_count") or 0,
+        "pushedAt": d.get("pushed_at"),
+        "isFork": bool(d.get("fork")),
+        "isArchived": bool(d.get("archived")),
+        "isDisabled": bool(d.get("disabled")),
+        "language": d.get("language"),
+        "description": d.get("description") or "",
+    }
+
+
+def adopted_projects():
+    """Lowercased repo-name set of MOAT-adopted projects (projects/<name>/).
+    The code-search pass should not re-surface a repo already being ported.
+    Match is on the trailing repo name since projects/<name> drops the owner."""
+    proot = REPO_ROOT / "projects"
+    if not proot.is_dir():
+        return set()
+    return {p.name.lower() for p in proot.iterdir() if p.is_dir()}
+
+
+def run_code_search_pass(cfg, out_path):
+    """Surface candidates by CUDA SOURCE (the discovery blind spot), merge them
+    into the existing candidates.json, re-sort, and report. Existing records
+    are preserved; only repos not already in candidates.json and not already an
+    adopted project are evaluated."""
+    s = cfg["search"]
+    excl_orgs = {o.lower() for o in s.get("exclude_orgs", [])}
+    excl_substr = [x.lower() for x in s.get("exclude_org_substrings", [])]
+    threshold = max(1, int(s.get("min_cuda_bytes", 0)))
+    max_fetches = int(cfg["code_search"].get("max_new_repo_fetches", 250))
+
+    existing = json.loads(Path(out_path).read_text()) if Path(out_path).exists() else []
+    known = {r["full_name"].lower() for r in existing}
+    adopted_names = adopted_projects()
+
+    surfaced = code_search_repos(cfg)
+    n_unique = len(surfaced)
+
+    # Partition: skip repos already known (in candidates.json) or already adopted.
+    new_repos = []
+    n_known = n_adopted = 0
+    for fn, q in surfaced:
+        low = fn.lower()
+        if low in known:
+            n_known += 1
+            continue
+        if low.split("/")[-1] in adopted_names:
+            n_adopted += 1
+            continue
+        new_repos.append((fn, q))
+
+    truncated = 0
+    if len(new_repos) > max_fetches:
+        truncated = len(new_repos) - max_fetches
+        sys.stderr.write(
+            f"discover: code-search TRUNCATED -- {len(new_repos)} new repos exceed "
+            f"max_new_repo_fetches={max_fetches}; deferring {truncated} (NOT silent)\n")
+        new_repos = new_repos[:max_fetches]
+
+    cache = {}
+    new_recs = []
+    n_fork = n_org = n_filter = n_nocuda = n_meta = 0
+    for fn, q in new_repos:
+        meta = fetch_repo_meta(fn)
+        time.sleep(0.1)
+        if meta is None:
+            n_meta += 1
+            continue
+        owner = meta["fullName"].split("/")[0].lower()
+        if owner in excl_orgs or any(sub in owner for sub in excl_substr):
+            n_org += 1
+            continue
+        if meta.get("isFork"):
+            n_fork += 1
+            continue
+        if not passes(meta, cfg):
+            n_filter += 1
+            continue
+        cb = cuda_bytes(meta["fullName"], cache)
+        meta["_cuda_bytes"] = cb
+        if cb < threshold:
+            n_nocuda += 1
+            continue
+        meta["matched_queries"] = [f"code:{q}"]
+        new_recs.append(to_record(meta, cfg))
+
+    merged = existing + new_recs
+    merged.sort(key=lambda r: (-r["priority"], r["full_name"].lower()))
+    with open(out_path, "w") as f:
+        json.dump(merged, f, indent=2)
+        f.write("\n")
+
+    stats = {
+        "queries": len(cfg["code_search"]["queries"]),
+        "unique_repos": n_unique,
+        "already_known": n_known,
+        "already_adopted": n_adopted,
+        "new_evaluated": len(new_repos),
+        "truncated": truncated,
+        "meta_errors": n_meta,
+        "dropped_fork": n_fork,
+        "dropped_excluded_org": n_org,
+        "dropped_filters": n_filter,
+        "dropped_no_cuda": n_nocuda,
+        "kept_new": len(new_recs),
+        "total_candidates": len(merged),
+    }
+    sys.stderr.write("discover: code-search summary " + json.dumps(stats) + "\n")
+    return new_recs, stats
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(prog="discover")
     ap.add_argument("--limit", type=int, help="per-query result cap (<=1000)")
     ap.add_argument("--out", default=str(DATA / "candidates.json"))
     ap.add_argument("--no-verify", action="store_true",
                     help="skip the languages-API check that a repo really has CUDA code")
+    ap.add_argument("--code-search", action="store_true",
+                    help="run the CUDA-source code-search pass and merge new repos "
+                         "into --out (the metadata-search blind-spot closer); "
+                         "does not re-run the metadata pass")
     args = ap.parse_args(argv)
     cfg = load_cfg()
+    if args.code_search:
+        run_code_search_pass(cfg, args.out)
+        return 0
     s = cfg["search"]
     limit = args.limit or s["per_query_limit"]
     raw_hits = gather(cfg, limit)
