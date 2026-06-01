@@ -1254,3 +1254,74 @@ Fork `jeffdaily/raft` branch `moat-port` amended and force-pushed. New tip: `707
 
 validated_sha: 70773a97f43ab6a861722b181c4524ab800c1126. State transition: revalidate -> completed.
 gfx90a validated_sha (640bdb1) remains valid at the prior SHA (the cmake split does not affect the gfx90a test binaries; BALL_COVER_TEST simply replaces what was NEIGHBORS_TEST on gfx90a with the split targets -- function unchanged).
+
+## Revalidation 2026-06-01 (gfx90a)
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Fork: jeffdaily/raft @ moat-port, HEAD 70773a97f43ab6a861722b181c4524ab800c1126. HIP_VISIBLE_DEVICES=0 (GCD 0, isolated per instructions). Build: reconfigured with new cmake split (RAFT_TEST_NEIGHBORS=ON + RAFT_TEST_BALL_COVER=ON), incremental build (~94s, added HAVERSINE_TEST + BALL_COVER_TEST binaries). GPU arch confirmed: AMD_LOG_LEVEL=3 shows Gfx Major/Minor/Stepping: 9/0/10 = gfx90a. Verdict: PASS -- gfx90a function is genuinely unchanged at 70773a9; the cmake split is functionally identical on gfx90a.
+
+### Context
+
+Prior validated_sha was 640bdb1. The cmake split (70773a9, gfx1100-specific fix) renamed NEIGHBORS_TEST into HAVERSINE_TEST (haversine.cu only) + BALL_COVER_TEST (ball_cover.cu + epsilon_neighborhood.cu). No raft header files were changed. On gfx90a, BALL_COVER_TEST = the full 74 tests that were formerly in NEIGHBORS_TEST minus HaversineKNNTestF; HAVERSINE_TEST = 1 test. Total 75 = identical to prior NEIGHBORS_TEST 75/75.
+
+### Build command
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S /var/lib/jenkins/moat/projects/raft/src/cpp \
+  -B /var/lib/jenkins/moat/projects/raft/build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  "-DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/raft-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON -DRAFT_TEST_NEIGHBORS=ON -DRAFT_TEST_BALL_COVER=ON \
+  -DRAFT_TEST_DISTANCE=ON -DRAFT_TEST_FUSED_NN=ON -DRAFT_TEST_MATRIX_SELECT=ON \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/raft/install
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build -j$(nproc)
+```
+
+### GPU test commands
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build:_deps/raft-rmm/install/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+# Neighbors gate (HAVERSINE_TEST + BALL_COVER_TEST x2 for determinism):
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/HAVERSINE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/BALL_COVER_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/BALL_COVER_TEST  # run 2 determinism
+# Regression subset:
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/MATRIX_SELECT_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/LINALG_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build/gtests/LABEL_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- \
+  projects/raft/build/gtests/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+HIP_VISIBLE_DEVICES=0 projects/raft/build/gtests/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+HIP_VISIBLE_DEVICES=0 projects/raft/build/gtests/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+```
+
+### Results
+
+GPU arch: gfx90a (MI250X). All tests run on real GPU (device dispatch confirmed via AMD_LOG_LEVEL=3, Gfx 9/0/10).
+
+| Test | Run 1 | Run 2 | Notes |
+|------|-------|-------|-------|
+| HAVERSINE_TEST | 1/1 PASS (0.27s) | -- | HaversineKNNTestF.Fit PASS |
+| BALL_COVER_TEST | 74/74 PASS (1634s) | 74/74 PASS (1575s) | DETERMINISTIC; BallCoverAllKNNTest 9/9, BallCoverKNNQueryTest 9/9, EpsNeighTestFI BruteForce 14/14, EpsNeighRbcTestFI (Dense+Sparse+SparseRbcMaxK) 42/42. No SIGABRT, no HSA fault. |
+| DISTANCE_TEST | 11/11 PASS (15s) | -- | CK MFMA aligned + SIMT fallback unaligned; no regression |
+| FUSED_NN_TEST | 12/12 PASS (68s) | -- | CK reducing-epilogue + SIMT fallback; no regression |
+| MATRIX_SELECT_TEST | 567+40 skip PASS (1031s) | 567+40 skip PASS (1375s) | wave64 warp-sort + radix, k 1..1700; no regression |
+| LINALG_TEST | 2017/2018 PASS (1609s) | -- | 1 DotTestF float-tolerance fail = pre-existing hipBLAS artifact |
+| LABEL_TEST | 14/14 PASS (2.7s) | -- | no regression |
+| RANDOM subset | 148/148 PASS (80s) | -- | same filter (no Bernoulli); no regression |
+| CORE subset | 171/172 PASS (51s) | -- | 1 Raft.InterruptibleOpenMP fail = pre-existing deferred; no regression |
+| UTILS (excl deferred) | 177/177 PASS (22s) | -- | deferred items excluded as on prior runs; no regression |
+
+Total: 75/75 NEIGHBORS (HAVERSINE + BALL_COVER, identical to prior NEIGHBORS_TEST 75/75). All bars at 640bdb1 met or exceeded. No new failures introduced by the 70773a9 cmake split.
+
+The cmake split (HAVERSINE_TEST + BALL_COVER_TEST) is a pure build-system rename on gfx90a: the same source files are compiled and the same gtest cases run. The BALL_COVER_TEST binary exercises RAFT_TEST_BALL_COVER=ON which was the missing gate that triggered this revalidation -- confirmed PASS on real gfx90a hardware.
+
+validated_sha: 70773a97f43ab6a861722b181c4524ab800c1126. State transition: revalidate -> completed.
