@@ -17,3 +17,4 @@ __pycache__/
 *.pyc
 *.pyo
 _deps/
+projects/rmcl/rmagine_src/

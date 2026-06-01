@@ -1,0 +1,13 @@
+{"kind":"phase","ts":"2026-06-01T21:13:00Z","phase":"compile","seconds":5.743,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:13:20Z","phase":"compile","seconds":3.367,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:14:00Z","phase":"compile","seconds":5.745,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:16:01Z","phase":"compile","seconds":8.879,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:16:53Z","phase":"compile","seconds":14.138,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:18:08Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:18:23Z","phase":"compile","seconds":8.543,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build /var/lib/jenkins/moat/projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:19:00Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:19:16Z","phase":"compile","seconds":8.555,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build /var/lib/jenkins/moat/projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:19:21Z","phase":"test","seconds":0.141,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/ctest --output-on-failure -R ^cuda_"}
+{"kind":"phase","ts":"2026-06-01T21:19:29Z","phase":"test","seconds":1.857,"exit":8,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/rmcl/rmagine_src/build && /opt/conda/envs/py_3.12/bin/ctest --output-on-failure -R \"^cuda_\""}
+{"kind":"phase","ts":"2026-06-01T21:20:54Z","phase":"compile","seconds":6.428,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/cmake --build /var/lib/jenkins/moat/projects/rmcl/rmagine_src/build -j 8"}
+{"kind":"phase","ts":"2026-06-01T21:20:56Z","phase":"test","seconds":2.129,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/rmcl/rmagine_src/build && /opt/conda/envs/py_3.12/bin/ctest --output-on-failure -R \"^cuda_\""}

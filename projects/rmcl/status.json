@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "rmcl",
   "upstream_url": "https://github.com/uos/rmcl",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/rmagine",
   "fork_default_branch": "main",
   "priority": 4.281,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:40:15Z",
-  "updated_at": "2026-06-01T01:17:29Z",
-  "head_sha": null,
+  "updated_at": "2026-06-01T21:24:57Z",
+  "head_sha": "100e713214ce2337973a950b98782894ce49133f",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-01T21:24:57Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T01:17:29Z",
+      "updated_at": "2026-06-01T21:24:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
