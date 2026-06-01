@@ -7,17 +7,17 @@
   "priority": 4.133,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-01T01:08:31Z",
+  "updated_at": "2026-06-01T19:40:08Z",
   "head_sha": "135ab0ad76fdba89ae7f44b808b36300b19f7caf",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "135ab0ad76fdba89ae7f44b808b36300b19f7caf",
       "started_at": "2026-06-01T00:24:48Z",
       "completed_at": "2026-06-01T01:08:31Z",
-      "updated_at": "2026-06-01T01:08:31Z",
+      "updated_at": "2026-06-01T19:40:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "port-ready",

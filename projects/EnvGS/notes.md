@@ -143,7 +143,16 @@ returning `(image, radii, allmap, weight)`; easyvolcap drives it from
 Editable install works here (the package dir has `__init__.py`, so it avoids the
 LiteGS empty-namespace-package editable trap); non-editable also fine.
 
-## Stage 2 deferred (OptiX reflection path)
+## Stage 2 IN PROGRESS (2026-06-01): OptiX reflection path -> HIPRT reimplementation
+
+jeff UNBLOCKED Stage 2 once the HIPRT feasibility probe (UPSTREAM_FINDINGS B7
+UPDATE) proved HIPRT traces correctly on gfx90a. This is MOAT's FIRST
+OptiX->HIPRT reimplementation. State reopened completed -> revalidate ->
+validation-failed -> porting (the Stage-2 OptiX gap was the known deferral).
+diff-surfel-tracing forked to jeffdaily/diff-surfel-tracing; Actions disabled.
+See "## Stage 2 port: OptiX -> HIPRT" below (appended as the work lands).
+
+## Stage 2 deferred (OptiX reflection path) -- HISTORICAL, superseded by the port above
 
 EnvGS's diffuse / rasterized path is fully ported and GPU-validated on gfx90a
 (above). The environment-Gaussian REFLECTION path is NOT ported and is
