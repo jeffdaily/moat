@@ -196,6 +196,13 @@ PORTING_GUIDE.md; only items with a plausible "report upstream" action are here.
   the CUDA project's). Tracked here so the OptiX wall is a known, named cluster
   rather than re-discovered per project.
 
+### B7 UPDATE -- HIPRT feasibility probe (2026-06-01): HIPRT WORKS on gfx90a
+- HIPRT 3.1.0 builds against ROCm 7.2.1 (~5s; source GPUOpen-LibrariesAndSDKs/HIPRT, Orochi vendored in-tree) and runs a minimal one-triangle trace CORRECTLY on gfx90a/MI250X (software BVH, HIPRT_RTIP=0, wave64 -- CDNA has no RT cores). The earlier "import hiprt fails / unproven" question is RESOLVED: HIP-RT is feasible here. (HIPRT = the RT SDK; hiprtc = the installed runtime compiler; HIPRT JIT-compiles its device kernels via Orochi->hiprtc.)
+- OptiX -> HIPRT mapping: triangle GAS build ~1:1; raygen/closesthit/miss collapse into ONE HIP kernel; anyhit -> a device filter functor (idiomatic); payload is a real void*. Hard parts: the SBT -> functor-table restructure (light for single-record tracers, heavy for multi-shader) and re-validating any DIFFERENTIABLE backward traversal.
+- Per-port effort: EnvGS Stage 2 = MEDIUM, the recommended FIRST HIPRT reimplementation (only raygen+anyhit, single SBT record, one triangle GAS; its anyhit is a t-sorted K-closest insert = textbook HIPRT functor; the real work is re-validating the ~1200-LOC differentiable backward + the torch-extension build wiring). rmcl = LARGE (OptiX lives in rmagine's backend ~6700 LOC / 5 sensor models / multiple SBT records -- do rmcl's HIPRT-free rmagine_cuda compute FIRST). splatad = NOT OptiX (spherical-coordinate rasterization, gsplat-class; remove from this cluster -- plain Strategy-B hipify).
+- REAL UPSTREAM HIPRT BUG: the device name "AMD Instinct MI250X / MI250" contains a `/`, which std::filesystem::path treats as a directory separator, so HIPRT's JIT-cache file write fails (it never creates the implied subdir). One-line fix: sanitize `/` in the cache name. Without it HIPRT cannot run on ANY `/`-containing AMD device name. Reportable to GPUOpen/HIPRT (Report decision: PENDING). Probe + patch (gitignored): agent_space/hiprt_probe/.
+- jeff's decision (2026-06-01): DEFER the OptiX-gated ports for now; HIPRT is proven feasible, so EnvGS Stage 2 is the recommended first reimplementation when revisited.
+
 ---
 
 ## Build-config / environment (not bugs; for completeness)
