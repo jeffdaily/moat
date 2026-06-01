@@ -179,3 +179,72 @@ atomicAdd), so wave64 is moot until the backend exists. See UPSTREAM_FINDINGS.md
   before re-hipifying after a source edit, or the stale hipified mirror is
   recompiled. They are NOT in a .gitignore (the submodule has none) -- stage
   edits with `git add -u` so the generated `.hip` files are never committed.
+
+## Review 2026-06-01 (reviewer, linux-gfx90a)
+
+Verdict: review-passed. The diff-surfel 2DGS rasterizer port is correct, minimal,
+and fully USE_ROCM-guarded; the submodule fork structure resolves correctly on a
+fresh clone; commit hygiene is clean on both forks; the Stage 2 OptiX deferral is
+honest and within the accepted hardware/library-gated pattern. One documentation
+accuracy item below for the validator to scope the Stage 1 gate; not a code defect.
+
+Verified clean (no action): the 3 variants are byte-identical except config.h
+NUM_CHANNELS 3/5/7 (BLOCK 16x16=256); the 6 source edits are byte-identical across
+variants and setup.py differs only by package name. Zero warp primitives (grep
+rc=1: no __shfl/__ballot/__activemask/__reduce_*_sync/cg::reduce/tiled_partition/
+warpSize); the only CG use is this_grid().thread_rank()/this_thread_block()/
+block.sync(); cross-thread exchange is __shared__ + block.sync() + __syncthreads_count
+(forward.cu:328, a HIP block builtin at amd_device_functions.h:717) -- so no wave32/
+wave64 fault class. The 7 launch normalizations are whitespace-only (grid/block args
+byte-identical after stripping spaces); ext.cpp and rasterize_points.cu (host glue)
+are untouched (0 diff lines); no texture/surface/managed/cudaFuncSetAttribute, so the
+pitch/rule-of-five/funcattr classes do not apply. auxiliary.h `#define __trap
+__builtin_trap` is safe (HIP declares no __trap) and necessary; compiled clean on
+gfx90a. GLM @ 5c46b9c is version-stamped 0.9.9.9 but HAS GLM_COMPILER_HIP detection
+(simd/platform.h:143-144); hipcc defines __HIP__ and NOT __CUDACC__ (probed), so GLM
+routes to the HIP branch and the headers' `#define GLM_FORCE_CUDA` is inert -- the
+ignore-monkeypatch alone is correct, as notes claim. Fresh `git clone -b moat-port
+jeffdaily/EnvGS` + `git submodule update --init submodules/diff-surfel-rasterizations`
+checks out d7e9f1a with the port present (USE_ROCM guard + monkeypatch present, no
+`<< <`). Actions disabled on both forks; both default branches are clean upstream
+mirror `main`. B7 in UPSTREAM_FINDINGS documents the OptiX wall at the cross-project
+level.
+
+PROBLEM (documentation accuracy, for the validator -- not a blocking code defect):
+The notes' "EnvGS trains end-to-end with use_optix_tracing=False" overstates what is
+runnable through the EnvGS Python framework. The diff-surfel RASTERIZER trains
+forward+backward end-to-end (validated via the direct autograd harness
+agent_space/envgs/train_converge.py, which imports the rasterizer packages directly)
+-- that is the correct and authoritative gate for THIS port and it passes. But the
+EnvGS framework's diffuse sampler cannot currently be imported without the un-ported
+Stage 2 module: gaussian2d_sampler.py:15 unconditionally
+`from easyvolcap.utils.optix_utils import HardwareRendering`, and optix_utils.py:7
+unconditionally `from diff_surfel_tracing import SurfelTracer, SurfelTracingSettings`
+(module-level, not in any try/except, despite the stale "Maybe lazy import this"
+comment at optix_utils.py:6). EnvGSSampler subclasses Gaussian2DSampler
+(envgs_sampler.py:12,25), so it inherits the chain. Confirmed empirically: all 3
+rasterizer packages import OK, `import diff_surfel_tracing` raises ModuleNotFoundError.
+So `import easyvolcap.models.samplers.{gaussian2d_sampler,envgs_sampler}` fails at
+import time when Stage 2 is not built, regardless of use_optix_tracing=False. This is
+UPSTREAM EnvGS code (untouched by the port; leaving it untouched is correct
+minimal-footprint discipline) -- it is NOT a defect in the reviewed diff. Actions:
+(1) the validator should scope the Stage 1 gate to the rasterizer harness (forward /
+backward / FD / convergence / determinism), NOT to importing the EnvGS sampler
+classes, which need diff_surfel_tracing (Stage 2). (2) Recommend correcting the
+notes/commit phrasing from "EnvGS trains end-to-end" to "the ported 2DGS rasterizer
+trains forward+backward end-to-end (direct harness); the EnvGS Python sampler
+additionally needs diff_surfel_tracing to import (Stage 2) before the framework-level
+diffuse path is runnable." Optional follow-up (Stage 2 or a tiny separate change):
+make the optix_utils import lazy so the framework diffuse path runs without the
+tracer built -- out of scope for this rasterizer port.
+
+Stage 2 deferral ruling: ACCEPTED as the gfx90a bar. Stage 1 (the diffuse 2DGS
+rasterizer) is genuinely complete, correct, and standalone-functional at the kernel
+level (the reflection path is gated behind iter >= render_reflection_start_iter and
+only constructs HardwareRendering when use_optix_tracing=True, gaussian2d_sampler.py:182).
+The deferral is honest documentation (notes "Stage 2 deferred" + UPSTREAM_FINDINGS B7,
+which states the OptiX gap, the rewrite scope, and the no-software-fallback fact), not
+a silent omission. This matches the ElasticFusion-GL precedent (validate the ported
+kernels directly with a device-array harness; the hardware/library-gated full-app path
+belongs where that backend exists) and the cupoch/Open3D "validatable core, documented
+deferral" pattern.
