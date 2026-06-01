@@ -143,3 +143,28 @@ compile-only tripwire (USE_HIP=ON builds, the gpuRIR_bind .so exceeds a few KB,
 PyInit_gpuRIR_bind exported) is worth having, but adding it here would have
 churned the curated commit and forced gfx90a to revalidate for a non-GPU file.
 It should be added to the lead-port commit instead, so no follower pays for it.
+
+## Windows gfx1151 (2026-05-31): BUILD PASS, validation pending (resumable)
+
+Build SUCCEEDED for gfx1151 with the all-clang Windows toolchain. Module
+gpuRIR_bind.cp313-win_amd64.pyd linked (links hipfft/hiprand; gpuRIRcu static lib;
+gfx1151 code object). Fork HEAD 6c91213 (no source change -- validate-first follower).
+Build script: agent_space/gpurir_build.sh.
+```
+cmake -S <src> -B build-win-gfx1151 -G Ninja \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_HIP_COMPILER=clang++ \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_PREFIX_PATH="<devel-root>;<libraries-root>" -DPYTHON_EXECUTABLE=<py> \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win-gfx1151 --target gpuRIR_bind -j16
+```
+
+TO VALIDATE (next session, quick): place gpuRIR_bind.*.pyd on sys.path; deploy beside
+it amdhip64_7.dll + amd_comgr + rocm_kpack.dll + hipfft.dll + rocfft.dll + hiprand.dll
++ rocrand.dll (from _rocm_sdk_core/bin and _rocm_sdk_libraries/bin); the gfx1151 FFT/RAND
+kpacks (fft_lib_gfx1151.kpack, rand_lib_gfx1151.kpack) ship in _rocm_sdk_libraries/.kpack.
+pip install scipy numpy. Run the shoebox-room harness (4x5x3 room, src (1,1,1.5) ->
+rcv (3,4,1.5), expect direct-path sample at round(dist/c*Fs)=168, RIR finite/non-zero;
+compare to gfx90a/gfx1100). Status left port-ready (NOT completed -- GPU correctness
+not yet exercised on gfx1151).
