@@ -1,0 +1,354 @@
+diff --git a/cpp/cmake/hip/raft_hip.cmake b/cpp/cmake/hip/raft_hip.cmake
+index 2fa6b04..a96b913 100644
+--- a/cpp/cmake/hip/raft_hip.cmake
++++ b/cpp/cmake/hip/raft_hip.cmake
+@@ -165,10 +165,22 @@ target_compile_options(
+ # RAFT_COMPILE_LIBRARY builds explicit-instantiation TUs. The stock 8 sources
+ # are rmat generators (random) + lanczos solvers (sparse/spectral). They do NOT
+ # pull cutlass/cuco. Mark them LANGUAGE HIP.
+-# The lanczos solver TUs pull the full cuSOLVER wrapper surface (syevdx /
+-# syevjInfo / gesvdr / getriBatched), several of which have hipSOLVER signature
+-# deltas; deferred behind RAFT_COMPILE_LANCZOS (OFF) off the validated path.
+-option(RAFT_COMPILE_LANCZOS "Build the lanczos solver instantiations into libraft" OFF)
++#
++# The lanczos eigensolver's tridiagonal eigensolve (sterf/steqr) and the small
++# dense Householder GEMM run on the HOST via raft's Lapack<T> helpers, which on
++# CUDA wrap the cuSOLVER *Host CPU routines (cusolverDnS{gemm,sterf,steqr}Host).
++# Those *Host helpers have no hipSOLVER alias, so on HIP the helpers route to
++# host LAPACK/BLAS Fortran symbols directly (see spectral/detail/lapack.hpp).
++# That is the only blocker; with it the lanczos TUs build, so they default ON.
++option(RAFT_COMPILE_LANCZOS "Build the lanczos solver instantiations into libraft" ON)
++
++# Host LAPACK/BLAS (OpenBLAS + reference LAPACK) backs the lanczos Lapack<T>
++# helpers on HIP; the symbols (sterf/steqr/geqrf/ormqr/gemm) are dense host-side
++# ops on the small tridiagonal/projected matrices.
++if(RAFT_COMPILE_LANCZOS)
++  find_package(LAPACK REQUIRED)
++endif()
++
+ if(RAFT_COMPILE_LIBRARY)
+   set(RAFT_LIB_SOURCES
+       ${RAFT_CPP_DIR}/src/raft_runtime/random/rmat_rectangular_generator_int64_double.cu
+@@ -196,6 +208,9 @@ if(RAFT_COMPILE_LIBRARY)
+                POSITION_INDEPENDENT_CODE ON
+                HIP_ARCHITECTURES "${CMAKE_HIP_ARCHITECTURES}")
+   target_link_libraries(raft_lib PUBLIC raft::raft)
++  if(RAFT_COMPILE_LANCZOS)
++    target_link_libraries(raft_lib PUBLIC LAPACK::LAPACK)
++  endif()
+   target_compile_definitions(raft_lib PUBLIC RAFT_COMPILED)
+ 
+   # raft::compiled is what tests link for the LIB variant.
+diff --git a/cpp/cmake/hip/raft_hip_tests.cmake b/cpp/cmake/hip/raft_hip_tests.cmake
+index d6c8025..566673a 100644
+--- a/cpp/cmake/hip/raft_hip_tests.cmake
++++ b/cpp/cmake/hip/raft_hip_tests.cmake
+@@ -85,6 +85,7 @@ option(RAFT_TEST_MATRIX_SELECT "" OFF)
+ option(RAFT_TEST_STATS "" OFF)
+ option(RAFT_TEST_SPARSE "" OFF)
+ option(RAFT_TEST_SOLVERS "" OFF)
++option(RAFT_TEST_LANCZOS "" OFF)
+ option(RAFT_TEST_NEIGHBORS "" OFF)
+ 
+ if(RAFT_TEST_CORE)
+@@ -197,6 +198,18 @@ if(RAFT_TEST_SOLVERS)
+   ConfigureHipTest(
+     NAME SOLVERS_TEST LIB EXPLICIT PATH
+     linalg/eigen_solvers.cu lap/lap.cu sparse/mst.cu sparse/solver/lanczos.cu)
++  if(TARGET LAPACK::LAPACK)
++    target_link_libraries(SOLVERS_TEST PRIVATE LAPACK::LAPACK)
++  endif()
++endif()
++
++# LANCZOS_TEST: the sparse Lanczos eigensolver alone (the host-LAPACK glue gate).
++# Header-only path (lanczos_compute_smallest_eigenvectors), so no raft::compiled
++# / EXPLICIT needed; narrow target for the gfx90a host-LAPACK validation.
++if(RAFT_TEST_LANCZOS)
++  find_package(LAPACK REQUIRED)
++  ConfigureHipTest(NAME LANCZOS_TEST PATH sparse/solver/lanczos.cu)
++  target_link_libraries(LANCZOS_TEST PRIVATE LAPACK::LAPACK)
+ endif()
+ 
+ if(RAFT_TEST_NEIGHBORS)
+diff --git a/cpp/include/raft/linalg/detail/eig.cuh b/cpp/include/raft/linalg/detail/eig.cuh
+index b051481..8cb6f27 100644
+--- a/cpp/include/raft/linalg/detail/eig.cuh
++++ b/cpp/include/raft/linalg/detail/eig.cuh
+@@ -45,6 +45,55 @@ void eigDC_legacy(raft::resources const& handle,
+ {
+   cusolverDnHandle_t cusolverH = resource::get_cusolver_dn_handle(handle);
+ 
++#if defined(USE_HIP) || defined(__HIP_PLATFORM_AMD__)
++  // rocSOLVER's syevd is divide-and-conquer (STEDC) on the tridiagonalized
++  // matrix and fails to converge (dev_info != 0) on the clustered/near-
++  // degenerate spectra Lanczos produces. Use the Jacobi eigensolver
++  // (hipsolverDn{S,D}syevj), which is iterative and robust on clustered
++  // eigenvalues, on the same dense symmetric T. Stays fully on device.
++  syevjInfo_t syevj_params = nullptr;
++  RAFT_CUSOLVER_TRY(cusolverDnCreateSyevjInfo(&syevj_params));
++  RAFT_CUSOLVER_TRY(cusolverDnXsyevjSetTolerance(syevj_params, math_t(1.e-7)));
++  RAFT_CUSOLVER_TRY(cusolverDnXsyevjSetMaxSweeps(syevj_params, 100));
++
++  int lwork;
++  RAFT_CUSOLVER_TRY(cusolverDnsyevj_bufferSize(cusolverH,
++                                               CUSOLVER_EIG_MODE_VECTOR,
++                                               CUBLAS_FILL_MODE_UPPER,
++                                               static_cast<int>(n_rows),
++                                               eig_vectors,
++                                               static_cast<int>(n_cols),
++                                               eig_vals,
++                                               &lwork,
++                                               syevj_params));
++
++  rmm::device_uvector<math_t> d_work(lwork, stream);
++  rmm::device_scalar<int> d_dev_info(stream);
++
++  raft::matrix::copy(handle,
++                     make_device_matrix_view<const math_t>(in, n_rows, n_cols),
++                     make_device_matrix_view<math_t>(eig_vectors, n_rows, n_cols));
++
++  RAFT_CUSOLVER_TRY(cusolverDnsyevj(cusolverH,
++                                    CUSOLVER_EIG_MODE_VECTOR,
++                                    CUBLAS_FILL_MODE_UPPER,
++                                    static_cast<int>(n_rows),
++                                    eig_vectors,
++                                    static_cast<int>(n_cols),
++                                    eig_vals,
++                                    d_work.data(),
++                                    lwork,
++                                    d_dev_info.data(),
++                                    syevj_params,
++                                    stream));
++  RAFT_CUDA_TRY(cudaGetLastError());
++
++  auto dev_info = d_dev_info.value(stream);
++  RAFT_CUSOLVER_TRY(cusolverDnDestroySyevjInfo(syevj_params));
++  ASSERT(dev_info == 0,
++         "eig.cuh: eigensolver couldn't converge to a solution. "
++         "This usually occurs when some of the features do not vary enough.");
++#else
+   int lwork;
+   RAFT_CUSOLVER_TRY(cusolverDnsyevd_bufferSize(cusolverH,
+                                                CUSOLVER_EIG_MODE_VECTOR,
+@@ -79,6 +128,7 @@ void eigDC_legacy(raft::resources const& handle,
+   ASSERT(dev_info == 0,
+          "eig.cuh: eigensolver couldn't converge to a solution. "
+          "This usually occurs when some of the features do not vary enough.");
++#endif
+ }
+ 
+ template <typename math_t>
+diff --git a/cpp/include/raft/sparse/solver/detail/lanczos.cuh b/cpp/include/raft/sparse/solver/detail/lanczos.cuh
+index 1d93a93..cb1e5bc 100644
+--- a/cpp/include/raft/sparse/solver/detail/lanczos.cuh
++++ b/cpp/include/raft/sparse/solver/detail/lanczos.cuh
+@@ -1694,6 +1694,16 @@ void lanczos_aux(raft::resources const& handle,
+     raft::copy<ValueTypeT>(
+       &alpha_i_host, alpha.data_handle() + i * alpha.stride(1), 1, stream);  // alpha(0, i)
+ 
++#if defined(USE_HIP) || defined(__HIP_PLATFORM_AMD__)
++    // UNTESTED (staged, GPUs busy). hipMemcpyAsync D2H to pageable host memory is
++    // not host-synchronous the way CUDA's small-pageable D2H is, so b/alpha_i_host
++    // (read on the host by the host-pointer-mode axpy below) can be stale; sync the
++    // stream so the two scalar copies above complete before they are dereferenced.
++    // Without this the thick-restart recurrence diverges on the second restart on
++    // gfx90a. CUDA path unchanged.
++    resource::sync_stream(handle, stream);
++#endif
++
+     raft::linalg::axpy(handle, n, &alpha_i_host, v.data_handle(), 1, vv.data_handle(), 1, stream);
+     raft::linalg::axpy(handle,
+                        n,
+diff --git a/cpp/include/raft/spectral/detail/lapack.hpp b/cpp/include/raft/spectral/detail/lapack.hpp
+index 203e6e5..5d066ad 100644
+--- a/cpp/include/raft/spectral/detail/lapack.hpp
++++ b/cpp/include/raft/spectral/detail/lapack.hpp
+@@ -97,6 +97,11 @@ extern "C" int sgeev_(char* jobvl,
+                       int* lwork,
+                       int* info);
+ 
++#ifndef USE_HIP
++// cuSOLVER host-API helpers. These are cuSOLVER-private CPU routines (the *Host
++// suffix) with no hipSOLVER alias; on the HIP build the small dense
++// tridiagonal/QR ops they wrap are routed directly to host LAPACK/BLAS Fortran
++// symbols below. The CUDA build is byte-identical.
+ extern "C" cusolverStatus_t cusolverDnSgemmHost(cublasOperation_t transa,
+                                                 cublasOperation_t transb,
+                                                 int m,
+@@ -140,6 +145,55 @@ extern "C" cusolverStatus_t cusolverDnDsteqrHost(const signed char* compz,
+                                                  int ldz,
+                                                  double* work,
+                                                  int* info);
++#else
++// HIP build: host LAPACK/BLAS Fortran entry points (OpenBLAS + reference LAPACK)
++// for the tridiagonal eigensolve (sterf/steqr) and the small dense GEMM that
++// the cuSOLVER *Host helpers cover on CUDA.
++extern "C" void sgemm_(const char* transa,
++                       const char* transb,
++                       const int* m,
++                       const int* n,
++                       const int* k,
++                       const float* alpha,
++                       const float* A,
++                       const int* lda,
++                       const float* B,
++                       const int* ldb,
++                       const float* beta,
++                       float* C,
++                       const int* ldc);
++extern "C" void dgemm_(const char* transa,
++                       const char* transb,
++                       const int* m,
++                       const int* n,
++                       const int* k,
++                       const double* alpha,
++                       const double* A,
++                       const int* lda,
++                       const double* B,
++                       const int* ldb,
++                       const double* beta,
++                       double* C,
++                       const int* ldc);
++extern "C" void ssterf_(const int* n, float* d, float* e, int* info);
++extern "C" void dsterf_(const int* n, double* d, double* e, int* info);
++extern "C" void ssteqr_(const char* compz,
++                        const int* n,
++                        float* d,
++                        float* e,
++                        float* z,
++                        const int* ldz,
++                        float* work,
++                        int* info);
++extern "C" void dsteqr_(const char* compz,
++                        const int* n,
++                        double* d,
++                        double* e,
++                        double* z,
++                        const int* ldz,
++                        double* work,
++                        int* info);
++#endif
+ 
+ template <typename T>
+ class Lapack {
+@@ -213,10 +267,16 @@ class Lapack {
+                           float* c,
+                           int ldc)
+   {
++#ifdef USE_HIP
++    const char ta = transa;
++    const char tb = transb;
++    sgemm_(&ta, &tb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
++#else
+     cublasOperation_t cublas_transa = (transa == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+     cublasOperation_t cublas_transb = (transb == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+     cusolverDnSgemmHost(
+       cublas_transa, cublas_transb, m, n, k, &alpha, (float*)a, lda, (float*)b, ldb, &beta, c, ldc);
++#endif
+   }
+ 
+   static void lapack_gemm(const signed char transa,
+@@ -233,6 +293,11 @@ class Lapack {
+                           double* c,
+                           int ldc)
+   {
++#ifdef USE_HIP
++    const char ta = static_cast<char>(transa);
++    const char tb = static_cast<char>(transb);
++    dgemm_(&ta, &tb, &m, &n, &k, &alpha, a, &lda, b, &ldb, &beta, c, &ldc);
++#else
+     cublasOperation_t cublas_transa = (transa == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+     cublasOperation_t cublas_transb = (transb == 'N') ? CUBLAS_OP_N : CUBLAS_OP_T;
+     cusolverDnDgemmHost(cublas_transa,
+@@ -248,22 +313,36 @@ class Lapack {
+                         &beta,
+                         c,
+                         ldc);
++#endif
+   }
+ 
+   static void lapack_sterf(int n, float* d, float* e, int* info)
+   {
++#ifdef USE_HIP
++    ssterf_(&n, d, e, info);
++#else
+     cusolverDnSsterfHost(n, d, e, info);
++#endif
+   }
+ 
+   static void lapack_sterf(int n, double* d, double* e, int* info)
+   {
++#ifdef USE_HIP
++    dsterf_(&n, d, e, info);
++#else
+     cusolverDnDsterfHost(n, d, e, info);
++#endif
+   }
+ 
+   static void lapack_steqr(
+     const signed char compz, int n, float* d, float* e, float* z, int ldz, float* work, int* info)
+   {
++#ifdef USE_HIP
++    const char compz_c = static_cast<char>(compz);
++    ssteqr_(&compz_c, &n, d, e, z, &ldz, work, info);
++#else
+     cusolverDnSsteqrHost(&compz, n, d, e, z, ldz, work, info);
++#endif
+   }
+ 
+   static void lapack_steqr(const signed char compz,
+@@ -275,7 +354,12 @@ class Lapack {
+                            double* work,
+                            int* info)
+   {
++#ifdef USE_HIP
++    const char compz_c = static_cast<char>(compz);
++    dsteqr_(&compz_c, &n, d, e, z, &ldz, work, info);
++#else
+     cusolverDnDsteqrHost(&compz, n, d, e, z, ldz, work, info);
++#endif
+   }
+ 
+   static void lapack_geqrf(
+diff --git a/cpp/include/raft/spectral/detail/matrix_wrappers.hpp b/cpp/include/raft/spectral/detail/matrix_wrappers.hpp
+index 31228cc..a8716b7 100644
+--- a/cpp/include/raft/spectral/detail/matrix_wrappers.hpp
++++ b/cpp/include/raft/spectral/detail/matrix_wrappers.hpp
+@@ -32,7 +32,11 @@
+ #include <thrust/execution_policy.h>
+ #include <thrust/fill.h>
+ #include <thrust/reduce.h>
++#ifdef USE_HIP
++#include <thrust/system/hip/execution_policy.h>
++#else
+ #include <thrust/system/cuda/execution_policy.h>
++#endif
+ 
+ #include <algorithm>
+ #include <cstddef>
+@@ -132,7 +136,11 @@ class vector_t {
+  private:
+   using thrust_exec_policy_t =
+     thrust::detail::execute_with_allocator<rmm::mr::thrust_allocator<char>,
++#ifdef USE_HIP
++                                           thrust::hip_rocprim::execute_on_stream_nosync_base>;
++#else
+                                            thrust::cuda_cub::execute_on_stream_nosync_base>;
++#endif
+   rmm::device_uvector<value_type> buffer_;
+   const thrust_exec_policy_t thrust_policy;
+ };
+diff --git a/cpp/include/raft/util/hip/raft_mathlib_aliases.inc b/cpp/include/raft/util/hip/raft_mathlib_aliases.inc
+index 543ec98..06d9305 100644
+--- a/cpp/include/raft/util/hip/raft_mathlib_aliases.inc
++++ b/cpp/include/raft/util/hip/raft_mathlib_aliases.inc
+@@ -158,6 +158,9 @@
+ #define CUSPARSE_SPARSETODENSE_ALG_DEFAULT         HIPSPARSE_SPARSETODENSE_ALG_DEFAULT
+ #define CUSPARSE_SPMM_CSR_ALG1                     HIPSPARSE_SPMM_CSR_ALG1
+ #define CUSPARSE_SPMM_CSR_ALG2                     HIPSPARSE_SPMM_CSR_ALG2
++#define CUSPARSE_SPMV_ALG_DEFAULT                  HIPSPARSE_SPMV_ALG_DEFAULT
++#define CUSPARSE_SPMV_CSR_ALG1                     HIPSPARSE_SPMV_CSR_ALG1
++#define CUSPARSE_SPMV_CSR_ALG2                     HIPSPARSE_SPMV_CSR_ALG2
+ #define CUSPARSE_STATUS_ALLOC_FAILED               HIPSPARSE_STATUS_ALLOC_FAILED
+ #define CUSPARSE_STATUS_ARCH_MISMATCH              HIPSPARSE_STATUS_ARCH_MISMATCH
+ #define CUSPARSE_STATUS_EXECUTION_FAILED           HIPSPARSE_STATUS_EXECUTION_FAILED
