@@ -76,6 +76,30 @@
     }
   },
   {
+    "full_name": "PaddlePaddle/PaddleNLP",
+    "url": "https://github.com/PaddlePaddle/PaddleNLP",
+    "default_branch": "develop",
+    "stars": 12946,
+    "forks": 3040,
+    "pushed_at": "2026-05-23T02:54:28Z",
+    "days_since_push": 9.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Easy-to-use and powerful LLM and SLM library with awesome model zoo.",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 2403881,
+    "cuda_dominant": false,
+    "priority": 7.298,
+    "score_parts": {
+      "stars_term": 4.112,
+      "forks_term": 1.742,
+      "recency_term": 1.444
+    }
+  },
+  {
     "full_name": "numba/numba",
     "url": "https://github.com/numba/numba",
     "default_branch": "main",
@@ -2576,6 +2600,30 @@
     }
   },
   {
+    "full_name": "teddykoker/torchsort",
+    "url": "https://github.com/teddykoker/torchsort",
+    "default_branch": "main",
+    "stars": 863,
+    "forks": 41,
+    "pushed_at": "2026-03-03T20:41:47Z",
+    "days_since_push": 90.1,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Fast, differentiable sorting and ranking in PyTorch",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 14770,
+    "cuda_dominant": false,
+    "priority": 4.808,
+    "score_parts": {
+      "stars_term": 2.937,
+      "forks_term": 0.812,
+      "recency_term": 1.06
+    }
+  },
+  {
     "full_name": "owensgroup/RXMesh",
     "url": "https://github.com/owensgroup/RXMesh",
     "default_branch": "main",
@@ -3757,6 +3805,30 @@
     }
   },
   {
+    "full_name": "Tencent-Hunyuan/FlashVDM",
+    "url": "https://github.com/Tencent-Hunyuan/FlashVDM",
+    "default_branch": "main",
+    "stars": 328,
+    "forks": 12,
+    "pushed_at": "2026-03-13T02:55:53Z",
+    "days_since_push": 80.8,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Unleashing Vecset Diffusion Model for Fast Shape Generation / within 1 Second (ICCV'25 Highlight)",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 82722,
+    "cuda_dominant": false,
+    "priority": 4.173,
+    "score_parts": {
+      "stars_term": 2.517,
+      "forks_term": 0.557,
+      "recency_term": 1.099
+    }
+  },
+  {
     "full_name": "yassa9/qwen600",
     "url": "https://github.com/yassa9/qwen600",
     "default_branch": "main",
@@ -3851,6 +3923,54 @@
       "stars_term": 2.747,
       "forks_term": 0.954,
       "recency_term": 0.407
+    }
+  },
+  {
+    "full_name": "NetEase-FuXi/EETQ",
+    "url": "https://github.com/NetEase-FuXi/EETQ",
+    "default_branch": "main",
+    "stars": 205,
+    "forks": 17,
+    "pushed_at": "2026-03-25T14:42:59Z",
+    "days_since_push": 68.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "C++",
+    "description": "Easy and Efficient Quantization for Transformers",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 47885,
+    "cuda_dominant": false,
+    "priority": 4.094,
+    "score_parts": {
+      "stars_term": 2.314,
+      "forks_term": 0.628,
+      "recency_term": 1.153
+    }
+  },
+  {
+    "full_name": "thunlp/LLaVA-UHD",
+    "url": "https://github.com/thunlp/LLaVA-UHD",
+    "default_branch": "main",
+    "stars": 423,
+    "forks": 20,
+    "pushed_at": "2025-12-20T14:23:06Z",
+    "days_since_push": 163.4,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "LLaVA-UHD v3: Progressive Visual Compression for Efficient Native-Resolution Encoding in MLLMs",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 10708,
+    "cuda_dominant": false,
+    "priority": 4.088,
+    "score_parts": {
+      "stars_term": 2.627,
+      "forks_term": 0.661,
+      "recency_term": 0.8
     }
   },
   {
@@ -3971,6 +4091,30 @@
       "stars_term": 2.572,
       "forks_term": 0.739,
       "recency_term": 0.613
+    }
+  },
+  {
+    "full_name": "TRAILab/CaDDN",
+    "url": "https://github.com/TRAILab/CaDDN",
+    "default_branch": "master",
+    "stars": 401,
+    "forks": 61,
+    "pushed_at": "2025-06-29T08:56:17Z",
+    "days_since_push": 337.6,
+    "is_fork": false,
+    "fork_exception": false,
+    "language": "Python",
+    "description": "Categorical Depth Distribution Network for Monocular 3D Object Detection (CVPR 2021 Oral)",
+    "matched_queries": [
+      "code-search"
+    ],
+    "cuda_bytes": 77081,
+    "cuda_dominant": false,
+    "priority": 3.909,
+    "score_parts": {
+      "stars_term": 2.604,
+      "forks_term": 0.896,
+      "recency_term": 0.409
     }
   },
   {
