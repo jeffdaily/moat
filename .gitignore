@@ -12,6 +12,10 @@ projects/*/.claim
 projects/.selection.lock
 agent_space/
 
+# discover.py --code-search resumable checkpoint (per-repo meta + surfacing);
+# regenerated each run, never a tracked artifact.
+data/.code_search_cache.json
+
 # Python
 __pycache__/
 *.pyc
