@@ -143,3 +143,64 @@ run-to-run grad variation is ~1e-9 here (well under float-atomic noise), benign.
 - gfx1151 (Windows) ext.cpp uses PYBIND11_MODULE -- watch the c10 inherited-ctor
   dllexport gap (the fused-ssim blocker; gsplat dodged it via TORCH_LIBRARY).
   Note only; do not act on the lead.
+
+## Review 2026-06-01 (reviewer, linux-gfx90a, /pr-review local-branch mode)
+Branch moat-port @ 9430d42 vs base 728de13. Verdict: APPROVE -> review-passed.
+No problems found (per skill philosophy this section lists problems only; none to
+list). 23 files: new root .gitignore (additive) + 3 setup.py (build-only) + 18
+source files (6 per rasterizer variant) + simple_knn.cu, every source edit
+USE_ROCM-guarded. No CMake (Strategy B correct). No host/CPU C++ touched.
+
+Fact-checked (all VALID):
+- Variant payload byte-identical: stripping hunk headers/context, the +/- payload
+  of fisheye and panorama equals pinhole; the 8x3+3=27 launch normalizations are
+  1:1 and (token-level proof: strip <>/ws, every removed line pairs with an added
+  line) preserve kernel name, template/grid/block args verbatim -- only `<< <`->
+  `<<<` / `>> >`->`>>>` spacing changed. Correctness-neutral on both backends.
+- cooperative_groups/reduce.h guard is a PURE include guard: exhaustive grep finds
+  ZERO cg::reduce / tiled_partition / thread_block_tile / __shfl / __ballot / __any
+  / __popc / __reduce_*_sync / warpSize in the device tree (excl GLM). Nothing to
+  replace. Wave-agnostic confirmed.
+- NUM_WARPS (BLOCK_SIZE/32) in auxiliary.h is DEAD (only its own #define matches;
+  zero references) -- stock Inria leftover, not a wave64 hazard. All __shared__
+  arrays are sized by BLOCK_SIZE (256), never by warp count.
+- GLM hipify monkeypatch VERIFIED EFFECTIVE on this torch: it wraps the exact
+  hipify_python.hipify object that CUDAExtension invokes; both torch call sites
+  (cpp_extension.py:1552 setup-path, :2319) pass header_include_dirs as a KEYWORD
+  (so kwargs.get sees it; the load-bearing strip works); hipify matches `ignores`
+  via fnmatch (line 155/191) so os.path.join(glm_dir,'*') is a valid glob; gated on
+  PYTORCH_ROCM_ARCH or /opt/rocm so the CUDA build is untouched (inert, byte-for-byte).
+- Build fixes correct + necessary (all fallout from guarding CUDA-only
+  device_launch_parameters.h): `#include <cfloat>` for FLT_MAX (6 device sites in
+  simple_knn.cu; standard/idempotent, safe unconditionally); `#define __trap
+  __builtin_trap` USE_ROCM-guarded (object-like macro cleanly rewrites the bare
+  `__trap();` call at auxiliary.h:165 in in_frustum's prefiltered branch; clang
+  device builtin); `#define __CUDACC__` guarded out on ROCm (only simple-knn had it;
+  rasterizers never defined it -- confirmed by grep).
+- cub begin_bit=0 EVERYWHERE: rasterizer SortPairs `..., num_rendered, 0, 32+bit`
+  (begin_bit literal 0); simple_knn SortPairs/Reduce use defaulted begin_bit (0).
+  NOT the cudaKDTree nonzero-begin_bit hipCUB bug. CustomMin/CustomMax return
+  float3 BY VALUE (not a ref to a param) -> cudf dangling-ref UB class N/A. cub::
+  used unaliased; namespace resolution is a build-time matter the validator settles.
+
+means3D / curved-variant-scales FD-slope RULING: the porter's dismissal is SOUND.
+The complete changed-line set in forward.cu and backward.cu (all 3 variants) is
+exactly (a) the reduce.h include guard and (b) the launch-spacing normalization --
+ZERO lines touch computeCov2D / computeCov2DCUDA / the analytic backward / any
+projection math, and the launch grid/block args are unchanged. The scaled-but-
+sign-correct slope (pinhole ~0.16, panorama ~1.77, fisheye scales ~0.71) is
+therefore intrinsic to op43dgs's optimal-projection analytic backward (an
+approximate local-affine descent direction, the paper's contribution), identical
+on CUDA. Validating it by ~100% sign-agreement + eps-independence + grad-sum
+stability + training convergence (PSNR up) rather than FD magnitude is the correct
+gate, and it holds because the diff provably does not alter the math.
+
+Commit hygiene clean: title 66 chars, [ROCm] prefix; Claude disclosed; Test Plan
+with literal commands; no Co-Authored-By/noreply trailer; ASCII, no em-dash; no
+AMD-internal account refs; fork main == origin/main == 728de13 (clean mirror), port
+only on moat-port; build artifacts (hip_rasterizer/, *.hip, build/) gitignored and
+untracked. GPU validation is the validator's next stage (not a review blocker).
+
+Minor (non-blocking, not a change-request): each setup.py drops one trailing space
+from the upstream LICENSE comment line -- cosmetic, zero behavioral effect, in a
+file already edited for the monkeypatch.
