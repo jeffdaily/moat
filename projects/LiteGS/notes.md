@@ -194,3 +194,81 @@ width-32 tile reductions are correct on wave32 too -- on RDNA a 32-lane
 wavefront == one tile, the native CUDA layout). A follower validates with
 `PYTORCH_ROCM_ARCH=gfx1100` + clean rebuild; do not advance head_sha unless a
 genuine build/source fix is needed.
+
+## Review 2026-06-01 (reviewer, linux-gfx90a) -- PASS
+
+Reviewed `git diff 004b952...602ce5a` on jeffdaily/LiteGS @ moat-port with the
+/pr-review skill (ROCm-fault-class aware). Verdict: review-passed. No blocking
+findings. The validator runs the real GPU tests next (a missing GPU run at
+review time is expected and not a block).
+
+All 7 wave64/build fixes independently fact-checked as correct and arch-unified,
+CUDA path byte-identical:
+1. Divergent __any_sync -> tile_any (width-32 butterfly). Confirmed confined to
+   the 32-lane tile: blockDim.x==32 so the hardware lane within a wavefront is
+   threadIdx.y*32+threadIdx.x mod 64, i.e. each tile (one threadIdx.y) maps
+   EXACTLY to one 32-lane half-wavefront ([0,31] or [32,63]); the width-32
+   __shfl_xor sub-group split aligns with the tile boundary, so tile_any cannot
+   diverge across tiles. This is the load-bearing HSA_STATUS_ERROR_EXCEPTION
+   (0x1016) fix and it is sound. Grep confirmed NO other full-wavefront
+   __any/__all/__ballot_sync over a divergent predicate remains in any
+   device-active path (the only such calls left are in the CUDA-only #else
+   branch; raster.cu:913 is pre-existing commented-out dead code).
+2. sm_80 __reduce_{add,max}_sync (11 sites) -> tile_warp_reduce_add<T> /
+   tile_warp_reduce_max (width-32 __shfl_xor all-reduce). Confirmed: the int
+   exponent-rescale path is preserved (int add associative+commutative -> the
+   butterfly is bitwise-deterministic and equals the CUDA intrinsic over the
+   same 32 tile lanes); template T covers the instantiated int and unsigned int;
+   _max covers int. No cross-tile fold. The porter's decision to NOT name-shim
+   was correct: this torch build sets -DHIP_ENABLE_WARP_SYNC_BUILTINS=1, so HIP
+   DOES provide __reduce_*_sync but it reduces the whole 64-lane wavefront -- a
+   name-shim would have silently folded the adjacent tile.
+3. compact.cu frustum_culling_aabb leader-election: 64-bit ballot + __popcll +
+   lane = threadIdx.x & (kWarpSize-1) + single leader per kWarpSize-lane
+   wavefront + __shfl_sync(...,kWarpSize). 1D block of 256 confirmed (lane =
+   threadIdx.x%64), so lane_id==0 fires once per 64-lane wavefront (no
+   double-fire), __popcll covers the full 64 lanes (no dropped upper half). The
+   ballot is non-divergent (global_visible is false for OOB lanes, all lanes
+   reach it). kWarpSize is __GFX9__-keyed (64 gfx90a / 32 RDNA+CUDA), verified
+   __GFX9__==1 on gfx90a. Correct on wave32 and wave64.
+4. PTX ex2.approx.f16x2 -> h2exp2: h2exp2(__half2) confirmed present in
+   amd_hip_fp16.h; matching base-2 packed-half exp (both approximate).
+5. half2 masks: __h{gt,ge,le}2_mask synthesize 0xFFFF-per-half from __h*2; the
+   low-16/high-16 split matches the little-endian reinterpret_cast<unsigned*>
+   byte layout (.x=bits0-15, .y=bits16-31) and the packed 0x00010001 & mask
+   increment EXACTLY, matching CUDA's _mask convention. __vcmpleu2 halfword
+   split correct. The reimplemented names (__h*2_mask, __vcmpleu2) are absent
+   from ROCm headers (no redefinition). __hmin2(half2) does NOT collide with
+   HIP's only __hmin2 (which is bf16-only: __hmin2(__hip_bfloat162,...)).
+6. 32-thread tile mapping: PIXELS_PER_THREAD=(tile_area)/(32*VECTOR_SIZE) and
+   the [...][4*32] shared buffers indexed by threadIdx.y*blockDim.x+threadIdx.x
+   are pure threadIdx arithmetic, wave-width independent -- correct on wave64.
+7. Build/host: setup.py COMMON_HIPCC_FLAGS strip matches this build byte-for-byte
+   (['-DCUDA_HAS_FP16=1','-D__HIP_NO_HALF_OPERATORS__=1','-D__HIP_NO_HALF_CONVERSIONS__=1','-DHIP_ENABLE_WARP_SYNC_BUILTINS=1'])
+   and runs before setup(); -ffast-math correct; cuda_errchk hip*; the
+   __CUDACC__/__NVCC__ force-defines, <cuda/atomic> and
+   <cooperative_groups/reduce.h> are USE_ROCM-guarded out and confirmed unused
+   (no cg::reduce/cuda::atomic anywhere; cg::this_grid in simple_knn resolves via
+   the kept <cooperative_groups.h>). All 35 MUSA spaced-launch `<< <`/`>> >`
+   sites normalized to `<<<`/`>>>` (strict grep for a space BETWEEN the angle
+   brackets returns zero); pure syntax, no launch-config change. The eigh
+   (float) brace-init cast is a numeric no-op on CUDA (the double->float
+   narrowing into the float[2][2] happened regardless; the cast only makes it
+   explicit so clang accepts it) -- BC-safe even though unguarded.
+
+Commit hygiene: title 65 chars with [ROCm]; Claude-disclosed; no
+Co-Authored-By/noreply trailer; pure ASCII, no em-dash; Test Plan present; no
+AMD-internal account refs (jeff.daily@amd.com is the public account); fork
+master == upstream 004b952 (clean mirror); CMakeLists.txt untouched and not in
+the setup.py build path (Strategy B is the only build path, correct for a torch
+extension). All HIP intrinsics the port depends on (h2exp2, h2rcp, __hlt,
+__low2half/__high2half/__halves2half2, __hgt2/__hge2/__hle2, __hmin,
+__float_as_uint/__uint_as_float) confirmed present in this ROCm.
+
+Minor non-blocking observation (NOT a wave64 fault, absorbed by the gate):
+- raster.cu:67-72 __hmin2 NaN-selection differs from CUDA's __hmin2 in the
+  extreme case b==NaN (the __hlt-ternary returns the NaN operand where CUDA
+  returns the number). The three call sites clamp alpha against a finite
+  constant (255/256) and alpha = a*exp_approx(power) is finite in normal
+  training, so this cannot arise in practice; the PSNR gate absorbs it. Left as
+  documentation, no change required.
