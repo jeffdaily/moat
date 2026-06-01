@@ -245,6 +245,49 @@ cause not isolated" note above.
   open upstream issues/PRs/comments without jeff's approval. Details +
   evidence in projects/raft/notes.md "## Lanczos divergence investigation 2026-06-01".
 
+### B6 UPDATE (2026-06-01, third pass) -- SYNC FIX VALIDATED ON gfx90a: race fixed, but a SECOND ROCm bug (rocSOLVER stedc) now gates lanczos
+
+Built + ran the staged USE_HIP sync_stream fix on real gfx90a (GCD1, narrow
+RAFT_COMPILE_LANCZOS=ON + RAFT_TEST_LANCZOS-only build; ctest -R LANCZOS twice +
+an AMD_LOG_LEVEL=3 dispatch check). Outcome:
+
+- THE SYNC FIX WORKS for its target: the alpha/beta -> NaN divergence is GONE.
+  Zero NaN/inf in either run; results are now fully DETERMINISTIC run-to-run (the
+  run-to-run nondeterminism the race caused is eliminated). This confirms the B6
+  second-pass diagnosis: the host-vs-stream async-copy race was real and the
+  one-line resource::sync_stream(handle, stream) guard removes it. CUDA path
+  byte-identical (guard is USE_HIP-only).
+- BUT lanczos is still 0/11 on gfx90a. A SECOND, INDEPENDENT ROCm bug now blocks
+  every variant (SA/LA/SM/LM, F and D, + Rmat): the dense eigensolve inside
+  lanczos (raft::linalg::eig_dc -> eigDC_legacy -> hipsolverDn{S,D}syevd, which
+  rocSOLVER implements as STEDC divide-and-conquer) returns dev_info != 0 and the
+  ASSERT at raft/linalg/detail/eig.cuh:81 throws "eigensolver couldn't converge to
+  a solution". AMD_LOG confirmed the rocSOLVER stedc_* / sytd2 kernel family
+  dispatching on gfx90a:sramecc+:xnack-. This is NOT a NaN/divergence (our fix
+  handled that) and NOT the SM/LM gtest tolerance flakiness (#3021) -- it is a
+  THIRD failure class, a clean solver non-convergence that aborts before the
+  eigenvalue comparison ever runs. The SM/LM tolerance question is therefore
+  MASKED (untestable until stedc converges).
+- ROOT CAUSE of the new wall: rocSOLVER's STEDC (divide-and-conquer symmetric-
+  tridiagonal eigensolver) is less robust than cuSOLVER's syevd on the
+  clustered/near-degenerate tridiagonals lanczos produces. Note the earlier
+  syevd_probe that passed to ~1e-7 used a generic dense symmetric matrix, not
+  these tridiagonals -- so it did not exercise this path. Candidate follow-ups
+  (UNTESTED, jeff's call): route the small ncv x ncv solve through the non-d&c
+  steqr/sterf path on HIP, or fall back to host LAPACK syev (Lapack<T> host
+  helpers are already linked), or report the rocSOLVER stedc convergence gap.
+- Reportability: the original async-copy race (now fix-validated) remains a
+  legitimate upstream raft portability bug worth filing against
+  sparse/solver/detail/lanczos.cuh. The rocSOLVER stedc non-convergence is an
+  AMD-library bug (rocSOLVER), not a raft bug. Do NOT open either upstream without
+  jeff's approval.
+- NOT pushed: the fix stays staged in agent_space/raft_lanczos; jeffdaily/raft
+  HEAD and raft status.json are UNCHANGED (moving HEAD would force the passing
+  platforms to revalidate; whether to push/upstream is jeff's call). Full
+  build+test commands, per-variant table, and the NaN-vs-tolerance-vs-stedc
+  classification are in projects/raft/notes.md "### Fix validation 2026-06-01
+  (gfx90a)".
+
 ### B7. NVIDIA OptiX has no ROCm equivalent (the OptiX -> HIP-RT cluster)
 - Class: a fundamental ROCm ecosystem gap, not a bug. OptiX (the NVIDIA
   ray-tracing API: `optixAccelBuild` GAS/BVH, `optixTrace`, the

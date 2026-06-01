@@ -398,6 +398,89 @@ fork (would move HEAD to a non-validatable tip and force gfx90a/gfx1100 revalida
   upstream as #3021 / #2485 / #2519, partially mitigated by #3046). Do NOT open
   these upstream without jeff's approval (upstream-visible action).
 
+### Fix validation 2026-06-01 (gfx90a)
+
+VERDICT: the one-line USE_HIP sync_stream fix WORKS for what it targets (the NaN
+divergence is gone -- deterministic, zero NaN/inf across two runs) but does NOT
+make SA/LA green. A SECOND, independent ROCm bug now gates all 11 variants: the
+dense eig solve inside lanczos (raft::linalg::eig_dc -> hipsolverDn{S,D}syevd ->
+rocSOLVER STEDC divide-and-conquer) reports non-convergence (dev_info != 0). So:
+NaN race FIXED, but lanczos still 0/11 on gfx90a due to rocSOLVER stedc, not our
+fix and not the SM tolerance flakiness.
+
+Build (GCD1, narrow, -j16; liblapack-dev installed alongside the existing
+libopenblas-dev so find_package(LAPACK) resolves -- it picked MKL+openblas):
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S agent_space/raft_lanczos/cpp -B agent_space/raft_lanczos/build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/raft-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DRAFT_COMPILE_LANCZOS=ON -DBUILD_TESTS=ON \
+  -DRAFT_TEST_CORE=OFF -DRAFT_TEST_UTILS=OFF -DRAFT_TEST_LABEL=OFF \
+  -DRAFT_TEST_LINALG=OFF -DRAFT_TEST_RANDOM=OFF -DRAFT_TEST_LANCZOS=ON
+cmake --build agent_space/raft_lanczos/build --target raft_lib LANCZOS_TEST -j16
+```
+Build CLEAN (libraft.so carries the lanczos TUs: nm -D | grep -c lanczos = 1432).
+
+Test (GCD1, run twice + an AMD_LOG_LEVEL=3 single-variant run for dispatch):
+```
+cd agent_space/raft_lanczos/build
+export HIP_VISIBLE_DEVICES=1
+LD_LIBRARY_PATH=$PWD:/var/lib/jenkins/moat/_deps/raft-rmm/install/lib:$CONDA_PREFIX/lib:/opt/rocm/lib \
+  ctest --output-on-failure -R LANCZOS        # run1 and run2
+AMD_LOG_LEVEL=3 ... ./gtests/LANCZOS_TEST --gtest_filter='*LanczosTestD_SA*'
+```
+
+Per-variant (identical run1 == run2 -- deterministic):
+- LanczosTestF / LanczosTestD (base)         FAIL -- stedc non-convergence
+- LanczosTestD_SA / LanczosTestF_SA          FAIL -- stedc non-convergence
+- LanczosTestD_LA / LanczosTestF_LA          FAIL -- stedc non-convergence
+- LanczosTestD_SM / LanczosTestF_SM          FAIL -- stedc non-convergence
+- LanczosTestD_LM / LanczosTestF_LM          FAIL -- stedc non-convergence
+- RmatLanczosTestF                           FAIL -- stedc non-convergence
+All 11 fail via the SAME path: a C++ exception from
+raft/linalg/detail/eig.cuh:81 "eigensolver couldn't converge to a solution"
+(ASSERT dev_info == 0 in eigDC_legacy, after cusolver/hipsolverDnsyevd).
+
+NaN-vs-tolerance classification: NEITHER. This is a THIRD class -- a clean
+solver-reported non-convergence (dev_info > 0), not a NaN/divergence (the thing
+our fix targeted) and not a gtest CompareApprox tolerance miss (the SM/LM #3021
+flakiness). There is no `[  FAILED  ]` from an eigenvalue compare and no NaN/inf
+anywhere in either run; the test never reaches the comparison because eig_dc
+throws first. So the SM/LM tolerance issue is now MASKED (untestable until stedc
+converges), and SA/LA cannot be declared green.
+
+Why the fix is nonetheless confirmed working: pre-fix the failure mode was a
+nondeterministic alpha/beta -> NaN explosion on the second restart (the
+host-vs-stream race). Post-fix: zero NaN, fully deterministic run-to-run, and the
+recurrence proceeds far enough to BUILD the symmetric tridiagonal and hand it to
+the dense eigensolver -- which is the expected effect of removing the stale-beta
+race. The fix did its job; the wall moved downstream.
+
+Root cause of the new wall: eig_dc on HIP routes to eigDC_legacy ->
+hipsolverDn{S,D}syevd, which rocSOLVER implements as STEDC (divide-and-conquer
+symmetric-tridiagonal eigensolver). AMD_LOG confirmed the rocSOLVER stedc_* kernel
+family (stedc_divide/merge/solve, sytd2_upper) dispatching on gfx90a, and stedc
+returns dev_info != 0. This is independent of the async-copy race: a separate
+rocSOLVER stedc convergence/robustness gap on the clustered/near-degenerate
+tridiagonals lanczos produces. Note: the prior syevd_probe (notes ~line 279) that
+passed to ~1e-7 used a generic dense symmetric matrix; the stedc d&c path is more
+fragile on lanczos's tridiagonals. Candidate follow-ups (untested, jeff's call):
+(a) force the non-d&c tridiagonal path (steqr/sterf) for the small ncv x ncv solve
+on HIP, (b) fall back to host LAPACK syev for that solve (Lapack<T> host helpers
+are already linked), or (c) a rocSOLVER stedc bug report. None attempted here --
+this run was scoped to validating the sync fix only.
+
+Device dispatch confirmed (AMD_LOG_LEVEL=3): HIP 7.2.53211, Direct Dispatch on
+/opt/rocm/lib/libamdhip64.so.7, native code object
+amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-, ~22k kernel launches incl. the
+rocSOLVER stedc_* / sytd2 family. HIP_VISIBLE_DEVICES=1 isolated to GCD1 (process
+saw 1 GPU agent; GCD0's concurrent raft build untouched).
+
+Not pushed to jeffdaily/raft; raft status.json unchanged (per task scope).
+
 ### Install-as-dependency impact (when lanczos lands)
 
 Dependents that compile the lanczos headers (cuvs spectral) will need host LAPACK
