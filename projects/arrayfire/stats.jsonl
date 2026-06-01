@@ -31,3 +31,6 @@
 {"kind":"phase","ts":"2026-05-31T22:56:44Z","phase":"compile","seconds":0.169,"exit":0,"cmd":"cmake --build build-hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T22:56:50Z","phase":"test","seconds":0.168,"exit":0,"cmd":"ctest --test-dir build-hip -R _cuda$ -j1 --output-on-failure"}
 {"kind":"phase","ts":"2026-05-31T22:56:58Z","phase":"test","seconds":0.137,"exit":0,"cmd":"ctest -R _cuda$ -j1 --output-on-failure"}
+{"kind":"phase","ts":"2026-05-31T23:36:20Z","phase":"compile","seconds":0.117,"exit":1,"cmd":"cmake --build build-hip-gfx1100 -j 16"}
+{"kind":"phase","ts":"2026-05-31T23:40:01Z","phase":"compile","seconds":212.407,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -j 16"}
+{"kind":"phase","ts":"2026-05-31T23:45:34Z","phase":"test","seconds":321.268,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 ctest --test-dir /var/lib/jenkins/moat/projects/arrayfire/src/build-hip-gfx1100 -R _cuda$ -j1 --output-on-failure"}

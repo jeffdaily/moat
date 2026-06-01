@@ -10,3 +10,4 @@
 {"kind":"phase","ts":"2026-05-31T02:40:53Z","phase":"compile","seconds":38.866,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/alien/src/build -j 16"}
 {"kind":"phase","ts":"2026-05-31T02:41:03Z","phase":"test","seconds":0.027,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/EngineInterfaceTests --gtest_filter=-GeometryTests.* 2>&1"}
 {"kind":"phase","ts":"2026-05-31T02:41:09Z","phase":"test","seconds":0.254,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/alien/src/build/PersisterTests 2>&1"}
+{"kind":"phase","ts":"2026-05-31T03:31:42Z","phase":"compile","seconds":286.435,"exit":0,"cmd":"bash -c ARCH=gfx1100 JOBS=16 bash /var/lib/jenkins/moat/projects/alien/src/build_hip.sh 2>&1"}

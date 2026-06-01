@@ -1,5 +1,91 @@
 # cudf notes (ROCm/HIP port)
 
+## Validation 2026-06-01 (linux-gfx1100, ROCm 7.2.1) -- VALIDATION-FAILED
+
+Device: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1 HIP clang 22.0.0. HIP_VISIBLE_DEVICES=0.
+
+### Build
+
+Fork clone: jeffdaily/cudf @ moat-port (c4b9b5bf7c522c9a4c6acba0de38f1d7e4abb3d4).
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cudf/src/cpp -B projects/cudf/build-hip-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCUDF_CUCO_SOURCE_DIR=/var/lib/jenkins/moat/projects/cuCollections/src \
+  -DCUDF_NVTX3_INCLUDE_DIR=/var/lib/jenkins/pytorch/third_party/NVTX/c/include \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON
+cmake --build projects/cudf/build-hip-gfx1100 -j16
+```
+
+Configure output: "CUDF HIP: arch=gfx1100 sources=204 (scoped core)". Build: 207/207 targets, 545 s (9.1 min), zero errors (warnings only). libcudf.so = 583,112,280 B (556.2 MB), well under 2 GiB.
+
+Code-object verification: `llvm-objdump --offloading build-hip-gfx1100/libcudf.so` -> 151 embedded code objects, ALL `hipv4-amdgcn-amd-amdhsa--gfx1100`, zero non-gfx1100 (--offload-compress working, no multi-arch bloat).
+
+### Smoke test (in-scope subset)
+
+```
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100/lib:${CONDA_PREFIX}/lib:/opt/rocm/lib"
+HIP_VISIBLE_DEVICES=0 ./build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST
+```
+
+Run 1: 18/18 PASS (8446 ms). Run 2: 18/18 PASS (6956 ms). All 18 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile. No regression vs gfx90a (same 18 tests, same pass). Deterministic (two runs identical).
+
+### Targeted wave32 ballot check -- FAIL: HSA hardware exception
+
+The reviewer-flagged test: exercise `valid_if_kernel` with a non-multiple-of-32 null mask on gfx1100. `valid_if_kernel` (valid_if.cuh:58) uses `tiled_partition<32>::ballot(pred)` inside a `while (i < size)` per-lane loop. For a partial tail (size % 32 != 0), exited tail lanes do NOT call ballot -- the ballot call is divergent within the 32-lane tile.
+
+Root cause isolated by a standalone harness (`agent_space/cudf_valid_if_harness/ballot_diverge.cu`):
+
+- `tiled_partition<32>::ballot(pred)` called from CONVERGED code (all 32 tile members call it): PASS (correct result 0x55555555).
+- `tiled_partition<32>::ballot(pred)` called from DIVERGENT code (`if (i < n)`): CRASH -- `HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception` (code 0x1016).
+
+This is a behavioral difference from gfx90a:
+- On gfx90a (wave64): 32-lane tile is a sub-wave of the 64-lane hardware wavefront. The hardware executes all 64 lanes in lockstep. Even "exited" tile members participate in the ballot at the hardware level (masked to 0 in the result). No divergence within the hardware wave, so no crash.
+- On gfx1100 (wave32): 32-lane tile IS the hardware wavefront. When some lanes have exited the while loop (different PC from the ballot caller), `tile.ballot()` is called divergently. This is invalid for a cooperative groups collective and causes a hardware exception.
+
+The CUDA path avoids this with `__ballot_sync(active_mask, ...)` which carries the `active_mask` across loop iterations. The HIP replacement `tile.ballot(pred)` inside a per-lane while loop does NOT carry a mask, so the partial tail case is structurally broken on gfx1100.
+
+Confirmed: `valid_if_kernel` as written will crash on gfx1100 for any input size not a multiple of 32 (or block_size*grid_stride, more precisely: whenever the last tile in the grid stride has fewer than 32 active lanes).
+
+### Result
+
+- Build: PASS (gfx1100, 556 MB, 151 gfx1100 code objects, --offload-compress confirmed).
+- In-scope smoke tests: 18/18 PASS (matches gfx90a, deterministic). None of the 18 tests exercise `valid_if_kernel` with a partial null mask.
+- Targeted wave32 valid_if_kernel partial-tail check: FAIL -- HSA hardware exception on divergent `tiled_partition<32>::ballot()` call.
+- State: validation-failed. Back to porter (opus).
+
+### Fix sketch (for porter)
+
+`valid_if_kernel` needs to restructure the loop so that ALL tile members call `tile.ballot()` at the same convergent point. The correct HIP pattern for a grid-stride ballot loop:
+
+```cpp
+// All threads in the tile call ballot together; out-of-range threads vote false.
+while (any_in_tile_active) {
+    bool active = (i < size);
+    bool vote = active && p(*(begin + i));
+    bitmask_type ballot = cudf::detail::ballot_32(vote);
+    if (lane_id == leader_lane && active) {
+        output[cudf::word_index(i)] = ballot;
+        warp_valid_count += __popc(ballot);
+    }
+    // Advance; check whether ANY tile member has work remaining
+    i += stride;
+    bool any = tile.any(i < size);
+    if (!any) break;
+}
+```
+
+The key: `ballot_32` is called OUTSIDE any divergent branch -- ALL tile members call it, with out-of-range members voting `false`. The output write is guarded by `active` so only tile members that had valid work write to the output. The `tile.any(i < size)` determines when to exit.
+
+Or equivalently: the existing per-lane `while (i < size)` loop can be replaced by a tile-level loop where the tile stays in the loop as long as ANY member has work. Within the loop body, each lane votes its `(i < size && pred)` result to the ballot, then only lane 0 writes the word if its own `i` is in range (the ballot already has the correct bits because out-of-range lanes vote false).
+
+This fix would keep the 18/18 smoke tests passing and also make the valid_if partial-tail harness pass.
+
 ## Review 2026-05-31 (reviewer, linux-gfx90a, fork c4b9b5b vs upstream 6cea374)
 
 Verdict: review-passed. ROCm fault-class-aware review via /pr-review (local-branch). Code, build system, export contract, and commit hygiene are sound; the CUDA path is unchanged (every edit is USE_HIP/__HIPCC__-guarded or a strict generalization valid on nvcc). The offload-compress single-.so decision and the find_package(cudf) dependency contract were verified directly against the built/installed artifacts. One documentation-accuracy finding (does not block).

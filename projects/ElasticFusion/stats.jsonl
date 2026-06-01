@@ -3,3 +3,7 @@
 {"kind":"phase","ts":"2026-05-31T23:08:50Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -C build-hip efusion -j16"}
 {"kind":"phase","ts":"2026-05-31T23:09:31Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -C build-hip efusion -j16"}
 {"kind":"phase","ts":"2026-05-31T23:10:16Z","phase":"test","seconds":0.212,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/ef_glprobe/build && HIP_VISIBLE_DEVICES=2 ./kernel_harness"}
+{"kind":"phase","ts":"2026-05-31T23:51:30Z","phase":"compile","seconds":2.328,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/ElasticFusion/src -B /var/lib/jenkins/moat/projects/ElasticFusion/src/build-hip-gfx1100 -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-05-31T23:51:42Z","phase":"compile","seconds":8.576,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/projects/ElasticFusion/src/build-hip-gfx1100 efusion -j16"}
+{"kind":"phase","ts":"2026-05-31T23:52:56Z","phase":"test","seconds":0.216,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/ef-harness-gfx1100/kernel_harness"}
+{"kind":"phase","ts":"2026-05-31T23:53:01Z","phase":"test","seconds":0.189,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/ef-harness-gfx1100/kernel_harness"}

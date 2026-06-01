@@ -23,3 +23,5 @@
 {"kind":"phase","ts":"2026-05-31T22:01:08Z","phase":"compile","seconds":661.414,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T23:02:45Z","phase":"compile","seconds":823.208,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T23:10:32Z","phase":"test","seconds":9.723,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cudf/build-hip --output-on-failure"}
+{"kind":"phase","ts":"2026-06-01T00:08:21Z","phase":"compile","seconds":545.095,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-01T00:09:07Z","phase":"test","seconds":9.195,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST"}
