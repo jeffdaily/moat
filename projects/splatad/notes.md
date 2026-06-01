@@ -312,3 +312,65 @@ across repeats; this is the documented atomic-order noise, not a regression. The
 nerfacc-gated lidar rasterize_to_points fwd/bwd reference cannot run (nerfacc CUDA _C is
 None on ROCm); the porter's independent compositor + finite-difference + 80-step Adam
 check substitutes (same gap class as the completed gsplat port).
+
+## Validation 2026-06-01 (validator, linux-gfx90a, moat-port @ e337891)
+
+Platform: AMD Instinct MI250X / MI250 (gfx90a), HIP_VISIBLE_DEVICES=1 (GCD 1), ROCm 7.2.1.
+Build: PYTORCH_ROCM_ARCH=gfx90a BUILD_CUDA=1 NO_FAST_MATH=1 MAX_JOBS=16 pip install -e . --no-build-isolation. csrc.so built successfully; roc-obj-ls confirms 4 gfx90a code objects (no other arch). AMD_LOG_LEVEL=3 confirms hipLaunchKernel calls return hipSuccess for all GPU test paths.
+
+Build command:
+    cd projects/splatad/src
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    rm -rf gsplat/hip build
+    HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx90a BUILD_CUDA=1 NO_FAST_MATH=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -v
+
+Test commands (all run from projects/splatad/src/):
+
+    # Camera math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=1 python -m pytest tests/test_basic.py \
+        -k "(test_quat_scale_to_covar_preci or test_persp_proj or test_world_to_cam or test_projection or test_fully_fused_projection_packed or test_isect or test_sh or test_compute_pix_velocity) and not lidar" \
+        -v --tb=short
+
+    # Camera rasterization (RGB / RGB+D / D x packed{T,F} x sh_degree{None,3} x per_view_color{T,F})
+    HIP_VISIBLE_DEVICES=1 python -m pytest tests/test_rasterization.py::test_rasterization -v --tb=short
+
+    # Lidar math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=1 python -m pytest tests/test_basic.py \
+        -k "lidar_proj or compute_lidar_velocity or lidar_projection or isect_lidar or map_points_to_lidar_tiles or populate_image_from_points" \
+        -v --tb=short
+
+    # Lidar end-to-end rasterization
+    HIP_VISIBLE_DEVICES=1 python -m pytest tests/test_rasterization.py -k "lidar" -v --tb=short
+
+    # Lidar rasterize_to_points fwd+bwd (nerfacc not available on ROCm; independent check)
+    HIP_VISIBLE_DEVICES=1 AMD_LOG_LEVEL=3 python agent_space/splatad_validate_lidar.py
+
+    # Non-GPU regression
+    HIP_VISIBLE_DEVICES=1 python -m pytest tests/test_strategy.py -v --tb=short
+
+Results:
+- Camera math: 26-27 passed / 27 total (test_projection[True-True-False] flaps at line 393
+  on v_viewmats rtol=1e-3, sometimes at line 394/395 on v_quats/v_scales; 7/10 pass rate in
+  isolation; run-to-run variation at 1-2 elements with different indices each run -- confirmed
+  atomicAdd accumulation-order noise, NOT a systematic defect). All other camera math: PASS.
+- Camera rasterization: 24 passed / 24 total. PASS.
+- Lidar math: 14 passed / 14 total. PASS.
+- Lidar rasterization (test_lidar_rasterization[3,32,128]): 3 passed / 3 total. PASS.
+- Lidar rasterize_to_points independent validation (agent_space/splatad_validate_lidar.py):
+    [A] forward finite, range-sane, 2-run bit-exact (feats+alphas). PASS.
+    [B] grads finite (means/quats/scales/opacities/lidar_features), grad-sums stable to
+        rel ~1e-6..1e-8, FD slope=1.0000 / sign-agreement=100% / median rel-err=0.000. PASS.
+    [C] 80-step Adam training: loss 0.0441 -> 0.0001 (99.7% down), grads finite. PASS.
+- Non-GPU regression (test_strategy.py): 1 passed / 1 total. PASS.
+- nerfacc-gated tests (test_rasterize_to_points, test_rasterize_to_pixels): 7 failed --
+  expected, nerfacc CUDA _C is None on ROCm (same gap class as completed gsplat port).
+- test_png_compression: ImportError: Please install PLAS -- expected, NOT a port regression.
+
+GPU dispatch verified: AMD_LOG_LEVEL=3 shows hipLaunchKernel returning hipSuccess for all
+splatad kernels (camera projection/rasterization, lidar projection/rasterization, hipcub sort).
+Native gfx90a code objects confirmed: roc-obj-ls csrc.so shows 4 gfx90a code objects.
+
+Known flapper confirmed on rerun: test_projection[True-True-False] flaps at atomic-order
+boundary (1-2 elements, different indices each run, 7/10 passes in isolation). NOT systematic.
+Verdict: PASS. No systematic GPU fault. Port correct.
