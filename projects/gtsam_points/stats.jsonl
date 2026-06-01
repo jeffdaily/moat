@@ -10,3 +10,5 @@
 {"kind":"phase","ts":"2026-05-31T23:11:37Z","phase":"compile","seconds":0.006,"exit":1,"cmd":"ninja -C build_hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T23:11:51Z","phase":"compile","seconds":0.036,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
 {"kind":"phase","ts":"2026-05-31T23:12:36Z","phase":"test","seconds":39.533,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-01T00:49:31Z","phase":"compile","seconds":89.263,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
+{"kind":"phase","ts":"2026-06-01T00:50:14Z","phase":"test","seconds":29.920,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1"}
