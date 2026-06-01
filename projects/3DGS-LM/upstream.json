@@ -2,7 +2,7 @@
   "full_name": "lukasHoel/3DGS-LM",
   "upstream_url": "https://github.com/lukasHoel/3DGS-LM",
   "default_branch": "main",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/3DGS-LM",
   "ext_type": "torch-extension",
-  "base_sha": null
+  "base_sha": "d6db64b1844b4303caa2f6e9a0a1ba107b96d6c9"
 }

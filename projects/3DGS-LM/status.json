@@ -7,17 +7,17 @@
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-01T01:45:42Z",
+  "updated_at": "2026-06-01T19:44:42Z",
   "head_sha": "d5a69846ea4b526e6c1e63ebfb708adab3057420",
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "changes-requested",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-01T00:55:34Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T01:45:42Z",
+      "updated_at": "2026-06-01T19:44:42Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
