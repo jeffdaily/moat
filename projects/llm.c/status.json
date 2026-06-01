@@ -7,7 +7,7 @@
   "priority": 6.667,
   "ext_type": "makefile",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-01T19:34:10Z",
+  "updated_at": "2026-06-01T20:03:43Z",
   "head_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
   "platforms": {
     "linux-gfx90a": {
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "15f5e1a6d745a6385ea86a6fc745cdae9fe436ef",
+      "validated_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
       "started_at": "2026-05-31T01:25:00Z",
-      "completed_at": "2026-05-31T02:30:00Z",
-      "updated_at": "2026-05-31T17:01:39Z",
+      "completed_at": "2026-06-01T20:03:43Z",
+      "updated_at": "2026-06-01T20:03:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

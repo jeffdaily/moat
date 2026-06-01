@@ -557,3 +557,30 @@ ROCm-version-guarded cg functor change that is a no-op on ROCm 7.2.1 / gfx90a.
 No regression versus the prior validated result at 15f5e1a. Pass counts: FP32 16/16
 tensors OK, BF16 14/16 (2 expected determinism-shift), CPU 16/16.
 State: revalidate -> completed. validated_sha: 25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300.
+
+## Validation 2026-06-01 (gfx1100) -- carry-forward to 25932dd (no GPU re-run)
+
+Shared commit advanced 15f5e1a -> 25932dd. The full tree delta is 3 files; for
+linux-gfx1100 on ROCm 7.2.1 it is provably no-op, so the gfx1100 device code is
+byte-identical to the 15f5e1a validation. Carried forward rather than re-run.
+
+Delta analysis (git diff 15f5e1a 25932dd):
+- .gitignore: build-artifact ignores only; no build or runtime impact.
+- Makefile (+38/-3): every added hunk is inside the `SHELL_UNAME := Windows` ->
+  `ifeq ($(USE_HIP),1)` branch (Windows hipcc detection via `where`, lld-link
+  consuming libhipblaslt.dll.a by full path, the `$@.exe` copy). The non-Windows
+  (Linux) USE_HIP build path is untouched.
+- llmc/cuda_to_hip.h (+9/-1): wraps the cg::plus/cg::greater functors in
+  `#if HIP_VERSION < 71300000` and adds `#include <hip/hip_version.h>`. Newer ROCm
+  (>= 7.13) ships those functors natively (redefining them is an error there);
+  ROCm 7.2.x still needs them. This host: HIP_VERSION = 70253211 (HIP 7.2.53211,
+  MAJOR/MINOR/PATCH = 7/2/53211) < 71300000, so the guard is TRUE and the functors
+  are DEFINED -- identical to 15f5e1a. cg::reduce is supplied unconditionally as
+  before (butterfly over the 32-lane tile, width = tile.size(); correct on wave32).
+  Net effect here: byte-identical device code (only a standard ROCm header include
+  is preprocessed in).
+
+Evidence: HIP_VERSION=70253211 printed from <hip/hip_version.h> on this host;
+guard boundary 71300000 = HIP 7.13. The change cannot reach the gfx1100 Linux
+device code. gfx90a is completed at 25932dd. validated_sha advanced 15f5e1a ->
+25932dd (carry-forward, no GPU run).
