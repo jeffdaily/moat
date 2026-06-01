@@ -43,20 +43,35 @@ queries = [
 # requests/min rate limit -- so throttle and prefer the narrow high-signal
 # queries over exhausting the broad one.
 [code_search]
-# Narrow, high-signal queries first; the broad __global__ one is supplementary
-# (the 1000-result cap binds, so mid-star repos can fall off it).
+# Narrow, high-signal queries FIRST (they page first, so the budget lands on
+# them); the broad __global__ one is LAST -- 98k matches, mostly sub-200-star,
+# low yield, so it only fills leftover budget. Counts (search/code total_count,
+# 2026-06-01) kept tractable per query (a few thousand each, not 98k):
+#   CUDAExtension extension:py filename:setup ........... 2344  torch ext setup
+#   cpp_extension.load extension:py .................... 1244  JIT torch ext
+#   BuildExtension extension:py filename:setup ......... 6464  torch ext setup
+#   load_inline extension:py .......................... 2324  inline torch ext
+#   torch.utils.cpp_extension extension:py ............. 2060  torch ext import
+#   AT_DISPATCH_FLOATING_TYPES extension:cu ............ 7432  torch .cu kernels
+#   cudaMalloc extension:cuh ........................... 3988  CUDA headers
+#   __global__ extension:cu ........................... 98176  broad (last)
 queries = [
   "CUDAExtension extension:py filename:setup",
   "cpp_extension.load extension:py",
+  "BuildExtension extension:py filename:setup",
+  "load_inline extension:py",
+  "torch.utils.cpp_extension extension:py",
+  "AT_DISPATCH_FLOATING_TYPES extension:cu",
+  "cudaMalloc extension:cuh",
   "__global__ extension:cu",
 ]
 page_cap = 10                 # pages per query; API hard cap is 10 (100/page -> 1000)
 throttle_seconds = 7          # pause between code-search calls (~10 req/min limit)
-# Bound on per-repo metadata fetches for NEW repos. Sized to cover the two
-# narrow high-signal queries in full (they page first, so the broad
-# supplementary query is what gets truncated). Each fetch is core-API
-# (5000/hr), not the tight code-search limit, so this can be generous.
-max_new_repo_fetches = 1700
+# Bound on per-repo metadata fetches for NEW repos. Sized for a deeper sweep
+# across the narrow high-signal queries (they page first, so the broad
+# supplementary __global__ query is what gets truncated). Each fetch is
+# core-API (5000/hr), not the tight code-search limit, so this can be generous.
+max_new_repo_fetches = 800
 
 [weights]
 # priority = stars*log10(stars+1) + forks*log10(forks+1)
