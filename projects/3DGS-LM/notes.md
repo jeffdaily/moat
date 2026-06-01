@@ -107,3 +107,38 @@ The apply_jtj-vs-autograd oracle (cos 0.9947, symmetry 5.7e-9, PSD) is a sound g
 ### Non-blocking observations
 - gsgn.cu:2451 `dsigmoidvdv(unactivated_opacity_cache[gaussian_idx], G*dL_dalpha)` is intentionally NOT cast to scalar_t (unlike the porter's other dsigmoidvdv/dexpvdv casts): both args are float here so it resolves to the (float,float) overload unambiguously for any scalar_t. Correct as-is; the casts were applied precisely where one arg was scalar_t. No action.
 - simple_knn.cu ends with no trailing newline (cosmetic, pre-existing).
+
+## Porter fix 2026-06-01 (response to Review 2026-06-01) -- over-broad sync/shuffle masks after a divergent continue
+
+Fixed the one blocker and the same-shape second site. Both USE_ROCM-guarded; the CUDA path is byte-identical (the macro expands to `__syncwarp(mask)` and the helper returns the 32-bit FULL_MASK).
+
+### The blocker: apply_jt_kernel `__syncwarp(mask)` after the radius_gt_zero `continue` (gsgn.cu)
+apply_jt_kernel has a per-thread-divergent `continue` at gsgn.cu:1917 (`if(!rendered_data_ptr->radius_gt_zero) continue;`). The SEVEN `__syncwarp(mask)` reached AFTER it (the FEAT_DC / FEAT_REST x3 / POSITION / SCALE / ROTATION segmented-reduce write-outs) passed the pre-divergence ballot `mask` = `__ballot_sync(FULL_MASK, idx<stride)`, which over-names the lanes that already took the `continue`. HIP `__syncwarp(MaskT)` -> `__hip_check_mask` -> `__hip_assert(mask == __ballot(true))` (amd_warp_sync_functions.h:135/180), active under torch's `.cu` device compile (no -DNDEBUG), so it traps HSA 0x1016 when a 32-lane logical warp straddles Gaussians of mixed radius_gt_zero. The `__syncwarp(mask)` at gsgn.cu:1905 is BEFORE the continue (the OPACITY block, always reached) -> left as-is. Sibling apply_jt_render_bkwd_kernel (decl ~2241) has the same calls but NO divergent continue between its ballot and them (only the uniform `if(idx>=stride) return`) -> left as-is. apply_j_kernel's continue (~1412) has no collective after it -> nothing to fix.
+
+Fix: a USE_ROCM macro `GSGN_SYNCWARP_AFTER_DIVERGENCE(mask)` in hip_warp_compat.h -- maskless `__syncwarp()` on HIP (a `__builtin_amdgcn_wave_barrier`, no mask check; the surviving lanes are exactly the ones still executing, and each site is immediately followed by `if(head_flag) atomicAdd`, so a wavefront barrier is a safe superset), `__syncwarp(mask)` on CUDA (byte-identical). Applied at the seven post-continue sites only. The HeadSegmentedSum arithmetic, the width-32 cub pins, the 64-bit masks, the head-flag width-32 shfl_up, and the host tiling were NOT touched (the review confirmed all correct).
+
+### Second site: butterfly `__shfl_down_sync(FULL_MASK,...,32)` (backward.cu:840-849, BW_IMPLEMENTATION=1, opt-in but reachable)
+Same defect class. The DISTWAR butterfly is entered per 32-lane group (line ~837 `(__match_any_sync(...) & group_mask) == group_mask`), so within a wavefront only one of the two 32-groups may be live. The fixed `FULL_MASK` (all 64) over-names the inactive group and traps. NOTE the subtlety proven on-GPU (agent_space/3dgslm_review/butterfly_one.cu): a per-group HALF mask (`group_mask`) ALSO traps when BOTH groups are live, because `__hip_check_mask` asserts `mask == __ballot(true)` and `__ballot(true)` is the full 64-lane active set then, not the half. HIP `__shfl_down_sync(mask,var,delta,width)` uses `mask` ONLY for that assertion; `width=32` does the per-group sub-grouping independently (amd_warp_sync_functions.h:296-302). So the correct, always-valid participation mask is `__activemask()` (== `__ballot(true)` by construction), exposed as `gsgn_active_shfl_mask()` (HIP `__activemask()`, CUDA `FULL_MASK` -- byte-identical). `group_mask` is still used for the per-32-group match test (unchanged).
+
+### Why the original synthetic validation missed it (the validation gap, now closed)
+In a single consistent forward pass every CACHED Gaussian is radius>0: `is_gaussian_hit` (which defines map_visible_gaussians, __init__.py:482) is set in renderCUDA only for Gaussians that pass the alpha/transmittance tests, and only radius>0 Gaussians are binned/rendered. So the buildCache kernels even comment out the radius check ("all of those have a radius_gt_zero", gsgn.cu:431/964). The divergent `continue` fires for REAL only on the temporal mismatch: the sparse-Jacobian index_map + radius_gt_zero geomBuffer are frozen at the START of an LM iteration (filter_reordered_geometry_buffer), but a Gaussian can go degenerate (radii==0) under the line-search parameter update while apply_jt still reads the cached index_map. The porter's all-radius>0 scene never produced intra-warp divergence, so it never trapped.
+
+### Divergence gate (NEW; the reviewer's required test) -- agent_space/3dgslm_div.py
+Reproduces the frozen-cache-vs-degenerate condition faithfully and forces it: build the real GSGNDataSpec, then flip `radius_gt_zero=false` for an INTERLEAVED subset of the visible Gaussians directly in the filtered geomBuffer (radius_gt_zero is the bool at byte offset 63 of the 64-byte GeometryStateReduced: means2D[2]=8 + conic_opacity[4]=16 + cov3D[6]=24 + rgb[3]=12 + clamped[3]=3 = 63; the buffer is num_visible_gaussians*64 bytes/image, a uint8 torch tensor editable in place). The sorted index_map packs consecutive lanes across consecutive Gaussians, so flipping every Nth Gaussian guarantees 32-lane warps straddle mixed radius_gt_zero -> the `continue` splits the warp -> every post-continue `__syncwarp` is reached divergently. Then run `calc_preconditioner` (apply_jt PRECONDITIONER mode) + `apply_jtj` (apply_j + apply_jt) under AMD_LOG_LEVEL=3.
+
+DECISIVE before/after on the REAL kernel (not just the minimal repro), GCD 0:
+- FIXED build (committed): 4 scenes, 125-240 Gaussians forced radius_gt_zero=false each, NO 0x1016, outputs finite, operator PSD (<p,Ap> 3.8e4..8.2e4 > 0). `3dgslm_div.py` exit 0, AMD_LOG_LEVEL=3 log clean.
+- BUGGY build (temporarily reverted the macro to `__syncwarp(mask)`, separate prefix agent_space/3dgslm_site_buggy): the SAME harness aborts `(core dumped)` with `HSA_STATUS_ERROR_EXCEPTION ... code: 0x1016` during apply_jt. Proves the harness genuinely reaches the trapping path and the fix removes the trap. (Reviewer's minimal repros agent_space/3dgslm_review/syncwarp_run.cu [traps] / syncwarp_ctrl.cu [clean] re-confirmed on this host too.)
+- No regression: the full agent_space/3dgslm_val.py (Tiers 1-3) still PASSES identically (Tier2 cos 0.9947, symmetry 2.2e-8, PSD, PCG 19 iters; Tier3 PSNR 23.69 -> 46.39 monotone) -- maskless `__syncwarp()` == `__syncwarp(mask)` on the non-divergent path.
+
+Build/run commands (GCD 0):
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16
+bash agent_space/3dgslm_build.sh                 # both extensions, gfx90a
+# isolated prefix for validation (shared-conda collision per notes above):
+python -m pip install --no-cache-dir --target agent_space/3dgslm_site \
+  <KNN> <DGR> --no-build-isolation --no-deps
+cd /tmp
+AMD_LOG_LEVEL=3 python /var/lib/jenkins/moat/agent_space/3dgslm_div.py   # divergence gate -> PASS, no 0x1016
+python /var/lib/jenkins/moat/agent_space/3dgslm_val.py all               # Tiers 1-3 -> PASS (no regression)
+```
