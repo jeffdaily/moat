@@ -14,3 +14,162 @@ IVFPQ/IVFFlat GPU indexes, StandardGpuResources, the full GpuIndex* hierarchy, c
 integration) is a MUCH larger standalone CUDA library and is NOT redundant with Open3D.
 It is a strong MOAT target in its own right (popular GPU similarity search). The Open3D
 nns/kernel port is a useful reference for the warp-select/selection-network HIP translation.
+
+## Port disposition: ENABLE-AND-ADAPT (upstream ROCm support is mature/merged)
+FAISS carries first-class, Meta-maintained ROCm support in `main` (FAISS_ENABLE_ROCM
+switch -> enable_language(HIP) + a configure-time faiss/gpu/hipify.sh that translates
+faiss/gpu/*.cu -> *.hip in place). This port DRIVES that path on ROCm 7.2.1 / gfx90a; it
+is not a from-scratch CUDA->HIP conversion. Outcome on gfx90a: enable-only on the source
+side except ONE hipify-driver fix (below). No arch-drift CMake edit, no hipBLAS-Ex fix,
+no --offload-compress.
+
+## Lead platform result: linux-gfx90a (MI250X, CDNA2 wave64), ROCm 7.2.1
+- libfaiss.so + faiss_gpu_objs + all GPU gtests build clean (0 errors) at single arch gfx90a.
+- GPU gate via ctest (per-process, serial, HIP_VISIBLE_DEVICES=1, OPENBLAS_NUM_THREADS=1):
+  108/108 pass.
+- TestGpuSelect (the raft/cuvs de-risking gate): 6/6, run twice, deterministic.
+
+## THE ONE SOURCE CHANGE: hipify.sh device_functions.h doubled-prefix fix
+faiss/gpu/utils/PtxUtils.cuh (under USE_AMD_ROCM) includes `<device_functions.h>`.
+hipify-perl on ROCm 7.2.1 rewrites that to `<hip/hip/device_functions.h>` -- a DOUBLED
+`hip/` prefix (hipify's CUDA->HIP header map prepends `hip/` without noticing the target
+header already lives directly under hip/). The correct header is
+`/opt/rocm/include/hip/device_functions.h`. Symptom: `fatal error:
+'hip/hip/device_functions.h' file not found` on every PtxUtils consumer.
+Fix: one post-hipify sed in faiss/gpu/hipify.sh, alongside the existing `<hipblas.h>` and
+`<hiprand_kernel.h>` path fixups:
+    sed -i 's@#include <hip/hip/device_functions.h>@#include <hip/device_functions.h>@' "$src"
+Kept in the hipify driver (the project's own translation layer) so it survives a re-hipify;
+it is the single most-likely-and-actual necessary edit, and the only one needed.
+
+(The raft/cuvs vendored faiss_select copies do NOT hit this -- they don't carry PtxUtils'
+device_functions.h include; this is specific to the full FAISS gpu/utils tree.)
+
+## What did NOT need changing (validates the plan's "enable, don't fix" expectation)
+- Arch propagation: `-DCMAKE_HIP_ARCHITECTURES=gfx90a` propagates to the HIP TUs as
+  `--offload-arch=gfx90a` automatically (CMake 3.24 derives the HIP_ARCHITECTURES target prop
+  from the cache var). The plan's anticipated gated `set_target_properties(faiss_gpu_objs
+  PROPERTIES HIP_ARCHITECTURES ...)` was NOT needed. No literal gfx90a anywhere -> followers
+  (gfx1100/gfx1151) build with only `-DCMAKE_HIP_ARCHITECTURES=<arch>`, zero source churn.
+- hipBLAS GemmEx / GemmStridedBatchedEx: MatrixMult-inl.cuh already guards the compute-type
+  enum on hipBLAS version (`HIPBLAS_COMPUTE_32F` when hipblasVersionMajor>=3 or v2+HIPBLAS_V2,
+  else `HIPBLAS_R_32F`). Host hipBLAS is v3 with HIPBLAS_V2 -> the COMPUTE_32F branch compiles
+  and runs; TestGpuDistance (the GEMM path) 28/28. No fixup.
+- WarpShuffles.cuh: on HIP, CUDA_VERSION is undefined, so the `#else` MASKLESS builtins
+  (`__shfl`/`__shfl_xor`, no _sync, no 0xffffffff mask) are active -- the wave-safe path with
+  no `__hip_check_mask` abort risk. The `__shfl_sync(0xffffffff,...)` lines are dead on HIP.
+- DeviceDefs.cuh: kWarpSize = rocprim::arch::wavefront::max_size() = 64 on gfx90a;
+  GPU_MAX_SELECTION_K = 2048. Select.cuh/BlockSelect/WarpSelect fully kWarpSize-parameterized.
+- --offload-compress: NOT needed. The single-arch gfx90a fatbin links into libfaiss.so with no
+  R_X86_64_PC32 overflow. (Keep in mind for a future multi-arch / gfx1100+gfx90a fat build.)
+
+## TWO host-environment artifacts that are NOT porting defects (do not chase)
+1. OpenBLAS many-core heap corruption (host CPU BLAS bug, not GPU). TestGpuIndexFlat.LargeIndex
+   aborts with `malloc(): corrupted top size` / `corrupted size vs prev_size` right after the
+   OpenBLAS warning "precompiled NUM_THREADS exceeded, adding auxiliary array for thread
+   metadata". System libopenblas 0.3.26 was built NUM_THREADS=64; this host has 128 cores, so
+   OpenBLAS's >NUM_THREADS auxiliary-allocation path corrupts the glibc heap (reproduces at
+   thread counts >1; OPENBLAS_NUM_THREADS=32 still aborts). OPENBLAS_NUM_THREADS=1 -> LargeIndex
+   passes cleanly (idx diff 0). This is host-side CPU reference code (the test's brute-force CPU
+   ground truth), would be identical on the upstream CUDA build on the same box; NOT a HIP/wave64
+   issue. RUN THE GATE WITH OPENBLAS_NUM_THREADS=1.
+2. Monolithic-binary teardown SIGSEGV. Running ./TestGpuIndexFlat as one process exits 139 AFTER
+   printing "[ PASSED ] 18 tests" (a HIP-runtime atexit/teardown crash in the combined process).
+   Per-process ctest (one process per test case) does not hit it; all 18 Flat cases pass
+   individually. Likewise the TestGpuIndexIVFPQ.Float16Coarse / Add_IP "failures" only fire when
+   many cases share ONE process: the global faiss RNG state advances across cases and pushes the
+   float16 PQ approximate index past its 3.5% relative-error tolerance for that data realization;
+   each passes in its own ctest process. ALWAYS validate via ctest, never the monolithic binaries.
+
+## Build recipe (gfx90a, ROCm 7.2.1)
+Host deps (apt, standard packages): libopenblas-dev, libgflags-dev (gflags is required by
+perf_tests, which BUILD_TESTING pulls in). gtest is FetchContent-fetched by tests/CMakeLists.txt
+(no system gtest needed). rocPRIM/rocThrust/hipBLAS/hip::host are in /opt/rocm. FAISS is C++20;
+rocPRIM C++17 floor is satisfied (no -std bump).
+
+Configure (Python OFF; C++ + GPU + C API + tests):
+```
+cmake -S projects/faiss/src -B projects/faiss/src/build \
+  -DFAISS_ENABLE_GPU=ON -DFAISS_ENABLE_ROCM=ON -DFAISS_ENABLE_CUVS=OFF \
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_ENABLE_C_API=ON \
+  -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON \
+  -DFAISS_OPT_LEVEL=generic -DFAISS_ENABLE_MKL=OFF -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++ \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+```
+Configure runs faiss/gpu/hipify.sh (execute_process): translates faiss/gpu/*.cu -> *.hip and
+faiss/c_api/gpu/* in place, backing up originals to faiss/gpu-backup/ and c_api/gpu-backup/.
+
+Build (cap -j to be a good neighbor on a shared box):
+```
+cmake --build projects/faiss/src/build --target faiss faiss_gpu_objs -j 16
+cmake --build projects/faiss/src/build --target \
+  TestGpuSelect TestGpuDistance TestGpuIndexFlat TestGpuIndexIVFFlat TestGpuIndexIVFPQ \
+  TestGpuIndexIVFScalarQuantizer TestGpuIndexBinaryFlat TestGpuResidualQuantizer \
+  TestGpuIcmEncoder TestGpuMemoryException TestCodePacking -j 16
+```
+
+Validate on real gfx90a (ctest = canonical gate; per-process; serial -j1):
+```
+cd projects/faiss/src/build
+HIP_VISIBLE_DEVICES=1 OPENBLAS_NUM_THREADS=1 \
+  ctest --test-dir $(pwd) -j1 -R "TestGpu|TestCodePacking" --output-on-failure
+```
+TestGpuSelect alone (the de-risking gate, run twice for determinism):
+```
+HIP_VISIBLE_DEVICES=1 ./faiss/gpu/test/TestGpuSelect
+```
+
+## hipify is NOT idempotent -- re-hipify only from PRISTINE source
+hipify.sh does `cp -r ./gpu ./gpu-backup` at the START, then hipifies in place. Re-running it on
+an ALREADY-hipified tree compounds (<device_functions.h> -> hip/.. -> hip/hip/.. -> hip/hip/hip/..)
+AND overwrites gpu-backup with the already-translated state. To re-hipify by hand: first restore
+pristine (`git checkout -- faiss/gpu c_api/gpu`), remove artifacts (`find faiss/gpu c_api/gpu
+-name '*.hip' -delete; rm -rf faiss/gpu-backup faiss/gpu-tmp c_api/gpu-backup c_api/gpu-tmp`),
+THEN run hipify.sh once. A clean `cmake` reconfigure from a pristine tree does this on its own.
+
+## DO NOT COMMIT the generated artifacts
+hipify edits TRACKED files in place (the .cuh/.h/.cpp under faiss/gpu get their CUDA includes
+rewritten) and creates untracked .hip files + gpu-backup/. NONE of these belong in the commit --
+they regenerate at configure. The fork commit must contain ONLY the hipify.sh edit. Before
+committing, restore them (`git checkout -- faiss/ c_api/`, preserving just hipify.sh) so the
+diff is one file. The build dir keeps the hipified/tested artifacts untouched.
+
+## Install as a dependency (raft, cuvs, and other FAISS-GPU consumers)
+FAISS is a base library: raft (neighbors/detail/faiss_select) and cuvs vendor a CUDA-only COPY
+of FAISS's gpu/utils select files. GPU-validating FAISS-ROCm proper (TestGpuSelect green on
+gfx90a) is the canonical confirmation that the kWarpSize warp/block-select is wave64-correct on
+CDNA; it directly de-risks the raft and cuvs select ports.
+
+To build + install the ROCm fork for a consumer (into _deps/faiss/install at the repo root):
+```
+git clone https://github.com/jeffdaily/faiss.git _deps/faiss
+cd _deps/faiss && git checkout moat-port
+cmake -S . -B build \
+  -DFAISS_ENABLE_GPU=ON -DFAISS_ENABLE_ROCM=ON -DFAISS_ENABLE_CUVS=OFF \
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_ENABLE_C_API=OFF \
+  -DBUILD_TESTING=OFF -DBUILD_SHARED_LIBS=ON \
+  -DFAISS_OPT_LEVEL=generic -DFAISS_ENABLE_MKL=OFF -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_C_COMPILER=/opt/rocm/bin/amdclang \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++ \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_INSTALL_PREFIX=$(pwd)/install
+cmake --build build --target faiss -j 16 && cmake --install build
+```
+Then point the consumer at it: `-DCMAKE_PREFIX_PATH=.../_deps/faiss/install` (exports the
+`faiss` CMake package via faiss-targets; headers under include/faiss, lib under lib/). For a
+different AMD target, change ONLY `-DCMAKE_HIP_ARCHITECTURES` (e.g. gfx1100). NOTE most consumers
+vendor the select SOURCE rather than linking libfaiss; for those, the reference is
+faiss/gpu/utils/{Select,WarpShuffles,PtxUtils,DeviceDefs}.* on the moat-port branch.
+
+## Out of scope (by design, not regressions)
+- cuVS/CAGRA: FAISS_ENABLE_CUVS=ON pulls NVIDIA cuVS/raft (CUDA-only), mutually exclusive with
+  ROCm. TestGpuIndexCagra / TestGpuIndexBinaryCagra / TestGpuFilterConvert are CUVS-gated and
+  absent on the ROCm build. Not a regression.
+- bfloat16 GPU distance subtests (TestGpuDistance.*_BF16): the test self-skips ("no bfloat16
+  support on AMD") -- the test's own gate, not a port failure.
+- Python bindings (swig) and benchs/demos: not built (Python OFF; gflags satisfies perf_tests).
+</content>

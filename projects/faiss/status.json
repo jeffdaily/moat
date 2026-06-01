@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "faiss",
   "upstream_url": "https://github.com/facebookresearch/faiss",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/faiss",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-31T16:36:35Z",
-  "updated_at": "2026-05-31T22:35:26Z",
-  "head_sha": null,
+  "updated_at": "2026-06-01T01:18:29Z",
+  "head_sha": "a5c47343e73cb528bcc620e9d51cf948206383cb",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-05-31T23:40:43Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T22:35:26Z",
+      "updated_at": "2026-06-01T01:18:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
