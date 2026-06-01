@@ -228,3 +228,40 @@ Matches gfx90a bar: 48/48 (gfx90a also 48/48). Deterministic (bit-identical pass
 No delta-port required. Result: PASS.
 
 validated_sha: b7113fe9133aa0444bf0205cea546d33700ac16e -> completed.
+
+## Validation 2026-06-01 (windows-gfx1151) -- GPU PASS (cuda_util-ut); e2e blocked (host build); blocked pending jeff
+
+Platform: AMD Radeon(TM) 8060S Graphics (gfx1151, RDNA3.5, wave32, compute capability 11.5), Windows 11, MSVC 14.44 BuildTools, ROCm from TheRock pip wheels (venv-gsplat, AMD clang 23). No /opt/rocm. Build scripts: `agent_space/catboost/win_configure.sh` + `win_build.sh` (source `agent_space/gsplat_buildenv.sh`).
+
+### Outcome
+- catboost-cuda-cuda_util-ut: **48/48 pass, two back-to-back runs bit-identical pass set (deterministic), real gfx1151 GPU, clean exit, no HSA fault.** Validates the core GPU primitives (compression, fill, mvs-threshold, reduce/segmented-reduce, reorder, scan/segmented-scan, sort/segmented-sort, transform -- incl. the PowVector transform). Exercises rocPRIM device sort/scan/reduce and the wave-size-aware reductions. hipMemGetInfo works (free=64.7GB) once TheRock's amdhip64 is deployed beside the exe.
+- GBDT histogram-kernel e2e (full `catboost` app, or `catboost-cuda-methods-ut`/`gpu_data-ut`) NOT run on gfx1151: blocked by an out-of-ROCm-scope host-build toolchain collision (below). Those kernels' wave32 correctness is already validated on linux-gfx1100 (RDNA3, wave32) via its e2e training, and gfx1151 runs byte-identical kernel source on the same wave32 ISA family, so the histogram risk here is low and covered.
+
+### Build approach (all-clang-cl)
+catboost has no torch; it routes .cu (and the GPU-wrapper .cpp, via target_cuda_sources) through the GPU compiler, and host C++ TUs include <cuda_runtime.h> (-> the hip_compat shim -> <hip/hip_runtime.h>) under the plain host compiler. cl.exe cannot parse the GCC `__attribute__` in HIP headers; catboost's MSVC flag module officially supports clang-cl (the `_IS_CLANG_CL_COMPILER` path), and clang-cl compiles HIP TUs (`-x hip`), so use clang-cl for C, CXX, and HIP (one consistent MSVC `/`-flag style). clang++ in gcc-driver mode fails: CMake injects MSVC `/Zi //Od /DWIN32` flags for the windows-msvc ABI that the gcc driver rejects. conan provisions openssl/ragel/swig/yasm from conancenter cleanly; pip install Cython>=3.0.10.
+
+### Local deltas required to BUILD on Windows (all uncommitted; moat-port stays b7113fe)
+None touch GPU kernel logic except the trivial PowVector param-qualifier match. Categorized:
+
+Build-system (port-relevant, Linux-safe, conditioned on the MSVC HIP frontend -- candidates to commit):
+1. `cmake/cuda.cmake` HIP branch (MSVC frontend only): force-include uses `/FI<hdr>` not `-include` (clang-cl ignores `-include` -> the header becomes a stray source -> "/Fo with multiple source files"); add `-DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_WIN32_WINNT=0x0601 -D_CRT_SECURE_NO_WARNINGS -D_USE_MATH_DEFINES` to CMAKE_HIP_FLAGS (HIP TUs otherwise miss catboost's CXX-only Windows defines -> <windows.h> drags winsock.h -> redefinition vs winsock2.h); add `/clang:-nostdinc++` (use only the bundled libcxxmsvc, not MSVC STL -> kills the std::memory_order ambiguity in most TUs).
+2. Root `CMakeLists.txt` HAVE_HIP block: `include_directories(BEFORE .../contrib/libs/flatbuffers/include)` -- TheRock's ROCm SDK ships a vanilla flatbuffers/ that the global `${ROCM_PATH}/include` add let shadow catboost's bundled flatbuffers (flatc: "no member kCppYandexMapsIter"). /opt/rocm on Linux ships no flatbuffers so it never bit.
+3. `catboost/cuda/cuda_util/kernel/transform.cu`: PowVector<T> definitions match the transform.cuh decls exactly (drop top-level const on pointer params). clang-cl's MSVC-ABI mangling keeps top-level const (T* const -> QEAM) on the definition while the caller uses T* (PEAM) -> unresolved at link. Itanium/Linux drops top-level const so identical there.
+
+Link (configure -- CMAKE_EXE/SHARED_LINKER_FLAGS): clang_rt.builtins-x86_64.lib (clang emits __divti3 for __int128 division in util/double-conversion; catboost links via lld-link directly, not the clang driver, so builtins are not auto-added) + advapi32.lib userenv.lib (GetUserNameA/CreateProcessWithLogonW).
+
+Toolchain-compat in bundled contrib (clang 23 vs cl.exe; NOT ROCm-specific -- would belong upstream, do NOT put in the port commit):
+4. `contrib/libs/cxxsupp/libcxxmsvc/src/support/runtime/exception_pointer_msvc.ipp`: `extern "C" _LIBCPP_NORETURN` (attribute after the linkage-spec; clang 23 rejects `[[noreturn]] extern "C"`).
+5. `contrib/libs/cxxsupp/libcxxmsvc/include/type_traits`: gate the 16384-align aligned_storage specialization on `!defined(_WIN32)` too -- under clang -x hip the host pass targets COFF (8192 cap) but _LIBCPP_OBJECT_FORMAT_COFF stays unset so the existing COFF guard is skipped.
+6. `contrib/libs/tbb/CMakeLists.windows-x86_64-cuda.txt`: add `-mrtm -mwaitpkg` (clang gates the RTM/WAITPKG intrinsics TBB uses; cl.exe does not).
+7. `contrib/libs/base64/avx2/CMakeLists.windows-x86_64-cuda.txt`: add `-mavx2` (clang gates AVX2 intrinsics).
+
+Build-scoping (never commit): prune the R/JVM/Python/Spark bindings (`catboost/CMakeLists.windows-x86_64-cuda.txt`) and `library/python` (`library/CMakeLists.windows-x86_64-cuda.txt`) -- they need Java+SWIG and are orthogonal to the GPU port. Also copy conan ragel/yasm/swig exes into `build_hip/cm/bin/` (the conanfile.py tool-copy path math does not land them on Windows).
+
+Runtime to RUN: deploy TheRock amdhip64_7.dll + amd_comgr*.dll + rocm_kpack.dll beside the exe (`agent_space/deploy_therock_runtime.sh`; System32 Adrenalin driver is device-lib-mismatched).
+
+### e2e blocker (out of ROCm-port scope)
+The full app and the GPU method/data uts pull `library/cpp/threading/local_executor/tbb_local_executor.h` -> TBB `oneapi/tbb/cache_aligned_allocator.h` -> MSVC `<memory_resource>` (which libcxxmsvc does NOT provide, so it resolves to MSVC's STL) -> MSVC `std::memory_order` collides with libcxxmsvc `std::__y1::memory_order` ("reference to memory_order is ambiguous"). `/clang:-nostdinc++` fixed the broad case (test framework etc.) but not this `<memory_resource>` fallback. Resolving it is bundled-libc++/TBB host-toolchain work, not the GPU port.
+
+### Decision needed (why blocked, not completed)
+b7113fe does NOT build on Windows without the deltas above, so it cannot honestly be marked completed at that sha. Options for jeff: (a) commit the build-system subset (1-3) + link flags as a delta-port -- Linux-safe and conditioned on the MSVC HIP frontend, but it changes the fork HEAD sha and so re-validates gfx90a + gfx1100; the contrib toolchain fixes (4-7) are clang-23-compat and arguably stay out of the commit (upstream-able), which then means a fresh checkout still needs them locally; and (b) decide whether cuda_util-ut (real-GPU, deterministic) plus the gfx1100 wave32 histogram e2e is a sufficient gfx1151 gate, or whether the gfx1151 e2e must be unblocked (needs the libcxxmsvc <memory_resource> / TBB host fix first). Set blocked=true pending this call; GPU port itself is sound on gfx1151.

@@ -7,7 +7,7 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-31T08:30:00Z",
+  "updated_at": "2026-06-01T22:33:10Z",
   "head_sha": "b7113fe9133aa0444bf0205cea546d33700ac16e",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "GPU port validated on real gfx1151: cuda_util-ut 48/48 x2 deterministic (core GPU primitives). Full-app/methods-ut e2e blocked by an OUT-OF-SCOPE host-build dual-STL collision: TBB oneapi cache_aligned_allocator pulls MSVC <memory_resource> (absent from bundled libcxxmsvc) -> MSVC std::memory_order collides with libcxxmsvc std::__y1::memory_order under clang-cl. Histogram kernels covered by gfx1100 wave32 (identical source). Windows build needs ~9 local deltas (see notes.md); committing the port-relevant subset (cuda.cmake /FI + Win hygiene defines + /clang:-nostdinc++; root CMakeLists flatbuffers include-order; transform.cu PowVector param-qualifier mangling fix; clang_rt.builtins + advapi32 link) re-validates gfx90a+gfx1100. NEEDS JEFF: commit deltas as delta-port, and/or accept cuda_util-ut + gfx1100 histograms as the gfx1151 gate vs unblocking the e2e (needs a libcxxmsvc <memory_resource>/TBB host fix first).",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-31T06:27:29Z",
+      "updated_at": "2026-06-01T22:33:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
