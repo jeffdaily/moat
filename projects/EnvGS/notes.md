@@ -122,7 +122,11 @@ gfx1151`, clean rebuild. No source edit expected (no wave-size fault class).
 - Training convergence (the authoritative gradient gate): a short diffuse-path
   Adam fit to a fixed target image drops the loss ~95% (wet 0.0488->0.0026,
   ch05 0.0502->0.0027, ch07 0.0680->0.0026) with PSNR ~25-26 dB and no NaN, for
-  all 3 channel counts.
+  all 3 channel counts. The RASTERIZER (diff-surfel-rasterization) trains
+  forward+backward end-to-end via the direct autograd harness; the EnvGS
+  framework sampler additionally requires the deferred Stage 2 OptiX module
+  (diff_surfel_tracing) to import -- importing the EnvGS sampler classes
+  (gaussian2d_sampler.py, envgs_sampler.py) is NOT part of the Stage 1 gate.
 - Determinism: forward bit-identical run-to-run; backward grads agree to ~3e-7
   (benign atomicAdd reorder, NOT bitwise -- the standard 3DGS bar).
 - Device dispatch: `AMD_LOG_LEVEL=3` shows `preprocessCUDA<3>`, `renderCUDA<3u>`,
@@ -248,3 +252,62 @@ a silent omission. This matches the ElasticFusion-GL precedent (validate the por
 kernels directly with a device-array harness; the hardware/library-gated full-app path
 belongs where that backend exists) and the cupoch/Open3D "validatable core, documented
 deferral" pattern.
+
+## Validation 2026-06-01 (linux-gfx90a)
+
+Platform: AMD Instinct MI250X / MI250, gfx90a:sramecc+:xnack-, ROCm 7.2 / HIP 7.2.53211, torch 2.13.0a0
+
+Gate scoped to the RASTERIZER autograd harness (NOT the EnvGS framework sampler, which
+requires the deferred Stage 2 diff_surfel_tracing module). All 3 -wet* variants
+(`diff_surfel_rasterization_wet`, `_wet_ch05`, `_wet_ch07`) were validated directly.
+
+Build: all 3 -wet* extensions previously built and installed; imports confirmed clean
+with _C exporting rasterize_gaussians / rasterize_gaussians_backward / mark_visible.
+Build reused (intact), -j 16, PYTORCH_ROCM_ARCH=gfx90a.
+
+Commands:
+
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs/validate_stage1.py
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS-converge test -- \
+    python3 agent_space/envgs/train_converge.py
+```
+
+Per-variant rasterizer results (validate_stage1.py):
+
+- diff-surfel-rasterization-wet (NC=3):
+  - Forward: image(3,150,200) finite, min=0.0113 max=0.8651 mean=0.3536
+    nonzero_frac=1.000, visible=1778/4000 -- non-trivial, no illegal memory access.
+  - Backward: all 6 input grads finite (means3D/means2D/opacity/colors/scales/rots).
+  - FD opacity: sign_agreement=1.00, slope=1.007 (decisive geometric-blend gate PASS).
+  - FD means3D directional: avg slope=0.490 (within [0.4,1.8] gate, downhill confirmed).
+  - Determinism: forward bit-identical; backward grad_rel=1.9e-7 (benign atomicAdd reorder).
+  - PASS.
+
+- diff-surfel-rasterization-wet-ch05 (NC=5):
+  - Forward: image(5,150,200) finite, min=0.0235 max=0.8622, nonzero_frac=1.000, visible=1778/4000.
+  - Backward: all input grads finite.
+  - FD opacity: sign=1.00, slope=1.001. FD means3D directional avg=0.478. PASS.
+  - Determinism: forward bit-identical; grad_rel=3.2e-7. PASS.
+
+- diff-surfel-rasterization-wet-ch07 (NC=7):
+  - Forward: image(7,150,200) finite, min=0.0402 max=0.8743, nonzero_frac=1.000, visible=1778/4000.
+  - Backward: all input grads finite.
+  - FD opacity: sign=1.00, slope=1.003. FD means3D directional avg=0.449. PASS.
+  - Determinism: forward bit-identical; grad_rel=3.9e-7. PASS.
+
+Training convergence (train_converge.py, 400 iters, P=2500, 160x120):
+
+- wet (nc=3): loss 0.04880 -> 0.00298 (93.9% down), PSNR=25.28 dB, all_finite=True. CONVERGED.
+- wet-ch05 (nc=5): loss 0.05023 -> 0.00288 (94.3% down), PSNR=25.48 dB, all_finite=True. CONVERGED.
+- wet-ch07 (nc=7): loss 0.06795 -> 0.00247 (96.4% down), PSNR=26.08 dB, all_finite=True. CONVERGED.
+
+Device dispatch (AMD_LOG_LEVEL=3): preprocessCUDA<3>, duplicateWithKeys,
+identifyTileRanges, renderCUDA<3u> all dispatched on AMD device.
+
+A ModuleNotFoundError on `import diff_surfel_tracing` (Stage 2 OptiX module) is
+EXPECTED and NOT a failure -- it is the documented Stage 2 deferral. Importing
+gaussian2d_sampler / envgs_sampler was NOT attempted (not part of this gate).
+
+Result: ALL PASS. State -> completed. validated_sha = 135ab0ad76fdba89ae7f44b808b36300b19f7caf.
