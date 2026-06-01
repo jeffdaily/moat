@@ -55,8 +55,11 @@ Evidence:
   for Hopper, in {100,103} for Blackwell). All are unsatisfiable on AMD by construction.
 
 ## CUDA surface inventory (for the record; this is exactly what makes it unportable)
-- 155 C/C++ device source+header files under `csrc/`; **118 of them `#include <cutlass/...>` or
-  `<cute/...>`**. Whole-tree `csrc/` is 71,777 LOC.
+- 155 C/C++ device source+header files under `csrc/`; **51 of them directly `#include <cutlass/...>`
+  or `<cute/...>`, and 138 of the 155 reference `cutlass`/`cute` (transitively, via project headers)**.
+  Verified at HEAD 92750c3: `grep -rl '#include <cutlass|#include <cute' csrc | wc -l` = 51;
+  `grep -rl 'cutlass\|cute' csrc | wc -l` = 138. Whole-tree `csrc/` is 71,777 LOC. The 17 files that
+  never name cutlass/cute are pure C++ glue (helpers.h, natten.cpp dispatch, type aliases), not kernels.
 - Kernel families (all CUTLASS/CuTe), with build-target counts per setup.py "default" autogen policy:
   - `reference` (2 splits): CuTe reference attention -- `csrc/include/natten/cuda/reference/fna_reference_forward.hpp`
     is `#include <cute/tensor.hpp>` + `<cutlass/cutlass.h>`; the .cu is `#ifdef NATTEN_WITH_CUTLASS` and
