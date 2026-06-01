@@ -7,7 +7,7 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-01T19:21:54Z",
+  "updated_at": "2026-06-01T19:37:16Z",
   "head_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
   "platforms": {
     "linux-gfx90a": {
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "ported",
+      "state": "review-passed",
       "blocked": false,
       "blocked_reason": "PORTED at fork 7d743ae (delta-fix for the wave32 divergent-ballot VALIDATION-FAILED). Root cause was broader than first diagnosed: SIX per-lane grid-stride ballot kernels (valid_if_kernel; concatenate_masks_kernel + fused_concatenate_kernel in copying/concatenate.cu; fused_concatenate_string_offset_kernel in strings/copying/concatenate.cu; replace_kernel in replace/replace.cu; replace_nulls in replace/nulls.cu) called ballot_32 from inside a per-lane while(i<size) loop, so a partial final tile (size%32!=0) ballots divergently on wave32 (HSA_STATUS_ERROR_EXCEPTION 0x1016); benign-by-accident on wave64. Fixed arch-unified on the HIP path with a new tile_any_32 helper driving a converged tile-level loop (all lanes reach ballot_32 at one PC, OOB lanes short-circuit to false, write+leader-count guarded by active; the strings terminal-offset write captured pre-loop as writes_terminal). CUDA path byte-for-byte unchanged. valid_if_n_kernel/copy_range_kernel/copy_if_else_kernel are warp/block-uniform (already converged), left as-is. GPU re-test on gfx1100 (W7800): valid_if partial-tail harness 24/24 PASS no-crash (sizes 1..100001, all %32!=0, incl 1000+1057) null mask+count == host ref; MOAT_CORE_SMOKE_TEST 18/18 PASS, both x2 deterministic. libcudf.so 555.8 MB, 151 gfx1100 code objects. See notes.md 'Porter 2026-06-01'.",
       "validated_sha": null,
       "started_at": "2026-06-01T00:00:00Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T00:41:59Z",
+      "updated_at": "2026-06-01T19:37:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +54,7 @@
         "first_session_at": "2026-06-01T00:00:00Z",
         "last_session_at": "2026-06-01T00:30:00Z"
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "windows-gfx1151": {
       "state": "port-ready",

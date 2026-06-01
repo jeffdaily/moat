@@ -1,5 +1,24 @@
 # cudf notes (ROCm/HIP port)
 
+## Review 2026-06-01 (reviewer, linux-gfx1100, wave32 divergent-ballot fix, fork 7d743ae)
+
+Verdict: review-passed. ROCm fault-class-aware /pr-review (local-branch) of the wave32 delta c4b9b5b..7d743ae (6 files, +193/-50): warp_primitives.cuh (tile_any_32), valid_if.cuh, copying/concatenate.cu (concatenate_masks_kernel + fused_concatenate_kernel), strings/copying/concatenate.cu, replace/replace.cu, replace/nulls.cu. The full port vs upstream was already review-passed at c4b9b5b; this reviews only the delta. No defects found; the validator runs the gfx1100 GPU next.
+
+Verified directly (no remaining divergent-tile-collective, null-mask semantics identical to CUDA):
+- Convergence: in all 6 kernels the HIP path is now `while (tile_any_32(idx < n)) { bool active = idx<n; ballot_32(active && pred); if (active && leader) write; idx += stride; }`. ballot_32 sits at the top level of the loop body (one PC reached by every tile lane); the `if (active) {...}` blocks guard only the data lookup/deref, never a collective. OOB lanes short-circuit `active && pred` so they never dereference and vote false. tile.any keeps the whole 32-tile in lockstep until all lanes finish. grep confirms no ballot_32/tile.any/__shfl remains inside a divergent if/while in the HIP path.
+- Lane-to-bit alignment (the silent-null-mask-corruption risk): all 6 kernels launch block_size=256 (multiple of 32). global_thread_id = threadIdx.x + blockIdx.x*blockDim.x and grid_stride = blockDim.x*gridDim.x are both = 0 mod 32, so lane k always processes an index with idx%32==k for every iteration. tile-relative ballot_32 puts lane k's vote at bit k = intra_word_index(idx), and the leader (lane 0, idx%32==0) writes word_index(idx)=idx/32. Bit alignment is exact and identical to the CUDA __ballot_sync result.
+- tile_any_32 / ballot_32 wave-agnostic: both use cg::tiled_partition<32>(this_thread_block()).any/.ballot -- tile size 32 on both wave64 and wave32, no 64-bit-mask assumption. On wave64 the two 32-lane tiles of a wavefront each produce their own 32-bit word matching word_index. warp_size stays 32 (the bitmask word width).
+- Leader-only accumulation is exact: single_lane_block_sum_reduce<block_size,0> (cuda.cuh:55) loads lane_values[warp_id] written ONLY by lane_id==leader_lane, so only the leader's warp_valid_count/valid_sum is ever consumed. Moving fused_concatenate_kernel + fused_concatenate_string_offset_kernel accumulation under `if (active && leader)` yields the identical lane-0 total.
+- strings writes_terminal equivalence: original wrote output_data[output_size] from the post-loop thread with output_index==output_size. The converged loop runs output_index past output_size for every lane, so the porter captures pre-loop `writes_terminal = output_index <= output_size && (output_size-output_index)%stride==0` -- exactly the lane whose grid-stride trajectory lands on output_size (incl. the start==output_size case). Equivalent, no double-write, no dropped terminal.
+- concatenate_masks_kernel default bit_is_set=true for source_view_index>=number_of_views matches the CUDA default; vote `active && bit_is_set`.
+- No dropped-tail / off-by-one: tile_any_32(idx<n) keeps the tile iterating until the last partial word's leader has written; OOB lanes of that final word vote false (matching the CUDA carried active_mask), so the partial word is correct.
+- CUDA path byte-for-byte unchanged: each kernel's `#else` branch is the original CUDA loop with the __ballot_sync active_mask dance restored to its pre-delta always-CUDA form (verified against c4b9b5b:replace.cu). Every added non-comment line is inside `#if defined(USE_HIP)`.
+- The 3 "left as-is" ballot kernels are genuinely converged (not missed sites): valid_if_n_kernel (block-uniform block_offset, already votes thread_active && pred), copy_range_kernel (warp-uniform mask_idx = begin_mask_idx + warp_id), copy_if_else_kernel (warp-uniform warp_cur = warp_begin + warp_id). None has a per-lane divergent loop.
+- Hygiene: single curated commit, title "[ROCm] HIP build for AMD GPUs (USE_HIP): libcudf core + algorithms" (66 chars), body mentions Claude + has a Test Plan, no Co-Authored-By noreply, no em-dash, ASCII-clean delta, no CI yaml, no literal-arch hardcode, no AMD-internal account refs. Matches the PORTING_GUIDE divergent-tile-collective lesson (line 310).
+
+State: linux-gfx1100 ported -> review-passed (validator next exercises it on the gfx1100 GPU).
+
+
 ## Validation 2026-06-01 (linux-gfx90a, MI250X, ROCm 7.2.1) -- fork 7d743ae REVALIDATED, wave32 fix clean on wave64
 
 Device: AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1 HIP clang 22.0.0.
