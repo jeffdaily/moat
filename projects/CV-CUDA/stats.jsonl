@@ -41,3 +41,8 @@
 {"kind":"phase","ts":"2026-05-31T18:48:49Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ./bin/cvcuda_test_system 2>&1"}
 {"kind":"phase","ts":"2026-05-31T18:50:35Z","phase":"test","seconds":99.585,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system 2>&1"}
 {"kind":"phase","ts":"2026-05-31T18:57:46Z","phase":"test","seconds":1.235,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system 2>&1"}
+{"kind":"phase","ts":"2026-05-31T18:34:09Z","phase":"test","seconds":140.514,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system"}
+{"kind":"phase","ts":"2026-05-31T18:39:04Z","phase":"test","seconds":141.637,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/cvcuda_test_system"}
+{"kind":"phase","ts":"2026-05-31T18:39:11Z","phase":"test","seconds":1.383,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system"}
+{"kind":"phase","ts":"2026-05-31T18:39:22Z","phase":"test","seconds":1.321,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system"}
+{"kind":"phase","ts":"2026-05-31T18:39:34Z","phase":"test","seconds":1.336,"exit":1,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/CV-CUDA/src/build-hip/bin/nvcv_test_cudatools_system"}

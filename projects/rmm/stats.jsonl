@@ -6,3 +6,5 @@
 {"kind":"phase","ts":"2026-05-30T22:06:57Z","phase":"test","seconds":69.534,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/rmm/build-gfx1100 --output-on-failure"}
 {"kind":"phase","ts":"2026-05-31T07:07:09Z","phase":"compile","seconds":13.953,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/rmm/build-gfx1100 -j64"}
 {"kind":"phase","ts":"2026-05-31T07:08:39Z","phase":"test","seconds":66.926,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ctest --test-dir /var/lib/jenkins/moat/projects/rmm/build-gfx1100 --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-05-31T06:48:48Z","phase":"compile","seconds":14.710,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/rmm_build -j16"}
+{"kind":"phase","ts":"2026-05-31T06:51:51Z","phase":"test","seconds":158.957,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 ctest --test-dir /var/lib/jenkins/moat/agent_space/rmm_build --output-on-failure -j1 2>&1"}

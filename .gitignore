@@ -22,3 +22,6 @@ __pycache__/
 *.pyo
 _deps/
 projects/rmcl/rmagine_src/
+
+# clang/hip offload-bundle per-TU intermediates (never source)
+*.o.0.*

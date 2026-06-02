@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-01T19:06:19Z","phase":"compile","seconds":814.476,"exit":0,"cmd":"cmake --build projects/cudf/build-hip -j16"}
 {"kind":"phase","ts":"2026-06-01T19:19:52Z","phase":"test","seconds":0.005,"exit":127,"cmd":"/var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST"}
 {"kind":"phase","ts":"2026-06-01T19:20:21Z","phase":"test","seconds":11.042,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST"}
+{"kind":"phase","ts":"2026-05-31T23:52:21Z","phase":"test","seconds":9.966,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST --gtest_output=json:/tmp/cudf_run1.json 2>&1"}

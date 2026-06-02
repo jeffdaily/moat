@@ -18,3 +18,5 @@
 {"kind":"phase","ts":"2026-06-01T00:49:22Z","phase":"compile","seconds":161.746,"exit":0,"cmd":"cmake --build projects/faiss/src/build --target faiss_test -j 16"}
 {"kind":"phase","ts":"2026-06-01T00:56:59Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./tests/faiss_test"}
 {"kind":"phase","ts":"2026-06-01T01:07:54Z","phase":"test","seconds":31.228,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/faiss/src/build/tests/faiss_test"}
+{"kind":"phase","ts":"2026-06-01T01:29:10Z","phase":"test","seconds":7.312,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 OPENBLAS_NUM_THREADS=1 /var/lib/jenkins/moat/projects/faiss/src/build/faiss/gpu/test/TestGpuSelect"}
+{"kind":"phase","ts":"2026-06-01T01:36:16Z","phase":"test","seconds":408.109,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 OPENBLAS_NUM_THREADS=1 ctest --test-dir /var/lib/jenkins/moat/projects/faiss/src/build -j1 -R TestGpu|TestCodePacking --output-on-failure"}
