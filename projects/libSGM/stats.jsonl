@@ -8,3 +8,8 @@
 {"kind":"phase","ts":"2026-06-02T00:56:29Z","phase":"compile","seconds":12.211,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j128"}
 {"kind":"phase","ts":"2026-06-02T00:57:21Z","phase":"test","seconds":20.421,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
 {"kind":"phase","ts":"2026-06-02T00:57:52Z","phase":"test","seconds":20.348,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T03:34:41Z","phase":"compile","seconds":3.786,"exit":0,"cmd":"bash -c cmake -S /var/lib/jenkins/moat/projects/libSGM/src -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=\"gfx90a;gfx1100\" -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -20"}
+{"kind":"phase","ts":"2026-06-02T03:34:57Z","phase":"compile","seconds":11.084,"exit":0,"cmd":"bash -c cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-02T03:35:54Z","phase":"compile","seconds":11.726,"exit":0,"cmd":"bash -c cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j$(nproc) 2>&1 | tail -25"}
+{"kind":"phase","ts":"2026-06-02T03:41:06Z","phase":"compile","seconds":12.903,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build -j8"}
+{"kind":"phase","ts":"2026-06-02T03:41:43Z","phase":"test","seconds":21.522,"exit":0,"cmd":"bash -c AMD_LOG_LEVEL=3 /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build/test/sgm-test 2>&1 | tee /var/lib/jenkins/moat/agent_space/libSGM-multiarch-run1.log | tail -20"}

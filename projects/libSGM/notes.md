@@ -212,3 +212,45 @@ Deterministic.
 
 Result: 67/67 PASS, deterministic. No source change needed (follower validate-first, no
 delta-port). Transition: port-ready -> completed, validated_sha=9ce43fd0a475ea0a13961c540cf867b23df48ff6.
+
+## Revalidation (multi-arch) 2026-06-02 (validator, linux-gfx90a, fork 4ffe4e9)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1 (GCD1).
+
+This revalidation gates the multi-arch warp-size fix (fork 4ffe4e9f5eeb467bd62fed3e1db550be7fd88202):
+host launch geometry now comes from a runtime hipDeviceGetAttribute query (device_warp_size() in
+host_utility.h) instead of the compile-time CMake-derived SGM_HOST_WARP_SIZE constant.
+
+Two-arch configure and build:
+```
+cmake -S /var/lib/jenkins/moat/projects/libSGM/src \
+      -B /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build -j8
+```
+Build: PASS (warnings only -- nodiscard on hipStream* macros, pre-existing upstream pattern).
+
+Code objects confirmed (roc-obj-ls on sgm-test): 7 bundles, each containing BOTH
+hipv4-amdgcn-amd-amdhsa--gfx90a and hipv4-amdgcn-amd-amdhsa--gfx1100 code objects.
+
+Native gfx90a dispatch confirmed (AMD_LOG_LEVEL=3): all 7 kernel fat-binary loads show
+"Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" -- no JIT, no fallback.
+
+Runtime warpSize=64 confirmed: AMD_LOG_LEVEL=3 shows hipDeviceGetAttribute(attr=87, dev=0)
+called twice (cost_aggregation and winner_takes_all launchers), returning hipSuccess.
+Direct probe: hipDeviceGetAttribute(hipDeviceAttributeWarpSize=87, dev=0) -> 64 on this GCD.
+
+Test (run twice for determinism):
+```
+HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build/test/sgm-test
+```
+Run 1: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Multi-arch fix verdict: PASS. Both code objects emitted, gfx90a native code object loads, host
+path resolves warpSize=64 at runtime (not a baked constant), 67/67 bit-exact deterministic.
+Transition: revalidate -> completed, validated_sha=4ffe4e9f5eeb467bd62fed3e1db550be7fd88202.
+linux-gfx1100 left at revalidate for the RDNA3 follower host.
