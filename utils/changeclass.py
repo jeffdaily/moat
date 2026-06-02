@@ -39,6 +39,11 @@ from dataclasses import dataclass, field
 DOC_SUFFIXES = (".md", ".rst")
 DOC_NAMES = ("LICENSE", "NOTICE", "COPYING", "AUTHORS", "CHANGELOG")
 
+# VCS/repo-meta files: never a build input, so a change to them cannot alter any
+# compiled output on any target. Treated as inert like documentation.
+REPO_META_NAMES = (".gitignore", ".gitattributes", ".dockerignore",
+                   ".editorconfig", ".mailmap", ".gitmodules")
+
 C_FAMILY = (".c", ".cc", ".cpp", ".cxx", ".cu", ".cuh", ".h", ".hpp", ".hxx",
             ".hip", ".inl", ".inc")
 CMAKE = ("cmakelists.txt",)  # by basename; plus .cmake by suffix
@@ -100,6 +105,8 @@ def _is_doc(path: str) -> bool:
     if low.endswith(DOC_SUFFIXES):
         return True
     if path.startswith("docs/") or path.startswith("doc/") or "/docs/" in path:
+        return True
+    if base in REPO_META_NAMES:
         return True
     return any(base.startswith(n) for n in DOC_NAMES)
 
