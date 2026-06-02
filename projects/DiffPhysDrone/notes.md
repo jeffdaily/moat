@@ -111,3 +111,50 @@ print('SECONDARY PASS')
 PASS: render (8,24,32), find_nearest_pt (10,8,3), rerender_backward (4,3,24,32) -- all finite on gfx90a.
 
 Verdict: **completed** (linux-gfx90a). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. No GPU fault. No non-GPU regression (no CPU-only path exists).
+
+## Validation 2026-06-02 (gfx1100)
+
+Platform: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), ROCm 7.2.1, torch 2.13, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/DiffPhysDrone @ moat-port, validated_sha=2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d. Zero-churn follower (no code change from gfx90a branch).
+
+### Build
+```
+cd /var/lib/jenkins/moat/projects/DiffPhysDrone/src/src
+rm -rf build *.egg-info *.hip *.so
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e . --no-build-isolation
+# result: Successfully installed quadsim_cuda-0.0.0  (compile time: ~37s)
+```
+Compile: PASS. Extension .so loads cleanly.
+
+### Architecture proof (roc-obj-ls)
+```
+roc-obj-ls quadsim_cuda.cpython-312-x86_64-linux-gnu.so
+# hipv4-amdgcn-amd-amdhsa--gfx1100  (two bundles, one per .cu source)
+# No gfx90a bundle present.
+```
+AMD_LOG_LEVEL=3 dispatch excerpt:
+```
+Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100
+hipLaunchKernel: Returned hipSuccess
+```
+Native gfx1100 code object confirmed. No fallback.
+
+### Primary gate: test.py (fixed seed, run x2)
+```
+# Run 1 (seed=42)
+python3 -c "import os,sys; os.chdir('...src/src'); sys.path.insert(0,'.'); import torch; torch.manual_seed(42); import runpy; runpy.run_path('test.py', run_name='__main__')"
+# Run 2 (seed=123) -- same invocation with torch.manual_seed(123)
+```
+Both runs: PASS. All 4 forward outputs (act_next, p_next, v_next, a_next) and all 5 gradients (d_act_pred, d_act, d_p, d_v, d_a) pass torch.allclose vs reference. Deterministic across both seeds. No v_next flap observed (fixed seed eliminates the near-zero float-ctl_dt artifact documented in the gotcha section). No HSA fault, no NaN.
+
+### Secondary: env_cuda.py drive (5 steps + render + find_nearest_pt + rerender_backward)
+```
+canvas shape: (8, 24, 32), vec shape: (10, 8, 3), dddp shape: (4, 3, 24, 32)
+SECONDARY PASS
+```
+All finite on gfx1100 (render, find_nearest_pt, rerender_backward).
+
+### Wave32 / wave-width verdict
+No wave-width-sensitive constructs in source (confirmed by reviewer). All 6 kernels are one-thread-per-output with no shuffle/ballot/shared-mem. Results are identical to gfx90a (wave64). Zero delta needed.
+
+Verdict: **completed** (linux-gfx1100). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. Secondary kernels: 3/3 finite. No GPU fault. Zero-churn follower: no code change from gfx90a.
