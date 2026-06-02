@@ -48,3 +48,20 @@ The ML-KEM kernels run 128-thread blocks organized as four logical 32-thread war
 - `.gitignore` ignores `icicle/backend/*` except cpu/cuda_pqc; added `!icicle/backend/hip_pqc` so the new backend is tracked.
 - `test_pqc_api.cpp` was hard-coded to "CUDA-PQC"; changed to `IcicleTestBase::main_device()` so it runs on the registered GPU backend on both NVIDIA and ROCm.
 - error_translation.h: HIP lacks distinct `hipErrorInvalidHostPointer` / a `SyncDepthExceeded` analog; the hip copy maps hipError_t -> eIcicleError directly (do not `#define` cuda error enums to colliding hip values -> duplicate case labels).
+
+## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port d66e92a)
+
+Verdict: review-passed. Additive sibling HIP-PQC backend; reviewed `git diff 625532a...HEAD` in full plus the cuda_to_hip shim, all wave64-touched kernels, the two race fixes (against the untouched cuda_pqc originals), registration, CMake wiring, and commit hygiene. No changes requested. The GPU gate (58/58 KAT-exact backend gtests + 6/6 frontend dispatch) is recorded above as porter-run on real gfx90a; the validator re-runs it next.
+
+No defects found. Fault-class analysis verified correct:
+- Wave64 subgroup mapping (cuda_to_hip.h): per-32-lane ballot extracted from the 64-bit `__ballot` (shift by `32 * ((tid & (warpSize-1)) >> 5)`), width-32 `__shfl`/`__shfl_xor`, and a width-32 butterfly that replaces HIP `__reduce_add_sync` (which would fold lanes 28..63 into MASK28). Confinement is by hardware lane group, not mask width. Sound; the two logical warps in a wavefront index distinct shared slots (`threadIdx.x/32`) so they stay independent.
+- SHAKE coeff counter (cuda_sample_utils.cuh load_coeffs_shake): lanes 28-31 now compute `active=false`, contribute `valid_count=0` to the butterfly, participate in the reduction, then `if(!active) return;` after. Equivalent to the masked 28-lane CUDA reduce. Correct.
+- Both races are genuine and pre-existing latently in cuda_pqc (confirmed byte-diff: cuda_pqc encaps has no `__syncthreads` between warp-0 `generate_k_r` and all-warp `pke::encrypt` read of `r=k_r+32`; cuda_pqc `generate_k_r` has no `__syncwarp` between `H` write and `G` read of shared `hashed_ek`). Fixes are wave-agnostic (`__syncthreads`, `__syncwarp`) and correct on NVIDIA too. Port (correctly per its additive strategy) leaves cuda_pqc untouched; the upstream PR ships only HIP-PQC.
+- keccakf (cuda_sha3_32threads.cuh) is byte-identical to cuda_pqc; relies on intra-32-lane lockstep, valid within a wavefront on both wave widths; `sha3_state_raw` sized for 4 logical warps (max), fits wave64 and wave32.
+- Registration: named `register_hip_pqc_ml_kem_backends()` avoids the three-anonymous-lambda mangling collision; device API uses single `REGISTER_DEVICE_API("HIP-PQC")` in a separate TU. Shared backend consumed via runtime dlopen (RTLD_LOCAL), not NEEDED-linked, so no double-registration; static build whole-archives. Sound.
+- Shims `__ldcs`/`__stcs`/`__ldlu` -> `__builtin_nontemporal_load/store`; `cuda::barrier`->`__syncthreads`; `Zq() = default` for `__shared__` arrays. `__funnelshift_l`/`__signbit`/`ROTL1` are HIP builtins, KAT-validated.
+
+Hygiene: cuda_pqc and cpu trees untouched (verified empty diff). `[ROCm]` title 46 chars, mentions Claude, Test Plan present, no noreply trailer, no ghstack, no em-dash, no AMD-internal account refs. Fork main is a clean mirror at base 625532a; moat-port single curated commit at d66e92a. Actions disabled on jeffdaily/icicle (`enabled:false`). Closed MSM/NTT/ECNTT/EC out-of-scope documented in commit, README, plan, notes.
+
+Observational only (no action required):
+- icicle/cmake/backend_include.cmake:37 sets `BACKEND_BUILD_DIR` for HIP-PQC for the frontend test loader, matching how the existing CUDA_BACKEND/METAL/VULKAN blocks set it (last-wins). A combined CUDA_PQC_BACKEND+HIP_PQC_BACKEND build would have the HIP value win, but that combo is not a MOAT target and the last-wins pattern is pre-existing upstream; the validated HIP-only build is correct.
