@@ -1641,3 +1641,98 @@ gfx90a run: all required tests PASS, deterministic x2.
 Runtime warpSize query: confirmed (hipDeviceGetAttribute; RAFT_HOST_WARP_SIZE absent).
 
 validated_sha: ce0fa68c. State transition: revalidate -> completed (linux-gfx90a).
+
+## Validation 2026-06-02 (gfx1100) -- revalidate at ce0fa68c (select_warpsort multi-arch fix)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32). ROCm 7.2.1. HIP_VISIBLE_DEVICES=0. This session revalidates gfx1100 at ce0fa68c (multi-arch host warp-size runtime query). Verdict: VALIDATION-FAILED. A genuine wave32 regression in LINALG_TEST (MatVecOpTests group, SIGABRT) caused by ce0fa68c leaving `WarpSize=64` in the host `#else` arm while `matrix/detail/linewise_op.cuh` uses this as a compile-time template argument for `MaxOffset`, causing a symbol mismatch.
+
+### What changed in ce0fa68c (70773a9..ce0fa68c, 6 files)
+
+The multi-arch host warp-size fix replaces the static `RAFT_HOST_WARP_SIZE` compile-time constant with a runtime query (`host_warp_size()` via `hipDeviceGetAttribute(hipDeviceAttributeWarpSize)`, cached per device). Specific changes:
+
+- `util/cuda_dev_essentials.cuh` (+38): host `#else` arm removes `RAFT_HOST_WARP_SIZE`-based `WarpSize` constant. Adds `inline int host_warp_size()`. The host `#else` arm now has `static const int WarpSize = 64` as a kept "name" (comment: "Kept as a name for host code paths that still reference it where the value is arch-agnostic"). Device passes (GFX9 = 64, else = 32) unchanged.
+- `util/cudart_utils.hpp` (+10): host-pass `warp_size()` now returns `host_warp_size()` (non-constexpr). Device passes unchanged.
+- `matrix/detail/select_warpsort.cuh` (+36): all 8 host-side launch-geometry uses of `WarpSize` (`calc_launch_parameter`, `calc_smem`, `select_k_`, `select_k`) replaced with `raft::warp_size()` runtime calls. `Pow2<WarpSize>::roundDown/roundUp` replaced with runtime lambdas.
+- `neighbors/detail/knn_brute_force.cuh` (+2): `raft::WarpSize <= 32` -> `raft::warp_size() <= 32` for the fused-L2 kNN dispatch.
+- `util/hip/cuda_to_hip.h` (+3): `cudaDevAttrWarpSize -> hipDeviceAttributeWarpSize`.
+- `cmake/hip/raft_hip.cmake` (+25 net): removed the `RAFT_HOST_WARP_SIZE` foreach-arch derivation and the `RAFT_HOST_WARP_SIZE` compile definition.
+
+### Build
+
+Reconfigured with ce0fa68c source and `-DCMAKE_HIP_ARCHITECTURES=gfx1100` (MATRIX_SELECT=OFF, BALL_COVER=OFF, same as prior gfx1100 validation). Verified `RAFT_HOST_WARP_SIZE` absent from build.ninja.
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/raft/src/cpp -B projects/raft/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON -DRAFT_TEST_DISTANCE=ON -DRAFT_TEST_FUSED_NN=ON \
+  -DRAFT_TEST_NEIGHBORS=ON -DRAFT_TEST_BALL_COVER=OFF -DRAFT_TEST_MATRIX_SELECT=OFF \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/raft/install-gfx1100
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build-gfx1100 -j16
+# Build time: 53.1s (incremental). Exit=0. Clean build.
+```
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading projects/raft/build-gfx1100/gtests/DISTANCE_TEST
+# -> hipv4-amdgcn-amd-amdhsa--gfx1100 only; no gfx90a
+llvm-objdump --offloading projects/raft/build-gfx1100/gtests/HAVERSINE_TEST
+# -> hipv4-amdgcn-amd-amdhsa--gfx1100 only
+```
+
+### GPU test results
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build-gfx1100:projects/rmm/install-gfx1100/lib:/opt/rocm/lib"
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/HAVERSINE_TEST  # x2
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh raft test -- projects/raft/build-gfx1100/gtests/LINALG_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/LABEL_TEST
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/RANDOM_TEST --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/CORE_TEST --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+HIP_VISIBLE_DEVICES=0 projects/raft/build-gfx1100/gtests/UTILS_TEST --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+```
+
+| Test | gfx1100 result | gfx90a bar | Notes |
+|------|----------------|------------|-------|
+| DISTANCE_TEST | 11/11 PASS (2.1s) | 11/11 | All shapes SIMT fallback (CK gate false for gfx11). No regression. |
+| FUSED_NN_TEST | 12/12 PASS (2.1s) | 12/12 | All shapes SIMT fallback. No regression. |
+| HAVERSINE_TEST | 1/1 PASS (x2, DETERMINISTIC) | 1/1 | wave32 top-k gate: faiss warp-select correct on gfx1100. No SIGABRT, no HSA 0x1016. |
+| LINALG_TEST | SIGABRT (exit 134) | 2017/2018 | **REGRESSION vs 70773a9 (was 2017/2018 PASS).** MatVecOpTestF_i32_add1vec.Result/4 crashes: `Cannot find Symbol matrixLinewiseVecRowsTailKernelIfiLm64E...` -- see root cause below. |
+| LABEL_TEST | 14/14 PASS | 14/14 | No regression. |
+| RANDOM subset | 148/148 PASS | 148/148 | No regression. |
+| CORE subset | 171/172 PASS | 171/172 | Same 1 pre-existing Raft.InterruptibleOpenMP fail. |
+| UTILS subset | 177/177 PASS | 177/177 | No regression. |
+| MATRIX_SELECT_TEST | BUILD FAIL | 607 (567+40 skip) | Same pre-existing rocPRIM 4.2.0 DPP bug. Unchanged. |
+| BALL_COVER_TEST | BUILD FAIL | 75/75 (gfx90a) | Same pre-existing rocPRIM 4.2.0 DPP bug. Unchanged. |
+
+### Wave32 verdict on select_warpsort (HAVERSINE confirms correct)
+
+The select_warpsort runtime-query change (`raft::warp_size()` returns 32 on gfx1100) is CORRECT on wave32. HAVERSINE_TEST exercises the faiss warp-select top-k path; 1/1 PASS twice, deterministic. No HSA 0x1016, no wrong neighbors. The bitonic merge on wave32 uses 5 stages (strides 1,2,4,8,16); the stride-32 extra stage (`if constexpr WarpSize == 64`) does not execute. The runtime `host_warp_size()` returns 32 on the W7800, matching the device.
+
+### REGRESSION root cause: linewise_op.cuh MaxOffset uses compile-time WarpSize
+
+`matrix/detail/linewise_op.cuh` (not touched by ce0fa68c) computes:
+```cpp
+constexpr std::size_t MaxOffset = std::max(std::size_t(raft::WarpSize), VecBytes);
+// called at host-side call site in matrixLinewiseVecRows / matrixLinewiseVecCols
+```
+This uses the compile-time `raft::WarpSize` in the HOST pass to derive the template arg `MaxOffset`. In ce0fa68c, the host `#else` arm keeps `static const int WarpSize = 64` (left as a "name for arch-agnostic host paths"). At gfx1100 this gives `MaxOffset = max(64, 4) = 64`.
+
+The device kernel template `matrixLinewiseVecRowsTailKernel<float,int,64,...>` (symbol `...Lm64E`) is compiled into the gfx1100 code object with `__launch_bounds__(64, 2)` and `blockDim.x = MaxOffset = 64`. BUT the gfx1100 device pass sees `raft::WarpSize = 32`, so the device-side `MaxOffset` in the kernel body is also 32 -- meaning the device would compile a `...Lm32E` kernel. However, the HOST requested `...Lm64E` (because host `WarpSize = 64`). The gfx1100 code object contains ONLY `...Lm32E` (matching the device-pass `WarpSize=32`). The host launch of `...Lm64E` triggers `Cannot find Symbol`. SIGABRT.
+
+At 70773a9 with `RAFT_HOST_WARP_SIZE=32` for gfx1100, the host also had `WarpSize=32`, giving `MaxOffset=32`, and the host launched `...Lm32E` which matched the device code object. This was the working state.
+
+The fix in ce0fa68c only converted `select_warpsort.cuh`'s direct uses of `WarpSize` to `warp_size()` calls. It did NOT update `linewise_op.cuh` (or any other header that uses `raft::WarpSize` as a compile-time template arg in the host pass). Leaving the host-pass constant at 64 breaks single-arch gfx1100 builds where the device compiles WarpSize=32 kernels.
+
+**FIX REQUIRED (porter):** The host `#else` arm of `WarpSize` in `cuda_dev_essentials.cuh` must NOT be 64 for a single-arch gfx1100 build; it should be the arch-appropriate value OR all call sites using `raft::WarpSize` as a compile-time template arg must be audited and fixed. The select_warpsort change correctly routes through `host_warp_size()`; `linewise_op.cuh` (and possibly others) still use the host `WarpSize` constant as a template arg. One correct approach: keep the per-arch `RAFT_HOST_WARP_SIZE` for the compile-time template-arg sites (where a `constexpr` is required) while routing the launch-geometry sites through `host_warp_size()`. Another approach: make `WarpSize` in the host `#else` arm derive from `CMAKE_HIP_ARCHITECTURES` as before (the old behavior) for single-arch builds, and only use `host_warp_size()` for launch-geometry sites in multi-arch builds.
+
+State transition: revalidate -> validation-failed. Escalated to porter.
+MATRIX_SELECT_TEST: still BUILD FAIL (pre-existing rocPRIM 4.2.0 DPP bug, unchanged; NOT the cause of this failure).
+HAVERSINE_TEST wave32: PASS (the select_warpsort runtime-query change is correct on wave32).
+The regression is specifically in LINALG_TEST / `linewise_op.cuh` template instantiation mismatch.

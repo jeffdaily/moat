@@ -17,7 +17,7 @@
       "validated_sha": "ce0fa68c",
       "started_at": "2026-05-30T20:28:33Z",
       "completed_at": "2026-06-02T04:59:08Z",
-      "updated_at": "2026-06-02T05:00:00Z",
+      "updated_at": "2026-06-02T05:30:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "validation-failed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "70773a97f43ab6a861722b181c4524ab800c1126",
       "started_at": "2026-05-31T08:00:00Z",
-      "completed_at": "2026-06-01T01:42:00Z",
-      "updated_at": "2026-06-02T03:59:53Z",
+      "completed_at": null,
+      "updated_at": "2026-06-02T05:30:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
