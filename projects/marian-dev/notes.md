@@ -204,3 +204,14 @@ ShaderName : void marian::gMaxElementUpdate<float>(...)
 ```
 
 ### Verdict: PASS -- linux-gfx90a completed at validated_sha 25f910c
+
+## Status fix 2026-06-02: windows-gfx1151 invalid state
+
+windows-gfx1151 was set to `blocked-needs-gfx1100`, which is not a valid
+MOAT state. validate_status() rejected the file, so next_task() silently
+caught the ValueError and skipped the whole project -- starving the gfx1100
+port-ready follower (it could never be selected). gfx90a is completed, so
+the correct follower state is `port-ready` (windowsgfx1151 gates on the
+gfx90a lead like every follower, not on gfx1100). Set windows-gfx1151 ->
+port-ready. (All 83 other projects use valid windows states; this was a
+one-off typo from the marian-dev port.)

@@ -7,7 +7,7 @@
   "priority": 3.968,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-02T02:05:00Z",
+  "updated_at": "2026-06-02T05:33:10Z",
   "head_sha": "25f910ceefedbb907300fca1d275762fb046472b",
   "platforms": {
     "linux-gfx90a": {
@@ -56,7 +56,7 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx1100",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
