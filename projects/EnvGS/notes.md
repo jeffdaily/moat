@@ -152,7 +152,7 @@ validation-failed -> porting (the Stage-2 OptiX gap was the known deferral).
 diff-surfel-tracing forked to jeffdaily/diff-surfel-tracing; Actions disabled.
 See "## Stage 2 port: OptiX -> HIPRT" below (appended as the work lands).
 
-## Stage 2 port: OptiX -> HIPRT (2026-06-02, RESUMED then BLOCKED)
+## Stage 2 port: OptiX -> HIPRT (2026-06-02, RESOLVED -- ported)
 
 RESUME decision: a prior Stage-2 porter (process restart) left comprehensive,
 well-engineered UNCOMMITTED work in submodules/diff-surfel-tracing -- a complete
@@ -206,32 +206,38 @@ VALIDATED: forward tracer is correct on gfx90a -- non-trivial image (hit_frac
 ~0.17, min 0/max 0.76), correct depths (~3.2), genuine hits+misses, no illegal
 access; the LINEAR backward gradient (colors) is finite + nonzero + FD-consistent.
 
-BLOCKER (linux-gfx90a -> blocked): the differentiable GEOMETRIC backward
-(d means3D / scales / rotations / opacities) produces a DETERMINISTIC, LOAD-
-CORRELATED NaN. Diagnosis: it NaNs on the MOST heavily-hit (front-facing) disks
-and is FINITE on the grazing/few-hit disks -- the opposite of a grazing-angle
-1/q degeneracy, so it is not a near-zero-denominator algorithm issue. It is a
-ROCm 7.2.x hiprtc/comgr codegen miscompile of the register-heavy backward
-traversal kernel: instrumentation-sensitive (adding a probe/printf flips the
-NaN to a finite, correct value -- e.g. an exfiltration probe showed dL_dalpha=0.5
-finite at the very point the unprobed run NaNs), optimization-level-invariant
-(NaN at JIT -O1/-O2; -O0 aborts), and distinct from the algorithm (forward
-correct; colors-gradient correct; the gradient math is byte-identical to the
-OptiX backward.cu). Attempts that did NOT resolve it: __noinline__ helpers,
-global mid_val/out_rgb reads, cutoff init, launch_bounds(64,8), JIT -O0/-O1/-O2.
-The remaining candidate fix (extract the entire ~140-line per-contributor
-gradient body into a __noinline__ function to shrink the traversal-loop frame) is
-high-risk for the validated forward path and not guaranteed against a heisenbug
-toolchain miscompile; stopping here rather than thrash (>3 substantive attempts).
+RESOLVED (2026-06-02, linux-gfx90a -> ported): the geometric-backward NaN was
+UNDEFINED BEHAVIOR, not a codegen miscompile. The prior "ROCm 7.2.x hiprtc/comgr
+codegen miscompile" diagnosis was WRONG. Root cause: two value-returning
+__device__ functions fall off the end without a return statement (UB):
+  - auxiliary.h quat_to_rotmat_transpose (declared float3) -- THE one on the
+    failing path; called by compute_transmat_uv, produces R whose row R[2] is the
+    surfel normal. The UB poisons normal -> NaNs dL_dalpha (the dL_dnorm*normal
+    term) -> every geometric gradient. Worst on heavily-hit disks (more
+    contributors = more poisoned terms). Inline, so a probe perturbs inlining and
+    masks it -> the "instrumentation-sensitive" heisenbug profile.
+  - kernels.h compute_transmat_xy_backward (declared bool) -- same class, only on
+    the start_from_first path (not the failing test), fixed for completeness.
+Both are latent UB in the upstream OptiX sources (nvcc tolerated it: the return
+value is never read). FIX: return void (every caller discards the result);
+unconditional (UB on CUDA too). The JIT (hiprtBuildTraceKernels) does not pass
+-w, but it also does not surface its own warnings -- compile the TU yourself with
+-Werror=return-type to see them (it flags exactly these two, no others).
 
-Resume path for the next porter: (a) reproduce on a newer ROCm (>7.2.x) hiprtc to
-see if the codegen bug is fixed upstream; (b) the __noinline__ per-contributor-body
-extraction; (c) compare against an actual OptiX run (needs NVIDIA HW) to confirm
-the NaN is purely codegen and not a latent reference NaN on front-facing disks;
-(d) try building HIPRT with -DBITCODE=ON (precompiled traversal, different codegen
-path) or a non-JIT offline-compiled backward kernel. Working tree + the two fork
-moat-port branches (b72226d tracing, f3b5031 super) hold all the work; the harness
-is agent_space/envgs_stage2/validate_stage2.py.
+VALIDATED on gfx90a (GCD 2, ROCm 7.2.1): validate_stage2.py PASS -- all grads
+finite, FD colors cosine 1.0000/slope 0.999, FD opacities cosine 0.934/slope
+1.016. validate_geom_fd.py: FD means3D cosine 0.996/slope 1.013, scales cosine
+0.995, rotations directional FD ratio 0.59 (per-component cosine is quaternion
+renormalization null-space noise, not a wrong gradient). Stable across repeated
+runs. Forks: diff-surfel-tracing @ moat-port 5991683, EnvGS @ moat-port 2890415.
+Full root-cause writeup: agent_space/envgs_stage2/heisenbug_writeup.md.
+
+Retained from the bring-up (genuine, kept): chunk buffer in global scratch;
+cutoff init on reflected bounces (a separate real uninitialized-var bug). The
+__noinline__/threadfence/launch_bounds/mid_val-from-global tweaks were applied
+while chasing the non-bug; they perturb inlining around the UB (which is why some
+seemed to almost help) but the actual fix is the void return. Left in place
+(harmless; the global-buffer/threadfence are defensible for the AnyHit payload).
 
 ## Stage 2 deferred (OptiX reflection path) -- HISTORICAL, superseded by the port above
 

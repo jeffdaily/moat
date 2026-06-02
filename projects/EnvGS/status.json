@@ -7,17 +7,17 @@
   "priority": 4.133,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-02T00:22:34Z",
-  "head_sha": "f3b5031c38fa7c0dc4f7534c0b4f3678d8922bd6",
+  "updated_at": "2026-06-02T00:43:57Z",
+  "head_sha": "2890415c449c12d3f7a3146d8d9b282ed140c41b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "Stage 2 OptiX->HIPRT reflection tracer: forward GPU-validated on gfx90a (correct ray-surfel hits, non-trivial image, finite depths) and the linear colors backward gradient is correct, but the differentiable GEOMETRIC backward (means/scales/rotations/opacity) produces a deterministic, load-correlated NaN on the most heavily-hit disks. Root cause is a ROCm 7.2.x hiprtc/comgr codegen miscompile of the register-heavy backward traversal kernel: instrumentation-sensitive (a probe flips the NaN to a finite correct value), optimization-level-invariant, math byte-identical to the OptiX reference. Exhausted contained fixes (noinline helpers, global mid_val reads, cutoff-uninit bugfix, launch_bounds, JIT -O levels). Work committed to jeffdaily/diff-surfel-tracing@moat-port b72226d and EnvGS@moat-port f3b5031; resume path + harness in notes.md.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": "135ab0ad76fdba89ae7f44b808b36300b19f7caf",
       "started_at": "2026-06-01T00:24:48Z",
       "completed_at": "2026-06-01T01:08:31Z",
-      "updated_at": "2026-06-02T00:22:34Z",
+      "updated_at": "2026-06-02T00:43:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
