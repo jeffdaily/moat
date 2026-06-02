@@ -43,7 +43,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | heavydb | [heavyai/heavydb](https://github.com/heavyai/heavydb) | - | todo (blocked) | gated | gated | - |
 | rmm | [rapidsai/rmm](https://github.com/rapidsai/rmm) | [rmm](https://github.com/jeffdaily/rmm/tree/moat-port) | done | done | done | - |
 | cuvs | [rapidsai/cuvs](https://github.com/rapidsai/cuvs) | [cuvs](https://github.com/jeffdaily/cuvs/tree/moat-port) | done | validating | validating | - |
-| GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | [GPUMD](https://github.com/jeffdaily/GPUMD/tree/moat-port) | done | done | done | - |
+| GPUMD | [brucefan1983/GPUMD](https://github.com/brucefan1983/GPUMD) | [GPUMD](https://github.com/jeffdaily/GPUMD/tree/moat-port) | done | done | done | [#1538](https://github.com/brucefan1983/GPUMD/pull/1538) |
 | cuCollections | [NVIDIA/cuCollections](https://github.com/NVIDIA/cuCollections) | [cuCollections](https://github.com/jeffdaily/cuCollections/tree/moat-port) | done | done | validating | - |
 | amgcl | [ddemidov/amgcl](https://github.com/ddemidov/amgcl) | [amgcl](https://github.com/jeffdaily/amgcl/tree/moat-port) | done | done | validating (blocked) | - |
 | CudaSift | [Celebrandil/CudaSift](https://github.com/Celebrandil/CudaSift) | [CudaSift](https://github.com/jeffdaily/CudaSift/tree/moat-port) | done | done | done | - |
