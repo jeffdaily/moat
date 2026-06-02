@@ -52,9 +52,21 @@ def load_projects():
         if not sp.exists():
             continue
         try:
-            out.append(json.loads(sp.read_text()))
+            rec = json.loads(sp.read_text())
         except json.JSONDecodeError:
             sys.stderr.write(f"gen_readme: skipping unparseable {sp}\n")
+            continue
+        # An open upstream PR lives in upstream.json (its presence implies the
+        # port is upstreamed; there is no separate pr-open state to track).
+        up = d / "upstream.json"
+        if up.exists():
+            try:
+                u = json.loads(up.read_text())
+                rec["pr_url"] = u.get("pr_url")
+                rec["pr_number"] = u.get("pr_number")
+            except json.JSONDecodeError:
+                pass
+        out.append(rec)
     return out
 
 
@@ -73,8 +85,8 @@ def render_table(projects):
     if not projects:
         return EMPTY
     projects = sorted(projects, key=lambda p: (-float(p.get("priority", 0)), p.get("name", "")))
-    lines = ["| Project | Upstream | Fork | gfx90a | gfx1100 | gfx1151 |",
-             "| --- | --- | --- | --- | --- | --- |"]
+    lines = ["| Project | Upstream | Fork | gfx90a | gfx1100 | gfx1151 | Upstream PR |",
+             "| --- | --- | --- | --- | --- | --- | --- |"]
     for p in projects:
         name = p.get("name", "?")
         up = owner_repo(p.get("upstream_url"))
@@ -82,7 +94,8 @@ def render_table(projects):
         fork = f"[{name}]({p['fork_url']}/tree/{moatlib.PORT_BRANCH})" if p.get("fork_url") else "-"
         plats = p.get("platforms", {})
         cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
-        lines.append(f"| {name} | {upstream} | {fork} | {cells[0]} | {cells[1]} | {cells[2]} |")
+        pr = f"[#{p['pr_number']}]({p['pr_url']})" if p.get("pr_url") else "-"
+        lines.append(f"| {name} | {upstream} | {fork} | {cells[0]} | {cells[1]} | {cells[2]} | {pr} |")
     return "\n".join(lines)
 
 
