@@ -90,3 +90,54 @@ hipBLASLt native dispatch confirmed (AMD_LOG_LEVEL=3):
 Deferred: torch extension (Strategy B) -- see "Torch extension" section above.
 
 Verdict: COMPLETED. linux-gfx90a validated_sha=29a9acf.
+
+## Validation 2026-06-02 (validator, linux-gfx1100, moat-port @ 29a9acf)
+
+Platform: AMD Radeon Pro W7800 48GB (x2), ROCm 7.2.1 (HIP_VISIBLE_DEVICES=0), wave32.
+GPU arch: gfx1100 (amdgcn-amd-amdhsa--gfx1100).
+Compiler: clang++ 22.0.0 (/opt/rocm/llvm/bin/clang++).
+Fork: clone of jeffdaily/mHC.cu moat-port @ 29a9acf; fork clean (git status: nothing to commit).
+
+Build command:
+```
+cmake -B build -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build build -j$(nproc)
+```
+
+Build result: rc=0, no errors. All 8 test_*.cu link clean (same multi-arch fat binary as gfx90a build, reconfirmed on this host).
+
+Multi-arch code object check (roc-obj-ls on test_rmsnorm):
+- hipv4-amdgcn-amd-amdhsa--gfx1100 (offset=8192, size=364200)
+- hipv4-amdgcn-amd-amdhsa--gfx90a  (offset=372736, size=395464)
+Both code objects present.
+
+s_memrealtime check: llvm-objdump over test_rmsnorm and test_fused_rmsnorm_matmul: 0 occurrences. RDNA trap absent; __builtin_readcyclecounter() compiles cleanly on gfx1100.
+
+Test run (8 tests, gfx1100 HIP_VISIBLE_DEVICES=0, run x2 for determinism):
+- test_rmsnorm:                    max diff 1.22e-05, PASS (tol 1e-2) -- matches gfx90a
+- test_rmsnorm_backward:           d_inp 1.45e-02, d_weight 9.54e-07, PASS (tol 2e-2) -- matches gfx90a
+- test_sinkhorn_knopp:             row err 2.4e-7, col err 4.8e-7, max diff 0, PASS; doubly-stochastic holds -- matches gfx90a
+- test_mhc_layer:                  static 1.19e-06, dynamic 7.15e-07, PASS (tol 1e-1) -- matches gfx90a
+- test_stream_ops:                 aggregate 1.19e-07, distribute 2.38e-07, PASS -- matches gfx90a
+- test_stream_ops_backward:        all 6 gradients PASS -- matches gfx90a
+- test_fused_rmsnorm_matmul:       fwd 5.65e-02, rms 2.65e-04, PASS (tol 6e-2 / 1e-3) -- matches gfx90a
+- test_fused_rmsnorm_matmul_backward: dW 2.06e-02, dx 3.05e-02, PASS (tol 5e-2 / 6e-2) -- matches gfx90a
+
+Result: 8 PASS, 0 FAIL (both runs identical -- deterministic).
+
+hipBLASLt native dispatch confirmed (AMD_LOG_LEVEL=3):
+- hipModuleLoad: /opt/rocm/lib/hipblaslt/library/Kernels.so-000-gfx1100.hsaco
+- hipModuleLoad: TensileLibrary_BB_SB_HA_Bias_Type_BS_HPA_Contraction_l_Alik_Bljk_Cijk_Dijk_gfx1100.co
+- "Using native code object for device: amdgcn-amd-amdhsa--gfx1100" (not a fallback)
+- Zero HSA 0x1016 errors.
+
+Wave32 verdict:
+- cg::reduce/cg::plus shim (tile.size() shfl_xor butterfly): correct at tile size 32 (native wave32). All reductions (rmsnorm, sinkhorn, mhc_layer, stream_ops) pass vs CPU fp32 references.
+- Logical-32 subgroups: all /32, %32, tiled_partition<32> are logical-subgroup partitioning, not physical-warp assumptions. Correct on wave32.
+- s_warp_sums[8] reduce-partials: kernels launch at 128 threads, __launch_bounds__(256) -> max 8 logical subgroups -- no overflow on wave32.
+- hipBLASLt row->col swap shim: operand + TRANSA/TRANSB swap applied identically in matmul and heuristic, producing correct row-major C on gfx1100 with native Tensile dispatch.
+- No source changes required; follower delta is nil (as expected per notes "Follower delta" section).
+
+Verdict: COMPLETED. linux-gfx1100 validated_sha=29a9acf.
