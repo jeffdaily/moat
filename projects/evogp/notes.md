@@ -78,3 +78,15 @@ per-op probe to run, the test's roulette tensor needs padding to 29.
 ## Actions disabled on fork
 `gh api -X PUT repos/jeffdaily/evogp/actions/permissions -F enabled=false` run
 after fork.
+
+## Review 2026-06-02 (linux-gfx90a, reviewer)
+Reviewed moat-port @ ba4fa7e vs base ee11f1e via /pr-review. Verdict: review-passed (no problems found). Re-ran the GPU gate on real gfx90a (GCD 0).
+
+Verified on hardware:
+- Clean rebuild from committed source (rm -rf build src/evogp/hip; pip install -e . --no-build-isolation) succeeds; hipify mirror src/evogp/hip/*.hip generated (Strategy B active); torch HIP build defines -DUSE_ROCM=1 so the #ifndef USE_ROCM guard correctly drops device_launch_parameters.h.
+- sr_test: 100 generations, two fixed-seed runs both converge gen0 best -0.2511 -> gen99 best -0.0179 (identical final), finite throughout, exit 0, no HIP fault / no assert(top==1).
+- alloca fully converted at all 6 sites (forward.cu x4, generate.cu x2 arrays, mutation.cu x3); fixed-array sizes byte-match the original alloca bounds (float[MAX_STACK], int16_t[2*MAX_STACK], GPNode[MAX_STACK], NchildDepth[MAX_STACK]); arrays decay to the same pointers at eval call sites; assert(top==1) canary did not fire at pop 1000 / 1024-thread blocks. Arch-unified: zero warp intrinsics, zero hardcoded 32, fitness reduction fully __syncthreads()-guarded (warp-tail commented out at forward.cu:464,639).
+- hipified output confirms __constant__ preserved, cudaMemcpyToSymbolAsync->hipMemcpyToSymbolAsync (hipMemcpyDeviceToDevice), float atomicAdd preserved (HIP-correct on gfx90a), thrust::random resolved against rocThrust.
+- setup.py: ROCm branch keeps only -O3; CUDA else-branch byte-identical to upstream's original nvcc flag list (CUDA path unchanged).
+- test/test_bind_success.py failure confirmed pre-existing and backend-independent: host-side check_tensor(roulette_funcs, {Function::END=29}) rejects the test's 24-element tensor; identical on CUDA, unrelated to any HIP change.
+- Commit hygiene clean: title 50 chars [ROCm]; body mentions Claude + Test Plan; no noreply/ghstack trailer; ASCII-clean msg and diff; fork main == origin main (clean mirror); Actions disabled on fork.
