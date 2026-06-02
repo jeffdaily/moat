@@ -144,6 +144,103 @@ Order to review: the CMake/shim infra first, then the per-file gotchas below.
   interaction this should clear with no source change; otherwise the LARS gtest
   needs an isolation harness (separate process per fit) upstream.
 
+## Validation 2026-06-02 (validator, linux-gfx90a, fork moat-port 2baf983)
+
+Platform: linux-gfx90a (MI250X GCD2, ROCm 7.2.1). GPU arch detected: gfx90a.
+Scope: cuvs-free SG algorithm slice + cuvs-free PRIMS. Followers linux-gfx1100
+and windows-gfx1151 are left for their respective hosts.
+
+### GPU arch
+
+```
+HIP_VISIBLE_DEVICES=2
+rocminfo -> gfx90a (AMD Instinct MI250X / MI250), sramecc+:xnack-
+AMD_LOG_LEVEL=3 log confirms: "Using native code object for device:
+  amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-"
+Tensile kernel tags contain ISA90a / WS64 (wave64 dispatch confirmed).
+```
+
+### Step 1: Multi-arch build check
+
+```
+llvm-objdump --offloading projects/cuml/build-hip/libcuml.so
+```
+
+Result: BOTH code objects present -- gfx90a and gfx1100 bundles extracted
+(30 bundles each for both arches, visible as
+`libcuml.so.{N}.hipv4-amdgcn-amd-amdhsa--gfx{90a,1100}`).
+Build is multi-arch confirmed.
+
+Incremental build command (re-link only, sources unchanged):
+```
+cmake --build projects/cuml/build-hip -j16
+```
+Exit 0. 32/32 test binaries linked.
+Timing: 0.29 s (incremental, stats.jsonl phase=compile).
+
+### Step 2: ctest run (gfx90a real GPU)
+
+```
+export HIP_VISIBLE_DEVICES=2
+export LD_LIBRARY_PATH=$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+ctest --test-dir projects/cuml/build-hip --output-on-failure -j1
+```
+
+Result: 32/33 PASS. SG_LARS_TEST FAILS (in-process sequential, expected).
+Timing: 23.76 s (stats.jsonl phase=test).
+
+Passing SG tests (all in-scope algos):
+SG_OLS_TEST, SG_RIDGE_TEST, SG_CD_TEST, SG_QUASI_NEWTON, SG_SGD_TEST,
+SG_PCA_TEST, SG_TSVD_TEST, SG_HOLTWINTERS_TEST, SG_SHAP_KERNEL_TEST,
+SG_GENETIC_NODE_TEST, SG_GENETIC_PARAM_TEST.
+
+Passing PRIMS tests (all 21 incl KSELECTION):
+PRIMS_ADD_SUB_DEV_SCALAR_TEST, PRIMS_BATCHED_CSR_TEST,
+PRIMS_BATCHED_GEMV_TEST, PRIMS_BATCHED_MAKE_SYMM_TEST,
+PRIMS_BATCHED_MATRIX_TEST, PRIMS_DECOUPLED_LOOKBACK_TEST,
+PRIMS_DEVICE_UTILS_TEST, PRIMS_ELTWISE2D_TEST, PRIMS_FAST_INT_DIV_TEST,
+PRIMS_FILLNA_TEST, PRIMS_GRID_SYNC_TEST, PRIMS_HINGE_TEST,
+PRIMS_JONES_TRANSFORM_TEST, PRIMS_KSELECTION_TEST, PRIMS_LINALG_BLOCK_TEST,
+PRIMS_LINEARREG_TEST, PRIMS_LOG_TEST, PRIMS_LOGISTICREG_TEST,
+PRIMS_MAKE_ARIMA_TEST, PRIMS_PENALTY_TEST, PRIMS_SIGMOID_TEST.
+
+PRIMS_KSELECTION_TEST: 3/3 subtests PASS (wave64 6th-stage bitonic fix
+confirmed working on gfx90a). All WarpTopKTests pass.
+
+### Step 3: LARS in-isolation check (NOT a gate)
+
+Each LARS subtest run in strict isolation (one --gtest_filter per invocation):
+```
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.fitGram"  -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.fitX"     -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.fitLarge" -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.predictV1"-> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.predictV2"-> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/1.fitGram"  -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/1.fitX"     -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/1.fitLarge" -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTest*" (unit tests only)   -> 20/20 PASSED
+```
+
+All LARS subtests pass in isolation; the in-process sequential failure
+(4/24 fitGram+fitX float+double) is the documented ROCm-7.2.1 runtime
+cross-invocation state leak. Not a port defect. Confirmed: identical 23
+rocBLAS calls, no HIP API error, drift +/-1 only after a prior fit in the
+same process.
+
+### Verdict: PASS
+
+All formal gates met:
+- Multi-arch build: gfx90a + gfx1100 code objects in libcuml.so (confirmed).
+- In-scope SG tests: 11/11 PASS.
+- PRIMS tests: 21/21 PASS including PRIMS_KSELECTION (wave64 fix verified).
+- LARS in isolation: all subtests PASS (in-process failure is documented
+  ROCm-7.2.1 known issue, not a regression).
+- Native gfx90a dispatch: confirmed via AMD_LOG_LEVEL=3 (ISA90a/WS64).
+
+validated_sha: 2baf9836f5cd90bccb70af4bfbaf6b67f2983086
+State transition: review-passed -> completed (linux-gfx90a).
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port 2baf983)
 
 Verdict: review-passed. Single curated commit 2baf983 on base b081fcd08
