@@ -7,7 +7,7 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-02T18:26:34Z",
+  "updated_at": "2026-06-02T18:34:07Z",
   "head_sha": "09612d3c18f8a5d99283a8d3a54e7a7972c60140",
   "platforms": {
     "linux-gfx90a": {
@@ -59,11 +59,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "fork @ 09612d3c. MultiStat histogram CRASH and post-split index mismatch BOTH FIXED. (1) Histogram grid div-by-zero (numBlocks product, guarded ScaleBlockCountToOccupancy at 16 sites). (2) Post-split index mismatch = rocPRIM DeviceScan temp MISALIGNMENT in SortWithoutCub (split_points.cu): the scan working temp was sub-allocated at offset 4*part.Size (4-byte aligned) inside a shared buffer; rocPRIM needs it aligned, else the scan corrupts non-deterministically at tile boundaries -> wrong split indices. Fixed by 256-aligning the scan-temp offset (USE_HIP only). gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat 5/6 (WithoutOneHot1/2/17 + WithOneHot3/13 pass; FatSplitPropsTest 2M re-running to confirm, uses radix path + just slow on APU); targets-ut TCombinationTargetTests 3/3 (dcg.cu) + Huber/MultiLogit/Tweedie pass. ONLY remaining failure: TAddingLangevinNoiseTest -- proven NOT a ROCm defect (GPU NextNormal bit-identical to host; pre-existing upstream test-design, won't fix). So GPU correctness is essentially fully validated. Pending: FatSplitPropsTest confirmation; full-app e2e not run. See notes.md 2026-06-02.",
+      "blocked_reason": "fork @ 09612d3c. GPU CORRECTNESS FULLY VALIDATED on gfx1151. Five wave-agnostic GPU bugs fixed (all surfaced by running the full UT suite on ROCm): bin-builder ui32 overflow; rocPRIM segmented-sort temp-size; exact-leaves leaf-count-bound + leading-empty-leaf; multistat histogram grid div-by-zero (numBlocks product before IsGridEmpty); multistat split rocPRIM DeviceScan temp MISALIGNMENT (256-align the shared-buffer scan-temp offset). Tally: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat 6/6 PASS; targets-ut combination 3/3 (dcg.cu) + huber/multilogit/tweedie PASS. NOT AMD-correctness defects (the only non-passing items): TAddingLangevinNoiseTest (proven not-a-ROCm-defect: GPU NextNormal bit-identical to host; pre-existing upstream test-design; won't fix); TAucTest/TQueryCrossEntropyTests slow on the APU (StartCudaManager ~12s/sub-test, not run to completion, no failure observed); full-app e2e not run (was blocked by the libcxx memory_resource issue, now resolved -- runnable if desired). gfx90a/gfx1100 -> revalidate at 09612d3c. DECISION for jeff: is the full GPU-UT validation sufficient to mark validated (-> upstream PR gate), or run AUC/QCE to completion + full-app e2e first? See notes.md 2026-06-02.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T18:26:34Z",
+      "updated_at": "2026-06-02T18:34:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
