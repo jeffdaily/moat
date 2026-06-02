@@ -7,7 +7,7 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-02T15:00:00Z",
+  "updated_at": "2026-06-02T05:01:00Z",
   "head_sha": "c9b6024b788f8dc73b95eebbe131fdc715ecad21",
   "platforms": {
     "linux-gfx90a": {
@@ -34,25 +34,25 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
-      "blocked_reason": "COMPLETED at fork 7d743ae (real gfx1100 code object, 18/18 GPU tests x3 runs + valid_if partial-tail harness 24/24 x2 runs, all deterministic). The wave32 divergent-tile-collective fix (6 kernels restructured from divergent per-lane while(i<size) ballot to converged while(tile_any_32(i<n)) tile-level loop) eliminates HSA_STATUS_ERROR_EXCEPTION 0x1016 for size%32!=0 inputs on gfx1100 (RDNA3, wave32). Null-mask correctness verified: device null counts + bitmasks match host reference exactly for all partial-tail sizes (1,31,33,63,65,97,1000,1057,4097,100001). libcudf.so 555.8 MB, 151 gfx1100 code objects (llvm-objdump confirmed ALL gfx1100, zero non-gfx1100). Matches gfx90a@7d743ae (18/18 same tests). Revalidate needed against head_sha c9b6024 (merge.cu wave64 fix added 1 TU). See notes.md 'Validation 2026-06-01 (gfx1100)'.",
-      "validated_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
+      "blocked_reason": "COMPLETED at fork c9b6024 (real gfx1100 code object, 19/19 GPU tests x3 runs + MergeNullableBitmaskWave64 confirmed + valid_if partial-tail harness 24/24, all deterministic). Wave32 verdict: merge.cu materialize_merged_bitmask_kernel uses converged tile_any_32 + ballot_32 pattern; MergeNullableBitmaskWave64 PASS on gfx1100 wave32; zero HSA_STATUS_ERROR_EXCEPTION 0x1016; prior 6-kernel fix not regressed (6/6 PASS). libcudf.so 585,846,808 B, 152 gfx1100 code objects ALL gfx1100 (zero non-gfx1100, llvm-objdump confirmed). Matches gfx90a@c9b6024 (19/19 same tests). Incremental build 33.6 s. AMD Radeon Pro W7800 48GB gfx1100, HIP_VISIBLE_DEVICES=0, ROCm 7.2.1. See notes.md 'Validation 2026-06-02 (gfx1100)'.",
+      "validated_sha": "c9b6024b788f8dc73b95eebbe131fdc715ecad21",
       "started_at": "2026-06-01T00:00:00Z",
-      "completed_at": "2026-06-01T20:30:00Z",
-      "updated_at": "2026-06-02T15:00:00Z",
+      "completed_at": "2026-06-02T05:01:00Z",
+      "updated_at": "2026-06-02T05:01:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 545,
-          "test": 60,
+          "compile": 579,
+          "test": 81,
           "misc": 0
         },
-        "session_count": 2,
+        "session_count": 3,
         "first_session_at": "2026-06-01T00:00:00Z",
-        "last_session_at": "2026-06-01T20:30:00Z"
+        "last_session_at": "2026-06-02T05:01:00Z"
       },
       "last_agent": "validator"
     },

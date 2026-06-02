@@ -1,5 +1,73 @@
 # cudf notes (ROCm/HIP port)
 
+## Validation 2026-06-02 (gfx1100) -- revalidate at c9b6024 (merge.cu)
+
+Device: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1 HIP clang 22.0.0. Fork c9b6024b788f8dc73b95eebbe131fdc715ecad21.
+
+### What merge.cu changed (delta 7d743ae -> c9b6024)
+
+The three-file delta adds `merge/merge.cu` to `cpp/cmake/hip/cudf_hip_sources.cmake` (sources 204 -> 205; merge.cu was previously scoped out because its raw `__ballot_sync(0xffff'ffffu, ...)` stored into a 32-bit bitmask_type does not compile on HIP -- braced-init from a 64-bit ballot narrows and is a hard error). The new HIP path in `materialize_merged_bitmask_kernel` (merge.cu:139-167) is the same converged tile-level pattern as the prior 6 fixed kernels: `while (cudf::detail::tile_any_32(tid < num_destination_rows))` keeps all 32-lane tile members in lockstep; `ballot_32(active && source_bit_is_valid)` is called at one PC reached by every tile member; the leader check is `0 == threadIdx.x % cudf::detail::warp_size` where `warp_size` is the constexpr 32 (bitmask word width, not the hardware wave width). OOB lanes have `active = false`, so they short-circuit the `is_valid_nocheck` deref and vote false. Both 32-bit validity words of a 64-wide wavefront span are written by their own tile leaders. This is a wave32-correct fix: on gfx1100 (wave32) the 32-lane tile IS the hardware wavefront, so a divergent ballot would be HSA_STATUS_ERROR_EXCEPTION 0x1016 for any `num_destination_rows % 32 != 0` merge. The new smoke test `MergeNullableBitmaskWave64` (core_smoke_test.cu:813) merges two sorted nullable INT32 columns with n_total=260>64 and asserts the output null mask word-by-word including word 1 (rows 32-63). CUDA path under `#else` is byte-for-byte unchanged.
+
+### Build
+
+Incremental rebuild on top of existing gfx1100 build dir (cmake cache already configured for gfx1100). Source state: fork c9b6024 (git reset --hard origin/moat-port). The build compiled merge.cu.o and relinked libcudf.so + MOAT_CORE_SMOKE_TEST:
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/projects/rmm/install-gfx1100/lib:${CONDA_PREFIX}/lib:/opt/rocm/lib"
+cd /var/lib/jenkins/moat && utils/timeit.sh cudf-gfx1100-revalidate compile -- cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100 -j16
+```
+
+Incremental build: 33.6 s (only merge.cu + relink; cmake cache preserved gfx1100 configuration from prior full build). merge.cu.o mtime 2026-06-02 05:00:53 UTC (newer than merge.cu source 2026-06-02 04:59:14 UTC). libcudf.so mtime 2026-06-02 05:00:54 UTC. Size: 585,846,808 B.
+
+### gfx1100 code-object evidence
+
+`llvm-objdump --offloading libcudf.so` -> 152 embedded code objects, ALL `hipv4-amdgcn-amd-amdhsa--gfx1100` (zero non-gfx1100). Matches gfx90a@c9b6024 (also 152 objects). Prior gfx1100 build at 7d743ae had 151 objects (merge.cu not yet included).
+
+### GPU test results
+
+All tests run with `HIP_VISIBLE_DEVICES=0` (AMD Radeon Pro W7800 48GB, gfx1100).
+
+**MOAT_CORE_SMOKE_TEST -- 19/19:**
+
+Run 1: **19/19 PASS** (6748 ms). Run 2: **19/19 PASS** (7006 ms). Run 3 (timeit): **19/19 PASS** (6857 ms). Deterministic.
+
+All 19 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile, MergeNullableBitmaskWave64.
+
+**Isolated merge test:**
+
+```
+HIP_VISIBLE_DEVICES=0 projects/cudf/build-hip-gfx1100/gtests/MOAT_CORE_SMOKE_TEST --gtest_filter='*MergeNullable*'
+```
+
+Run 1: MergeNullableBitmaskWave64 **OK** (185 ms). Run 2: **OK** (187 ms). Deterministic. No HSA_STATUS_ERROR_EXCEPTION.
+
+**Prior 6-kernel regression spot-check** (concatenate/replace/valid_if via RepeatTable, TileTable, ListsDistinct, QuantileLinear, TDigestReducePercentile, ApplyBooleanMask):
+
+```
+HIP_VISIBLE_DEVICES=0 gtests/MOAT_CORE_SMOKE_TEST --gtest_filter='*RepeatTable:*TileTable:*ListsDistinct:*QuantileLinear:*TDigestReducePercentile:*ApplyBooleanMask'
+```
+
+**6/6 PASS** (1317 ms). No regression in the prior 6-kernel fix.
+
+**valid_if partial-tail harness** (size % 32 != 0 divergent-tail gate):
+
+```
+HIP_VISIBLE_DEVICES=0 agent_space/cudf_valid_if_harness/build_fix/valid_if_test
+```
+
+**24/24 PASS** (x2 runs deterministic). Sizes 1, 31, 33, 63, 65, 97, 1000, 1057, 4097, 100001 with multiple strides; no HSA 0x1016 fault, no wrong null mask.
+
+### Wave32 verdict
+
+- **merge correct on wave32**: MergeNullableBitmaskWave64 PASS on gfx1100 (RDNA3, wave32). The converged `while (tile_any_32(tid < n))` loop keeps all 32 tile lanes in lockstep through `ballot_32`; the 32-lane tile leader writes the correct 32-bit word; both words of any 64-row span are written. No wrong merged null mask, no wrong row order.
+- **zero 0x1016 in merge kernels**: No HSA_STATUS_ERROR_EXCEPTION observed across all runs including isolated merge-test. The converged loop means `ballot_32` is at one PC reached by all tile members on wave32 even when `num_destination_rows % 32 != 0`.
+- **prior 6-kernel fix not regressed**: 6/6 PASS on concatenate/replace/valid_if paths (RepeatTable, TileTable, ListsDistinct, QuantileLinear, TDigestReducePercentile, ApplyBooleanMask); valid_if harness 24/24 PASS.
+- **deterministic**: Two full smoke runs, two isolated merge runs, two harness runs all produce identical results.
+- **matches gfx90a@c9b6024**: 19/19 PASS on both platforms. Zero divergence.
+
+State: linux-gfx1100 revalidate -> completed. validated_sha = c9b6024b788f8dc73b95eebbe131fdc715ecad21.
+
 ## Validation 2026-06-02 (linux-gfx90a, MI250X GCD 3, ROCm 7.2.1) -- fork c9b6024 merge.cu wave64 null-mask fix
 
 Device: AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=3 (GCD 3). ROCm 7.2.1 HIP clang 22.0.0. Fork c9b6024b788f8dc73b95eebbe131fdc715ecad21.
