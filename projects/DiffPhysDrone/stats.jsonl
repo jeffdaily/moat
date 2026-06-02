@@ -1,0 +1,4 @@
+{"kind":"phase","ts":"2026-06-02T01:33:13Z","phase":"compile","seconds":27.724,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/build_dpd.sh"}
+{"kind":"phase","ts":"2026-06-02T01:35:12Z","phase":"compile","seconds":50.735,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/build_dpd.sh"}
+{"kind":"phase","ts":"2026-06-02T01:35:20Z","phase":"test","seconds":2.792,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DiffPhysDrone/src/src && HIP_VISIBLE_DEVICES=0 python test.py"}
+{"kind":"phase","ts":"2026-06-02T01:47:33Z","phase":"compile","seconds":51.897,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/build_dpd.sh"}

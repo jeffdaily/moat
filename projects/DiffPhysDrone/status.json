@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "DiffPhysDrone",
   "upstream_url": "https://github.com/HenryHuYu/DiffPhysDrone",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/DiffPhysDrone",
   "fork_default_branch": "master",
   "priority": 4.108,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-02T01:07:36Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T01:49:00Z",
+  "head_sha": "2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T01:32:35Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T01:07:36Z",
+      "updated_at": "2026-06-02T01:49:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
