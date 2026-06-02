@@ -76,3 +76,28 @@ No warp-level code anywhere (no `__shfl`/`__ballot`/`__syncwarp`), kernels are
 vs wave64 does not affect correctness. gfx1100/gfx1151 expected to pass with the
 same source + flags (only PYTORCH_ROCM_ARCH changes). Validate first, delta only
 on failure.
+
+## Review 2026-06-02 (reviewer, gfx90a, fork c4ed7fad)
+Reviewed `git diff 9b17d5d...HEAD` via /pr-review. No problems found; review-passed.
+Verified independently (not just trusting notes): no warp intrinsics anywhere
+(`__shfl`/`__ballot`/`__syncwarp`/`warpSize`/mma all absent), the only `32`s are
+upstream `min(SIZE,32)` block-size clamps (launch sizing, wave-agnostic on
+wave64). The `hip_aware_cuda_cflags` drop-set strings (`-res-usage`,
+`-Xptxas -O3` as one element, `--extra-device-vectorization`) match every
+harness's flag list verbatim, so the drop fires; `--use_fast_math`->`-ffast-math`
+maps, `-O3` and `-D` defines kept; NVIDIA path is byte-identical (gated on
+`torch.version.hip is None`). `host_cflags` drops `/wd4624` off Windows only.
+The rwkv7 bf16 switch to `c10::BFloat16` is value-equivalent: confirmed the type
+exposes `C10_HOST_DEVICE BFloat16(float)` and `C10_HOST_DEVICE operator float()`
+(headeronly/util/BFloat16.h) plus an explicit `__hip_bfloat16` interop ctor, so
+`static_cast` to/from float is round-to-nearest and matches NVIDIA's
+`__float2bfloat16_rn`/`__bfloat162float`; .cu and .cpp use the same typedef so
+the cuda_forward/backward signatures agree. Source edits limited to the 6 rwkv7
+files; fp32 and NVIDIA paths untouched. Deferrals confirmed pre-existing
+upstream: wkv5 default v1d has a 12-arg `cuda_backward` (op wrapper declares 13
+with extra `ww`) and an empty backward kernel body -- fails identically on CUDA,
+not a port defect. Commit hygiene clean: `[ROCm]` title 47 chars, mentions
+Claude, no noreply trailer, no ghstack, no em-dash; fork/main == origin/main
+(clean mirror at 9b17d5d); Actions disabled; no AMD-internal references.
+Note: GPU re-run is the validator's job; the porter's recorded err-ratios
+(fp32 ~1e-7, bf16 ~3e-3) are consistent and were not re-executed at review time.
