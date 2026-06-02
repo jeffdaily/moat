@@ -80,3 +80,87 @@ delta-port on failure.
 This is a leaf application (a CuPy plugin loaded via PYTHONPATH), not a base
 library other MOAT targets build against. No install-as-dependency section
 needed. A future libxc-HIP project would be the dependency gpu4pyscf consumes.
+
+## Review 2026-06-02 (reviewer, gfx90a, moat-port @ 460879b) -- CHANGES REQUESTED
+
+Verdict: one high-severity latent defect on the HF path; the wave64 J-engine
+fix, multi-arch build, and Python BLAS/solver layer are otherwise correct.
+Reproduced on real gfx90a (HIP_VISIBLE_DEVICES=0, GCD0).
+
+### Blocker -- get_smid() scratch-pool OOB on the HF hcore path (not a deferred path)
+- gpu4pyscf/lib/gvhf-rys/vhf.cuh:155-161 switches get_smid() to HIP __smid()
+  and the comment claims "the host sizes the scratch pool to the full id range
+  on ROCm (see SM_POOL_SLOTS in scf/jk.py / df int3c2e)". That symbol does not
+  exist anywhere in the tree, and the actual scratch pool is unchanged:
+  gpu4pyscf/df/int3c2e_bdiv.py:191-192 still does
+  `workers = gpu_specs['multiProcessorCount']; pool = cp.empty((workers, POOL_SIZE))`
+  (file untouched by the port). The kernel indexes it as
+  `out_local = pool + get_smid()*POOL_SIZE` at gpu4pyscf/lib/gvhf-rys/fill_int3c2e.cu:332
+  and 9 sites in unrolled_int3c2e.cu (654/937/1473/1699/1987/2353/2634/2887...),
+  with no clamp/modulo on get_smid().
+- Measured on this gfx90a GCD: __smid() reaches 125 while multiProcessorCount
+  is 104. POOL_SIZE=25600 doubles, so a block on a CU with smid in [104,125]
+  writes up to ~4 MB past the pool -- device heap corruption.
+- This is on the Milestone-1 HF path, not deferred: scf/hf.py:get_hcore (line
+  133) calls df.int3c2e_bdiv.contract_int3c2e_auxvec for the nuclear-attraction
+  hcore on every RHF/UHF build, which routes through libvhf_rys.fill_int3c2e
+  with that pool. The pool-write branch is `to_sph && (li>1||lj>1)`, taken for
+  d-shells, which def2-svp / cc-pVDZ (the test bases) have. The 33+16 passing
+  tests do not prove safety: the OOB is silent until the clobbered allocation
+  is read, so a green run is consistent with latent corruption.
+- Fix: size the pool to the actual __smid() id range under ROCm (allocate
+  `max_smid+1` rows, e.g. from a one-time device query of the max __smid, or a
+  safe gfx9 upper bound), OR clamp/remap the index in get_smid()'s consumers.
+  Make the vhf.cuh comment match whatever is actually implemented (and define
+  the SM_POOL_SLOTS it references, or drop the reference). Audit every
+  get_smid()*POOL_SIZE site (fill_int3c2e.cu + unrolled_int3c2e.cu) and the
+  df/int3c2e_bdiv.py:192 allocation together.
+
+### Minor -- commit body / dead-code accuracy (fix on the same pass)
+- The commit body states the pbc int3c2e_create_tasks warp_max/block_max
+  reductions are "made wave-size aware ... the CUDA path is byte-identical".
+  block_max's CUDA `#else` branch in gpu4pyscf/lib/pbc/int3c2e_create_tasks.cuh
+  (lines ~378-391) was changed from `offset = WARPS/2` / `thread_id < WARPS`
+  (WARPS=8) to `offset = nwarps/2` / `thread_id < nwarps`, so the CUDA source
+  is not byte-identical (it is behavior-equivalent only because blockDim.x=256
+  -> nwarps=8). Moreover block_max and warp_max are dead in Milestone 1: only
+  _filter_jk_images is called by the compiled pbc TUs (contract_int3c2e.cu,
+  ejk_int3c2e_ip1.cu, fill_int3c2e.cu) and it does not call warp_max/block_max.
+  Either drop the dead-code CUDA-path edit (keep the CUDA path truly untouched
+  and guard only under USE_HIP) or correct the "byte-identical" wording.
+- Housekeeping: the build leaves untracked `*.so.0.hipv4-*` / `*.so.0.host-*`
+  split RDC objects in gpu4pyscf/lib (notes already document `rm -f`-ing them);
+  they are not committed (.so gitignored; splits untracked), so this is only a
+  reminder, not a defect.
+
+### Verified clean (no action)
+- gvhf-md wave64 shfl fix is correct. cuda_to_hip_shfl.h rewrites the 16-lane
+  __shfl_down_sync(mask,...) to __shfl_down(val, offset, popcount(mask)); the
+  width = popcount = threadsx (16 in unrolled_md_j*.cu, derived per-site in
+  md_contract_j.cu). With sq_id = tx + 16*ty mapping thread->hardware lane in
+  row-major order, a width-16 HIP segment is exactly one ty-row on wave64
+  (lanes 0-15/16-31/32-47/48-63) and wave32 -- multi-arch-correct from one
+  binary; the buggy CUDA group_id/mask is correctly ignored because HIP
+  re-derives the segment from the hardware lane. Scoping the macro to the 3
+  J-engine TUs via force-include (not the global compat header) avoids the
+  hipCUB/bf16 __shfl_down_sync overload collision. contract_int3c2e.cu's
+  full-warp + nwarps cross-warp reduction tree-reduces correctly on wave64
+  (garbage lanes >= nwarps never reach lane 0 given the offset reach).
+- Multi-arch confirmed: llvm-objdump --offloading shows BOTH gfx90a and gfx1100
+  code objects in all 8 .so (gint/gvhf/gvhf-rys/gvhf-md/cupy_helper/gdft/pbc/gecp).
+- Python layer: lib/cusolver.py hipSOLVER enum remap (TYPE_1=211, MODE_VECTOR=202,
+  FILL_LOWER=122) and own-handle/stream-bind is correct; cholesky stays on the
+  CuPy potrf backend. lib/cublas.py lazy find_library(cublas|hipblas) is sound
+  (handle unused). __config__ sharedMemPerBlockOptin .get() fallback and
+  dft/libxc.py version guard are additive and CUDA-behavior-preserving.
+- Deferral gating is clean: gpu4pyscf/__init__.py imports only lib+scf under
+  is_hip; scf's deferred imports (grad, pbc.gto.int1e) are function-local;
+  pbc/__init__.py and pbc/df/__init__.py skip the periodic/df drivers under HIP
+  without breaking the libpbc 1e path. CUTLASS grouped_gemm/grouped_dot excluded
+  from cupy_helper SOURCES when BUILD_CUTLASS=OFF (structural, not silent).
+- test_jk_energy_per_atom genuinely exercises the deferred analytic-gradient
+  engine (imports grad.rhf._jk_energy_per_atom, compares vs int2e_ip1), not core
+  J/K -- the deferral label is accurate.
+- Commit hygiene OK: [ROCm] title <=72 chars, Claude credited, no noreply
+  trailer, no ghstack, Test Plan present, no AMD-internal account refs; fork
+  master is a clean mirror; Actions disabled on the fork.
