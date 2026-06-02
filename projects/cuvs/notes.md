@@ -403,3 +403,23 @@ sm80 stub; commit hygiene clean ([ROCm] title 56 chars, mentions Claude, no
 noreply trailer, no ghstack, no em-dash); fork main is a clean upstream mirror;
 Actions disabled on the fork. The fused-NN __CUDA_ARCH__ trap is the only
 blocker.
+
+## Review 2026-06-02 (third reviewer, linux-gfx90a) -- REVIEW PASSED
+
+Re-review of moat-port HEAD 0c2b709a (delta from the prior reviewed 728265cc) against base v25.08.00 (9ce11a0f) with the /pr-review skill on real gfx90a (GCD 2). The delta since the two prior CHANGES-REQUESTED reviews is exactly the fix and nothing else (git diff 728265cc..0c2b709a: simt_kernel.cuh guard, new tests/distance/fused_l2_nn_simt.cu, cuvs_hip_tests.cmake wiring).
+
+The prior blocker is resolved. simt_kernel.cuh:90 guard is now `#if (__CUDA_ARCH__ < 800) || defined(USE_HIP)`, so the SIMT fusedDistanceNNkernel body is live on HIP. Verified empirically on a FRESH rebuild (touched the changed sources, relinked libcuvs.so + FUSED_NN_TEST -- compiled clean, only pre-existing nodiscard warnings):
+- FUSED_NN_TEST: 7/7 PASS, deterministic (3 runs). The test exercises the public cuvs::distance::fusedDistanceNNMinReduce<float,KVP,int> and asserts BOTH the argmin index and the L2 relu-ALWAYS epilogue distance vs an independent CPU reference (splitmix64-hashed inputs). It genuinely catches a body-less kernel: initOutBuffer=true -> initKernel sets out->value = FLT_MAX (helper_structs.cuh:87-90), so an empty kernel leaves FLT_MAX and EXPECT_NEAR fails catastrophically vs the small reference distance.
+- AMD_LOG_LEVEL=3: live cuvs::distance::detail::fusedDistanceNNkernel<float, KeyValuePair<int,float>, int, KernelPolicy<...>, ...> dispatched on the native amdgcn-amd-amdhsa--gfx90a:sramecc+ code object (Direct Dispatch). A real body, not the body-less empty kernel that previously shipped.
+- DISTANCE_TEST --gtest_filter='-BigMatrix*': 410/410 PASS across 48 suites (the CUDA path / pairwise slice unaffected).
+- Multi-arch: built -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"; llvm-objdump --offloading on the freshly-linked libcuvs.so shows BOTH gfx90a and gfx1100 code objects.
+
+Wave64 correctness of the now-live SIMT kernel re-verified: the kernel's reduction shuffle (raft::shfl width=P::AccThCols, a sub-warp width) and the per-row mutex walk (`raft::WarpSize / P::AccThCols` lanes, one lane at a time) both derive from raft's device-pass raft::WarpSize, which the installed multi-arch raft (ce0fa68c) resolves to 64 on the __GFX9__ device pass and 32 on RDNA (_deps/raft/install/include/raft/util/cuda_dev_essentials.cuh:87-123). The installed raft is the keystone multi-arch build (host_warp_size() runtime hipDeviceGetAttribute query present, cuda_dev_essentials.cuh:98), not a stale pre-ce0fa68c install. cuVS has no warp-size constant of its own in the compiled slice. The m=513 wave64 case (param /6) passes -- empirical wave64 confirmation.
+
+CUDA-path inertness confirmed: `|| defined(USE_HIP)` adds nothing on CUDA (USE_HIP undefined there), so sm80+ codegen is unchanged; all other edits remain `#if defined(USE_HIP)` / `#if !defined(USE_HIP)` guarded (the previously-verified l_inf static_cast, dispatch_sm80 stub, dispatch-inl cutlass_op_unavailable, kernel_sm60 early-exit skip are byte-unchanged in this delta).
+
+Notes accuracy: the prior false claims are corrected. notes.md:90-103 now describes the guard fix honestly ("Keep the body live on HIP", "Validated on gfx90a by the new FUSED_NN_TEST"); notes.md:228-229 now says the fused-NN path is now-live and exercised. Both match what I observed on hardware.
+
+Commit hygiene: title "[ROCm] Port cuVS pairwise-distance subsystem to HIP (Strategy A)" (64 chars); body names Claude (Anthropic), has a Test Plan with literal commands, no Co-Authored-By noreply trailer, no ghstack, no em-dash, ASCII clean. No AMD-internal account references in the diff. Branch moat-port; fork main ee7fada6 is the clean upstream mirror (unchanged); Actions disabled on the fork (enabled:false).
+
+No problems found. Proceeds to validation.
