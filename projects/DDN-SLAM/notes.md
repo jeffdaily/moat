@@ -198,4 +198,67 @@ Stage-2-vendor-backend split as EnvGS (OptiX) -- see UPSTREAM_FINDINGS B-class T
 - 4 GCDs; sibling agents use GCD 0/1. This port: GPU runs on HIP_VISIBLE_DEVICES=2, builds capped -j 16.
 - HIP compiler: /opt/rocm/llvm/bin/clang++ (ROCm 7.2.1, AMD clang 22.0.0). System OpenCV 4.6.0,
   Eigen3, boost_serialization present; Pangolin + Sophus + MIGraphX absent.
-</content>
+
+## Recovery session (2026-06-02): assessed partial work, BLOCKED on validation dataset egress
+Recovered the interrupted porter (prior porter died mid-port leaving uncommitted work).
+
+### Decision on the partial state: RESUME (the partial work is coherent).
+The fork clone (projects/DDN-SLAM/src) is on branch `moat-port` with the `fork` remote =
+jeffdaily/DDN-SLAM. The tracked diff (10 files: CMakeLists.txt, Config.h, LoopClosing.h,
+OptimizableTypes.{h,cu}, Tracking.h, YoloDetector.h, ORBmatcher.cu, System.cu, DBoW2/FORB.cpp)
+is well-commented and matches this notes file exactly (USE_HIP/USE_TENSORRT options, the .cu ->
+LANGUAGE HIP loop + compat-header force-include, the YOLO/TensorRT compile-guard, C++14->17
+fallout fixes Vector7d->Vector7 / bool mnFullBAIdx -> int). The instant-ngp-kf / g2o / Sophus /
+Vocabulary / build_hip dirs are UNTRACKED (not nested git repos; instant-ngp-kf is a flat tarball
+extract per agent_space/stage_ddnslam_deps.sh, .git removed). NOT inconsistent -> kept it, did not
+reset. The Stage-1 build COMPLETED successfully before the death: agent_space/ddnslam_build5.log
+ends `[100%] Built target rgbd_replica`; build_hip/rgbd_replica (19 MB) links clean (ldd: no
+missing libs), GCD2 idle. So the port BUILDS on gfx90a.
+
+### Commit structure resolved: submodule forks (matches upstream/Orbeez convention).
+Upstream DrLi-Ming/DDN-SLAM ships only Thirdparty/DBoW2 and has no .gitmodules, but it is an
+Orbeez-SLAM derivative; Orbeez-SLAM wires Thirdparty/instant-ngp-kf, g2o, opencv-4.5.5 as git
+SUBMODULES (agent_space/Orbeez-SLAM-ref/.gitmodules). The clean upstream-PR form is therefore:
+- jeffdaily/tiny-rocm-nn @ moat-port  -- the HIP tcnn backend with the ROCm-7.2 fixes. DONE, PUSHED
+  (commit b299322, based on upstream 6f32935). 6 files: cublas_matmul.h (hipBLAS v2 datatypes;
+  CRLF preserved, only the 3 real datatype edits), fully_fused_mlp.cpp (wmma_elem<__half>->
+  float16_t rocWMMA disambiguation), CMakeLists.txt (tiny-cuda-nn ALIAS + vendor-skip test), and
+  common.h/object.h/grid_interface.h API shims. Verified byte-identical (mod EOL) to the vendored
+  copy that built.
+- jeffdaily/instant-ngp-kf @ moat-port  -- NOT YET PUSHED (blocked, see below). The exact edit set
+  is known: 16 modified files (CMakeLists.txt, src/{testbed,testbed_nerf,testbed_sdf,render_buffer}.cu,
+  include/neural-graphics-primitives/{common.h,common_device.cuh,nerf.h,nerf_loader.h,nerf_network.h,
+  sdf.h,takikawa_encoding.cuh,testbed.h,trainable_buffer.cuh,camera_path.h}, dependencies/tinyexr/
+  tinyexr.h) + 1 new file (include/neural-graphics-primitives/cuda_to_hip.h, 123 lines) on top of
+  pinned base 1adb67d, with dependencies/tiny-cuda-nn re-pointed to jeffdaily/tiny-rocm-nn@moat-port.
+- jeffdaily/DDN-SLAM @ moat-port  -- the top-level diff above + a .gitmodules adding
+  Thirdparty/instant-ngp-kf -> jeffdaily/instant-ngp-kf@moat-port, g2o @ 26f775d, Sophus, plus the
+  added Examples/RGB-D/rgbd_replica.cu (from Orbeez ref, bUseViewer=false for headless).
+
+### BLOCKER (concrete): host external egress ~40-160 KB/s, uniform across all mirrors.
+Two independent needs both hit the SAME wall and cannot complete this session:
+1. GPU VALIDATION dataset. rgbd_replica needs a Replica RGB-D sequence (<seq>/frame/*.jpg,
+   <seq>/depth/*.png, <seq>/traj.txt). The only source (NICE-SLAM Replica.zip,
+   https://cvg-data.inf.ethz.ch/nice-slam/data/Replica.zip) is 12.4 GB and the zip is NOT ordered
+   by scene (office2 entries come first; members are scattered) so a single scene cannot be
+   stream-extracted without reading the whole file. Measured live rate on the running download:
+   51 KB/s sustained => ETA ~67 h. TUM fr1_xyz (448 MB, the repo's other supported RGB-D dataset)
+   measured 42 KB/s. Concurrent HTTP range requests do not beat the per-host cap (163 KB/s aggregate
+   across 4). No usable RGB-D sequence is staged on the host (cupoch testdata has only 5 frames --
+   far too few for ORB-SLAM init + NeRF training). Partial Replica.zip (~27 MB) preserved at
+   agent_space/replica_dl/Replica.zip for a `curl -C -` resume in a future session.
+2. The jeffdaily/instant-ngp-kf fork PUSH. Full clone and even `git fetch --depth 1 <base-sha>`
+   of the fork both time out (the 1adb67d tree bundles eigen/imgui/nanovdb/stb as tracked content;
+   the pack is large and the egress wall stalls every clone at ~31 MB). Pristine base tree IS on
+   disk (agent_space/instant-ngp-kf-1adb67d.../ from agent_space/ingp.tar.gz) so the branch can be
+   reconstructed and pushed from a host with normal bandwidth, or once egress recovers.
+
+Stage 0 (mlp_learning_an_image, the rocWMMA FP16 MLP + hash-grid) WAS GPU-validated earlier
+(loss 9.40 -> 8.9e-3, no NaN/fault). What remains unvalidated is ONLY the integrated rgbd_replica
+NeRF+ORB-SLAM path on real frames, which is gated entirely on fetching the dataset above. Per MOAT
+rules a build is not validation, so NOT marking `ported`. Set linux-gfx90a `blocked` with this
+reason. To unblock: on a host with normal bandwidth, finish the Replica.zip download (resume the
+preserved partial), extract office0 to <root>/office0/{frame,depth,traj.txt}, then
+`HIP_VISIBLE_DEVICES=2 build_hip/rgbd_replica Vocabulary/ORBvoc.txt Examples/RGB-D/office0.yaml
+office0/` and assert loss decreases + no NaN/GPU fault + sane trajectory; also push the
+instant-ngp-kf fork branch and add DDN-SLAM .gitmodules, then curated commit + ported.
