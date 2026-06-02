@@ -143,3 +143,64 @@ Order to review: the CMake/shim infra first, then the per-file gotchas below.
   numerically correct on gfx90a. If a future ROCm fixes the allocator/Tensile
   interaction this should clear with no source change; otherwise the LARS gtest
   needs an isolation harness (separate process per fit) upstream.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port 2baf983)
+
+Verdict: review-passed. Single curated commit 2baf983 on base b081fcd08
+(REL v25.08.00). Reviewed via /pr-review local-branch mode against
+git diff b081fcd08...HEAD.
+
+Verified correct (no changes requested):
+- kselection.cuh 6th bitonic stage: bitonicSortStage<...,5> uses Stride2=1<<6=64
+  and iterates strides 32..1, the standard final merge that joins two sorted
+  32-lane halves into a sorted 64-lane sequence. Gated by
+  `if constexpr (raft::WarpSize > 32)` (per-arch device constexpr: wave32 emits
+  5 stages, wave64 emits 6), so arch-unified in one binary, CUDA path unchanged.
+  The three `obj.template cas<Greater>` edits are the correct C++20 clang
+  two-phase-lookup fix.
+- glm/preprocess.cuh + glm/ridge.cuh gemv reroutes are numerically identical to
+  the gemm they replace (checked against the installed raft gemv overloads:
+  preprocess hits the 8-arg `gemv(h,A,m,n,x,y,trans,stream)`, ridge hits the
+  10-arg `gemv(h,A,m,n,x,y,trans,alpha,beta,stream)`; trans/alpha/beta and the
+  output dims match the original CUBLAS_OP_T/OP_N gemm). USE_HIP-guarded.
+- hw_decompose.cuh lda=trend_len passed to the *_bufferSize queries is the
+  genuinely-correct lda (matches the real geqrf/orgqr calls); unconditional edit
+  is safe on NVIDIA (cusolver ignores lda in the size query).
+- batched_kalman.cu erfinv: confirmed host-side scalar (kernel-launch argument);
+  cuml_host_erfinv is the same Giles(2010) double approximation, level in (0,1)
+  is within domain. CUDA path byte-for-byte via the #else.
+- cuvs deferral clean: every `<cuvs/...>` include lives in deferred files
+  (metrics distance, knn, tsne, spectral); none of the 30 in-scope
+  CUML_HIP_SOURCES pulls cuvs. The whole metrics module was deferred (not split
+  per the plan's option-a) -- acceptable, expands with cuvs, no replan.
+- Commit hygiene: `[ROCm]` title 64 chars, Claude named, no noreply trailer, no
+  ghstack, no em-dash, Test Plan present. jeffdaily/main is a clean upstream
+  mirror (no [ROCm] commits), default branch main, Actions disabled
+  (enabled:false). moat-port HEAD == recorded head_sha 2baf983.
+- BC: top-level guard is an early-return bypass; everything below is upstream
+  byte-for-byte. qn_solvers.cuh default-arg `= 0` -> `level_enum::trace` is
+  value-identical (TRACE==0) and is the canonical spelling -- a strict
+  generalization, safe on the CUDA path though unguarded.
+
+Minor observations (non-blocking, no fix required for review-passed):
+- cuml_hip.cmake:195 links libcuml with `-Wl,--allow-shlib-undefined`. This
+  suppresses link-time detection of genuinely missing symbols; it is justified
+  by raft's `$<TARGET_NAME_IF_EXISTS:...>` guarded math-lib references but means
+  a real undefined symbol would only surface at dlopen/runtime. The validator
+  should confirm every in-scope test binary actually loads and runs (the ctest
+  run does this), not rely on a clean link.
+- The cub thread_operators / device_segmented_reduce compat shims
+  (cpp/src/hip/compat_include/cub/...) exist for the deferred RF_TEST path; they
+  are harmless header forwards but are dead for the current in-scope set. Leave
+  them for the RF follow-up.
+
+LARS in-process-sequential known issue: accepted as a documented ROCm-7.2.1
+runtime cross-invocation state issue, NOT a port/source defect. Evidence is
+sound: every LARS subtest passes in isolation (per-filter, float+double); the
+failing in-process fit issues the identical 23 rocBLAS calls with no HIP error,
+drifting +/-1; no host static/__constant__/shared global in lars_test.cu or
+lars_impl.cuh. Not a bounce.
+
+GPU re-run is the validator's job; this review did not re-execute ctest. The
+porter's reported 32/33 pass (incl KSELECTION WarpTopK on wave64) is the claim
+the validator must reproduce.
