@@ -147,6 +147,12 @@ cmake --build projects/raft/build -j$(nproc)
 
 Arch is taken from `CMAKE_HIP_ARCHITECTURES` (defaults to gfx90a only when
 unset), so a follower validates with only `-DCMAKE_HIP_ARCHITECTURES=<arch>`.
+As of fork ce0fa68c the host warp size is a RUNTIME query (not the old
+RAFT_HOST_WARP_SIZE compile constant), so `CMAKE_HIP_ARCHITECTURES` may list
+MULTIPLE arches in one build, e.g. `-DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"`
+(a fat binary whose host launch geometry adapts to the device at runtime).
+Dependents consuming raft::raft inherit this; they must NOT pass any host
+warp-size define. See "## Multi-arch host warp-size fix" at the end of this file.
 
 ## Validation (gfx90a, HIP_VISIBLE_DEVICES=1)
 
@@ -1495,3 +1501,61 @@ Total: 75/75 NEIGHBORS (HAVERSINE + BALL_COVER, identical to prior NEIGHBORS_TES
 The cmake split (HAVERSINE_TEST + BALL_COVER_TEST) is a pure build-system rename on gfx90a: the same source files are compiled and the same gtest cases run. The BALL_COVER_TEST binary exercises RAFT_TEST_BALL_COVER=ON which was the missing gate that triggered this revalidation -- confirmed PASS on real gfx90a hardware.
 
 validated_sha: 70773a97f43ab6a861722b181c4524ab800c1126. State transition: revalidate -> completed.
+
+## Multi-arch host warp-size fix (runtime query) -- 2026-06-02, fork ce0fa68c
+
+THE KEYSTONE FIX for combined-arch builds. raft baked a single compile-time host
+warp constant (RAFT_HOST_WARP_SIZE, derived from CMAKE_HIP_ARCHITECTURES). That
+is correct only for a single-arch build: a combined `gfx90a;gfx1100` build emits
+BOTH a 64-lane and a 32-lane device kernel, so no single host constant can match
+whichever kernel the driver dispatches. The host-side launch geometry then
+mis-launches one of the two arches. Fix = query the active device's wavefront at
+runtime (cached per device id) and feed that into the host launch sites.
+
+What changed (all 6 files; CUDA path byte-identical; device per-arch pass
+unchanged):
+- util/cuda_dev_essentials.cuh: host pass of `raft::WarpSize` no longer a
+  constant; added `inline int host_warp_size()` -> hipGetDevice +
+  hipDeviceGetAttribute(hipDeviceAttributeWarpSize), cached in a per-device
+  function-local static. The `WarpSize` device pass (__GFX9__ -> 64, else 32) is
+  untouched (still compile-time, needed for device templates / Pow2<WarpSize>).
+- util/cudart_utils.hpp: host pass of `raft::warp_size()` now returns
+  `host_warp_size()` (non-constexpr); device pass stays constexpr per-arch.
+  Added `#include <raft/util/cuda_dev_essentials.cuh>` for the helper.
+- matrix/detail/select_warpsort.cuh: every HOST launch-geometry use of WarpSize
+  (calc_launch_parameter, the single-block adjust_block_size lambda, select_k_'s
+  warp_width, select_k's len_per_thread, calc_optimal_params' calc_smem lambda)
+  reads `raft::warp_size()` at runtime. `Pow2<WarpSize>::roundDown/roundUp` are
+  rewritten as runtime power-of-two masking (x & ~(w-1) / (x+w-1)&~(w-1)) since a
+  runtime width cannot be a template arg. The DEVICE structs/kernels keep the
+  compile-time `WarpSize` (kWarpWidth, Pow2<WarpSize> in device members) as-is.
+- neighbors/detail/knn_brute_force.cuh: the fused-L2 kNN host dispatch guard
+  `raft::WarpSize <= 32` -> `raft::warp_size() <= 32`, so wave64 (gfx90a) is NOT
+  routed into the wave32-only fused kernel at runtime.
+- util/hip/cuda_to_hip.h: added `cudaDevAttrWarpSize -> hipDeviceAttributeWarpSize`.
+- cmake/hip/raft_hip.cmake: deleted RAFT_HOST_WARP_SIZE, its foreach arch scan,
+  and its compile definition. CMAKE_HIP_ARCHITECTURES may now list multiple arches.
+
+Validation (gfx90a, GCD2, ROCm 7.2.1):
+- Multi-arch build: `cmake -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"` configures
+  and builds raft_lib + HAVERSINE_TEST clean; roc-obj-ls shows BOTH gfx90a and
+  gfx1100 code objects in libraft.so and HAVERSINE_TEST. (The old single-constant
+  build could not configure two arches.)
+- MATRIX_SELECT_TEST / BALL_COVER_TEST still cannot include the gfx1100 device
+  pass -- pre-existing rocPRIM 4.2.0 block_radix_sort warp_exchange DPP_WF_SL1
+  codegen bug, NOT this change -- so those are gfx90a-only.
+- gfx90a run (runtime query returns 64; AMD_LOG_LEVEL=3 -> gfx90a:sramecc+:xnack-
+  dispatch): warp-sort select_k path 320/320 PASS, 0 fail, two-run deterministic;
+  HAVERSINE 1/1; BALL_COVER/eps_nn cases all PASS 0 fail (longest cases truncated
+  by an external process-kill on the shared GCD; zero correctness divergence).
+
+DOWNSTREAM CONSUMERS (cuvs, cuml, cugraph): raft's headers are now multi-arch
+correct, but cuvs and cuml have their OWN host-side launch sites that compute
+geometry from a warp-size value. When porting those, apply the SAME pattern:
+replace any host-baked warp width with `raft::warp_size()` (the runtime query) at
+the host launch site; never reintroduce a single compile-time host warp constant.
+
+validated_sha (this fix): ce0fa68c (multi-arch build + gfx90a runtime-query run).
+State: advance-head flipped completed gfx90a/gfx1100 -> revalidate; gfx90a
+re-validated by the porter this session (build + GPU run), gfx1100 awaits a
+follower validator on RDNA3 hardware.

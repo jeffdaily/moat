@@ -98,3 +98,6 @@
 {"kind":"phase","ts":"2026-06-01T22:40:19Z","phase":"test","seconds":1375.687,"exit":0,"cmd":"projects/raft/build/gtests/MATRIX_SELECT_TEST"}
 {"kind":"phase","ts":"2026-06-01T23:03:26Z","phase":"test","seconds":1575.180,"exit":0,"cmd":"projects/raft/build/gtests/BALL_COVER_TEST"}
 {"kind":"phase","ts":"2026-06-01T23:04:30Z","phase":"test","seconds":1608.972,"exit":1,"cmd":"projects/raft/build/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-02T03:39:47Z","phase":"compile","seconds":52.294,"exit":1,"cmd":"cmake --build projects/raft/build_multiarch --target raft_lib MATRIX_SELECT_TEST HAVERSINE_TEST BALL_COVER_TEST -j32"}
+{"kind":"phase","ts":"2026-06-02T03:40:18Z","phase":"compile","seconds":0.178,"exit":0,"cmd":"cmake --build projects/raft/build_multiarch --target raft_lib HAVERSINE_TEST -j32"}
+{"kind":"phase","ts":"2026-06-02T03:42:20Z","phase":"compile","seconds":95.330,"exit":0,"cmd":"cmake --build projects/raft/build_gfx90a --target raft_lib MATRIX_SELECT_TEST HAVERSINE_TEST BALL_COVER_TEST -j32"}
