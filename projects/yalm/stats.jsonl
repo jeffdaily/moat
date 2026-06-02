@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-06-02T02:08:37Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:09:00Z","phase":"compile","seconds":0.009,"exit":2,"cmd":"bash -c make test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:09:14Z","phase":"compile","seconds":5.514,"exit":2,"cmd":"make -C projects/yalm/src test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:09:28Z","phase":"compile","seconds":0.097,"exit":2,"cmd":"make -C projects/yalm/src test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:09:47Z","phase":"compile","seconds":5.596,"exit":0,"cmd":"make -C projects/yalm/src test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:09:53Z","phase":"test","seconds":0.268,"exit":0,"cmd":"projects/yalm/src/build/test"}
