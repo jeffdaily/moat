@@ -8,3 +8,7 @@
 {"kind":"phase","ts":"2026-06-02T02:18:46Z","phase":"compile","seconds":5.457,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/yalm_build_run1.sh"}
 {"kind":"phase","ts":"2026-06-02T02:18:52Z","phase":"test","seconds":0.228,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/yalm/src/build/test"}
 {"kind":"phase","ts":"2026-06-02T02:19:03Z","phase":"test","seconds":0.239,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/yalm/src/build/test"}
+{"kind":"phase","ts":"2026-06-02T02:29:42Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-02T02:30:00Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-02T02:30:26Z","phase":"compile","seconds":4.252,"exit":0,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-02T02:31:31Z","phase":"test","seconds":0.178,"exit":0,"cmd":"HIP_VISIBLE_DEVICES=0 ./build/test"}

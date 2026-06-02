@@ -81,3 +81,42 @@ Minor (non-blocking; porter may address opportunistically, not required to re-va
 - att_mix shared array size changed 32 -> 64 unconditionally (infer.cu:468), so it is NOT byte-identical on the NVIDIA path (extra 256B shared, indices 32..63 unused, behavior unchanged). The commit message says the wave64 fixes are "guarded by USE_HIP only where the value genuinely differs" -- here the value differs but is unguarded. Harmless on CUDA; the claim is slightly imprecise.
 - hipcc command places `-x hip` after the input file (Makefile CUFLAGS), so clang emits `warning: '-x hip' after last input file has no effect`. The .cu still compiles as HIP (verified gfx90a code object present) because clang treats .cu as HIP by default, so this is cosmetic; could move `-x hip` ahead of `$<` or drop it.
 - hipGraph capture/replay path (_forward_cuda, add_or_update_kernel_node) is unverified by the gate (full-model only, no model staged). Already documented as secondary; flagging that gfx90a graph parity remains unproven for the eventual end-to-end check.
+
+## Validation 2026-06-02 (gfx1100)
+
+Result: PASS -- linux-gfx1100 completed, validated_sha=311e1c39ebf5cfad02ca13c70aaf7f9942f39101.
+
+GPU: AMD Radeon Pro W7800 (gfx1100, RDNA3, wave32), HIP_VISIBLE_DEVICES=0. ROCm/hipcc 7.2.53211. Wavefront size: 32 (confirmed via `rocminfo`: "Wavefront Size: 32(0x20)"). Workgroup max: 1024.
+
+Commands run (from /var/lib/jenkins/moat/projects/yalm/src):
+
+```
+make clean && make test USE_HIP=1 HIPARCH=gfx1100   # clean build; exit 0, ~4.3s
+HIP_VISIBLE_DEVICES=0 ./build/test                   # run 1 -> "All tests passed"
+HIP_VISIBLE_DEVICES=0 ./build/test                   # run 2 -> "All tests passed" (deterministic)
+```
+
+gfx1100 dispatch confirmed via AMD_LOG_LEVEL=3:
+```
+hip_fatbin.cpp: Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100
+Gfx Major/Minor/Stepping: 11/0/0
+```
+roc-obj-ls: hipv4-amdgcn-amd-amdhsa--gfx1100, 85144 bytes.
+
+Kernels dispatched (ShaderName log): matmul<float>, attn_dot, attn_softmax, att_mix, fused_ffn_w1_w3_glu_act<float, GELU>, matmul<float> (ffn w2). All five test-path kernels exercised.
+
+Pass/fail counts: test_attn() CPU regression guard PASS; test_cuda_kernels() matmul/mha (attn_dot+attn_softmax+att_mix)/ffn CPU-vs-GPU epsilon 1e-4 comparisons all PASS; both runs identical. No HSA faults, no error output.
+
+Wave32 verdict (warpSize=32 on gfx1100):
+
+- MATMUL_WPB geometry: the test gate uses the simple `matmul` kernel (not matmul_wide), launched `<<<d, warpSize>>>` = `<<<16, 32>>>`. The MATMUL_WPB=16 path (matmul_wide/fused_matmul_add_residuals at `<<<rows/16, 32*16=512>>>`) is in the full-model _forward_cuda only and is not exercised by `./build/test` -- same documented caveat as gfx90a; the porter validated it via an agent_space probe at gfx90a geometry; at wave32 the block would be 32*16=512 <= 1024 cap, so no launch-geometry failure.
+
+- att_mix shared arrays: `shared0/1[WARP_SIZE_MAX=64]` indexed by `threadIdx.x`. At wave32, `tpb.x=32`, so threadIdx.x in [0,31]; only slots 0..31 are accessed, slots 32..63 unused. No OOB, no stale read. Confirmed by the mha xout comparison passing at epsilon 1e-4.
+
+- Warp reductions at width 32: `warp_reduce_sum` / `warp_all_reduce_max` / `warp_all_reduce_sum` loop `for offset = warpSize/2; offset > 0; offset /= 2` (device-side `warpSize`=32 at runtime), reducing 16->8->4->2->1 -- correct 5-step tree for 32-wide warps, no 64-lane assumption. `FULL_MASK=0xffffffffffffffffULL` with only 32 active lanes: on gfx1100 the low 32 bits are the active mask and the upper 32 are ignored by hardware, so the full-mask shuffle is valid. All reductions produce correct values (matmul/mha/ffn pass CPU gold at 1e-4).
+
+- `block_all_reduce_max/sum` shared[32]: at most 32 warps per block (1024/32=32); shared capacity exactly matches. At block=32 threads (1 warp), path `if (blockDim.x < warpSize) return val` early-exits before the shared write, so no hazard.
+
+- No 0x1016 (signal 11 / page fault), no wrong output, no NaN, no launch failure.
+
+No source or fork changes required; the commit at 311e1c39ebf5 validates as-is on wave32. The `-x hip` cosmetic warning persists (noted in gfx90a review; non-blocking).
