@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "evogp",
   "upstream_url": "https://github.com/EMI-Group/evogp",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/evogp",
   "fork_default_branch": "main",
   "priority": 4.627,
   "ext_type": "torch-extension",
