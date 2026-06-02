@@ -19,14 +19,49 @@ cmake --build build-hip -j
 HIP_VISIBLE_DEVICES=3 ./build-hip/test/sgm-test
 ```
 Followers: same command with `-DCMAKE_HIP_ARCHITECTURES=gfx1100` / `gfx1151`,
-no source change (arch propagates to the host warp-size derivation too).
+no source change. Multi-arch also works:
+`-DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"` (host launch dims come from a runtime
+warpSize query, so every device slice is correct -- see multi-arch fix below).
+
+## Multi-arch warp-size fix (fork 4ffe4e9, 2026-06-02)
+The original port baked one host warp size: CMake scanned CMAKE_HIP_ARCHITECTURES
+and injected SGM_HOST_WARP_SIZE (64 if ANY arch matched gfx9), and the host launch
+math used it for BLOCK_SIZE = WARP_SIZE * N. The device pass keyed WARP_SIZE per
+slice off __GFX*__. For a single-arch build host==device, but a combined
+gfx90a;gfx1100 build set host=64 -> host launched bdim=512 against the gfx1100
+kernel built for 32-lane geometry (BLOCK_SIZE=256): out-of-range warp/lane indexing
+on the gfx1100 slice. Fix (arch-unified, correct on wave32 AND wave64):
+- `src/constants.h`: WARP_SIZE device value stays per-arch (__GFX8__||__GFX9__->64,
+  else 32). Removed the SGM_HOST_WARP_SIZE host arm + the ->64 fallback's reliance
+  on CMake. WARP_SIZE retains a host-pass value (64) ONLY so hipcc can parse the
+  __global__ bodies into launch stubs; it no longer drives runtime launch geometry.
+- `src/host_utility.h`: added `device_warp_size()` -- queries the current device's
+  warpSize once via hipDeviceGetAttribute (cached per device), returns 32 on CUDA.
+- `src/cost_aggregation.cu` + `src/winner_takes_all.cu`: every host launcher now
+  computes block_size = device_warp_size() * WARPS_PER_BLOCK and derives
+  paths_per_block / gdim / bdim from it. The namespace-scope BLOCK_SIZE = WARP_SIZE
+  * N constexpr stays (used INSIDE the kernels' smem-stride and RIGHT_BUFFER sizing,
+  device pass). SUBGROUP_SIZE = MAX_DISPARITY/DP_BLOCK_SIZE is warp-size-independent.
+- `src/CMakeLists.txt`: deleted the SGM_HOST_WARP_SIZE arch-scan loop and dropped it
+  from target_compile_definitions (USE_HIP stays).
+- `src/cuda_to_hip.h`: added cudaGetDevice/cudaDeviceGetAttribute/cudaDevAttrWarpSize
+  aliases; fixed the stale SGM_WARP_SIZE comment.
+Validated: two-arch build (`-DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"`) compiles
+clean, roc-obj-ls shows BOTH gfx90a and gfx1100 code objects, gfx90a run picks
+warpSize=64 at runtime (AMD_LOG_LEVEL=3 native gfx90a object, no JIT), 67/67
+bit-exact, deterministic across 2 runs (HIP_VISIBLE_DEVICES=1). gfx1100 RUN
+revalidates on the RDNA3 follower host.
+GOTCHA: hipcc parses __global__ bodies in BOTH passes to emit launch stubs, so a
+purely device-only (`#if __HIP_DEVICE_COMPILE__`) WARP_SIZE breaks the host parse
+(warp_id = threadIdx.x / WARP_SIZE etc. inside the kernel). Keep a host-pass value;
+the correctness guarantee is that LAUNCH dims come from the runtime query, not that
+host WARP_SIZE is undefined.
 
 ## Key changes
 - `src/cuda_to_hip.h` (new): on USE_HIP includes hip_runtime + aliases the
   cuda* runtime surface used by host code; else passthrough to cuda_runtime.h.
-- `src/constants.h`: WARP_SIZE became the TRUE per-arch wavefront width. Device
-  pass keys on `__GFX9__` (64 on CDNA gfx9, 32 on RDNA); host pass uses
-  `SGM_HOST_WARP_SIZE` injected by CMake from the target arch. CUDA stays 32.
+- `src/constants.h`: WARP_SIZE device-side per-arch via __GFX*__ (64 CDNA, 32 RDNA);
+  host launch geometry from runtime device_warp_size() (see multi-arch fix above).
 - `src/median_filter.cu`: USE_HIP-guarded software emulation of __vcmpgtu2/4,
   __vminu2/4, __vmaxu2/4 (absent in ROCm 7.x), bit-identical to the intrinsics.
 - `src/winner_takes_all.cu`: WTA inter-lane smem handoff uses __syncwarp() on
