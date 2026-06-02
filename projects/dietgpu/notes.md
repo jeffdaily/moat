@@ -348,3 +348,54 @@ gfx90a run from the multi-arch binary (HIP_VISIBLE_DEVICES=0):
 gfx1100/gfx1151 RUN re-validates on follower hosts (advance-head flips the
 already-completed platforms to revalidate). The clean two-arch build + correct
 gfx90a run + runtime-query host path is this porter's gate.
+
+## Review (multi-arch) 2026-06-02 (reviewer, linux-gfx90a)
+
+Reviewed `git diff 03088ce..b6e0d3f` on moat-port (the delta: per-arch device
+kWarpSize, fixed-64-slot archive, runtime-query host grid divisor, CMake
+DIETGPU_WARP_SIZE removal). Verdict: review-passed. Reproduced the multi-arch
+GPU gate on real gfx90a (ROCm 7.2.1, HIP_VISIBLE_DEVICES=0).
+
+Verified correct (load-bearing, the highest-risk fixed-64-slot change):
+- DeviceDefs.cuh:32-39 -- device kWarpSize is `__HIP_DEVICE_COMPILE__` then
+  `__GFX8__||__GFX9__`->64 else 32, host/CUDA fall-through 32. Resolves per-arch
+  in the fat binary; gfx90a dispatch confirmed (AMD_LOG_LEVEL=3 "native code
+  object for device: amdgcn-amd-amdhsa--gfx90a"). CUDA path unchanged.
+- GpuANSUtils.cuh:72-77 -- `kMaxWarpSize=64`, `ANSWarpState::warpState[64]`.
+  ANSStateT=uint32_t so sizeof(ANSWarpState)=256B both before (gfx90a baked
+  DIETGPU_WARP_SIZE=64) and now -> gfx90a archive byte-identical to the prior
+  validated 64-lane format. getCompressedOverhead (GpuANSUtils.cuh:80-93, the
+  __host__ __device__ sizing fn) and the host inline getMaxBlockSizeUnCoalesced
+  (GpuANSEncode.cuh:38-41) both size via sizeof(ANSWarpState), now
+  arch-independent. getWarpStates/getBlockWords offsets are __device__ and
+  stride by sizeof(ANSWarpState) -- arch-independent.
+- Device kernels still stride by per-arch kWarpSize: encode writes
+  warpState[laneId] / warpState[tid] under `tid < kWarpSize` (GpuANSEncode.cuh
+  :207,:588-592), decode reads warpState[laneId] (GpuANSDecode.cuh:374). gfx90a
+  fills 0-63, a wave32 device fills 0-31; per-arch self-consistent.
+- GpuANSEncode.cuh:752,756 -- host grid divisor now
+  `getCurrentDeviceProperties().warpSize`. Confirmed it is the ONLY host
+  consumer of the warp width: every other kWarpSize use (GpuANSEncode 165-394,
+  GpuANSDecode 174-469, GpuANSStatistics 26-200, GpuFloatCompress 297-301,
+  PtxUtils) is inside __global__/__device__ code; the decode launcher grid is
+  occupancy-based and never divides by kWarpSize on the host.
+- CMakeLists.txt -- DIETGPU_WARP_SIZE + gfx9* arch-scan loop deleted; only
+  `add_compile_definitions(USE_HIP=1)` remains.
+
+GPU gate reproduced from a SINGLE multi-arch fat binary
+(`-DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"`): clean build, only the
+pre-existing FloatTest.cu:306 braced-scalar-init warning. `llvm-objdump
+--offloading` on libgpu_ans.so AND libgpu_float_compress.so shows BOTH gfx90a
+and gfx1100 bundles. gfx90a run (HIP_VISIBLE_DEVICES=0): ans_test 4/4,
+ans_statistics_test 4/4, batch_prefix_sum_test 2/2, float_test 3/3 -- all PASS,
+identical across two runs (deterministic). Suites assert compress->decompress
+equality (EXPECT_EQ orig/dec), so the fixed-64-slot archive round-trip is
+genuinely verified, not just no-crash.
+
+Commit hygiene clean: title `[ROCm] ...` 68 chars, mentions Claude, no
+Co-Authored-By/noreply trailer, no ghstack, no em-dash, no AMD-internal
+references. Fork main is a clean upstream mirror at a4d70a1; Actions disabled.
+
+Minor (non-blocking, pre-existing, NOT touched by this delta -- carried from the
+prior review): PtxUtils.cuh:78/82 getLaneMaskLe/Gt `2<<laneId` lane-63 UB in
+dead helpers; getBitfield/setBitfield unused. No action required for this port.
