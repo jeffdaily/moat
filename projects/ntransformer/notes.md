@@ -43,3 +43,19 @@ USE_GPUNVME stays OFF (needs external gpu-nvme-direct lib + VFIO/root; not GPU-v
 ## Followers (gfx1100 / gfx1151)
 - Multi-arch build already proves gfx1100 compiles and emits a code object. Build is `-DCMAKE_HIP_ARCHITECTURES=gfx1100` (no source edit). Validate a wave32 run of test_gemm/test_tensor.
 - Watch points on wave32: the `warpSize`-based reductions and the logical-32 GEMV butterfly are wave-agnostic by construction (see analysis above); NT_WARP_MASK high bits are ignored on wave32. Expect a clean pass; delta-port only if a numeric test fails.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a)
+Reviewed moat-port 144ab93 vs upstream f2237be via /pr-review. No problems found; recommendation Approve -> review-passed.
+
+Verified on real gfx90a (MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=1):
+- USE_HIP=ON gfx90a build clean; host .cpp compiled by /usr/bin/c++ (confirms the host path never sees hipcc, so the float16_t=uint16_t storage branch holds on both backends).
+- ctest: test_tensor PASS, test_gemm PASS. Exact dot-product checks match (q6_k smem y[0]=256, q6_k_large no-smem y[0]=32768, rmsnorm/silu_mul within tolerance) -- confirms the logical-32 GEMV butterfly and the warpSize cross-warp reductions are correct on wave64.
+- Multi-arch CMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" builds; roc-obj-ls test_gemm shows both gfx90a and gfx1100 native code objects.
+
+Fault-class review (all clear):
+- Strategy A applied correctly: option(USE_HIP) with project(... HIP) vs project(... CUDA); set_source_files_properties(LANGUAGE HIP) (no file renames); compat header + hip_compat shim dir added BEFORE only under USE_HIP. NVIDIA path byte-identical when OFF.
+- Both __CUDACC__ traps in src/core/types.h fixed (half typedef line 16, NT_CUDA_CHECK line 238) -> `#if defined(__CUDACC__) || defined(__HIPCC__)`. The third __CUDACC__ guard at src/core/tensor.cpp:7 is correctly LEFT UNCHANGED: tensor.cpp is a host .cpp (never nvcc/hipcc), so it always takes the extern-C stub #else branch on both backends -- not a missed trap.
+- All 28 __shfl_xor_sync sites substituted with NT_WARP_MASK (0xFFFFFFFFFFFFFFFFULL on HIP / 0xFFFFFFFFu on CUDA); zero raw 0xFFFFFFFF literals remain. warpSize-based reductions are wave-agnostic; gemm.cu GEMV offset starts at 16 and the XOR butterfly never crosses the 32-lane boundary (verified: warp_id*32+tid layout, each logical 32-row writes its own tid==0). Correct on wave64 and wave32.
+- No hardcoded warpSize=32; the `__shared__ float[32]` cross-warp buffers are sized at the wave32 upper bound (1024/32), safe at wave64 (16 warps). attention.cu:50 `acc[HEAD_DIM/32]` is dead/unused (cosmetic, harmless).
+- No textures/resource handles -> no rule-of-five or pitch concerns. No library swaps (no cuBLAS/cuFFT/Thrust/CUB). hipFuncSetAttribute(64KB) accepted on gfx90a (q6_k smem test passes). nodiscard warnings on hipFree/hipFuncSetAttribute are benign (upstream ignores return; CUDA-identical behavior).
+- Commit hygiene: title `[ROCm] Add HIP backend for AMD GPUs (gfx90a/gfx1100)` 52 chars, mentions Claude, no noreply trailer, no ghstack, no em-dash, no AMD-internal account refs. Fork main is a clean upstream mirror (f2237be).
