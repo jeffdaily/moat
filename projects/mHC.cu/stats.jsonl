@@ -1,0 +1,12 @@
+{"kind":"phase","ts":"2026-06-02T06:28:19Z","phase":"compile","seconds":2.914,"exit":0,"cmd":"bash -c cmake -B agent_space/mhc_build -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ 2>&1 | tail -25"}
+{"kind":"phase","ts":"2026-06-02T06:28:26Z","phase":"compile","seconds":1.525,"exit":2,"cmd":"cmake --build agent_space/mhc_build --target test_rmsnorm -j8"}
+{"kind":"phase","ts":"2026-06-02T06:29:27Z","phase":"compile","seconds":3.633,"exit":0,"cmd":"cmake --build agent_space/mhc_build --target test_rmsnorm -j8"}
+{"kind":"phase","ts":"2026-06-02T06:29:44Z","phase":"compile","seconds":3.789,"exit":2,"cmd":"cmake --build agent_space/mhc_build -j8"}
+{"kind":"phase","ts":"2026-06-02T06:29:53Z","phase":"compile","seconds":3.600,"exit":2,"cmd":"cmake --build agent_space/mhc_build -j8"}
+{"kind":"phase","ts":"2026-06-02T06:30:53Z","phase":"compile","seconds":10.155,"exit":0,"cmd":"cmake --build agent_space/mhc_build -j8"}
+{"kind":"phase","ts":"2026-06-02T06:31:54Z","phase":"compile","seconds":10.484,"exit":0,"cmd":"cmake --build agent_space/mhc_build --target test_sinkhorn_knopp test_fused_rmsnorm_matmul test_fused_rmsnorm_matmul_backward -j8"}
+{"kind":"phase","ts":"2026-06-02T06:36:10Z","phase":"compile","seconds":10.365,"exit":0,"cmd":"cmake --build agent_space/mhc_build -j8"}
+{"kind":"phase","ts":"2026-06-02T06:36:29Z","phase":"compile","seconds":4.503,"exit":0,"cmd":"bash -c cmake -B agent_space/mhc_build_fat -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=\"gfx90a;gfx1100\" -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ >/dev/null 2>&1 && cmake --build agent_space/mhc_build_fat --target test_rmsnorm test_sinkhorn_knopp test_fused_rmsnorm_matmul -j8 2>&1 | grep -iE \"error:|Built target\" | grep -v nodiscard"}
+{"kind":"phase","ts":"2026-06-02T06:43:26Z","phase":"compile","seconds":5.454,"exit":0,"cmd":"cmake --build agent_space/mhc_build -j128"}
+{"kind":"phase","ts":"2026-06-02T06:44:16Z","phase":"compile","seconds":7.121,"exit":2,"cmd":"cmake --build agent_space/mhc_build_fat -j128"}
+{"kind":"phase","ts":"2026-06-02T06:58:27Z","phase":"compile","seconds":8.833,"exit":0,"cmd":"cmake --build agent_space/mhc_build_fat -j128"}

@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "mHC.cu",
   "upstream_url": "https://github.com/AndreSlavescu/mHC.cu",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/mHC.cu",
   "fork_default_branch": "main",
   "priority": 4.192,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-02T06:23:11Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T07:00:31Z",
+  "head_sha": "29a9acfda0e1b787cee18ea96b95ce548432cb5f",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T06:58:53Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T06:23:11Z",
+      "updated_at": "2026-06-02T07:00:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
