@@ -97,3 +97,47 @@ Fault-class review (all clear):
 - No hardcoded warpSize=32; the `__shared__ float[32]` cross-warp buffers are sized at the wave32 upper bound (1024/32), safe at wave64 (16 warps). attention.cu:50 `acc[HEAD_DIM/32]` is dead/unused (cosmetic, harmless).
 - No textures/resource handles -> no rule-of-five or pitch concerns. No library swaps (no cuBLAS/cuFFT/Thrust/CUB). hipFuncSetAttribute(64KB) accepted on gfx90a (q6_k smem test passes). nodiscard warnings on hipFree/hipFuncSetAttribute are benign (upstream ignores return; CUDA-identical behavior).
 - Commit hygiene: title `[ROCm] Add HIP backend for AMD GPUs (gfx90a/gfx1100)` 52 chars, mentions Claude, no noreply trailer, no ghstack, no em-dash, no AMD-internal account refs. Fork main is a clean upstream mirror (f2237be).
+
+## Validation 2026-06-02 (linux-gfx1100)
+
+Platform: AMD Radeon Pro W7800 48GB x4, gfx1100 (RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/ntransformer moat-port @ 144ab937bbaa7aad3440106358006dc014d776b6 (no fork push; follower validate-first, no source changes needed).
+
+### Build (gfx1100 single-arch)
+```
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-hip \
+  -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build agent_space/ntransformer/build-hip -j$(nproc)
+```
+Result: BUILD CLEAN (nodiscard warnings only, documented benign).
+
+gfx1100 code-object evidence (`roc-obj-ls agent_space/ntransformer/build-hip/test_gemm`):
+- `hipv4-amdgcn-amd-amdhsa--gfx1100` present (no gfx90a; single-arch build correct)
+
+### ctest (3 deterministic runs)
+```
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 ctest --test-dir agent_space/ntransformer/build-hip \
+  --output-on-failure -R "test_tensor|test_gemm"
+```
+Run 1: 2/2 PASS (0.58s). Run 2: 2/2 PASS (0.43s). Run 3: 2/2 PASS (0.45s). Deterministic.
+
+AMD_LOG_LEVEL=3 confirms: `Using native code object for device: amdgcn-amd-amdhsa--gfx1100`
+
+Exact dot-product results (vs gfx90a@144ab93 -- byte-identical):
+- gemv_f32: y[0]=32.0 (expected 32.0), y[1]=-16.0 (expected -16.0) PASS
+- gemv_q4_0 (smem): y[0]=256.0 (expected 256.0), y[1]=-256.0 (expected -256.0) PASS
+- gemv_q6_k_large (no-smem): y[0]=32768.0 (expected 32768.0), y[1]=-32768.0 PASS
+- silu_mul: [0.000, 0.731, -0.269, 1.762] within tolerance PASS
+- rmsnorm: [0.365148, 0.730296, 1.095444, 1.460593] exact match PASS
+
+### Wave32 verdict
+- NT_WARP_MASK = 0xFFFFFFFFFFFFFFFFULL: high 32 bits ignored on wave32 -- all 28 __shfl_xor_sync sites correct.
+- warpSize-based reductions (offset starts warpSize/2=16, __shared__ float[32] cross-warp buffer): correct at wave32 (32 lanes/warp, buffer holds up to 32 warps -- well within 1024/32=32 max).
+- gemm.cu GEMV logical-32 butterfly (block(32, GEMV_WARPS=8), offsets <= 16): native at wave32, XOR butterfly never crosses lane boundary. Exact dot-products (y[0]=32768 q6_k_large) prove correct.
+- Zero HSA 0x1016 faults. No NaN, no hang, no wrong output.
+- Fork clone: stays clean (build in agent_space, not in src/).
+
+### Verdict
+PASS. State: linux-gfx1100 port-ready -> completed. validated_sha=144ab937bbaa7aad3440106358006dc014d776b6.
