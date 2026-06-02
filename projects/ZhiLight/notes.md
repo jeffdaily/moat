@@ -273,3 +273,103 @@ Note for the validator: this is the final functional issue; cleared for validati
 
 ### Recommendation
 Approve (review-passed). No remaining problems.
+
+## Validation 2026-06-02 (linux-gfx90a, fork moat-port @ cffe5a4)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-), warpSize=64, CC:9.0, GCD 1 (HIP_VISIBLE_DEVICES=1). ROCm 7.2.1, ROCm PyTorch 2.13.
+
+### GPU arch
+
+```
+HIP_VISIBLE_DEVICES=1 python3 -c "import torch; p=torch.cuda.get_device_properties(0); print(p.name, f'CC:{p.major}.{p.minor}')"
+# AMD Instinct MI250X / MI250, CC:9.0
+```
+
+### Build (incremental, ninja: no work to do -- source matches cffe5a4)
+
+```
+HIPCXX=/opt/rocm/lib/llvm/bin/clang++ ZHILIGHT_USE_HIP=1 ENABLE_NCCL_TP=on TESTING=1 \
+cmake -S projects/ZhiLight/src -B agent_space/zhilight-build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++ -DCMAKE_HIP_PLATFORM=amd \
+  -DCMAKE_BUILD_TYPE=Release -DWITH_TESTING=ON -DPYTHON_EXECUTABLE=$(which python3)
+cmake --build agent_space/zhilight-build --target C internals_ -j16
+# ninja: no work to do.  (source matches committed cffe5a4)
+```
+
+### Gate 1: 77-case kernel test (run 1)
+
+```
+HIP_VISIBLE_DEVICES=1 PYTHONPATH=projects/ZhiLight/src python3 -m pytest \
+  projects/ZhiLight/src/tests/test_softmax.py \
+  projects/ZhiLight/src/tests/test_attn_softmax.py \
+  projects/ZhiLight/src/tests/test_rotary_embedding.py \
+  projects/ZhiLight/src/tests/test_feedforward.py \
+  projects/ZhiLight/src/tests/test_linear.py \
+  projects/ZhiLight/src/tests/test_embedding.py \
+  projects/ZhiLight/src/tests/test_arthmetic.py \
+  projects/ZhiLight/src/tests/test_concat_tensor.py \
+  projects/ZhiLight/src/tests/test_index_along_dim.py \
+  projects/ZhiLight/src/tests/test_log_prob.py \
+  projects/ZhiLight/src/tests/test_attention.py \
+  projects/ZhiLight/src/tests/test_lazy_loader.py
+# 77 passed in 10.77s
+# CC:90, mp_count:104, L2 Cache:8MB, max_smem:64KB
+```
+
+### Gate 1: 77-case kernel test (run 2 -- determinism)
+
+```
+# (same command)
+# 77 passed in 10.58s  -- bit-identical, deterministic
+```
+
+### Gate 2: MoE routing probe (agent_space/moe_probe/probe, reused from reviewer stage)
+
+Exercises `<<<rows,32>>>` launch -> DEV_softmax_inplace (blockDim.x==32, the fixed
+width-32 reduce form) vs the buggy full-wave64 form, compared to CPU softmax reference.
+fp16+bf16, num_exp in {8,32,60,128}, rows=200. Run twice.
+
+```
+HIP_VISIBLE_DEVICES=1 agent_space/moe_probe/probe
+# device=gfx90a:sramecc+:xnack- warpSize=64
+# fp16 num_exp=8    fixed_err=2.384e-07  buggy_err=2.384e-07
+# fp16 num_exp=32   fixed_err=2.384e-07  buggy_err=2.384e-07
+# fp16 num_exp=60   fixed_err=3.576e-07  buggy_err=3.576e-07
+# fp16 num_exp=128  fixed_err=4.172e-07  buggy_err=4.172e-07
+# bf16 num_exp=8    fixed_err=1.788e-07  buggy_err=1.788e-07
+# bf16 num_exp=32   fixed_err=3.576e-07  buggy_err=3.576e-07
+# bf16 num_exp=60   fixed_err=4.768e-07  buggy_err=4.768e-07
+# bf16 num_exp=128  fixed_err=5.960e-07  buggy_err=5.960e-07
+# determinism(fp16,128): run1_err=3.576e-07 run2_err=3.576e-07 same=1
+# WORST fixed err: fp16=4.172e-07 bf16=5.960e-07
+# (run 2 identical)
+```
+
+Fixed form: max abs error 4.2e-7 (fp16) / 6.0e-7 (bf16) vs CPU reference, bit-identical
+across two runs. The buggy/fixed forms produce identical output, confirming the porter's
+UB-not-observable analysis (inactive lanes 32-63 return 0.0 on ROCm 7.2.x; shift-invariant
+max subtraction + zero-sum from inactive lanes means no output divergence -- the fix removes
+the UB dependence, not a detectable output difference). The fixed form is value-correct
+against the CPU reference.
+
+### Supported vs deferred surface
+
+Supported (validated): fp16/bf16 dense FeedForward, softmax, attn_softmax, rotary embedding,
+hipBLASLt fp16/bf16 Linear (fp16+bf16 GEMM with 32F compute), embedding, amax/amin/sum,
+concat, index_along_dim, log_prob, attention (scalar path), lazy_loader, fp16/bf16 MoE
+routing softmax (top_k_softmax/KERNEL_top_k_softmax, the wave64-fixed path).
+
+Deferred/gated OFF (not a failure -- BM_EXCEPTION or compile-time gate):
+- marlin/awq/fp8/gptq quant kernels (mma.sync/ldmatrix/cp.async PTX, NVIDIA only)
+- wmma tensor-core attention decode (use_mma=false on HIP, scalar path used)
+- int8-quantized-KV attention (quant_attention.cuh whole-file #if !USE_HIP)
+- deep_gemm/flash_mla (not compiled under USE_HIP)
+- flash-attn prefill (run_mha_fwd throws on HIP)
+- int8-TP all-reduce quant kernels (wave64-correct code present but unreachable: cc==89 gate)
+
+### Result
+
+PASS. 77/77 kernel tests, deterministic across 2 runs. MoE routing probe: correct + deterministic.
+No regressions on non-GPU tests (no non-GPU test suite in this project).
+validated_sha: cffe5a42f5161d4c210681b8909b6a294929463e
