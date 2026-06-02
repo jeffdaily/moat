@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "libSGM",
   "upstream_url": "https://github.com/fixstars/libSGM",
-  "fork_url": null,
-  "fork_default_branch": "main",
+  "fork_url": "https://github.com/jeffdaily/libSGM",
+  "fork_default_branch": "master",
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-02T00:34:50Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T00:47:02Z",
+  "head_sha": "9ce43fd0a475ea0a13961c540cf867b23df48ff6",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T00:47:02Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T00:34:50Z",
+      "updated_at": "2026-06-02T00:47:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
