@@ -152,6 +152,87 @@ validation-failed -> porting (the Stage-2 OptiX gap was the known deferral).
 diff-surfel-tracing forked to jeffdaily/diff-surfel-tracing; Actions disabled.
 See "## Stage 2 port: OptiX -> HIPRT" below (appended as the work lands).
 
+## Stage 2 port: OptiX -> HIPRT (2026-06-02, RESUMED then BLOCKED)
+
+RESUME decision: a prior Stage-2 porter (process restart) left comprehensive,
+well-engineered UNCOMMITTED work in submodules/diff-surfel-tracing -- a complete
+HIPRT reimplementation (hiprt_tracer/{kernels.h,hiprt_wrapper.{cpp,h},params.h,
+config.h,auxiliary.h}; rewritten setup.py/trace_surfels.cpp/ext.cpp/__init__.py;
+vendored third_party/hiprt SDK). Inspection showed it was nearly complete and
+correct, so this session RESUMED (did not restart). Committed to
+jeffdaily/diff-surfel-tracing @ moat-port (b72226d) and repointed the superproject
+submodule there (EnvGS @ moat-port f3b5031, .gitmodules url+branch).
+
+OptiX -> HIPRT mapping (validated forward): triangle GAS optixAccelBuild ->
+hiprtCreateGeometry/hiprtBuildGeometry over the same host disk tessellation;
+raygen/closesthit/miss collapse to one HIP kernel; __anyhit__ record-and-ignore
+-> a HIPRT filter functor (surfelFilter) returning true to enumerate all hits
+t-sorted; optixLaunch -> oroModuleLaunchKernel of a hiprtBuildTraceKernels JIT
+(Orochi/hiprtc, disk cache); the vendored HIPRT SDK ships in third_party/hiprt so
+the tracer self-JITs; public API (OptiXStateWrapper, SurfelTracer) byte-stable.
+
+Build structure: the HIPRT/Orochi glue is a STANDALONE static lib (Orochi's hipew
+driver loader redeclares the HIP driver API and conflicts with torch's
+hip_runtime.h -- they cannot share a TU). The torch CUDAExtension compiles only
+ext.cpp + trace_surfels.cpp and links the glue + libhiprt through a POD/void*
+boundary (hiprt_tracer/hiprt_wrapper.h). The prebuilt libhiprt0300164.so is NOT
+committed (*.so gitignored); build HIPRT from source per agent_space/hiprt_probe
+(cmake -DBITCODE=OFF --target hiprt03001) into third_party/hiprt/dist/bin/Release.
+
+Build: succeeds (_C.cpython-312 .so links; import OK). Recipe:
+  HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx90a pip install -e . \
+    --no-build-isolation --no-deps -v
+Harness: agent_space/envgs_stage2/validate_stage2.py (faithful copy of
+HardwareRendering.get_disks tessellation; forward image + FD gradient checks).
+
+ROCm 7.2.x hiprtc/comgr codegen workarounds applied (the OptiX->HIPRT fault
+class): (1) per-ray hit chunk buffer in GLOBAL scratch, not a kernel stack array
+(stack-payload writes go stale above a register-pressure threshold);
+(2) JIT --gpu-max-threads-per-block=64; (3) __noinline__ traceStep returning the
+chunk count + __threadfence; (4) THIS SESSION: marked the backward geometry
+helpers (compute_transmat_uv_backward, compute_transmat_xy_backward,
+computeColorFromSHBackward) __noinline__ and made the backward kernel read the
+forward outputs/mid_val straight from params global (not staged into large local
+arrays) -- both to cut the heavy backward frame's register footprint.
+
+GENUINE BUG FIXED: cutoff was used UNINITIALIZED on the reflected bounces (upstream
+OptiX only set it in the start_from_first primary branch; the reflected-bounce
+h1/h2/h3 disk-corner vectors multiply by it). On HIP this stale value is NaN and
+poisons the surfel-vertex gradient. Initialized cutoff = 3.0f (the 3-sigma value
+the disk tessellation and the #else primary path use) in both traceRay_fwd and
+traceRay_bwd. Arch-unified (correct on wave32 and wave64).
+
+VALIDATED: forward tracer is correct on gfx90a -- non-trivial image (hit_frac
+~0.17, min 0/max 0.76), correct depths (~3.2), genuine hits+misses, no illegal
+access; the LINEAR backward gradient (colors) is finite + nonzero + FD-consistent.
+
+BLOCKER (linux-gfx90a -> blocked): the differentiable GEOMETRIC backward
+(d means3D / scales / rotations / opacities) produces a DETERMINISTIC, LOAD-
+CORRELATED NaN. Diagnosis: it NaNs on the MOST heavily-hit (front-facing) disks
+and is FINITE on the grazing/few-hit disks -- the opposite of a grazing-angle
+1/q degeneracy, so it is not a near-zero-denominator algorithm issue. It is a
+ROCm 7.2.x hiprtc/comgr codegen miscompile of the register-heavy backward
+traversal kernel: instrumentation-sensitive (adding a probe/printf flips the
+NaN to a finite, correct value -- e.g. an exfiltration probe showed dL_dalpha=0.5
+finite at the very point the unprobed run NaNs), optimization-level-invariant
+(NaN at JIT -O1/-O2; -O0 aborts), and distinct from the algorithm (forward
+correct; colors-gradient correct; the gradient math is byte-identical to the
+OptiX backward.cu). Attempts that did NOT resolve it: __noinline__ helpers,
+global mid_val/out_rgb reads, cutoff init, launch_bounds(64,8), JIT -O0/-O1/-O2.
+The remaining candidate fix (extract the entire ~140-line per-contributor
+gradient body into a __noinline__ function to shrink the traversal-loop frame) is
+high-risk for the validated forward path and not guaranteed against a heisenbug
+toolchain miscompile; stopping here rather than thrash (>3 substantive attempts).
+
+Resume path for the next porter: (a) reproduce on a newer ROCm (>7.2.x) hiprtc to
+see if the codegen bug is fixed upstream; (b) the __noinline__ per-contributor-body
+extraction; (c) compare against an actual OptiX run (needs NVIDIA HW) to confirm
+the NaN is purely codegen and not a latent reference NaN on front-facing disks;
+(d) try building HIPRT with -DBITCODE=ON (precompiled traversal, different codegen
+path) or a non-JIT offline-compiled backward kernel. Working tree + the two fork
+moat-port branches (b72226d tracing, f3b5031 super) hold all the work; the harness
+is agent_space/envgs_stage2/validate_stage2.py.
+
 ## Stage 2 deferred (OptiX reflection path) -- HISTORICAL, superseded by the port above
 
 EnvGS's diffuse / rasterized path is fully ported and GPU-validated on gfx90a

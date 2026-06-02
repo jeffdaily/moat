@@ -11,3 +11,4 @@
 {"kind":"phase","ts":"2026-06-01T00:42:08Z","phase":"test","seconds":4.707,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
 {"kind":"phase","ts":"2026-06-01T00:43:51Z","phase":"test","seconds":27.158,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/train_converge.py"}
 {"kind":"phase","ts":"2026-06-01T01:06:07Z","phase":"test","seconds":4.651,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-02T00:07:15Z","phase":"compile","seconds":32.127,"exit":0,"cmd":"bash -c cd projects/EnvGS/src/submodules/diff-surfel-tracing && pip install -e . --no-build-isolation --no-deps -v"}

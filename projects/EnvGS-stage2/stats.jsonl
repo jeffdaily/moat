@@ -1,0 +1,15 @@
+{"kind":"phase","ts":"2026-06-01T19:57:53Z","phase":"compile","seconds":0.336,"exit":1,"cmd":"pip install -e . --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-01T19:58:29Z","phase":"compile","seconds":21.072,"exit":1,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:03:07Z","phase":"compile","seconds":24.067,"exit":1,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:04:27Z","phase":"compile","seconds":31.551,"exit":0,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:06:38Z","phase":"compile","seconds":32.203,"exit":0,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:07:59Z","phase":"compile","seconds":31.991,"exit":0,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:10:40Z","phase":"test","seconds":20.956,"exit":2,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-01T20:12:33Z","phase":"test","seconds":3.826,"exit":2,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-01T20:14:58Z","phase":"compile","seconds":32.548,"exit":0,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:31:30Z","phase":"compile","seconds":37.327,"exit":0,"cmd":"bash agent_space/envgs_stage2/build_tracer.sh"}
+{"kind":"phase","ts":"2026-06-01T20:31:36Z","phase":"test","seconds":5.820,"exit":2,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-01T20:58:52Z","phase":"test","seconds":3.982,"exit":1,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T00:07:59Z","phase":"test","seconds":5.836,"exit":2,"cmd":"python3 -W ignore agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T00:10:14Z","phase":"test","seconds":5.970,"exit":1,"cmd":"python3 -W ignore agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T00:18:26Z","phase":"test","seconds":4.169,"exit":1,"cmd":"python3 -W ignore agent_space/envgs_stage2/validate_stage2.py"}
