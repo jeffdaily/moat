@@ -335,3 +335,86 @@ lars_impl.cuh. Not a bounce.
 GPU re-run is the validator's job; this review did not re-execute ctest. The
 porter's reported 32/33 pass (incl KSELECTION WarpTopK on wave64) is the claim
 the validator must reproduce.
+
+## Validation (Stage 2) 2026-06-02 (validator, linux-gfx90a, fork moat-port 9a5812f)
+
+Platform: linux-gfx90a (MI250X GCD2, HIP_VISIBLE_DEVICES=2, ROCm 7.2.1).
+GPU arch: gfx90a (amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-).
+Scope: Stage 2 delta -- pairwise_distance + random_projection enabled against
+cuvs::distance (jeffdaily/cuvs @ moat-port 0c2b709a, installed at
+_deps/cuvs/install). SVM/dbscan/kmeans/knn/tsne/umap remain deferred (cuvs
+neighbors/grammian not yet exported). SG slice + PRIMS non-regression also
+confirmed.
+
+### Step 1: Multi-arch build check (gfx90a;gfx1100)
+
+```
+llvm-objdump --offloading projects/cuml/build-hip/libcuml.so
+```
+
+Result: BOTH code objects present (gfx90a and gfx1100 bundles extracted at every
+TU boundary). CMakeCache confirms CMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100,
+CUML_LINK_CUVS=ON.
+
+```
+nm -D projects/cuml/build-hip/libcuml.so | grep cuvs
+```
+
+Result: cuvs::distance::pairwise_distance (float and double, both layout_left and
+layout_right) are undefined symbols -- correctly resolved at runtime from
+libcuvs.so. cuvs::cuvs is linked.
+
+Incremental build: cmake --build projects/cuml/build-hip -j16 -> ninja: no work
+to do. (sources unchanged, build state matches fork HEAD 9a5812f)
+
+### Step 2: SG_RPROJ_TEST (Stage 2 formal gate, gfx90a real GPU)
+
+```
+export HIP_VISIBLE_DEVICES=2
+export AMD_LOG_LEVEL=3
+export LD_LIBRARY_PATH=_deps/cuvs/install/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+projects/cuml/build-hip/SG_RPROJ_TEST
+```
+
+Result: 8/8 PASS (132.2 s total). All 4 EpsilonCheck subtests PASS:
+- RPROJTestF1.EpsilonCheck (759 ms) -- float, small matrix -> cuvs::distance
+- RPROJTestD1.EpsilonCheck (808 ms) -- double, small matrix -> cuvs::distance
+- RPROJTestF2.EpsilonCheck (60396 ms) -- float, larger matrix -> cuvs::distance
+- RPROJTestD2.EpsilonCheck (68056 ms) -- double, larger matrix -> cuvs::distance
+
+AMD_LOG_LEVEL=3 confirms: "Using native code object for device:
+amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" and Tensile ShaderName tags contain
+ISA90a and WS64 (wave64 dispatch on gfx90a confirmed). The ISA90a Tensile GEMM
+kernel is invoked inside cuvs::distance::pairwise_distance on device.
+
+### Step 3: Full ctest non-regression (gfx90a real GPU)
+
+```
+export HIP_VISIBLE_DEVICES=2
+export LD_LIBRARY_PATH=_deps/cuvs/install/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+ctest --test-dir projects/cuml/build-hip --output-on-failure -j1
+```
+
+Result: 33/34 PASS. SG_RPROJ_TEST: Passed (129.88 s in ctest sequence).
+Only SG_LARS_TEST fails (4 fitGram/fitX float+double subtests in-process-
+sequential) -- same documented ROCm-7.2.1 known issue as Stage 1, no regression.
+PRIMS 21/21 PASS including PRIMS_KSELECTION_TEST (wave64 6th-stage fix).
+SG tests 12/13 PASS (SG_RPROJ_TEST now counted; LARS still the sole failure).
+
+### Verdict: PASS
+
+All formal Stage 2 gates met:
+- Multi-arch build: gfx90a + gfx1100 code objects in libcuml.so (confirmed).
+- CUML_LINK_CUVS=ON: cuvs::distance::pairwise_distance symbols linked.
+- SG_RPROJ_TEST: 8/8 PASS including all 4 EpsilonCheck cases (pairwise_distance
+  -> cuvs::distance on device, native gfx90a ISA90a/WS64 Tensile dispatch).
+- Full ctest: 33/34 PASS; SG_LARS_TEST sole failure is the documented ROCm-7.2.1
+  in-process-sequential state-leak (not a port defect, passes in isolation).
+- No Stage 1 regression: all previously passing SG + PRIMS tests still pass.
+
+Stage 2 deliverable: pairwise_distance + random_projection enabled against
+cuvs::distance. SVM/dbscan/kmeans/knn/tsne/umap deferred pending cuvs
+neighbors/grammian sub-stages.
+
+validated_sha: 9a5812f1ed4a8b000d73a21402f57c3febf9ad76
+State transition: revalidate -> completed (linux-gfx90a).
