@@ -2,7 +2,7 @@
   "full_name": "Samarvivian/3P-ADMM-PC2",
   "upstream_url": "https://github.com/Samarvivian/3P-ADMM-PC2",
   "default_branch": "features",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/3P-ADMM-PC2",
   "ext_type": "nvcc-shared",
-  "base_sha": null
+  "base_sha": "dd96d5d3454a72334ddf1a6a3a63405d9c579ce8"
 }
