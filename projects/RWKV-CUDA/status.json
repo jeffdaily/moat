@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "RWKV-CUDA",
   "upstream_url": "https://github.com/BlinkDL/RWKV-CUDA",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/RWKV-CUDA",
   "fork_default_branch": "main",
   "priority": 3.923,
   "ext_type": "torch-extension",
