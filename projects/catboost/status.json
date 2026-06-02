@@ -7,8 +7,8 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-02T04:06:10Z",
-  "head_sha": "95ea9136",
+  "updated_at": "2026-06-02T06:11:03Z",
+  "head_sha": "887427fbfcf4ec9664d0ceadb1eab18895f7c952",
   "platforms": {
     "linux-gfx90a": {
       "state": "revalidate",
@@ -59,11 +59,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "MAJOR PROGRESS at 95ea9136. The memory_resource vendoring (jeff's insight) resolved the dual-STL blocker; the full GPU engine now builds all-clang-cl on gfx1151. Running gpu_data-ut then FOUND + FIXED a real GPU-correctness bug (committed): split.cu computed the split predicate as binIdx<<feature.Shift, which OVERFLOWS ui32 for a feature at high Shift (1-bit one-hot at Shift=31) with out-of-range binIdx -> spurious one-hot match; fix compares the extracted bin to binIdx directly (matches CPU; wave-agnostic; affects ALL platforms -> gfx90a/gfx1100 revalidate). gfx1151 GPU-VALIDATED: cuda_util-ut 48/48 + gpu_data-ut 20/20, both deterministic x2. REMAINING (blocks completed): methods-ut (histogram kernels) hits a clang-cl link quirk -- NKernel::MakeElementwiseOffsets is present in catboost-cuda-targets.lib with matching PEAU mangling yet unresolved at the ut-exe link (3 sibling dcg kernels resolve); full-app e2e not run. Build recipe + all Windows deltas in notes.md / agent_space/catboost.",
+      "blocked_reason": "fork @ 887427fb. Bin-builder overflow FIXED + methods-ut link quirk FIXED (mixed-const repeated-ui64 back-ref mangling mismatch -> match decl exactly). gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut HISTOGRAM suites 8/8 (TPairwise+TPointwise, with/without one-hot -- the wave32 GBDT core). REMAINING (block completed), both surfaced by running full methods-ut, both SEPARATE from the link quirk: (1) TExactLeavesEstimationTest crashes -- segmented_sort.cpp:130 hipcub DeviceSegmentedRadixSort 'invalid argument' on gfx1151 (likely rocPRIM GFX10/11 segmented-sort limit; RDNA-specific, may also hit gfx1100); (2) TAddingLangevinNoiseTest -- GPU SGLD noise std 0.657 vs CPU 0.431 (~1.5x; GPU RNG/scale). full-app e2e still not run. See notes.md.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T04:06:10Z",
+      "updated_at": "2026-06-02T06:11:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
