@@ -2,7 +2,11 @@
   "full_name": "nerfstudio-project/gsplat",
   "upstream_url": "https://github.com/nerfstudio-project/gsplat",
   "default_branch": "main",
-  "fork_url": null,
-  "ext_type": "unknown",
-  "base_sha": null
+  "fork_url": "https://github.com/jeffdaily/gsplat",
+  "ext_type": "torch-extension",
+  "base_sha": "9ebed19e9fd5464679c076e33d3197d3900a3766",
+  "pr_url": "https://github.com/nerfstudio-project/gsplat/pull/970",
+  "pr_number": 970,
+  "pr_head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+  "pr_opened_at": "2026-06-02"
 }

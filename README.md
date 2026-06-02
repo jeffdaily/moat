@@ -24,7 +24,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | catboost | [catboost/catboost](https://github.com/catboost/catboost) | [catboost](https://github.com/jeffdaily/catboost/tree/moat-port) | revalidate | revalidate | validating (blocked) | - |
 | cudf | [rapidsai/cudf](https://github.com/rapidsai/cudf) | [cudf](https://github.com/jeffdaily/cudf/tree/moat-port) | done | done | validating | - |
 | LMCache | [LMCache/LMCache](https://github.com/LMCache/LMCache) | [LMCache](https://github.com/jeffdaily/LMCache/tree/moat-port) | done | done | validating (blocked) | - |
-| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | done | done | done | - |
+| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | done | revalidate | revalidate | [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
 | llm.c | [karpathy/llm.c](https://github.com/karpathy/llm.c) | [llm.c](https://github.com/jeffdaily/llm.c/tree/moat-port) | done | done | done | - |
 | kaldi | [kaldi-asr/kaldi](https://github.com/kaldi-asr/kaldi) | [kaldi](https://github.com/jeffdaily/kaldi/tree/moat-port) | done | done | validating | - |
 | cuml | [rapidsai/cuml](https://github.com/rapidsai/cuml) | [cuml](https://github.com/jeffdaily/cuml/tree/moat-port) | done | validating | gated | - |
