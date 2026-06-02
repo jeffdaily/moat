@@ -45,3 +45,48 @@ Re-verified on this host (GCD 1, ROCm 7.2.1):
 
 Non-blocking (porter may fix opportunistically, not gating):
 - utils.cuh:489 -- the get_smid() HIP branch passes literal 0x1e to __builtin_amdgcn_s_getreg with comment "HW_REG_HW_ID, offset 0, size 32", but 0x1e decodes to hwRegId=30/offset=0/size=1, not HW_ID (hwRegId=4) nor a 32-bit field; the returned value is not the CU/SM id. It compiles and is dead code (get_smid is only called under if constexpr(DO_PROFILE), default false, and the profiler output is explicitly not validated per plan risk 2), so it does not affect the deliverable; fix the comment/encoding only if the profiler is ever enabled.
+
+## Validation 2026-06-02 (validator, linux-gfx90a, moat-port @ 29a9acf)
+
+Platform: MI250X (AMD Instinct), ROCm 7.2.1, GCD 1 (HIP_VISIBLE_DEVICES=1).
+GPU arch: gfx90a (amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-).
+Compiler: clang++ 22.0.0 (/opt/rocm/llvm/bin/clang++).
+
+Build command:
+```
+export HIP_VISIBLE_DEVICES=1
+cmake -B build -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build build -j$(nproc)
+```
+
+Build result: rc=0, no errors. All 8 test_*.cu and 9 bench_*.cu link clean.
+
+Multi-arch code object check (roc-obj-ls on test_rmsnorm):
+- hipv4-amdgcn-amd-amdhsa--gfx1100 (offset=8192, size=364200)
+- hipv4-amdgcn-amd-amdhsa--gfx90a  (offset=372736, size=395464)
+Both code objects present in every test binary checked.
+
+s_memrealtime check: llvm-objdump over test_rmsnorm and test_fused_rmsnorm_matmul: 0 occurrences. RDNA trap confirmed absent.
+
+Test run (8 tests, gfx90a GCD1, AMD_LOG_LEVEL=3):
+- test_rmsnorm:                    max diff 1.22e-05, PASS (tol 1e-2)
+- test_rmsnorm_backward:           d_inp 1.45e-02, d_weight 9.54e-07, PASS (tol 2e-2)
+- test_sinkhorn_knopp:             row err ~2.4e-7, col err ~4.8e-7 (<=1e-7 scale varies by size), max diff 0, PASS; doubly-stochastic assertion holds
+- test_mhc_layer:                  static 1.19e-06, dynamic 7.15e-07, PASS (tol 1e-1)
+- test_stream_ops:                 aggregate 1.19e-07, distribute 2.38e-07, PASS
+- test_stream_ops_backward:        all 6 gradients PASS
+- test_fused_rmsnorm_matmul:       fwd 5.65e-02, rms 2.65e-04, PASS (tol 6e-2 / 1e-3)
+- test_fused_rmsnorm_matmul_backward: dW 2.06e-02, dx 3.05e-02, PASS (tol 5e-2 / 6e-2)
+
+Result: 8 PASS, 0 FAIL.
+
+hipBLASLt native dispatch confirmed (AMD_LOG_LEVEL=3):
+- Kernels.so-000-gfx90a.hsaco loaded
+- TensileLibrary_BB_SB_UA_..._gfx90a.co loaded
+- "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" (not a fallback)
+
+Deferred: torch extension (Strategy B) -- see "Torch extension" section above.
+
+Verdict: COMPLETED. linux-gfx90a validated_sha=29a9acf.
