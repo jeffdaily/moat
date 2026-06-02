@@ -208,3 +208,52 @@ Resolved both reviewer findings; rebuilt multi-arch and re-validated.
   test_jk_energy_per_atom fails). Both gfx90a+gfx1100 code objects present in
   libgvhf_rys.so (and the other 7 .so). AMD_LOG_LEVEL=3 shows probe_smid_kernel
   + int3c2e kernels dispatch on gfx90a.
+
+## Review 2026-06-02 (reviewer, gfx90a, DELTA 460879b -> 8cb8806) -- REVIEW PASSED
+
+Focused delta re-review of the porter's fix for the prior get_smid() pool-OOB
+blocker. Both commits share parent 72087c7 (the porter amended the single
+curated commit; correct per MOAT rules). No problems found; the prior blocker
+and minor are both resolved and independently verified on real gfx90a (GCD0).
+
+Verification performed (not just read):
+- probe_smid_range (mole_helper.cu, USE_HIP only) uses the same get_smid()/
+  __smid() the consumers use, launches mpc*8 blocks with a clock64 spin to keep
+  blocks co-resident (saturating occupancy), atomicMaxes the slot id. Any probe
+  under-count is absorbed by the power-of-two rounding in __config__: on gfx90a
+  observed 125 -> +1 -> rounded to 128, covering the full gfx9 7-bit encodable
+  smid range [0,127]. Not racy under-counting in a way that matters because the
+  ceiling, not the observation, sets the floor.
+- pool_slots (__config__.py) = 128 on gfx90a, == multiProcessorCount on CUDA
+  (NVIDIA path untouched), not moduloed (per-CU-private slots preserved).
+- Applied at exactly the two get_smid()-indexed pools: df/int3c2e_bdiv.py:196
+  and pbc/df/ft_ao.py:377. Audit confirmed exhaustive: get_smid() appears only
+  in fill_int3c2e.cu, unrolled_int3c2e.cu (9 sites) and pbc/ft_ao.cu:261. Those
+  kernels launch a 2D grid (sp_block x ksh_block) that can exceed mpc, so the
+  CU-private smid index is the right choice and mpc-sizing was genuinely wrong.
+- scf/jk.py and grad/hessian dd_pool correctly left at multiProcessorCount:
+  RYS_build_jk / RYS_per_atom_jk_ip1 index pool + blockIdx.x*QUEUE_DEPTH and
+  dd_pool + blockIdx.x*... , launched <<<workers=multiProcessorCount, ...>>>, so
+  blockIdx.x in [0,mpc) -- mpc sizing is exact there. Confirmed device-side.
+- Decisive proof reproduced on GCD0 (agent_space/sentinel_proof.py and a
+  negative control): d-shell aux_e2(O/H cc-pVDZ + cc-pVDZ-jkfit) hitting the
+  to_sph && li>1 write branch -> 0 guard f64 entries clobbered at pool_slots=128;
+  forcing the old workers=mpc=104 sizing clobbers 7107 guard entries on the same
+  run. The guard genuinely catches the silent OOB in both directions.
+- pbc int3c2e_create_tasks.cuh block_max CUDA #else is now byte-identical to
+  upstream 72087c7 (buf[WARPS], thread_id < WARPS, offset WARPS/2, mask 0xff);
+  warp_max likewise. Wave-aware nwarps logic is fully inside #ifdef USE_HIP. The
+  prior "byte-identical" wording is now accurate. Verified via git show.
+- vhf.cuh comment now points at the real pool_slots/probe_smid_range instead of
+  the never-existing SM_POOL_SLOTS symbol.
+- Tests on GCD0: test_rhf/uhf/int2c2e/int4c2e/scf_j_engine/scf_jk -> 49 passed,
+  3 skipped, 1 failed (only the deferred analytic-gradient test_jk_energy_per_atom,
+  accurately labeled). libgvhf_rys.so carries both gfx90a + gfx1100 code objects;
+  probe_smid_range symbol exported. Build artifacts are current with 8cb8806's
+  sources (so mtime newer than the .cu/.py). Untracked split RDC objects are the
+  documented gitignored housekeeping, not committed.
+- Hygiene: [ROCm] title 61 chars, Claude credited, no noreply trailer, no
+  ghstack, no em-dash, Test Plan present; fork master is a clean mirror at
+  72087c7; Actions disabled on the fork (enabled=false).
+
+Verdict: APPROVE. Handing to the validator for the full GPU test run.
