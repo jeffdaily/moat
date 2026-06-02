@@ -1,0 +1,7 @@
+{"kind":"phase","ts":"2026-06-02T01:09:43Z","phase":"compile","seconds":0.336,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-02T01:10:15Z","phase":"compile","seconds":23.378,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-02T01:11:57Z","phase":"compile","seconds":53.139,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-02T01:19:49Z","phase":"compile","seconds":52.494,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-02T01:21:36Z","phase":"compile","seconds":52.526,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-02T01:21:45Z","phase":"test","seconds":2.847,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && python test/test_bind_success.py"}
+{"kind":"phase","ts":"2026-06-02T01:22:06Z","phase":"test","seconds":5.277,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/evogp/src && python -m evogp.sr_test"}
