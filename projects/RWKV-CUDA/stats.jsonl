@@ -5,3 +5,5 @@
 {"kind":"phase","ts":"2026-06-02T01:32:02Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python rwkv7_cuda_benchmark.py fp32 0"}
 {"kind":"phase","ts":"2026-06-02T01:37:26Z","phase":"compile","seconds":261.573,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/rwkv_val_run.sh 1"}
 {"kind":"phase","ts":"2026-06-02T01:57:07Z","phase":"test","seconds":0.003,"exit":0,"cmd":"echo test phase complete"}
+{"kind":"phase","ts":"2026-06-02T02:14:32Z","phase":"compile","seconds":0.033,"exit":2,"cmd":"python rwkv7_cuda_benchmark.py fp32 0"}
+{"kind":"phase","ts":"2026-06-02T02:24:55Z","phase":"test","seconds":78.840,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/build/RWKV-CUDA/rwkv7_fast_fused && python rwkv7_cuda_benchmark.py fp32 0 && python rwkv7_cuda_benchmark.py bf16 0 && python rwkv7_cuda_benchmark_state.py fp32 0 && python rwkv7_cuda_benchmark_state.py bf16 0 && python rwkv7_cuda_benchmark_state_passing.py fp32 0 && python rwkv7_cuda_benchmark_state_passing.py bf16 0"}

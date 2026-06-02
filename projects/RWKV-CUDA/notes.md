@@ -163,6 +163,100 @@ wkv6 fwd+bwd (expect 1e-5..1.7e-3):
 **Conclusion:** All validated variants PASS. err ratios stable across 2 runs.
 Native gfx90a code object confirmed. linux-gfx90a -> completed (sha c4ed7fad).
 
+## Validation 2026-06-02 (gfx1100)
+
+GPU: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1, PyTorch 2.13.0a0+gitb5e90ff.
+HIP_VISIBLE_DEVICES=0 CUDA_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100.
+Fork cloned to agent_space/build/RWKV-CUDA (moat-port @ c4ed7fa); hipify mirror at
+agent_space/build/RWKV-HIP (gitignored). No RWKV-HIP/ in MOAT repo (git status clean).
+
+**Device dispatch confirmed:** AMD_LOG_LEVEL=3 (wkv6 run):
+"Using native code object for device: amdgcn-amd-amdhsa--gfx1100" + hipLaunchKernel calls.
+All compile steps show `--offload-arch=gfx1100`.
+
+**Wave32 verdict:** No `__shfl`/`__ballot`/`__syncwarp`/`warpSize` in any kernel
+(confirmed by reviewer). All synchronization via `__syncthreads()` over a block of N
+(head size) threads -- wave-width agnostic. No wave32 bug found; err-ratios on gfx1100
+match gfx90a within expected run-to-run variance.
+
+**Build commands (JIT, per subproject):**
+```
+export HIP_VISIBLE_DEVICES=0 CUDA_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100
+export TORCH_EXTENSIONS_DIR=/var/lib/jenkins/moat/agent_space/ext_gfx1100_<variant>
+# rwkv7_fast_fused (from agent_space/build/RWKV-CUDA/rwkv7_fast_fused):
+python rwkv7_cuda_benchmark.py fp32 0
+python rwkv7_cuda_benchmark.py bf16 0
+python rwkv7_cuda_benchmark_state.py fp32 0
+python rwkv7_cuda_benchmark_state.py bf16 0
+python rwkv7_cuda_benchmark_state_passing.py fp32 0
+python rwkv7_cuda_benchmark_state_passing.py bf16 0
+# wkv5_bf16 (from agent_space/build/RWKV-CUDA/wkv5_bf16):
+python run.py
+# wkv6 (from agent_space/build/RWKV-CUDA/wkv6):
+python run.py
+# wkv5 v1 fwd+bwd (from agent_space/build/RWKV-CUDA/wkv5):
+python run_v1_fwd_gfx1100.py   # fwd vs formula (HEAD_SIZE=2)
+python run_v1_bwd_gfx1100.py   # v1 vs ref kernel (HEAD_SIZE=4)
+```
+
+**Err ratios (run 1 / run 2) -- gfx90a reference in parens:**
+
+rwkv7 vanilla fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.65e-7/1.58e-7 | g_r 2.20e-7/2.21e-7 | g_w 2.94e-7/3.15e-7
+  g_k 1.76e-7/1.77e-7 | g_v 1.95e-7/1.92e-7 | g_a 3.19e-7/3.16e-7 | g_b 2.02e-7/2.01e-7  PASS
+
+rwkv7 vanilla bf16 (gfx90a ~3.5e-3..4.6e-3):
+- y: 3.41e-3/3.67e-3 | g_r 3.80e-3/3.94e-3 | g_w 3.49e-3/3.65e-3
+  g_k 3.61e-3/4.13e-3 | g_v 3.73e-3/4.14e-3 | g_a 4.20e-3/5.08e-3 | g_b 4.26e-3/4.74e-3  PASS
+
+rwkv7 state fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.65e-7/1.69e-7 | g_s 2.12e-7/2.34e-7 | g_r 2.35e-7/2.24e-7
+  g_w 3.46e-7/2.82e-7 | g_k 1.84e-7/1.87e-7 | g_v 2.10e-7/2.13e-7
+  g_a 3.46e-7/3.16e-7 | g_b 2.40e-7/2.20e-7  PASS
+
+rwkv7 state bf16 (gfx90a ~3.3e-3..4.4e-3):
+- y: 3.43e-3/3.48e-3 | g_s 3.23e-3/3.43e-3 | g_r 3.71e-3/3.71e-3
+  g_w 3.81e-3/3.58e-3 | g_k 3.91e-3/3.62e-3 | g_v 3.89e-3/3.76e-3
+  g_a 4.50e-3/4.21e-3 | g_b 4.69e-3/4.15e-3  PASS
+
+rwkv7 state-passing fp32 (gfx90a ~1e-7..3.4e-7):
+- y: 1.73e-7/1.71e-7 | sT 1.36e-7/1.48e-7 | g_s 2.28e-7/2.13e-7
+  g_r 2.32e-7/2.49e-7 | g_w 2.94e-7/3.30e-7 | g_k 1.96e-7/1.76e-7
+  g_v 2.09e-7/2.00e-7 | g_a 3.18e-7/3.36e-7 | g_b 2.39e-7/2.16e-7  PASS
+
+rwkv7 state-passing bf16 (gfx90a ~2.7e-3..4.3e-3):
+- y: 3.41e-3/3.45e-3 | sT 2.74e-3/2.75e-3 | g_s 3.14e-3/3.02e-3
+  g_r 3.75e-3/3.84e-3 | g_w 3.51e-3/3.50e-3 | g_k 3.76e-3/3.77e-3
+  g_v 3.84e-3/3.77e-3 | g_a 4.49e-3/4.42e-3 | g_b 4.41e-3/4.34e-3  PASS
+
+wkv5_bf16 correctness (v1b, gfx90a: fwd 1.7e-3, grads 1.2e-3..2e-3):
+- CUDA fwd: 1.66e-3/1.66e-3 | g_r 2.01e-3/2.01e-3 | g_k 1.74e-3/1.74e-3
+  g_v 1.74e-3/1.74e-3 | g_w 2.40e-3/2.40e-3 | g_u 1.88e-3/1.88e-3  PASS
+
+wkv6 fwd+bwd (gfx90a: fwd 1.7e-5, grads 1e-5..1.7e-3):
+- fwd: 1.61e-5/1.61e-5 | g_r 3.04e-5/3.04e-5 | g_k 6.07e-5/6.07e-5
+  g_v 3.41e-5/3.41e-5 | g_w 1.78e-3/1.78e-3 | g_u 8.15e-5/8.15e-5  PASS
+
+wkv5 v1 fwd (vs formula, HEAD_SIZE=2, gfx90a: 7.5e-8):
+- err: 8.47e-8/8.47e-8  PASS
+
+wkv5 v1 bwd (v1 vs ref kernel, HEAD_SIZE=4, gfx90a: ~1e-7..2.7e-7):
+- fwd y: 0.0/0.0 | g_r 7.92e-8/7.92e-8 | g_k 1.04e-7/1.04e-7
+  g_v 7.26e-8/7.26e-8 | g_w 1.35e-7/1.35e-7 | g_u 5.70e-8/6.66e-8  PASS
+
+**Determinism:** All fp32 and wkv6 results identical across 2 runs. bf16 results
+show minor run-to-run float variation within the bf16 rounding budget; well within
+the ~3e-3..5e-3 band.
+
+**Deferred (unchanged from gfx90a):**
+- wkv5 default CUDA_KERNEL_VERSION='1d': pre-existing upstream link bug.
+- wkv/depthwise_conv1d: JIT+hipify clean; no HIP-specific risk.
+
+**Conclusion:** All validated variants PASS on gfx1100. err ratios on par with gfx90a.
+No wave32 bug (no warp intrinsics; block synchronization is wave-width agnostic).
+bf16 paths (c10::BFloat16 switch) produce consistent results with the gfx90a bf16 baseline.
+Native gfx1100 code objects dispatched. Repo clean (no RWKV-HIP leak). linux-gfx1100 -> completed (sha c4ed7fad).
+
 ## Review 2026-06-02 (reviewer, gfx90a, fork c4ed7fad)
 Reviewed `git diff 9b17d5d...HEAD` via /pr-review. No problems found; review-passed.
 Verified independently (not just trusting notes): no warp intrinsics anywhere
