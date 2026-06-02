@@ -4,3 +4,6 @@
 {"kind":"phase","ts":"2026-06-01T23:20:49Z","phase":"compile","seconds":13.579,"exit":1,"cmd":"ninja -C agent_space/cuvs_build -j16 DISTANCE_TEST"}
 {"kind":"phase","ts":"2026-06-01T23:22:00Z","phase":"compile","seconds":26.937,"exit":0,"cmd":"ninja -C agent_space/cuvs_build -j16 DISTANCE_TEST"}
 {"kind":"phase","ts":"2026-06-01T23:37:11Z","phase":"test","seconds":900.065,"exit":124,"cmd":"timeout 900 agent_space/cuvs_build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-02T05:07:09Z","phase":"compile","seconds":30.763,"exit":0,"cmd":"ninja -C agent_space/cuvs_build -j32 cuvs DISTANCE_TEST FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-02T05:17:09Z","phase":"test","seconds":0.523,"exit":0,"cmd":"agent_space/cuvs_build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-02T05:27:16Z","phase":"test","seconds":591.862,"exit":0,"cmd":"agent_space/cuvs_build/gtests/DISTANCE_TEST --gtest_filter=-BigMatrix*"}

@@ -89,20 +89,34 @@ follow-on; Layer A SIMT is correct and is the validated deliverable here.)
   helper_structs}.cuh`: `#if !defined(USE_HIP)` the `cutlass_base.cuh` includes
   (which pull <cuda/semaphore> + <cutlass/...>) and the cutlass dispatch branch;
   force the SIMT fused-NN kernel on HIP (same fallback cuVS uses below SM_80).
-- `fused_distance_nn/simt_kernel.cuh`: `KVPair{static_cast<KVPair::Key>(tmpkey),
-  acc}` -- clang rejects the unsigned->int narrowing in the braced init that nvcc
-  only warns on (the same narrowing class raft fixed in its simt_kernel). The SIMT
-  fused-NN per-row mutex is acquired one lane at a time (`lid == j*AccThCols`) and
-  the shuffles use raft::WarpSize, so it is wave64-correct by construction.
+- `fused_distance_nn/simt_kernel.cuh`: two HIP edits. (1) `KVPair{static_cast<
+  KVPair::Key>(tmpkey), acc}` -- clang rejects the unsigned->int narrowing in the
+  braced init that nvcc only warns on (the same narrowing class raft fixed in its
+  simt_kernel). (2) the body guard is `#if (__CUDA_ARCH__ < 800) ||
+  defined(USE_HIP)`: the dispatcher forces this SIMT kernel on HIP, but raft's
+  compat header pins `__CUDA_ARCH__` to 800 on the device pass, so the bare
+  `< 800` guard compiled the body OUT and shipped an EMPTY kernel (uninitialized
+  fusedDistanceNN output -- the cupoch/RXMesh `__CUDA_ARCH__` trap). With the
+  body live, the SIMT per-row mutex is acquired one lane at a time
+  (`lid == j*AccThCols`) and the shuffles use raft::WarpSize, so it is
+  wave-agnostic (correct on wave32 and wave64). Validated on gfx90a by the new
+  FUSED_NN_TEST (argmin + L2 relu-ALWAYS epilogue vs a CPU reference).
 
 ## wave64 audit (distance slice)
 
 The distance slice rides raft's wave-agnostic primitives: the SIMT pairwise
 GEMM (PairwiseDistances in pairwise_distance_base.cuh) and the SIMT fused-NN
-kernel use `raft::WarpSize` / `raft::shfl(width=AccThCols)` (host-correct via
-raft's RAFT_HOST_WARP_SIZE), and the per-row L2 norms feed through raft's
-coalescedReduction (the active_mask() fix already landed in raft). No literal-32
-masks, no `__ballot(0xffffffff)`, no hand-rolled bitonic in this slice. The
+kernel use `raft::WarpSize` / `raft::shfl(width=AccThCols)`, and the per-row L2
+norms feed through raft's coalescedReduction (the active_mask() fix already
+landed in raft). cuVS has NO warp-size constant of its own (no CMake-injected
+warp def, no hardcoded wave width in the compiled slice -- the only literal-32
+shuffles/ballots live in the CUTLASS persistent-GEMM and sparse paths, both
+`#if !defined(USE_HIP)` guarded out), so building against the fixed raft
+(ce0fa68c, whose HOST raft::WarpSize is a runtime hipDeviceGetAttribute query)
+auto-inherits the multi-arch fix at every host launch site (kmeans_balanced
+block_dim, ivf_pq_build, vpq_dataset, scann_quantize, haversine). This was
+verified by a combined gfx90a;gfx1100 build (both code objects in libcuvs.so).
+No `__ballot(0xffffffff)`, no hand-rolled bitonic in the compiled slice. The
 wave64 headline risks (CAGRA team-size, NN-Descent bitonic, FAISS select /
 ball_cover) live in the DEFERRED neighbors stages below, not in distance.
 
@@ -148,17 +162,27 @@ Prereqs: ported rmm at `_deps/raft-rmm/install`, ported raft at
 (gtest/gmock/spdlog/fmt). Build scratch is kept in agent_space/ (gitignored), not
 the MOAT repo root.
 
+cuvs MUST be built against the FIXED raft (jeffdaily/raft @ moat-port ce0fa68c,
+the multi-arch keystone): reinstall raft multi-arch first (see raft notes
+"## Install as a dependency"), then point cuvs at `_deps/raft/install`. The
+installed raft header must show `host_warp_size()` (the runtime warp query); a
+stale pre-ce0fa68c install ships a compile-time host WarpSize and is wrong for a
+multi-arch build.
+
 ```bash
 export CONDA_PREFIX=/opt/conda/envs/py_3.12
-export HIP_VISIBLE_DEVICES=0   # GCD 0 only; 1/2/3 busy with other agents
+export HIP_VISIBLE_DEVICES=2   # pin one GCD; others may run other agents
 cmake -S projects/cuvs/src/cpp -B agent_space/cuvs_build -GNinja \
   -DUSE_HIP=ON \
-  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
   -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
   -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/raft/install;/var/lib/jenkins/moat/_deps/raft-rmm/install;/opt/rocm;$CONDA_PREFIX" \
   -DBUILD_TESTS=ON \
   -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cuvs/install
-bash utils/timeit.sh cuvs compile -- ninja -C agent_space/cuvs_build -j16 cuvs DISTANCE_TEST
+bash utils/timeit.sh cuvs compile -- \
+  ninja -C agent_space/cuvs_build -j32 cuvs DISTANCE_TEST FUSED_NN_TEST
+# both code objects in the lib:
+llvm-objdump --offloading agent_space/cuvs_build/libcuvs.so | grep -io 'gfx[0-9a-z]*' | sort -u
 ```
 
 Arch is read from CMAKE_HIP_ARCHITECTURES (defaulted to gfx90a only when unset),
@@ -167,28 +191,42 @@ edit. Followers (gfx1100/gfx1151) will also need the raft rocPRIM 4.2.0 DPP
 workaround (ROCPRIM_DISABLE_DPP=1 on RDNA) inherited via raft, plus -- once the CK
 Layer-B lands -- the `is_xdl_wmma_supported` gfx11 gate.
 
-## Validation (gfx90a, GCD 0)
+## Validation (gfx90a, GCD 2)
 
 ```bash
 export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:/var/lib/jenkins/moat/_deps/raft/install/lib:/var/lib/jenkins/moat/_deps/raft-rmm/install/lib:/opt/rocm/lib:$LD_LIBRARY_PATH"
-HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build/gtests/DISTANCE_TEST
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build/gtests/DISTANCE_TEST --gtest_filter='-BigMatrix*'
 ```
 
 DISTANCE_TEST exercises the PUBLIC `cuvs::distance::pairwise_distance` for every
-metric x dtype against a CPU reference at the per-test recall/tolerance.
+metric x dtype against a CPU reference. FUSED_NN_TEST exercises the PUBLIC
+`cuvs::distance::fusedDistanceNNMinReduce<float, KeyValuePair<int,float>, int>`
+(the forced-SIMT kernel) and checks both the argmin index and the L2 relu-ALWAYS
+epilogue distance against an independent CPU reference, using splitmix64-hashed
+embeddings (no periodic structure -> no exact-tie false negatives). A body-less
+kernel leaves the output at the init maxVal and fails immediately.
 
-RESULTS (gfx90a, MI250X, GCD 0, ROCm 7.2.1): the parameterized correctness suite
-(`--gtest_filter='-BigMatrix*'`) is **410/410 PASS, 0 FAILED** across 48 test
-suites -- canberra, correlation, cosine, hamming, hellinger, inner-product,
-jensen-shannon, kl-divergence, l1, l2-expanded (+ self-distance X==Y), l2-sqrt
--expanded, l-inf, lp-unexpanded, russell-rao, each in float + half + double. The
-slow `BigMatrix*` stress cases were excluded from the timed gate (each large L2
-case is ~48s on the forced-SIMT path); a prior full-suite run confirmed the
-BigMatrix EucExp cases also pass (all `[ OK ]`). Device dispatch confirmed via
-AMD_LOG_LEVEL=3: gfx90a native code object (amdgcn-amd-amdhsa--gfx90a:sramecc+),
-Direct Dispatch on HIP 7.2.53211 -- real GPU, not a CPU smoketest. The l_inf
-static_cast fix and the forced-SIMT fused-NN/distance path are exercised and
-correct.
+RESULTS (gfx90a, MI250X, GCD 2, ROCm 7.2.53211, built against fixed raft
+ce0fa68c, multi-arch gfx90a;gfx1100):
+- **FUSED_NN_TEST: 7/7 PASS, 0 FAILED.** Proves the fused-NN kernel now has a
+  real body on HIP (the `__CUDA_ARCH__<800` guard fix) and that its argmin +
+  L2 epilogue numerics are correct. AMD_LOG_LEVEL=3 shows the live
+  `cuvs::distance::detail::fusedDistanceNNkernel<float, KeyValuePair<int,float>,
+  int, ...>` launching on the native gfx90a code object
+  (amdgcn-amd-amdhsa--gfx90a:sramecc+, Direct Dispatch).
+- **DISTANCE_TEST `--gtest_filter='-BigMatrix*'`: 410/410 PASS, 0 FAILED**
+  across 48 suites -- canberra, correlation, cosine, hamming, hellinger,
+  inner-product, jensen-shannon, kl-divergence, l1, l2-expanded (+ self-distance
+  X==Y), l2-sqrt-expanded, l-inf, lp-unexpanded, russell-rao, each in float +
+  half + double. The slow `BigMatrix*` stress cases were excluded from the timed
+  gate (each large L2 case is ~48s on the forced-SIMT path); a prior full-suite
+  run confirmed the BigMatrix EucExp cases also pass.
+- libcuvs.so carries BOTH gfx90a and gfx1100 code objects (llvm-objdump
+  --offloading), so the multi-arch build is verified.
+
+The l_inf static_cast fix, the forced-SIMT pairwise-distance path, and the now-
+live forced-SIMT fused-NN path are all exercised on real gfx90a and correct.
 
 ## Install as a dependency
 
