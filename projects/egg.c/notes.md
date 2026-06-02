@@ -142,3 +142,51 @@ Results:
 - Determinism: two EGG_FIXED_SEED=12345 runs are BIT-IDENTICAL on Loss, Up+, Up- across all 16 steps (diff returned empty). Only Fwd/Host wall-clock timings differ. Decisive warp-width fingerprint: a wrong 64-lane partition would produce different Up+/Up- counts between runs.
 - Non-GPU regression: d-eggs/test_ternary.cpp builds + passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
 - GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
+
+## Validation 2026-06-02 (validator, linux-gfx1100, fork 0472ed5)
+Verdict: PASS. Real GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1.
+
+Commands run:
+
+```
+# 1. Build (gfx1100 only)
+utils/timeit.sh egg.c compile -- \
+  /opt/rocm/bin/hipcc -O3 --offload-arch=gfx1100 -x hip \
+  projects/egg.c/src/full_cuda_train_egg.cu \
+  -o agent_space/egg_hip_gfx1100
+
+/opt/rocm/lib/llvm/bin/llvm-objdump --offloading agent_space/egg_hip_gfx1100 \
+  | grep -io 'gfx[0-9a-f]*' | sort -u
+# -> gfx1100  (gfx1100-only code object confirmed)
+
+# 2. Native dispatch confirmation (AMD_LOG_LEVEL=3)
+cd agent_space && HIP_VISIBLE_DEVICES=0 EGG_FIXED_SEED=12345 AMD_LOG_LEVEL=3 \
+  stdbuf -oL ./egg_hip_gfx1100 > /tmp/egg_r3_stdout.log 2>/tmp/egg_r3_amdlog.log &
+# -> grep "native code object" /tmp/egg_r3_amdlog.log:
+#    "Using native code object for device: amdgcn-amd-amdhsa--gfx1100"
+
+# 3. Training runs (determinism, HIP_VISIBLE_DEVICES=0)
+cd agent_space && HIP_VISIBLE_DEVICES=0 EGG_FIXED_SEED=12345 \
+  stdbuf -oL ./egg_hip_gfx1100 > egg_val_gfx1100_run2_stdout.log 2>/dev/null &
+# (kill after ~170s, 6 steps)
+
+# 4. Non-GPU regression
+utils/timeit.sh egg.c test -- \
+  g++ -O3 -Iprojects/egg.c/src/d-eggs/include \
+  projects/egg.c/src/d-eggs/test_ternary.cpp -o agent_space/test_ternary_gfx1100
+./agent_space/test_ternary_gfx1100
+```
+
+Results:
+- Build time: 11.1s (gfx1100-only binary). 11 pre-existing -Wunused-value warnings, no errors.
+- Code-object arch: llvm-objdump confirms gfx1100-only code object.
+- Native dispatch: AMD_LOG_LEVEL=3 log line "Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100". Gfx Major/Minor/Stepping: 11/0/0.
+- Loss decreases monotonically over 6 steps: 8.3250 -> 7.5786 -> 6.9139 -> 6.3246 -> 5.8225 -> 5.4027. All finite, no NaN/Inf.
+- Wave32 verdict: EGG_WARP_SIZE=32 logical-warp is CORRECT at wave32. On gfx1100 the 32-lane logical warp equals the hardware wavefront (native case); no warp-width mismatch. The WarpReduce<long long,32> and width-32 warpBroadcast produce correct per-lane results.
+- Determinism: three independent EGG_FIXED_SEED=12345 runs all produce BIT-IDENTICAL Loss, Up+, Up-, and debug (Pos/Neg/Fit) values at step 0: Loss=8.3250, Up+=421700, Up-=420481, Pos=33904, Neg=34414, Fit=1. Decisive wave32 fingerprint; a wrong-width reduction would diverge.
+- Trajectory vs gfx90a@0472ed5: loss trajectory matches gfx90a review run (gfx90a step 0 Loss=8.2460; gfx1100 step 0 Loss=8.3250 -- small difference expected because gfx90a reviewer used a different corpus and the per-step seed includes the step index; the validator gfx90a run with this corpus started at 8.3489 which is consistent with gfx1100 at 8.3250 using EGG_FIXED_SEED=12345 on both arches). The monotone decreasing shape and magnitude are correct.
+- Step time: ~25s/step on W7800 gfx1100 (vs ~11s on MI250X gfx90a), due to fewer CUs; no hang.
+- No HSA 0x1016 faults or any HIP errors in any run.
+- Non-GPU regression: d-eggs/test_ternary.cpp builds + passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
+- Fork state: clean at 0472ed5 (no source changes needed; gfx1100 validate-first follower requires no code delta).
+- GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
