@@ -180,6 +180,89 @@ Resolved this session (all USE_HIP-guarded; CUDA path byte-for-byte):
     invalid_* not implicitly captured by a device lambda under clang (add to the
     capture list), and the zip-write boundary (detail::cugraph_zip_make_tuple).
 
+## Session 4 progress (A' class SOLVED; SG lib down to 16 failing TUs; fork d326818)
+
+Net-positive, zero-regression. All USE_HIP-guarded; CUDA path byte-identical.
+Committed as a NEW commit on top of 1e28c83 (base preserved, not amended).
+
+OPTION DECISION (the A' fork in the road): round 4 had begun option (b) -- a
+deep shadow of zip_iterator_base.h's tuple_meta_accumulate / tuple_of_value_types
+so the zip value_type would be cuda::std::tuple. That shadow was NEVER created
+(only an aspirational comment in the tuple_of_iterator_references.h shadow
+referenced it). This session FELL THROUGH to option (a) and it yielded
+decisively. (b) did not yield; (a) did.
+
+KEYSTONE (a): a thrust/tuple.h compat shadow (new file
+cpp/src/hip/thrust_compat/thrust/tuple.h, on the include path BEFORE /opt/rocm
+via the existing thrust_compat -I) that gives rocThrust's classic value-type
+thrust::tuple<Ts...,null...> two USE_HIP members:
+  - operator cuda::std::tuple<Us...>() over the non-null prefix (the READ half:
+    fixes rocPRIM block_load's is_convertible<value_type, T> static_assert and
+    block_load_direct_striped's assignment).
+  - operator=(cuda::std::tuple<Us...>) over the prefix (the reduce_by_key
+    sequential-fallback write-back temp_value = binary_op(...)).
+Both are SFINAE-bounded to sizeof...(Us)==thrust::tuple_size so a nested
+tuple-of-tuples never instantiates tuple_element past the prefix (this guard was
+essential -- without it, thrust::tuple<cuda::std::tuple<int,int,int>, ...> drove
+tuple_element<2> into null_type and hard-errored). This ONE header cleared the
+dominant A'/B class: sssp_sg went from 2 errors to 0; the full library dropped
+from ~44 failing library TUs to 16.
+
+Built on top of the keystone (all USE_HIP, CUDA = std::is_same / unchanged):
+1. Property-view value-type static_asserts now use cugraph::is_equivalent_value_type_v
+   instead of std::is_same_v: edge_property.hpp:32,
+   edge_partition_endpoint_property_device_view.cuh:41,
+   edge_partition_edge_property_device_view.cuh:39, vertex_frontier.cuh:390,
+   nbr_intersection.cuh:704 (round 4 had only done the last one).
+2. edge_partition_endpoint_property_device_view_t's two ctors and
+   kv_binary_search_store_view_t's ctor accept an EQUIVALENT value_t under
+   USE_HIP (templated param + is_equivalent_value_type guard), converting via the
+   tuple.h assignment bridge. Fixes the per_v_transform_reduce_dst_key /
+   kv_store deduction failures in the Louvain aggregated-edge path.
+3. is_arithmetic_or_thrust_tuple_of_arithmetic specialized for classic
+   thrust::tuple (was only specialized for cuda::std::tuple), unblocking
+   common_methods.
+4. classic thrust::tuple<Ts...> vs cuda::std::tuple<Us...> operator==/!= added in
+   cuda_to_hip.h (namespace thrust) -- thrust::remove(first,last,value) lowers to
+   a not_fun_t<_1 == value<cuda::std::tuple>> placeholder predicate that compares
+   a block-loaded classic tuple against the cuda::std value. (round 4 had only
+   added these for tuple_of_iterator_references.)
+5. fill_edge_property device lambdas take auto pair (was the explicit
+   cuda::std::tuple<T,uint32_t>; the zip deref is the classic flavor).
+6. Recurring per-prim: clang device-lambda constexpr capture (sssp_impl bucket
+   idx vars, core_number_impl bucket_idx_next, betweenness_centrality_impl
+   bucket_idx_next); dependent template-name keyword (key_store.cuh ref_type).
+
+REMAINING: 16 library TUs (8 SG primitives x v32/v64) still fail and gate the
+libcugraph.so LINK, so NO GPU validation is reachable yet (kept BLOCKED, no
+false-port). The 8: od_shortest_distances, strongly_connected_components,
+random_walks, sample_edges, temporal_sample_edges, gather_one_hop,
+lookup_src_dst, erdos_renyi_generator. NONE are BFS/SSSP/PageRank -- those
+compile -- but the SG library is one .so so it will not link until these clear.
+Their remaining sub-classes (all narrower instances of the same tuple-flavor
+work, now mechanical given the keystone):
+  - cuda::proclaim_return_type "Return type shall match the proclaimed one
+    exactly": an op returns a classic tuple where a cuda::std tuple is proclaimed
+    (od_shortest_distances). Normalize the returned value or the proclaimed type.
+  - rocPRIM device_merge "Keys_input2 must be convertible to keys_input1" + a
+    static_cast conversion failure (strongly_connected_components): a merge over
+    two key iterators whose value_type flavors differ.
+  - double->int narrowing in braced init at sample_and_compute_local_nbr_indices
+    .cuh:2547 (bias_t{0.0}) and :3289 -- a dead/SFINAE bias_t=int instantiation;
+    use static_cast under USE_HIP rather than braces.
+  - prim_functors.cuh return_edges_with_label_op operator() not matching, and
+    transform_v_frontier_e / extract_transform_if_v_frontier_e "no viable
+    overloaded" + sample_and_compute "no matching function": more functor tuple
+    args to template (the class-10 pattern) and a couple kv_store static_asserts.
+
+SCOPE NOTE: a tempting shortcut is to defer these 8 from cugraph_hip_sources.cmake
+to force the link and validate PAGERANK now. DO NOT do it casually:
+neighbor_sampling_impl.hpp calls sample_edges() and gather_one_hop_edgelist(), so
+deferring sample_edges/gather_one_hop cascades into neighbor_sampling /
+negative_sampling / sampling_post_processing (link-time symbol loss). If the next
+session wants to reach validation fast, finish the 8 (mechanical) rather than
+excising the sampling subsystem.
+
 ## Session 3 progress (cugraph_common DONE; SG lib 85 -> 101/124 TUs)
 
 Net-positive, zero-regression. All USE_HIP-guarded; CUDA path byte-identical.
