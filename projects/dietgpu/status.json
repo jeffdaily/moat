@@ -34,19 +34,19 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "03088ce1542c8413ba1daad3eb5c03a4ece22976",
+      "validated_sha": "b6e0d3f64558eb7d30cab1573be487318514c7a1",
       "started_at": "2026-06-02T06:00:00Z",
-      "completed_at": "2026-06-02T06:35:00Z",
-      "updated_at": "2026-06-02T03:38:52Z",
+      "completed_at": "2026-06-02T04:07:00Z",
+      "updated_at": "2026-06-02T04:07:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 8,
+          "compile": 24,
           "test": 23,
           "misc": 0
         },

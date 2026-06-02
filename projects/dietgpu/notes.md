@@ -459,3 +459,116 @@ Total: 13/13 PASS both runs. Pass/fail identical across runs: deterministic conf
 ### Verdict
 
 PASS. Clean two-arch fat binary (both gfx90a and gfx1100 bundles), native gfx90a dispatch confirmed, fixed-64-slot archive round-trip correct (all round-trip tests assert EXPECT_EQ orig/dec and pass), deterministic x2. Transitioning linux-gfx90a to completed (validated_sha=b6e0d3f).
+
+## Validation 2026-06-02 (gfx1100) -- revalidate at b6e0d3f (multi-arch fixed-64-slot archive)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA b6e0d3f64558eb7d30cab1573be487318514c7a1.
+State: revalidate (was completed at 03088ce) -> completed at b6e0d3f.
+
+### DeviceDefs.cuh fixed-64-slot resolution on gfx1100
+
+DeviceDefs.cuh:32-40 resolves kWarpSize per-arch in the DEVICE compile pass:
+- `#if defined(__HIP_DEVICE_COMPILE__)` then `__GFX8__||__GFX9__` -> 64 else 32.
+- On gfx1100 (not GFX9): device kWarpSize = 32. On gfx90a (GFX9): device kWarpSize = 64.
+- The host fall-through (neither __HIP_DEVICE_COMPILE__ nor CUDA) resolves to 32 as well,
+  but host code no longer consumes kWarpSize for archive sizing -- that was the old bug.
+
+The ARCHIVE GEOMETRY is pinned by GpuANSUtils.cuh kMaxWarpSize=64 (ANSWarpState::warpState[64]).
+This is separate from the device kWarpSize. On gfx1100 (wave32) the device kernel:
+- Writes/reads lanes 0-31 (its kWarpSize stride in warpState[laneId]).
+- Slots 32-63 in ANSWarpState are unused but present in every block header.
+- sizeof(ANSWarpState) = 64 * 4 = 256 bytes -- identical on gfx90a and gfx1100.
+- The host grid divisor uses getCurrentDeviceProperties().warpSize (runtime query = 32 on gfx1100),
+  so the launch geometry matches the wave32 device kernel exactly.
+
+Wave32 encode semantics: 32 active lanes each independently encode a stripe of input
+into one of the 32 live rANS states (laneId 0..31). The 64-slot header fits this with
+32 live entries; the remaining 32 slots are zero-initialized. Decode reverses exactly.
+Self-consistent round-trip on gfx1100 with the fixed-64-slot header confirmed by all tests.
+
+### Build
+
+```
+cd /var/lib/jenkins/moat/projects/dietgpu/src
+git submodule update --init --recursive
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
+```
+
+Configure: `-- dietgpu HIP arch=gfx90a;gfx1100` (no DIETGPU_WARP_SIZE -- deleted by multi-arch fix).
+Build: PASS, 35/35 targets, 0 errors, 1 pre-existing upstream warning (FloatTest.cu:306
+braced-scalar-init, appears for each of the 3 compile passes: gfx1100, gfx90a, host).
+Build time: 23.7s (timeit, fresh two-arch build).
+
+### Fat binary / gfx1100 code-object evidence
+
+`llvm-objdump --offloading` on libgpu_ans.so: 3 segments, each containing:
+  `hipv4-amdgcn-amd-amdhsa--gfx1100` AND `hipv4-amdgcn-amd-amdhsa--gfx90a` bundles.
+`llvm-objdump --offloading` on libgpu_float_compress.so: same -- both gfx90a and gfx1100 bundles.
+Fat binary with both code objects confirmed for all codec libraries.
+
+AMD_LOG_LEVEL=3 dispatch: `Using native code object for device: amdgcn-amd-amdhsa--gfx1100
+co: amdgcn-amd-amdhsa--gfx1100` -- correct per-arch dispatch from the fat binary on gfx1100.
+
+### GPU tests (run directly; ctest still reports no tests under HIP-language build)
+
+```
+export HIP_VISIBLE_DEVICES=0
+cd build-hip
+./bin/ans_test
+./bin/ans_statistics_test
+./bin/batch_prefix_sum_test
+./bin/float_test
+```
+
+Run 1 (test time: 22.7s total via timeit):
+- ans_test: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Run 2 (determinism check -- ans_test + float_test rerun):
+- ans_test: 4/4 PASSED
+- float_test: 3/3 PASSED
+
+Pass/fail identical across runs: deterministic confirmed. Zero HSA faults (0x1016).
+
+### Tally vs gfx90a @ b6e0d3f
+
+| Test binary           | gfx90a@b6e0d3f | gfx1100@b6e0d3f |
+|-----------------------|----------------|-----------------|
+| ans_test              | 4/4            | 4/4             |
+| ans_statistics_test   | 4/4            | 4/4             |
+| batch_prefix_sum_test | 2/2            | 2/2             |
+| float_test            | 3/3            | 3/3             |
+| **Total**             | 13/13          | 13/13           |
+
+### Wave32 verdict (fixed-64-slot archive)
+
+PASS. The fixed-64-slot archive (kMaxWarpSize=64, ANSWarpState[64]) on gfx1100 (wave32):
+- Device kWarpSize=32 (per-arch compile-time, GFX9->64 else 32 in device pass).
+- Archive header is 256 bytes regardless of arch: sizeof(ANSWarpState)=64*4=256B.
+- Encoder writes 32 lane-states into slots 0-31; slots 32-63 unused but header fits.
+- Host grid divisor uses runtime warpSize=32, matching the 32-lane device kernel.
+- All round-trip tests (ANSTest, FloatTest) assert EXPECT_EQ(orig, dec) and pass.
+- Deterministic across 2 runs, zero HSA faults.
+
+Cross-arch portability status: this re-port makes the archive geometry arch-independent
+(fixed 64-slot header, same sizeof on all arches). However, a wave32 producer (gfx1100)
+writes only 32 live lane-states into a 64-slot structure, while a wave64 producer (gfx90a)
+writes 64. Cross-warp-width decode interop (gfx90a archive -> gfx1100 decode) is NOT a
+goal and not tested: the slot counts (32 vs 64 live) differ and the decode kernel reads
+exactly kWarpSize states. Same-arch round-trip is the correctness gate and is confirmed.
+On this host (gfx1100 only), only gfx1100->gfx1100 round-trip is exercisable; no
+gfx90a-produced archive fixture exists in-tree, and the fat binary does not allow targeting
+gfx90a from a gfx1100 host (HIP_VISIBLE_DEVICES=0 selects the gfx1100 device). The win
+from the fixed-64-slot layout is that sizeof(ANSWarpState) and all header offsets are
+compile-time-constant and arch-independent in a multi-arch build -- not write-interop.
+
+Transitioning linux-gfx1100 to completed (validated_sha=b6e0d3f).
