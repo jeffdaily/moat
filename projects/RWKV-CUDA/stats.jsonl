@@ -1,0 +1,4 @@
+{"kind":"phase","ts":"2026-06-02T01:03:41Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python rwkv7_cuda_benchmark.py fp32 0"}
+{"kind":"phase","ts":"2026-06-02T01:04:04Z","phase":"compile","seconds":17.119,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/RWKV-CUDA/src/rwkv7_fast_fused && python rwkv7_cuda_benchmark.py fp32 0"}
+{"kind":"phase","ts":"2026-06-02T01:05:08Z","phase":"compile","seconds":19.873,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/RWKV-CUDA/src/rwkv7_fast_fused && python rwkv7_cuda_benchmark.py fp32 0"}
+{"kind":"phase","ts":"2026-06-02T01:05:32Z","phase":"test","seconds":15.646,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/RWKV-CUDA/src/rwkv7_fast_fused && python rwkv7_cuda_benchmark.py bf16 0"}
