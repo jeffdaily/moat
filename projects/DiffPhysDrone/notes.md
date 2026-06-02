@@ -41,3 +41,16 @@ test.py as-shipped uses unseeded randoms and the `v_next` allclose flaps ~7.5% o
 
 ## Followers (gfx1100 / gfx1151, RDNA wave32)
 No delta expected -- zero wave-width-sensitive constructs. Same moat-port branch should build and pass with only `PYTORCH_ROCM_ARCH=<arch>` changed. If a follower's test.py flaps it is the same unseeded float-ctl_dt artifact above (run seeded); a real failure would be a torch-on-RDNA build/runtime issue, not port logic. Do not re-plan; append findings here.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a)
+Reviewed `git diff 2719361...HEAD` on moat-port @ 2dc1a4b. Verdict: review-passed. No problems found; all plan/notes fault-class analysis independently verified against source.
+
+Verified (no findings):
+- Diff scope is exactly .gitignore + 6 `.type()`->`.scalar_type()` edits (dynamics_kernel.cu:295,341,374; quadsim_kernel.cu:336,362,382). The only remaining `.type()` is a commented-out line (quadsim.cpp:78), untouched. Value-identical forward-compat fix; the dispatched `scalar_t` is unchanged, applies on CUDA too.
+- Wave-agnostic: no __shfl/__ballot/__any/__all/__activemask/warpSize, no __shared__/__syncthreads/__syncwarp, no cub/hipcub/cooperative groups, no bare `32` literal. All 6 kernels are one-thread-per-output (blockIdx*blockDim+threadIdx with `if(idx>=N) return;`). wave64 cannot change results.
+- Backward adjoint UB class (EnvGS lesson): NO value-returning `__device__` helper exists anywhere; all kernels are `__global__ void`. run_backward_cuda_kernel writes all 5 grad outputs by direct assignment on first touch then accumulates; local accumulators d_a_drag_2/d_a_drag_1 (dynamics_kernel.cu:214-215) are fully written at :223-224 before read at :240-245; d_v_fwd/left/up_s init to 0 (:235-237). No fall-off-end / uninitialized accumulator.
+- OOB neighbor reads (colmap class): rerender_backward (quadsim_kernel.cu:293-295) reads depth[b][0][u*2..u*2+1][v*2..v*2+1]; output H,W = half depth res, so max index 2H-1 = depth dim-1, in-bounds by construction, no clamp needed. nearest_pt "others" loop guarded `i>=B` (:191); obstacle loops iterate `.size(1)`.
+- Strategy correct (B): sources stay CUDA-spelled, no compat header, hipify at build. `<cuda.h>`/`<cuda_runtime.h>` retained (hipify maps cleanly per notes).
+- Commit hygiene: `[ROCm] Build quadsim_cuda extension on ROCm/HIP` (47 chars), mentions Claude, no noreply trailer, no ghstack, no em-dash, has Test Plan. Fork master = clean upstream mirror @ 2719361. Actions disabled on fork (enabled:false). No AMD-internal account references.
+
+Note for validator: GPU gate not re-run at review (expected). Validator runs src/src/test.py with a FIXED seed (forward 4-output + analytic-backward-vs-autograd 5-grad allclose on 64 double states) plus the env_cuda.py secondary drive. The documented ~7.5% unseeded v_next flake is the pre-existing float ctl_dt vs double-reference gap (platform-independent), not a port defect; run seeded.
