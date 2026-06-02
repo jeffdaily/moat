@@ -101,3 +101,9 @@
 {"kind":"phase","ts":"2026-06-02T03:39:47Z","phase":"compile","seconds":52.294,"exit":1,"cmd":"cmake --build projects/raft/build_multiarch --target raft_lib MATRIX_SELECT_TEST HAVERSINE_TEST BALL_COVER_TEST -j32"}
 {"kind":"phase","ts":"2026-06-02T03:40:18Z","phase":"compile","seconds":0.178,"exit":0,"cmd":"cmake --build projects/raft/build_multiarch --target raft_lib HAVERSINE_TEST -j32"}
 {"kind":"phase","ts":"2026-06-02T03:42:20Z","phase":"compile","seconds":95.330,"exit":0,"cmd":"cmake --build projects/raft/build_gfx90a --target raft_lib MATRIX_SELECT_TEST HAVERSINE_TEST BALL_COVER_TEST -j32"}
+{"kind":"phase","ts":"2026-06-02T04:05:35Z","phase":"compile","seconds":67.262,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/raft-multiarch-build -j16 --target raft_lib HAVERSINE_TEST DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-02T04:08:24Z","phase":"compile","seconds":97.041,"exit":0,"cmd":"cmake --build projects/raft/build -j16 --target MATRIX_SELECT_TEST BALL_COVER_TEST HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-02T04:08:36Z","phase":"test","seconds":0.270,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/raft-multiarch-build/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-02T04:19:32Z","phase":"test","seconds":1.694,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/raft-multiarch-build/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-02T04:19:49Z","phase":"test","seconds":11.188,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/raft-multiarch-build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-02T04:59:08Z","phase":"test","seconds":2025.849,"exit":0,"cmd":"projects/raft/build/gtests/MATRIX_SELECT_TEST"}

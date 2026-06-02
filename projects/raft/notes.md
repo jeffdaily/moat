@@ -1559,3 +1559,85 @@ validated_sha (this fix): ce0fa68c (multi-arch build + gfx90a runtime-query run)
 State: advance-head flipped completed gfx90a/gfx1100 -> revalidate; gfx90a
 re-validated by the porter this session (build + GPU run), gfx1100 awaits a
 follower validator on RDNA3 hardware.
+
+## Revalidation (multi-arch) 2026-06-02
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Fork: jeffdaily/raft @
+moat-port, HEAD ce0fa68c. HIP_VISIBLE_DEVICES=2 (GCD 2, isolated).
+Validated_sha ce0fa68c = keystone multi-arch host warp-size fix.
+
+### Arch (two-arch build)
+
+Build configuration: `cmake -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"` into
+agent_space/raft-multiarch-build with `-DBUILD_TESTS=ON -DRAFT_TEST_DISTANCE=ON
+-DRAFT_TEST_NEIGHBORS=ON`. Build target: `raft_lib HAVERSINE_TEST DISTANCE_TEST`.
+Build time: 67.3s (clean). Exit=0.
+
+```
+roc-obj-ls agent_space/raft-multiarch-build/libraft.so | grep -E "gfx90a|gfx1100"
+# -> 4 gfx1100 + 4 gfx90a code objects (one per rmat TU)
+roc-obj-ls agent_space/raft-multiarch-build/gtests/HAVERSINE_TEST | grep -E "gfx90a|gfx1100"
+# -> 1 gfx1100 + 1 gfx90a code object
+roc-obj-ls agent_space/raft-multiarch-build/gtests/DISTANCE_TEST | grep -E "gfx90a|gfx1100"
+# -> 1 gfx1100 + 1 gfx90a code object
+```
+
+BOTH gfx90a and gfx1100 code objects confirmed in libraft.so and both test
+binaries. RAFT_HOST_WARP_SIZE absent from build.ninja (confirmed; no compile-time
+constant; replaced by runtime hipDeviceGetAttribute call in host_warp_size()).
+
+NOTE: MATRIX_SELECT_TEST / BALL_COVER_TEST gfx1100 device pass excluded per
+pre-existing rocPRIM 4.2.0 DPP_WF_SL1 codegen bug (unchanged from prior gfx1100
+validation). Those are built gfx90a-only from projects/raft/build.
+
+### GPU test commands (gfx90a, GCD 2)
+
+Two-arch binary tests (gfx90a code object selected at runtime):
+```bash
+export HIP_VISIBLE_DEVICES=2
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:agent_space/raft-multiarch-build:_deps/raft-rmm/install/lib:/opt/rocm/lib"
+AMD_LOG_LEVEL=3 bash utils/timeit.sh raft test -- agent_space/raft-multiarch-build/gtests/HAVERSINE_TEST  # run 1
+bash utils/timeit.sh raft test -- agent_space/raft-multiarch-build/gtests/HAVERSINE_TEST  # run 2 (determinism)
+bash utils/timeit.sh raft test -- agent_space/raft-multiarch-build/gtests/DISTANCE_TEST
+```
+
+gfx90a-only binary tests (select_k warp-sort + ball_cover/eps_nn):
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build:_deps/raft-rmm/install/lib:/opt/rocm/lib"
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/MATRIX_SELECT_TEST
+# BALL_COVER: from projects/raft/build_gfx90a (ce0fa68c source, built 03:42 after
+# source mod at 03:38, before commit at 03:59); two concurrent runs logged to
+# agent_space/raft_bc.log and raft_bc2.log
+```
+
+### Results
+
+GPU arch: gfx90a (MI250X). AMD_LOG_LEVEL=3 HAVERSINE run confirmed:
+"Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-"
+-- fat binary selects gfx90a at runtime. Warp-sort kernels dispatching confirmed
+(AMD_LOG early output shows block_kernel warp_sort_immediate/filtered/distributed).
+hipDeviceGetAttribute(hipDeviceAttributeWarpSize) = warpSize=64 confirmed by
+RAFT_HOST_WARP_SIZE absent from build AND select_k tests PASS (would fail/corrupt
+if wrong warp width used for launch geometry).
+
+| Test | Result | Binary | Notes |
+|------|--------|--------|-------|
+| HAVERSINE_TEST | 1/1 PASS (x2, DETERMINISTIC) | multi-arch (gfx90a+gfx1100) | gfx90a code object selected (AMD_LOG); runtime warpSize query confirmed |
+| DISTANCE_TEST | 11/11 PASS | multi-arch | CK MFMA (aligned) + SIMT fallback (unaligned) |
+| MATRIX_SELECT_TEST | 567/567 PASS + 40 SKIP = 607 total, 0 failures | gfx90a-only (ce0fa68c) | select_k warp-sort + radix, k 1..1700; runtime warpSize=64 correct for launch geometry; run time 2025s (contended) |
+| BALL_COVER_TEST | 74/74 PASS (x2, DETERMINISTIC) | build_gfx90a (ce0fa68c source) | Ball cover KNN + eps_nn RBC; same source as ce0fa68c (source mod 03:38, build 03:42, commit 03:59) |
+
+Run 2 details for determinism:
+- HAVERSINE_TEST run 2: 1/1 PASS (1569ms)
+- BALL_COVER_TEST run 2: 74/74 PASS (2972086ms = 49.5min, heavier GPU contention)
+
+Non-GPU bars: no new failures relative to 70773a9 baseline (the multi-arch fix
+changes only host launch geometry computation; device kernels are binary-identical).
+
+### Verdict
+
+Two-arch build: CLEAN (both gfx90a and gfx1100 code objects in all built binaries).
+gfx90a run: all required tests PASS, deterministic x2.
+Runtime warpSize query: confirmed (hipDeviceGetAttribute; RAFT_HOST_WARP_SIZE absent).
+
+validated_sha: ce0fa68c. State transition: revalidate -> completed (linux-gfx90a).
