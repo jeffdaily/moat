@@ -77,6 +77,92 @@ vs wave64 does not affect correctness. gfx1100/gfx1151 expected to pass with the
 same source + flags (only PYTORCH_ROCM_ARCH changes). Validate first, delta only
 on failure.
 
+## Validation 2026-06-02 (validator, linux-gfx90a, fork c4ed7fad)
+
+GPU: AMD Instinct MI250X, GCD 2, gfx90a (ROCm 7.2, PyTorch 2.13.0a0+gitb5e90ff).
+Fork synced to agent_space/build/RWKV-CUDA; JIT extensions built there; hipify
+mirror lands at agent_space/build/RWKV-HIP (gitignored). All variants run TWICE
+with fixed seed 42; err ratios are stable run-to-run.
+
+Device dispatch confirmed: AMD_LOG_LEVEL=3 shows "Using native code object for
+device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" and hipLaunchKernel calls.
+
+**Build commands (JIT, per subproject):**
+```
+export HIP_VISIBLE_DEVICES=2 CUDA_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx90a
+export TORCH_EXTENSIONS_DIR=/var/lib/jenkins/moat/agent_space/ext_val_1_<variant>
+# rwkv7_fast_fused:
+cd agent_space/build/RWKV-CUDA/rwkv7_fast_fused
+python rwkv7_cuda_benchmark.py fp32 0
+python rwkv7_cuda_benchmark.py bf16 0
+python rwkv7_cuda_benchmark_state.py fp32 0
+python rwkv7_cuda_benchmark_state.py bf16 0
+python rwkv7_cuda_benchmark_state_passing.py fp32 0
+python rwkv7_cuda_benchmark_state_passing.py bf16 0
+# wkv5 (CUDA_KERNEL_VERSION=1, fresh ext dir per HEAD_SIZE):
+cd agent_space/build/RWKV-CUDA/wkv5
+python wkv5_v1_correctness.py   # JOB=correctness, HEAD_SIZE=2
+# wkv5 backward validated via direct kernel call (v1 vs ref kernel, HEAD_SIZE=4):
+python run_v1_bwd_v2.py
+# wkv6:
+cd agent_space/build/RWKV-CUDA/wkv6
+python run.py   # CHECK_BACKWARD(), always runs
+```
+
+**Err ratios (run 1 / run 2) -- PASS thresholds in parens:**
+
+rwkv7 vanilla fp32 (expect ~1e-7):
+- y err:  1.72e-7 / 1.79e-7 | g_r 2.35e-7/2.47e-7 | g_w 3.13e-7/3.45e-7
+  g_k 1.86e-7/1.86e-7 | g_v 2.14e-7/2.10e-7 | g_a 3.35e-7/3.64e-7 | g_b 2.26e-7/2.38e-7  PASS
+
+rwkv7 vanilla bf16 (expect ~3e-3, on par with bf16 ref error):
+- y err:  3.52e-3 / 3.59e-3 | g_r 3.86e-3/3.84e-3 | g_w 3.43e-3/3.48e-3
+  g_k 3.93e-3/3.84e-3 | g_v 3.89e-3/3.87e-3 | g_a 4.35e-3/4.36e-3 | g_b 4.40e-3/4.56e-3  PASS
+
+rwkv7 state fp32 (expect ~1e-7):
+- y err:  1.74e-7 / 1.76e-7 | g_s 2.22e-7/2.19e-7 | g_r 2.36e-7/2.36e-7
+  g_w 3.32e-7/3.20e-7 | g_k 1.78e-7/1.80e-7 | g_v 2.01e-7/2.01e-7
+  g_a 3.47e-7/3.68e-7 | g_b 2.19e-7/2.24e-7  PASS
+
+rwkv7 state bf16 (expect ~3e-3):
+- y err:  3.34e-3 / 3.43e-3 | g_s 2.84e-3/3.05e-3 | g_r 3.76e-3/3.77e-3
+  g_w 3.41e-3/3.34e-3 | g_k 3.63e-3/3.75e-3 | g_v 3.74e-3/3.73e-3
+  g_a 4.33e-3/4.05e-3 | g_b 4.18e-3/4.38e-3  PASS
+
+rwkv7 state-passing fp32 (expect ~1e-7):
+- y err:  1.74e-7 / 1.81e-7 | sT 1.55e-7/1.62e-7 | g_s 2.24e-7/2.51e-7
+  g_r 2.51e-7/2.58e-7 | g_w 3.37e-7/3.45e-7 | g_k 1.70e-7/2.03e-7
+  g_v 1.96e-7/2.13e-7 | g_a 3.28e-7/3.53e-7 | g_b 2.23e-7/2.62e-7  PASS
+
+rwkv7 state-passing bf16 (expect ~3e-3):
+- y err:  3.45e-3 / 3.51e-3 | sT 2.67e-3/2.69e-3 | g_s 3.17e-3/3.28e-3
+  g_r 3.69e-3/3.83e-3 | g_w 3.26e-3/3.23e-3 | g_k 3.54e-3/3.81e-3
+  g_v 3.67e-3/3.66e-3 | g_a 4.18e-3/4.32e-3 | g_b 4.01e-3/4.30e-3  PASS
+
+wkv5 v1 fwd (correctness job, expect ~1e-7):
+- err ratio (vs formula): 7.50e-8 / 7.50e-8 (identical -- deterministic)  PASS
+
+wkv5 v1 bwd (v1 kernel vs ref kernel, expect ~1e-7):
+- fwd y:  0.0 / 0.0 | g_r 9.22e-8/9.22e-8 | g_k 1.08e-7/1.08e-7
+  g_v 1.08e-7/1.08e-7 | g_w 2.66e-7/3.92e-7 | g_u 2.32e-7/1.69e-7  PASS
+  Note: wkv5 run.py backward job uses O(B*T^2*N^2) Python reference on GPU (very slow)
+  with inplace-op autograd conflict; validated instead by comparing v1 backward kernel
+  output against the wkv5 CUDA reference kernel (wkv5_ref), which is the same reference
+  that the upstream uses for the v1e/v1b comparisons. err ratios ~1e-7 confirm correctness.
+
+wkv6 fwd+bwd (expect 1e-5..1.7e-3):
+- fwd: 1.71e-5/1.71e-5 | g_r 3.57e-5/3.57e-5 | g_k 7.03e-5/7.03e-5
+  g_v 3.47e-5/3.47e-5 | g_w 1.73e-3/1.73e-3 | g_u 1.11e-5/1.11e-5  PASS
+
+**Deferred (unchanged from porter):**
+- wkv5 default CUDA_KERNEL_VERSION='1d': pre-existing upstream link bug (12-arg
+  cuda_backward vs 13-arg op wrapper + empty kernel body). Not a port defect.
+- wkv/depthwise_conv1d: O(B*T*T) Python reference is intractably slow; kernels
+  hipify and build clean; no HIP-specific risk.
+
+**Conclusion:** All validated variants PASS. err ratios stable across 2 runs.
+Native gfx90a code object confirmed. linux-gfx90a -> completed (sha c4ed7fad).
+
 ## Review 2026-06-02 (reviewer, gfx90a, fork c4ed7fad)
 Reviewed `git diff 9b17d5d...HEAD` via /pr-review. No problems found; review-passed.
 Verified independently (not just trusting notes): no warp intrinsics anywhere
