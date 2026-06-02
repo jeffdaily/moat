@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/Samarvivian/3P-ADMM-PC2",
   "default_branch": "features",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "nvcc-shared",
   "base_sha": null
 }
