@@ -70,3 +70,52 @@ Verified clean:
 - Commit hygiene: [ROCm] title 54 chars, mentions Claude, no noreply/ghstack/em-dash. Fork main == upstream main (1580e2e) clean mirror; moat-port HEAD == ec2fae28; fork Actions disabled. No AMD-internal account reference.
 
 Minor (non-blocking, recorded for the e2e follow-up): the harness cross-checks mode-0 hit_mask against a CPU SAT reference, but mode-1/mode-2 centroid/poly-vert VALUES are validated only for determinism + index alignment + range, not against an independent CPU Sutherland-Hodgman reference (plan called for "centroids/areas within tol"). The clip geometry is unchanged from upstream CUDA and the shared SAT plane logic is cross-checked via mode-0, so this is a coverage gap, not a defect; close it when atom3d enables the end-to-end demo run.
+
+## Validation 2026-06-02
+
+Platform: linux-gfx90a (AMD Instinct MI250X, GCD 3, gfx90a:sramecc+:xnack-, ROCm 7.2)
+Fork: jeffdaily/FaithC @ moat-port ec2fae28
+Validator: claude-sonnet-4-6
+
+Build command (from-scratch, multi-arch):
+```
+rm -f src/faithcontour/_C*.so && rm -rf build/ && rm -f src/faithcontour/_C/kernels.hip
+HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH="gfx90a;gfx1100" python setup.py build_ext --inplace
+```
+Build result: PASS (73 s, exit 0, warnings only -- loop-unroll advisory on sat_centroid/sat_clip templates)
+
+Multi-arch code objects verified:
+```
+llvm-objdump --offloading _C.cpython-312-x86_64-linux-gnu.so | grep -E "gfx90a|gfx1100"
+# hipv4-amdgcn-amd-amdhsa--gfx1100  PRESENT
+# hipv4-amdgcn-amd-amdhsa--gfx90a   PRESENT
+```
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=3 AMD_LOG_LEVEL=3 python agent_space/faithc_harness.py
+```
+Test result: 16/16 PASS (4 s, exit 0)
+
+AMD_LOG_LEVEL=3 confirms native gfx90a code-object dispatch (no JIT fallback):
+"Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-"
+
+Pass breakdown:
+- seg_tri pair set: PASS
+- seg_tri dots (maxerr=3.54e-07): PASS
+- seg_tri deterministic set: PASS
+- overlap no spurious overflow: PASS
+- overlap pair set: PASS
+- overlap overflow flag set: PASS
+- voxelize_mark use_sat=False exact: PASS
+- voxelize_mark use_sat=False deterministic: PASS
+- voxelize_mark use_sat=True exact: PASS
+- voxelize_mark use_sat=True deterministic: PASS
+- sat mode0 hit_mask exact (116 hits): PASS
+- sat mode0 deterministic: PASS
+- sat mode1 deterministic: PASS
+- sat mode1 idx alignment: PASS
+- sat mode2 deterministic poly verts: PASS
+- sat mode2 poly_counts in range: PASS
+
+Verdict: completed. validated_sha=ec2fae28.

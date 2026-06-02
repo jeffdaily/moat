@@ -3,3 +3,6 @@
 {"kind":"phase","ts":"2026-06-02T07:05:35Z","phase":"compile","seconds":50.283,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-02T07:08:12Z","phase":"test","seconds":2.435,"exit":1,"cmd":"python /var/lib/jenkins/moat/agent_space/faithc_harness.py"}
 {"kind":"phase","ts":"2026-06-02T07:08:27Z","phase":"test","seconds":4.057,"exit":0,"cmd":"python /var/lib/jenkins/moat/agent_space/faithc_harness.py"}
+{"kind":"phase","ts":"2026-06-02T07:20:19Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:21:38Z","phase":"compile","seconds":73.242,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:21:58Z","phase":"test","seconds":4.187,"exit":0,"cmd":"python /var/lib/jenkins/moat/agent_space/faithc_harness.py"}
