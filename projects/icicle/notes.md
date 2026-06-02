@@ -49,6 +49,98 @@ The ML-KEM kernels run 128-thread blocks organized as four logical 32-thread war
 - `test_pqc_api.cpp` was hard-coded to "CUDA-PQC"; changed to `IcicleTestBase::main_device()` so it runs on the registered GPU backend on both NVIDIA and ROCm.
 - error_translation.h: HIP lacks distinct `hipErrorInvalidHostPointer` / a `SyncDepthExceeded` analog; the hip copy maps hipError_t -> eIcicleError directly (do not `#define` cuda error enums to colliding hip values -> duplicate case labels).
 
+## Validation 2026-06-02 (validator, linux-gfx90a, fork moat-port d66e92a7733d958f2c5ec118cfa98e0e6de4c683)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a, amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-), GCD 0 (HIP_VISIBLE_DEVICES=0). ROCm 7.2.
+
+### Build
+
+Configure (fresh, includes Taskflow + GTest fetch via FetchContent):
+```
+export HIP_VISIBLE_DEVICES=0
+cmake -S projects/icicle/src/icicle -B agent_space/icicle_val_build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCPU_BACKEND=ON -DHIP_PQC_BACKEND=ON -DCUDA_PQC_BACKEND=OFF \
+  -DPQC=ON -DBUILD_TESTS=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_PREFIX_PATH=/opt/rocm
+# Configuring done (369.1s -- includes network fetch)
+```
+
+Compile (via timeit.sh):
+```
+cmake --build agent_space/icicle_val_build -j128
+# [100%] Built target test_ml_kem  -- exit 0, ~25 s
+```
+
+### Backend gtests (58 KAT-exact tests, run twice)
+
+Run 1:
+```
+ctest --test-dir agent_space/icicle_val_build/backend/hip_pqc/tests -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 58 -- Total Test time: 20.04 s
+```
+
+Run 2:
+```
+ctest --test-dir agent_space/icicle_val_build/backend/hip_pqc/tests -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 58 -- Total Test time: 20.27 s
+```
+
+Both runs: 58/58 PASS. Includes bit-exact NIST KAT vectors for ML-KEM-512/768/1024 keygen, encaps, decaps, and PKE encrypt/decrypt. Main-device=HIP-PQC, Reference-device=CPU printed in each test.
+
+### Frontend dispatch tests (6 tests, run twice)
+
+Run 1:
+```
+ctest --test-dir agent_space/icicle_val_build/tests -R PqcTest -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 6 -- Total Test time: 1.40 s
+```
+
+Run 2:
+```
+ctest --test-dir agent_space/icicle_val_build/tests -R PqcTest -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 6 -- Total Test time: 1.45 s
+```
+
+Both runs: 6/6 PASS (MLkemSharedSecretConsistencyTest + MLkemSharedSecretConsistencyTestOnDevice for Kyber512/768/1024, batch 4096). Main-device=HIP-PQC confirmed.
+
+### Kernel dispatch on gfx90a (AMD_LOG_LEVEL=3)
+
+```
+export HIP_VISIBLE_DEVICES=0
+AMD_LOG_LEVEL=3 ./test_ml_kem_keygen --gtest_filter="MLKemKeygenTest.ML_KEM_Internal_Keygen512"
+```
+Output:
+```
+Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-
+ShaderName : void icicle::pqc::ml_kem::ml_kem_keygen_kernel<...>  hipLaunchKernel: Returned hipSuccess
+```
+
+```
+AMD_LOG_LEVEL=3 ./test_ml_kem_encaps --gtest_filter="MLKemEncapsTest.MlKemEncaps512Batch"
+```
+Output:
+```
+Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-
+ShaderName : void icicle::pqc::ml_kem::ml_kem_encaps_kernel<...>
+```
+
+```
+AMD_LOG_LEVEL=3 ./test_ml_kem_decaps --gtest_filter="MLKemDecapsTest.MlKemDecaps512Batch"
+```
+Output:
+```
+Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-
+ShaderName : void icicle::pqc::ml_kem::ml_kem_decaps_kernel<...>
+```
+
+All three ML-KEM kernels (keygen, encaps, decaps) confirmed launching native code on gfx90a. Deterministic across both runs.
+
+### Verdict
+
+PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests, both deterministic. ML-KEM kernels run native gfx90a code. No non-GPU regressions (CPU backend gtests are not built in this configuration; the CPU backend itself is unmodified and the closed-source MSM/NTT/EC backends are out of scope and not built).
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port d66e92a)
 
 Verdict: review-passed. Additive sibling HIP-PQC backend; reviewed `git diff 625532a...HEAD` in full plus the cuda_to_hip shim, all wave64-touched kernels, the two race fixes (against the untouched cuda_pqc originals), registration, CMake wiring, and commit hygiene. No changes requested. The GPU gate (58/58 KAT-exact backend gtests + 6/6 frontend dispatch) is recorded above as porter-run on real gfx90a; the validator re-runs it next.
