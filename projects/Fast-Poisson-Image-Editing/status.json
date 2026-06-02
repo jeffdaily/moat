@@ -7,17 +7,17 @@
   "priority": 4.518,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-02T14:54:20Z",
-  "head_sha": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+  "updated_at": "2026-06-02T15:15:15Z",
+  "head_sha": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+      "validated_sha": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
       "started_at": "2026-05-30T07:02:44Z",
       "completed_at": "2026-05-30T07:18:07Z",
-      "updated_at": "2026-06-02T14:54:20Z",
+      "updated_at": "2026-06-02T15:15:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,22 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
-        "to": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "from": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "to": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "fpie/core/cuda/CMakeLists.txt: comment-only (comments/format only)",
-        "at": "2026-06-02T14:54:20Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T15:15:15Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+      "validated_sha": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
       "started_at": null,
       "completed_at": "2026-05-30T07:46:14Z",
-      "updated_at": "2026-06-02T14:54:20Z",
+      "updated_at": "2026-06-02T15:15:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -64,22 +64,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
-        "to": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "from": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "to": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "fpie/core/cuda/CMakeLists.txt: comment-only (comments/format only)",
-        "at": "2026-06-02T14:54:20Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T15:15:15Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+      "validated_sha": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
       "started_at": null,
       "completed_at": "2026-05-31T00:00:00Z",
-      "updated_at": "2026-06-02T14:54:20Z",
+      "updated_at": "2026-06-02T15:15:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -95,12 +95,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "6a41e0b33c9bd6a54c1d69f0cda3354318cd2cff",
-        "to": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "from": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
+        "to": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "fpie/core/cuda/CMakeLists.txt: comment-only (comments/format only)",
-        "at": "2026-06-02T14:54:20Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T15:15:15Z"
       }
     }
   }
