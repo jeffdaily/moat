@@ -373,3 +373,117 @@ Deferred/gated OFF (not a failure -- BM_EXCEPTION or compile-time gate):
 PASS. 77/77 kernel tests, deterministic across 2 runs. MoE routing probe: correct + deterministic.
 No regressions on non-GPU tests (no non-GPU test suite in this project).
 validated_sha: cffe5a42f5161d4c210681b8909b6a294929463e
+
+## Validation 2026-06-02 (linux-gfx1100, fork moat-port @ cffe5a4)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100), warpSize=32, CC:11.0, GCD 0 (HIP_VISIBLE_DEVICES=0). ROCm 7.2.1, ROCm PyTorch 2.13. 4x W7800 present; validated on GPU[0].
+
+### GPU arch
+
+```
+HIP_VISIBLE_DEVICES=0 python3 -c "import torch; p=torch.cuda.get_device_properties(0); print(p.name, f'CC:{p.major}.{p.minor}', f'warpSize:{p.warp_size}')"
+# AMD Radeon Pro W7800 48GB CC:11.0 warpSize:32
+```
+
+### Build (fresh -- no prior gfx1100 artifacts on this host)
+
+```
+git clone https://github.com/jeffdaily/ZhiLight.git projects/ZhiLight/src --branch moat-port --depth 1
+# HEAD: cffe5a42f5161d4c210681b8909b6a294929463e
+
+mkdir -p agent_space/zhilight-build-gfx1100
+HIPCXX=/opt/rocm/lib/llvm/bin/clang++ ZHILIGHT_USE_HIP=1 ENABLE_NCCL_TP=on TESTING=1 \
+cmake -S projects/ZhiLight/src -B agent_space/zhilight-build-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++ -DCMAKE_HIP_PLATFORM=amd \
+  -DCMAKE_BUILD_TYPE=Release -DWITH_TESTING=ON -DPYTHON_EXECUTABLE=$(which python3)
+# -- Configuring done (7.5s) -- Generating done (0.1s)
+
+bash utils/timeit.sh ZhiLight compile -- \
+  cmake --build agent_space/zhilight-build-gfx1100 --target C internals_ -j16
+# [84/84] Linking HIP shared module tests/py_export_internal/internals_.cpython-312-x86_64-linux-gnu.so
+# (exit 0, 34.5s)
+```
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading agent_space/zhilight-build-gfx1100/C.cpython-312-x86_64-linux-gnu.so 2>&1 | grep gfx
+# hipv4-amdgcn-amd-amdhsa--gfx1100  (all entries; no gfx90a present)
+llvm-objdump --offloading agent_space/zhilight-build-gfx1100/tests/py_export_internal/internals_.cpython-312-x86_64-linux-gnu.so 2>&1 | grep gfx
+# hipv4-amdgcn-amd-amdhsa--gfx1100  (all entries; no gfx90a present)
+```
+
+### reduce.cuh wave32 analysis
+
+On gfx1100 the device compiler does NOT define `__GFX9__`, so `BM_WARP_SIZE = 32` (the `#else` branch,
+identical to the CUDA path). All warpReduce* and blockReduce* functions degenerate correctly at warpSize=32:
+
+- `warpReduceMax/Min/Sum`: shuffle offsets are `BM_WARP_SIZE/2 = 16` down to 1 -- exactly the 32-lane
+  reduction tree, correct for gfx1100 wavefronts.
+- `blockReduceMax/Min/Sum`: `num_warps = (blockDim.x + 31) / 32` (ceil, HIP path); at warpSize=32 this
+  is exact (no fractional warps). `lane = threadIdx.x % 32`, `wid = threadIdx.x / 32`. `lane < num_warps`
+  guard selects the right partial results. `BM_BLOCK_REDUCE_MAX_WARPS = 33`: a 1024-thread block has at
+  most 32 warps, so 33 slots is sufficient (32 partials + 1 final result slot).
+- `warpReduceMaxWidthB<T,32>` / `warpReduceSumWidthB<T,32>`: at WIDTH=32 = warpSize on gfx1100, the
+  width-32 subgroup equals the whole wavefront, so they are value-identical to the full-wave forms.
+  No inactive-lane hazard; no cross-group contamination. Same result as on CUDA (warpSize=32 = WIDTH=32).
+- No hardcoded 64-lane assumption survives to gfx1100. The shared[33] array size is safe (max 32 partials).
+
+hipBLASLt GEMM: 32F compute + scale with fp16 I/O (the gfx90a fix) applies equally on gfx1100 (16F
+compute/scale is rejected on AMD in general). find_algo() takes the top hipblasLtMatmulAlgoGetHeuristic
+result, no algo-introspection API that lacks a hipBLASLt analogue.
+
+### Gate: 77-case kernel test (run 1)
+
+```
+ln -sf agent_space/zhilight-build-gfx1100/C.cpython-312-x86_64-linux-gnu.so \
+       projects/ZhiLight/src/zhilight/
+ln -sf agent_space/zhilight-build-gfx1100/tests/py_export_internal/internals_.cpython-312-x86_64-linux-gnu.so \
+       projects/ZhiLight/src/zhilight/
+
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=projects/ZhiLight/src \
+  bash utils/timeit.sh ZhiLight test -- \
+  python3 -m pytest \
+    projects/ZhiLight/src/tests/test_softmax.py \
+    projects/ZhiLight/src/tests/test_attn_softmax.py \
+    projects/ZhiLight/src/tests/test_rotary_embedding.py \
+    projects/ZhiLight/src/tests/test_feedforward.py \
+    projects/ZhiLight/src/tests/test_linear.py \
+    projects/ZhiLight/src/tests/test_embedding.py \
+    projects/ZhiLight/src/tests/test_arthmetic.py \
+    projects/ZhiLight/src/tests/test_concat_tensor.py \
+    projects/ZhiLight/src/tests/test_index_along_dim.py \
+    projects/ZhiLight/src/tests/test_log_prob.py \
+    projects/ZhiLight/src/tests/test_attention.py \
+    projects/ZhiLight/src/tests/test_lazy_loader.py -v
+# 77 passed in 7.84s
+# CC:110, mp_count:35, L2 Cache:6MB, max_smem:64KB
+```
+
+### Gate: 77-case kernel test (run 2 -- determinism)
+
+```
+# (same command)
+# 77 passed in 7.36s  -- bit-identical, deterministic
+```
+
+### Symlink cleanup
+
+```
+rm projects/ZhiLight/src/zhilight/C.cpython-312-x86_64-linux-gnu.so \
+   projects/ZhiLight/src/zhilight/internals_.cpython-312-x86_64-linux-gnu.so
+cd projects/ZhiLight/src && git status --short
+# (no output -- clean)
+```
+
+No fork commits made (follower validate-first: no source changes needed; commit untouched at cffe5a4).
+
+### Result
+
+PASS. 77/77 kernel tests on gfx1100, deterministic across 2 runs. Adaptive reductions correct at
+warpSize=32: BM_WARP_SIZE=32 on gfx1100 (not __GFX9__), warpReduce offsets 16..1, blockReduce
+num_warps=(blockDim+31)/32 exact at warpSize=32, WIDTH-32 forms degenerate to full-wavefront at warpSize=32.
+hipBLASLt GEMM correct (32F compute/scale; find_algo top-heuristic). No HSA 0x1016, no NaN, no hang.
+Matches gfx90a@cffe5a4 (77 passed, deterministic). Symlinks removed; fork clean (git status empty).
+validated_sha: cffe5a42f5161d4c210681b8909b6a294929463e
