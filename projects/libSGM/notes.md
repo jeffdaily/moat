@@ -63,6 +63,37 @@ no source change (arch propagates to the host warp-size derivation too).
 libSGM is a leaf (a stereo-matching application library; nothing in MOAT
 consumes it). No dependency-install section needed.
 
+## Validation 2026-06-02 (validator, linux-gfx90a, fork 9ce43fd)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3.
+
+Device dispatch confirmed: AMD_LOG_LEVEL=3 shows "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" for all kernel loads -- no JIT, no fallback.
+
+Build (fresh, from committed source at 9ce43fd):
+```
+cd projects/libSGM/src
+git submodule update --init
+cmake -S /var/lib/jenkins/moat/projects/libSGM/src \
+      -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build-hip -j$(nproc)
+```
+Build: PASS (warnings only -- nodiscard on hipStream* macros, pre-existing in upstream pattern).
+
+Test (run twice for determinism):
+```
+HIP_VISIBLE_DEVICES=3 ./build-hip/test/sgm-test
+```
+Run 1: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Test suites covered: CastTest (2), CensusTransformTest (3), SymmetricCensusTest (3), CheckConsistencyTest (6), IntegrationTest (1, full pipeline RandomU8), MedianFilterTest (4), CorrectDisparityRangeTest (18), CostAggregationTest (18), WinnerTakesAllTestP (12).
+
+Result: 67/67 PASS, deterministic. Transition: review-passed -> completed, validated_sha=9ce43fd.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a, fork 9ce43fd)
 Verdict: review-passed. Reproduced the build and ran sgm-test twice on real
 gfx90a (HIP_VISIBLE_DEVICES=3, ROCm 7.2.1): 67/67 PASS both runs, pass/fail

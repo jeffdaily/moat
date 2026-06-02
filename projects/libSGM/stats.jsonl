@@ -3,3 +3,8 @@
 {"kind":"phase","ts":"2026-06-02T00:42:43Z","phase":"compile","seconds":7.914,"exit":0,"cmd":"bash -c cmake --build /var/lib/jenkins/moat/agent_space/libSGM-build -j 2>&1 | tail -40"}
 {"kind":"phase","ts":"2026-06-02T00:43:00Z","phase":"compile","seconds":5.636,"exit":0,"cmd":"bash -c cmake --build /var/lib/jenkins/moat/agent_space/libSGM-build -j 2>&1 | tail -15"}
 {"kind":"phase","ts":"2026-06-02T00:43:30Z","phase":"test","seconds":20.424,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/libSGM-build/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T00:56:01Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake -S . -B build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-02T00:56:11Z","phase":"compile","seconds":3.791,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/libSGM/src -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-02T00:56:29Z","phase":"compile","seconds":12.211,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j128"}
+{"kind":"phase","ts":"2026-06-02T00:57:21Z","phase":"test","seconds":20.421,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T00:57:52Z","phase":"test","seconds":20.348,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
