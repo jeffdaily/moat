@@ -7,17 +7,17 @@
   "priority": 6.114,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-02T00:22:06Z",
-  "head_sha": "cd283ff1abadbfcb0323afcce2064dec79bc6f8f",
+  "updated_at": "2026-06-02T09:53:05Z",
+  "head_sha": "2cec6361732c372a5a57096de17eb6e4c97b685b",
   "platforms": {
     "linux-gfx90a": {
       "state": "planned",
       "blocked": true,
-      "blocked_reason": "SG HIP build scaffold + dependency wiring + version-skew (assume_aligned, rmm/mr header relocation, non-templated pool MR, raft span enable_if C++20 probe) + the systemic cuda::std::get-on-rocThrust-tuple read-boundary fix are done and pushed (fork cd283ff). Library does not yet compile: remaining is the rocThrust zip-WRITE boundary (cuda::std::make_tuple into thrust::tuple zip outputs, ~10-45 prim sites), make_zip_iterator(cuda::std::make_tuple(...)) -> variadic form, clang two-phase template/this-> fixes, and a cuCollections-fork heterogeneous_value .first-on-thrust::tuple delta (renumber_utils blocker) requiring a second-repo change. Genuine multi-session/multi-repo effort; complete fault taxonomy + bounded fix list in notes.md.",
+      "blocked_reason": "Session 2 advanced the SG HIP port substantially (fork 2cec636): ~14 systematic interop/multi-arch classes resolved (CUDACC/HIPCC guard, host-vs-device-pass compile-time warp_size via warp_size_ct, transform_e wave64 packed-bool regrouping, clang device-lambda is_invocable/invoke_result trait, raft C++20 span enable_if shadow-fix, cub=hipcub alias, classic thrust::tuple<->cuda::std bridge incl tuple_size/tuple_element/pair + is_thrust_tuple traits, rmm flat-path + cuda/std/algorithm shims, ~16 tuple-arg comparator functors). cugraph_common now compiles entirely EXCEPT the 2 renumber_utils TUs (the cuCollections heterogeneous_value .first-on-thrust::tuple delta -- a second-repo fix in jeffdaily/cuCollections); ~92/124 SG TUs compile, 32 primitive groups remain. Library does not yet link. Remaining (precise list + exemplars in notes.md): the rest of the rocThrust zip-WRITE boundary + paired local-constexpr-capture across the frontier/per-prim impls; a rocPRIM block_load value-type (thrust::tuple-vs-scalar) mismatch in extract_transform_if/per_v_transform_reduce; the cuco delta; then link + SG gtests (a libhipcxx cuda::mr async_resource concept-arity issue in tests/base_fixture.hpp to clear first) + gfx90a GPU validation. Mechanical/bounded but multi-session/multi-repo; kept blocked to avoid thrash/false-port.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T00:22:06Z",
+      "updated_at": "2026-06-02T09:53:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
