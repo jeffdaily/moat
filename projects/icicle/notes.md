@@ -279,3 +279,18 @@ cmake --build build -j
 - No HSA 0x1016, no hang.
 
 advance-head d8e04fd flipped gfx90a completed -> revalidate (expected; the barrier is wave-agnostic so gfx90a re-passes unchanged).
+
+## Review 2026-06-02 (reviewer, linux-gfx1100, fork moat-port d8e04fd)
+
+Verdict: review-passed (delta-ported -> review-passed). Reviewed the amend delta d66e92a..d8e04fd via /pr-review. The validator re-runs the gfx1100 GPU gate next.
+
+No problems found. The delta is exactly one file, +7 lines: a single unguarded `__syncwarp()` plus comment in `icicle/backend/hip_pqc/include/ml_kem/samplers/cuda_samplers.cuh:123`, at the `if constexpr (ntt)` boundary. No unrelated change slipped into the amend; commit title/body unchanged except as expected.
+
+Fact-checked against the code (not the writeup):
+- Barrier scope is correct as `__syncwarp` (NOT `__syncthreads`). In `generate_error_vector` the CBD writes target `error_vector_result[start_idx_in_warp]` where `start_idx` is per-warp (cuda_samplers.cuh:93-94,102), and the NTT reads back `error_vector_result[t + start_idx]` for the SAME warp (cuda_samplers.cuh:126,130). Each logical warp owns a disjoint `[start_idx, start_idx+warp_hash_count)` poly range; there is no cross-warp read inside this helper, including the two-warp k=768 case (start=0,end=1). On wave32 the wavefront IS the logical warp, so a wavefront-scope fence orders the producer->consumer LDS dependency; `__syncthreads` would be an unnecessary superset.
+- `__syncwarp` is a real LDS fence here: the shim leaves it as HIP-native (cuda_to_hip.h:148-151, "wavefront barrier with the right memory ordering"), not a weak release-only fence.
+- The eta=3 path already fenced, eta=2 did not: `samplePolyCBD_3_5threads` ends with a trailing `__syncwarp()` (cuda_sample_helpers_5threads.cuh:117); `samplePolyCBD_2_5threads` ends at the last poly write with no fence (cuda_sample_helpers_5threads.cuh:69-70). Confirmed.
+- Single fence covers all 12 failures: every ntt=true callsite routes through this boundary -- pke_keygen.cuh:31 (k=512, start=1,end=1, one warp, already eta=3-fenced -> passed), :35 (k=768, start=0,end=1, two warps -> failed), :39 (k=1024 single, start=0,end=0 -> passed), pke_encrypt.cuh:31 (encaps/decaps batch -> failed under concurrency). eta1=3 for Kyber-512 and eta1=2 for Kyber-768/1024 per spec, matching the eta=2-lacked-fence diagnosis.
+- Wave-agnostic + minimal: no literal-arch hardcode, no warpSize/32 conditional, no per-arch branch; safe superset on wave64 (gfx90a re-passes, hence the expected advance-head revalidate flip) and on CUDA.
+
+Hygiene: `[ROCm]` title 46 chars; body mentions Claude and now documents the third (wave32) race; Test Plan present; no Co-Authored-By/noreply trailer, no ghstack, no AMD-internal refs, no CI yaml. Scope confined to backend/hip_pqc (cuda_pqc/cpu/cuda trees untouched).
