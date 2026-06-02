@@ -7,8 +7,8 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-02T16:26:55Z",
-  "head_sha": "0dc1f7c07ad12833c2a680b3b057999306289e71",
+  "updated_at": "2026-06-02T17:27:48Z",
+  "head_sha": "bbfc54d98839c535c909bc8861baefe9157544ce",
   "platforms": {
     "linux-gfx90a": {
       "state": "revalidate",
@@ -59,11 +59,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "fork @ 0dc1f7c0. RESOLVED since 887427fb: exact-leaves (segmented-sort temp-size crash + two correctness bugs in the binary-search kernel -- leaf loop bounded by object-count not binCount so populated high-index leaves read 0; leading-empty-leaf returned targets[0]; TExactLeavesEstimationTest now 15/15) and Langevin (proven NOT a ROCm defect: GPU NextNormal is bit-identical to host CPU over the same seeds, gpuStd==hostStd to 7 sig figs; pre-existing upstream test-design issue comparing Box-Muller vs StdNormalDistribution under a marginal tol -- won't fix). gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15; targets-ut TCombinationTargetTests 3/3 (exercises dcg.cu) + Huber/MultiLogit/Tweedie pass. OPEN BLOCKER: TPointwiseMultiStatHistogramTest CRASHES (host int-div-by-zero 0xC0000094 in the multi-stat histogram compute-by-blocks orchestration) -- methods-ut never ran on ANY platform before this port so this path is unvalidated everywhere; needs a debugger to pinpoint the divisor, not yet classified AMD-specific vs pre-existing. TAucTest/QueryCrossEntropy slow on APU (CUDA start/stop ~12s per sub-test, no failure). full-app e2e not run. See notes.md 2026-06-02.",
+      "blocked_reason": "fork @ bbfc54d9. MultiStat histogram CRASH FIXED: host int-div-by-zero in the histogram grid sizing (numBlocks.x *= CeilDivide(N, x*y*z) divided by zero when a dim was 0, e.g. partCount==0, before the IsGridEmpty guard); fixed with a guarded ScaleBlockCountToOccupancy helper (hist.cuh) at all 16 launch sites in hist_binary/half_byte/one_byte.cu + hist_2_one_byte_base.cuh, bit-identical to the old code for non-empty grids. gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat CheckHistograms (GPU-vs-CPU histogram values) PASS (WithoutOneHot2/17 pass end-to-end); targets-ut TCombinationTargetTests 3/3 (exercises dcg.cu) + Huber/MultiLogit/Tweedie pass. Langevin proven NOT a ROCm defect (won't fix). OPEN BLOCKER (separate subsystem, NOT the histogram): TPointwiseMultiStatHistogramTest still fails 2 of its configs (WithoutOneHot1, WithOneHot3) in the POST-SPLIT path -- CheckAndMakeSplit AssertVecEqual on reordered indices (cpu 37888 vs gpu 0). Pre-existing, masked by the crash, unaffected by the histogram fix; gather/split path (gather_bins/split_points), candidate wave32 scan/scatter. TAucTest/QueryCrossEntropy + the 2M-doc FatSplitPropsTest are just slow on the APU (no failure). full-app e2e not run. See notes.md 2026-06-02.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T16:26:55Z",
+      "updated_at": "2026-06-02T17:27:48Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
