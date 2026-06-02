@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "LEAP",
   "upstream_url": "https://github.com/llnl/LEAP",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/LEAP",
   "fork_default_branch": "main",
   "priority": 4.426,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-02T07:23:34Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T08:08:39Z",
+  "head_sha": "17534792ea62722cf0537894bbab68fb5bb257cc",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T08:08:39Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T07:23:34Z",
+      "updated_at": "2026-06-02T08:08:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

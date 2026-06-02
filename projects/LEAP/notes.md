@@ -1,1 +1,94 @@
 # LEAP notes
+
+LLNL LEAP (LivermorE AI Projector for CT). ROCm/HIP port, lead linux-gfx90a.
+Strategy B: torch CUDAExtension build-time hipify over the canonical `.cu`.
+
+## Build (gfx90a;gfx1100, GCD 0)
+```
+cd projects/LEAP/src
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH="gfx90a;gfx1100"
+python setup_AMD.py build_ext --inplace        # or: bash build_rocm.sh
+```
+- `setup_AMD.py` is the torch CUDAExtension build (the repo's plain `setup.py` is
+  the CMake/ctype path; do not use it for ROCm). The ROCm branch defines
+  `-D__USE_GPU -D__INCLUDE_CUFFT` and links `hipfft`.
+- torch needs numpy<2 in this env (`pip install "numpy<2"`), else the runtime
+  import warns/breaks.
+- The `.so` is loaded by `leapctype.py` via ctypes (`cdll.LoadLibrary` globbing
+  `*leapct*.so` in src/), NOT `import leapct`.
+
+## The dominant fix: HW linear texture filtering -> software interpolation
+~617 `tex3D/tex2D/tex1D<float>` fetches at fractional coords relied on
+`cudaFilterModeLinear` on float element-read textures, which HIP rejects at
+create time. Fix:
+- `cuda_utils.cu` loadTexture/loadTexture_from_cpu/loadTexture1D: under
+  `__HIP_PLATFORM_AMD__`/`__HIPCC__`, always create `cudaFilterModePoint`.
+- `cuda_utils.h`: `leapTex3D/2D/1D(tex, coords, bool linear=true)` device helpers,
+  guarded by `#if defined(__CUDACC__) || defined(__HIPCC__)` (MUST be device-only;
+  host `.cpp` that include cuda_utils.h would otherwise see tex builtins and fail).
+  On CUDA they forward to the builtins (HW linear preserved). On HIP, when
+  `linear`, they software-trilerp/bilerp/lerp by point-fetching the 8/4/2 corners
+  through the point-mode hardware `tex*D<float>` (so the texture address mode --
+  Border-zero or Clamp -- still governs out-of-range neighbors for free; no
+  past-end fault), with the CUDA unnormalized -0.5 texel-center convention
+  (lower neighbor floor(c-0.5), weight frac(c-0.5)).
+
+### Which fetch sites are routed (key correctness rule)
+Only LINEAR-bound textures route through `leapTex*`. Point-bound textures keep
+`tex*D<float>` because HIP point-mode reproduces CUDA point sampling exactly,
+including at bare-integer coords (e.g. Siddon `tex3D(f, iz, iy, ix)` -- routing
+that through the linear helper would wrongly blend). Mapping derived per
+(file, texture-variable, bind flag):
+- routed (linear): SF f+g, extendedSF g, symmetric f+g, backprojectors_VD g,
+  geometric_calibration g, attenuated g+mu, scatter mu/f/detector/sigma*/scatterDist,
+  Joseph f+mu, resample upSample I, ramp deriv_helical g.
+- NOT routed (point, left as tex*D): Siddon f+g, attenuated f, extendedSF f,
+  bilateral, noise, matching_pursuit, scatter source/energies, ramp explicit_convolution g
+  and h (1D), resample downSample I.
+- Runtime-variable: backprojectors_VD g and extendedSF back g are always-linear.
+  Joseph modular-beam back `g` picks linear at runtime (`doLinearInterpolation`,
+  true only when axially aligned), so a `bool linearInterp` kernel param was
+  threaded into the 7 Joseph `g`-reading kernels and passed `doLinearInterpolation`
+  at the 4 live launches; `leapTex3D(g,...,linearInterp)` then degrades to a point
+  fetch in the point case. This keeps it correct in both modes and arch-unified.
+
+### NaN sanitization (cone/fan/modular edge weights)
+Cone/fan/modular SF/VD compute detector-footprint coords like
+`i + 0.5 + hWeight_1/(hWeight_0+hWeight_1)`, which is 0/0 = NaN at detector
+edges. CUDA hardware texturing returns a finite border/clamped value for a
+non-finite coordinate; the call site then multiplies by the 0 weight -> 0.
+Software interp must reproduce that: `leapTex*` clamps a non-finite input
+coordinate to a finite value (`xs = isfinite(x) ? x-0.5 : 0`). Without this the
+projection was all-NaN at the top/bottom detector rows for cone/fan/modular.
+
+## cuFFT -> hipFFT
+Enabled `-D__INCLUDE_CUFFT` on ROCm so the GPU FFT ramp/Hilbert path (`conv1D`,
+`rampFilter2D`, transmission filter in ramp_filter.cu) is exercised; torch hipify
+maps cufft* -> hipfft* (cufftPlan1d/ExecR2C/ExecC2R/Complex/Real/Destroy, the
+R2C/C2R/SUCCESS enums) and we link `hipfft`. FBP recon of a uniform cylinder
+recovers exactly 1.0, gating the hipFFT path.
+
+## hipify ordering / orphan traps
+- The repo shipped orphan one-shot hipify dumps (`src/hip_utils.h`,
+  `src/projectors_Joseph_cpu_hip.h`, `src/ramp_filter_hip.cuh`) that are
+  unreferenced by any source. torch hipify maps `cuda_utils.h` -> `hip_utils.h`,
+  so the tracked orphan `hip_utils.h` COLLIDED with hipify's generated output.
+  Fix: `git rm` the three orphans and gitignore the hipify outputs
+  (`src/*.hip`, `src/*_hip.cpp`, `src/*_hip.cuh`, `src/*_hip.h`, `src/hip_utils.h`).
+- `analytic_ray_tracing_gpu.cu` included its `.cuh` (which uses float3/float2)
+  BEFORE `cuda_runtime.h`; on HIP the vector types come from hip_runtime, so the
+  cuh failed with "unknown type float3". Fix: include `cuda_runtime.h` first.
+
+## Validation (real gfx90a, GCD 0, AMD_LOG_LEVEL=3 native dispatch confirmed)
+- Multi-arch build: gfx90a + gfx1100 code objects both present in the `.so`
+  (roc-obj-ls / llvm-objdump --offloading).
+- `unitTests/gpu_vs_cpu_validate.py`: 6 geometries x {VD,SF}, ALL PASS.
+  Per (geom,method): forward/back/FBP finite (NaN-free); uniform-cylinder FBP
+  interior recovers 1.0000 (+-3%); forward/back adjoint identity <Af,g>==<f,A^Tg>
+  to ~1e-4. The in-tree CPU projectors (*_cpu.cpp) return NaN/garbage in this
+  torch GPU build (pre-existing CPU-path defect, no _cpu.cpp touched) so they
+  are NOT a usable gold here; the cylinder FBP value + adjointness are the gates.
+- Pre-existing upstream limitation (reproduced, not a port bug): modular-beam SF
+  FBP does not converge (tilted-detector separable footprint); modular SF forward
+  is bit-identical to modular VD and modular VD FBP recovers 1.0.
+- `verificationTests.py` needs an external LTTserver + Windows data -> not a gate.

@@ -1,0 +1,9 @@
+{"kind":"phase","ts":"2026-06-02T07:36:12Z","phase":"compile","seconds":13.927,"exit":0,"cmd":"bash projects/LEAP/src/build_rocm.sh"}
+{"kind":"phase","ts":"2026-06-02T07:38:52Z","phase":"compile","seconds":13.701,"exit":0,"cmd":"bash projects/LEAP/src/build_rocm.sh"}
+{"kind":"phase","ts":"2026-06-02T07:39:16Z","phase":"compile","seconds":0.038,"exit":2,"cmd":"python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:39:41Z","phase":"compile","seconds":8.836,"exit":0,"cmd":"bash -c cd projects/LEAP/src && python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:41:08Z","phase":"test","seconds":0.040,"exit":2,"cmd":"python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T07:59:46Z","phase":"compile","seconds":13.877,"exit":0,"cmd":"bash -c cd projects/LEAP/src && python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T08:03:04Z","phase":"test","seconds":6.539,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T08:04:29Z","phase":"test","seconds":5.756,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T08:06:13Z","phase":"test","seconds":6.235,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
