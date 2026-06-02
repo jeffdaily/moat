@@ -559,6 +559,61 @@ shift DPP that the backend rejects ("wavefront shifts not supported on GFX10+").
 Expect per-arch COMPILE exclusions on gfx1100/gfx1151 (the raft gfx1100 wall), NOT
 a source change. Does not affect gfx90a (CDNA).
 
+## Validation 2026-06-02 (validator, linux-gfx90a @ d372efc) -- FAILED
+
+GPU: gfx90a (GCD 2, HIP_VISIBLE_DEVICES=2). Fork HEAD d372efc confirmed.
+Build: cmake --build projects/cugraph/build-hip --target BFS_TEST SSSP_TEST PAGERANK_TEST
+-- EXIT 0 (all three targets build clean).
+
+RAPIDS_DATASET_ROOT_DIR=projects/cugraph/src/datasets; HSA_ENABLE_COREDUMP=0.
+
+PAGERANK_TEST: 56/56 PASS.
+
+BFS_TEST: 14/18 PASS. 4 FAIL = file-missing exceptions for absent large datasets
+wiki2003.mtx (cases 6,7) and wiki-Talk.mtx (cases 8,9). All in-scope cases PASS:
+- file_test karate/polbooks/netscience (cases 0-5): 6/6 PASS incl edge_masking
+- rmat_small (4 cases): 4/4 PASS
+- rmat_benchmark (4 cases): 4/4 PASS
+The 4 wiki* failures are expected/documented (absent large datasets); not a regression.
+
+SSSP_TEST: 10/14 PASS. 4 failures. Breakdown:
+- file_test karate (cases 0-1): 2/2 PASS incl edge_masking  <-- in-scope, pass
+- file_test dblp (cases 2-3): FAIL with fopen dblp.mtx -- absent dataset, expected
+- file_test wiki2003 (cases 4-5): FAIL with fopen wiki2003.mtx -- absent dataset, expected
+- rmat_small (4 cases): 4/4 PASS
+- rmat_benchmark (cases 0-1): ABORT via assert -- REAL GPU BUG (see below)
+
+REAL BUG (blocks validation): SSSP_TEST rmat_benchmark_test cases 0 and 1 abort with:
+  Assertion `vertex_frontier.bucket(bucket_idx_far).aggregate_size() > 0' failed.
+in sssp_impl.cuh:503. This is inside the delta-stepping algorithm's split_far path.
+
+ROOT CAUSE: sssp_impl.cuh line 249:
+  auto delta = (static_cast<weight_t>(raft::warp_size()) * average_edge_weight)
+               / average_vertex_degree;
+raft::warp_size() on the HOST for gfx90a returns 64 (wave64 runtime query), vs 32 on
+CUDA. This doubles the delta step size. For the large directed RMAT benchmark graph
+(scale=20, edge_factor=32), the 2x delta causes the split_bucket call to move ALL
+vertices from bucket_idx_far into bucket_idx_cur_near_near (their distances are all
+within the enlarged threshold), violating the assert that bucket_idx_far is non-empty
+after the split. This is a host-side arithmetic issue, not a device-kernel issue; the
+delta formula uses warp_size as a performance-tuning constant (not a correctness param)
+and must stay at 32 to match the upstream-calibrated delta-stepping behavior.
+
+FIX NEEDED: In sssp_impl.cuh line 249, replace raft::warp_size() with the constant 32
+(or equivalently min(raft::warp_size(), 32u)) under USE_HIP. This restores the upstream
+CUDA delta calibration on all ROCm targets.
+
+Note: the rmat_small tests (scale=10, smaller graph) PASS because the smaller graph has
+fewer vertices in bucket_idx_far when the split fires, so the 2x delta still leaves some
+vertices in far. The large benchmark (1M+ vertices, 32M+ edges) triggers the assert.
+
+This is NOT covered by the session-6 porter validation because the SSSP rmat_benchmark
+was not run in session 6 (only rmat_small and file karate were validated). BFS
+rmat_benchmark was run and passed because BFS does not use a delta-stepping threshold.
+
+Status: validation-FAILED. Returning to porter. Fix: sssp_impl.cuh:249 replace
+raft::warp_size() with 32 under USE_HIP (min or constant).
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a @ d372efc)
 
 Reviewed `git diff e314f1e...HEAD` (4 commits, 83 files) with the /pr-review skill, fault-class deep read of warp_size_ct.hpp and the five ballot/shuffle sites, the classic-tuple <-> cuda::std::tuple bridge (tuple.h, cuda_to_hip.h, thrust_tuple_utils.hpp), the CMake USE_HIP gate, and the test harness. Verdict: review-passed, no changes requested.
