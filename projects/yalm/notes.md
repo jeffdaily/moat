@@ -37,3 +37,21 @@ make test USE_HIP=1 HIPARCH=gfx90a && ./build/test   # prints "All tests passed"
 
 ## Secondary / not the gate
 Full-model `./build/main model.yalm -d cuda -m perplexity` needs a converted model (offline `convert.py`, torch) and exercises hipGraph capture/replay. Not run here (no model staged); not required for the gate. If hipGraph replay misbehaves on a follower, a non-graph dispatch fallback is low effort since every kernel is already directly launchable (the test path proves it).
+
+## Review 2026-06-02 (reviewer, linux-gfx90a)
+Verdict: review-passed. Reviewed `git diff 6cd1ef6...311e1c3` on moat-port. Built clean from scratch (`make clean && make test USE_HIP=1 HIPARCH=gfx90a`, hipcc 7.2.53211, gfx90a) and ran `./build/test` on GCD2 -> "All tests passed". Confirmed gfx90a device code embedded (`roc-obj-ls`: hipv4-amdgcn-amd-amdhsa--gfx90a, 86888 bytes). Wave64 fixes verified as correct and the CUDA path preserved.
+
+Verified correct:
+- WPB self-consistency (infer.cu:29-31, 297-309, 314-329, 963/1003/1236/1242): `<<<rows/MATMUL_WPB, warp_size*MATMUL_WPB>>>` with WPB=16 on HIP gives 64*16=1024 <= cap; kernel-internal `blockDim.x/warpSize` == MATMUL_WPB == grid divisor, so blocktranspose store `block_start_i = blockIdx.x*blockDim.x/warpSize` tiles every row; 16 divides 4096 and 32000. CUDA WPB=32 keeps the original /32,*32 exactly.
+- att_mix shared sizing (infer.cu:468-470, 557-565): shared0/1 indexed by threadIdx.x in [0,warpSize), sized to WARP_SIZE_MAX=64; head_dim=128 covered by `i=2*threadIdx.x; i<head_dim; i+=2*warpSize` (one pass at warpSize=64). blocktranspose sm[32] and block_all_reduce shared[32] hold <=16 wavefronts safely.
+- Test entry points (infer.cu:1017/1061/1087) now use lazy query_warp_size()/query_max_threads_per_block() instead of hardcoded 32/1024; matches device-side warpSize=64.
+- FULL_MASK widened to 0xffffffffffffffffULL only under USE_HIP (infer.cu:15-19); CUDA keeps 0xffffffff.
+- Compat header (cuda_to_hip.h): libc-before-hip, host-safe (__HIPCC__ gates hip_runtime.h vs hip_runtime_api.h), aliases only used symbols; NVIDIA branch unchanged. model.h reroute correct.
+- Makefile USE_HIP branch: hipcc -x hip --offload-arch, -lamdhip64 -no-pie, host CFLAGS get -DUSE_HIP -D__HIP_PLATFORM_AMD__; CUDA path untouched.
+- Commit hygiene: title 60 chars `[ROCm] ...`, no noreply/Co-Authored/ghstack, mentions Claude, no em-dash. Fork main == upstream 6cd1ef6 (clean mirror); fork/moat-port == HEAD. Actions disabled (api enabled=false).
+- No texture/surface, no library swaps, no per-arch hack in shared code (changes are wave-agnostic rewrites or USE_HIP-guarded).
+
+Minor (non-blocking; porter may address opportunistically, not required to re-validate):
+- att_mix shared array size changed 32 -> 64 unconditionally (infer.cu:468), so it is NOT byte-identical on the NVIDIA path (extra 256B shared, indices 32..63 unused, behavior unchanged). The commit message says the wave64 fixes are "guarded by USE_HIP only where the value genuinely differs" -- here the value differs but is unguarded. Harmless on CUDA; the claim is slightly imprecise.
+- hipcc command places `-x hip` after the input file (Makefile CUFLAGS), so clang emits `warning: '-x hip' after last input file has no effect`. The .cu still compiles as HIP (verified gfx90a code object present) because clang treats .cu as HIP by default, so this is cosmetic; could move `-x hip` ahead of `$<` or drop it.
+- hipGraph capture/replay path (_forward_cuda, add_or_update_kernel_node) is unverified by the gate (full-model only, no model staged). Already documented as secondary; flagging that gfx90a graph parity remains unproven for the eventual end-to-end check.
