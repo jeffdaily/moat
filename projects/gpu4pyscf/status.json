@@ -7,17 +7,17 @@
   "priority": 4.871,
   "ext_type": "cmake-cupy-plugin",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-02T06:31:07Z",
-  "head_sha": "460879b05bfa36afa6212d78612a557c3f9d3279",
+  "updated_at": "2026-06-02T06:51:16Z",
+  "head_sha": "8cb88067f72652557788a3dc7be075a38b717c82",
   "platforms": {
     "linux-gfx90a": {
-      "state": "changes-requested",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-02T06:21:22Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T06:31:07Z",
+      "updated_at": "2026-06-02T06:51:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

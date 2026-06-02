@@ -60,8 +60,21 @@ delta-port on failure.
   instantiations are #ifndef USE_HIP'd out (the HF path uses gvhf-rys, not this
   legacy engine). nr_fill_ao_ints also compiled at -O1 to fit the frame.
 - get_smid: HIP `__smid()` returns a sparse (SE,CU) id that can exceed
-  multiProcessorCount; the scratch pool is sized to the full id range under
-  USE_HIP (see vhf.cuh).
+  multiProcessorCount (gfx90a: max 125 vs mpc 104). Any pool indexed as
+  `pool + get_smid()*POOL_SIZE` MUST be sized to the smid range, not mpc, or
+  blocks on high-id CUs write past it (silent ~4MB OOB on the d-shell int3c2e
+  path). Implemented as `__config__.pool_slots`: `probe_smid_range()` in
+  gvhf-rys/mole_helper.cu launches a saturating max-occupancy kernel that
+  `atomicMax`es `get_smid()`, returns max+1, then the Python rounds up to the
+  next power of two (128 on gfx90a) so the slot count provably covers the full
+  encodable id range. Used at the two get_smid()-indexed pools:
+  df/int3c2e_bdiv.py:192 and pbc/df/ft_ao.py:377. NOT moduloed into [0,workers)
+  (that would reintroduce per-CU contention). On CUDA pool_slots == mpc
+  (NVIDIA smid < SM count holds). The scf/jk.py and grad/hessian dd_pool pools
+  are NOT smid-indexed (blockIdx.x*QUEUE_DEPTH, launched with exactly mpc
+  blocks device-side) so they stay at mpc. Proof: sentinel guard after the
+  pool stays intact (0 clobbered) with 128 slots; the old mpc=104 sizing
+  clobbers 6639 f64 guard entries on the same d-shell aux_e2 run.
 - pbc int3c2e uses cub::BlockScan/BlockReduce; hip_compat/cub/cub.cuh aliases
   cub -> hipcub. The wave64 `__ballot` path in int3c2e_create_tasks_o1.cuh is
   NOT compiled (no .cu includes it) and is left for the periodic int3c2e
@@ -164,3 +177,34 @@ Reproduced on real gfx90a (HIP_VISIBLE_DEVICES=0, GCD0).
 - Commit hygiene OK: [ROCm] title <=72 chars, Claude credited, no noreply
   trailer, no ghstack, Test Plan present, no AMD-internal account refs; fork
   master is a clean mirror; Actions disabled on the fork.
+
+## Porter fix 2026-06-02 (Review response, fork moat-port @ 8cb8806)
+
+Resolved both reviewer findings; rebuilt multi-arch and re-validated.
+
+- BLOCKER (get_smid OOB) FIXED. Implemented the promised host-side pool resize.
+  Added `probe_smid_range()` (gvhf-rys/mole_helper.cu): a saturating
+  max-occupancy kernel that `atomicMax`es `get_smid()` and returns max+1.
+  `gpu4pyscf/__config__.pool_slots` calls it once (USE_HIP only), rounds up to
+  the next power of two (128 on gfx90a, covering the full 0..127 encodable smid
+  range), and is used at df/int3c2e_bdiv.py:196 and pbc/df/ft_ao.py:377 (the two
+  get_smid()-indexed pools). On CUDA pool_slots == multiProcessorCount, NVIDIA
+  path unchanged. NOT moduloed (keeps the per-CU-private-slot semantics). Audit:
+  get_smid() appears only in fill_int3c2e.cu/unrolled_int3c2e.cu (libvhf_rys)
+  and pbc/ft_ao.cu; scf/jk.py + grad/hessian dd_pool are blockIdx-indexed with
+  mpc blocks, not smid -- correctly left at mpc. Updated the vhf.cuh comment to
+  point at the real pool_slots/probe_smid_range instead of the never-existing
+  SM_POOL_SLOTS symbol.
+- Proof the OOB is gone: sentinel guard rows placed right after the pool, driven
+  by a d-shell aux_e2 (O/H cc-pVDZ + cc-pVDZ-jkfit) that hits the
+  to_sph && li>1 fill branch: 0 guard entries clobbered with pool_slots=128;
+  the same run forced to the old workers=mpc=104 sizing clobbers 6639 f64 guard
+  entries. probe returns 126 (max smid 125) vs mpc 104.
+- MINOR FIXED. pbc/int3c2e_create_tasks.cuh block_max: the wave-aware nwarps
+  logic is now fully inside #ifdef USE_HIP; the CUDA #else branch is reverted to
+  the upstream byte-identical WARPS form. (These functions are dead in M1.)
+- Re-validated on gfx90a (GCD0): test_rhf/test_uhf/test_int2c2e/test_int4c2e
+  33 passed 3 skipped; test_scf_j_engine/test_scf_jk 16 passed (only deferred
+  test_jk_energy_per_atom fails). Both gfx90a+gfx1100 code objects present in
+  libgvhf_rys.so (and the other 7 .so). AMD_LOG_LEVEL=3 shows probe_smid_kernel
+  + int3c2e kernels dispatch on gfx90a.
