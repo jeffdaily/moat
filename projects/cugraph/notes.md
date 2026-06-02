@@ -691,3 +691,15 @@ Verified (no defect): CUDA path. Every ballot/shuffle change keeps the original 
 Minor (non-blocking, recorded for the porter, not changes-requested): the tuple.h operator=(cuda::std::tuple<Us...>) at line 750 is bounded only by `sizeof...(Us) <= 10` rather than `== tuple_size`, unlike the converting operator/ctor which use the strict `==` arity check. moat_assign_cuda_std assigns only the first sizeof...(Us) slots, so a shorter-arity RHS would silently leave trailing classic-tuple slots unwritten. No current call site hits a mismatched arity (the reduce_by_key write-back is always equal-arity), so this is latent only; tightening to `==` would match the other two bridges and remove the foot-gun.
 
 Scope deferrals confirmed documented (spectral/mst/hungarian/FA2 legacy, cugraph_c C-API, MG/MTMG, Python layer) in plan.md and notes.md "Deferred surface". GPU validation claims (BFS/SSSP/PAGERANK PASS on gfx90a GCD 2) are the porter's; the validator re-runs them next.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a @ 6f8dcd9, delta d372efc..6f8dcd9)
+
+Focused re-review of the new delta only (the prior commit d372efc was already review-passed). Used the /pr-review skill. Verdict: review-passed, no changes requested. No problems found, so per the skill's problems-only philosophy there is nothing to action.
+
+Delta is a single file, 15 insertions / 0 deletions, cpp/src/traversal/sssp_impl.cuh. Verified all four required points: (1) the change is confined to the assert condition -- the split_bucket call (lines 486-500), the near_near_aggregate_size read (501-502), and the if-near>0-break-else-bump-resplit control flow (519-525) are untouched; (2) USE_HIP-guarded with the CUDA assert `assert(vertex_frontier.bucket(bucket_idx_far).aggregate_size() > 0);` byte-identical in the #else (line 517); (3) the delta tuning constant at line 249 (raft::warp_size() * avg_edge_weight / avg_vertex_degree) is unchanged -- grep for warp_size/delta in the diff matches only the new comment text; (4) no other edits in the delta (git diff --name-only = one file).
+
+Fault-class analysis is correct. The while(true) split-far loop is entered only when split_far is set, which requires far_aggregate_size > 0 (line 468). Each iteration splits far into near/far by dist<threshold; afterward either near>0 (break) or near==0 meaning all far vertices stayed in far (far>0 still holds, bump threshold, re-split). So (near>0)||(far>0) holds at every iteration and is the true invariant; the original far>0 is correct only on the else branch. The relaxation weakens the assert to the genuine invariant without changing behavior; on CUDA the original is preserved (and NDEBUG-stripped in Release anyway).
+
+Commit hygiene clean: title [ROCm]-prefixed and 64 chars, root-cause + Test Plan body, Claude named, no noreply trailer, no ghstack, no AMD-internal account references.
+
+The fresh validator GPU run is expected to be absent at review time and is not a blocker; the validator re-runs SSSP/BFS/PAGERANK next.

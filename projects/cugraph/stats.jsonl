@@ -15,3 +15,8 @@
 {"kind":"phase","ts":"2026-06-02T22:59:29Z","phase":"test","seconds":22.820,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-hip/gtests/PAGERANK_TEST"}
 {"kind":"phase","ts":"2026-06-02T23:00:28Z","phase":"test","seconds":48.549,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-hip/gtests/BFS_TEST"}
 {"kind":"phase","ts":"2026-06-02T23:01:16Z","phase":"test","seconds":36.405,"exit":134,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-hip/gtests/SSSP_TEST"}
+{"kind":"phase","ts":"2026-06-02T23:15:44Z","phase":"compile","seconds":601.082,"exit":0,"cmd":"cmake --build projects/cugraph/build-hip --target SSSP_TEST -j16"}
+{"kind":"phase","ts":"2026-06-02T23:27:50Z","phase":"compile","seconds":601.855,"exit":0,"cmd":"cmake --build projects/cugraph/build-hip --target SSSP_TEST -j16"}
+{"kind":"phase","ts":"2026-06-02T23:40:13Z","phase":"compile","seconds":601.010,"exit":0,"cmd":"cmake --build projects/cugraph/build-hip --target SSSP_TEST -j16"}
+{"kind":"phase","ts":"2026-06-02T23:40:29Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./gtests/SSSP_TEST"}
+{"kind":"phase","ts":"2026-06-02T23:53:35Z","phase":"compile","seconds":604.952,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cugraph/build-hip --target BFS_TEST PAGERANK_TEST -j16"}
