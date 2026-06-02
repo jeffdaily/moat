@@ -44,6 +44,44 @@ USE_GPUNVME stays OFF (needs external gpu-nvme-direct lib + VFIO/root; not GPU-v
 - Multi-arch build already proves gfx1100 compiles and emits a code object. Build is `-DCMAKE_HIP_ARCHITECTURES=gfx1100` (no source edit). Validate a wave32 run of test_gemm/test_tensor.
 - Watch points on wave32: the `warpSize`-based reductions and the logical-32 GEMV butterfly are wave-agnostic by construction (see analysis above); NT_WARP_MASK high bits are ignored on wave32. Expect a clean pass; delta-port only if a numeric test fails.
 
+## Validation 2026-06-02 (validator, linux-gfx90a)
+
+Platform: MI250X gfx90a, ROCm 7.2.1, HIP_VISIBLE_DEVICES=1 (GCD 1).
+Fork: jeffdaily/ntransformer moat-port @ 144ab937bbaa7aad3440106358006dc014d776b6.
+
+### Multi-arch build (gfx90a + gfx1100)
+```
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-multi \
+  -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  "-DCMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build agent_space/ntransformer/build-multi -j$(nproc)
+```
+Result: BUILD CLEAN (nodiscard warnings only, documented benign).
+
+`roc-obj-ls agent_space/ntransformer/build-multi/test_gemm` confirms:
+- `hipv4-amdgcn-amd-amdhsa--gfx1100` code object present
+- `hipv4-amdgcn-amd-amdhsa--gfx90a` code object present
+
+### ctest (2 deterministic runs)
+```
+HIP_VISIBLE_DEVICES=1 AMD_LOG_LEVEL=3 ctest --test-dir agent_space/ntransformer/build-multi \
+  --output-on-failure -R "test_tensor|test_gemm"
+```
+Run 1: 2/2 PASS (0.45s total). Run 2: 2/2 PASS (0.46s total). Deterministic.
+
+AMD_LOG_LEVEL=3 confirms: `Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`
+
+Exact/tolerance results:
+- gemv_f32: y[0]=32.0 (expected 32.0), y[1]=-16.0 (expected -16.0) PASS
+- gemv_q4_0 (smem): y[0]=256.0 (expected 256.0), y[1]=-256.0 (expected -256.0) PASS
+- gemv_q6_k_large (no-smem): y[0]=32768.0 (expected 32768.0), y[1]=-32768.0 PASS
+- silu_mul: [0.000, 0.731, -0.269, 1.762] within tolerance PASS
+- rmsnorm: [0.365148, 0.730296, 1.095444, 1.460593] exact match PASS
+
+### Verdict
+PASS. State: linux-gfx90a review-passed -> completed. validated_sha=144ab937bbaa7aad3440106358006dc014d776b6. linux-gfx1100 unblocked to port-ready.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a)
 Reviewed moat-port 144ab93 vs upstream f2237be via /pr-review. No problems found; recommendation Approve -> review-passed.
 
