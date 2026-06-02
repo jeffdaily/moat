@@ -257,3 +257,73 @@ Verification performed (not just read):
   72087c7; Actions disabled on the fork (enabled=false).
 
 Verdict: APPROVE. Handing to the validator for the full GPU test run.
+
+## Validation 2026-06-02 (validator, linux-gfx90a, fork @ 8cb8806) -- COMPLETED
+
+Platform: MI250X gfx90a, GCD0 (HIP_VISIBLE_DEVICES=0), ROCm 7.2.1, conda py_3.12.
+Scope: Milestone 1 HF/integrals; DFT/gradients/CUTLASS-GEMM/libxc deferred.
+
+### Step 1 -- Multi-arch build
+
+Rebuilt from source in agent_space/gpu4pyscf_build:
+
+```
+cmake -S gpu4pyscf/lib -B agent_space/gpu4pyscf_build \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_CUTLASS=OFF -DBUILD_LIBXC=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build agent_space/gpu4pyscf_build -j8
+```
+
+roc-obj-ls confirmed both gfx1100 and gfx90a code objects in all 8 .so:
+libcupy_helper.so, libgdft.so, libgecp.so, libgint.so, libgvhf.so,
+libgvhf_md.so, libgvhf_rys.so, libpbc.so. Build: PASS.
+
+### Step 2 -- HF/integral test suite
+
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python -m pytest \
+  gpu4pyscf/scf/tests/test_rhf.py gpu4pyscf/scf/tests/test_uhf.py \
+  gpu4pyscf/scf/tests/test_int2c2e.py gpu4pyscf/scf/tests/test_int4c2e.py -v
+```
+
+Result: 33 passed, 3 skipped, 0 failed (157.74 s). Exactly the expected count.
+
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python -m pytest \
+  gpu4pyscf/scf/tests/test_scf_j_engine.py gpu4pyscf/scf/tests/test_scf_jk.py -v
+```
+
+Result: 16 passed, 1 failed (54.41 s). The single failure is
+test_scf_jk.py::test_jk_energy_per_atom -- deferred analytic-gradient engine,
+expected and correctly labeled. All core J/K tests pass.
+
+AMD_LOG_LEVEL=3 confirmed "Using native code object for device:
+amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" and probe_smid_kernel dispatching
+natively on gfx90a.
+
+### Step 3 -- Sentinel OOB proof
+
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python agent_space/sentinel_proof.py
+```
+
+Output:
+  pool_slots=128 multiProcessorCount=104
+  pool allocations intercepted: 1
+  guard rows=64 clobbered f64 entries=0
+  PASS: sentinel intact -> no get_smid() OOB write past pool_slots
+
+0 guard entries clobbered. The smid-pool OOB fix (probe_smid_range -> pool_slots=128
+on gfx90a, covering full 0..127 smid range) is confirmed effective. The silent
+~4 MB OOB that old workers=mpc=104 sizing caused is gone.
+
+### Summary
+
+All three formal gates pass:
+- Multi-arch build: both gfx90a + gfx1100 code objects in all 8 .so -- PASS
+- HF/integral suite: 33+16 passed, 3 skipped, 1 deferred expected failure -- PASS
+- Sentinel OOB check: 0 guard clobbers at pool_slots=128 -- PASS
+
+validated_sha=8cb88067f72652557788a3dc7be075a38b717c82. linux-gfx90a -> completed.
+Followers (linux-gfx1100) unblocked to port-ready.
