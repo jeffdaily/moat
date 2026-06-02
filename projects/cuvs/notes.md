@@ -213,3 +213,98 @@ cuvs, raft, rmm, and conda lib dirs on LD_LIBRARY_PATH. NOTE: the installed cuVS
 is the DISTANCE slice; cuml code paths that need IVF/CAGRA/brute-force must wait
 for those stages (fence them as cugraph/cuml fence cuvs-dependent code), exactly
 as cuvs itself is built without spectral while raft lanczos is gated.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a) -- CHANGES REQUESTED
+
+Reviewed moat-port HEAD 728265cc against the v25.08.00 base (9ce11a0f) with the
+/pr-review skill, ROCm-fault-class aware. Scope: the delivered distance slice
+(CUVS_HIP_SLICE=distance). Verified empirically on real gfx90a (GCD 1): rebuilt
+nothing, re-ran the existing DISTANCE_TEST -- 410/410 PASS across 48 suites,
+exit 0; device dispatch confirmed via AMD_LOG_LEVEL=3 (native
+amdgcn-amd-amdhsa--gfx90a:sramecc+ code object, live
+cuvs::distance::detail::pairwise_matrix_kernel on device, checked against the
+naive CPU reference kernel). The tested public pairwise-distance API is correct.
+
+### Fault Classes -- BLOCKER (silently-wrong shipped symbol)
+
+cpp/src/distance/detail/fused_distance_nn/simt_kernel.cuh:86 -- the SIMT
+fused-NN kernel `fusedDistanceNNkernel` (declared line 70) wraps its ENTIRE body
+(lines 86-184) in `#if __CUDA_ARCH__ < 800`. raft's force-included compat header
+defines `__CUDA_ARCH__ 800` on the HIP device pass
+(_deps/raft/install/include/raft/util/hip/cuda_to_hip.h:53-54), so `800 < 800`
+is false and the kernel body is compiled OUT on HIP -- the device kernel is
+empty. I confirmed this directly: compiling a probe with `__CUDA_ARCH__=800`
+drops the guarded store (no `v_mov_b32 v2, 0x6f`), while `__CUDA_ARCH__=700`
+emits it. This is the cupoch/RXMesh `__CUDA_ARCH__` trap in PORTING_GUIDE.
+
+The porter's forced-SIMT strategy walked into this: fused_l2_nn.cuh /
+fused_cosine_nn.cuh / fused_distance_nn.cuh now guard out CUTLASS and force the
+SIMT branch, but the SIMT branch it falls back to has no body on HIP. The host
+launcher `fusedDistanceNNImpl` still launches the (empty) kernel, so
+`cuvs::distance::fusedDistanceNNMinReduce` / `fusedDistanceNN` (public API,
+instantiated by src/distance/detail/fused_distance_nn.cu which IS in the shipped
+slice, cmake/hip/cuvs_hip.cmake:142) leave their output uninitialized -- silently
+wrong, no compile error, no test failure. Consumers: kmeans
+(cluster/detail/kmeans_common.cuh, kmeans_balanced.cuh; deferred stage) and the
+public fused_distance_nn-inl.cuh API. The TESTED public pairwise path is NOT
+affected -- pairwise_matrix_kernel in kernel_sm60.cuh has no `<800` body guard,
+which is why DISTANCE_TEST is genuinely 410/410.
+
+Fix, pick one and re-validate on gfx90a:
+- (a) Make the forced SIMT fused-NN path actually live: extend the guard to
+  `#if __CUDA_ARCH__ < 800 || defined(USE_HIP)` (or equivalent) so the body
+  compiles on HIP, then add masked_nn.cu / a FusedL2NN test to the slice and
+  show it passing (recall/argmin against a CPU reference; per PORTING_GUIDE use
+  a splitmix-hashed embedding, never a periodic generator, to avoid exact-tie
+  false negatives). This is the same `l2_exp_distance_op::epilog` (relu ALWAYS,
+  optional sqrt) vs pairwise's `l2_exp_cutlass_op` distinction raft's review
+  flagged -- validate the argmin numerics, not just that it runs.
+- (b) Honestly defer fused-NN: drop src/distance/detail/fused_distance_nn.cu
+  from CUVS_DISTANCE_SOURCES so the shipped libcuvs.so does not export a
+  silently-broken public symbol, and move fused-NN to the deferred list.
+
+### Notes accuracy -- must fix (inaccurate fault-class analysis)
+
+notes.md:96 ("The SIMT fused-NN ... is wave64-correct by construction") and
+notes.md:190-191 ("The l_inf static_cast fix and the forced-SIMT
+fused-NN/distance path are exercised and correct") are both false for fused-NN:
+it is NOT exercised by DISTANCE_TEST (cuvs_hip_tests.cmake:59-61 explicitly
+excludes masked_nn) and its kernel is empty on HIP, so it is not correct. The
+wave64 reasoning about the per-row mutex (updateReducedVal walking lanes via
+raft::WarpSize) is sound IN PRINCIPLE, but it is moot while the body is gated
+out. Correct these claims to match whichever fix above is chosen.
+
+### Verified correct (no action; recorded so the porter need not re-investigate)
+
+- l_inf.cuh:54 cast: raft::max(float,__half) has no host-pass overload
+  (math.hpp:421 static_asserts is_same_v); the device pass converts via
+  __half2float (math.hpp:401-403). static_cast<AccT>(diff) is value-identical on
+  CUDA. Correct.
+- dispatch_sm80.cuh HIP stub: signature matches the dispatch-inl.cuh forward
+  decl (line 58); the `else` branch calling it is discarded by
+  `if constexpr(cutlass_op_unavailable==true)` on HIP, so the stub is never
+  instantiated. Correct.
+- kernel_sm60.cuh:45 early-exit skip: SM_compute_arch() static_asserts in the
+  host pass; single HIP target arch so the sm60 kernel is always launched.
+  Correct, arch-unified.
+- simt_kernel.cuh:115 KVPair narrowing static_cast: `tmpkey < n` still uses the
+  uncast value; the cast only feeds the KVPair. Value-identical. (Lives inside
+  the gated-out body, so currently dead on HIP -- becomes live under fix (a).)
+- CUTLASS handling: zero cutlass symbols in the built libcuvs.so; all
+  cutlass/cute includes USE_HIP-guarded; CUDA path byte-identical (all edits
+  `#if defined(USE_HIP)` / `#if !defined(USE_HIP)`).
+- Build wiring: USE_HIP option default OFF, early include+return() before the
+  rapids bootstrap; enable_language(HIP); arch from CMAKE_HIP_ARCHITECTURES
+  (gfx90a default only when unset); find_package(rmm/raft) not CPM; offload-
+  compress + gc-sections present.
+- Commit hygiene: title "[ROCm] Port cuVS pairwise-distance subsystem to HIP
+  (Strategy A)" (54 chars); body names Claude, has a Test Plan, no noreply
+  trailer, no ghstack; ASCII clean, no em-dash. Fork main (ee7fada6) == upstream
+  rapidsai/cuvs main HEAD (clean mirror, no MOAT commits); moat-port == local
+  HEAD; Actions disabled on the fork. The v25.08.00 base pin is intentional and
+  preserved.
+
+Verdict: Request Changes. The blocker is a shipped public symbol that is
+silently wrong on HIP, plus notes claiming that path is validated when it is
+not. Resolve fused-NN (fix or honest deferral), correct the notes, re-validate,
+then bounce back for re-review.
