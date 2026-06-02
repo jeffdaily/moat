@@ -407,3 +407,31 @@ EXPECTED and NOT a failure -- it is the documented Stage 2 deferral. Importing
 gaussian2d_sampler / envgs_sampler was NOT attempted (not part of this gate).
 
 Result: ALL PASS. State -> completed. validated_sha = 135ab0ad76fdba89ae7f44b808b36300b19f7caf.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a -- Stage 2 OptiX->HIPRT)
+
+Verdict: review-passed. MOAT's first OptiX->HIPRT reimplementation. The two missing-return UB fixes (the load-bearing change), the cutoff-init fix, the HIPRT integration (GAS build, AnyHit filter functor, raygen/closesthit/miss -> single HIP kernel, Compiler.cpp device-name sanitize, submodule gitlink wiring), the standalone-glue build structure, and commit hygiene are all correct, minimal, and USE_ROCM-honest. Independently reproduced on gfx90a (GCD 2): validate_stage2.py PASS and validate_geom_fd.py finite/FD-correct -- the geometric-backward NaN is genuinely gone. No blocking defects; the items below are non-blocking notes for the validator and the eventual upstream-PR gate.
+
+Verified clean (no action):
+- The UB fix is correct and complete. auxiliary.h:437 quat_to_rotmat_transpose and kernels.h:409 compute_transmat_xy_backward now return void; both callers discard (kernels.h:227 inside compute_transmat_uv; kernels.h:1091 in the backward loop). I rebuilt the JIT TU myself (clang++ --offload-arch=gfx90a -O3 -x hip -fsyntax-only kernels.h -Wreturn-type -Wall -Wextra -Wuninitialized -Wsometimes-uninitialized): zero return-type and zero uninitialized warnings across all 124 value-returning device functions -- these two were the only fall-off-end functions and they are fixed. CUDA path unaffected (the change is unconditional void; nvcc tolerated the dead return register). Only residual warnings are -Wunused-parameter noise and a __trap macro-redef artifact from my own -D on the command line (the real JIT does not pass that define).
+- cutoff initialized to 3.0f on the reflected bounces in BOTH kernels (kernels.h:597 forward, kernels.h:898 backward); the start_from_first branch still sets it per TIGHTBBOX (kernels.h:638-640, 947-949). Matches the disk tessellation 3-sigma half-extent.
+- No wave-size fault class: exhaustive grep of hiprt_tracer/ finds no warpSize/__shfl/__ballot/__activemask/__reduce/tiled_partition; the lone "wave" token is a comment (kernels.h:897). Per-ray serial compositing + atomicAdd; correct on wave64 (gfx90a) and wave32 followers. Both kernels guard h>=H||w>=W (kernels.h:806, backward equivalent) so the ceil-div 8x8 launch grid never reads OOB. chunk_buffer is indexed by tidx=h*W+w over H*W*CHUNK_SIZE, no inter-thread overlap.
+- power_clamped = 1.0f unconditional override (kernels.h:1057) is verbatim upstream (backward.cu:802), not a porter regression.
+- The .contiguous().data_ptr() on temporaries in trace_surfels.cpp:151-176 is upstream-identical and guarded by CHECK_INPUT (enforces contiguity, so .contiguous() is a no-op and no temporary is destroyed) -- no dangling-pointer regression.
+- setup.py: clean standalone-glue static-lib structure (g++ compiles hiprt_wrapper.cpp + Orochi/hipew/cuew; the torch CUDAExtension compiles only ext.cpp + trace_surfels.cpp and links the glue + libhiprt through the POD/void* boundary), hipify-ignore monkeypatch on the vendored HIPRT tree (the GLM lesson), runtime-file staging into the package, package_data for wheels. The upstream OptiX build path is replaced by a SystemExit-on-non-HIP (the fork is ROCm-only); acceptable for a fork-only reimplementation.
+- Compiler.cpp:639-643 device-name sanitize patch is minimal and correct ('/' and '\\' -> '_' so "AMD Instinct MI250X / MI250" does not break the filesystem cache path); well-commented.
+- ext.cpp / __init__.py: minimal, API-stable (OptiXStateWrapper name kept); __init__.py resolves pkg_dir from __file__ (editable + wheel safe) and points HIPRT_PATH at the vendored hiprt_root.
+- No .so committed (gitignored); committed large blobs are all vendored HIPRT/Orochi source. Submodule gitlink at 5991683 matches; EnvGS .gitmodules points diff-surfel-tracing at jeffdaily fork @ moat-port; superproject @ 2890415.
+- Commit hygiene both forks: [ROCm] titles 60 and 63 chars (<=72), bodies mention Claude, no noreply/Co-Authored-By trailer, no em-dash, no ghstack. Actions disabled on both jeffdaily forks. Fork main mirrors upstream xbillowy main (ef6f24b) exactly; the moat-port branch base 9b86cbf is the commit the upstream EnvGS superproject pins.
+
+NOTE (upstream-PR gate, not a porter defect): xbillowy/diff-surfel-tracing's current default branch (main @ ef6f24b "add: license") shares NO common ancestor with the commit the EnvGS superproject pins (9b86cbf "update: paper version") -- upstream rewrote/re-licensed their history after EnvGS pinned the submodule. Basing the moat-port branch on the pinned 9b86cbf is correct for making EnvGS build from the fork. But a future moat-port -> upstream-main PR would show the entire history as a diff (disjoint roots). This is jeff's call at the upstream-PR gate; flagging so it is not a surprise. No porter action.
+
+NOTE (minor, non-blocking): third_party/hiprt/contrib/Orochi/contrib/bin/win64/*.dll are committed as git-LFS pointer stubs (3-line spec pointers) but the repo has no .gitattributes, so they will not resolve on clone. They are Windows-only and unused on the Linux gfx90a build; left as-vendored. No action for gfx90a.
+
+NOTE (cosmetic): the Compiler.cpp patch comment reads "MOAT probe patch". MOAT is public and not an AMD-internal codename, so this is allowed, but for an eventual upstream PR a project-neutral phrasing ("sanitize path-hostile chars in device name") would read better in vendored HIPRT code. No action required for the fork.
+
+Independent GPU reproduction (GCD 2, AMD Instinct MI250X, ROCm 7.2, torch 2.13.0a0):
+- validate_stage2.py: VERDICT PASS -- forward hit_frac 0.160 (hits+misses), all backward grads finite, FD colors cosine 1.0000 slope 0.999, FD opacities cosine 0.934 slope 1.016.
+- validate_geom_fd.py: means3D cosine 0.996 slope 1.013, scales cosine 0.995, rotations directional-FD CHECK (documented quaternion-renorm null-space noise). All grads finite -- the NaN is gone.
+
+Recommendation: Approve (review-passed). Validator: re-run validate_stage2.py + validate_geom_fd.py on GCD 2 as the gfx90a gate; both reproduced PASS here.
