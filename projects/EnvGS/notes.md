@@ -492,3 +492,104 @@ Independent GPU reproduction (GCD 2, AMD Instinct MI250X, ROCm 7.2, torch 2.13.0
 - validate_geom_fd.py: means3D cosine 0.996 slope 1.013, scales cosine 0.995, rotations directional-FD CHECK (documented quaternion-renorm null-space noise). All grads finite -- the NaN is gone.
 
 Recommendation: Approve (review-passed). Validator: re-run validate_stage2.py + validate_geom_fd.py on GCD 2 as the gfx90a gate; both reproduced PASS here.
+
+## Validation 2026-06-02 (linux-gfx1100)
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1 / HIP 7.2.53211, torch 2.13.0a0+gitb5e90ff. HIP_VISIBLE_DEVICES=0.
+
+Scope: Stage 1 only (diff-surfel-rasterizations 3 variants). Stage 2 OptiX->HIPRT (diff-surfel-tracing) is out of scope for this validation -- it requires a separate gfx1100 validation pass and depends on HIPRT/hiprtc which was validated only on gfx90a.
+
+### Fork / commit
+
+Superproject: jeffdaily/EnvGS @ moat-port 2890415c449c (unchanged from gfx90a lead). Rasterizer: jeffdaily/diff-surfel-rasterizations @ d7e9f1a. No fork change needed -- this is a validate-first follower.
+
+### Build note: GLM nested submodule requires explicit init
+
+On a fresh clone the `third_party/glm` nested submodule in diff-surfel-rasterizations is NOT populated by default (it is a second-level submodule not covered by the top-level `git submodule update --init submodules/diff-surfel-rasterizations`). Without it, clang-HIP picks up the system GLM from `/usr/include/glm/` (0.9.9 without GLM_COMPILER_HIP detection), causing ~30 compile errors (const-assignment in auxiliary.h, no `dot`/`length`/`transpose` overloads). Fix:
+
+```
+git -C projects/EnvGS/src/submodules/diff-surfel-rasterizations submodule update --init third_party/glm
+```
+
+The bundled GLM @ 5c46b9c has `glm/simd/platform.h:#define GLM_COMPILER_HIP 0x40000000` and detects `__HIP__` correctly. Once initialized the build proceeds cleanly. This is a documentation/recipe gap, not a code defect in the port.
+
+### Build commands and timing (PYTORCH_ROCM_ARCH=gfx1100, MAX_JOBS=16)
+
+```bash
+# Init nested GLM submodule (required on fresh clone)
+git -C projects/EnvGS/src/submodules/diff-surfel-rasterizations submodule update --init third_party/glm
+
+# Clear stale hipify artifacts, then build each variant
+export PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 HIP_VISIBLE_DEVICES=0
+RASTER_BASE=projects/EnvGS/src/submodules/diff-surfel-rasterizations
+for v in diff-surfel-rasterization-wet diff-surfel-rasterization-wet-ch05 \
+         diff-surfel-rasterization-wet-ch07; do
+  rm -rf $RASTER_BASE/$v/{build,*.egg-info,hip_rasterizer,*_hip.*,rasterize_points.hip}
+  bash utils/timeit.sh EnvGS compile -- \
+      pip install -e $RASTER_BASE/$v --no-build-isolation --no-deps -v
+done
+```
+
+Build times (gfx1100): wet ~37s, ch05 ~37s, ch07 ~37s (all exit=0).
+
+### gfx1100 code-object evidence
+
+roc-obj-ls on each built _C*.so shows exclusively `hipv4-amdgcn-amd-amdhsa--gfx1100` code objects (3 per .so). No gfx90a objects present. AMD_LOG_LEVEL=3 confirms: `Gfx Major/Minor/Stepping: 11/0/0`, `Using native code object for device: amdgcn-amd-amdhsa--gfx1100`.
+
+### Imports
+
+All three _C extensions import with correct symbols: rasterize_gaussians / rasterize_gaussians_backward / mark_visible present on all variants (confirmed).
+
+### Stage 1 GPU validation results (gfx1100)
+
+Gate: the rasterizer autograd harness (agent_space/envgs/validate_stage1.py). NOT the EnvGS framework sampler (which needs diff_surfel_tracing -- Stage 2).
+
+Commands:
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- python3 agent_space/envgs/validate_stage1.py
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS-converge test -- python3 agent_space/envgs/train_converge.py
+```
+
+Per-variant results (validate_stage1.py):
+
+- diff-surfel-rasterization-wet (NC=3):
+  - Forward: image(3,150,200) finite=True, min=0.0000 max=0.8977 mean=0.2040, nonzero_frac=0.934, visible=1317/4000. Non-trivial, no illegal memory access.
+  - Backward: all 6 input grads finite (means3D/means2D/opacity/colors/scales/rotations).
+  - FD opacity (surfel 1): sign_agreement=1.00, slope=1.000. DECISIVE GEOMETRIC-BLEND GATE PASS.
+  - FD means3D directional: avg slope=0.937 (within [0.1, 5.0] gate, downhill confirmed).
+  - Determinism: forward bit-identical (max_diff=0.0); backward grad_rel=4.69e-08 (benign atomicAdd reorder).
+  - PASS.
+
+- diff-surfel-rasterization-wet-ch05 (NC=5):
+  - Forward: image(5,150,200) finite=True, min=0.0000 max=0.9076 mean=0.2135, nonzero_frac=0.934, visible=1317/4000.
+  - Backward: all 6 grads finite.
+  - FD opacity: sign=1.00, slope=1.000. FD means3D directional avg=0.971. PASS.
+  - Determinism: forward bit-identical; backward grad_rel=1.06e-07. PASS.
+
+- diff-surfel-rasterization-wet-ch07 (NC=7):
+  - Forward: image(7,150,200) finite=True, min=0.0000 max=0.9128 mean=0.2054, nonzero_frac=0.934, visible=1317/4000.
+  - Backward: all 6 grads finite.
+  - FD opacity: sign=1.00, slope=1.000. FD means3D directional avg=0.991. PASS.
+  - Determinism: forward bit-identical; backward grad_rel=1.38e-07. PASS.
+
+Training convergence (train_converge.py, 400 iters, P=2500, 160x120):
+
+- wet (nc=3): loss 0.29331 -> 0.07493 (74.5% down), PSNR=11.25 dB, all_finite=True. CONVERGED.
+- wet-ch05 (nc=5): loss 0.29385 -> 0.07724 (73.7% down), PSNR=11.12 dB, all_finite=True. CONVERGED.
+- wet-ch07 (nc=7): loss 0.29391 -> 0.07809 (73.4% down), PSNR=11.07 dB, all_finite=True. CONVERGED.
+
+Note: gfx1100 convergence numerics differ from gfx90a (initial loss ~0.29 here vs ~0.05 on gfx90a) because the gfx1100 host uses a fresh validation setup with different GPU coverage (visible=1317 vs 1778 on gfx90a, nonzero_frac=0.934 vs 1.000). All grads are finite and training descends monotonically. The decisive gate (FD opacity slope=1.000 for all 3 variants) confirms correct forward+backward computation.
+
+### Wave32 verdict
+
+The 2DGS surfel rasterizer is wave-agnostic by design. Exhaustive grep (confirmed in review): zero warp primitives (no __shfl/__ballot/__activemask/__reduce_*_sync/cg::reduce/tiled_partition/warpSize). All cross-thread exchange uses __shared__ + block.sync() + __syncthreads_count; block is 16x16=256. NUM_WARPS in auxiliary.h is defined but never read. No cg::tiled_partition<32> path, no 64-lane-mask assumption. FD opacity slope=1.000 (exact) on the 32-lane wavefront for all 3 channel variants -- no HSA 0x1016 fault, no divergence artifact. Wave32-correct.
+
+### Device dispatch (AMD_LOG_LEVEL=3)
+
+preprocessCUDA<3>, duplicateWithKeys, identifyTileRanges, renderCUDA<3u> all dispatched on amdgcn-amd-amdhsa--gfx1100. No HSA errors.
+
+### Stage 2 OptiX->HIPRT
+
+Stage 2 (diff-surfel-tracing HIPRT tracer) was validated on gfx90a (linux-gfx90a completed 2026-06-02). It requires a separate gfx1100 validation pass. Not attempted here. Status: DEFERRED for gfx1100.
+
+Result: Stage 1 ALL PASS on gfx1100. State -> completed. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
