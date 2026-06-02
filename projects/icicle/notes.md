@@ -141,6 +141,80 @@ All three ML-KEM kernels (keygen, encaps, decaps) confirmed launching native cod
 
 PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests, both deterministic. ML-KEM kernels run native gfx90a code. No non-GPU regressions (CPU backend gtests are not built in this configuration; the CPU backend itself is unmodified and the closed-source MSM/NTT/EC backends are out of scope and not built).
 
+## Validation 2026-06-02 (gfx1100) -- FAIL: 12/58 backend tests, wave32 race exposed
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, wave32, RDNA3). ROCm 7.2.1. HIP_VISIBLE_DEVICES=0.
+
+### Build (gfx1100)
+
+Clone fork moat-port @ d66e92a7733d:
+```
+git clone --branch moat-port --single-branch https://github.com/jeffdaily/icicle /var/lib/jenkins/moat/agent_space/icicle_src
+```
+
+Configure:
+```
+cmake -S agent_space/icicle_src/icicle -B agent_space/icicle_gfx1100_build \
+  -DCMAKE_BUILD_TYPE=Release -DCPU_BACKEND=ON -DHIP_PQC_BACKEND=ON -DCUDA_PQC_BACKEND=OFF \
+  -DPQC=ON -DBUILD_TESTS=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_PREFIX_PATH=/opt/rocm
+# Configuring done (10.6s -- FetchContent deps already cached)
+```
+
+Compile (timeit.sh):
+```
+cmake --build agent_space/icicle_gfx1100_build -j128
+# [100%] Built target test_ml_kem -- exit 0, 17.7s
+```
+
+Architecture verified:
+```
+roc-obj-ls agent_space/icicle_gfx1100_build/backend/hip_pqc/libicicle_backend_hip_pqc.so
+# hipv4-amdgcn-amd-amdhsa--gfx1100  (473032 bytes)
+```
+No gfx90a code present. Correct.
+
+### Backend gtests (58 tests) -- FAIL 12/58
+
+```
+ctest --test-dir agent_space/icicle_gfx1100_build/backend/hip_pqc/tests
+# 79% tests passed, 12 tests failed out of 58 -- Total Test time: 18.9s
+```
+
+Failing tests (consistent across runs):
+- 16 - KyberTest.PkeKeygen768
+- 24 - KyberTest.ML_KEM_Internal_Keygen768
+- 31 - MLKemTest.KeyCheckTest768Batch
+- 32 - MLKemTest.KeyCheckTest1024Batch
+- 38 - MLKemKeygenTest.ML_KEM_Internal_Keygen768
+- 41 - MLKemKeygenTest.ML_KEM_Internal_Keygen768_Batch
+- 45 - MLKemEncapsTest.MlKemEncaps768Batch
+- 46 - MLKemEncapsTest.MlKemEncaps1024Batch
+- 48 - MLKemDecapsTest.MlKemDecaps768Batch
+- 49 - MLKemDecapsTest.MlKemDecaps1024Batch
+- 54 - PkeEncryptTest.Encrypt768Batch
+- 55 - PkeEncryptTest.Encrypt1024Batch
+
+All k=512 tests pass. All 1024 single-instance KAT tests pass. The failures are concentrated in k=768 and batch k=1024.
+
+### Wave32 diagnosis
+
+The failures are NON-DETERMINISTIC: `PkeKeygen768` (KAT test with fixed input d="3c53596d...") produces a DIFFERENT wrong dk_pke on every run, even though the input is fixed. This is the definitive signature of a shared-memory race condition. On gfx90a (wave64), wavefront 0 carries threads 0-63 (logical warps 0+1) and wavefront 1 carries threads 64-127 (logical warps 2+3). Intra-wavefront lockstep hides cross-warp shared memory races within a wavefront. On gfx1100 (wave32), each of the 4 logical warps (warp 0..3, threads 0..31, 32..63, 64..95, 96..127) is its own independent wavefront; there is NO automatic lockstep synchronization across warps.
+
+Pattern analysis:
+- k=512: `generate_error_vector<2, 4, eta=3, start=1, end=1>` -- ONE warp (warp 1). Passes.
+- k=768: `generate_error_vector<3, 6, eta=2, start=0, end=1>` -- TWO warps (0 and 1). FAILS non-deterministically.
+- k=1024 single KAT: `generate_error_vector<4, 8, eta=2, start=0, end=0>` -- ONE warp (warp 0). Passes.
+- k=1024 batch: fails. Involves encaps/decaps which run `pke::encrypt` with `generate_matrix_A<4,1,3>` (warps 1-3) and `generate_error_vector<4,4,eta=2,0,0>` (warp 0) concurrently without a barrier -- and with 8192 blocks running simultaneously, the timing-dependent race becomes reliable.
+
+The race is a genuine wave32 issue not fixed by the two existing race fixes (encaps `__syncthreads` and `generate_k_r __syncwarp`). Those fixes address cross-warp DATA races in specific functions. The new failure exposes a DIFFERENT class of race: multiple independent wavefronts accessing shared memory within the same block without sufficient ordering.
+
+The porter needs to audit `pke::keygen` (k=768 two-warp error vector), `pke::encrypt` (concurrent matrix_A + error vector generation), and the encaps/decaps kernels for missing `__syncthreads()` between concurrent warp assignments that access or are followed by reads of the same shared memory regions.
+
+### Verdict
+
+FAIL. 46/58 backend gtests pass; 12/58 fail with non-deterministic results indicating a shared-memory race exposed uniquely on wave32 (gfx1100). No HSA faults (0x1016), no hang. The gfx90a wave64 lockstep hid this race. State set to validation-failed; escalated to porter.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port d66e92a)
 
 Verdict: review-passed. Additive sibling HIP-PQC backend; reviewed `git diff 625532a...HEAD` in full plus the cuda_to_hip shim, all wave64-touched kernels, the two race fixes (against the untouched cuda_pqc originals), registration, CMake wiring, and commit hygiene. No changes requested. The GPU gate (58/58 KAT-exact backend gtests + 6/6 frontend dispatch) is recorded above as porter-run on real gfx90a; the validator re-runs it next.
