@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "ntransformer",
   "upstream_url": "https://github.com/xaskasdf/ntransformer",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/ntransformer",
   "fork_default_branch": "main",
   "priority": 4.348,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:34Z",
-  "updated_at": "2026-06-02T05:44:17Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T05:53:23Z",
+  "head_sha": "144ab937bbaa7aad3440106358006dc014d776b6",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T05:53:09Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T05:44:17Z",
+      "updated_at": "2026-06-02T05:53:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

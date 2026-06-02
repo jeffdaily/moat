@@ -1,0 +1,8 @@
+{"kind":"phase","ts":"2026-06-02T05:48:52Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake -S . -B /var/lib/jenkins/moat/agent_space/nt-build -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-02T05:49:06Z","phase":"compile","seconds":2.731,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/ntransformer/src -B /var/lib/jenkins/moat/agent_space/nt-build -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-02T05:49:15Z","phase":"compile","seconds":2.789,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/nt-build -j128"}
+{"kind":"phase","ts":"2026-06-02T05:50:17Z","phase":"compile","seconds":8.460,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/nt-build -j128"}
+{"kind":"phase","ts":"2026-06-02T05:50:27Z","phase":"compile","seconds":2.790,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/ntransformer/src -B /var/lib/jenkins/moat/agent_space/nt-multi -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release -DCMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-02T05:50:39Z","phase":"compile","seconds":11.433,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/nt-multi -j128"}
+{"kind":"phase","ts":"2026-06-02T05:50:51Z","phase":"test","seconds":0.144,"exit":0,"cmd":"ctest --output-on-failure"}
+{"kind":"phase","ts":"2026-06-02T05:50:57Z","phase":"test","seconds":0.588,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/nt-build --output-on-failure"}
