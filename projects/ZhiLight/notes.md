@@ -138,3 +138,37 @@ Verdict: Request Changes (one latent wave64 correctness defect to fix or explici
 - Build: USE_HIP opt-in, enable_language(HIP), CMAKE_HIP_ARCHITECTURES defaults gfx90a only when unset (followers need no source edit), .cu marked LANGUAGE HIP (not renamed), CUDA path intact behind NOT USE_HIP, pybind11 NO_EXTRAS + IPO OFF, --offload-compress.
 - Commit hygiene: title "[ROCm] Portable HIP build for ZhiLight on AMD (gfx90a first pass)" 53 chars, Claude disclosed, no Co-Authored-By/noreply trailer, no ghstack, no em-dash. Fork main = ee844680 (clean upstream mirror), moat-port = 9bb3e8b, Actions disabled on the fork. No AMD-internal account references.
 - Note for the validator: the supported int8 Linear (Int8Linear via hipBLASLt) and the int8-TP all-reduce are not exercised by the 80 standalone kernel tests; test_linear.py covers the fp16 NormalLinear GEMM. Not a review blocker (GPU run is the validator's stage), but the int8 Linear surface is unverified by the listed gate.
+
+## Porter response 2026-06-02 (fork moat-port @ 54bd8df, was 9bb3e8b)
+
+Fixed both reviewer findings; rebuilt and re-ran the kernel-test gate on real
+gfx90a (GCD 1, MI250X, CC:90). 77 passed (the listed 12 files collect 77 cases,
+not 80; the earlier "80" was a stale count), deterministic across three runs,
+0 skip / 0 fail. arthmetic (amax/amin/sum) + softmax + attn_softmax all pass.
+
+1. (wave64 int8 reduce) quant_reduce_kernel.cu:26,56,267 -- replaced the three
+   warpReduceMaxB<T>(fabsf(...)) with warpReduceMaxWidthB<float,32>. Added that
+   helper to reduce.cuh (warpReduceMaxWidth<T,W> + a new width-W broadcast
+   warpShflW<T>(x,0,W)); it is the broadcast counterpart of the width form
+   already used in attention_kernel.cu. This keeps the reduction inside the
+   intended 32-lane group on wave64 (no cross-row contamination on the
+   dim3(32,32) launch, no inactive-lane 32-63 read on the <<<M,32>>> launch) and
+   is value-identical to the old full-warp reduce on a 32-thread CUDA warp. Chose
+   the correctness fix over de-risking since notes/commit imply the int8 surface
+   is supported; scoped the "supported" wording in notes/commit to the cublasLt
+   Int8Linear GEMM (the int8-TP all-reduce quant kernels are now wave64-correct
+   but remain unexercised by the kernel-test gate).
+2. (byte-identical CUDA) wrapped the blockReduce* partial-selection guard rewrite
+   in #if defined(USE_HIP)||defined(__HIP_PLATFORM_AMD__) in reduce.cuh (3 fns)
+   and attention_kernel.cu (2 fns): HIP keeps the ceil form (lane < num_warps),
+   CUDA gets back its original threadIdx.x < blockDim.x/BM_WARP_SIZE floor form
+   (BM_WARP_SIZE==32 on CUDA, so literally the original codegen). num_warps is
+   now declared only inside the HIP branch (no unused-var on CUDA). Corrected the
+   commit body's "byte-for-byte unchanged" claim accordingly.
+
+Out-of-scope observation (NOT changed, left for a later pass): ff_kernel.cu
+DEV_softmax_inplace (lines 139/149) calls warpReduceMaxB/SumB in the
+blockDim.x<=32 branch -- same half-filled-wavefront class as finding 1, but on
+the deferred MOE routing path (DEV_route_score, num_exp experts), outside the
+two findings and outside the test gate. fp8_util.cu:259 is likewise a deferred
+NVIDIA-only path. Flagged here rather than fixed to avoid scope creep.
