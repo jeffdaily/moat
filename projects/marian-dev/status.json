@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "marian-dev",
   "upstream_url": "https://github.com/marian-nmt/marian-dev",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/marian-dev",
   "fork_default_branch": "master",
   "priority": 3.968,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-02T01:01:49Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T01:50:34Z",
+  "head_sha": "25f910ceefedbb907300fca1d275762fb046472b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T01:50:34Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T01:01:49Z",
+      "updated_at": "2026-06-02T01:50:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
