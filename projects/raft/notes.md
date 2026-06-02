@@ -1736,3 +1736,88 @@ State transition: revalidate -> validation-failed. Escalated to porter.
 MATRIX_SELECT_TEST: still BUILD FAIL (pre-existing rocPRIM 4.2.0 DPP bug, unchanged; NOT the cause of this failure).
 HAVERSINE_TEST wave32: PASS (the select_warpsort runtime-query change is correct on wave32).
 The regression is specifically in LINALG_TEST / `linewise_op.cuh` template instantiation mismatch.
+
+## Delta-port 2026-06-02 (gfx1100 host/device WarpSize template-arg fix)
+
+Fork: jeffdaily/raft @ moat-port, new HEAD 6e925ac (amended from ce0fa68). Fixes
+the gfx1100 LINALG SIGABRT regression the validator isolated above. Platform:
+linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32), ROCm 7.2.1,
+HIP_VISIBLE_DEVICES=0.
+
+### Root cause (recap) and why the runtime query alone was insufficient
+
+ce0fa68 made the HOST warp size a runtime query (host_warp_size() ->
+hipDeviceGetAttribute), which correctly fixes host launch-GEOMETRY INTS. But a
+kernel templated on the hardware warp width is a SEPARATE hazard: in a HIP fat
+binary the host pass is compiled ONCE, so a single host compile-time WarpSize
+cannot match both device arches. `matrix/detail/linewise_op.cuh` launched its
+unaligned head/tail kernel with a COMPILE-TIME template arg
+`MaxOffset = max(WarpSize, VecBytes)`. The host `#else` arm of cuda_dev_essentials
+keeps `WarpSize = 64`, so on gfx1100 the host requested
+`matrixLinewiseVecRowsTailKernel<...,64,...>` (...Lm64E), but the gfx1100 device
+pass (WarpSize=32) compiled only ...Lm32E -> "Cannot find Symbol ...Lm64E" ->
+SIGABRT. gfx90a never saw it (host 64 == device 64).
+
+### Sites fixed (approach: decouple the template arg from the hardware warp)
+
+1. `cpp/include/raft/matrix/detail/linewise_op.cuh`:
+   - New constant (line ~47): `static constexpr std::size_t kLinewiseTailWidth`
+     = 32 on HIP, `std::size_t(raft::WarpSize)` on CUDA.
+   - Lines ~552 (matrixLinewiseVecCols) and ~669 (matrixLinewiseVecRows):
+     `MaxOffset = std::max(std::size_t(raft::WarpSize), VecBytes)` ->
+     `std::max(kLinewiseTailWidth, VecBytes)`.
+   WHY 32 is correct on BOTH arches: MaxOffset is purely the tail-kernel BLOCK
+   WIDTH (= blockDim.x = the template arg). The tail kernel only processes the
+   unaligned head (< VecBytes elements) and tail (< VecBytes) of each row; it
+   needs blockDim.x >= VecBytes (VecBytes <= 16) and warp-aligned for branching.
+   The hardware warp width is irrelevant to its correctness (the kernel body uses
+   it only via `Linewise<...,MaxOffset>` as BlockSize for striding, not as a warp
+   width; `AlignWarp = Pow2<raft::WarpSize>` is used only in vectorCols/Span,
+   which the TAIL kernel does not call). 32 is warp-aligned on wave32 (= one warp)
+   and wave64 (divides 64), covers any VecBytes, and equals the CUDA WarpSize, so
+   host and the per-arch device pass select ONE identical instantiation (...Lm32E)
+   on every arch. Verified: `nm LINALG_TEST | grep matrixLinewiseVecRowsTailKernel`
+   shows Lm32E only -- no Lm64E.
+
+2. `cpp/include/raft/spatial/knn/detail/ball_cover/registers-inl.cuh` (7 launch
+   sites): the eps CSR/xd grid `ceildiv(n_query_rows, 64 / raft::WarpSize)` is a
+   HOST-computed grid-geometry INT (queries-per-block); changed `raft::WarpSize`
+   -> `raft::warp_size()` (the runtime query) per the multi-arch pattern. With the
+   host constant at 64 this was `64/64 = 1` query/block on gfx1100, which would
+   under-launch the wave32 CSR path (the same class of wave64-CSR-grid bug the
+   notes document); the runtime query restores `64/32 = 2` on a wave32 device.
+   These kernels are build-skipped on gfx1100 (rocPRIM DPP bug), but the fix keeps
+   the fat binary correct and consistent with the runtime-query keystone.
+
+CUDA path byte-identical: kLinewiseTailWidth == raft::WarpSize == 32, and
+raft::warp_size() is constexpr 32 on CUDA. The fix does NOT change the gfx90a
+(wave64) instantiation either -- gfx90a now also uses the ...Lm32E tail kernel
+(MaxOffset = max(32, VecBytes)); the tail block width 32 is still warp-aligned and
+>= VecBytes on wave64, so gfx90a behavior is correct and re-passes (advance-head
+flipped gfx90a completed -> revalidate accordingly). Audited all other
+host-pass compile-time `raft::WarpSize` template-arg / `<<<...WarpSize...>>>`
+launch sites: linewise + ball_cover were the only two; every remaining
+`constexpr ... WarpSize` is inside a `__device__`/`__global__` body or device
+struct (compiled per-arch, no host/device symbol mismatch).
+
+### gfx1100 GPU evidence (HIP_VISIBLE_DEVICES=0, W7800)
+
+Build: incremental into projects/raft/build-gfx1100 (`-DCMAKE_HIP_ARCHITECTURES=
+gfx1100`), exit 0, only pre-existing nodiscard warnings.
+
+| Test | Result | Bar | Notes |
+|------|--------|-----|-------|
+| LINALG_TEST | 2017/2018 PASS (run1); 2018/2018 (run2) | 2017/2018 | **REGRESSION FIXED.** Was SIGABRT (Cannot find Symbol ...Lm64E). MatVecOp tests all OK. The 1 fail (run1) is the pre-existing nondeterministic DotTestF.Result/5 hipBLAS-dot float-tolerance artifact (passed run2). No SIGABRT, no Cannot-find-Symbol. |
+| DISTANCE_TEST | 11/11 PASS | 11/11 | SIMT fallback (CK gate false on gfx11). |
+| FUSED_NN_TEST | 12/12 PASS | 12/12 | SIMT fallback. |
+| HAVERSINE_TEST | 1/1 PASS (x2, deterministic) | 1/1 | wave32 faiss warp-select; no HSA 0x1016. |
+| LABEL_TEST | 14/14 PASS | 14/14 | |
+| RANDOM subset | 148/148 PASS | 148/148 | |
+| CORE subset | 171/172 PASS | 171/172 | 1 pre-existing Raft.InterruptibleOpenMP. |
+| UTILS subset | 177/177 PASS | 177/177 | |
+
+MATRIX_SELECT_TEST / BALL_COVER_TEST remain rocPRIM 4.2.0 DPP-build-skipped on
+gfx1100 (separate pre-existing upstream bug, not this regression). Determinism:
+LINALG MatVecOp + the symbol-resolution fix are deterministic across two runs
+(only the DotTestF tolerance flake varies). State transition:
+validation-failed -> delta-ported.
