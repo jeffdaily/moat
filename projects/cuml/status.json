@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "cuml",
   "upstream_url": "https://github.com/rapidsai/cuml",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/cuml",
   "fork_default_branch": "main",
   "priority": 6.614,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-01T22:15:39Z",
-  "head_sha": null,
+  "updated_at": "2026-06-02T07:11:42Z",
+  "head_sha": "2baf9836f5cd90bccb70af4bfbaf6b67f2983086",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T07:11:42Z",
       "completed_at": null,
-      "updated_at": "2026-06-01T22:15:39Z",
+      "updated_at": "2026-06-02T07:11:42Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
