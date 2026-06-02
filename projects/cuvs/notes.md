@@ -423,3 +423,47 @@ Notes accuracy: the prior false claims are corrected. notes.md:90-103 now descri
 Commit hygiene: title "[ROCm] Port cuVS pairwise-distance subsystem to HIP (Strategy A)" (64 chars); body names Claude (Anthropic), has a Test Plan with literal commands, no Co-Authored-By noreply trailer, no ghstack, no em-dash, ASCII clean. No AMD-internal account references in the diff. Branch moat-port; fork main ee7fada6 is the clean upstream mirror (unchanged); Actions disabled on the fork (enabled:false).
 
 No problems found. Proceeds to validation.
+
+## Validation 2026-06-02 (validator, linux-gfx90a) -- COMPLETED
+
+Fork jeffdaily/cuvs @ moat-port 0c2b709a. GPU: MI250X gfx90a, GCD 2 (HIP_VISIBLE_DEVICES=2), ROCm 7.2.53211.
+
+**Raft install verified:** `_deps/raft/install/include/raft/util/cuda_dev_essentials.cuh` has `inline int host_warp_size()` (the ce0fa68c multi-arch keystone -- runtime hipDeviceGetAttribute query). Not a stale pre-ce0fa68c install.
+
+**simt_kernel.cuh guard verified:** line 90 reads `#if (__CUDA_ARCH__ < 800) || defined(USE_HIP)` -- the fix is present and the fused-NN kernel body is live on HIP.
+
+**Step 1 -- Multi-arch build:**
+
+```bash
+# Build already current at 0c2b709a; ninja reports "no work to do"
+bash utils/timeit.sh cuvs compile -- ninja -C agent_space/cuvs_build -j32 cuvs DISTANCE_TEST FUSED_NN_TEST
+llvm-objdump --offloading agent_space/cuvs_build/libcuvs.so | grep -io 'gfx[0-9a-z]*' | sort -u
+# -> gfx1100
+# -> gfx90a
+```
+
+Both gfx90a and gfx1100 code objects confirmed in libcuvs.so. CMakeCache: CMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100, USE_HIP=ON.
+
+**Step 2 -- FUSED_NN_TEST (run 1, AMD_LOG_LEVEL=3):**
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:_deps/raft/install/lib:_deps/raft-rmm/install/lib:/opt/rocm/lib:$LD_LIBRARY_PATH"
+HIP_VISIBLE_DEVICES=2 AMD_LOG_LEVEL=3 agent_space/cuvs_build/gtests/FUSED_NN_TEST
+```
+
+AMD_LOG_LEVEL=3 confirms:
+- HIP Direct Dispatch: 1, native code object `amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`
+- ShaderName: `void cuvs::distance::detail::fusedDistanceNNkernel<float, raft::KeyValuePair<int, float>, int, raft::linalg::KernelPolicy<...>, ...>` dispatched for each of 7 test cases
+- RESULT: **7/7 PASS, 0 FAILED**
+
+Run 2 (determinism): **7/7 PASS, 0 FAILED** (405 ms total, identical result).
+
+**Step 3 -- DISTANCE_TEST (run 1):**
+
+```bash
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build/gtests/DISTANCE_TEST --gtest_filter='-BigMatrix*'
+```
+
+RESULT: **410/410 PASS, 0 FAILED** across 48 suites (592511 ms). All metrics (canberra, correlation, cosine, hamming, hellinger, inner-product, jensen-shannon, kl-divergence, l1, l2-expanded + self-distance, l2-sqrt-expanded, l-inf, lp-unexpanded, russell-rao) in float + half + double verified correct vs CPU reference.
+
+**Verdict: PASS. Transition linux-gfx90a review-passed -> completed, validated_sha=0c2b709a2c38e5b699475aa614a19cc79661d01a. Followers linux-gfx1100 and windows-gfx1151 auto-unblocked to port-ready.**
