@@ -2,7 +2,7 @@
   "full_name": "rapidsai/cugraph",
   "upstream_url": "https://github.com/rapidsai/cugraph",
   "default_branch": "main",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/cugraph",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "e314f1e077fe84762a12807639f39985bb4fd564"
 }
