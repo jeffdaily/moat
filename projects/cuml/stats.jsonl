@@ -4,3 +4,6 @@
 {"kind":"phase","ts":"2026-06-02T06:46:34Z","phase":"compile","seconds":51.994,"exit":1,"cmd":"cmake --build projects/cuml/build-hip -j16"}
 {"kind":"phase","ts":"2026-06-02T07:18:09Z","phase":"compile","seconds":0.290,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cuml/build-hip -j16"}
 {"kind":"phase","ts":"2026-06-02T07:18:39Z","phase":"test","seconds":23.756,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-02T07:34:08Z","phase":"compile","seconds":246.420,"exit":1,"cmd":"cmake --build projects/cuml/build-hip -j8"}
+{"kind":"phase","ts":"2026-06-02T07:35:28Z","phase":"compile","seconds":24.213,"exit":0,"cmd":"cmake --build projects/cuml/build-hip -j8"}
+{"kind":"phase","ts":"2026-06-02T07:41:03Z","phase":"test","seconds":153.833,"exit":8,"cmd":"ctest --test-dir projects/cuml/build-hip --output-on-failure -j1"}

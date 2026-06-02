@@ -16,15 +16,49 @@ decomposition (PCA/TSVD), ensemble (decision tree + random forest library
 code), tsa (ARIMA/auto-ARIMA), holtwinters, genetic, explainer
 (kernel_shap + permutation_shap), datasets. The cuvs-free PRIMS primitives.
 
-### Deferred (NOT regressions -- documented scope)
-- cuvs-dependent algorithms (pull `<cuvs/...>`, the CUTLASS->CK neighbors/
-  distance surface that lives in the cuvs port): dbscan, hdbscan, kmeans,
-  knn/kde, tsne (+cufft), umap, **svm** (svm includes
-  `cuvs/distance/grammian.hpp` for the kernel matrix -- it is NOT cuvs-free,
-  correcting an earlier assumption), spectral clustering, and the
-  distance-based metrics (pairwise_distance, silhouette_score{,batched},
-  trustworthiness). Expand `CUML_ALGORITHMS` once cuvs is `completed`; no
-  replan needed.
+### Stage 2 (cuvs distance slice enabled) -- 2026-06-02
+cuvs is now `completed`; the validated jeffdaily/cuvs @ moat-port (0c2b709a)
+delivers the DISTANCE subsystem only (libcuvs.so exports `cuvs::distance::*`;
+its neighbors/cluster/stats/grammian stages are still deferred ON THE CUVS FORK
+-- see projects/cuvs/notes.md). Bounded by what cuvs actually exports, Stage 2
+enables the cuvs-dependent algorithms reachable with `cuvs::distance` alone:
+- **metrics/pairwise_distance** (`src/metrics/pairwise_distance.cu`): calls only
+  `cuvs::distance::pairwise_distance` (dense), which the slice exports. The
+  sparse (CSR) `pairwiseDistance_sparse` overload is `#if !defined(USE_HIP)`'d
+  out -- it calls cuvs's CSR distance (cuVS sparse-distance subsystem, deferred);
+  no in-tree C++ cuML caller uses it (Python/Cython only). CUDA byte-identical.
+- **random_projection** (`src/random_projection/rproj.cu`): cuvs-free itself;
+  enabled because its **SG_RPROJ_TEST** is the on-GPU validation vehicle for the
+  pairwise_distance metric (`ML::Metrics::pairwise_distance`).
+Gated by `CUML_LINK_CUVS` (cuml_hip.cmake; default ON) which adds
+`find_package(cuvs)`, links `cuvs::cuvs`, appends `CUML_HIP_CUVS_SOURCES`, and
+builds SG_RPROJ_TEST. `CUML_LINK_CUVS=OFF` reproduces the Stage 1 cuvs-free
+build (no cuVS install required). Dep: build+install jeffdaily/cuvs @ moat-port
+into `_deps/cuvs/install` (`cmake --install agent_space/cuvs_build --prefix
+_deps/cuvs/install`); put it first on CMAKE_PREFIX_PATH and its lib on
+LD_LIBRARY_PATH at runtime.
+
+SG_RPROJ_TEST: 8/8 PASS on gfx90a (MI250X GCD2), incl the EpsilonCheck cases
+that drive pairwise_distance -> cuvs::distance on device (AMD_LOG_LEVEL=3:
+native gfx90a code object, ISA90a/WS64 Tensile GEMM). Full ctest 33/34 PASS
+(only the documented LARS in-process-sequential known issue fails); no Stage 1
+regression.
+
+### Still deferred -- consuming cuVS surface NOT in the delivered distance slice
+The remaining cuvs-dependent algorithms wait for the cuVS fork to extend past
+distance (expand CUML_HIP_CUVS_SOURCES then, no replan):
+- dbscan / knn / tsne / umap -> `cuvs::neighbors` (brute_force / ball_cover /
+  ivf_flat / ivf_pq / all_neighbors / knn_merge_parts)
+- kmeans -> `cuvs::cluster::kmeans`; hdbscan -> `cuvs::cluster::agglomerative`
+- **svm** (svc/svr) -> `cuvs::distance::kernels::GramMatrixBase`/`KernelFactory`
+  (grammian): `gram_matrix.cu`/`kernel_factory.cu`/`kernel_matrices.cu` are
+  cuVS's NEXT distance sub-stage and are NOT yet built into libcuvs.so (verified
+  via `nm -DC`: zero GramMatrix/KernelFactory symbols). SVM stays deferred until
+  cuVS ships grammian, even though it is "only" a distance dependency.
+- silhouette_score{,_batched} / trustworthiness -> `cuvs::stats`
+- spectralclustering -> `cuvs::cluster::spectral` + `cuvs::embed`
+- DIST_ADJ_TEST: its `#include <distance/distance.cuh>` is a cuVS IN-TREE header
+  not shipped by the cuVS install; not buildable against installed cuVS.
 - `explainer/tree_shap.cu`: needs the header-only gputreeshap CUDA library;
   deferred for the lead pass (kernel_shap + permutation_shap kept, SHAP_KERNEL
   validated). Bring tree_shap when gputreeshap is audited under hipcc.
