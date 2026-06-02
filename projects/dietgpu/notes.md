@@ -151,3 +151,55 @@ Verified correct (load-bearing):
 GPU gate reproduced (HIP_VISIBLE_DEVICES=0, gfx90a, ROCm 7.2.1):
 ans_test 4/4, ans_statistics_test 4/4, batch_prefix_sum_test 2/2, float_test 3/3
 -- all PASS, deterministic.
+
+## Validation 2026-06-02 (validator, linux-gfx90a)
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA 03088ce1542c8413ba1daad3eb5c03a4ece22976.
+
+### Build
+
+```
+cd projects/dietgpu/src
+git submodule update --init --recursive
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
+```
+
+CMake configure confirmed: `-- dietgpu HIP arch=gfx90a warp_size=64` (DIETGPU_WARP_SIZE=64).
+Build: PASS, 34 targets, 0 errors, 1 pre-existing upstream warning (braces around scalar initializer in FloatTest.cu:306).
+
+### GPU tests (run directly; ctest reports no tests under HIP-language build)
+
+```
+export HIP_VISIBLE_DEVICES=0
+cd build-hip
+./bin/ans_test
+./bin/ans_statistics_test
+./bin/batch_prefix_sum_test
+./bin/float_test
+```
+
+Run 1:
+- ans_test: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Run 2 (determinism check):
+- ans_test: 4/4 PASSED
+- ans_statistics_test: 4/4 PASSED
+- batch_prefix_sum_test: 2/2 PASSED
+- float_test: 3/3 PASSED
+
+Pass/fail identical across both runs: deterministic confirmed.
+
+Device dispatch confirmed via AMD_LOG_LEVEL=3:
+`Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`
+
+Total: 13/13 PASS. Verdict: PASS. Transitioning linux-gfx90a to completed.
