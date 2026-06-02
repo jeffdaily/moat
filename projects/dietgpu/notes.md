@@ -105,3 +105,49 @@ statistics, BlockReduce in checksum) uses its OWN dedicated TempStorage union
 used exactly once; there is no back-to-back reuse of a single TempStorage that
 would race on a single-wavefront block. The statistics kernel already separates
 its sort and scan with a shared-memory round-trip + __syncthreads().
+
+## Review 2026-06-02 (reviewer, linux-gfx90a)
+
+Reviewed git diff a4d70a14...03088ce1 on moat-port. Verdict: review-passed.
+Strategy A executed correctly; R1-R6 analysis verified; reproduced the GPU gate
+(all four gtests PASS on real gfx90a, DIETGPU_WARP_SIZE=64 baked, deterministic
+across repeated runs). Commit hygiene clean. Findings are minor (latent UB in
+two unused helpers); none block.
+
+Minor (non-blocking, fix opportunistically):
+- dietgpu/utils/PtxUtils.cuh:78 (getLaneMaskLe) and :82 (getLaneMaskGt) compute
+  `LaneMaskT(2) << laneId`; at laneId==63 that is a shift of an effective 1<<64,
+  i.e. shift-count == type width, which is UB in C++. These two helpers are DEAD
+  in the codec (only getLaneMaskLt and getLaneMaskGe are called -- GpuANSEncode
+  :69/:116 and GpuANSDecode :95/:149 -- and neither uses the 2<<laneId form), so
+  there is no live miscompression today. If kept, rewrite Le as
+  `getLaneMaskLt() | (LaneMaskT(1) << laneId)` and Gt as `~getLaneMaskLe()` to
+  avoid the lane-63 UB. getLaneMaskLt/Ge use `1<<laneId` and are well-defined at
+  lane 63.
+- getBitfield/setBitfield are defined in both branches but unused anywhere in
+  the codec (pre-existing upstream dead code, not port-introduced); their HIP
+  rewrites were not exercised by any test. Left as-is is fine (they mirror the
+  NVIDIA branch); no action required.
+
+Verified correct (load-bearing):
+- rotateLeft/rotateRight/funnelShiftRight HIP C++ are bit-identical to the PTX
+  shf.l/r.clamp.b32 they replace for the shift==1 call sites used in the float
+  split/join, and across the full 0..31 rotate range (exhaustive check). bf16
+  join operand order (funnelShiftRight(lo,hi,1)) matches the original
+  shf.r.clamp.b32 dst,lo,hi,1.
+- 64-bit getLaneMaskLt/Ge match PTX lanemask_lt/ge for all lanes 0..63.
+- ballot/popc/shfl route through maskless 64-bit HIP builtins; lanes 32-63 are
+  not dropped. NVIDIA branch keeps the original PTX + 0xffffffff verbatim.
+- kWarpSize derived from build-injected DIETGPU_WARP_SIZE (gfx9*->64 else 32),
+  NOT __GFX9__; host and device agree. Build confirmed DIETGPU_WARP_SIZE=64.
+- R6: smemSort (BlockRadixSort) and smemScan (BlockScan) are distinct unions
+  separated by __syncthreads() (GpuANSStatistics.cuh:325); BatchPrefixSum passes
+  are separate kernels; checksum BlockReduce used once. No reused-TempStorage
+  race. notes' "no __syncthreads needed" claim verified.
+- NVIDIA/CUDA path untouched (compat header no-op; CMake else-branch reproduces
+  the original verbatim). Torch binding deferral documented and gated, not
+  silently broken.
+
+GPU gate reproduced (HIP_VISIBLE_DEVICES=0, gfx90a, ROCm 7.2.1):
+ans_test 4/4, ans_statistics_test 4/4, batch_prefix_sum_test 2/2, float_test 3/3
+-- all PASS, deterministic.
