@@ -597,3 +597,23 @@ No regression vs the 5cdaa15 baseline.
 
 The build.py import cleanup is confirmed behavior-neutral on gfx90a: the main rasterizer passes
 all 108 core tests unchanged.
+
+## Validation 2026-06-02 (gfx1100) -- carry-forward to 8839b72 (doc-only)
+
+Revalidate triggered by the fork advancing to 8839b72. The prior gfx1100 validated
+sha was rebased away on the fork (the gfx90a host rebased moat-port onto newer
+upstream), so a direct two-dot tree diff is not possible from this clone; the
+carry-forward rests on first-hand verification of the constituent changes:
+- The upstream commits folded into the rebase (71660ea..9ebed19) touch ONLY
+  README.md files (`git diff 71660ea 9ebed19 -- gsplat/cuda/**` is EMPTY; no
+  setup.py change). Pure documentation/benchmarking-readme commits.
+- The curated-commit tip delta is a README "AMD GPUs (ROCm)" install note --
+  the gfx90a host committed 8839b72 as an explicit "doc-only carry-forward"
+  (MOAT commit 5aa3683), atop the behavior-neutral build.py import relocation
+  (5fd287a; experimental HiGS renderer, entirely skipped on ROCm per setup.py).
+
+No gsplat/cuda device code and no ROCm compiled-build path changed. The prior
+gfx1100 validation applies unchanged: 3DGUT core 108/108, full 312 passed / 38
+nerfacc-gated known-fail baseline, wave32 correct. validated_sha -> 8839b72. No
+GPU re-run, no fork change. (windows-gfx1151 left as-is for a Windows host; the
+same doc-only delta applies there.)

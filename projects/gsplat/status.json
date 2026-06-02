@@ -7,48 +7,17 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-02T18:23:49Z",
-  "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+  "updated_at": "2026-06-02T18:24:37Z",
+  "head_sha": "8839b72e43f555622673e060728e7480b0fbf40a",
   "platforms": {
-    "linux-gfx90a": {
+    "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
-      "started_at": "2026-05-30T07:12:53Z",
-      "completed_at": "2026-06-02T18:15:00Z",
-      "updated_at": "2026-06-02T18:23:49Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 2,
-        "first_session_at": "2026-05-30T23:00:00Z",
-        "last_session_at": "2026-06-02T18:15:00Z"
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "8839b72e43f555622673e060728e7480b0fbf40a",
-        "to": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T18:23:49Z"
-      }
-    },
-    "linux-gfx1100": {
-      "state": "revalidate",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "0f72aef3ca02100721c4a24c87f6df782a2a31db",
+      "validated_sha": "8839b72e43f555622673e060728e7480b0fbf40a",
       "started_at": "2026-05-30T09:00:00Z",
-      "completed_at": "2026-05-31T00:10:51Z",
-      "updated_at": "2026-06-02T18:03:56Z",
+      "completed_at": "2026-06-02T18:24:37Z",
+      "updated_at": "2026-06-02T18:24:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -101,6 +70,37 @@
         "class": "doc-only",
         "detail": "no changes",
         "at": "2026-06-02T16:55:10Z"
+      }
+    },
+    "linux-gfx90a": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+      "started_at": "2026-05-30T07:12:53Z",
+      "completed_at": "2026-06-02T18:15:00Z",
+      "updated_at": "2026-06-02T18:23:49Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 2,
+        "first_session_at": "2026-05-30T23:00:00Z",
+        "last_session_at": "2026-06-02T18:15:00Z"
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "8839b72e43f555622673e060728e7480b0fbf40a",
+        "to": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T18:23:49Z"
       }
     }
   }
