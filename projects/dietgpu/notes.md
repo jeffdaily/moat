@@ -399,3 +399,63 @@ references. Fork main is a clean upstream mirror at a4d70a1; Actions disabled.
 Minor (non-blocking, pre-existing, NOT touched by this delta -- carried from the
 prior review): PtxUtils.cuh:78/82 getLaneMaskLe/Gt `2<<laneId` lane-63 UB in
 dead helpers; getBitfield/setBitfield unused. No action required for this port.
+
+## Validation (multi-arch) 2026-06-02
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA b6e0d3f64558eb7d30cab1573be487318514c7a1.
+State: review-passed -> completed (multi-arch warp-size fix).
+
+### Two-arch build
+
+```
+cmake -S /var/lib/jenkins/moat/projects/dietgpu/src -B .../build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
+```
+
+Configure: `-- dietgpu HIP arch=gfx90a;gfx1100` (no DIETGPU_WARP_SIZE -- removed by multi-arch fix).
+Build: PASS, 34/34 targets, 0 errors, 1 pre-existing upstream warning (FloatTest.cu:306 braced-scalar-init, appears for each arch pass).
+
+### Offload bundle verification
+
+`llvm-objdump --offloading` on libgpu_ans.so: contains `hipv4-amdgcn-amd-amdhsa--gfx1100` AND `hipv4-amdgcn-amd-amdhsa--gfx90a` bundles (3 .so segments each).
+`llvm-objdump --offloading` on libgpu_float_compress.so: same -- both gfx90a and gfx1100 bundles present.
+Fat binary confirmed for both codec libraries.
+
+### gfx90a dispatch from fat binary
+
+AMD_LOG_LEVEL=3: `Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`
+Correct per-arch dispatch from the fat binary confirmed.
+
+### GPU tests (run directly; ctest reports no tests under HIP-language build)
+
+```
+export HIP_VISIBLE_DEVICES=0
+cd build-hip
+./bin/ans_test
+./bin/ans_statistics_test
+./bin/batch_prefix_sum_test
+./bin/float_test
+```
+
+Run 1:
+- ans_test: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Run 2 (determinism check):
+- ans_test: 4/4 PASSED
+- ans_statistics_test: 4/4 PASSED
+- batch_prefix_sum_test: 2/2 PASSED
+- float_test: 3/3 PASSED
+
+Total: 13/13 PASS both runs. Pass/fail identical across runs: deterministic confirmed.
+
+### Verdict
+
+PASS. Clean two-arch fat binary (both gfx90a and gfx1100 bundles), native gfx90a dispatch confirmed, fixed-64-slot archive round-trip correct (all round-trip tests assert EXPECT_EQ orig/dec and pass), deterministic x2. Transitioning linux-gfx90a to completed (validated_sha=b6e0d3f).
