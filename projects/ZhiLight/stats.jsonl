@@ -1,3 +1,4 @@
 {"kind":"phase","ts":"2026-06-02T00:45:26Z","phase":"compile","seconds":3.373,"exit":1,"cmd":"cmake --build agent_space/zhilight-build --target bmengine -j16"}
 {"kind":"phase","ts":"2026-06-02T01:11:33Z","phase":"compile","seconds":42.722,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/zhilight-build --target C internals_ -j16"}
 {"kind":"phase","ts":"2026-06-02T02:11:18Z","phase":"compile","seconds":29.668,"exit":0,"cmd":"cmake --build agent_space/zhilight-build --target C internals_ -j16"}
+{"kind":"phase","ts":"2026-06-02T02:23:19Z","phase":"compile","seconds":29.973,"exit":0,"cmd":"cmake --build agent_space/zhilight-build --target C internals_ -j16"}

@@ -173,6 +173,11 @@ the deferred MOE routing path (DEV_route_score, num_exp experts), outside the
 two findings and outside the test gate. fp8_util.cu:259 is likewise a deferred
 NVIDIA-only path. Flagged here rather than fixed to avoid scope creep.
 
+CORRECTION (see "Porter response (2)" below): the "deferred MOE routing path"
+claim above was WRONG. feedforward.cpp routes EVERY fp16/bf16 MoE model through
+the generic MOEImpl -> route() -> top_k_softmax -> DEV_softmax_inplace, so it is
+a SUPPORTED gfx90a path, not deferred. It was fixed in the next pass.
+
 ## Re-review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port @ 54bd8df, delta 9bb3e8b -> 54bd8df)
 
 Verdict: Request Changes. The two prior findings are correctly fixed and verified. But the porter's "out-of-scope / deferred MOE" deferral of the ff_kernel.cu DEV_softmax_inplace path is WRONG: that path is reachable on a SUPPORTED gfx90a path (fp16/bf16 MOE routing), not a deferred one, and carries the identical half-filled-wavefront silent-wrong wave64 bug as finding 1. One new must-fix below.
@@ -201,3 +206,48 @@ Not a review blocker (GPU run is the validator's stage), but the 77-case gate ex
 ### Recommendation
 
 Request Changes -- one reachable wave64 silent-wrong defect on the supported fp16/bf16 MOE routing path (ff_kernel.cu:139,149).
+
+## Porter response (2) 2026-06-02 (fork moat-port @ cffe5a4, was 54bd8df)
+
+Fixed the re-review must-fix; rebuilt and re-ran the 77-case kernel gate on real
+gfx90a (GCD 1, MI250X, CC:90) -- 77 passed, deterministic -- and added a direct
+MoE-routing validation (below). The earlier "out-of-scope / deferred MOE" claim
+was wrong and is corrected in-place above: this is a SUPPORTED fp16/bf16 path.
+
+1. (wave64 MoE routing softmax) ff_kernel.cu DEV_softmax_inplace (the
+   blockDim.x<=32 branch, formerly :139/:149) now routes both reductions through
+   the width-32 forms under USE_HIP: warpReduceMaxWidthB<float,32> and a NEW
+   warpReduceSumWidthB<float,32> added to reduce.cuh (the broadcast-sum
+   counterpart of the existing max form: warpReduceSumWidth<T,W> +
+   warpShflW<T>(x,0,W)). On wave64 this confines the reduce to the intended
+   32-lane group (no inactive-lane 32-63 read on the <<<gridDim,32>>> launch);
+   on a 32-thread CUDA warp width==32 so it is value-identical to the old
+   warpReduceMaxB/SumB. The CUDA path keeps the original calls in the #else.
+   KERNEL_group_topk's DEV_softmax_inplace (topk_group>1, num_group*WARP_SIZE>=64
+   threads) is untouched -- it stays on the wave-correct blockDim.x>32 block
+   reduce branch. fp8_util.cu:259 left deferred (NVIDIA fp8 e4m3, correct).
+
+### MoE-routing validation (the 77-case gate does NOT cover this path)
+
+Bound nn::top_k_softmax into the internals test module (a throwaway aid, NOT
+committed) and compared the routing softmax + top-k vs a PyTorch reference over
+standard Mixtral/Qwen-MoE shapes (fp16+bf16, seq 1..200, num_exp 8/32/60/128,
+top-2/6/8): max value error 1.2e-7, expert-id sets exact, bit-identical across
+5 re-runs (no inactive-lane nondeterminism). AMD_LOG_LEVEL=3 shows
+nn::KERNEL_top_k_softmax<__half> dispatching on amdgcn gfx90a.
+
+### Gotcha: softmax max-reduce is shift-invariant -- the SUM reduce is the hazard
+
+A direct hipcc probe (agent_space/probe.hip) confirms that on gfx90a a
+__shfl_down reading a NON-launched lane (lanes 32-63 of a 32-thread block on
+wave64) returns 0.0 on this ROCm 7.2.x build. That makes the buggy full-wave64
+DEV_softmax_inplace happen to pass even with all-negative logits, for two
+reasons: (a) softmax subtracts its max only for numerical stability, so a wrong
+max yields the identical softmax (shift-invariant); (b) the sum down-reduction
+adds 0 from the inactive lanes. Both are UB-dependent (inactive-lane register
+contents are not guaranteed), so the width-32 fix is the correct hardening even
+though the corruption does not manifest on this exact build. A validation
+harness on this path therefore cannot distinguish buggy from fixed by output
+alone -- the justification is the UB removal, confirmed correct against the
+reference. Same shift-invariance applies to any softmax-with-max-subtraction
+warp reduce; do not rely on a max-reduce divergence to detect this fault class.
