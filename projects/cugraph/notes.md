@@ -6,7 +6,22 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: linux-gfx90a PORTED -- BFS + SSSP + PageRank all GPU-validated
+## Status: linux-gfx90a PORTED (fork 6f8dcd9) -- BFS + SSSP + PageRank GPU-validated
+
+Session 7: fixed the validation-failed bug (SSSP rmat_benchmark abort at the
+sssp_impl.cuh far-bucket assert). Root cause is NOT the delta value: delta is a
+wave-tunable heuristic and BOTH 32 and 64 trip the assert on different graph
+sizes (delta=64 aborts rmat_benchmark, delta=32 aborts rmat_small -- confirmed
+empirically), so swapping warp_size() for a constant just moves the crash. The
+real defect is the assert itself: `assert(bucket(bucket_idx_far).aggregate_size()
+> 0)` in the split-far loop fires BEFORE the near-non-empty check, so it aborts
+on the legitimate case where one split moves all far vertices into near (near
+becomes non-empty, the loop breaks). Upstream CUDA never observes this because
+build.sh always configures Release (-DNDEBUG compiles the assert out); the ROCm
+build runs asserts-enabled. Fix under USE_HIP asserts the true invariant
+(near>0 OR far>0; the split made progress); delta and the CUDA-path assert are
+left byte-identical. NEW commit on top of d372efc (not amended). See Session 7
+below. Earlier status (kept for history):
 
 Session 6: fixed the session-5 remaining bug (BFS/SSSP wrong distances). The
 vertex-frontier expansion prims used raft::warp_full_mask() (0xffffffff, 32-bit),
@@ -558,6 +573,57 @@ rocPRIM block_radix_sort / lookback_scan_state, which on GFX10+ emit wavefront-
 shift DPP that the backend rejects ("wavefront shifts not supported on GFX10+").
 Expect per-arch COMPILE exclusions on gfx1100/gfx1151 (the raft gfx1100 wall), NOT
 a source change. Does not affect gfx90a (CDNA).
+
+## Session 7 (SSSP rmat_benchmark FIXED + GPU-validated; fork 6f8dcd9)
+
+Net-positive, zero-regression. NEW commit on top of d372efc (validated base
+preserved, not amended). One file, one USE_HIP-guarded change in
+cpp/src/traversal/sssp_impl.cuh; CUDA path byte-identical.
+
+The validator (entry below) reported SSSP_TEST rmat_benchmark cases 0/1 aborting
+at sssp_impl.cuh:503 `assert(vertex_frontier.bucket(bucket_idx_far)
+.aggregate_size() > 0)` and proposed pinning delta to 32 under USE_HIP. That
+proposal is WRONG: empirically delta=32 aborts rmat_small (which delta=64
+passes), and delta=64 aborts rmat_benchmark -- the delta value just moves which
+graph trips the assert. delta is a genuine performance heuristic
+(raft::warp_size() * avg_edge_weight / avg_vertex_degree), not a correctness
+parameter, and is NOT the bug.
+
+ROOT CAUSE: the assert is over-strict. The split-far loop (lines ~485-511) bumps
+the near/far threshold by delta, splits bucket_idx_far into bucket_idx_cur_near
+_near by `dist < threshold`, then `if near>0: break else: bump+resplit`. The
+assert sits BEFORE the near>0 check and fires unconditionally; but an empty far
+is a legitimate outcome when the split moved ALL far vertices into near (near>0,
+loop breaks immediately after). The assert only needs to hold on the else branch
+(near empty -> next iteration must have far vertices to re-split). Upstream CUDA
+never trips it because build.sh defaults BUILD_TYPE=Release (-DNDEBUG strips the
+assert); the ROCm build_hip configure leaves CMAKE_BUILD_TYPE empty so asserts
+are live. On wave64/gfx90a the large directed RMAT scale-20 benchmark has a
+distance distribution where the delta=64 step pulls the entire far bucket into
+near in one split -> abort.
+
+FIX: under USE_HIP, assert the true invariant `(near>0) || (far>0)` (the split
+made progress). CUDA path keeps the original `far>0` assert byte-identical in
+#else. delta untouched. This is host-side, arch-unified (correct on wave32 and
+wave64 -- the invariant is wave-independent).
+
+Confirmed there is exactly ONE raft::warp_size() tuning-constant site in the
+traversal/delta paths (sssp_impl.cuh:249, the delta formula) and it is left
+as-is (CUDA-identical); no other warp_size-as-tuning-constant in cpp/src/.
+
+DATASET ROOT NOTE: SSSP/BFS file_test prepend `test/datasets/` and the
+karate/polbooks/netscience/dolphins symlinks live under src/datasets/test/
+datasets (session 5/6 layout), so the correct RAPIDS_DATASET_ROOT_DIR for these
+gtests is `projects/cugraph/src/datasets`, NOT cpp/tests/datasets. (cpp/tests/
+datasets is empty; using it makes karate.mtx fopen-fail.)
+
+GPU validation (gfx90a, GCD 2, HIP_VISIBLE_DEVICES=2, HSA_ENABLE_COREDUMP=0,
+RAPIDS_DATASET_ROOT_DIR=projects/cugraph/src/datasets):
+- SSSP_TEST: rmat_benchmark 4/4 PASS (was ABORT), rmat_small 4/4 PASS, file
+  karate 2/2 PASS incl edge_masking. 4 fails = absent dblp/wiki2003 datasets.
+- BFS_TEST: 14/14 in-scope PASS. 4 fails = absent wiki2003/wiki-Talk datasets.
+- PAGERANK_TEST: 56/56 PASS (no regression).
+linux-gfx90a re-PORTED at 6f8dcd9.
 
 ## Validation 2026-06-02 (validator, linux-gfx90a @ d372efc) -- FAILED
 
