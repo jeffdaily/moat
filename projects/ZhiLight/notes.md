@@ -172,3 +172,32 @@ blockDim.x<=32 branch -- same half-filled-wavefront class as finding 1, but on
 the deferred MOE routing path (DEV_route_score, num_exp experts), outside the
 two findings and outside the test gate. fp8_util.cu:259 is likewise a deferred
 NVIDIA-only path. Flagged here rather than fixed to avoid scope creep.
+
+## Re-review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port @ 54bd8df, delta 9bb3e8b -> 54bd8df)
+
+Verdict: Request Changes. The two prior findings are correctly fixed and verified. But the porter's "out-of-scope / deferred MOE" deferral of the ff_kernel.cu DEV_softmax_inplace path is WRONG: that path is reachable on a SUPPORTED gfx90a path (fp16/bf16 MOE routing), not a deferred one, and carries the identical half-filled-wavefront silent-wrong wave64 bug as finding 1. One new must-fix below.
+
+### Prior findings -- verified FIXED (no action)
+
+- Finding 1 (wave64 int8 reduce): quant_reduce_kernel.cu:26,56,267 now call functions::warpReduceMaxWidthB<float,32>. The new helper (reduce.cuh:84-88) is warpReduceMaxWidth<T,32> (shuffle-down confined to a 32-lane subgroup via __shfl_down(x,offset,32)) + warpShflW<T>(x,0,32) broadcast (__shfl(x,0,32)). On wave64 the width-32 confinement removes cross-row contamination on the dim3(32,32) launch (quant_reduce_kernel.cu:92,230) and the inactive-lane 32-63 read on the <<<M,GROUP_SIZE=32>>> launch (quant_reduce_kernel.cu:312); on a 32-thread CUDA warp width==32 so it is value-identical to the old warpReduceMaxB. Matches the attention_kernel.cu precedent (warpReduceMaxWidth<float,WARP_SIZE> + attnShfl32(x,0)).
+- Finding 2 (byte-identical CUDA): the blockReduce* partial-selection guard is wrapped #if defined(__HIP_PLATFORM_AMD__)||defined(USE_HIP) in reduce.cuh (blockReduceMax/Min/Sum, :140-152,:162-174,:186-198) and attention_kernel.cu (blockReduceMax/Sum, :426-440,:451-465). HIP keeps lane < num_warps (ceil); CUDA #else restores the original threadIdx.x < blockDim.x/BM_WARP_SIZE (floor), byte-identical, with num_warps declared only in the HIP branch (no unused-var on CUDA). Commit body wording corrected.
+
+### Fault Classes
+
+1. (wave64, latent->REACHABLE silent-wrong; bounce) src/nn/feedforward/ff_kernel.cu:139,149 DEV_softmax_inplace, in the `blockDim.x <= 32` branch, calls functions::warpReduceMaxB / warpReduceSumB. Those now span BM_WARP_SIZE (64 on gfx90a) with no-mask full-wavefront shuffles (reduce.cuh:102-109,:130-137). The only SOFTMAX caller, KERNEL_top_k_softmax, launches <<<gridDim, 32>>> (ff_kernel.cu:257) -- a half-filled wavefront on wave64 -- so the reduce reads inactive lanes 32-63. This is the same fault class the porter just fixed in finding 1, and it is NOT deferred: feedforward.cpp:1274-1281 explicitly routes every fp16/bf16 MOE model through the generic impl::MOEImpl on HIP (the in-source comment: "the generic MOEImpl path (fp16/bf16) is used instead"), MOEImpl::forward (feedforward.cpp:704) -> route() (:425) -> top_k_softmax (:451, taken whenever topk_group <= 1, the standard Mixtral/Qwen-MoE softmax routing) -> DEV_route_score -> DEV_softmax_inplace. So a supported fp16/bf16 MoE model produces silently-wrong expert-routing softmax (wrong max/sum -> wrong expert weights) on gfx90a, no crash. Only NormalImpl/Int8Impl (dense, gptq/fp8 MOE) avoid this path, and the test gate exercises only dense FeedForward (test_feedforward.py builds layers.FeedForward(... "gelu" ...) -> NormalImpl), so the gate cannot catch it. Fix: route these two calls through warpReduceMaxWidthB<float,32> / warpReduceSumWidthB<float,32> (add the Sum broadcast counterpart to reduce.cuh alongside warpReduceMaxWidthB), value-identical on a 32-thread CUDA warp and correct on wave64. The KERNEL_group_topk path (DEV_softmax_inplace at ff_kernel.cu:348) is safe: it launches num_group*WARP_SIZE threads (ff_kernel.cu:500) and is only used when topk_group>1 (feedforward.cpp:439), so num_group>=2 -> blockDim>=64 -> the blockDim.x>32 blockReduce branch (wave-correct). If MOE on HIP is meant to be deferred instead of supported, change feedforward.cpp:1281 to BM_EXCEPTION and update notes/commit -- but then the int8 reduce fix in finding 1 (also on an unexercised path) was held to the correctness bar, so the same bar applies here.
+
+### Confirmed deferred (no action)
+
+- fp8_util.cu:259 warpReduceMaxB(amax): inside a __nv_fp8_e4m3 conversion kernel (cvt to e4m3, write fp8) -- an NVIDIA fp8 deferred path, correctly left flagged.
+
+### Commit Hygiene (clean, no action)
+
+Title "[ROCm] Portable HIP build for ZhiLight on AMD (gfx90a first pass)" 65 chars; Claude disclosed; no Co-Authored-By/noreply trailer; no ghstack; no em-dash; fork main = ee84468 (clean upstream mirror); moat-port @ 54bd8df; Actions disabled on the fork (enabled=false). No AMD-internal account references.
+
+### Note for the validator
+
+Not a review blocker (GPU run is the validator's stage), but the 77-case gate exercises only the dense FeedForward (NormalImpl) and does not cover the fp16/bf16 MOE routing softmax, the cublasLt Int8Linear, or the int8-TP all-reduce quant. The finding-1 path stays unexercised even after the fix.
+
+### Recommendation
+
+Request Changes -- one reachable wave64 silent-wrong defect on the supported fp16/bf16 MOE routing path (ff_kernel.cu:139,149).
