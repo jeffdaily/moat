@@ -142,3 +142,21 @@ cd /tmp
 AMD_LOG_LEVEL=3 python /var/lib/jenkins/moat/agent_space/3dgslm_div.py   # divergence gate -> PASS, no 0x1016
 python /var/lib/jenkins/moat/agent_space/3dgslm_val.py all               # Tiers 1-3 -> PASS (no regression)
 ```
+
+## Re-review 2026-06-02 (reviewer, linux-gfx90a) -- REVIEW PASSED
+
+Focused DELTA re-review of the porter's amend (delta d5a6984..56cb37a; the task's dc807cf is a stale pre-amend reflog ref, gone after the squash-amend, but the content delta is exactly the documented over-broad-mask fix). Re-verified on a FRESH clean rebuild from committed source on real gfx90a (GCD 0). The blocker from Review 2026-06-01 is fixed and complete. No new problems. The wave64 reduction arithmetic, width-32 cub pins, 64-bit lane masks, and host tiling were already cleared and not re-examined.
+
+What I verified (all confirmed correct):
+- gsgn.cu apply_jt_kernel: the SEVEN post-continue `__syncwarp(mask)` (now lines 2017/2044/2077/2109/2148/2193/2235) all use `GSGN_SYNCWARP_AFTER_DIVERGENCE(mask)`. Count is exactly 7, matching the OPACITY/FEAT_DC/FEAT_REST x3/POSITION/SCALE/ROTATION write-outs. The only control flow between the ballot (1642) and these sites, besides the divergent `continue` (1917/1918), is the uniform `if(idx>=stride) return` (1776) whose predicate is identical to the ballot, so it does not narrow `mask`.
+- The pre-continue OPACITY `__syncwarp(mask)` (1905) is in the always-reached path -> correctly left bare (mask == active set there).
+- Sibling apply_jt_render_bkwd_kernel (decl 2248): 7 bare `__syncwarp(mask)` (2400/2423/2430/2438/2445/2452/2461), ballot at 2283, uniform `idx>=stride` return, NO `continue` between -> correctly left untouched.
+- Butterfly backward.cu:828-849 (BW_IMPLEMENTATION=1): `__shfl_down_sync(gsgn_active_shfl_mask(),...,32)` with `gsgn_active_shfl_mask()`==`__activemask()` on HIP. This is the only always-valid mask -- a fixed full mask over-names an idle group and a per-group half mask under-names when both groups are live; `__activemask()`==`__ballot(true)` satisfies HIP's `__shfl_*_sync` assertion, group_mask still drives the per-32-group match test, width=32 does the reduction. Verified the contrast on-GPU.
+- CUDA branches byte-identical-equivalent: HIP `GSGN_SYNCWARP_AFTER_DIVERGENCE` -> `__syncwarp()`, CUDA -> `__syncwarp(mask)` (upstream literal). HIP `gsgn_active_shfl_mask()` -> `__activemask()`, CUDA -> `FULL_MASK` = 0xffffffffu (== upstream 0xFFFFFFFF). Within this delta the only CUDA-path change is a literal-to-same-value rename.
+
+On-GPU decisive contrast reproduced (fresh rebuild, GCD 0, gfx90a):
+- BUGGY build (HIP macro temporarily reverted to `__syncwarp(mask)`, separate prefix): `HSA_STATUS_ERROR_EXCEPTION ... code: 0x1016` in apply_jt, exit 134 -- proves agent_space/3dgslm_div.py genuinely reaches the trapping path. Source restored immediately; working tree clean at 56cb37a.
+- FIXED build (committed): agent_space/3dgslm_div.py PASS -- 4 scenes, 125-240 Gaussians forced radius_gt_zero=false, no 0x1016, finite, PSD (<p,Ap> 3.8e4..8.2e4).
+- No regression: agent_space/3dgslm_val.py Tiers 1-3 PASS (Tier2 cos 0.9947, symmetry 4.24e-8, PSD, PCG 19 iters; Tier3 PSNR 23.69 -> 46.39 monotone).
+
+Env note for the validator (NOT a port defect): the shared conda env's numpy had drifted to 2.2.6, which trips the documented `RuntimeError: Numpy is not available` torch<->numpy bridge in the val-harness loaders (the divergence gate uses synthetic data and is unaffected). I restored `numpy<2` (1.26.4) per the "Python deps" note before the Tier 1-3 oracle passed. Validator should confirm numpy<2 in the env before running 3dgslm_val.py.
