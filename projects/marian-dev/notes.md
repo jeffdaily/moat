@@ -205,6 +205,133 @@ ShaderName : void marian::gMaxElementUpdate<float>(...)
 
 ### Verdict: PASS -- linux-gfx90a completed at validated_sha 25f910c
 
+## Validation 2026-06-02 (linux-gfx1100, AMD Radeon Pro W7800 48GB, wave32)
+
+Platform: 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1,
+HIP_VISIBLE_DEVICES=0. Fork moat-port @ 25f910c -- no source changes vs gfx90a
+lead (validate-first follower, no delta-port needed).
+
+### Build
+
+Cloned jeffdaily/marian-dev @ moat-port (25f910c). Submodule: sentencepiece only
+(not nccl). Build in scratch dir outside fork clone.
+
+```
+git submodule update --init src/3rd_party/sentencepiece
+cmake -S /var/lib/jenkins/moat/projects/marian-dev/src \
+  -B /var/lib/jenkins/moat/agent_space/marian-build-gfx1100 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCOMPILE_CUDA=ON -DUSE_CUDNN=OFF -DUSE_NCCL=OFF \
+  -DUSE_FBGEMM=OFF -DCOMPILE_CPU=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCOMPILE_TESTS=ON -DUSE_MKL=OFF -DUSE_TCMALLOC=OFF -DUSE_DOXYGEN=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_ARCH=native
+cmake --build /var/lib/jenkins/moat/agent_space/marian-build-gfx1100 -j$(nproc)
+```
+
+Result: 292/292 targets, no errors. Fork clone `git status` clean -- zero build
+artifacts in the repo tree.
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading .../marian
+# Extracts: marian.*.hipv4-amdgcn-amd-amdhsa--gfx1100  (11 HIP bundles)
+# No gfx90a bundle present.
+```
+
+All 11 GPU code objects target gfx1100 exclusively. Zero non-gfx1100 device code.
+
+### Wave-size audit
+
+marian-dev's GPU kernels are wave-agnostic. Specifically:
+
+- `reduce_all.h`: uses `cg::tiled_partition<32>` with `cg::sync(cta)` fencing
+  the `tid+32` fold before entering the `thread_rank()<32` block; `shfl_down`
+  runs within the 32-wide tile. On wave32 the tile == the full wavefront; no
+  lockstep assumption below 32 lanes. Correct on both wave32 and wave64.
+- `topk.cu` / `nth_element.cu`: the wave64 race (UNROLL_MAXARG warp-sync tail)
+  was fixed in the gfx90a lead by replacing the unrolled tail with a
+  `__syncthreads()`-synchronized tree to `s>0`. This fix is strictly wave-agnostic
+  (block-wide barrier, no sub-wavefront assumption), correct on wave32 and wave64.
+- No `__shfl` / `__ballot` / `warpSize` / `WARP_SIZE` / lane-mask in any added
+  kernel line or in the marian GPU tensor/translator sources. The `warpSize`
+  occurrences in `lsh_tmp.h` are a CPU template variable (starts at 4); the
+  `WARP_SIZE` in `src/3rd_party/nccl/` is not compiled (USE_NCCL=OFF).
+- No hardcoded launch-grid warp constant feeding a device template argument.
+  No host/device WARP_SIZE split (the raft/libSGM class of bug is absent).
+
+Wave32 verdict: kernels are fully wave-agnostic. No wave32-specific hazard found.
+
+### Unit suites
+
+```
+BUILD=/var/lib/jenkins/moat/agent_space/marian-build-gfx1100
+export HIP_VISIBLE_DEVICES=0 ROCM_PATH=/opt/rocm
+$BUILD/src/tests/units/run_graph_tests
+$BUILD/src/tests/units/run_attention_tests
+$BUILD/src/tests/units/run_transformer_tests
+$BUILD/src/tests/units/run_operator_tests
+$BUILD/src/tests/units/run_rnn_tests
+```
+
+Results vs gfx90a@25f910c:
+- graph_tests: 10/10 assertions, 4 test cases -- PASS (matches gfx90a)
+- attention_tests: 6/6 assertions, 3 test cases -- PASS (matches gfx90a)
+- transformer_tests: 3/3 assertions, 3 test cases -- PASS (matches gfx90a)
+- operator_tests: 284/287 assertions; the 3 failures are the `csr-dot product`
+  SECTION (operator_tests.cpp:539,609,610) -- deferred cuSPARSE SpMM path,
+  identical to gfx90a. Dense dot product and topk operations PASS. (matches gfx90a)
+- rnn_tests: 21/24 assertions; 3 failures are the hipRAND-vs-cuRAND reference
+  mismatch (documented, not a port bug). (matches gfx90a)
+
+Total pass tally matches gfx90a@25f910c exactly.
+
+### End-to-end gate (wave32 correctness + determinism)
+
+Trained a tiny Transformer (reverse-copy toy task, 1000 sentences, 600u) on GPU,
+then beam-search decoded (beam=6) twice on GPU and once on CPU:
+
+```
+E2E=/var/lib/jenkins/moat/agent_space/marian-validate-gfx1100
+BUILD=/var/lib/jenkins/moat/agent_space/marian-build-gfx1100
+
+$BUILD/marian --type transformer \
+  -t $E2E/train.src $E2E/train.tgt -m $E2E/model.npz \
+  --vocabs $E2E/vocab.src.yml $E2E/vocab.tgt.yml --dim-emb 64 \
+  --transformer-dim-ffn 128 --transformer-heads 2 --enc-depth 2 --dec-depth 2 \
+  --after 600u --devices 0
+
+$BUILD/marian-decoder -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --devices 0 > $E2E/gpu1.out
+$BUILD/marian-decoder -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --devices 0 > $E2E/gpu2.out
+$BUILD/marian-decoder -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --cpu-threads 1 > $E2E/cpu.out
+
+diff $E2E/gpu1.out $E2E/gpu2.out  # IDENTICAL (deterministic)
+diff $E2E/gpu1.out $E2E/cpu.out   # IDENTICAL (GPU == CPU)
+```
+
+GPU run1 == GPU run2 (bit-identical, deterministic). GPU == CPU (correct).
+No HSA fault (0x1016), no NaN, no hang.
+
+gMaxElement/gMaxElementUpdate confirmed dispatching on gfx1100 via AMD_LOG_LEVEL=3:
+```
+ShaderName : void marian::gMaxElement<float>(...)
+ShaderName : void marian::gMaxElementUpdate<float>(...)
+```
+The wave32-corrected topk/nth_element path is confirmed running and producing
+correct beam-search results on gfx1100.
+
+### Fork clone hygiene
+
+`git status` in projects/marian-dev/src: clean. No build artifacts leaked into
+the fork clone tree. Scratch build dir is agent_space/marian-build-gfx1100.
+No fork push (validate-first follower: no source delta needed).
+
+### Verdict: PASS -- linux-gfx1100 completed at validated_sha 25f910c
+
 ## Status fix 2026-06-02: windows-gfx1151 invalid state
 
 windows-gfx1151 was set to `blocked-needs-gfx1100`, which is not a valid
