@@ -119,3 +119,61 @@ Pass breakdown:
 - sat mode2 poly_counts in range: PASS
 
 Verdict: completed. validated_sha=ec2fae28.
+
+## Validation 2026-06-02 (gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32, ROCm 7.2.1)
+Fork: jeffdaily/FaithC @ moat-port ec2fae28 (no delta from gfx90a -- wave-agnostic confirmed)
+Validator: claude-sonnet-4-6
+
+Build command (gfx1100-only, from-scratch):
+```
+rm -f src/faithcontour/_C/kernels.hip && rm -rf build/
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace
+```
+Build result: PASS (~58 s, exit 0, loop-unroll advisories on sat_centroid/sat_clip templates -- same as gfx90a)
+
+gfx1100 code-object verified:
+```
+llvm-objdump --offloading _C.cpython-312-x86_64-linux-gnu.so | grep gfx
+# hipv4-amdgcn-amd-amdhsa--gfx1100  PRESENT (single-arch gfx1100 build)
+```
+
+Fork clone git status: clean (no uncommitted files; .hip/.so.* gitignored)
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 python agent_space/faithc_harness.py
+```
+Test result: 16/16 PASS (exit 0)
+
+AMD_LOG_LEVEL=3 confirms native gfx1100 code-object dispatch (no JIT fallback, no HSA fault):
+"Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100"
+
+Pass breakdown:
+- seg_tri pair set: PASS
+- seg_tri dots (maxerr=1.19e-07): PASS
+- seg_tri deterministic set: PASS
+- overlap no spurious overflow: PASS
+- overlap pair set: PASS
+- overlap overflow flag set: PASS
+- voxelize_mark use_sat=False exact: PASS
+- voxelize_mark use_sat=False deterministic: PASS
+- voxelize_mark use_sat=True exact: PASS
+- voxelize_mark use_sat=True deterministic: PASS
+- sat mode0 hit_mask exact (4 hits): PASS
+- sat mode0 deterministic: PASS
+- sat mode1 deterministic: PASS
+- sat mode1 idx alignment: PASS
+- sat mode2 deterministic poly verts: PASS
+- sat mode2 poly_counts in range: PASS
+
+Wave32 verdict: CONFIRMED wave-agnostic. Zero warp intrinsics (no shfl/ballot/cub),
+extern __shared__ sized by blockDim.x, fully __syncthreads-fenced, dim3(32,32) are 2D
+tile dims. No delta needed from gfx90a lead; commit ec2fae28 untouched.
+
+Harness note: sat_centroid_kernel leaves hit_mask[k] uninitialized on early-return (poly
+clips to 0-vert) paths -- this is upstream behavior, not a regression. Harness compares
+hit_mask only where poly_count>0; poly_counts (always written) confirmed deterministic.
+
+Verdict: completed. validated_sha=ec2fae28.
