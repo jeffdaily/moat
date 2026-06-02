@@ -92,3 +92,22 @@ recovers exactly 1.0, gating the hipFFT path.
   FBP does not converge (tilted-detector separable footprint); modular SF forward
   is bit-identical to modular VD and modular VD FBP recovers 1.0.
 - `verificationTests.py` needs an external LTTserver + Windows data -> not a gate.
+
+## Review 2026-06-02 (reviewer, moat-port @ 1753479 vs base 0c8846f)
+
+Verdict: review-passed. The port (Strategy B torch CUDAExtension, build-time hipify over canonical .cu) is correct, minimally scoped, and the load-bearing HW-linear -> SW-interp fix and its linear-vs-point routing check out on read. No changes requested. Independent real-GPU re-run is left to the validator stage (the porter's gpu_vs_cpu_validate.py PASS is recorded; not re-run at review).
+
+Findings (minor, non-blocking):
+- src/projectors_Joseph.cu:1980 -- `modularBeamBackprojectorKernel` gained a trailing `bool linearInterp` parameter, but this kernel contains zero tex3D/leapTex fetches and is never launched (no `<<<` anywhere). The added param is dead. Harmless but a needless footprint touch; consider dropping the param to keep the diff to only the kernels that actually sample `g`. (The 7 live Joseph g-reading kernels are threaded and launched correctly with `doLinearInterpolation`.)
+- src/projectors_attenuated.cu:810,815,853,858 -- the point-bound `f` texture is fetched at a fractional coordinate `j_min_A+0.5+weight_1/(weight_0+weight_1)` that can be 0/0=NaN, and (correctly) stays raw `tex3D<float>` (no leapTex sanitize). Behavior is identical to upstream CUDA point sampling here, so this is not a port regression; flagging only so the validator confirms the attenuated forward stays finite at detector edges.
+
+Verified correct (no action):
+- cuda_utils.h:52-116 leapTex3D/2D/1D: CUDA unnormalized -0.5 convention reproduced (xs=x-0.5, lower=floor(xs), weight=frac(xs), corner point-fetch at floor(xs)+0.5); trilinear/bilinear/linear blend algebraically correct; corners go through HW `tex*D<float>` so the texture addressMode (Border-zero/Clamp) governs OOB +1 neighbors -- no past-end raw-pointer read, no fault. CUDA fallback (117-121) forwards the raw coord to the builtin unchanged.
+- cuda_utils.cu loadTexture/loadTexture_from_cpu/loadTexture1D: HIP-guarded forced cudaFilterModePoint; CUDA path unchanged. loadTexture2D is a dead stub (returns NULL, no callers); leapTex2D has no callers.
+- Routing audit (per file, loadTexture useLinearInterpolation flag vs fetch site): SF f+g linear -> all leapTex; extendedSF f point -> raw tex (incl. fractional SF-footprint coords, matching upstream point bind), g always-linear (doLinearInterpolation=true, never reassigned) -> leapTex; attenuated f point -> raw, mu+g linear -> leapTex; scatter source/energies point 1D -> raw, detector/sigma*/scatterDist/f/mu linear -> leapTex; backprojectors_VD g always-linear -> leapTex; symmetric f+g linear (const true) -> leapTex; geometric_calibration g -> leapTex; ramp deriv_helical g -> leapTex, explicit_convolution h (1D) point -> raw. Siddon: zero leapTex (integer-coord point fetches preserved). All consistent with the bind mode.
+- Joseph modular-beam runtime flag: `doLinearInterpolation` derivation (modularbeamIsAxiallyAligned, unchanged from upstream) is threaded to the live SF/eSF/Joseph g-reading launches; leapTex3D(...,linearInterp) degrades to a point fetch when false, matching the point bind. Arch-unified (no per-arch branch), wave-agnostic (no warp intrinsics / hardcoded 32).
+- analytic_ray_tracing_gpu.cu: cuda_runtime.h moved before the .cuh that uses float3/float2 (fixes HIP "unknown type float3").
+- cuFFT->hipFFT: setup_AMD.py ROCm branch adds -D__INCLUDE_CUFFT and links hipfft; CUDA branch untouched.
+- Orphans: src/hip_utils.h, src/projectors_Joseph_cpu_hip.h, src/ramp_filter_hip.cuh all removed from the tree (confirmed absent from HEAD), hipify outputs gitignored. On-disk copies are gitignored build artifacts.
+- Build: gfx90a;gfx1100 multi-arch per build_rocm.sh; no warp-width source code (regression guard only).
+- Hygiene: title "[ROCm] Port LEAP CT projectors to HIP via software texture interp" 65 chars; mentions Claude; no noreply trailer; no ghstack; no em-dash; no AMD-internal account refs. Fork main at base sha (clean upstream mirror). Fork Actions disabled (enabled=false).
