@@ -130,3 +130,50 @@ and any future multi-arch work:
   it would pull <cuda_runtime.h> on the test side and fail to compile, and any
   test use of WARP_SIZE would silently see 32. Latent fragility, not a current
   defect.
+
+## Validation 2026-06-02 (gfx1100)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+
+Build (fresh clone of moat-port @ 9ce43fd0a475ea0a13961c540cf867b23df48ff6):
+```
+cd projects/libSGM/src
+git submodule update --init
+cmake -S /var/lib/jenkins/moat/projects/libSGM/src \
+      -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j$(nproc)
+```
+Build: PASS (warnings only -- nodiscard on hipStream* macros, pre-existing in upstream pattern, same as gfx90a build).
+
+Code object evidence (roc-obj-ls on sgm-test):
+All 7 code objects are `hipv4-amdgcn-amd-amdhsa--gfx1100`; no gfx90a object present.
+
+WARP_SIZE host==device confirmation:
+`build-hip/src/CMakeFiles/sgm.dir/flags.make` shows `-DSGM_HOST_WARP_SIZE=32` in both
+CXX_DEFINES (host pass) and HIP_DEFINES (device pass). Device side: `__GFX9__` is not
+defined for gfx1100, so the `#if defined(__GFX9__)` branch is skipped and WARP_SIZE=32
+via `__HIP_DEVICE_COMPILE__`. Host and device both resolve to 32 -- no split-trap.
+
+Test (run twice for determinism):
+```
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test
+```
+Run 1: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Test suites covered: CastTest (2), CensusTransformTest (3), SymmetricCensusTest (3),
+CheckConsistencyTest (6), IntegrationTest (1, full pipeline RandomU8), MedianFilterTest (4),
+CorrectDisparityRangeTest (18), CostAggregationTest (18), WinnerTakesAllTestP (12).
+
+Wave32 verdict: path-aggregation shuffles (width=WARP_SIZE=32, subgroup-relative lane
+masking), WTA inter-lane smem handoff (__syncwarp), and median_filter software emulation
+(__vcmpgtu2/4, __vminu2/4, __vmaxu2/4) all produce correct, bit-exact disparity output
+at wave32. No HSA faults (0x1016 or otherwise). Results match the gfx90a bar (67/67).
+Deterministic.
+
+Result: 67/67 PASS, deterministic. No source change needed (follower validate-first, no
+delta-port). Transition: port-ready -> completed, validated_sha=9ce43fd0a475ea0a13961c540cf867b23df48ff6.
