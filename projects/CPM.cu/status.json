@@ -7,17 +7,17 @@
   "priority": 3.979,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T03:26:34Z",
-  "updated_at": "2026-06-02T05:39:08Z",
+  "updated_at": "2026-06-02T05:40:30Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "planned",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "CUTLASS/CuTe FlashAttention-2 + Marlin W4A16 raw sm80 PTX (mma.sync/ldmatrix/cp.async/lop3/prmt); monolithic module hard-includes flash_api.hpp so no portable-only validatable slice -- multi-week AMD-native CK/MFMA reimplement, not a mechanical port. Defer (jeff: skip-vs-fund-rewrite).",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T05:39:08Z",
+      "updated_at": "2026-06-02T05:40:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
