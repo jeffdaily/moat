@@ -1,5 +1,81 @@
 # cudf notes (ROCm/HIP port)
 
+## Porter 2026-06-02 (linux-gfx90a, MI250X) -- merge.cu wave64 silent null-mask corruption fix, fork c9b6024
+
+Fixes a wave64 SILENT DATA-CORRUPTION bug missed in the original port: a SEVENTH
+per-lane grid-stride null-mask kernel, merge/merge.cu
+materialize_merged_bitmask_kernel, was never converted to the wave64-safe
+ballot_32 shim. It used a raw `__ballot_sync(0xffffffffu, ...)` stored into a
+32-bit bitmask_type and `if (0 == threadIdx.x % warpSize)` with the HIP builtin
+warpSize (= 64 on gfx90a). On wave64: (a) the 64-lane ballot truncates to 32
+bits (lanes 32-63 lost) and (b) only lane 0 of each 64-wide wavefront writes, so
+the SECOND 32-bit validity word of every wavefront (merged rows 32-63, 96-127,
+...) is never written. Reachable from cudf::merge on any nullable column
+(<true,true>/<true,false>/<false,true>, block_size 256). Silent, so the prior
+18-test smoke suite (no nullable-merge case) passed validation with the bug live.
+
+### The fix (arch-unified, HIP-path only; CUDA byte-for-byte unchanged)
+
+merge.cu was NOT in cpp/cmake/hip/cudf_hip_sources.cmake (the raw-ballot form does
+not even compile on HIP -- `bitmask_type{__ballot_sync(...)}` narrows 64->32 in a
+braced-init = error -- which is why merge had been left out). Added merge/merge.cu
+to the source list (sources 204 -> 205) and routed the kernel through the same
+converged tile-level loop as the six already-fixed kernels:
+`while (tile_any_32(tid < n)) { active = tid<n; mask = ballot_32(active && valid);
+if (active && threadIdx.x % cudf::detail::warp_size == 0) out[word_index(tid)] =
+mask; tid += stride; }`. logical warp_size = 32 (the bitmask word width), so each
+32-bit word is written by its own 32-lane-tile leader; both words of a 64-thread
+span get written. OOB lanes short-circuit `active && valid` (never dereference,
+vote false). CUDA path kept under `#else` byte-for-byte. cudf::merge for a nullable
+fixed-width column dispatches to the fixed-width column_merger (no dictionary/
+strings/lists deferred symbols reached at runtime), so the smoke test's
+--unresolved-symbols=ignore-in-shared-libs link is unaffected.
+
+### GPU validation (gfx90a / MI250X, GCD 3, HIP_VISIBLE_DEVICES=3, ROCm 7.2.1)
+
+New gtest MergeNullableBitmaskWave64 (cpp/tests/hip/core_smoke_test.cu): merges two
+sorted nullable INT32 columns keyed on a NON-null key column (validity carried by a
+separate payload column so the host reference is exact regardless of cudf's null
+tie-break), merged span > 64 rows, asserts the output null mask word-by-word incl.
+word 1 (rows 32-63). The full suite is now 19/19 PASS on gfx90a, deterministic over
+two runs (11-14 s). AMD_LOG_LEVEL=3 confirms real gfx90a dispatch ("Using native
+code object for device: amdgcn-amd-amdhsa--gfx90a", the rocPRIM merge + column_merger
+kernels). libcudf.so 589,665,176 B, 152 gfx90a code objects (llvm-objdump
+--offloading), ALL gfx90a, --offload-compress intact.
+
+DECISIVE A/B (the bug is silent, so the test had to be proven to catch it): a temp
+`MOAT_MERGE_WAVE64_BUG` macro variant reproduced the original wave64 defect in
+HIP-compilable form (64-lane `__ballot_sync(~0ull, ...)` cast to bitmask_type +
+lane-0-of-64 write). Recompiled merge.cu with it, relinked, ran the test: FAILED
+exactly on word 1 / rows 32-63 (the dropped second word). Restored the fixed
+version, recompiled, relinked: PASS. So the test is a real, decisive gate, not a
+tautology. The temp macro was never committed.
+
+### Gotchas (incremental-build hazard)
+
+- `.ninja_deps` got corrupted ("premature end of file; recovering") after I killed
+  two concurrent `cmake --build` processes that were both driving the SAME build dir
+  (a stale `--target MOAT_CORE_SMOKE_TEST` build lingered while I started a full
+  build). After that, `cmake --build` / `ninja` reported exit 0 with NO work done
+  even though a source was newer than its .o -- the dirty check was confused. Symptom:
+  merge.cu.o mtime never advancing past the source edit. Recovery that worked:
+  recompile the one TU explicitly (`ninja CMakeFiles/cudf.dir/src/merge/merge.cu.o`),
+  then relink the lib + test directly via `eval "$(ninja -t commands libcudf.so | tail -1)"`
+  and the same for gtests/MOAT_CORE_SMOKE_TEST. Verify by timestamp + libcudf.so size
+  every step; do NOT trust a no-output exit-0 build. Lesson: never run two builds
+  against one build dir, and after any kill, sanity-check .o/.so mtimes.
+
+### FOLLOW-UP (separate audit, not this fix)
+
+Other raw `__ballot_sync` sites in cudf should get a confirm pass that each is
+warp/block-uniform (not per-lane divergent) on wave64 -- truncation/missing-word
+risk if any feeds a 32-bit store like merge did: cpp/src/json/json_path.cu,
+cpp/src/io/json/.../data_casting.cu (strings cast), the rolling-window kernels, and
+block_utils.cuh. grep `__ballot_sync` over in-scope + not-yet-scoped sources and
+classify each loop's index as warp-uniform vs per-lane. Most io/json TUs are
+currently scoped OUT, so this is a forward-looking audit for when they are brought
+up (and a wave64 correctness check on the in-scope ones).
+
 ## Validation 2026-06-01 (gfx1100) -- wave32 divergent-tile-collective fix on GPU
 
 Device: 4x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1 HIP clang 22.0.0. HIP_VISIBLE_DEVICES=0. Fork 7d743ae2205d12a99ac4639317099cd40e3746cb.
