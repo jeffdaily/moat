@@ -184,3 +184,54 @@ Non-blocking: the __HIP__-vs-__HIP_PLATFORM_AMD__ compat-shim-keying trap (an #i
 keyed only on __HIP_PLATFORM_AMD__ silently falls through to <cuda_runtime.h> because hipcc
 defines __HIP__, not __HIP_PLATFORM_AMD__, at preprocess) is a generalizable lesson and was
 appended to PORTING_GUIDE.md.
+
+## Validation 2026-06-02 (gfx1100, linux-gfx1100, HIP_VISIBLE_DEVICES=0)
+
+validated_sha: 6ef301f3204579779bbaa1f32a466934f720903a
+
+GPU arch: gfx1100 (AMD Radeon Pro W7800 48GB, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0, wave32)
+
+No code change from gfx90a lead -- validate-first follower, fork untouched at 6ef301f.
+
+Commands run:
+```
+# gfx1100 build (HIP_ARCH=gfx1100, no literal)
+HIP_VISIBLE_DEVICES=0 HIP_ARCH=gfx1100 \
+  BUILD=/var/lib/jenkins/moat/agent_space/3p-admm-gfx1100 OUT=/tmp/lib_cufft_gfx1100.so \
+  bash utils/timeit.sh 3P-ADMM-PC2 compile -- bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh
+
+# modexp gold match (run twice for determinism)
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=0 LIB_CUFFT=/tmp/lib_cufft_gfx1100.so \
+  bash utils/timeit.sh 3P-ADMM-PC2 test -- python3 agent_space/3p-admm-gfx1100/validate.py
+
+# gfx1100 dispatch confirmation
+HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 LIB_CUFFT=/tmp/lib_cufft_gfx1100.so \
+  python3 agent_space/3p-admm-gfx1100/validate.py 2>&1 | grep "native code\|gfx1100\|0x1016"
+
+# CPU regression
+PYTHONPATH=projects/3P-ADMM-PC2/src python3 crypto/test_paillier.py
+PYTHONPATH=projects/3P-ADMM-PC2/src python3 crypto/test_quantization.py
+PYTHONPATH=projects/3P-ADMM-PC2/src python3 crypto/test_full_chain.py
+```
+
+Results:
+- Build gfx1100: PASS -- only benign -Wunused-value on nodiscard hipMemcpy/hipFree (identical to gfx90a)
+- roc-obj-ls confirms gfx1100 code object: hipv4-amdgcn-amd-amdhsa--gfx1100 @ offset=12288
+  (single-arch gfx1100 only .so; no gfx90a object present in this build)
+- Native gfx1100 dispatch confirmed (AMD_LOG_LEVEL=3):
+  "Using native code object for device: amdgcn-amd-amdhsa--gfx1100"
+  hipFFT twiddle_gen_radices_dp dispatched; all kernels hipLaunchKernel hipSuccess; no HSA 0x1016
+- modexp vs gmpy2 gold (run 1): 6144/6144 exact match
+  n at 255/510/511/768/1022/1023/1535/2046 bits, 256/batch, 3 reps each, varied m_bits
+- modexp vs gmpy2 gold (run 2, determinism): 6144/6144 exact match
+- hipFFT double-FFT rounding margin holds on wave32 (gfx1100 fp64 full-rate): 0 mismatches
+- CPU regression: test_paillier PASS, test_quantization PASS, test_full_chain PASS (max error 1.33e-09)
+- Fork working tree: clean (only __pycache__ .pyc touched by running tests; no source change)
+- No fork push (zero-churn follower validation; no code change needed)
+
+Wave32 note: live path has no warp intrinsics (__shfl/__ballot/warpSize/__syncwarp absent),
+no cub/thrust/curand. The <<<N,32>>> launches are independent-thread strided copies -- wave32
+behavior is identical to wave64. Dead warp-NTT files remain excluded (no live path, wave64 hazard).
+
+VERDICT: PASS -- port-ready -> completed
+gfx1100 hipFFT Z2Z + Barrett reduction correct at wave32; matches gfx90a@6ef301f exactly.
