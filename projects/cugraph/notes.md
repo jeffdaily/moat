@@ -6,7 +6,15 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: IN PROGRESS (blocked, SG library compiling 101/124 TUs)
+## Status: SG library LINKS; PAGERANK/BFS/SSSP GPU-validated on gfx90a
+
+Session 5: all SG library TUs compile, libcugraph.so links, and the
+PAGERANK/BFS/SSSP gtests build and PASS on real gfx90a hardware (the validation
+gate). A real wave64 GPU bug in transform_e_packed_bool (out-of-range ballot
+shift on small graphs with edge masking) was found and fixed. See Session 5
+below. Earlier status (kept for history):
+
+## (historical) Status: IN PROGRESS (blocked, SG library compiling 101/124 TUs)
 
 Session 3: cugraph_common now compiles ENTIRELY (the 2 renumber_utils TUs cleared
 via the collect_comm zip-construction fix -- the cuco delta was a red herring on
@@ -179,6 +187,115 @@ Resolved this session (all USE_HIP-guarded; CUDA path byte-for-byte):
 11. sssp_impl exemplar for two recurring per-prim classes: local `constexpr`
     invalid_* not implicitly captured by a device lambda under clang (add to the
     capture list), and the zip-write boundary (detail::cugraph_zip_make_tuple).
+
+## Session 5 progress (SG lib LINKS; PAGERANK/BFS/SSSP GPU-validated on gfx90a)
+
+Net-positive, zero-regression. All USE_HIP-guarded; CUDA path byte-identical.
+NEW commit on top of d326818 (base preserved, not amended).
+
+The last 16 failing library TUs (8 SG primitives x v32/v64) now compile, so
+libcugraph.so LINKS (1.1 GB). PAGERANK_TEST / BFS_TEST / SSSP_TEST build and
+RUN on gfx90a (GCD 2) and PASS. The validation gate is met.
+
+How the 16 TUs were cleared (all mechanical instances of the classic-tuple vs
+cuda::std::tuple algebra now that the keystone conversion exists):
+- erdos_renyi: cuda::make_transform_output_iterator missing -> alias in
+  cuda_to_hip.h forwarding to thrust::make_transform_output_iterator.
+- strongly_connected_components: the reduce_by_key proclaim_return_type<cuda::std
+  ::tuple> lambda returned the classic zip tuple; gave it an explicit
+  -> cuda::std::tuple return that rebuilds via make_tuple (exact-match holds).
+- od_shortest_distances: rocPRIM device_merge needs key_type2 (a cuda::std::tuple
+  from split_vi_t) convertible/static_cast'able to key_type1 (the classic zip
+  value_type), plus thrust::less<> over the two flavors. Added (1) a converting
+  CONSTRUCTOR from cuda::std::tuple on the classic value-type tuple in the
+  thrust/tuple.h shadow (the reverse of session-4's conversion operator,
+  SFINAE-bounded the same way), and (2) classic-tuple-vs-cuda::std operator< in
+  cuda_to_hip.h (mirroring the existing ==/!=).
+- lookup_src_dst: kv_store insert ValueIterator static_asserts switched to
+  cugraph::is_equivalent_value_type_v (4 in kv_store.cuh + 1 in
+  lookup_src_dst_impl.cuh); the kv_cuco_store_view_t invalid_value ctor now
+  builds the classic tuple from the cuda::std invalid_value via the new ctor.
+- sample_edges / temporal_sample_edges / random_walks: temporal_sample_edge_
+  biases_op_t and gather_one_hop return_edges_with_label_op /
+  return_edges_with_index_and_position_op take the tagged-major/src KEY by a
+  template parameter (the class-10 functor pattern) so the classic zip deref
+  binds and reads through the bridged cuda::std::get; bias_t{0.0}/{1.0}
+  brace-init replaced with static_cast<bias_t>(...) (clang rejects the
+  double->int narrowing in the dead bias_t=int SFINAE instantiation that NVCC
+  tolerates); the inclusive-sum mid-degree-threshold constexpr uses
+  cugraph::warp_size_ct() (raft::warp_size() is not constexpr on the host pass);
+  and hipCUB DeviceSegmentedSort::SortPairs requires one OffsetIteratorT type
+  for begin+end (CUB allows two), so both offset iterators use one
+  segmented_sort_offset_t functor (empty counts span = begin offset i*K, counts
+  span = end offset i*K + counts[i]).
+
+cuCollections fork (jeffdaily/cuCollections @ moat-port): the SG lookup path is
+the first to hit open_addressing_ref_impl.cuh's three `#if __CUDA_ARCH__ < 700`
+guards. On HIP __CUDA_ARCH__ is undefined so a bare `< 700` evaluated to
+`0 < 700` (true) and wrongly applied NVIDIA's pre-Volta >8B slot restriction /
+cas_dependent_write; AMD provides the atomics. Gated all three on
+`defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700` (NVIDIA pre-Volta unchanged; HIP
+and NVIDIA Volta+ take the modern path). REQUIRES a cuco fork commit + push.
+
+Tests bring-up:
+- base_fixture.hpp: the ported rmm (~25.x) predates cuda::mr::any_resource and
+  ships pool_memory_resource only templated (no CTAD). Under USE_HIP the MR
+  factories return owning shared_ptr<device_memory_resource>,
+  create_memory_resource returns that, and a set_test_current_device_resource
+  bridge calls set_current_device_resource(resource.get()); CUDA path unchanged.
+- csv_file_utilities_impl.cuh: file.tellg() returns std::fpos; clang rejects
+  `fpos + int` as ambiguous (vs the implicit streamoff conversion libstdc++
+  allows). Reduced to std::streamoff before the size/index arithmetic.
+- cugraph_hip_tests.cmake: the test targets (cugraphtestutil + each gtest) now
+  get the SAME compat shims as the library -- raft_compat + thrust_compat BEFORE
+  includes and CUGRAPH_HOST_WARP_SIZE -- since they instantiate the same prims
+  (transform_e, property views). Previously only rmm_compat was wired, so the
+  zip<->cuda::std::tuple write boundary and the host-pass warp size were missing.
+
+REAL GPU BUG FOUND AND FIXED (transform_e.cuh transform_e_packed_bool, the
+session-2 wave-coupling kernel): running PAGERANK file_test with edge_masking on
+the tiny karate graph faulted (GPU memory fault) while the same masking usecase
+on the larger rmat/dolphins graphs passed -- the first time this kernel ran on
+real hardware (sessions 2-4 never linked the .so). Two coupled wave64 defects:
+(1) group_base_lane (the bit offset of a 32-lane packed-bool group in its
+wavefront's 64-bit ballot) was BLOCK-relative (threadIdx.x/32*32), so for the
+2nd+ wavefront in a block it was 64, 96, ... -> `ballot >> 96` is an
+out-of-range shift; reduced to the WAVE-relative offset (threadIdx.x % warp_size
+/ 32 * 32). (2) more fundamentally, the ballot used the full 64-bit wave mask,
+but on wave64 a wavefront spans TWO packed-bool words (two idx values), so the
+two 32-lane groups in a wave have DIFFERENT loop bounds; on a small graph the
+last wave splits (one group's word in range, the next out), the out-of-range
+group's lanes never reach the ballot, and a full-wave __ballot_sync on that
+divergent set faults. (Large graphs rarely split mid-wave, hence rmat passed.)
+Fix: ballot only over this lane's own 32-lane group (group_ballot_mask =
+0xFFFFFFFF << group_base_lane); a group's 32 lanes all share one idx = tid/32 so
+they enter/exit the loop together (matching upstream CUDA's warp==word
+invariant). Arch-unified: on wave32 group_base_lane=0 and the mask is the full
+32-bit warp. After the fix all PAGERANK file_test edge_masking cases pass.
+
+GPU validation (gfx90a, GCD 2, RAPIDS_DATASET_ROOT_DIR=src/datasets;
+HSA_ENABLE_COREDUMP=0 to avoid the host's missing-coredump-handler masking a
+fault as EXIT=141; a benchmark mtx symlink test/datasets/karate.mtx ->
+../../karate.mtx satisfies file_benchmark_test's nonstandard path):
+- PAGERANK_TEST: 56/56 PASS (rmat correctness + file karate/dolphins x 8
+  usecases incl edge_masking + weighted + personalized). FULLY VALIDATED.
+- BFS_TEST: 5 PASS, the rmat_small_test correctness cases FAIL with "distances
+  do not match with the reference values" (rmat_benchmark_test, correctness
+  off, passes; file_test cases need absent large datasets wiki2003/web-Google).
+- SSSP_TEST: same -- rmat_small_test correctness FAILS the same way.
+
+REMAINING BUG (keeps linux-gfx90a blocked, no false-port of traversal): BFS and
+SSSP compute WRONG distances on the in-GPU rmat graph (PageRank on the same
+infra is exact, so graph construction / renumber / per-V/per-E reduce / edge
+mask are all correct). BFS/SSSP differ from PageRank in using the vertex-
+frontier expansion prim transform_reduce_if_v_frontier_outgoing_e_by_dst +
+per_v_transform_reduce_if_incoming_outgoing_e + the frontier buckets. No raw
+wave intrinsics there (it lowers to rocPRIM BlockScan / DeviceSelect /
+reduce_by_key over the classic-tuple key algebra), so the next session should
+bisect that frontier/reduce path on gfx90a (a deterministic rmat seed-0 graph;
+likely a wave64 scan/select boundary or a reduce_op key-flavor mismatch in the
+frontier dedup at lines ~334-380 of the by_dst prim). This was not observable
+before this session because the .so never linked.
 
 ## Session 4 progress (A' class SOLVED; SG lib down to 16 failing TUs; fork d326818)
 

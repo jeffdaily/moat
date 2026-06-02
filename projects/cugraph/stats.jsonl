@@ -3,3 +3,10 @@
 {"kind":"phase","ts":"2026-06-02T15:19:34Z","phase":"compile","seconds":262.613,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 -- -k 0"}
 {"kind":"phase","ts":"2026-06-02T15:38:45Z","phase":"compile","seconds":817.047,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 -- -k 0"}
 {"kind":"phase","ts":"2026-06-02T15:51:15Z","phase":"compile","seconds":882.216,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T16:42:42Z","phase":"compile","seconds":913.090,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T17:07:43Z","phase":"compile","seconds":808.068,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target cugraph -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T17:32:17Z","phase":"compile","seconds":872.538,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target cugraph -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T17:43:55Z","phase":"compile","seconds":887.593,"exit":0,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target cugraph -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T18:07:10Z","phase":"compile","seconds":1039.704,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target PAGERANK_TEST -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T18:31:57Z","phase":"compile","seconds":1058.367,"exit":1,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target PAGERANK_TEST -- -k 0"}
+{"kind":"phase","ts":"2026-06-02T18:53:33Z","phase":"compile","seconds":1076.574,"exit":0,"cmd":"cmake --build projects/cugraph/build-hip -j8 --target PAGERANK_TEST -- -k 0"}
