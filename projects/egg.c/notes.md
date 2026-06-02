@@ -91,3 +91,17 @@ reductions and RoPE `__shfl_xor_sync(...,1)` (explicit width 32) when ported.
   logical-32 reduction MUST template `<T, 32>` explicitly.
 - `timeit.sh` runs the wrapped command from the repo root, so pass an ABSOLUTE
   source path to hipcc.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a, fork 0472ed5)
+Verdict: review-passed. Independently re-ran the port on real gfx90a (MI250X, GCD 3).
+
+Verified clean:
+- Logical-warp-32 fix (load-bearing): EggWarpReduce pins cub::WarpReduce<long long,32>; warpBroadcast routes through width-32 __shfl_sync with a 64-bit all-ones mask under __HIP__; eggWarpBroadcast body is byte-identical to the upstream broadcast (same lo/hi split + (unsigned int)lo low-half mask). Two EGG_FIXED_SEED=12345 runs were BIT-IDENTICAL on Loss + Up+/Up- across all 24 steps -- the decisive wave64 fingerprint (a wrong width-32 partition would diverge). Loss fell monotonically 8.2460 -> 3.2439; sample text-like; native MI250X dispatch.
+- Multi-arch fat binary carries both gfx90a and gfx1100 code objects (llvm-objdump --offloading).
+- CUDA-path byte-identity: both compat headers guard their bodies on __HIP__; under nvcc egg_hip_compat.cuh expands to nothing and the explicit width-32 shuffle args are no-ops (NVIDIA default warp width is 32). NVIDIA build behavior preserved.
+- Non-GPU regression: d-eggs/test_ternary.cpp builds + passes (1.6000 bits/value). All deferred .cu/.cuh and the ARM-NEON full_trained_egg.c are untouched; deferred paths documented in "Out of scope for the lead".
+- Commit hygiene: [ROCm] title 59 chars, mentions Claude, no noreply/ghstack/co-author trailer, ASCII clean. fork/moat-port == HEAD; fork/master clean upstream mirror; Actions disabled.
+
+Minor (non-blocking, no fix required for this commit):
+- egg_warp_compat.cuh:36 eggShflDownSync and :40 eggShflXorSync are defined but unused in this commit (the lead trainer uses only the WarpReduce + broadcast paths; down/xor shuffles belong to the deferred transformer/RoPE files). They are __device__ __forceinline__ so they emit no unused-function warning under hipcc or nvcc and do not affect the NVIDIA build. They are a deliberate forward-looking part of the warp-compat shim API; acceptable to keep, but if the transformer ports stall they should be removed per the orphan-cleanup rule.
+- The 11 -Wunused-value warnings on cudaFree/cudaDeviceSynchronize returns are pre-existing in the upstream source (hipError_t is nodiscard; nvcc is not), not introduced by the port.
