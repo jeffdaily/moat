@@ -54,3 +54,60 @@ Verified (no findings):
 - Commit hygiene: `[ROCm] Build quadsim_cuda extension on ROCm/HIP` (47 chars), mentions Claude, no noreply trailer, no ghstack, no em-dash, has Test Plan. Fork master = clean upstream mirror @ 2719361. Actions disabled on fork (enabled:false). No AMD-internal account references.
 
 Note for validator: GPU gate not re-run at review (expected). Validator runs src/src/test.py with a FIXED seed (forward 4-output + analytic-backward-vs-autograd 5-grad allclose on 64 double states) plus the env_cuda.py secondary drive. The documented ~7.5% unseeded v_next flake is the pre-existing float ctl_dt vs double-reference gap (platform-independent), not a port defect; run seeded.
+
+## Validation 2026-06-02 (validator, linux-gfx90a)
+
+Platform: AMD Instinct MI250X (gfx90a:sramecc+:xnack-), ROCm 7.2, torch 2.13, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/DiffPhysDrone @ moat-port, validated_sha=2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d.
+
+### Build
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a
+cd projects/DiffPhysDrone/src/src && rm -rf build *.egg-info
+pip install -e . --no-build-isolation
+# result: Successfully installed quadsim_cuda-0.0.0
+```
+Compile: PASS. Extension .so loads cleanly.
+
+### Primary gate: test.py (fixed seed, run x2)
+```
+# Run 1
+python3 -c "
+import os, sys; os.chdir('/var/lib/jenkins/moat/projects/DiffPhysDrone/src/src'); sys.path.insert(0, '.')
+import torch; torch.manual_seed(42)
+import runpy; runpy.run_path('test.py', run_name='__main__')
+print('PASS run 1 (seed=42)')
+"
+# Run 2 (identical)
+```
+Both runs: PASS. All 4 forward outputs (act_next, p_next, v_next, a_next) and all 5 gradients (d_act_pred, d_act, d_p, d_v, d_a) pass torch.allclose vs reference. Deterministic across runs.
+
+### Device dispatch confirmation
+AMD_LOG_LEVEL=3 output (excerpt):
+```
+hipLaunchKernel ( ... )
+Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack- co: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-
+hipLaunchKernel: Returned hipSuccess
+```
+Native gfx90a code object confirmed. No fallback.
+
+### Secondary: env_cuda.py drive (5 steps + render + find_nearest_pt + rerender_backward)
+```
+cd projects/DiffPhysDrone/src
+python3 -c "
+from env_cuda import Env; import torch
+torch.manual_seed(42)
+env = Env(batch_size=8, width=32, height=24, grad_decay=0.4, device='cuda')
+for step in range(5): env.run(torch.randn((8,3),device='cuda'), ctl_dt=1/15, v_pred=torch.randn((8,3),device='cuda'))
+canvas, _ = env.render(ctl_dt=1/15)
+vec = env.find_vec_to_nearest_pt()
+import quadsim_cuda
+dddp = torch.empty((4,3,24,32), device='cuda')
+quadsim_cuda.rerender_backward(dddp, torch.rand((4,1,48,64),device='cuda').add(0.1), 0.53)
+assert torch.isfinite(canvas).all() and torch.isfinite(vec).all() and torch.isfinite(dddp).all()
+print('SECONDARY PASS')
+"
+```
+PASS: render (8,24,32), find_nearest_pt (10,8,3), rerender_backward (4,3,24,32) -- all finite on gfx90a.
+
+Verdict: **completed** (linux-gfx90a). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. No GPU fault. No non-GPU regression (no CPU-only path exists).
