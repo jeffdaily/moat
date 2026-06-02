@@ -570,3 +570,30 @@ Grand total: 312 passed (255+57), 38 failed (nerfacc-only, unchanged from prior 
 ## Validation 2026-05-31 (gfx1100) -- carry-forward at 5cdaa15 (Windows-only delta)
 
 Revalidate triggered by the windows-gfx1151 amend c1ae9ce -> 5cdaa15. Two-dot tree diff is 3 files, none on the Linux/gfx1100 path: build.py changes are all under `if sys.platform=="win32":` plus a `*_winhip.cu` glob filter that is a no-op on Linux (no such files committed); distributed.py guards a torch.distributed import that binds as-before on Linux and is off the single-GPU test path; .gitignore is cosmetic. gfx1100 build inputs + kernels unchanged, so the prior c1ae9ce gfx1100 validation (3DGUT: 312 passed; 38 nerfacc-gated baseline; wave32 correct) applies. validated_sha -> 5cdaa15. No GPU re-run, no fork change.
+
+## Validation 2026-06-02 (linux-gfx90a revalidate at 5fd287a)
+
+Platform: AMD Instinct MI250X, gfx90a (wave64). ROCm 7.2.1.
+conda env py_3.12, torch 2.13.0a0+gitb5e90ff, torch.version.hip 7.2.53211.
+Fork tip validated: 5fd287a05122c71b42d85c8b73253d8742c34d67 (prior validated_sha 0f72aef3).
+State transition: revalidate -> completed. HIP_VISIBLE_DEVICES=0 (GCD 0, MI250X).
+
+Delta from 0f72aef3: a single Python import relocation in experimental/render/kernels/cuda/build.py
+-- `import torch` moved from function-local scope (inside get_build_parameters()) to module-top
+level. This file is the experimental HiGS inference extension's build script. The experimental
+renderer is entirely skipped on ROCm (setup.py fault #12: `build only gsplat.csrc` on ROCm).
+No compiled kernels changed, no ROCm build path affected.
+
+### Test command
+    cd /var/lib/jenkins/moat/projects/gsplat/src
+    HIP_VISIBLE_DEVICES=0 python3 -m pytest tests/test_basic.py \
+      -k "(test_quat_scale_to_covar_preci or test_proj or test_projection or \
+           test_fully_fused_projection_packed or test_isect or test_sh) and not lidar" -v
+
+Core 3DGS/2DGS result: 108 passed, 0 failed (identical to all prior gfx90a and gfx1100 runs).
+
+Full test_basic.py: 255 passed, 38 failed (all 38 nerfacc-only, same documented known-fail set).
+No regression vs the 5cdaa15 baseline.
+
+The build.py import cleanup is confirmed behavior-neutral on gfx90a: the main rasterizer passes
+all 108 core tests unchanged.
