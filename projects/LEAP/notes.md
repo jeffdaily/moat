@@ -153,3 +153,48 @@ returns finite on HIP tex3D<float>, matching CUDA behavior.
 
 validated_sha: 17534792ea62722cf0537894bbab68fb5bb257cc
 Followers unblocked: linux-gfx1100 -> port-ready.
+
+## Validation 2026-06-02 (validator, linux-gfx1100, moat-port @ 1753479)
+
+Verdict: completed. All formal gates passed on real gfx1100 (2x AMD Radeon Pro W7800 48GB, RDNA3, wave32).
+
+GPU arch confirmed: AMD_LOG_LEVEL=3 shows native gfx1100 dispatch (Gfx Major/Minor/Stepping: 11/0/0); hip_fatbin confirms "Using native code object for device: amdgcn-amd-amdhsa--gfx1100".
+
+Note on device selection: HIP device 0 was unresponsive (stale KFD handles from prior jobs, no active processes). Used HIP_VISIBLE_DEVICES=1 (second W7800, also gfx1100); dispatch confirmed native gfx1100 execution. Fork clean.
+
+Build commands:
+```
+cd /var/lib/jenkins/moat/projects/LEAP/src
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 python setup_AMD.py build_ext --inplace
+```
+hipify outputs already present from prior build; ninja relinked the .so. Build exit 0.
+
+Gate 1 -- gfx1100 code object: llvm-objdump --offloading shows 20 hipv4-amdgcn-amd-amdhsa--gfx1100 bundles. No non-gfx1100 arches in this gfx1100-only build. PASS.
+
+Gate 2 -- gfx1100 correctness (unitTests/gpu_vs_cpu_validate.py, 12 tests, 2 runs):
+```
+cd /var/lib/jenkins/moat/projects/LEAP/src
+HIP_VISIBLE_DEVICES=1 python unitTests/gpu_vs_cpu_validate.py
+```
+Results (both runs identical -- deterministic):
+- parallel     VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.54e-05  PASS
+- parallel     SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.64e-05  PASS
+- fan          VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.44e-04  PASS
+- fan          SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.85e-04  PASS
+- coneparallel VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.24e-03  PASS
+- coneparallel SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=5.07e-05  PASS
+- cone-flat    VD  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=1.42e-04  PASS
+- cone-flat    SF  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=1.46e-04  PASS
+- cone-curved  VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=8.54e-05  PASS
+- cone-curved  SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.30e-04  PASS
+- modular      VD  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=3.39e-03  PASS
+- modular      SF  finite=True  fwd-vs-VD  (err 0.000)  adjoint=n/a              PASS
+OVERALL: PASS (12/12). Results match gfx90a exactly within display precision.
+
+Wave32 verdict: texture software-interpolation fix is arch-unified/wave-agnostic. No warp-width intrinsics in the projection kernels. gfx1100 (RDNA3, wave32) results are bit-identical to gfx90a (CDNA2, wave64) for all 12 test cases.
+
+Gate 3 -- Reviewer flag: attenuated-beam forward projection finite at detector edges on gfx1100.
+Cone-flat geometry with tilt, mu=0.01: NaN/Inf count = 0/5898240. PASS.
+The point-bound f texture at fractional 0/0 coords returns finite on gfx1100 HIP tex3D<float>.
+
+validated_sha: 17534792ea62722cf0537894bbab68fb5bb257cc

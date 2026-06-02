@@ -10,3 +10,13 @@
 {"kind":"phase","ts":"2026-06-02T08:16:38Z","phase":"compile","seconds":0.006,"exit":127,"cmd":"bash build_rocm.sh"}
 {"kind":"phase","ts":"2026-06-02T08:16:59Z","phase":"compile","seconds":14.174,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/LEAP/src/build_rocm.sh"}
 {"kind":"phase","ts":"2026-06-02T08:17:25Z","phase":"test","seconds":6.126,"exit":0,"cmd":"python /var/lib/jenkins/moat/projects/LEAP/src/unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T08:22:43Z","phase":"compile","seconds":7.530,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && rm -rf build *.egg-info && python setup_AMD.py build_ext --inplace 2>&1"}
+{"kind":"phase","ts":"2026-06-02T08:23:55Z","phase":"test","seconds":44.201,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 python unitTests/gpu_vs_cpu_validate.py 2>&1"}
+{"kind":"phase","ts":"2026-06-02T09:02:05Z","phase":"compile","seconds":0.028,"exit":2,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T09:02:10Z","phase":"compile","seconds":0.024,"exit":2,"cmd":"python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T09:02:25Z","phase":"compile","seconds":2.730,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T09:02:46Z","phase":"test","seconds":0.028,"exit":2,"cmd":"python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T13:38:00Z","phase":"compile","seconds":0.024,"exit":2,"cmd":"python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T13:38:11Z","phase":"compile","seconds":2.778,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T13:47:20Z","phase":"test","seconds":4.780,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && HIP_VISIBLE_DEVICES=1 python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T13:47:31Z","phase":"test","seconds":4.799,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && HIP_VISIBLE_DEVICES=1 python unitTests/gpu_vs_cpu_validate.py"}
