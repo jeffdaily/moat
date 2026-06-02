@@ -2,7 +2,7 @@
   "full_name": "facebookresearch/dietgpu",
   "upstream_url": "https://github.com/facebookresearch/dietgpu",
   "default_branch": "main",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/dietgpu",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "a4d70a14066d2c3e5fe1849b3723e4cd423eee7e"
 }
