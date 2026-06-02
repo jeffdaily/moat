@@ -270,3 +270,60 @@ validation at 4ffe4e9 holds at a339d3d -- gfx90a carried forward to completed
 (validated_sha a339d3d) without a re-run. gfx1100 still needs its wave32 revalidate
 of the genuine re-port source changes (constants.h WARP_SIZE, cost_aggregation.cu,
 cuda_to_hip.h, host_utility.h, median_filter.cu, winner_takes_all.cu).
+
+## Validation 2026-06-02 (gfx1100) -- revalidate at a339d3d (multi-arch wave32/64 re-port)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+
+Build (fat binary, from committed source at a339d3da4918):
+```
+cd projects/libSGM/src
+git submodule update --init
+cmake -S /var/lib/jenkins/moat/projects/libSGM/src \
+      -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip \
+      -DUSE_HIP=ON "-DCMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100" \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j$(nproc)
+```
+Build: PASS (warnings only -- nodiscard on hipStream* macros, pre-existing upstream pattern). Configure ~2.8s, build ~9.1s.
+
+Code-object evidence (roc-obj-ls on sgm-test): 7 fat-binary bundles, each containing BOTH
+`hipv4-amdgcn-amd-amdhsa--gfx1100` and `hipv4-amdgcn-amd-amdhsa--gfx90a` code objects.
+gfx1100 objects are present and will be selected by the runtime loader on this host.
+
+Host + device warp-size resolution (runtime mechanism):
+- Device pass: `__GFX9__` is NOT defined for gfx1100; the `#if defined(__GFX8__)||defined(__GFX9__)` arm in
+  `src/constants.h` is skipped; WARP_SIZE resolves to 32 via the `__HIP_DEVICE_COMPILE__` else-branch. Wave32.
+- Host pass: launch geometry in `cost_aggregation.cu` and `winner_takes_all.cu` calls `sgm::device_warp_size()`
+  (added in `src/host_utility.h` for the multi-arch re-port). That function calls `cudaGetDevice` (aliased to
+  `hipGetDevice` via `cuda_to_hip.h`) then `cudaDeviceGetAttribute(..., cudaDevAttrWarpSize, dev)` (aliased to
+  `hipDeviceGetAttribute(hipDeviceAttributeWarpSize, ...)`) at the first launcher invocation, caches the result
+  per-device in a thread-local array, and returns it. On gfx1100 this returns 32. No SGM_HOST_WARP_SIZE
+  compile-time constant is involved; the old CMake arch-scan loop was removed in this re-port.
+- host == device == 32: BLOCK_SIZE = device_warp_size() * WARPS_PER_BLOCK = 32*N; grid dims derived from it;
+  all in agreement with the 32-lane kernel geometry.
+
+Test (run twice for determinism):
+```
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test
+```
+Run 1: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Test suites covered: CastTest (2), CensusTransformTest (3), SymmetricCensusTest (3),
+CheckConsistencyTest (6), IntegrationTest (1, full pipeline RandomU8), MedianFilterTest (4),
+CorrectDisparityRangeTest (18), CostAggregationTest (18), WinnerTakesAllTestP (12).
+
+Wave32 verdict: path-aggregation DP shuffles (width=WARP_SIZE=32, subgroup-relative lane
+masking), WTA inter-lane smem handoff (__syncwarp), and median_filter software SIMD emulation
+(__vcmpgtu2/4, __vminu2/4, __vmaxu2/4) all produce correct, bit-exact disparity output
+at wave32 with the new runtime host warp-size. No HSA faults (0x1016 or otherwise).
+Results match the prior 67/67 bar (single-arch 9ce43fd and multi-arch gfx90a a339d3d).
+Deterministic.
+
+Fork clone git status: CLEAN (build-hip/ covered by build*/ gitignore; no artifacts committed).
+No code change required for the follower (validate-first confirmed); fork HEAD untouched.
+
+Result: 67/67 PASS, deterministic. Transition: revalidate -> completed, validated_sha=a339d3da49181839e15a809d16a5f7286773f97e.
