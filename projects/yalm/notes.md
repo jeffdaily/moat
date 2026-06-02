@@ -38,6 +38,32 @@ make test USE_HIP=1 HIPARCH=gfx90a && ./build/test   # prints "All tests passed"
 ## Secondary / not the gate
 Full-model `./build/main model.yalm -d cuda -m perplexity` needs a converted model (offline `convert.py`, torch) and exercises hipGraph capture/replay. Not run here (no model staged); not required for the gate. If hipGraph replay misbehaves on a follower, a non-graph dispatch fallback is low effort since every kernel is already directly launchable (the test path proves it).
 
+## Validation 2026-06-02 (validator, linux-gfx90a)
+
+Result: PASS -- linux-gfx90a completed, validated_sha=311e1c39ebf5cfad02ca13c70aaf7f9942f39101.
+
+GPU: AMD Instinct MI250X (GFX Version gfx90a), GCD2 (HIP_VISIBLE_DEVICES=2). ROCm/hipcc 7.2.53211.
+
+Commands run (from /var/lib/jenkins/moat/projects/yalm/src):
+
+```
+export HIP_VISIBLE_DEVICES=2
+make clean && make test USE_HIP=1 HIPARCH=gfx90a   # clean build; exit 0
+./build/test                                         # run 1 -> "All tests passed"
+./build/test                                         # run 2 -> "All tests passed" (deterministic)
+```
+
+Wrapped with `utils/timeit.sh yalm compile` and `utils/timeit.sh yalm test`.
+
+gfx90a device dispatch confirmed via AMD_LOG_LEVEL=3:
+```
+hip_fatbin.cpp: Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack- co: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-
+```
+
+Pass/fail counts: matmul/mha/ffn CPU-vs-GPU tests PASS (eps 1e-4); test_attn() CPU regression guard PASS. Total: 1 binary, all subtests pass, both runs identical.
+
+Caveat carried from review: the WPB launch path (matmul_wide/fused_matmul_add_residuals) is not exercised by ./build/test -- it runs only in the full-model _forward_cuda, which requires a staged model (none downloaded). The porter/reviewer verified it via an agent_space probe at <<<d/16, 64*16>>> vs CPU reference. The formal gate is ./build/test + this documented caveat.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a)
 Verdict: review-passed. Reviewed `git diff 6cd1ef6...311e1c3` on moat-port. Built clean from scratch (`make clean && make test USE_HIP=1 HIPARCH=gfx90a`, hipcc 7.2.53211, gfx90a) and ran `./build/test` on GCD2 -> "All tests passed". Confirmed gfx90a device code embedded (`roc-obj-ls`: hipv4-amdgcn-amd-amdhsa--gfx90a, 86888 bytes). Wave64 fixes verified as correct and the CUDA path preserved.
 

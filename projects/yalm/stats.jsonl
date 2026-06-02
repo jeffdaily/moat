@@ -4,3 +4,7 @@
 {"kind":"phase","ts":"2026-06-02T02:09:28Z","phase":"compile","seconds":0.097,"exit":2,"cmd":"make -C projects/yalm/src test USE_HIP=1 HIPARCH=gfx90a"}
 {"kind":"phase","ts":"2026-06-02T02:09:47Z","phase":"compile","seconds":5.596,"exit":0,"cmd":"make -C projects/yalm/src test USE_HIP=1 HIPARCH=gfx90a"}
 {"kind":"phase","ts":"2026-06-02T02:09:53Z","phase":"test","seconds":0.268,"exit":0,"cmd":"projects/yalm/src/build/test"}
+{"kind":"phase","ts":"2026-06-02T02:18:14Z","phase":"compile","seconds":0.009,"exit":2,"cmd":"bash -c make clean && make test USE_HIP=1 HIPARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-02T02:18:46Z","phase":"compile","seconds":5.457,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/yalm_build_run1.sh"}
+{"kind":"phase","ts":"2026-06-02T02:18:52Z","phase":"test","seconds":0.228,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/yalm/src/build/test"}
+{"kind":"phase","ts":"2026-06-02T02:19:03Z","phase":"test","seconds":0.239,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/yalm/src/build/test"}
