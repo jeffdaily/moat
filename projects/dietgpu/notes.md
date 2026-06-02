@@ -13,7 +13,7 @@ cd projects/dietgpu/src
 git submodule update --init --recursive
 export HIP_VISIBLE_DEVICES=0
 cmake -S . -B build-hip -G Ninja \
-  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
   -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
   -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
   -DCMAKE_BUILD_TYPE=RelWithDebInfo
@@ -21,12 +21,16 @@ cmake --build build-hip --target ans_test ans_statistics_test \
   batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
 ```
 
-`-DCMAKE_POLICY_VERSION_MINIMUM=3.5` is required only because the vendored glog
-submodule predates CMake 3.5 policy removal; unrelated to the port.
+A single arch (`-DCMAKE_HIP_ARCHITECTURES=gfx90a`) also works; the multi-arch
+form is the new must-pass gate (confirm both code objects:
+`llvm-objdump --offloading build-hip/lib/libgpu_ans.so` shows gfx90a AND
+gfx1100). `-DCMAKE_POLICY_VERSION_MINIMUM=3.5` is required only because the
+vendored glog submodule predates CMake 3.5 policy removal; unrelated to the
+port.
 
-Followers reuse this same commit with only `-DCMAKE_HIP_ARCHITECTURES=gfx1100`
-(wave32) -- no source edit. The build derives the wavefront width (and thus
-DIETGPU_WARP_SIZE / kWarpSize) from the single target arch.
+Followers reuse this same commit with no source edit. The device wavefront
+width resolves per-arch at compile time (__GFX*__) and host code queries the
+runtime device warpSize -- there is no build-injected warp constant anymore.
 
 ## Test (run the four gtests directly)
 
@@ -47,25 +51,42 @@ GOTCHA: `ctest` reports "No tests were found" -- gtest_discover_tests does not
 register under the HIP language build here. Run the four executables directly;
 that is the real gate. (Do not treat the empty ctest list as a pass/fail.)
 
-## Wave64 archive non-portability (IMPORTANT, by design)
+## Multi-arch warp size (the fixed-64-slot archive) -- SUPERSEDES the old single-arch model
 
-kWarpSize defines the rANS archive geometry, not just a reduction width: the
-input is striped across lanes by kWarpSize and one rANS state per lane is
-serialized into the archive header (ANSWarpState::warpState[kWarpSize]). On
-gfx90a kWarpSize=64, so a gfx90a archive interleaves 64 lane-states and is NOT
-byte-compatible with a CUDA / RDNA (wave32, 32-state) archive, and vice versa.
-This is a wave-width consequence, not a bug. Round-trip on a single arch is
-self-consistent (compress and decompress agree), which is the correctness gate.
-Cross-warp-width archive interop is intentionally out of scope. gfx1100/gfx1151
-are wave32 and will produce 32-lane archives like CUDA.
+The original port baked a single build-injected DIETGPU_WARP_SIZE into BOTH
+host and device (gfx9* -> 64 else 32), which forced a single-arch build and
+mis-sized the archive on the host of a multi-arch binary. That is removed. The
+current model builds one fat binary for gfx90a;gfx1100:
 
-kWarpSize is derived by the BUILD from the single target arch
-(DIETGPU_WARP_SIZE; gfx9* -> 64 else 32), NOT keyed on __GFX9__. __GFX9__ is
-defined only in the device compile pass, so a __GFX9__-keyed constant would make
-the host compute archive buffer sizes / launch geometry at 32 lanes while a
-gfx90a device ran 64 -- buffer mis-size / corruption. A single-arch build is
-required (a compile-time-constant warp size cannot vary per-arch in one fat
-binary anyway).
+- DEVICE width is per-arch compile-time: DeviceDefs.cuh kWarpSize is guarded on
+  __HIP_DEVICE_COMPILE__ then __GFX8__||__GFX9__ -> 64 else 32. These __GFX*__
+  macros are defined ONLY in the device compile pass and ARE constexpr-usable,
+  so a fat binary resolves 64 on gfx90a and 32 on gfx1100. (No
+  __AMDGCN_WAVEFRONT_SIZE__ macro exists in ROCm 7.2.) CUDA path stays 32.
+- HOST never reads kWarpSize (it would always be 32 in the host pass, and there
+  is no single host warp width in a multi-arch build). The one host consumer
+  was the encode grid divisor GpuANSEncode.cuh `kThreads / kWarpSize`; it now
+  uses `getCurrentDeviceProperties().warpSize` (runtime device query) so the
+  grid matches the device kernel's `block = tid / warpSize` per arch.
+- ARCHIVE FORMAT is pinned arch-independent: GpuANSUtils.cuh defines
+  `kMaxWarpSize = 64` and `ANSWarpState::warpState[kMaxWarpSize]`. kWarpSize is
+  a serialized data-format parameter, so the header layout (sizeof(ANSWarpState),
+  getWarpStates/getBlockWords offsets, getCompressedOverhead) must NOT depend on
+  a per-arch or per-build warp width. Fixing it at 64 keeps the gfx90a archive
+  byte-identical to the previously validated format and gives gfx90a and gfx1100
+  the SAME 64-slot geometry. A wave32 device writes/reads only lanes 0-31 (its
+  device kWarpSize stride); slots 32-63 are unused on wave32. The device kernels
+  still stride by the per-arch device kWarpSize -- do NOT change that.
+- CMakeLists.txt: DIETGPU_WARP_SIZE and the gfx9* arch-scan loop are deleted;
+  only `add_compile_definitions(USE_HIP=1)` remains for the warp path.
+
+Round-trip on a single arch is self-consistent (the correctness gate). The
+gfx90a (wave64) archive uses all 64 slots; a gfx1100/CUDA (wave32) archive uses
+32 of the 64 -- the header geometry is identical (64 slots) but the live lane
+count differs, so cross-warp-width DECODE interop is still not a goal (a wave64
+producer fills 64 states that a wave32 consumer would not all read). The win is
+that the host/device sizing no longer couples to the warp width and the
+multi-arch build compiles and dispatches correctly.
 
 ## Deferred: the PyTorch tensor binding
 
@@ -84,7 +105,8 @@ benchmark.py) require that binding and a ROCm PyTorch; not part of the lead gate
   Force-included on every HIP TU via -include.
 - hip_compat/{cuda.h,cuda_runtime.h,cuda_profiler_api.h,cub/...} -- name-shim
   forwarders so source include lines are untouched; on the HIP include path only.
-- dietgpu/utils/DeviceDefs.cuh -- kWarpSize from DIETGPU_WARP_SIZE.
+- dietgpu/utils/DeviceDefs.cuh -- per-arch DEVICE kWarpSize (__GFX*__ guards);
+  GpuANSUtils.cuh kMaxWarpSize=64 pins the archive layout (see multi-arch section).
 - dietgpu/utils/PtxUtils.cuh -- HIP branch for bfe/bfi/rotate/funnel-shift,
   laneid/lanemask, ballot/popc/shfl helpers (64-bit masks, maskless builtins).
   NVIDIA branch keeps the original PTX verbatim.
@@ -93,7 +115,7 @@ benchmark.py) require that binding and a ROCm PyTorch; not part of the lead gate
 - dietgpu/float/GpuFloatUtils.cuh -- bf16 join funnel shift via funnelShiftRight.
 - CMakeLists.txt (top) -- option(USE_HIP), enable_language(HIP), add_library/
   add_executable override to retag .cu LANGUAGE HIP (subdir CMakeLists mostly
-  untouched), DIETGPU_WARP_SIZE derivation, compat include dir + force-include.
+  untouched), compat include dir + force-include. (No DIETGPU_WARP_SIZE anymore.)
 - dietgpu/utils/CMakeLists.txt -- DeviceUtils.cpp/StackDeviceMemory.cpp marked
   LANGUAGE HIP (they call the HIP runtime; plain g++ has no hip headers).
 
@@ -288,3 +310,41 @@ Device dispatch confirmed via AMD_LOG_LEVEL=3:
 `Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`
 
 Total: 13/13 PASS. Verdict: PASS. Transitioning linux-gfx90a to completed.
+
+## Multi-arch warp-size fix 2026-06-02 (porter, linux-gfx90a) -- fork b6e0d3f
+
+Re-entered from completed: the 03088ce port baked a single DIETGPU_WARP_SIZE in
+host + device, which broke a combined gfx90a;gfx1100 build (the warp width
+cannot be one compile-time constant across two archs, and it is an
+archive-format parameter). Fixed per the multi-arch warp-size standard:
+
+1. DeviceDefs.cuh kWarpSize -> per-arch DEVICE constexpr guarded on
+   __HIP_DEVICE_COMPILE__ + __GFX8__||__GFX9__ -> 64 else 32 (CUDA 32). Fixes
+   every device-side kWarpSize consumer per-arch with no other device edit.
+2. GpuANSUtils.cuh: ANSWarpState pinned to a fixed 64-slot layout
+   (kMaxWarpSize = 64) so the serialized header geometry is arch-independent;
+   gfx90a archive byte-identical to before, gfx1100 same 64-slot geometry.
+3. GpuANSEncode.cuh:747 host grid divisor now uses
+   getCurrentDeviceProperties().warpSize (runtime device query) instead of the
+   device-pass kWarpSize; matches the device kernel's block = tid / warpSize.
+4. CMakeLists.txt: deleted DIETGPU_WARP_SIZE + gfx9* arch-scan loop + the
+   "multi-arch not supported" comments; only USE_HIP=1 remains.
+
+### Validation gate (the new must-pass multi-arch test)
+
+Build `-DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"`: compiles clean (1
+pre-existing FloatTest.cu:306 warning). `llvm-objdump --offloading` on
+libgpu_ans.so AND libgpu_float_compress.so shows BOTH gfx90a and gfx1100
+offload bundles in the fat binary.
+
+gfx90a run from the multi-arch binary (HIP_VISIBLE_DEVICES=0):
+- ans_test 4/4, ans_statistics_test 4/4, batch_prefix_sum_test 2/2,
+  float_test 3/3 -- all PASS, deterministic across two runs.
+- AMD_LOG_LEVEL=3: "Using native code object for device:
+  amdgcn-amd-amdhsa--gfx90a" -- correct per-arch dispatch from the fat binary.
+- Fixed-64-slot archive round-trips correctly on gfx90a (all round-trip tests
+  pass), so the format change is byte-correct.
+
+gfx1100/gfx1151 RUN re-validates on follower hosts (advance-head flips the
+already-completed platforms to revalidate). The clean two-arch build + correct
+gfx90a run + runtime-query host path is this porter's gate.

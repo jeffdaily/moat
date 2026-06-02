@@ -13,3 +13,4 @@
 {"kind":"phase","ts":"2026-06-02T01:01:16Z","phase":"compile","seconds":0.006,"exit":0,"cmd":"bash -c echo \"compile recorded\""}
 {"kind":"phase","ts":"2026-06-02T01:11:46Z","phase":"compile","seconds":8.430,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/dietgpu/src/build-hip --target ans_test ans_statistics_test batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16"}
 {"kind":"phase","ts":"2026-06-02T01:12:33Z","phase":"test","seconds":22.604,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/dietgpu/src/build-hip && ./bin/ans_test && ./bin/ans_statistics_test && ./bin/batch_prefix_sum_test && ./bin/float_test"}
+{"kind":"phase","ts":"2026-06-02T03:35:06Z","phase":"compile","seconds":17.101,"exit":0,"cmd":"cmake --build projects/dietgpu/src/build-hip --target ans_test ans_statistics_test batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16"}
