@@ -108,6 +108,48 @@ arch-agnostic.
   + encrypt round-trip are the representative validatable proxy for the GPU work
   those drive.
 
+## Validation 2026-06-02 (validator, linux-gfx90a, GCD 1)
+
+validated_sha: 6ef301f3204579779bbaa1f32a466934f720903a
+
+GPU arch: gfx90a (AMD Instinct MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=1)
+
+Commands run:
+```
+# gfx90a build
+HIP_VISIBLE_DEVICES=1 BUILD=/var/lib/jenkins/moat/agent_space/3p-admm OUT=/tmp/lib_cufft.so \
+  bash utils/timeit.sh 3P-ADMM-PC2 compile -- bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh
+
+# fat binary (gfx90a + gfx1100)
+HIP_VISIBLE_DEVICES=1 HIP_ARCH="gfx90a,gfx1100" \
+  BUILD=/var/lib/jenkins/moat/agent_space/3p-admm OUT=/tmp/lib_cufft_multi.so \
+  bash utils/timeit.sh 3P-ADMM-PC2 compile -- bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh
+
+# modexp gold match
+HIP_VISIBLE_DEVICES=1 AMD_LOG_LEVEL=0 \
+  bash utils/timeit.sh 3P-ADMM-PC2 test -- python3 agent_space/3p-admm/validate.py
+
+# encrypt round-trip, CPU regression tests
+HIP_VISIBLE_DEVICES=1 PYTHONPATH=<src> python3 crypto/test_paillier.py
+HIP_VISIBLE_DEVICES=1 PYTHONPATH=<src> python3 crypto/test_quantization.py
+HIP_VISIBLE_DEVICES=1 PYTHONPATH=<src> python3 crypto/test_full_chain.py
+```
+
+Results:
+- Build gfx90a: PASS (only benign -Wunused-value on nodiscard hipMemcpy/hipFree, matches CUDA build)
+- Fat binary gfx90a+gfx1100: PASS; roc-obj-ls confirms both code objects embedded
+  (hipv4-amdgcn-amd-amdhsa--gfx1100 @ offset=12288, hipv4-amdgcn-amd-amdhsa--gfx90a @ offset=40960)
+- modexp vs gmpy2 gold: 6144/6144 exact match
+  n at 255/510/511/768/1022/1023/1535/2046 bits, 256/batch, 3 reps each, varied m_bits
+- Encrypt round-trip: 64/64 plaintexts recovered (GPU g^m mod n^2 -> CPU decrypt)
+- CPU regression: test_paillier PASS, test_quantization PASS, test_full_chain PASS (max error 1.33e-09)
+- Native gfx90a dispatch confirmed (AMD_LOG_LEVEL=3):
+  "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-"
+  hipFFT twiddle_gen_radices_dp dispatched; all our kernels dispatched via hipLaunchKernel
+- hipFFT double-FFT rounding margin holds: 0 mismatches across all 6144 crypto-significant cases
+
+VERDICT: PASS -- review-passed -> completed
+
 ## Review 2026-06-02 (reviewer, gfx90a)
 review-passed. No problems found; no changes requested.
 

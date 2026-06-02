@@ -1,0 +1,6 @@
+{"kind":"phase","ts":"2026-06-02T06:08:44Z","phase":"compile","seconds":0.005,"exit":127,"cmd":"bash gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:08:50Z","phase":"compile","seconds":0.529,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/3P-ADMM-PC2/src/gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:09:13Z","phase":"compile","seconds":3.183,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/3P-ADMM-PC2/src/gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:19:43Z","phase":"compile","seconds":3.244,"exit":0,"cmd":"bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:19:58Z","phase":"compile","seconds":4.799,"exit":0,"cmd":"bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:21:24Z","phase":"test","seconds":70.009,"exit":0,"cmd":"python3 agent_space/3p-admm/validate.py"}
