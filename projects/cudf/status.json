@@ -7,40 +7,40 @@
   "priority": 6.998,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-02T04:48:55Z",
+  "updated_at": "2026-06-02T15:00:00Z",
   "head_sha": "c9b6024b788f8dc73b95eebbe131fdc715ecad21",
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
-      "blocked_reason": "COMPLETED at fork c4b9b5b (real gfx90a code object, 18/18 GPU tests x2 runs). This session brought up the remaining ~15 non-JIT modules behind the prior 17-symbol residual and drove the cudf-internal undefined closure to EXACTLY 6: the 2 cudf::detail::binary_operation JIT overloads (jitify->hipRTC is the documented separate effort) PLUS 4 scan_inclusive<DeviceMin|Max> for strings/structs (scoped-out .cu files referenced by the in-scope reductions/scan dispatch; same deferred-dispatch class). Note: nm -D -u | grep 'U cudf' shows only 2 (the scan_inclusive symbols demangle with std::unique_ptr<cudf::column> prefix, not cudf::); use grep on scan_inclusive|binary_operation to see all 6. 9 new TUs added to cudf_hip_sources.cmake: stream_compaction/distinct_count.cu, quantiles/quantile.cu, quantiles/tdigest/{tdigest.cu,tdigest_aggregation.cu,tdigest_column_view.cpp}, groupby/sort/group_quantiles.cu, filling/repeat.cu, reshape/tile.cu, lists/stream_compaction/distinct.cu. libcudf.so = 559.46 MB (586,646,592 B), 151 embedded code objects ALL gfx90a, no -mcmodel=large, no split (--offload-compress stays on). GPU 18/18 on MI250X (GCD 0) x2 runs, stable. find_package(cudf) dependency-export contract GPU-verified. This unblocks cugraph/cuml (also needs raft). src/io (nvCOMP/KvikIO) + the binaryop/transform/rolling JIT stay scoped out. See notes.md + PORTING_GUIDE.",
-      "validated_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
+      "blocked_reason": "COMPLETED at fork c9b6024 (real gfx90a code object, 19/19 GPU tests x2 runs + MergeNullableBitmaskWave64 confirmed, deterministic). This session validates the merge.cu wave64 null-mask fix (delta 7d743ae->c9b6024). libcudf.so 589,663,656 B, 152 gfx90a code objects ALL gfx90a (zero non-gfx90a), --offload-compress intact, no -mcmodel=large. AMD_LOG_LEVEL=3 confirms 'Using native code object for device: amdgcn-amd-amdhsa--gfx90a' dispatch. MergeNullableBitmaskWave64 PASS (rows 32-63 null mask words correct, second 32-bit word of each 64-wide wavefront written). merge.cu.o mtime > merge.cu source; libcudf.so linked after .o (clean single build from committed c9b6024 source). HIP_VISIBLE_DEVICES=3 (GCD 3, MI250X gfx90a), ROCm 7.2.1. See notes.md 'Validation 2026-06-02'.",
+      "validated_sha": "c9b6024b788f8dc73b95eebbe131fdc715ecad21",
       "started_at": "2026-05-30T20:28:26Z",
-      "completed_at": "2026-06-01T19:21:54.535620Z",
-      "updated_at": "2026-06-02T04:48:55Z",
+      "completed_at": "2026-06-02T15:00:00Z",
+      "updated_at": "2026-06-02T15:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
           "compile": 0,
-          "test": 0,
+          "test": 20,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
+        "session_count": 1,
+        "first_session_at": "2026-06-02T15:00:00Z",
+        "last_session_at": "2026-06-02T15:00:00Z"
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "revalidate",
       "blocked": false,
-      "blocked_reason": "COMPLETED at fork 7d743ae (real gfx1100 code object, 18/18 GPU tests x3 runs + valid_if partial-tail harness 24/24 x2 runs, all deterministic). The wave32 divergent-tile-collective fix (6 kernels restructured from divergent per-lane while(i<size) ballot to converged while(tile_any_32(i<n)) tile-level loop) eliminates HSA_STATUS_ERROR_EXCEPTION 0x1016 for size%32!=0 inputs on gfx1100 (RDNA3, wave32). Null-mask correctness verified: device null counts + bitmasks match host reference exactly for all partial-tail sizes (1,31,33,63,65,97,1000,1057,4097,100001). libcudf.so 555.8 MB, 151 gfx1100 code objects (llvm-objdump confirmed ALL gfx1100, zero non-gfx1100). Matches gfx90a@7d743ae (18/18 same tests). See notes.md 'Validation 2026-06-01 (gfx1100)'.",
+      "blocked_reason": "COMPLETED at fork 7d743ae (real gfx1100 code object, 18/18 GPU tests x3 runs + valid_if partial-tail harness 24/24 x2 runs, all deterministic). The wave32 divergent-tile-collective fix (6 kernels restructured from divergent per-lane while(i<size) ballot to converged while(tile_any_32(i<n)) tile-level loop) eliminates HSA_STATUS_ERROR_EXCEPTION 0x1016 for size%32!=0 inputs on gfx1100 (RDNA3, wave32). Null-mask correctness verified: device null counts + bitmasks match host reference exactly for all partial-tail sizes (1,31,33,63,65,97,1000,1057,4097,100001). libcudf.so 555.8 MB, 151 gfx1100 code objects (llvm-objdump confirmed ALL gfx1100, zero non-gfx1100). Matches gfx90a@7d743ae (18/18 same tests). Revalidate needed against head_sha c9b6024 (merge.cu wave64 fix added 1 TU). See notes.md 'Validation 2026-06-01 (gfx1100)'.",
       "validated_sha": "7d743ae2205d12a99ac4639317099cd40e3746cb",
       "started_at": "2026-06-01T00:00:00Z",
       "completed_at": "2026-06-01T20:30:00Z",
-      "updated_at": "2026-06-02T04:19:46Z",
+      "updated_at": "2026-06-02T15:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

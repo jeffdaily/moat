@@ -1,5 +1,48 @@
 # cudf notes (ROCm/HIP port)
 
+## Validation 2026-06-02 (linux-gfx90a, MI250X GCD 3, ROCm 7.2.1) -- fork c9b6024 merge.cu wave64 null-mask fix
+
+Device: AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=3 (GCD 3). ROCm 7.2.1 HIP clang 22.0.0. Fork c9b6024b788f8dc73b95eebbe131fdc715ecad21.
+
+### Build hygiene verification
+
+Existing build-hip/ at c9b6024 was verified clean before GPU run:
+- merge.cu source mtime: 2026-06-02 04:46:29 UTC
+- merge.cu.o mtime: 2026-06-02 04:47:15 UTC (newer than source: correct)
+- libcudf.so mtime: 2026-06-02 04:47:17 UTC (newer than .o: correct, relinked after compile)
+- libcudf.so size: 589,663,656 B
+- llvm-objdump --offloading: 152 embedded code objects, ALL gfx90a (zero non-gfx90a), --offload-compress intact, no -mcmodel=large
+
+No concurrent build was running. No clean rebuild was needed; the existing single build already reflects the committed c9b6024 source.
+
+### GPU test (MOAT_CORE_SMOKE_TEST -- 19 tests including MergeNullableBitmaskWave64)
+
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/cudf-rmm/install/lib:${CONDA_PREFIX}/lib:/opt/rocm/lib"
+export HIP_VISIBLE_DEVICES=3
+export AMD_LOG_LEVEL=3
+utils/timeit.sh cudf-validate-gfx90a test -- projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST
+```
+
+Run 1 (with AMD_LOG_LEVEL=3): **19/19 PASS** (8685 ms). AMD_LOG_LEVEL=3 confirms "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-" dispatch across multiple kernel loads.
+
+Run 2 (plain): **19/19 PASS**. Deterministic.
+
+Isolated merge test:
+```
+HIP_VISIBLE_DEVICES=3 projects/cudf/build-hip/gtests/MOAT_CORE_SMOKE_TEST --gtest_filter='*MergeNullable*'
+```
+CudfHipCore.MergeNullableBitmaskWave64: **OK** (247 ms). Null mask words including word 1 (rows 32-63) are correct.
+
+All 19 tests: CountSetBitsWave64, SegmentedCountSetBits, CreateNullMask, CountIsDeterministic, SortRadixFloatTupleKeyShim, SortedOrderRadixFloatTupleKeyShim, DistinctCucoStaticSet, ApplyBooleanMask, ReduceSumMinMaxProduct, ReduceFloatingMean, HashInnerJoin, HashGroupbySum, QuantileLinear, DistinctCount, RepeatTable, TileTable, ListsDistinct, TDigestReducePercentile, MergeNullableBitmaskWave64.
+
+### Result
+
+PASS. The merge.cu wave64 null-mask fix (materialize_merged_bitmask_kernel routed through converged tile_any_32 + ballot_32 shim, 32-lane leader writes word_index(tid)) is correct on gfx90a. Both words of every 64-thread wavefront span are written. MergeNullableBitmaskWave64 PASS (rows 32-63 null mask correct). No regression vs prior 18/19 suite (same 18 tests pass, plus the new merge test). Deterministic across 2 runs. Real gfx90a dispatch confirmed (AMD_LOG_LEVEL=3).
+
+State: linux-gfx90a review-passed -> completed. validated_sha = c9b6024b788f8dc73b95eebbe131fdc715ecad21.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a, merge.cu wave64 null-mask DELTA, fork c9b6024)
 
 Verdict: review-passed. ROCm fault-class-aware /pr-review (local-branch) of the merge null-mask delta 7d743ae -> c9b6024 (3 files, +170/-1: cpp/src/merge/merge.cu, cpp/cmake/hip/cudf_hip_sources.cmake, cpp/tests/hip/core_smoke_test.cu). The wave32 delta (c4b9b5b..7d743ae) was already review-passed (Review 2026-06-01); this reviews only the seventh-kernel merge fix on top. No defects found. GPU verified on real gfx90a (MI250X, GCD 3, HIP_VISIBLE_DEVICES=3, ROCm 7.2.1) including a decisive A/B.
