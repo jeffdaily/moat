@@ -152,6 +152,91 @@ GPU gate reproduced (HIP_VISIBLE_DEVICES=0, gfx90a, ROCm 7.2.1):
 ans_test 4/4, ans_statistics_test 4/4, batch_prefix_sum_test 2/2, float_test 3/3
 -- all PASS, deterministic.
 
+## Validation 2026-06-02 (gfx1100)
+
+Platform: linux-gfx1100, 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA 03088ce1542c8413ba1daad3eb5c03a4ece22976.
+No source or fork changes; follower validates-first reusing the lead commit unchanged.
+
+### kWarpSize / DIETGPU_WARP_SIZE resolution on gfx1100
+
+CMake configure output: `-- dietgpu HIP arch=gfx1100 warp_size=32`
+
+DIETGPU_WARP_SIZE=32 is baked into the build via the CMakeLists.txt logic: if
+CMAKE_HIP_ARCHITECTURES matches gfx9*, warp_size=64, else warp_size=32. For
+-DCMAKE_HIP_ARCHITECTURES=gfx1100 (not gfx9*), it resolves to 32. This value
+is injected as a compile definition and DeviceDefs.cuh derives kWarpSize from it
+at compile time -- host and device both see 32. No source edit required.
+
+### Build
+
+```
+cd /var/lib/jenkins/moat/projects/dietgpu/src
+git submodule update --init --recursive
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
+```
+
+Build: PASS, 35 targets, 0 errors, 1 pre-existing upstream warning (braces around
+scalar initializer in FloatTest.cu:306). Build time: 8.4s (timeit).
+
+### gfx1100 code-object evidence
+
+llvm-objdump --offloading on libgpu_ans.so shows:
+`hipv4-amdgcn-amd-amdhsa--gfx1100` bundles -- no gfx90a present. All .so and
+executables link the gfx1100 code objects exclusively.
+
+### GPU tests (run directly; ctest still reports no tests under HIP-language build)
+
+```
+export HIP_VISIBLE_DEVICES=0
+cd build-hip
+./bin/ans_test
+./bin/ans_statistics_test
+./bin/batch_prefix_sum_test
+./bin/float_test
+```
+
+Run 1 (test time: 22.6s total via timeit):
+- ans_test: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Run 2 (determinism check -- ans_test + float_test rerun):
+- ans_test: 4/4 PASSED
+- float_test: 3/3 PASSED
+
+Pass/fail identical across runs: deterministic confirmed. Zero HSA faults (0x1016).
+
+### Tally vs gfx90a @ 03088ce
+
+| Test binary          | gfx90a | gfx1100 |
+|----------------------|--------|---------|
+| ans_test             | 4/4    | 4/4     |
+| ans_statistics_test  | 4/4    | 4/4     |
+| batch_prefix_sum_test| 2/2    | 2/2     |
+| float_test           | 3/3    | 3/3     |
+| **Total**            | 13/13  | 13/13   |
+
+### Wave32 verdict
+
+PASS. 32-lane rANS round-trip is self-consistent on gfx1100: all round-trip tests
+(ANSTest, float codec) compress and decompress to reproduce the input exactly with
+kWarpSize=32. No wrong round-trip, no 0x1016 HSA fault, no NaN, no hang.
+
+Cross-arch archive non-portability: a gfx90a (wave64, 64-lane) archive is not
+byte-compatible with a gfx1100 (wave32, 32-lane) archive -- this is expected by
+design and not tested as a failure. gfx1100/gfx1151 produce 32-lane archives
+consistent with CUDA behavior.
+
+Transitioning linux-gfx1100 to completed.
+
 ## Validation 2026-06-02 (validator, linux-gfx90a)
 
 Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2, HIP_VISIBLE_DEVICES=0.
