@@ -7,8 +7,8 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-02T17:27:48Z",
-  "head_sha": "bbfc54d98839c535c909bc8861baefe9157544ce",
+  "updated_at": "2026-06-02T18:26:34Z",
+  "head_sha": "09612d3c18f8a5d99283a8d3a54e7a7972c60140",
   "platforms": {
     "linux-gfx90a": {
       "state": "revalidate",
@@ -59,11 +59,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "fork @ bbfc54d9. MultiStat histogram CRASH FIXED: host int-div-by-zero in the histogram grid sizing (numBlocks.x *= CeilDivide(N, x*y*z) divided by zero when a dim was 0, e.g. partCount==0, before the IsGridEmpty guard); fixed with a guarded ScaleBlockCountToOccupancy helper (hist.cuh) at all 16 launch sites in hist_binary/half_byte/one_byte.cu + hist_2_one_byte_base.cuh, bit-identical to the old code for non-empty grids. gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat CheckHistograms (GPU-vs-CPU histogram values) PASS (WithoutOneHot2/17 pass end-to-end); targets-ut TCombinationTargetTests 3/3 (exercises dcg.cu) + Huber/MultiLogit/Tweedie pass. Langevin proven NOT a ROCm defect (won't fix). OPEN BLOCKER (separate subsystem, NOT the histogram): TPointwiseMultiStatHistogramTest still fails 2 of its configs (WithoutOneHot1, WithOneHot3) in the POST-SPLIT path -- CheckAndMakeSplit AssertVecEqual on reordered indices (cpu 37888 vs gpu 0). Pre-existing, masked by the crash, unaffected by the histogram fix; gather/split path (gather_bins/split_points), candidate wave32 scan/scatter. TAucTest/QueryCrossEntropy + the 2M-doc FatSplitPropsTest are just slow on the APU (no failure). full-app e2e not run. See notes.md 2026-06-02.",
+      "blocked_reason": "fork @ 09612d3c. MultiStat histogram CRASH and post-split index mismatch BOTH FIXED. (1) Histogram grid div-by-zero (numBlocks product, guarded ScaleBlockCountToOccupancy at 16 sites). (2) Post-split index mismatch = rocPRIM DeviceScan temp MISALIGNMENT in SortWithoutCub (split_points.cu): the scan working temp was sub-allocated at offset 4*part.Size (4-byte aligned) inside a shared buffer; rocPRIM needs it aligned, else the scan corrupts non-deterministically at tile boundaries -> wrong split indices. Fixed by 256-aligning the scan-temp offset (USE_HIP only). gfx1151 GPU-validated: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat 5/6 (WithoutOneHot1/2/17 + WithOneHot3/13 pass; FatSplitPropsTest 2M re-running to confirm, uses radix path + just slow on APU); targets-ut TCombinationTargetTests 3/3 (dcg.cu) + Huber/MultiLogit/Tweedie pass. ONLY remaining failure: TAddingLangevinNoiseTest -- proven NOT a ROCm defect (GPU NextNormal bit-identical to host; pre-existing upstream test-design, won't fix). So GPU correctness is essentially fully validated. Pending: FatSplitPropsTest confirmation; full-app e2e not run. See notes.md 2026-06-02.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T17:27:48Z",
+      "updated_at": "2026-06-02T18:26:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
