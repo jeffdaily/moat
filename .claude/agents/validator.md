@@ -21,4 +21,11 @@ A real-GPU pass is required to mark success. If no GPU is present, set `validati
 - port-ready / revalidate (follower start, or regression re-check after the shared branch changed) -> completed on a pass (this records validated_sha = head_sha); else validation-failed.
 - Completing the lead (linux-gfx90a) auto-unblocks the followers to port-ready.
 
+## Carry-forward shortcut on `revalidate` (skip the GPU re-run when nothing changed)
+A `revalidate` is triggered by a HEAD move since this platform's `validated_sha`. Before rebuilding and re-running tests, check whether the change is behavior-preserving on this arch -- if so, carry validation forward instead of re-running:
+1. Classify the delta: `python3 utils/moatlib.py classify <name> <validated_sha> <head_sha>`. Documentation-only and comment/format-only deltas are already carried forward automatically by `advance_head` (you will not see a `revalidate` for them). A `rename-only` or `mixed` verdict is what reaches you.
+2. Build the project at BOTH `validated_sha` and `head_sha` for THIS arch (the project's own recipe from notes.md), into two dirs, then `python3 utils/codeobj_diff.py <old_build> <new_build>`. A `verdict=identical` (device code objects AND exported symbols match) proves the compiled program is unchanged on this arch -> carry forward: `python3 utils/moatlib.py carry-forward <name> <platform> <head_sha> binary-equiv "<one-line reason>"`. No GPU run needed.
+3. Any other verdict (`differ`/`indeterminate`), or if you cannot build both shas, do the normal full real-GPU revalidation. Never carry forward on uncertainty.
+This is most useful for cosmetic comment reworks that shift `__LINE__` and for reformatting (the source classifier flags those as not-arch-independent, but they compile to identical code). An exported-symbol rename correctly shows as `differ` (external callers reference it by name), forcing a real revalidation.
+
 Push status.json + notes.md to the MOAT repo. Escalate hard failures back to the porter (opus) rather than root-causing deeply yourself.

@@ -210,17 +210,80 @@ def _unblock_followers(obj):
             blk["updated_at"] = now_iso()
 
 
-def advance_head(name, new_sha):
-    """A porter commit advanced the shared fork HEAD. Flip every platform that
-    had passed at a different HEAD back to revalidate, so a CLI on that hardware
-    re-checks it. This is the cross-platform regression guard."""
+def _fork_repo(name):
+    return PROJECTS / name / "src"
+
+
+def _classify_safe(repo, old_sha, new_sha):
+    """Classify a fork delta, returning None on any failure so the caller falls
+    back to revalidation. Conservative by construction: machinery missing, repo
+    absent, or sha unreachable all yield None, never a false carry-forward."""
+    if not old_sha or not Path(repo).is_dir():
+        return None
+    try:
+        d = str(Path(__file__).resolve().parent)
+        if d not in sys.path:
+            sys.path.insert(0, d)
+        import changeclass
+        return changeclass.classify(str(repo), old_sha, new_sha)
+    except Exception:
+        return None
+
+
+def advance_head(name, new_sha, repo=None):
+    """A porter commit advanced the shared fork HEAD. Each platform that had
+    passed at a different HEAD is re-examined against the source delta from its
+    validated_sha to new_sha (the cross-platform regression guard):
+
+      - arch-independent inert (documentation-only, or a comment/format change
+        with no __LINE__ hazard) cannot alter any target's compiled output, so
+        validation carries forward (validated_sha bumped, stays completed).
+      - everything else flips to revalidate. Rename/refactor deltas are inert but
+        not arch-independent (an exported-symbol rename changes behavior with an
+        identical instruction stream), so the validator confirms them per-arch
+        with a binary-equivalence check before re-running GPU tests; unbuildable
+        arches simply revalidate.
+
+    On any classification failure the platform revalidates -- the safe default."""
     obj = load_status(name)
     obj["head_sha"] = new_sha
+    repo = repo or _fork_repo(name)
     for plat in PLATFORMS:
         blk = obj["platforms"][plat]
-        if blk["state"] == "completed" and blk.get("validated_sha") != new_sha:
+        if blk["state"] != "completed" or blk.get("validated_sha") == new_sha:
+            continue
+        old = blk.get("validated_sha")
+        verdict = _classify_safe(repo, old, new_sha)
+        if verdict is not None and verdict.arch_independent:
+            blk["validated_sha"] = new_sha
+            blk["updated_at"] = now_iso()
+            blk["carry_forward"] = {"from": old, "to": new_sha, "method": "source-class",
+                                    "class": verdict.cls, "detail": verdict.detail[:200],
+                                    "at": now_iso()}
+        else:
             blk["state"] = "revalidate"
             blk["updated_at"] = now_iso()
+    save_status(name, obj)
+    return obj
+
+
+def carry_forward(name, platform, new_sha, method, detail):
+    """Carry one platform's validation forward to new_sha without a GPU re-run,
+    because the change was proven behavior-preserving. method is 'source-class'
+    (doc/comment-only) or 'binary-equiv' (compiled code objects identical on this
+    arch, dynamic symbol table included). The validator calls this on a revalidate
+    delta whose compiled output is unchanged; advance_head handles the
+    arch-independent source classes itself. Records provenance for audit."""
+    obj = load_status(name)
+    blk = obj["platforms"][platform]
+    if blk["state"] not in ("completed", "revalidate"):
+        raise ValueError(f"{name}/{platform}: carry_forward needs completed/revalidate, not {blk['state']}")
+    ts = now_iso()
+    blk["state"] = "completed"
+    blk["validated_sha"] = new_sha
+    blk["updated_at"] = ts
+    blk["completed_at"] = ts
+    blk["carry_forward"] = {"to": new_sha, "method": method, "detail": detail[:200], "at": ts}
     save_status(name, obj)
     return obj
 
@@ -495,6 +558,20 @@ def main(argv=None):
     s.add_argument("name")
     s.add_argument("sha")
 
+    s = sub.add_parser("carry-forward",
+                       help="carry a platform's validation forward across a behavior-preserving change")
+    s.add_argument("name")
+    s.add_argument("platform")
+    s.add_argument("sha")
+    s.add_argument("method", choices=["source-class", "binary-equiv"])
+    s.add_argument("detail")
+
+    s = sub.add_parser("classify",
+                       help="classify a fork delta: doc-only/comment-only/rename-only/mixed")
+    s.add_argument("name")
+    s.add_argument("old_sha")
+    s.add_argument("new_sha")
+
     sub.add_parser("unblock-followers")
     s = sub.add_parser("validate")
     s.add_argument("name")
@@ -527,6 +604,16 @@ def main(argv=None):
     elif args.cmd == "advance-head":
         advance_head(args.name, args.sha)
         print(f"{args.name} head_sha -> {args.sha}")
+    elif args.cmd == "carry-forward":
+        carry_forward(args.name, args.platform, args.sha, args.method, args.detail)
+        print(f"{args.name}/{args.platform} carried forward -> {args.sha} ({args.method})")
+    elif args.cmd == "classify":
+        v = _classify_safe(_fork_repo(args.name), args.old_sha, args.new_sha)
+        if v is None:
+            print("class=unknown arch_independent=False (classification failed -> revalidate)")
+        else:
+            print(f"class={v.cls} arch_independent={v.arch_independent} inert={v.inert}")
+            print(v.detail)
     elif args.cmd == "unblock-followers":
         changed = unblock_all_followers()
         print(" ".join(changed) if changed else "(none)")
