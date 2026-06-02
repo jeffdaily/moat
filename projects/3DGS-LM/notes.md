@@ -160,3 +160,59 @@ On-GPU decisive contrast reproduced (fresh rebuild, GCD 0, gfx90a):
 - No regression: agent_space/3dgslm_val.py Tiers 1-3 PASS (Tier2 cos 0.9947, symmetry 4.24e-8, PSD, PCG 19 iters; Tier3 PSNR 23.69 -> 46.39 monotone).
 
 Env note for the validator (NOT a port defect): the shared conda env's numpy had drifted to 2.2.6, which trips the documented `RuntimeError: Numpy is not available` torch<->numpy bridge in the val-harness loaders (the divergence gate uses synthetic data and is unaffected). I restored `numpy<2` (1.26.4) per the "Python deps" note before the Tier 1-3 oracle passed. Validator should confirm numpy<2 in the env before running 3dgslm_val.py.
+
+## Validation 2026-06-02 (validator, linux-gfx90a)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, ROCm 7.2.1, HIP 7.2.53211, GCD 0 (HIP_VISIBLE_DEVICES=0).
+Fork HEAD: 56cb37a ([ROCm] Port 3DGS-LM rasterizer + LM kernels to HIP wave64).
+Numpy: 1.26.4 (already <2, no action needed).
+Python env: /opt/conda/envs/py_3.12 (torch 2.13 ROCm).
+
+### Commands
+
+```
+# Env
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16
+
+# 1. Build (both extensions, gfx90a)
+cd /tmp
+utils/timeit.sh 3DGS-LM compile -- bash agent_space/3dgslm_build.sh
+
+# 2. Install into isolated site prefix (avoid shared-conda collision)
+P=/opt/conda/envs/py_3.12/bin/python
+SRC=projects/3DGS-LM/src
+rm -rf agent_space/3dgslm_site && mkdir -p agent_space/3dgslm_site
+$P -m pip install --no-cache-dir --target agent_space/3dgslm_site $SRC/submodules/simple-knn --no-build-isolation --no-deps
+$P -m pip install --no-cache-dir --target agent_space/3dgslm_site $SRC/submodules/diff-gaussian-rasterization --no-build-isolation --no-deps
+
+# 3. Divergence gate (the reviewer's required test -- forced intra-warp radius_gt_zero split)
+cd /tmp
+utils/timeit.sh 3DGS-LM test -- bash -c 'AMD_LOG_LEVEL=3 python agent_space/3dgslm_div.py'
+
+# 4. Full oracle Tier 1-3 (non-divergent correctness, PCG, end-to-end LM)
+python agent_space/3dgslm_val.py all
+```
+
+### Results
+
+Build: PASS. Both extensions compiled, linked, gfx90a code objects confirmed (roc-obj-ls: hipv4-amdgcn-amd-amdhsa--gfx90a present in both _C.so files).
+
+Import check (from val harness): all ops register: rasterize_gaussians, rasterize_gaussians_backward, mark_visible, eval_jtf_and_get_sparse_jacobian, calc_preconditioner, apply_jtj, apply_j, sort_sparse_jacobians, filter_reordered_geometry_buffer, GSGNDataSpec, distCUDA2.
+
+Divergence gate (agent_space/3dgslm_div.py, AMD_LOG_LEVEL=3): PASS.
+- 4 trials: seeds {1,5,1,7}, 80-120 base Gaussians, flip_every {2,2,3,4}, 125-240 Gaussians forced radius_gt_zero=false per run.
+- NO HSA_STATUS_ERROR_EXCEPTION 0x1016 in any trial.
+- All outputs finite. Operator PSD (<p,Ap> ranging 3.8e4..8.2e4 > 0 across all trials).
+- AMD_LOG_LEVEL=3 log clean (no trap, no unknown event during kernel execution).
+
+Tier 1 (rasterizer): forward finite + bit-identical (2 runs, same seed) + nontrivial (mean 0.2256); backward FD slope=0.993 sign_agree=1.00 rel_err=0.004. PASS.
+
+Tier 2 (LM-step oracle):
+- apply_j(p) vs autograd J@p: cos=0.9945, scale=0.988 (J correct).
+- apply_jtj(p) vs autograd J^T(Jp): cos=0.9947, scale=0.478 (direction exact; scale factor from residual convention between dense-autograd and half-precision sparse-Jacobian kernel).
+- Operator symmetry rel=8.44e-9; <p,Ap>=1.2605e5 > 0 (symmetric + PSD to machine precision).
+- PCG: optimal=True, 19 iters, final_res/|b|=6.469e-7, det_rel=1.28e-6, xfinite=True. PASS.
+
+Tier 3 (end-to-end LM fit): 8 LM steps on synthetic multi-view scene. PSNR: 23.69 -> 46.39 dB (monotone). MSE: 0.00429 -> 0.00002 (monotone). No NaN. Bit-identical run-to-run. PASS.
+
+### Overall verdict: PASS. linux-gfx90a -> completed (validated_sha=56cb37a).
