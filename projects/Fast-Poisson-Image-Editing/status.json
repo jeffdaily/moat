@@ -7,17 +7,17 @@
   "priority": 4.518,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-02T16:14:52Z",
-  "head_sha": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
+  "updated_at": "2026-06-02T16:20:13Z",
+  "head_sha": "fd5415cfe4b0ca957923a9c58efa54e0f09a29ed",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
+      "validated_sha": "fd5415cfe4b0ca957923a9c58efa54e0f09a29ed",
       "started_at": "2026-05-30T07:02:44Z",
       "completed_at": "2026-06-02T16:14:52Z",
-      "updated_at": "2026-06-02T16:14:52Z",
+      "updated_at": "2026-06-02T16:20:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
-        "method": "binary-equiv",
-        "detail": "codeobj_diff identical vs 7c8dbe8 (device ISA + exported symbols); CMake arch-detect + setup.py USE_HIP are build-config only, kernels unchanged",
-        "at": "2026-06-02T16:14:52Z"
+        "from": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
+        "to": "fd5415cfe4b0ca957923a9c58efa54e0f09a29ed",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T16:20:13Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
+      "validated_sha": "fd5415cfe4b0ca957923a9c58efa54e0f09a29ed",
       "started_at": null,
       "completed_at": "2026-06-02T16:14:52Z",
-      "updated_at": "2026-06-02T16:14:52Z",
+      "updated_at": "2026-06-02T16:20:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +64,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
-        "method": "binary-equiv",
-        "detail": "codeobj_diff identical vs 7c8dbe8 (device ISA + exported symbols); CMake arch-detect + setup.py USE_HIP are build-config only, kernels unchanged",
-        "at": "2026-06-02T16:14:52Z"
+        "from": "003f31ddedcd13bf8fed3df5950ed0876da7fd9e",
+        "to": "fd5415cfe4b0ca957923a9c58efa54e0f09a29ed",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T16:20:13Z"
       }
     },
     "windows-gfx1151": {
