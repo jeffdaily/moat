@@ -105,3 +105,40 @@ Verified clean:
 Minor (non-blocking, no fix required for this commit):
 - egg_warp_compat.cuh:36 eggShflDownSync and :40 eggShflXorSync are defined but unused in this commit (the lead trainer uses only the WarpReduce + broadcast paths; down/xor shuffles belong to the deferred transformer/RoPE files). They are __device__ __forceinline__ so they emit no unused-function warning under hipcc or nvcc and do not affect the NVIDIA build. They are a deliberate forward-looking part of the warp-compat shim API; acceptable to keep, but if the transformer ports stall they should be removed per the orphan-cleanup rule.
 - The 11 -Wunused-value warnings on cudaFree/cudaDeviceSynchronize returns are pre-existing in the upstream source (hipError_t is nodiscard; nvcc is not), not introduced by the port.
+
+## Validation 2026-06-02 (validator, linux-gfx90a, fork 0472ed5)
+Verdict: PASS. Real GPU: AMD Instinct MI250X / MI250, gfx90a (GCD 0), ROCm 7.2.
+
+Commands run:
+
+```
+# 1. Multi-arch build
+utils/timeit.sh egg.c compile -- \
+  /opt/rocm/bin/hipcc -O3 --offload-arch=gfx90a --offload-arch=gfx1100 \
+  -x hip projects/egg.c/src/full_cuda_train_egg.cu \
+  -o agent_space/egg_hip_multi_val
+
+/opt/rocm/lib/llvm/bin/llvm-objdump --offloading agent_space/egg_hip_multi_val \
+  | grep -io 'gfx[0-9a-f]*' | sort -u
+# -> gfx1100 gfx90a  (BOTH code objects present)
+
+# 2. Two determinism runs (pinned seed, AMD_LOG_LEVEL=3, HIP_VISIBLE_DEVICES=0)
+cd agent_space && EGG_FIXED_SEED=12345 AMD_LOG_LEVEL=3 \
+  timeout 200 ./egg_hip_multi_val > egg_val_run1.log 2>&1
+cd agent_space && EGG_FIXED_SEED=12345 AMD_LOG_LEVEL=3 \
+  timeout 200 ./egg_hip_multi_val > egg_val_run2.log 2>&1
+
+# 3. Non-GPU regression
+utils/timeit.sh egg.c test -- \
+  g++ -O3 -Id-eggs/include d-eggs/test_ternary.cpp -o agent_space/test_ternary_val
+./agent_space/test_ternary_val
+```
+
+Results:
+- Fat binary: both gfx90a and gfx1100 code objects confirmed by llvm-objdump.
+- Native gfx90a dispatch: AMD_LOG_LEVEL=3 log shows "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-".
+- Loss decreases monotonically across 16 steps: 8.3489 -> 7.6246 -> 6.9552 -> 6.3868 -> 5.8830 -> 5.4134 -> 5.0936 -> 4.7565 -> 4.4101 -> 4.1356 -> 3.8607 -> 3.5874 -> 3.5018 -> 3.4543 -> 3.3883 -> 3.3417.
+- Sample text-like by step 6+: "ick brown fox jumps over the l" prompt reproduced correctly; completion increasingly word-like.
+- Determinism: two EGG_FIXED_SEED=12345 runs are BIT-IDENTICAL on Loss, Up+, Up- across all 16 steps (diff returned empty). Only Fwd/Host wall-clock timings differ. Decisive warp-width fingerprint: a wrong 64-lane partition would produce different Up+/Up- counts between runs.
+- Non-GPU regression: d-eggs/test_ternary.cpp builds + passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
+- GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
