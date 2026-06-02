@@ -251,3 +251,25 @@ harness on this path therefore cannot distinguish buggy from fixed by output
 alone -- the justification is the UB removal, confirmed correct against the
 reference. Same shift-invariance applies to any softmax-with-max-subtraction
 warp reduce; do not rely on a max-reduce divergence to detect this fault class.
+
+## Re-review (2) 2026-06-02 (reviewer, linux-gfx90a, fork moat-port @ cffe5a4, delta 54bd8df -> cffe5a4)
+
+Verdict: review-passed. The re-review must-fix (reachable wave64 MoE-routing softmax bug) is correctly fixed and GPU-verified. Delta is two files, 17 insertions; no new problems. No findings to action.
+
+Verified (delta only, no action required):
+- warpReduceSumWidthB<T,WIDTH> (reduce.cuh:93-97) is the correct broadcast-sum counterpart of warpReduceMaxWidthB: warpReduceSumWidth<T,W> (width-W __shfl_down reduce, offsets W/2..1) + warpShflW<T>(x,0,W) (__shfl(x,0,W) broadcast). Structurally identical to warpReduceMaxWidthB; value-identical to the old full-warp warpReduceSumB on a 32-thread CUDA warp (BM_WARP_SIZE==32 -> same reduction tree + broadcast).
+- ff_kernel.cu DEV_softmax_inplace both reductions (:140 max, :154 sum) use warpReduceMaxWidthB<float,32> / warpReduceSumWidthB<float,32> under `#if defined(__HIP_PLATFORM_AMD__)||defined(USE_HIP)`; the `#else` preserves the original warpReduceMaxB/warpReduceSumB so CUDA codegen is byte-identical.
+- KERNEL_group_topk's DEV_softmax_inplace (ff_kernel.cu:357, topk_group>1) correctly untouched: launched with num_group*WARP_SIZE threads (:508) and num_group>=2 -> blockDim>=64 -> the blockDim.x>32 blockReduce branch (wave-correct).
+- fp8_util.cu:259 still deferred (NVIDIA fp8 e4m3 path).
+- Routing reachability reconfirmed: feedforward.cpp:1281 routes every fp16/bf16 MoE through impl::MOEImpl on HIP; route() (:425) -> top_k_softmax (:451, topk_group<=1) -> KERNEL_top_k_softmax<<<gridDim,32>>> (:265) -> DEV_route_score (SOFTMAX) -> DEV_softmax_inplace. All 32 threads execute DEV_softmax_inplace before the `threadIdx.x>0 return`. So the fix is on a SUPPORTED gfx90a path.
+
+GPU verification (GCD 1, MI250X, warpSize=64, CC:90):
+- 77-case kernel gate re-run: 77 passed, deterministic. (after an incremental rebuild that recompiled ff_kernel.cu)
+- Direct MoE-routing softmax probe (agent_space/moe_probe/probe.hip, throwaway, not committed): reproduced KERNEL_top_k_softmax's <<<rows,32>>> launch and DEV_softmax_inplace for both the FIXED width-32 form and the BUGGY full-wave64 form, compared to a CPU softmax reference over Mixtral/Qwen-MoE shapes (fp16+bf16, num_exp 8/32/60/128, rows=200). Fixed form: max abs error 4.2e-7 (fp16) / 6.0e-7 (bf16), bit-identical across two runs. The buggy full-wave64 form produced the IDENTICAL output -- confirming the porter's UB-not-observable analysis: on this ROCm 7.2.x build a __shfl_down from a non-launched lane (32-63) returns 0.0, and (a) softmax max-subtraction is shift-invariant so a wrong max is harmless, (b) the sum down-reduce adds 0 from inactive lanes. The width-32 fix is correct hardening (removes the UB dependence) and is value-correct against the reference; output divergence is not the right detector for this fault class (as the porter noted).
+
+Commit hygiene (clean): title "[ROCm] Portable HIP build for ZhiLight on AMD (gfx90a first pass)" 65 chars; Claude disclosed ("authored with assistance from Claude (Anthropic)"); no Co-Authored-By/noreply trailer; no ghstack; no em-dash/en-dash in delta or commit body; commit body's review-order item 3 now documents warpReduceSumWidthB and item 4 the MoE-routing fix. Fork main = ee84468 (clean upstream mirror); moat-port @ cffe5a4; Actions disabled on the fork (enabled:false). No AMD-internal account references.
+
+Note for the validator: this is the final functional issue; cleared for validation. The 77-case gate still does not exercise the MoE routing softmax, the cublasLt Int8Linear, or the int8-TP all-reduce quant; the MoE path was verified here by the standalone probe. The full GPU validation gate (real-GPU kernel tests) is the validator's stage.
+
+### Recommendation
+Approve (review-passed). No remaining problems.
