@@ -123,3 +123,16 @@ Other gotchas:
 3. NCCL -> RCCL multi-GPU collectives: USE_NCCL=OFF for the lead (single-GPU
    train/decode validates the full kernel + BLAS surface). RCCL is API-
    compatible and ships in ROCm; a follow-up.
+
+## Review 2026-06-02 (reviewer, linux-gfx90a, fork moat-port 25f910c vs base c9f287d)
+Verdict: review-passed. No changes requested. Strategy A (compat header + cuda_add_library LANGUAGE-HIP shim) is correct for this legacy-FindCUDA pure-CMake build; the NVIDIA and CPU paths are byte-identical (every divergence is USE_HIP / __HIPCC__ guarded, and __CUDACC__->__CUDACC__||__HIPCC__ extensions are no-ops when neither is defined).
+
+Re-ran the GPU suites myself on gfx90a (GCD 3) after an incremental rebuild at HEAD: graph (10/10), attention (6/6), transformer (3/3) all pass; operator 284/287 with the only 3 failures isolated to the `csr-dot product` SECTION (operator_tests.cpp:539,609,610), i.e. the deferred cuSPARSE SpMM path -- the dense `dot product` (508) and `topk operations` (1026, exact-value top-k/argmax/argmin/sort) pass. End-to-end decode artifacts confirm the load-bearing wave64 fix: GPU run1==run2 (deterministic) AND GPU==CPU (correct beam-search top-k). The topk.cu/nth_element.cu fix replaces the warp-synchronous UNROLL_MAXARG tail with the __syncthreads tree run to s>0 -- a strict generalization (same compare order, same `tid+s<end` guard), correct on any wave size; CUDA path unchanged.
+
+reduce_all.h is untouched and is wave64-correct as left: the `tid<64` fold is fenced by cg::sync before the `thread_rank()<32` block folds sdata[tid+32] and shfl_downs within a width-32 tiled_partition -- no reliance on sub-wavefront lockstep. No hardcoded 32/warpSize/shfl/ballot/lane-mask in any added kernel line. No textures/surfaces/managed memory (those fault classes N/A). alibi.cu POD-pair swap preserves field order. hipBLASLt deltas (dropped MIN_ALIGNMENT prefs, HIPBLAS_COMPUTE_32F + HIP_R_32F scale, SetMathMode no-op, dedicated Lt handle) and the GemmEx compute-type/batched-array cast macros are all USE_HIP-guarded and leave the CUDA call sites identical.
+
+rnn_tests 3 failures (rnn_tests.cpp:49->93) are NOT a port bug: the test seeds inputs with inits::glorotUniform() and compares against a hardcoded `#ifdef CUDA_FOUND` reference; the HIP build defines CUDA_FOUND so it uses the cuRAND-stream reference, but hipRAND yields a different stream for the same seed. RNN forward math is correct (21 structural assertions pass). Worth an upstream follow-up note only.
+
+Hygiene: title `[ROCm] Port Marian GPU backend to HIP for AMD GPUs` (50 chars), mentions Claude, no noreply trailer, no ghstack, no em-dash, Test Plan present; author jeff.daily@amd.com (user's own public email -- not an AMD-internal account); fork Actions disabled (enabled:false); fork/master == upstream c9f287d (clean mirror). Deferred cuSPARSE/cuDNN/NCCL items are documented, not silently broken.
+
+Minor (non-blocking, no fix required): getCublasLtHandle() (backend.h:81) does not check hipblasLtCreate's return, matching the existing lazy-init cublasCreate pattern; cumsum.cu:62 has a 2-space-indented `#if` (cosmetic).
