@@ -111,3 +111,45 @@ Verified correct (no action):
 - Orphans: src/hip_utils.h, src/projectors_Joseph_cpu_hip.h, src/ramp_filter_hip.cuh all removed from the tree (confirmed absent from HEAD), hipify outputs gitignored. On-disk copies are gitignored build artifacts.
 - Build: gfx90a;gfx1100 multi-arch per build_rocm.sh; no warp-width source code (regression guard only).
 - Hygiene: title "[ROCm] Port LEAP CT projectors to HIP via software texture interp" 65 chars; mentions Claude; no noreply trailer; no ghstack; no em-dash; no AMD-internal account refs. Fork main at base sha (clean upstream mirror). Fork Actions disabled (enabled=false).
+
+## Validation 2026-06-02 (validator, linux-gfx90a, moat-port @ 1753479)
+
+Verdict: completed. All formal gates passed on real gfx90a (AMD Instinct MI250X, GCD 0).
+
+GPU arch confirmed: AMD_LOG_LEVEL=3 shows native gfx90a dispatch (Gfx Major/Minor/Stepping 9/0/10).
+
+Build commands:
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH="gfx90a;gfx1100"
+bash /var/lib/jenkins/moat/projects/LEAP/src/build_rocm.sh
+```
+
+Gate 1 -- Multi-arch build: gfx90a + gfx1100 code objects both present in leapct.cpython-312-x86_64-linux-gnu.so (llvm-objdump --offloading shows hipv4-amdgcn-amd-amdhsa--gfx90a and hipv4-amdgcn-amd-amdhsa--gfx1100 bundles). hipfft linked (ldd shows libhipfft.so.0; nm -D shows hipfftPlan1d/ExecR2C/ExecC2R/Destroy symbols). PASS.
+
+Gate 2 -- gfx90a correctness (unitTests/gpu_vs_cpu_validate.py, 12 tests):
+```
+export HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3
+python unitTests/gpu_vs_cpu_validate.py
+```
+Results (all PASS):
+- parallel     VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.54e-05  PASS
+- parallel     SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.64e-05  PASS
+- fan          VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.44e-04  PASS
+- fan          SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.85e-04  PASS
+- coneparallel VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.24e-03  PASS
+- coneparallel SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=5.07e-05  PASS
+- cone-flat    VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.18e-04  PASS
+- cone-flat    SF  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=1.45e-04  PASS
+- cone-curved  VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=8.54e-05  PASS
+- cone-curved  SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.30e-04  PASS
+- modular      VD  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=3.39e-03  PASS
+- modular      SF  finite=True  fwd-vs-VD  (err 0.000)  adjoint=n/a              PASS
+OVERALL: PASS. All FBP interiors within 0.03% of 1.0 (tol 3%). All adjoint errors < 5e-3.
+
+Gate 3 -- Reviewer flag: attenuated-beam forward projection finite at detector edges.
+Cone-flat with tilt + uniform attenuation mu=0.01: NaN/Inf count = 0/760320. PASS.
+The point-bound f texture at fractional 0/0 coords (projectors_attenuated.cu:810,815,853,858)
+returns finite on HIP tex3D<float>, matching CUDA behavior.
+
+validated_sha: 17534792ea62722cf0537894bbab68fb5bb257cc
+Followers unblocked: linux-gfx1100 -> port-ready.

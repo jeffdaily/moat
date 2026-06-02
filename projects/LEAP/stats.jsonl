@@ -7,3 +7,6 @@
 {"kind":"phase","ts":"2026-06-02T08:03:04Z","phase":"test","seconds":6.539,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
 {"kind":"phase","ts":"2026-06-02T08:04:29Z","phase":"test","seconds":5.756,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
 {"kind":"phase","ts":"2026-06-02T08:06:13Z","phase":"test","seconds":6.235,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python unitTests/gpu_vs_cpu_validate.py"}
+{"kind":"phase","ts":"2026-06-02T08:16:38Z","phase":"compile","seconds":0.006,"exit":127,"cmd":"bash build_rocm.sh"}
+{"kind":"phase","ts":"2026-06-02T08:16:59Z","phase":"compile","seconds":14.174,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/LEAP/src/build_rocm.sh"}
+{"kind":"phase","ts":"2026-06-02T08:17:25Z","phase":"test","seconds":6.126,"exit":0,"cmd":"python /var/lib/jenkins/moat/projects/LEAP/src/unitTests/gpu_vs_cpu_validate.py"}
