@@ -258,6 +258,109 @@ Verification performed (not just read):
 
 Verdict: APPROVE. Handing to the validator for the full GPU test run.
 
+## Validation 2026-06-02 (gfx1100) -- COMPLETED
+
+Platform: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=0,
+ROCm 7.2.1, py_3.12 conda env (cupy-rocm-7-0 14.1.1, numpy 2.2.6, pyscf 2.13).
+Fork: jeffdaily/gpu4pyscf @ 8cb88067f726 (moat-port, no changes -- validate-first follower).
+Scope: Milestone 1 HF/integrals; DFT/gradients/CUTLASS-GEMM/libxc deferred.
+
+### Build (gfx1100)
+
+```
+cmake -S gpu4pyscf/lib -B /var/lib/jenkins/moat/agent_space/gpu4pyscf_build_gfx1100 \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_CUTLASS=OFF -DBUILD_LIBXC=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build /var/lib/jenkins/moat/agent_space/gpu4pyscf_build_gfx1100 -j8
+rm -f gpu4pyscf/lib/*.so.0.hipv4-* gpu4pyscf/lib/*.so.0.host-*
+```
+
+Build time: 124s (2m4s). Exit 0. All 8 .so emitted.
+
+Fat-binary code-object verification (llvm-objdump --offloading):
+All 8 .so (libcupy_helper, libgdft, libgecp, libgint, libgvhf, libgvhf_md,
+libgvhf_rys, libpbc) contain BOTH gfx1100 and gfx90a code objects.
+
+Git status after split-RDC cleanup: clean (no uncommitted files).
+
+AMD_LOG_LEVEL=3 confirms "Using native code object for device:
+amdgcn-amd-amdhsa--gfx1100" for all 8 .so on probe_smid_kernel dispatch.
+No HSA 0x1016 errors observed.
+
+### probe_smid_range / pool_slots on gfx1100
+
+pool_slots=512, multiProcessorCount=35 on gfx1100. probe_smid_range launched
+on __smid() with saturating occupancy and returned max_smid+1=512 (larger
+encodable smid range on RDNA3 than on gfx90a's 128). The two get_smid()-
+indexed pools (df/int3c2e_bdiv.py:196 and pbc/df/ft_ao.py:377) are correctly
+sized to 512 rows on gfx1100.
+
+### Wave32 verdict
+
+gvhf-md J-engine: CORRECT at wave32. The cuda_to_hip_shfl.h rewrite uses
+__shfl_down(val, offset, popcount(mask)) with width=popcount(mask)=threadsx=16.
+On wave32 a width-16 HIP segment covers one ty-row (lanes 0-15 or 16-31),
+yielding the same lane mapping as on wave64. The J/K tests (test_scf_j_engine,
+test_scf_jk) pass with 0 failures.
+
+Multi-arch host/device WARP_SIZE check: NO mismatch. The gvhf-md J-engine
+uses the width argument to __shfl_down at the call site rather than a compile-
+time warp-width template constant, so host launch geometry (via mol.nao, not
+a fixed warp count) never hardcodes a wave64-specific constant. No "Cannot find
+Symbol" or wrong-instantiation on gfx1100. AMD_LOG_LEVEL=3 confirms gfx1100
+native code objects dispatched without error.
+
+### HF/integral test suite
+
+Test run 1 (rhf / uhf / int2c2e / int4c2e):
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python -m pytest \
+  gpu4pyscf/scf/tests/test_rhf.py gpu4pyscf/scf/tests/test_uhf.py \
+  gpu4pyscf/scf/tests/test_int2c2e.py gpu4pyscf/scf/tests/test_int4c2e.py -v --tb=short
+```
+Result: 29 passed, 7 skipped, 0 failed (87.2s).
+Skips: test_rhf_d3/d4 (dftd3/dftd4 not installed), test_get_j1_hermi0/
+test_get_jk1_hermi0/test_get_k1_hermi0 (@unittest.skip('hermi=0')),
+test_uhf_d3bj/d4 (dftd3/dftd4 not installed). All unconditional skips, not
+regressions vs gfx90a. Total 36 collected = 29+7.
+
+Test run 2 (J-engine + JK, run 1):
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python -m pytest \
+  gpu4pyscf/scf/tests/test_scf_j_engine.py gpu4pyscf/scf/tests/test_scf_jk.py -v --tb=short
+```
+Result: 17 passed, 0 failed (39.8s). All J-engine and JK tests PASS including
+test_jk_energy_per_atom (grad.rhf import succeeded on gfx1100, test ran and passed).
+
+Test run 2b (J-engine + JK, determinism repeat):
+```
+HIP_VISIBLE_DEVICES=0 PYTHONPATH=. python -m pytest \
+  gpu4pyscf/scf/tests/test_scf_j_engine.py gpu4pyscf/scf/tests/test_scf_jk.py -v --tb=short
+```
+Result: 17 passed, 0 failed (39.1s). Identical to run 1 -- deterministic to print precision.
+
+### Deferred-path tests (expected failures)
+
+test_scf.py::test_to_cpu / test_to_gpu fail on the DFT RKS path (cupy_helper
+release_gpu_stack via numint.nr_rks) -- deferred, libxc not installed. test_rhf,
+test_rhf_cart, test_screening in test_scf.py all PASS. No new deferred-path
+failures vs gfx90a.
+
+### Summary
+
+All gates pass:
+- Fat-binary build: gfx1100 + gfx90a code objects in all 8 .so -- PASS
+- probe_smid_range / pool_slots: 512 on gfx1100, probe_smid_kernel dispatches
+  native gfx1100 code -- PASS
+- Wave32 J-engine: J/K correct at wave32, no WARP_SIZE mismatch, no 0x1016 -- PASS
+- HF/integral suite: 29+17 passed (46 total), 7 unconditional skips, 0 failures -- PASS
+- Determinism: identical results on back-to-back runs -- PASS
+- Deferred-path failures: DFT RKS only (test_to_cpu/gpu), expected, not gate -- PASS
+- Fork: clean (no changes needed -- validate-first follower, gfx1100 validated at same SHA as gfx90a)
+
+validated_sha=8cb88067f72652557788a3dc7be075a38b717c82. linux-gfx1100 -> completed.
+
 ## Validation 2026-06-02 (validator, linux-gfx90a, fork @ 8cb8806) -- COMPLETED
 
 Platform: MI250X gfx90a, GCD0 (HIP_VISIBLE_DEVICES=0), ROCm 7.2.1, conda py_3.12.
