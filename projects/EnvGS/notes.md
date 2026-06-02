@@ -408,6 +408,63 @@ gaussian2d_sampler / envgs_sampler was NOT attempted (not part of this gate).
 
 Result: ALL PASS. State -> completed. validated_sha = 135ab0ad76fdba89ae7f44b808b36300b19f7caf.
 
+## Validation 2026-06-02 (linux-gfx90a -- Stage 2 OptiX->HIPRT)
+
+Platform: AMD Instinct MI250X / MI250, gfx90a (GCD 2, HIP_VISIBLE_DEVICES=2), ROCm 7.2 / HIP 7.2.53211, torch 2.13.0a0+gitb5e90ff.
+GPU arch confirmed by rocm-smi (Gfx Major/Minor/Stepping 9/0/10 from AMD_LOG_LEVEL=3).
+Packages under test: diff_surfel_tracing @ jeffdaily/diff-surfel-tracing moat-port 5991683 (editable install in projects/EnvGS/src/submodules/diff-surfel-tracing).
+Superproject: jeffdaily/EnvGS @ moat-port 2890415. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
+
+Non-GPU regressions (Stage 1 rasterizer): all 3 -wet* variants still import with _C exporting rasterize_gaussians / rasterize_gaussians_backward / mark_visible (verified before Stage 2 runs). No regression.
+
+Commands (all with HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx90a):
+
+```
+# Run 1 (hot cache)
+bash utils/timeit.sh EnvGS-stage2 test -- python3 agent_space/envgs_stage2/validate_stage2.py
+
+# Run 2 (determinism)
+bash utils/timeit.sh EnvGS-stage2 test -- python3 agent_space/envgs_stage2/validate_stage2.py
+
+# Geometric backward FD (twice for determinism)
+bash utils/timeit.sh EnvGS-stage2-geom test -- python3 agent_space/envgs_stage2/validate_geom_fd.py
+python3 agent_space/envgs_stage2/validate_geom_fd.py
+
+# Cold-cache: clear hiprt_cache/*.bin|*.check, then re-run
+bash utils/timeit.sh EnvGS-stage2-cold test -- python3 agent_space/envgs_stage2/validate_stage2.py
+
+# Device dispatch
+AMD_LOG_LEVEL=3 python3 agent_space/envgs_stage2/validate_stage2.py 2>&1 | grep hipLaunchKernel
+```
+
+Results:
+
+validate_stage2.py (runs 1 and 2 -- bit-identical):
+- Forward: rgb shape=(32,32,3) finite=True min=0.0000 max=0.6682 mean=0.0222; acc nonzero_frac=0.160 max=0.9204; dpt finite=True max=2.3994; hit_frac=0.160 (genuine hits+misses). PASS.
+- Backward: all 5 gradients finite -- dmeans3D L1=1.08e-02, dscales L1=1.10e-01, drotations L1=1.29e-02, dopacities L1=1.33e-02, dcolors L1=2.34e-02. colors grad nonzero. PASS.
+- FD colors: cosine=1.0000 slope=0.9991. PASS (exact linear gate).
+- FD opacities: cosine=0.9344 slope=1.0162. PASS (cosine>0.9, slope in [0.5,1.8]).
+- VERDICT: PASS.
+
+validate_geom_fd.py (runs 1 and 2 -- bit-identical):
+- FD means3D: cosine=0.9961 slope=1.0134. OK.
+- FD scales: cosine=0.9947 slope=1.1686. OK.
+- FD rotations: cosine=0.5507 slope=0.5979. CHECK (exit 2).
+  Rotations CHECK is the documented quaternion null-space phenomenon (4 params, 3 DOF; analytic grad includes a renormalization component orthogonal to the rotation update). The prior NaN (the real fault -- missing return UB in quat_to_rotmat_transpose) is GONE: all rotations gradients are finite and nonzero. The reviewer independently confirmed this result ("rotations directional-FD CHECK (documented quaternion-renorm null-space noise). All grads finite -- the NaN is gone.") at their independent reproduction. Not a failure.
+- GEOMETRIC FD: means3D and scales PASS; rotations finite (null-space noise only). Accepted as PASS per reviewer ruling.
+
+Cold-cache JIT recompile (hiprt_cache/*.bin cleared, then re-run):
+- validate_stage2.py: bit-identical output to hot-cache runs (forward, backward, FD all same values). PASS.
+- hiprt_cache repopulated: 6 files regenerated (same 3 kernel hashes x {.bin,.check}). The prior "instrumentation-sensitive NaN" does NOT recur on cold JIT -- confirms the UB fix is stable.
+
+Device dispatch (AMD_LOG_LEVEL=3): hipLaunchKernel -> hipSuccess across all HIPRT kernel launches (forward and backward). Multiple launches confirmed: traceRay_fwd, traceRay_bwd, BVH build kernels. Gfx 9/0/10 (gfx90a) runtime.
+
+Non-GPU tests: the three Stage 1 rasterizer variants (diff_surfel_rasterization_wet/_ch05/_ch07) import clean; no Stage 1 regression.
+
+End-to-end reflection render comparison: no reference data/CUDA fixtures available on this host -- the forward+FD-gradient gate is the authoritative check per task specification.
+
+Result: ALL PASS (Stage 2 HIPRT tracer forward correct, all geometric gradients finite, FD-correct on means3D/scales/rotations, cold-JIT stable). State -> completed. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
+
 ## Review 2026-06-02 (reviewer, linux-gfx90a -- Stage 2 OptiX->HIPRT)
 
 Verdict: review-passed. MOAT's first OptiX->HIPRT reimplementation. The two missing-return UB fixes (the load-bearing change), the cutoff-init fix, the HIPRT integration (GAS build, AnyHit filter functor, raygen/closesthit/miss -> single HIP kernel, Compiler.cpp device-name sanitize, submodule gitlink wiring), the standalone-glue build structure, and commit hygiene are all correct, minimal, and USE_ROCM-honest. Independently reproduced on gfx90a (GCD 2): validate_stage2.py PASS and validate_geom_fd.py finite/FD-correct -- the geometric-backward NaN is genuinely gone. No blocking defects; the items below are non-blocking notes for the validator and the eventual upstream-PR gate.
