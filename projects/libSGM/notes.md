@@ -254,3 +254,19 @@ Multi-arch fix verdict: PASS. Both code objects emitted, gfx90a native code obje
 path resolves warpSize=64 at runtime (not a baked constant), 67/67 bit-exact deterministic.
 Transition: revalidate -> completed, validated_sha=4ffe4e9f5eeb467bd62fed3e1db550be7fd88202.
 linux-gfx1100 left at revalidate for the RDNA3 follower host.
+
+## Fork hygiene 2026-06-02: removed committed build-hip/ artifacts (a339d3d)
+
+The multi-arch wave32/64 re-port commit (4ffe4e9) had swept the entire `build-hip/`
+directory into the curated moat-port commit -- 168 files including the 2 MB
+`build-hip/test/sgm-test` binary, CMakeCache, googletest build files, and `.o`
+objects (`.gitignore` only covered `build/`, not `build-hip/`). Amended the single
+curated commit to untrack `build-hip/` and broadened `.gitignore` to `build*/`
+(covers build/, build-hip/, follower build-win-*). New fork sha a339d3d.
+
+Source-identical to 4ffe4e9: `git diff 4ffe4e9 a339d3d -- . :(exclude)build-hip
+:(exclude).gitignore` is EMPTY. No device code changed, so the gfx90a GPU
+validation at 4ffe4e9 holds at a339d3d -- gfx90a carried forward to completed
+(validated_sha a339d3d) without a re-run. gfx1100 still needs its wave32 revalidate
+of the genuine re-port source changes (constants.h WARP_SIZE, cost_aggregation.cu,
+cuda_to_hip.h, host_utility.h, median_filter.cu, winner_takes_all.cu).
