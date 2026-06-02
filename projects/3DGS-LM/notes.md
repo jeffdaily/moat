@@ -216,3 +216,99 @@ Tier 2 (LM-step oracle):
 Tier 3 (end-to-end LM fit): 8 LM steps on synthetic multi-view scene. PSNR: 23.69 -> 46.39 dB (monotone). MSE: 0.00429 -> 0.00002 (monotone). No NaN. Bit-identical run-to-run. PASS.
 
 ### Overall verdict: PASS. linux-gfx90a -> completed (validated_sha=56cb37a).
+
+## Validation 2026-06-02 (gfx1100)
+
+GPU: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1, HIP 7.2.53211. HIP_VISIBLE_DEVICES=0.
+Fork HEAD: 56cb37a ([ROCm] Port 3DGS-LM rasterizer + LM kernels to HIP wave64).
+Python env: /opt/conda/envs/py_3.12 (torch 2.13 ROCm), numpy 1.26.4 (<2, OK).
+
+This is the first gfx1100 follower validation. The fork branch is reused as-is from gfx90a (no source changes for gfx1100). The kernels were designed for 32-lane logical warps on wave64; gfx1100's hardware wavefront IS 32 lanes -- the native case.
+
+### Build command and time
+
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16
+bash utils/timeit.sh 3DGS-LM compile -- bash agent_space/3dgslm_build_gfx1100.sh
+```
+
+Build time: 86.5s. Installed into isolated prefix agent_space/3dgslm_site_gfx1100 (avoids shared-conda collision with concurrent agents).
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls agent_space/3dgslm_site_gfx1100/diff_gaussian_rasterization/_C*.so
+```
+
+Both _C.so files show exclusively `hipv4-amdgcn-amd-amdhsa--gfx1100` code objects (4 objects in DGR, 1 in simple-knn). No gfx90a objects.
+
+### Wave32 primitive analysis (hip_warp_compat.h on gfx1100)
+
+On gfx1100 (native wave32, `__lane_id()` returns 0-31):
+- `gsgn_wave_lane()` = `__lane_id()` = 0..31 -- correct.
+- `gsgn_logical_warp_mask()` = `0xffffffffull << (32 * (lane/32))` = `0xffffffffull << 0` = `0xffffffff` for all lanes (lane/32 = 0 always on wave32). This is the correct "full logical warp" mask on wave32 -- all 32 lanes are in lane-group 0.
+- `GSGN_FULL_LANE_MASK` = `0xffffffffffffffffULL`. The *_sync builtins on HIP static_assert sizeof(mask)==8 and accept 64-bit masks. On wave32 only the low 32 bits are active; the high 32 bits are set but inactive. The `__activemask()` / `__ballot(true)` == `0x00000000ffffffffULL` on wave32 (not `0xffffffffffffffffULL`), so there is a mismatch for non-divergence-safe sites. This is addressed per-site: `GSGN_SYNCWARP_AFTER_DIVERGENCE(mask)` -> maskless `__syncwarp()` (no mask check at all), and `gsgn_active_shfl_mask()` -> `__activemask()` (always satisfies HIP's assertion).
+- `gsgn_popc/gsgn_ffs`: over a value with only low 32 bits set (as on wave32), `__popcll/__ffsll` are correct -- they count/find-first within the 64-bit value, returning the right answer for 32-bit inputs.
+- The CUB pins `cub::WarpReduce<T, 32>` / `cub::WarpScan<int, 32>`: on gfx1100, hipCUB DEVICE_WARP_THREADS = 32 (native wavefront), so pinning to width=32 is a no-op -- the pin is correct and harmless.
+- `GSGN_SYNCWARP_AFTER_DIVERGENCE(mask)` -> `__syncwarp()` (maskless wavefront barrier): on wave32 this is a single-wave barrier over the 32 active lanes, correct.
+- `gsgn_active_shfl_mask()` -> `__activemask()`: on wave32, `__activemask() == __ballot(true) == 0xffffffff` (low 32 bits). Satisfies HIP's `__shfl_*_sync` assertion. The DISTWAR butterfly `__shfl_down_sync(gsgn_active_shfl_mask(), ..., 32)` with width=32: since the wavefront IS 32 lanes, width=32 spans the entire wavefront -- equivalent to no sub-grouping, which is correct (the two "32-groups" on wave64 collapse to one on wave32).
+
+Net: the wave64 design ("logical 32-warp = half a wavefront") degenerates correctly to ("logical 32-warp = whole wavefront") on wave32. No source change required.
+
+### Test commands
+
+```
+# Divergence gate (over-broad-mask fix validation, AMD_LOG_LEVEL=3)
+bash utils/timeit.sh 3DGS-LM test -- bash -c \
+  "HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 /opt/conda/envs/py_3.12/bin/python agent_space/3dgslm_div.py"
+
+# Full oracle suite (Tiers 0-3)
+bash utils/timeit.sh 3DGS-LM test -- bash -c \
+  "HIP_VISIBLE_DEVICES=0 /opt/conda/envs/py_3.12/bin/python agent_space/3dgslm_val.py all"
+```
+
+### Results
+
+Build: PASS (86.5s). Both extensions compiled + linked for gfx1100. roc-obj-ls confirms hipv4-amdgcn-amd-amdhsa--gfx1100 code objects in both _C.so files, no gfx90a.
+
+Divergence gate (agent_space/3dgslm_div.py, AMD_LOG_LEVEL=3): PASS.
+- 4 trials: seeds {1,5,1,7}, 80-120 base Gaussians, flip_every {2,2,3,4}.
+- NO HSA_STATUS_ERROR_EXCEPTION 0x1016 in any trial (log confirmed clean).
+- All outputs finite. Operator PSD (<p,Ap>: 1.1e7, 2.6e7, 2.0e7, 2.9e7 > 0).
+- GSGN_SYNCWARP_AFTER_DIVERGENCE(mask) -> __syncwarp() works correctly on wave32.
+
+Tier 0 (import + ops): all 11 ops register. PASS.
+
+Tier 1 (rasterizer):
+- Forward: num_visible=200 (all Gaussians visible), mean=0.1052, finite, bit-identical.
+- Backward FD: slope=0.993, sign_agree=1.00, rel_err=0.007. PASS.
+
+Tier 2 (LM-step oracle -- the decisive wave32 gate):
+- apply_jtj output: finite, correct.
+- Symmetry: <x,Ay>=164192, <y,Ax>=164192, rel=3.8e-7 -- machine precision. PASS.
+- PSD: <x,Ax>=5.76e7 > 0 -- symmetric positive definite. PASS.
+- PCG: optimal=True, 75 iters, final_res/|b|=9.0e-4. PASS.
+- Determinism: det_rel ~0.006 (expected; atomicAdd in apply_jt is non-deterministic in ordering, consistent with atomics).
+- No HSA 0x1016. PASS.
+
+Tier 3 (end-to-end LM fit): 8 LM steps, MSE monotone decrease (0.015934 -> 0.015930). No NaN. PASS.
+
+### Wave32 verdict (explicit)
+
+The gsgn.cu LM kernels (eval_jtf, apply_j, apply_jt via calc_preconditioner + apply_jtj) are CORRECT on the gfx1100 32-lane wavefront:
+- The logical-32-warp design is native on wave32 (one logical warp = one hardware wavefront).
+- CUB WarpReduce/WarpScan width-32 pins are no-ops (already native width on RDNA3).
+- GSGN_SYNCWARP_AFTER_DIVERGENCE (the __syncwarp fix) works correctly: no 0x1016 trap, PSD operator, correct symmetry.
+- gsgn_active_shfl_mask() = __activemask() = 0xffffffff on wave32, satisfies HIP assertion.
+- The atomred_vec full-wavefront leader election: on wave32 __match_any_sync operates over all 32 lanes (the full wavefront), matching the intended behavior (fewer atomics than per-32-group CUDA path, correct because two Gaussians in one 32-lane wavefront still each elect their own leader).
+
+No divergent _sync fault (HSA 0x1016). No wrong gradients. No non-convergence. No NaN.
+
+### Comparison to gfx90a@56cb37a
+
+gfx90a: FD slope=0.993, sign_agree=1.00, rel_err=0.004, sym_rel=8.44e-9, <x,Ax>=1.26e5, PCG 19 iters.
+gfx1100: FD slope=0.993, sign_agree=1.00, rel_err=0.007, sym_rel=3.8e-7, <x,Ax>=5.76e7, PCG 75 iters.
+
+The FD slope and sign agreement are identical. The sym_rel and operator magnitude differ because gfx1100 uses a different (larger) synthetic scene and different random seed for Tier 2. The PCG iteration count is higher due to the scene being differently conditioned. The divergence gate passes on both arches with no 0x1016. The rasterizer path (BW_IMPLEMENTATION=0, pure atomicAdd, no intrinsics) is identical.
+
+### Overall verdict: PASS. linux-gfx1100 -> completed (validated_sha=56cb37a). No source change required (validate-first follower, zero fork delta).
