@@ -12,3 +12,5 @@
 {"kind":"phase","ts":"2026-06-02T02:57:04Z","phase":"compile","seconds":24.942,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/icicle_val_build -j128"}
 {"kind":"phase","ts":"2026-06-02T03:07:27Z","phase":"test","seconds":20.184,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_val_build/backend/hip_pqc/tests -V --output-on-failure"}
 {"kind":"phase","ts":"2026-06-02T03:12:32Z","phase":"test","seconds":1.543,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_val_build/tests -R PqcTest -V --output-on-failure"}
+{"kind":"phase","ts":"2026-06-02T03:23:30Z","phase":"compile","seconds":17.687,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/icicle_gfx1100_build -j128"}
+{"kind":"phase","ts":"2026-06-02T03:24:08Z","phase":"test","seconds":18.756,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_gfx1100_build/backend/hip_pqc/tests -V --output-on-failure"}

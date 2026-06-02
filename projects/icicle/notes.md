@@ -231,3 +231,51 @@ Hygiene: cuda_pqc and cpu trees untouched (verified empty diff). `[ROCm]` title 
 
 Observational only (no action required):
 - icicle/cmake/backend_include.cmake:37 sets `BACKEND_BUILD_DIR` for HIP-PQC for the frontend test loader, matching how the existing CUDA_BACKEND/METAL/VULKAN blocks set it (last-wins). A combined CUDA_PQC_BACKEND+HIP_PQC_BACKEND build would have the HIP value win, but that combo is not a MOAT target and the last-wins pattern is pre-existing upstream; the validated HIP-only build is correct.
+
+## Delta-port 2026-06-02 (gfx1100 wave32 barrier fix)
+
+Fixes the validator's 12/58 wave32 FAIL. Fork moat-port d66e92a -> d8e04fd.
+
+### The race (one shared-memory LDS producer->consumer fence)
+
+File: `icicle/backend/hip_pqc/include/ml_kem/samplers/cuda_samplers.cuh`, in `generate_error_vector`, at the `if constexpr (ntt)` boundary (the new `__syncwarp()` sits just before the unrolled `ntt_inplace_32threads` loop, ~line 116).
+
+Data path: `samplePolyCBD_2_5threads` (eta=2, used by k=768/1024) writes each sampled polynomial into the shared error-vector buffer (`s_e`), then the in-place NTT reads that same shared poly back. The eta=2 sampler had NO fence between the CBD write and the NTT read; the eta=3 sampler (`samplePolyCBD_3_5threads`, used by k=512) already ends with a `__syncwarp()`, which is why k=512 passed and k=768/1024 failed.
+
+On gfx90a (wave64) a wavefront carries two logical 32-warps in lockstep, so the LDS write->read happened to be ordered implicitly and the missing fence was invisible. On gfx1100 (wave32) each logical warp is its OWN wavefront; the LDS write->read across the divergent CBD branch into the NTT is not implicitly ordered, so the first error-vector polynomial (element 0, the warp-0 poly) was read before its CBD write completed. Symptom: `dk_pke` byte 0..383 (= s_hat[0]) was a DIFFERENT wrong value on every run while bytes 384+ (s_hat[1], s_hat[2]) stayed bit-exact -- the definitive non-deterministic single-poly signature. The two-warp k=768 keygen and the high-concurrency k=768/1024 batch encaps/decaps (which all route through `generate_error_vector` with ntt=true) exposed it; k=512 (eta=3, already fenced) and k=1024 single-instance KAT did not.
+
+### The barrier added
+
+```
+if constexpr (ntt) {
+  __syncwarp();   // order CBD shared write before NTT shared read
+  for (int t = 0; t < min_hashes_per_warp; t++) ntt_inplace_32threads(...);
+  ...
+}
+```
+
+`__syncwarp()` (HIP wavefront barrier with memory ordering) is the right scope: the dependency is intra-logical-warp (warp 0 writes and warp 0 reads), and on wave32 the wavefront IS the logical warp. Wave-agnostic: on wave64 it is a full-wavefront barrier (a sound superset; gfx90a re-passes), on CUDA a warp barrier with a memory fence. Matches the existing eta=3 fence exactly. One-line fix, fixes all 12 failing tests at the single shared producer->consumer boundary.
+
+### Build (gfx1100, ROCm 7.2.1, AMD Radeon Pro W7800, wave32)
+
+```
+export HIP_VISIBLE_DEVICES=0
+cmake -S icicle -B build -DCMAKE_BUILD_TYPE=Release \
+  -DCPU_BACKEND=ON -DHIP_PQC_BACKEND=ON -DCUDA_PQC_BACKEND=OFF \
+  -DPQC=ON -DBUILD_TESTS=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_PREFIX_PATH=/opt/rocm
+cmake --build build -j
+```
+
+### Gate (gfx1100) -- PASS, stable
+
+- `ctest --test-dir build/backend/hip_pqc/tests`: 58/58 PASS, run 3x (all 58/58).
+- `ctest --test-dir build/tests -R PqcTest`: 6/6 PASS, run 3x (all 6/6).
+- Determinism (the race-fix proof), 5x each, all bit-exact every run:
+  - `KyberTest.PkeKeygen768` (the previously flaky NIST KAT): 5/5 OK.
+  - `MLKemTest.KeyCheckTest768Batch` + `KeyCheckTest1024Batch`: 5/5 OK.
+  - `MLKemEncapsTest.MlKemEncaps768Batch` + `MlKemEncaps1024Batch`: 5/5 OK.
+  - `MLKemDecapsTest.MlKemDecaps768Batch` + `MlKemDecaps1024Batch`: 5/5 OK.
+- No HSA 0x1016, no hang.
+
+advance-head d8e04fd flipped gfx90a completed -> revalidate (expected; the barrier is wave-agnostic so gfx90a re-passes unchanged).
