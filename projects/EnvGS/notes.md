@@ -593,3 +593,25 @@ preprocessCUDA<3>, duplicateWithKeys, identifyTileRanges, renderCUDA<3u> all dis
 Stage 2 (diff-surfel-tracing HIPRT tracer) was validated on gfx90a (linux-gfx90a completed 2026-06-02). It requires a separate gfx1100 validation pass. Not attempted here. Status: DEFERRED for gfx1100.
 
 Result: Stage 1 ALL PASS on gfx1100. State -> completed. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
+
+## Validation 2026-06-02 (gfx1100) -- Stage 1 PASS; reopened to revalidate for Stage 2
+
+Stage 1 (diff-surfel-rasterizations, 3 variants wet/ch05/ch07) validated on gfx1100:
+forward finite, backward FD-consistent (FD opacity slope 1.000 exact on all 3),
+training converges 73-74%, wave32 clean (zero warp primitives -- all cross-thread
+exchange via __shared__ + block.sync()), no HSA 0x1016, deterministic. gfx1100 code
+objects confirmed (preprocessCUDA<3>/renderCUDA<3u> dispatch on gfx1100). Build gotcha
+recorded: the nested third_party/glm submodule needs an explicit
+`git -C submodules/diff-surfel-rasterizations submodule update --init third_party/glm`
+or clang-HIP falls back to system GLM (no GLM_COMPILER_HIP) and fails to compile.
+
+CORRECTION (state honesty): the gfx90a lead at 2890415 covers BOTH Stage 1 (rasterizer)
+AND Stage 2 -- the OptiX->HIPRT reflection tracer (diff-surfel-tracing @ moat-port
+5991683), which is ported and validated on gfx90a (validate_stage2.py PASS). The initial
+gfx1100 pass scoped to Stage 1 only (a stale-notes dispatch) and prematurely set
+completed. Reopened completed -> revalidate so the platform does not advertise coverage
+it does not have. Stage 2 must be built (HIPRT from source for gfx1100 + the tracer
+extension) and forward/backward-validated on gfx1100 (wave32) before completed. The
+Stage-2 fixes (cutoff init on reflected bounces; the quat_to_rotmat_transpose /
+compute_transmat_xy_backward return-type UB) are documented arch-unified (correct on
+wave32 and wave64) but UNPROVEN on RDNA3 HIPRT hardware ray tracing.
