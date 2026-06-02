@@ -7,17 +7,17 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-02T18:28:36Z",
-  "head_sha": "b5c29cc266720fe15de112dca20a8681de0899f8",
+  "updated_at": "2026-06-02T18:47:56Z",
+  "head_sha": "221191b2ba4986bf456674be95bfa06d27b42a27",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b5c29cc266720fe15de112dca20a8681de0899f8",
+      "validated_sha": "221191b2ba4986bf456674be95bfa06d27b42a27",
       "started_at": "2026-05-30T01:38:56Z",
       "completed_at": "2026-05-31T11:32:53Z",
-      "updated_at": "2026-06-02T18:28:36Z",
+      "updated_at": "2026-06-02T18:47:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,22 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3bffbf7dccaa488cb5e8cc17019806b7f74c88fc",
-        "to": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); src/CMakeLists.txt: comment-only (comments/format only); src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
-        "at": "2026-06-02T18:28:36Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T18:47:56Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b5c29cc266720fe15de112dca20a8681de0899f8",
+      "validated_sha": "221191b2ba4986bf456674be95bfa06d27b42a27",
       "started_at": null,
       "completed_at": "2026-05-31T11:46:08Z",
-      "updated_at": "2026-06-02T18:28:36Z",
+      "updated_at": "2026-06-02T18:47:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,22 +63,22 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "from": "3bffbf7dccaa488cb5e8cc17019806b7f74c88fc",
-        "to": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); src/CMakeLists.txt: comment-only (comments/format only); src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
-        "at": "2026-06-02T18:28:36Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T18:47:56Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b5c29cc266720fe15de112dca20a8681de0899f8",
+      "validated_sha": "221191b2ba4986bf456674be95bfa06d27b42a27",
       "started_at": null,
       "completed_at": "2026-05-31T06:26:44Z",
-      "updated_at": "2026-06-02T18:28:36Z",
+      "updated_at": "2026-06-02T18:47:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -94,12 +94,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3bffbf7dccaa488cb5e8cc17019806b7f74c88fc",
-        "to": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
+        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); src/CMakeLists.txt: comment-only (comments/format only); src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
-        "at": "2026-06-02T18:28:36Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T18:47:56Z"
       }
     }
   }
