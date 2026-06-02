@@ -107,3 +107,38 @@ arch-agnostic.
   need multi-node SSH / matpool cloud; not runnable here. The modexp gold gate
   + encrypt round-trip are the representative validatable proxy for the GPU work
   those drive.
+
+## Review 2026-06-02 (reviewer, gfx90a)
+review-passed. No problems found; no changes requested.
+
+Verified independently on real gfx90a (HIP_VISIBLE_DEVICES=1, GCD 1, ROCm 7.2.1):
+- Scope correct: diff touches only gpu/cuda_to_hip.h (new), gpu/build_hip.sh (new),
+  gpu/cufft_modexp.cu (one include-line swap). No Python, no dead reg_ntt_*/ntt_funcs
+  warp-NTT files, no PyCUDA self-test touched -- so the live path genuinely has no
+  warp/wave64 surface (grep confirms no __shfl/__ballot/warpSize/__syncwarp in the .cu;
+  the <<<N,32>>> launches are independent-thread strided copies). Multi-arch trivially fine.
+- Shim symbol coverage complete: every cuda*/cufft*/CUFFT_* token used by cufft_modexp.cu
+  (cudaMalloc/Free/Memcpy + H2D/D2H, cufftHandle/DoubleComplex/PlanMany/ExecZ2Z/Destroy,
+  CUFFT_Z2Z/FORWARD/INVERSE->HIPFFT_BACKWARD) is aliased. libc (cstdlib/cstring/cmath)
+  included before <hip/hip_runtime.h>. #if keys off __HIP__ -- independently confirmed
+  `hipcc -x hip -dM -E` defines __HIP__ but NOT __HIP_PLATFORM_AMD__ at preprocess, so the
+  __HIP__ key is load-bearing and correct. NVIDIA #else path falls through to original CUDA
+  headers (math.h -> cmath is a superset; round() still resolves), byte-identical build.
+- build_hip.sh wrapper (init_gpu/run_modexp -> cufft_init/cufft_modexp) is identical to the
+  README's wr_cufft.cu, preserving the ctypes C ABI; arch from HIP_ARCH (no literal); no
+  -fgpu-rdc needed (no cross-TU __device__ funcs).
+- Built the gfx90a,gfx1100 fat binary clean (only benign -Wunused-value on nodiscard
+  hipMemcpy, present on CUDA too); roc-obj-ls confirms both code objects embedded.
+- Reproduced the correctness gate: 6144/6144 exact vs gmpy2.powmod across n at
+  255/510/511/768/1022/1023/1535/2046 bits, varied m_bits, 256/batch. hipFFT double-FFT
+  rounding margin holds.
+- g>=n: confirmed the kernel has NO initial g%=n reduction (identical to upstream CUDA), so
+  the precondition is pre-existing, not a port defect; after g%=n the batch matches gmpy2.
+- Commit hygiene: title "[ROCm] Port live cuFFT Paillier modexp to hipFFT" (47 chars),
+  mentions Claude, no noreply trailer, no ghstack, no em-dash. Fork features == upstream
+  features @ dd96d5d (clean mirror); single port commit on moat-port. Actions disabled.
+
+Non-blocking: the __HIP__-vs-__HIP_PLATFORM_AMD__ compat-shim-keying trap (an #include'd shim
+keyed only on __HIP_PLATFORM_AMD__ silently falls through to <cuda_runtime.h> because hipcc
+defines __HIP__, not __HIP_PLATFORM_AMD__, at preprocess) is a generalizable lesson and was
+appended to PORTING_GUIDE.md.
