@@ -7,17 +7,17 @@
   "priority": 6.114,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-02T21:45:33Z",
-  "head_sha": "2f60595",
+  "updated_at": "2026-06-02T22:21:26Z",
+  "head_sha": "d372efc",
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
-      "blocked": true,
-      "blocked_reason": "Session 5 (fork 2f60595 on top of d326818; cuco fork 0fb53f8): MAJOR PROGRESS -- libcugraph.so now LINKS (all 16 remaining SG library TUs compile) and PAGERANK_TEST passes 56/56 on real gfx90a vs the CPU reference (rmat + karate/dolphins files, incl edge-masking, weighted, personalized). The 8 last primitives cleared via mechanical USE_HIP tuple-flavor fixes (proclaim_return_type exact-match, kv_store is_equivalent_value_type asserts, templated sampling-functor key params, double->int static_cast, warp_size_ct constexpr, single-type hipCUB SortPairs offset functor) plus a thrust/tuple.h converting CONSTRUCTOR from cuda::std::tuple (reverse of the session-4 conversion operator) and classic-vs-cuda::std operator<. Test harness adapted: base_fixture.hpp to the ported rmm's older MR API (no any_resource), tests CMake wired with raft/thrust compat shims + host warp-size, tellg fpos->streamoff. cuco fork: gated the 3 pre-Volta __CUDA_ARCH__<700 guards on defined(__CUDA_ARCH__) (HIP-undefined macro folded to true and misapplied the >8B-slot / cas_dependent_write restriction). Also FIXED a real wave64 GPU fault in transform_e_packed_bool: the packed-bool ballot used the full 64-lane wave mask but a wavefront spans two words with different loop bounds, so a small graph splits the wave mid-loop and the divergent full-wave __ballot_sync faults; now ballots only the lane's own 32-lane group (arch-unified wave32/64). All USE_HIP-guarded, CUDA byte-identical. REMAINING (why still blocked, no false-port): BFS_TEST and SSSP_TEST build and run but compute WRONG distances on the rmat graph (rmat_small_test correctness fails 'distances do not match'); PageRank on the same infra is exact, isolating the bug to the vertex-frontier expansion path (transform_reduce_if_v_frontier_outgoing_e_by_dst + per_v_transform_reduce_if_incoming_outgoing_e + frontier buckets; no raw wave intrinsics -- lowers to rocPRIM BlockScan/DeviceSelect/reduce_by_key, so bisect that on the deterministic rmat seed-0 graph next session). This BFS/SSSP traversal bug was first observable only now that the .so links. notes.md Session 5 has exact sites.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-02T22:20:54Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T21:45:33Z",
+      "updated_at": "2026-06-02T22:21:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

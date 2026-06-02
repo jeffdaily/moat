@@ -6,7 +6,15 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: SG library LINKS; PAGERANK/BFS/SSSP GPU-validated on gfx90a
+## Status: linux-gfx90a PORTED -- BFS + SSSP + PageRank all GPU-validated
+
+Session 6: fixed the session-5 remaining bug (BFS/SSSP wrong distances). The
+vertex-frontier expansion prims used raft::warp_full_mask() (0xffffffff, 32-bit),
+which on wave64 dropped lanes 32-63 from __ballot_sync and miscomputed the
+intra-warp buffer prefix offsets. Added wave-width-correct ballot helpers and
+routed the frontier-expansion ballot/broadcast sites through them (USE_HIP). All
+BFS/SSSP/PageRank gtests with a local dataset now PASS on real gfx90a. See
+Session 6 below. Earlier status (kept for history):
 
 Session 5: all SG library TUs compile, libcugraph.so links, and the
 PAGERANK/BFS/SSSP gtests build and PASS on real gfx90a hardware (the validation
@@ -187,6 +195,51 @@ Resolved this session (all USE_HIP-guarded; CUDA path byte-for-byte):
 11. sssp_impl exemplar for two recurring per-prim classes: local `constexpr`
     invalid_* not implicitly captured by a device lambda under clang (add to the
     capture list), and the zip-write boundary (detail::cugraph_zip_make_tuple).
+
+## Session 6 (BFS + SSSP FIXED and GPU-validated on gfx90a; fork d372efc)
+
+Net-positive, zero-regression. All USE_HIP-guarded; CUDA path byte-identical
+(original __ballot_sync / __popc / __shfl_sync preserved verbatim in #else).
+NEW commit on top of 2f60595 (validated base preserved, not amended).
+
+ROOT CAUSE of the session-5 remaining bug (BFS/SSSP wrong distances on rmat,
+PageRank exact): the vertex-frontier expansion prims (which PageRank does not
+use) called raft::warp_full_mask(), hard-coded to 0xffffffff (32 bits). On
+wave64 (gfx90a/CDNA) a 32-bit ballot mask DROPS lanes 32-63 from __ballot_sync,
+__popc truncates the 64-bit ballot, and `mask << lane_id` for lane_id >= 32 is
+undefined; the per-lane prefix offset into the output buffer therefore collided,
+so frontier entries were lost/duplicated and distances diverged. The lane-0
+broadcasts (__shfl_sync with the same 32-bit mask) also failed to reach the
+upper half of the wave.
+
+FIX (warp_size_ct.hpp gained wave-width-correct helpers under USE_HIP):
+warp_full_ballot_mask() (64-bit on wave64, 32-bit on wave32), warp_ballot(bool)
+-> __ballot_sync with that mask, warp_ballot_popc -> __popcll, warp_ballot_prefix_popc
+(count set bits in lanes [0,lane_id) via `full_mask >> (warp_size - lane_id)`,
+special-casing lane_id==0 to avoid the UB 64-shift), and warp_bcast (shfl with
+the active-wave mask). Sites converted (all USE_HIP-guarded, CUDA in #else):
+- detail/extract_transform_if_v_frontier_e.cuh warp_push_buffer_elements (THE
+  primary bug; this is the by_dst topdown engine, runs unconditionally so it hit
+  even the edge_masking=false rmat case). ballot + increment popc + prefix popc +
+  the lane-0 broadcast.
+- detail/transform_v_frontier_e.cuh (edge-mask path only): ballot + intra-warp
+  offset + base_offset popc.
+- detail/per_v_transform_reduce_e.cuh (bottom-up + per_v_transform_reduce_if): the
+  two first_valid_lane_id lane-0 broadcasts.
+- detail/sample_and_compute_local_nbr_indices.cuh (sampling, not BFS/SSSP but
+  same SG lib + same bug): the inclusive-sum last-lane broadcast.
+NOTE: the many __popc(word) sites in per_v_transform_reduce_e / by_dst operate on
+uint32 packed-bool WORDS (32-bit), not ballots -- those are already correct and
+were left alone. transform_e.cuh was the session-5 group-mask fix, untouched.
+
+GPU validation (gfx90a, GCD 2): BFS_TEST rmat_small 4/4 PASS (was FAIL),
+file_test karate/polbooks/netscience 6/6 PASS incl edge_masking, rmat_benchmark
+4/4 PASS; SSSP_TEST rmat_small 4/4 PASS (was FAIL), file_test karate 2/2 PASS
+incl edge_masking; PAGERANK_TEST 56/56 PASS (no regression). Symlinked
+polbooks/netscience/dolphins into src/datasets/test/datasets so their file_test
+cases run (karate was symlinked in session 5). Remaining file_test cases need
+absent large datasets (wiki2003, wiki-Talk, dblp) and are not run. linux-gfx90a
+is now PORTED: BFS + SSSP + PageRank all correct on real gfx90a.
 
 ## Session 5 progress (SG lib LINKS; PAGERANK/BFS/SSSP GPU-validated on gfx90a)
 
