@@ -308,3 +308,60 @@ Verdict: Request Changes. The blocker is a shipped public symbol that is
 silently wrong on HIP, plus notes claiming that path is validated when it is
 not. Resolve fused-NN (fix or honest deferral), correct the notes, re-validate,
 then bounce back for re-review.
+
+## Review 2026-06-02 (second reviewer, linux-gfx90a) -- CONFIRMS CHANGES REQUESTED
+
+Independent second review of moat-port HEAD 728265cc vs v25.08.00 base
+(9ce11a0f) on real gfx90a (GCD 0). State was already changes-requested from the
+concurrent first review; this run independently re-verifies that finding rather
+than duplicating it.
+
+Re-ran DISTANCE_TEST (`--gtest_filter='-BigMatrix*'`) on GCD 0:
+410/410 PASS across 48 suites, exit 0; libcuvs.so confirmed to carry native
+gfx90a code objects (llvm-objdump --offloading shows
+hipv4-amdgcn-amd-amdhsa--gfx90a bundles). The tested pairwise-distance public
+API is genuinely correct.
+
+CONFIRMED BLOCKER (independently reproduced): the first review is right.
+cpp/src/distance/detail/fused_distance_nn/simt_kernel.cuh:86 wraps the entire
+`fusedDistanceNNkernel` body in `#if __CUDA_ARCH__ < 800` (closing #endif at
+line ~184). raft's force-included compat header defines `__CUDA_ARCH__ 800` on
+the HIP device pass (_deps/raft/install/include/raft/util/hip/cuda_to_hip.h:53-54),
+so `800 < 800` is false and the kernel body is compiled OUT -- the device kernel
+is empty on HIP. The forced-SIMT edits in fused_l2_nn.cuh / fused_cosine_nn.cuh /
+fused_distance_nn.cuh guard out CUTLASS and fall into this body-less SIMT branch.
+src/distance/detail/fused_distance_nn.cu (in the shipped slice,
+cmake/hip/cuvs_hip.cmake:142) instantiates the PUBLIC
+cuvs::distance::fusedDistanceNNMinReduce (float/int, float/int64,
+KeyValuePair-out) -- so libcuvs.so exports a silently-wrong symbol (uninitialized
+output, no compile error, no test failure). DISTANCE_TEST does not exercise it
+(cuvs_hip_tests.cmake excludes masked_nn), which is why 410/410 still passes.
+This is the cupoch/RXMesh `__CUDA_ARCH__` trap in PORTING_GUIDE.
+
+The two fixes the first review proposed both stand:
+- (a) extend the guard to `#if __CUDA_ARCH__ < 800 || defined(USE_HIP)` so the
+  SIMT body compiles on HIP, then add a fused-NN/masked_nn test to the slice and
+  validate the argmin numerics on gfx90a (splitmix-hashed embedding, not a
+  periodic generator; the l2_exp_distance_op::epilog relu-ALWAYS vs pairwise's
+  l2_exp_cutlass_op distinction must be checked, not just that it runs); or
+- (b) drop src/distance/detail/fused_distance_nn.cu from CUVS_DISTANCE_SOURCES
+  so libcuvs.so does not export the broken public symbol, and move fused-NN to
+  the deferred list.
+
+Also fix the inaccurate claims at notes.md:96 and notes.md:190-191 (the
+forced-SIMT fused-NN path is NOT exercised and is NOT correct on HIP) per
+whichever fix is chosen.
+
+Everything else in the port verified clean: Strategy A applied correctly (top-of
+-file USE_HIP guard before any rapids include -> standalone cuvs_hip.cmake;
+find_package(rmm/raft) against the installed forks, no CPM/CUTLASS fetch); arch
+read from CMAKE_HIP_ARCHITECTURES (gfx90a default only when unset, follower-safe);
+the l_inf static_cast<AccT> fix is value-identical on CUDA (verified against
+raft/core/math.hpp:385-428: host pass lacks a (float,__half) overload and
+static_asserts; the cast matches the device-pass __half2float); the simt_kernel
+KVPair::Key static_cast is the exact implicit conversion nvcc performs; the
+pairwise dispatch-inl forces sm60 with the full SM range and never reaches the
+sm80 stub; commit hygiene clean ([ROCm] title 56 chars, mentions Claude, no
+noreply trailer, no ghstack, no em-dash); fork main is a clean upstream mirror;
+Actions disabled on the fork. The fused-NN __CUDA_ARCH__ trap is the only
+blocker.
