@@ -12,3 +12,19 @@
 {"kind":"phase","ts":"2026-06-01T00:43:51Z","phase":"test","seconds":27.158,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 python3 /var/lib/jenkins/moat/agent_space/envgs/train_converge.py"}
 {"kind":"phase","ts":"2026-06-01T01:06:07Z","phase":"test","seconds":4.651,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/envgs/validate_stage1.py"}
 {"kind":"phase","ts":"2026-06-02T00:07:15Z","phase":"compile","seconds":32.127,"exit":0,"cmd":"bash -c cd projects/EnvGS/src/submodules/diff-surfel-tracing && pip install -e . --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:18:34Z","phase":"compile","seconds":0.261,"exit":1,"cmd":"pip install -e . --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:19:18Z","phase":"compile","seconds":36.800,"exit":1,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:21:46Z","phase":"compile","seconds":37.349,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:22:29Z","phase":"compile","seconds":37.031,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch05 --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:23:06Z","phase":"compile","seconds":36.973,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch07 --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-02T01:23:33Z","phase":"test","seconds":1.975,"exit":1,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-02T01:23:51Z","phase":"test","seconds":2.204,"exit":1,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-02T01:24:41Z","phase":"test","seconds":2.299,"exit":1,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-02T01:25:27Z","phase":"test","seconds":2.633,"exit":0,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-02T01:36:25Z","phase":"compile","seconds":3.828,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/hiprt_build/build_gfx1100 --target hiprt03001 -j16"}
+{"kind":"phase","ts":"2026-06-02T01:37:28Z","phase":"compile","seconds":23.873,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-tracing --no-build-isolation --no-deps -v 2>&1 | tee /var/lib/jenkins/moat/agent_space/envgs_stage2/tracer_build_gfx1100.log; echo 'BUILD_EXIT: '0"}
+{"kind":"phase","ts":"2026-06-02T01:40:48Z","phase":"test","seconds":10.115,"exit":1,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T01:41:39Z","phase":"test","seconds":2.700,"exit":1,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T01:43:22Z","phase":"test","seconds":2.639,"exit":1,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T01:46:08Z","phase":"test","seconds":2.801,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-02T01:46:21Z","phase":"test","seconds":2.765,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}

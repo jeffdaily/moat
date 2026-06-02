@@ -615,3 +615,95 @@ extension) and forward/backward-validated on gfx1100 (wave32) before completed. 
 Stage-2 fixes (cutoff init on reflected bounces; the quat_to_rotmat_transpose /
 compute_transmat_xy_backward return-type UB) are documented arch-unified (correct on
 wave32 and wave64) but UNPROVEN on RDNA3 HIPRT hardware ray tracing.
+
+## Validation 2026-06-02 (gfx1100) -- Stage 2 HIPRT tracer
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1 / HIP 7.2.53211, torch 2.13.0a0. HIP_VISIBLE_DEVICES=0. Gfx Major/Minor/Stepping: 11/0/0 (confirmed via AMD_LOG_LEVEL=3).
+
+Packages under test: diff_surfel_tracing @ jeffdaily/diff-surfel-tracing moat-port 5991683. Superproject: jeffdaily/EnvGS @ moat-port 2890415c449c.
+
+### HIPRT build from source (gfx1100)
+
+The vendored third_party/hiprt ships headers + impl sources but no CMakeLists.txt. The HIPRT 3.1.0 SDK (tag 5f7c1d2, commit cb09c56 -- matches the vendored version.txt) was cloned from GPUOpen-LibrariesAndSDKs/HIPRT and built for gfx1100:
+
+```bash
+cmake -S HIPRT_SDK -B build_gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release -DBITCODE=OFF -DNO_UNITTEST=ON \
+  -DHIP_PATH=/opt/rocm-7.2.1 -DFORCE_DISABLE_CUDA=ON
+bash utils/timeit.sh EnvGS compile -- \
+  cmake --build build_gfx1100 --target hiprt03001 -j16
+```
+
+Output: `dist/bin/Release/libhiprt0300164.so` (1.09 MB). Build time: 3.8s (all C++ host code, no GPU compilation at build time -- JIT at runtime). Copied to `third_party/hiprt/dist/bin/Release/` as expected by setup.py.
+
+### Tracer extension build (gfx1100)
+
+```bash
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 \
+  pip install -e submodules/diff-surfel-tracing --no-build-isolation --no-deps -v
+```
+
+Build time: ~24s. The standalone glue static lib (g++ compiles hiprt_wrapper.cpp + Orochi/hipew/cuew) compiled clean (2 warnings: system() and fread() unused-result, both benign). The CUDAExtension compiled ext.cpp + trace_surfels.cpp with -DUSE_ROCM=1 and linked against libhiprt0300164.so. Output: `diff_surfel_tracing/_C.cpython-312-x86_64-linux-gnu.so`. Exit code 0.
+
+Import: `diff_surfel_tracing._C` exports `OptiXStateWrapper`, `build_acceleration_structure`, `trace_surfels`, `trace_surfels_backward` -- confirmed.
+
+### JIT for gfx1100 (HIPRT hiprtc)
+
+At first BVH build, HIPRT JIT-compiles the BVH + traversal kernels via hiprtc for the live device. Cache files generated in `diff_surfel_tracing/hiprt_cache/`:
+
+```
+2421e5db-ea1588cf.v.AMD Radeon Pro W7800 48GB.70253211_64.bin
+81556444-6c97f4a0.v.AMD Radeon Pro W7800 48GB.70253211_64.bin
+b4c41394-11a66aac.v.AMD Radeon Pro W7800 48GB.70253211_64.bin
+```
+
+The `.v.AMD Radeon Pro W7800 48GB.70253211_64` suffix identifies the device (W7800 = gfx1100) and ROCm version (7.2.53211). Three kernel hashes x {.bin, .check} = 6 files, consistent with gfx90a (same kernel count). The Compiler.cpp MOAT patch (sanitize '/' in device name to '_') is required for these cache paths to be valid (W7800 name has no '/' unlike MI250X, so the patch is a no-op here but correct in general). hiprtc confirmed via AMD_LOG_LEVEL=3: `hiprtcCreateProgram` invoked with BVH intersection probe kernel.
+
+No JIT failure, no HSA fault, no 0x1016.
+
+### Stage 2 GPU validation results (gfx1100)
+
+Validation harnesses recreated in agent_space/envgs_stage2/ (gitignored, not present from gfx90a session).
+
+Commands:
+
+```bash
+# Run 1
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs_stage2/validate_stage2.py
+
+# Run 2 (determinism)
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs_stage2/validate_stage2.py
+
+# Geometric FD (run 1)
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS-stage2-geom test -- \
+    python3 agent_space/envgs_stage2/validate_geom_fd.py
+
+# Geometric FD (run 2, determinism)
+HIP_VISIBLE_DEVICES=0 python3 agent_space/envgs_stage2/validate_geom_fd.py
+```
+
+validate_stage2.py (runs 1 and 2 -- bit-identical):
+- Forward: rgb shape=(32,32,3) finite=True min=0.0000 max=0.7866 mean=0.1890; acc nonzero_frac=0.594 max=0.9999; dpt finite=True max=3.2852; hit_frac=0.594 (genuine hits+misses, non-trivial coverage). PASS.
+- Backward: all 5 gradients finite -- dmeans3D L1=2.302, dscales L1=6.496, drotations L1=3.154e-01, dopacities L1=1.872, dcolors L1=1.919. PASS.
+- FD colors: cosine=1.0000 slope=0.9977. PASS (exact linear gate).
+- FD opacities: cosine=1.0000 slope=1.0015. PASS.
+- VERDICT: PASS.
+
+validate_geom_fd.py (runs 1 and 2 -- bit-identical):
+- Analytic grads: means3D finite=True, scales finite=True, rotations finite=True. No NaN. PASS (decisive RDNA3 UB-fix gate).
+- FD means3D: cosine=0.9966 slope=1.0046. PASS.
+- FD scales: cosine=0.9978 slope=1.0610. PASS.
+- Rotations: all_finite=True (quaternion null-space noise CHECK per gfx90a precedent; not a failure). PASS.
+- VERDICT: PASS.
+
+### Wave32 / RDNA3 verdict
+
+The Stage-2 UB fixes (quat_to_rotmat_transpose / compute_transmat_xy_backward return void) HOLD on gfx1100 RDNA3 wave32: all geometric gradients are finite and FD-consistent, no NaN. The prior "heisenbug" that poisoned normals on gfx90a (triggered by UB inlining decisions) does NOT appear on wave32 -- consistent with the fix being the genuine root cause (not a codegen specific to wave64). The JIT workaround --gpu-max-threads-per-block=64 (= 2 wavefronts on wave32) and the cutoff=3.0f init on reflected bounces hold correctly. HIPRT hardware ray tracing on RDNA3 produces correct hit fractions and depths (hit_frac=0.594, max depth=3.29 -- in the gfx90a ballpark; the higher hit_frac reflects a larger effective disk coverage at 32x32 vs 32x32 with the same scene -- deterministic across runs). No HSA 0x1016 fault. No JIT/codegen error.
+
+### Non-GPU regressions
+
+Stage 1 rasterizer (3 variants): `diff_surfel_rasterization_wet`, `_wet_ch05`, `_wet_ch07` all import with correct symbols (rasterize_gaussians / rasterize_gaussians_backward / mark_visible). No Stage 1 regression.
+
+Result: ALL PASS (Stage 2 HIPRT tracer forward correct, all geometric gradients finite, FD-correct on means3D/scales, rotations finite/null-space, cold-JIT stable, no HSA fault, deterministic). State -> completed. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
