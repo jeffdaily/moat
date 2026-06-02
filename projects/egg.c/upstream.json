@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/d0rc/egg.c",
   "default_branch": "master",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "make",
   "base_sha": null
 }
