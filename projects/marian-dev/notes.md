@@ -136,3 +136,71 @@ rnn_tests 3 failures (rnn_tests.cpp:49->93) are NOT a port bug: the test seeds i
 Hygiene: title `[ROCm] Port Marian GPU backend to HIP for AMD GPUs` (50 chars), mentions Claude, no noreply trailer, no ghstack, no em-dash, Test Plan present; author jeff.daily@amd.com (user's own public email -- not an AMD-internal account); fork Actions disabled (enabled:false); fork/master == upstream c9f287d (clean mirror). Deferred cuSPARSE/cuDNN/NCCL items are documented, not silently broken.
 
 Minor (non-blocking, no fix required): getCublasLtHandle() (backend.h:81) does not check hipblasLtCreate's return, matching the existing lazy-init cublasCreate pattern; cumsum.cu:62 has a 2-space-indented `#if` (cosmetic).
+
+## Validation 2026-06-02 (linux-gfx90a, GCD 3, fork moat-port 25f910c)
+
+Platform: AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3.
+
+### Build
+
+Full clean build from committed source (292 targets):
+```
+cd projects/marian-dev/src
+export HIP_VISIBLE_DEVICES=3 ROCM_PATH=/opt/rocm
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCOMPILE_CUDA=ON -DUSE_CUDNN=OFF -DUSE_NCCL=OFF \
+  -DUSE_FBGEMM=OFF -DCOMPILE_CPU=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCOMPILE_TESTS=ON -DUSE_MKL=OFF -DUSE_TCMALLOC=OFF -DUSE_DOXYGEN=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_ARCH=native
+cmake --build build-hip -j$(nproc)
+```
+Result: 292/292 targets, no errors.
+
+### Unit suites
+
+```
+BUILD=projects/marian-dev/src/build-hip
+$BUILD/src/tests/units/run_graph_tests
+$BUILD/src/tests/units/run_attention_tests
+$BUILD/src/tests/units/run_transformer_tests
+$BUILD/src/tests/units/run_operator_tests
+```
+
+- graph_tests: 10/10 assertions, 4 test cases -- PASS
+- attention_tests: 6/6 assertions, 3 test cases -- PASS
+- transformer_tests: 3/3 assertions, 3 test cases -- PASS
+- operator_tests: 284/287 assertions; the 3 failures are all in the `csr-dot product` SECTION (operator_tests.cpp:539,609,610) -- the documented deferred cuSPARSE SpMM path. The dense `dot product` and `topk operations` sections (exact top-k values, argmax/argmin/sort) PASS.
+
+### End-to-end gate (silent-corruption / determinism guard)
+
+Trained a tiny Transformer (reverse-copy toy task) on GPU from scratch, then beam-search decoded (beam=6) twice on GPU and once on CPU:
+```
+E2E=agent_space/marian-validate
+MARIAN=projects/marian-dev/src/build-hip/marian
+DECODER=projects/marian-dev/src/build-hip/marian-decoder
+
+$MARIAN --type transformer -t $E2E/train.src $E2E/train.tgt -m $E2E/model.npz \
+  --vocabs $E2E/vocab.src.yml $E2E/vocab.tgt.yml --dim-emb 64 \
+  --transformer-dim-ffn 128 --transformer-heads 2 --enc-depth 2 --dec-depth 2 \
+  --after 600u --devices 0
+
+$DECODER -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --devices 0 > $E2E/gpu1.out 2>&1
+
+$DECODER -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --devices 0 > $E2E/gpu2.out 2>&1
+
+$DECODER -m $E2E/model.npz -v $E2E/vocab.src.yml $E2E/vocab.tgt.yml \
+  -i $E2E/test.src -b 6 --cpu-threads 1 > $E2E/cpu.out 2>&1
+```
+Result: GPU run1 == GPU run2 (bit-identical, deterministic) AND GPU == CPU (correct). diff exits 0 on both comparisons.
+
+gMaxElement/gMaxElementUpdate kernel dispatch on gfx90a confirmed via AMD_LOG_LEVEL=3:
+```
+ShaderName : void marian::gMaxElement<float>(...)
+ShaderName : void marian::gMaxElementUpdate<float>(...)
+```
+
+### Verdict: PASS -- linux-gfx90a completed at validated_sha 25f910c
