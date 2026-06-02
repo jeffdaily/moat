@@ -79,6 +79,34 @@ per-op probe to run, the test's roulette tensor needs padding to 29.
 `gh api -X PUT repos/jeffdaily/evogp/actions/permissions -F enabled=false` run
 after fork.
 
+## Validation 2026-06-02 (linux-gfx90a, validator)
+
+GPU: AMD Instinct MI250X (gfx90a, GCD 0), ROCm 7.2, torch 2.13a (hip 7.2.53211).
+Fork: jeffdaily/evogp @ moat-port, SHA ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0.
+
+Build (clean from committed source):
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a
+rm -rf build src/evogp.egg-info src/evogp/*.so src/evogp/hip
+pip install -e /var/lib/jenkins/moat/projects/evogp/src --no-build-isolation
+# Completed in ~53s; .so contains amdgcn-amd-amdhsa--gfx90a code objects (confirmed via strings)
+```
+
+GPU gate (run twice, fixed seed):
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a
+python -m evogp.sr_test
+```
+
+Run 1: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; no HIP fault; no assert(top==1).
+Run 2: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; identical -- deterministic PASS.
+Total test time ~5.3s per run (fast after gen0 GPU warmup at ~394ms).
+AMD_LOG_LEVEL=3 confirms: "Using native code object for device: amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-".
+alloca->fixed-array fix holds at 1000-pop / 1024-thread blocks; assert(top==1) canary silent.
+test/test_bind_success.py pre-existing failure confirmed unchanged (backend-independent, not gated).
+
+Result: PASS -> linux-gfx90a completed (validated_sha ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0).
+
 ## Review 2026-06-02 (linux-gfx90a, reviewer)
 Reviewed moat-port @ ba4fa7e vs base ee11f1e via /pr-review. Verdict: review-passed (no problems found). Re-ran the GPU gate on real gfx90a (GCD 0).
 
