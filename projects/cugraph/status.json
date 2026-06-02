@@ -7,17 +7,17 @@
   "priority": 6.114,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-02T09:53:05Z",
-  "head_sha": "2cec6361732c372a5a57096de17eb6e4c97b685b",
+  "updated_at": "2026-06-02T10:56:36Z",
+  "head_sha": "1e28c83",
   "platforms": {
     "linux-gfx90a": {
       "state": "planned",
       "blocked": true,
-      "blocked_reason": "Session 2 advanced the SG HIP port substantially (fork 2cec636): ~14 systematic interop/multi-arch classes resolved (CUDACC/HIPCC guard, host-vs-device-pass compile-time warp_size via warp_size_ct, transform_e wave64 packed-bool regrouping, clang device-lambda is_invocable/invoke_result trait, raft C++20 span enable_if shadow-fix, cub=hipcub alias, classic thrust::tuple<->cuda::std bridge incl tuple_size/tuple_element/pair + is_thrust_tuple traits, rmm flat-path + cuda/std/algorithm shims, ~16 tuple-arg comparator functors). cugraph_common now compiles entirely EXCEPT the 2 renumber_utils TUs (the cuCollections heterogeneous_value .first-on-thrust::tuple delta -- a second-repo fix in jeffdaily/cuCollections); ~92/124 SG TUs compile, 32 primitive groups remain. Library does not yet link. Remaining (precise list + exemplars in notes.md): the rest of the rocThrust zip-WRITE boundary + paired local-constexpr-capture across the frontier/per-prim impls; a rocPRIM block_load value-type (thrust::tuple-vs-scalar) mismatch in extract_transform_if/per_v_transform_reduce; the cuco delta; then link + SG gtests (a libhipcxx cuda::mr async_resource concept-arity issue in tests/base_fixture.hpp to clear first) + gfx90a GPU validation. Mechanical/bounded but multi-session/multi-repo; kept blocked to avoid thrash/false-port.",
+      "blocked_reason": "Session 3 (fork 1e28c83): cugraph_common now compiles ENTIRELY (the 2 renumber_utils TUs cleared -- the actual blocker was a zip-iterator CONSTRUCTION site in collect_comm.cuh, not the cuco heterogeneous_value delta, which is NOT on the SG path). SG cugraph library compiles 101 of 124 .cu (was 85); BFS and PageRank objects compile. Library does not yet link. KEYSTONE this round: the rocThrust zip-WRITE boundary solved once via a thrust_compat shadow of tuple_of_iterator_references.h that adds operator=(cuda::std::tuple), placed BEFORE /opt/rocm on the include path (raft_compat/rmm_compat pattern); plus a make_zip_iterator(cuda::std::tuple) splat overload, dataframe-buffer/to_thrust_iterator_tuple classic<->cuda::std normalization, an is_equivalent_value_type predicate, and a tuple-flavor-agnostic thrust_tuple_get. The 52 remaining TUs ALL share one class (A' in notes.md): rocThrust zip iterators are classic-thrust::tuple-based while cugraph 26.08 is cuda::std::tuple-native, so the edge-property-view value algebra (edge_endpoint_property_view_t value_type/asserts, edge_partition_endpoint_property_device_view_t conversion, reduce_op::plus on tuple args, single-element zips) needs the READ/value-type half of the bridge. create_graph_from_edgelist (graph construction, needed by EVERY SG test incl BFS/PageRank) is in this set, so no GPU validation is reachable yet. notes.md names the exact decision: option (a) push is_equivalent_value_type + template the property-device-view/reduce_op tuple args through the stack (~1-2 sessions, mechanical), or option (b) shadow zip_iterator_base.h to instantiate for cuda::std::tuple (riskier, could collapse the class). Also pending before gtests: a libhipcxx cuda::mr async_resource concept-arity issue in tests/utilities/base_fixture.hpp:99. Net-positive, zero-regression; kept blocked to avoid thrash/false-port.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T09:53:05Z",
+      "updated_at": "2026-06-02T10:56:36Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

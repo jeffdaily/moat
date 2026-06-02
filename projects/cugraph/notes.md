@@ -6,17 +6,20 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: IN PROGRESS (blocked, library nearly compiling)
+## Status: IN PROGRESS (blocked, SG library compiling 101/124 TUs)
 
-Session 2 resolved ~14 systematic interop/multi-arch fault classes (see "Session 2
-progress" below). cugraph_common now compiles entirely EXCEPT the 2 cuco-blocked
-renumber_utils TUs (class C); the SG cugraph library has ~92 of ~124 .cu compiling
-with 32 primitive groups remaining (classes A/B/D). The library does not yet link.
-Remaining is the rest of the zip-WRITE boundary + rocPRIM block_load value-type
-mismatch across the frontier/per-prim impls, the cuCollections-fork heterogeneous_value
-delta (a second repo we own), then link + the SG gtests + GPU validation on gfx90a.
-Kept blocked (no false-port) per the no-thrash rule; the continuation plan below is
-precise and the fixes are mechanical/bounded.
+Session 3: cugraph_common now compiles ENTIRELY (the 2 renumber_utils TUs cleared
+via the collect_comm zip-construction fix -- the cuco delta was a red herring on
+the SG path). The SG cugraph library compiles 101 of 124 .cu (was 85); 52 TUs
+remain, all gated by ONE class (A' below): the rocThrust classic-tuple zip iterator
+value_type vs cugraph's cuda::std::tuple value algebra in the edge-property-view
+stack. The KEYSTONE write-boundary class is SOLVED this session (a thrust_compat
+shadow header adding cuda::std::tuple assignment to tuple_of_iterator_references).
+The library does not yet link. bfs_sg / pagerank_sg objects DO compile, but no SG
+test can run yet because create_graph_from_edgelist (graph construction) is in the
+A' set. Kept BLOCKED (no false-port) per the no-thrash rule; the continuation plan
+(Session 3 progress + Remaining fault classes A'/B/D/E) below is precise and names
+the decision needed.
 
 ## Build recipe (gfx90a lead)
 
@@ -177,43 +180,106 @@ Resolved this session (all USE_HIP-guarded; CUDA path byte-for-byte):
     invalid_* not implicitly captured by a device lambda under clang (add to the
     capture list), and the zip-write boundary (detail::cugraph_zip_make_tuple).
 
+## Session 3 progress (cugraph_common DONE; SG lib 85 -> 101/124 TUs)
+
+Net-positive, zero-regression. All USE_HIP-guarded; CUDA path byte-identical.
+
+Resolved this session:
+1. cugraph_common now compiles ENTIRELY (the 2 renumber_utils TUs cleared). The
+   actual blocker was NOT the cuco heterogeneous_value `.first` delta (class C,
+   never hit on the SG renumber path); it was a zip-iterator CONSTRUCTION site:
+   collect_comm.cuh:71 `thrust::make_zip_iterator(cuda::std::make_tuple(it0,it1))`.
+   rocThrust's make_zip_iterator takes a classic thrust::tuple or a variadic
+   iterator pack, so a single cuda::std::tuple is taken as ONE iterator. Fixed
+   generically (see item 4) + the explicit collect_comm / wcc sites converted to
+   detail::cugraph_zip_make_tuple.
+2. KEYSTONE -- the rocThrust zip-WRITE boundary (the broad class A) solved ONCE,
+   not per-site: rocThrust's thrust::detail::tuple_of_iterator_references (a zip
+   deref lvalue) defines operator= only for thrust::tuple / thrust::pair /
+   thrust::reference, NOT cuda::std::tuple, so the central prim write
+   `*(result_value_output + i) = val` (val a cuda::std::tuple) failed everywhere
+   (per_v_transform_reduce_e.cuh 218/366/663/877, etc.). Added a SHADOW header
+   cpp/src/hip/thrust_compat/thrust/iterator/detail/tuple_of_iterator_references.h
+   (byte-identical to rocThrust's except one added operator=(cuda::std::tuple<Us...>)
+   that rebuilds a classic thrust::tuple and delegates), wired on the include path
+   BEFORE /opt/rocm/include via target_include_directories(... BEFORE ...) in
+   cugraph_hip.cmake -- exactly the raft_compat / rmm_compat shim pattern. This
+   cleared the entire per-prim `= val` write class in one move. NOTE: the value-
+   variable writes (val a variable, not make_tuple) can ONLY be fixed this way;
+   detail::cugraph_zip_make_tuple does not apply to them.
+3. make_zip_iterator(cuda::std::tuple<Its...>) overload added to the compat header
+   (namespace thrust) that splats the cuda::std::tuple into rocThrust's variadic
+   make_zip_iterator. Fixes view_concat's `make_zip_iterator(thrust_tuple_cat(...))`
+   and all explicit-tuple zip construction generically.
+4. dataframe_buffer_{,const_}iterator_type<cuda::std::tuple<Ts...>> trait: declared
+   the zip iterator over a classic thrust::tuple under USE_HIP (matching what
+   thrust::make_zip_iterator actually returns; a zip_iterator<cuda::std::tuple<...>>
+   cannot even instantiate -- rocThrust's tuple_meta_accumulate/value_type are
+   undefined for cuda::std::tuple). NOTE this is the source of the remaining wide
+   front (class A' below): it pushes a CLASSIC thrust::tuple value_type into the
+   property views' ValueIterator, which then disagrees with the cuda::std value_t.
+5. cugraph::is_equivalent_value_type_v<A,B> (thrust_tuple_utils.hpp): treats a
+   classic thrust::tuple<Ts...> and a cuda::std::tuple<Us...> with the same element
+   prefix as equal (= std::is_same on CUDA). Applied at edge_src_dst_property.hpp:51
+   static_assert. (More property-view asserts/typedefs need the same treatment --
+   see A' below.)
+6. to_thrust_iterator_tuple (tuple-valued overload): normalize the classic
+   get_iterator_tuple() result to cuda::std::tuple under USE_HIP (new detail helper
+   classic_tuple_to_cuda_std_tuple) so view_concat can mix scalar- and tuple-valued
+   views in thrust_tuple_cat.
+7. thrust_tuple_get functor operator() templated under USE_HIP (class-10 pattern)
+   so the classic-tuple zip deref binds (unblocked the shuffle_comm path in
+   create_graph_from_edgelist).
+
 ## Remaining fault classes (the bounded work to finish)
 
-A. rocThrust zip-WRITE boundary across the rest of the prims (`no viable
-   overloaded '='`). The pattern is established (sssp_impl.cuh): a device lambda /
-   functor returning cuda::std::make_tuple into a zip output reference (classic
-   thrust::tuple). Convert each return site to detail::cugraph_zip_make_tuple (or
-   thrust::make_tuple under USE_HIP). Plus the paired "local constexpr not
-   captured" capture-list fix. Surfaces in the frontier prims
-   (extract_transform_if_v_frontier_e.cuh has several at lines ~78/260/388/505)
-   and per-prim impls. Mechanical, ~tens of sites; do per failing TU.
+A'. THE DOMINANT REMAINING CLASS (gates ~all 52 failing SG TUs incl
+   create_graph_from_edgelist, common_methods, sssp, the centralities, similarity).
+   Root: item 4 above makes the edge property buffers' ValueIterator a classic-
+   thrust::tuple zip iterator, whose value_type is thrust::tuple<...,null...> while
+   the property's logical value_t is cuda::std::tuple<...>. That mismatch then
+   breaks, in cascade: edge_endpoint_property_view_t (value_type typedef + asserts),
+   edge_partition_endpoint_property_device_view_t conversion (the
+   `no matching conversion ... to edge_partition_dst_input_device_view_t` at
+   transform_reduce_e_by_src_dst_key.cuh:592), reduce_op::plus<cuda::std::tuple>
+   invoked on classic-tuple args inside rocPRIM/rocThrust reduce_by_key, and
+   to_thrust_iterator_tuple's enable_if on single-element zips
+   (`zip_iterator<thrust::tuple<cuda::std::tuple<const float*>>>`).
+   DECISION NEEDED (pick ONE and apply consistently across the property-view stack):
+   (a) Keep value_iterators classic-tuple-based (current item-4 direction) and push
+       is_equivalent_value_type through EVERY property-view value_type compare +
+       teach edge_partition_endpoint_property_device_view_t + reduce_op to accept
+       a classic-tuple value_type (template their tuple args like the class-10
+       functors, use the cuda::std::get bridge). Broadest but mechanical.
+   (b) Revert item 4 (value_iterators stay cuda::std::tuple) and instead make
+       rocThrust's zip machinery instantiate for cuda::std::tuple by shadowing
+       zip_iterator_base.h's tuple_meta_accumulate/tuple_of_value_types for
+       cuda::std::tuple (deep thrust shadow, narrow blast radius if it works).
+   Estimate: option (a) is ~1-2 sessions of per-site templating; (b) is riskier but
+   could collapse the whole class. The underlying truth: this rocThrust is classic-
+   tuple-based and cugraph 26.08 is fully CCCL/cuda::std::tuple-native, so every
+   zip<->value boundary needs a bridge. The write side (keystone item 2) is done;
+   the READ/value-type side (A') is the remaining half.
 
-B. rocPRIM block_load value-type mismatch: in extract_transform_if /
-   per_v_transform_reduce paths rocPRIM block_load static_asserts
-   is_convertible<thrust::tuple<...>, int> -- the iterator value_type resolves to
-   a thrust::tuple where a scalar is expected (or vice versa). Needs the specific
-   iterator's value_type aligned (likely a transform/zip iterator whose declared
-   reference/value_type disagrees on ROCm). Diagnose per site; may need a
-   proclaim_return_type or an explicit value_type on the cugraph iterator wrapper.
+B. rocPRIM block_load value-type mismatch (block_load_func.hpp:301 `assigning to
+   'int' from incompatible type tuple_of_iterator_references<float&&>`): a sub-case
+   of A' surfacing inside rocPRIM block primitives once the property value_type is
+   classic. Should fall out once A' is resolved; recheck per TU.
 
-C. cuCollections fork delta (a SECOND repo -- jeffdaily/cuCollections, which we
-   own): cuco open_addressing_ref_impl.cuh heterogeneous_value() does `.first` /
-   `.second` on the inserted value when it is a (classic) thrust::tuple<K,V> from a
-   rocThrust zip deref -- thrust::tuple has no `.first`. cugraph's kv_store insert
-   (renumbering) hits this -- it is the ONLY remaining cugraph_common blocker
-   (renumber_utils_common_v32/v64). Add a thrust::tuple branch (thrust::get<0>/<1>)
-   to the cuco fork's is_cuda_std_pair_like / heterogeneous_value, push the cuco
-   fork (--force-with-lease), and re-consume from projects/cuCollections/src.
+C. cuCollections fork delta -- NOT on the SG critical path after all (cugraph_common
+   compiles without it). Leave the jeffdaily/cuCollections fork as-is unless a
+   non-SG path later needs it.
 
 D. clang two-phase lookup (`template`/`this->`/class-qualified static) across the
-   template-heavy prims -- mechanical, surfaced per-TU at compile (a few seen).
+   template-heavy prims -- mechanical, ~2 TUs left (od_shortest_distances).
 
-E. After cugraph_common + cugraph link: build the in-scope SG gtests, then
-   GPU-validate on gfx90a (the real gate). NOT started. Note the tests cmake hits
-   a separate concept error in tests/utilities/base_fixture.hpp:99
-   (`too many template arguments for concept 'async_resource'`) -- a libhipcxx
-   cuda::mr concept-arity mismatch in the test harness, to resolve before the
-   gtests build.
+E. After the SG lib links: the in-scope SG gtests, then GPU-validate on gfx90a
+   (the real gate). NOT reachable yet -- create_graph_from_edgelist (graph
+   construction, needed by EVERY test incl BFS/PageRank) is in the A' set, so even
+   though bfs_sg / pagerank_sg .cu OBJECTS already compile, no test can build a
+   graph until A' is cleared. Tests cmake also hits a libhipcxx cuda::mr
+   async_resource concept-arity issue in tests/utilities/base_fixture.hpp:99 to
+   clear first.
 
 ## Build hygiene note (session 2)
 
