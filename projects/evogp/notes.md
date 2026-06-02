@@ -107,6 +107,34 @@ test/test_bind_success.py pre-existing failure confirmed unchanged (backend-inde
 
 Result: PASS -> linux-gfx90a completed (validated_sha ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0).
 
+## Validation 2026-06-02 (linux-gfx1100, validator)
+
+GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2, torch 2.13.0a0+gitb5e90ff (hip 7.2.53211).
+Fork: jeffdaily/evogp @ moat-port, SHA ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0 (no code change; follower validate-first).
+
+Build (clean from committed source):
+```
+rm -rf build src/evogp.egg-info src/evogp/*.so src/evogp/hip
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e /var/lib/jenkins/moat/projects/evogp/src --no-build-isolation
+# Completed in ~39s; Strategy B (torch hipify) generated src/evogp/hip/*.hip
+```
+
+gfx1100 code-object evidence:
+- roc-obj-ls on evogp_cuda.cpython-312-x86_64-linux-gnu.so shows 3x "hipv4-amdgcn-amd-amdhsa--gfx1100" code objects; no gfx90a.
+- AMD_LOG_LEVEL=3 confirms: "Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100" on first kernel dispatch.
+
+GPU gate (run twice, fixed seed):
+```
+HIP_VISIBLE_DEVICES=0 python -m evogp.sr_test
+```
+
+Run 1: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; ~3.7s total (300ms gen0 warmup, ~5ms/gen thereafter); no HIP/HSA fault; no assert(top==1) abort.
+Run 2: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; identical output -- deterministic PASS.
+
+Verdict: PASS. Fixed-array scratch (alloca->float stack[MAX_STACK]) holds at gfx1100 (RDNA3) occupancy. No HSA_STATUS_ERROR_EXCEPTION, no assert(top==1) canary, fitness converges monotonically from -0.2511 (gen 0) to -0.0179 (gen 99), finite throughout, two seeded runs identical. Results match gfx90a baseline exactly (-0.0179 final best, same trajectory). No fork code change needed -- arch-unified fix validated on wave32.
+
+Result: PASS -> linux-gfx1100 completed (validated_sha ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0).
+
 ## Review 2026-06-02 (linux-gfx90a, reviewer)
 Reviewed moat-port @ ba4fa7e vs base ee11f1e via /pr-review. Verdict: review-passed (no problems found). Re-ran the GPU gate on real gfx90a (GCD 0).
 
