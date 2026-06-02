@@ -57,3 +57,16 @@ pipeline is a follow-up (the four `_C` kernels are the validated lead gate):
   recording FaithC `depends_on` it for the e2e story.
 - `torch_scatter` (rusty1s/pytorch_scatter): builds on ROCm torch via auto-hipify
   but must be compiled for this ROCm; external pip dep, not a MOAT project.
+
+## Review 2026-06-02 (reviewer, gfx90a)
+Verdict: review-passed. Independently reproduced on real gfx90a (MI250X, GCD 3, ROCm torch hip 7.2.53211).
+
+Verified clean:
+- setup.py CUDAExtension + BuildExtension drives a clean-from-scratch HIP build (auto-hipify generates kernels.hip, compiles, links amdhip64/c10_hip/torch_hip); sources stay CUDA-native (.cu/.cpp/.h tracked, no .hip/.so committed; .gitignore covers *.hip/*.prehip/*.so.*).
+- Multi-arch: PYTORCH_ROCM_ARCH="gfx90a;gfx1100" fresh build -> both code objects in _C*.so (llvm-objdump --offloading).
+- Ternary-launch hoist (kernels.cu:730 mode-1 sat_centroid, kernels.cu:745 mode-2 sat_clip): `auto kernel = max_vert==8 ? K<scalar_t,8> : K<scalar_t,7>; kernel<<<...>>>` is semantically identical to the original `(cond ? A : B)<<<...>>>`; both template branches differ only in the non-type MAXV arg so they share one function-pointer type that `auto` deduces cleanly. Parses under hipify and nvcc.
+- Wave-agnostic confirmed: zero warp intrinsics (no shfl/ballot/activemask/any/all), no cooperative groups, no threadfence, no textures/surfaces, no cub/thrust/cublas/curand/cufft. Only atomicAdd + __syncthreads + dynamic extern __shared__ (sized by blockDim.x, fully fenced) + float math. dim3(32,32) are 2D tile dims, not warp assumptions.
+- Correctness harness reproduced: 16/16 PASS. atomicAdd kernels (seg_tri, gen_candidates_overlap) order-independent sorted-pair sets; non-atomic kernels exact + rerun-deterministic; overflow path exercised; Moller-Trumbore dot drift 3.5e-7, eps-absorbed (no -ffp-contract pin needed).
+- Commit hygiene: [ROCm] title 54 chars, mentions Claude, no noreply/ghstack/em-dash. Fork main == upstream main (1580e2e) clean mirror; moat-port HEAD == ec2fae28; fork Actions disabled. No AMD-internal account reference.
+
+Minor (non-blocking, recorded for the e2e follow-up): the harness cross-checks mode-0 hit_mask against a CPU SAT reference, but mode-1/mode-2 centroid/poly-vert VALUES are validated only for determinism + index alignment + range, not against an independent CPU Sutherland-Hodgman reference (plan called for "centroids/areas within tol"). The clip geometry is unchanged from upstream CUDA and the shared SAT plane logic is cross-checked via mode-0, so this is a coverage gap, not a defect; close it when atom3d enables the end-to-end demo run.
