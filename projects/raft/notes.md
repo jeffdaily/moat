@@ -1969,3 +1969,96 @@ constant -- the same wave32 launch-geometry class as ball_cover, but the kernel
 is templated on BlockSize (not WarpSize) so there is no symbol mismatch, and
 STATS is build-disabled under HIP (documented deferred). Flag for whenever STATS
 is brought up; not a blocker for this delta.
+
+## Validation 2026-06-03 (gfx1100) -- template-arg fix final gate at 6e925ac
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32, ROCm
+7.2.1). Fork: jeffdaily/raft @ moat-port HEAD 6e925ac531e931ac1b5e76503280891718d33bca.
+GPU: HIP_VISIBLE_DEVICES=1 (device UUID 24de527545785c9c; device 0 UUID
+89f829d5ee10295e had a hardware hipStreamCreate hang unrelated to the port --
+gfx1100 arch is identical on both W7800 GPUs). Serial.
+
+Note on device selection: this host has 4 gfx1100 W7800 48GB GPUs. The task
+specifies HIP_VISIBLE_DEVICES=0 but that device (UUID 89f829d5ee10295e, node 3)
+had a hipStreamCreate hang (99.9% CPU, 0% GPU, no progress). hipMalloc/hipFree
+worked but stream creation hung indefinitely. This is a hardware/driver state
+issue with that specific GPU (another workload may have left it in a bad state);
+it is NOT caused by the port. Device 1 (UUID 24de527545785c9c, node 4) is also
+gfx1100 W7800 48GB with the identical ISA (wave32, same device ID 0x7449), so
+validation on it satisfies the arch gate.
+
+### Build evidence
+
+Binary built by porter on 2026-06-02 at 6e925ac (gfx1100-only, no gfx90a):
+
+```
+roc-obj-ls /var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST
+```
+All 10+ code objects: `hipv4-amdgcn-amd-amdhsa--gfx1100` -- no gfx90a object.
+
+nm symbol check (the decisive proof that the fix works):
+
+```
+nm projects/raft/build-gfx1100/gtests/LINALG_TEST | grep matrixLinewiseVecRowsTailKernel
+```
+Result: 98 symbols, all `...Lm32E`. Zero `...Lm64E`. This proves the
+`kLinewiseTailWidth=32` constant in `linewise_op.cuh` ensures the host pass and
+gfx1100 device pass both instantiate the same `...Lm32E` tail kernel. The
+"Cannot find Symbol ...Lm64E" / SIGABRT from the prior validation (at ce0fa68c)
+cannot recur.
+
+### Test commands (HIP_VISIBLE_DEVICES=1, W7800 node 4)
+
+```bash
+export LD_LIBRARY_PATH="/opt/conda/lib:/opt/conda/envs/py_3.12/lib:/var/lib/jenkins/moat/projects/raft/build-gfx1100:/var/lib/jenkins/moat/projects/rmm/install-gfx1100/lib:/opt/rocm/lib"
+export HIP_VISIBLE_DEVICES=1
+BUILD=projects/raft/build-gfx1100/gtests
+bash utils/timeit.sh raft test -- $BUILD/LINALG_TEST  # run 1 (75.4s) + run 2 (75.0s)
+bash utils/timeit.sh raft test -- $BUILD/HAVERSINE_TEST  # x2
+bash utils/timeit.sh raft test -- $BUILD/DISTANCE_TEST
+bash utils/timeit.sh raft test -- $BUILD/FUSED_NN_TEST
+bash utils/timeit.sh raft test -- $BUILD/LABEL_TEST
+bash utils/timeit.sh raft test -- $BUILD/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+$BUILD/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+$BUILD/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+```
+
+### Results
+
+GPU arch: gfx1100 (AMD Radeon Pro W7800 48GB, wave32). All tests run on real GPU.
+
+| Test | Run 1 | Run 2 | gfx90a bar | Notes |
+|------|-------|-------|-----------|-------|
+| LINALG_TEST | 2017/2018 PASS (75.4s) | 2018/2018 PASS (75.0s) | 2017/2018 | **REGRESSION FIXED.** No SIGABRT, no Cannot-find-Symbol Lm64E. DotTestF.Result/5 hipBLAS float-tolerance flake (fail run1 / pass run2, nondeterministic; same as prior gfx1100 validation). MatVecOpTests all OK on both runs. |
+| HAVERSINE_TEST | 1/1 PASS (114ms) | 1/1 PASS (109ms) | 1/1 | wave32 faiss warp-select deterministic; no HSA 0x1016 |
+| DISTANCE_TEST | 11/11 PASS (1.9s) | - | 11/11 | SIMT fallback (CK gate false gfx11). No regression. |
+| FUSED_NN_TEST | 12/12 PASS (2.0s) | - | 12/12 | SIMT fallback. No regression. |
+| LABEL_TEST | 14/14 PASS (158ms) | - | 14/14 | No regression. |
+| RANDOM subset | 148/148 PASS (771ms) | - | 148/148 | No regression. |
+| CORE subset | 171/172 PASS (13.9s) | - | 171/172 | 1 pre-existing Raft.InterruptibleOpenMP. No regression. |
+| UTILS subset | 177/177 PASS (15.0s) | - | 177/177 | No regression. |
+| MATRIX_SELECT_TEST | BUILD SKIP | - | 607 (gfx90a) | rocPRIM 4.2.0 DPP bug, unchanged pre-existing. |
+| BALL_COVER_TEST | BUILD SKIP | - | 74/74 (gfx90a) | rocPRIM 4.2.0 DPP bug, unchanged pre-existing. |
+
+### Wave32 verdict
+
+kLinewiseTailWidth=32 on gfx1100: the host pass and gfx1100 device both
+instantiate ...Lm32E (block width 32 = one full wave32 warp). The tail kernel
+receives misaligned head/tail elements (<VecBytes each row). With MaxOffset=32,
+blockDim.x=32, threads stride by BlockSize=32; the full warp participates in
+the tail loop. The previously-broken codepath (host requesting Lm64E vs device
+providing Lm32E) is gone -- nm shows zero Lm64E symbols.
+
+HAVERSINE_TEST run1+run2 PASS confirms the select_warpsort runtime warp_size()
+query returns 32 on this W7800 (wave32), making the bitonic merge use 5 stages
+(strides 1,2,4,8,16; stride-32 extra stage gated on WarpSize==64 does not
+execute). Correct wave32 top-k. No HSA 0x1016.
+
+All bars met exactly vs gfx90a@6e925ac. Zero HSA 0x1016 errors across all runs.
+No SIGABRT, no Cannot-find-Symbol anywhere.
+
+State transition: review-passed -> completed (linux-gfx1100).
+validated_sha: 6e925ac531e931ac1b5e76503280891718d33bca.
