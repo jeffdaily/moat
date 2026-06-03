@@ -1139,3 +1139,161 @@ is usable here -- enabling the exact count-match gate, no config divergence.
   ok; non-layered surf3Dread ALL-FRESH). The non-layered-3D fix is correct + necessary.
 
 All three platforms now completed @ 3a789a13.
+## Experiment 2026-06-03 -- ROCm/clr#275: does ROCm/rocm-systems#6683 fix the layered collapse?
+
+Controlled experiment on real gfx90a (AMD Instinct MI250X, HIP_VISIBLE_DEVICES=0, ROCm 7.2.1).
+Scratch in agent_space/clr275/. No project state touched.
+
+### Setup
+
+Shadow header at `agent_space/clr275/shadow/hip/amd_detail/amd_surface_functions.h` --
+a copy of `/opt/rocm/include/hip/amd_detail/amd_surface_functions.h` with ONLY the
+PR #6683 changes applied (surf1DLayered{read,write} and surf2DLayered{read,write});
+`/opt/rocm` is not modified. PR diff obtained via `gh pr diff 6683 --repo ROCm/rocm-systems`.
+
+Extended repro at `agent_space/clr275/layered_collapse_ext.cpp`: after
+surf2DLayeredwrite produces all 6 layers (value = layer*100+7), three read paths are
+exercised: (a) surf2DLayeredread, (b) tex2DLayered, (c) hipMemcpy3D from the layered
+array to host. Plus the non-layered 3D control (surf3Dwrite/surf3Dread).
+
+BASELINE build: stock /opt/rocm header.
+PATCHED build: `-I agent_space/clr275/shadow` first on the include path.
+Device-code blob verification: both gfx90a blobs are 16344 bytes; Python byte-compare
+confirms they differ (different image intrinsics -- the shadow header was picked up).
+
+### Build commands
+
+```
+export HIP_VISIBLE_DEVICES=0
+hipcc -O2 --offload-arch=gfx90a layered_collapse_ext.cpp -o base
+hipcc -O2 --offload-arch=gfx90a -I/var/lib/jenkins/moat/agent_space/clr275/shadow \
+  layered_collapse_ext.cpp -o patched
+```
+
+### BASELINE raw output (stock /opt/rocm header, __ockl_image_load_lod_2D path)
+
+```
+device: AMD Instinct MI250X / MI250  warpSize: 64
+
+(a) LAYERED array, surf2DLayeredread:
+  layer 0 got 507.0 exp 7 STALE
+  layer 1 got 507.0 exp 107 STALE
+  layer 2 got 507.0 exp 207 STALE
+  layer 3 got 507.0 exp 307 STALE
+  layer 4 got 507.0 exp 407 STALE
+  layer 5 got 507.0 exp 507 OK
+  => COLLAPSED
+
+(b) LAYERED array, tex2DLayered:
+  layer 0 got 507.0 exp 7 STALE
+  layer 1 got 0.0 exp 107 STALE
+  layer 2 got 0.0 exp 207 STALE
+  layer 3 got 0.0 exp 307 STALE
+  layer 4 got 0.0 exp 407 STALE
+  layer 5 got 0.0 exp 507 STALE
+  => COLLAPSED
+
+(c) LAYERED array, hipMemcpy3D (host readback @ pixel [16,16]):
+  layer 0 got 507.0 exp 7 STALE
+  layer 1 got 0.0 exp 107 STALE
+  layer 2 got 0.0 exp 207 STALE
+  layer 3 got 0.0 exp 307 STALE
+  layer 4 got 0.0 exp 407 STALE
+  layer 5 got 0.0 exp 507 STALE
+  => COLLAPSED
+
+(ctrl) NON-LAYERED 3D array, surf3Dread:
+  layer 0 got 7.0 exp 7 OK
+  layer 1 got 107.0 exp 107 OK
+  layer 2 got 207.0 exp 207 OK
+  layer 3 got 307.0 exp 307 OK
+  layer 4 got 407.0 exp 407 OK
+  layer 5 got 507.0 exp 507 OK
+  => ALL-FRESH
+
+=== SUMMARY ===
+(a) surf2DLayeredread : COLLAPSED
+(b) tex2DLayered      : COLLAPSED
+(c) hipMemcpy3D       : see above
+(ctrl) non-layered 3D : ALL-FRESH (coherent)
+```
+
+### PATCHED raw output (shadow header, __ockl_image_load_2Da path)
+
+```
+device: AMD Instinct MI250X / MI250  warpSize: 64
+
+(a) LAYERED array, surf2DLayeredread:
+  layer 0 got 7.0 exp 7 OK
+  layer 1 got 107.0 exp 107 OK
+  layer 2 got 207.0 exp 207 OK
+  layer 3 got 307.0 exp 307 OK
+  layer 4 got 407.0 exp 407 OK
+  layer 5 got 507.0 exp 507 OK
+  => ALL-FRESH
+
+(b) LAYERED array, tex2DLayered:
+  layer 0 got 7.0 exp 7 OK
+  layer 1 got 107.0 exp 107 OK
+  layer 2 got 207.0 exp 207 OK
+  layer 3 got 307.0 exp 307 OK
+  layer 4 got 407.0 exp 407 OK
+  layer 5 got 507.0 exp 507 OK
+  => ALL-FRESH
+
+(c) LAYERED array, hipMemcpy3D (host readback @ pixel [16,16]):
+  layer 0 got 7.0 exp 7 OK
+  layer 1 got 107.0 exp 107 OK
+  layer 2 got 207.0 exp 207 OK
+  layer 3 got 307.0 exp 307 OK
+  layer 4 got 407.0 exp 407 OK
+  layer 5 got 507.0 exp 507 OK
+  => ALL-FRESH
+
+(ctrl) NON-LAYERED 3D array, surf3Dread:
+  layer 0 got 7.0 exp 7 OK
+  layer 1 got 107.0 exp 107 OK
+  layer 2 got 207.0 exp 207 OK
+  layer 3 got 307.0 exp 307 OK
+  layer 4 got 407.0 exp 407 OK
+  layer 5 got 507.0 exp 507 OK
+  => ALL-FRESH
+
+=== SUMMARY ===
+(a) surf2DLayeredread : ALL-FRESH
+(b) tex2DLayered      : ALL-FRESH
+(c) hipMemcpy3D       : see above
+(ctrl) non-layered 3D : ALL-FRESH (coherent)
+```
+
+### Result matrix
+
+| Read path | BASELINE | PATCHED |
+|-----------|----------|---------|
+| (a) surf2DLayeredread | COLLAPSED | ALL-FRESH |
+| (b) tex2DLayered | COLLAPSED | ALL-FRESH |
+| (c) hipMemcpy3D | COLLAPSED | ALL-FRESH |
+| (ctrl) non-layered 3D surf3Dread | ALL-FRESH | ALL-FRESH |
+
+### Interpretation
+
+PR #6683 switches surf2DLayeredwrite from `__ockl_image_store_lod_2D(coords_2d, layer)`
+to `__ockl_image_store_2Da(coords_4d_with_layer_in_z)` -- the write intrinsic change is
+what matters. The BASELINE writer used `lod_2D` (which treats the `lod` argument as a
+mipmap LOD level, not an array layer), so ALL writes landed in the same slot regardless of
+the `layer` argument. The PATCHED writer uses `store_2Da` (the genuine array intrinsic),
+which writes each layer to the correct slot.
+
+Once the writes land correctly, ALL read paths (surf2DLayeredread, tex2DLayered,
+hipMemcpy3D) see correct per-layer data. RichardGe's note that his PR touches
+surf2DLayered but NOT tex2DLayered is accurate: tex2DLayered is a texture (runtime-side)
+path, but it reads from the same underlying layered array storage. When the writes are
+correct, reads via texture are also correct; there is no separate texture-cache
+invalidation bug (the prior "stale texture" symptom was entirely caused by the wrong
+write slot, not a cache fault). hipMemcpy3D similarly reads from storage, not from an
+image/texture unit, and it too benefits from the corrected writes.
+
+The fix is complete and correct for the layered-array collapse (ROCm/clr#275).
+popsift's workaround (dropping hipArrayLayered, using non-layered 3D arrays + surf3Dwrite)
+remains the right fix for ROCm 7.2.x (where PR #6683 is not yet merged); once #6683 lands,
+the original layered pattern would also work.
