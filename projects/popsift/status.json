@@ -7,17 +7,17 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-03T17:41:11Z",
-  "head_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+  "updated_at": "2026-06-03T21:11:02Z",
+  "head_sha": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+      "validated_sha": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
       "started_at": "2026-05-30T01:38:56Z",
       "completed_at": "2026-06-03T04:07:12Z",
-      "updated_at": "2026-06-03T04:07:12Z",
+      "updated_at": "2026-06-03T21:11:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+        "to": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-03T21:11:02Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+      "validated_sha": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
       "started_at": null,
       "completed_at": "2026-06-03T06:26:10Z",
-      "updated_at": "2026-06-03T06:26:10Z",
+      "updated_at": "2026-06-03T21:11:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +62,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+        "to": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-03T21:11:02Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+      "validated_sha": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
       "started_at": null,
       "completed_at": "2026-06-03T14:11:17Z",
-      "updated_at": "2026-06-03T14:11:17Z",
+      "updated_at": "2026-06-03T21:11:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,7 +93,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
+        "to": "5cbf3b2b29adc70618a1bfe327893714f3e12264",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "src/popsift/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-03T21:11:02Z"
+      }
     }
   }
 }

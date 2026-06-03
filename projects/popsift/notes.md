@@ -1301,3 +1301,24 @@ the original layered pattern would also work.
 ## clr#275 re-test posted (2026-06-03)
 
 Posted a re-test reply on ROCm/clr#275 (issuecomment-4614003997) confirming ROCm/rocm-systems#6683 fully fixes the layered-array collapse on gfx90a/ROCm 7.2.1: with #6683 all three layered read paths (surf2DLayeredread, tex2DLayered, hipMemcpy3D) return correct per-layer data; root cause was entirely surf2DLayeredwrite routing `layer` into the LOD slot, so no separate tex2DLayered defect. The popsift non-layered-3D workaround stays required for ROCm 7.2.x until #6683 lands. Verified regression reproducer: agent_space/clr275/clr275_repro.cpp (move into hip_repro/ at PR-prep for durability).
+
+## 2026-06-03 -- hip_repro/README.md gfx1100 results backfill (commit 5cbf3b2 on top of squash f1a23a5)
+
+The gfx90a host re-squashed the port to a single PR-prep commit f1a23a5 ("HIP port for AMD
+GPUs (gfx90a, gfx1100, gfx1151)"), orphaning the prior validated 3a789a1. The squash also
+folded in a jargon scrub (cuda_to_hip.h comment "ROCm 7.2.x lead ->" -> "ROCm 7.2.x ->",
+README intro reworded off the "follower" wording) -- comment/doc only, no device code.
+
+The hip_repro/README.md still listed gfx90a results only, even though the 2026-06-03
+gfx1100 revalidation had already run both reproducers on RDNA3 (see "## Validation
+2026-06-03 (gfx1100)" above). Backfilled a "## gfx1100 results" section recording:
+linear_filter_reject ACCEPTED on RDNA3 (HW linear filtering works; differs from gfx90a
+REJECTED; software bilinear fallback unnecessary-but-harmless, no source change), and
+layered_collapse still COLLAPSED on RDNA3 (clr#275 holds; non-layered-3D workaround stays
+necessary). Kept upstream-clean (no MOAT vocabulary).
+
+Committed as a NEW commit 5cbf3b2 on top of f1a23a5 (not an amend -- preserves the
+validated tree as a reachable ancestor) and pushed to jeffdaily/popsift moat-port. Net
+delta from validated 3a789a1 to 5cbf3b2 classifies comment-only/arch-independent/inert
+(`moatlib classify popsift 3a789a1 5cbf3b2`), so advance-head carried all three platforms
+forward (head_sha -> 5cbf3b2, all completed) with no GPU re-run.

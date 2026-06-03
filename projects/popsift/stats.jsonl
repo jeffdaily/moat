@@ -45,3 +45,6 @@
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 124343, "source": "session-2026-06-02/03 backfill: fixes porter (wave32/cmake/claims)"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 80702, "source": "session-2026-06-02/03 backfill: re-baseline validator (Oxford suite)"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 86744, "source": "session-2026-06-02/03 backfill: golden cmp validator"}
+{"kind":"phase","ts":"2026-05-30T07:26:49Z","phase":"compile","seconds":4.162,"exit":0,"cmd":"cmake -S projects/popsift/src -B projects/popsift/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON"}
+{"kind":"phase","ts":"2026-05-30T07:27:20Z","phase":"compile","seconds":27.428,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
+{"kind":"phase","ts":"2026-05-30T07:29:27Z","phase":"test","seconds":0.491,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/popsift/src/build-hip/Linux-x86_64/popsift-demo -i /var/lib/jenkins/moat/agent_space/scene.pgm 2>&1"}
