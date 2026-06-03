@@ -119,7 +119,7 @@ def _is_doc(path: str) -> bool:
     if path.startswith(".github/") or "/.github/" in path \
             or path.startswith(".circleci/") or "/.circleci/" in path:
         return True
-    if base in CI_NAMES:
+    if base.lower() in CI_NAMES:
         return True
     return any(base.startswith(n) for n in DOC_NAMES)
 
