@@ -7,47 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-03T18:20:00Z",
+  "updated_at": "2026-06-03T18:45:44Z",
   "head_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
   "depends_on": [],
   "platforms": {
-    "linux-gfx90a": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-      "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-03T15:54:05Z",
-      "updated_at": "2026-06-03T18:20:00Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 1,
-        "first_session_at": "2026-06-02T04:00:00Z",
-        "last_session_at": "2026-06-02T04:30:00Z"
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-        "method": "binary-equiv",
-        "detail": "codeobj_diff identical vs a339d3d (libsgm.a + sgm-test device ISA); prep delta is CMake arch-autodetect + cuda_to_hip comment + README, no TU changed",
-        "at": "2026-06-03T15:54:05Z"
-      }
-    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-03T16:02:19Z",
-      "updated_at": "2026-06-03T18:20:00Z",
+      "completed_at": "2026-06-03T18:45:44Z",
+      "updated_at": "2026-06-03T18:45:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,14 +34,37 @@
       },
       "last_agent": "validator"
     },
-    "windows-gfx1151": {
+    "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-      "started_at": "2026-06-03T18:01:47Z",
-      "completed_at": "2026-06-03T18:20:00Z",
-      "updated_at": "2026-06-03T18:20:00Z",
+      "started_at": "2026-06-02T00:47:02Z",
+      "completed_at": "2026-06-03T18:45:44Z",
+      "updated_at": "2026-06-03T18:45:44Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 1,
+        "first_session_at": "2026-06-02T04:00:00Z",
+        "last_session_at": "2026-06-02T04:30:00Z"
+      },
+      "last_agent": "validator"
+    },
+    "windows-gfx1151": {
+      "state": "revalidate",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
+      "started_at": "2026-06-03T18:01:47.223805Z",
+      "completed_at": "2026-06-03T18:01:47.223805Z",
+      "updated_at": "2026-06-03T18:45:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -81,16 +75,10 @@
           "misc": 0
         },
         "session_count": 1,
-        "first_session_at": "2026-06-03T18:01:47Z",
-        "last_session_at": "2026-06-03T18:20:00Z"
+        "first_session_at": "2026-06-03T18:01:47.223805Z",
+        "last_session_at": "2026-06-03T18:01:47.223805Z"
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-        "method": "binary-equiv",
-        "detail": "sgm-test 67/67 PASS twice on real gfx1151 (AMD Radeon 8060S, RDNA3.5, wave32), deterministic; gfx1151 code objects confirmed in sgm-test.exe. The GPU run used a local test-build patch making the vestigial OpenCV dependency optional; OpenCV never touches any .cu/.cuh, so the gfx1151 device code objects are identical to fdb9d24. That test-build fix is intentionally kept OUT of the ROCm port and submitted as a separate upstream PR (jeffdaily:remove-unused-opencv-test-dep -> fixstars/libSGM, branch e0898b8). On a host with OpenCV present (Linux gfx90a/gfx1100) fdb9d24 builds and validates as-is.",
-        "at": "2026-06-03T18:20:00Z"
-      }
+      "last_agent": "validator"
     }
   }
 }

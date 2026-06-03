@@ -15,3 +15,11 @@
 {"kind":"phase","ts":"2026-06-02T03:41:43Z","phase":"test","seconds":21.522,"exit":0,"cmd":"bash -c AMD_LOG_LEVEL=3 /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build/test/sgm-test 2>&1 | tee /var/lib/jenkins/moat/agent_space/libSGM-multiarch-run1.log | tail -20"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 45058, "source": "session-2026-06-02/03 backfill: audit"}
 {"kind": "tokens", "ts": "2026-06-03T18:04:11Z", "tokens": 126922, "source": "validator"}
+{"kind":"phase","ts":"2026-06-02T01:53:00Z","phase":"compile","seconds":2.763,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/libSGM/src -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-02T01:53:14Z","phase":"compile","seconds":9.073,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j64"}
+{"kind":"phase","ts":"2026-06-02T01:53:42Z","phase":"test","seconds":10.584,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T01:53:58Z","phase":"test","seconds":10.501,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T04:46:32Z","phase":"compile","seconds":2.766,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/libSGM/src -B /var/lib/jenkins/moat/projects/libSGM/src/build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-02T04:46:58Z","phase":"compile","seconds":9.117,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-hip -j64"}
+{"kind":"phase","ts":"2026-06-02T04:47:35Z","phase":"test","seconds":10.870,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}
+{"kind":"phase","ts":"2026-06-02T04:47:53Z","phase":"test","seconds":10.821,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/libSGM/src/build-hip/test/sgm-test"}

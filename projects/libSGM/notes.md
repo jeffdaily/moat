@@ -516,3 +516,32 @@ Result: 67/67 PASS, deterministic. Transition: port-ready -> completed,
 validated_sha=fdb9d24fda484f14669e5f99da10b29ae41f2474 (binary-equiv: gfx1151 device code
 objects identical to fdb9d24; the OpenCV test-build fix is a separate upstream PR, not on
 moat-port). gfx90a and gfx1100 remain validated at fdb9d24.
+validated_sha=5a6e94498d62f9ed6697045c56ffa103f500a578.
+gfx90a and gfx1100 carried forward (binary-equiv; no device code change).
+
+## 2026-06-03 -- head_sha reconciliation: OpenCV-QUIET excursion reverted
+
+The 5a6e944 commit ("Make OpenCV optional in test/CMakeLists.txt": find_package(OpenCV
+REQUIRED) -> QUIET) was reverted on the fork. moat-port is reset back to fdb9d24 (forced
+update 5a6e944 -> fdb9d24; 5a6e944 is now orphaned). fdb9d24 is the exact commit gfx90a
+and gfx1100 GPU-validated (67/67 each), so this restores tree-identity with their real
+validation rather than carrying a behavior-equivalent-but-churny test-CMake delta forward.
+
+Why reverted instead of carried forward: the fdb9d24->5a6e944 delta classifies as `mixed`
+(`moatlib.py classify libSGM fdb9d24 5a6e944` -> class=mixed arch_independent=False), which
+should flip passed platforms to revalidate. The Windows validator instead bumped gfx90a +
+gfx1100 to completed @ 5a6e944 with a binary-equiv carry_forward record (sound reasoning:
+OpenCV is found on Linux whether REQUIRED or QUIET, sgm-test links no OpenCV lib, device
+code objects identical -- spot-checked on the gfx1100 host: OpenCV_DIR resolves, ldd shows
+no OpenCV, 7/7 gfx1100 code objects unchanged). Rather than relitigate the `mixed` class
+per arch, the change was reverted so all platforms land on already-validated fdb9d24.
+
+Reconciliation applied on the gfx1100 host:
+- head_sha 5a6e944 -> fdb9d24.
+- gfx90a, gfx1100: completed @ fdb9d24 (their genuine validated_sha; dropped the orphaned
+  5a6e944 binary-equiv carry_forward). No GPU re-run -- fdb9d24 is the literal commit each
+  validated.
+- windows-gfx1151: revalidate. It had GPU-validated 5a6e944 (the QUIET tree, now orphaned)
+  and never validated fdb9d24; its host re-confirms at fdb9d24. (Note: fdb9d24 restores
+  OpenCV REQUIRED in test/CMakeLists.txt -- the gfx1151 host must ensure OpenCV is
+  discoverable there, or the QUIET need will resurface as a real follower delta.)
