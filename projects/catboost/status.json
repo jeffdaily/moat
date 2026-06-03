@@ -11,13 +11,13 @@
   "head_sha": "09612d3c18f8a5d99283a8d3a54e7a7972c60140",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b7113fe9133aa0444bf0205cea546d33700ac16e",
+      "validated_sha": "09612d3c18f8a5d99283a8d3a54e7a7972c60140",
       "started_at": "2026-05-31T00:31:43Z",
-      "completed_at": "2026-05-31T06:27:29Z",
-      "updated_at": "2026-06-02T04:05:21Z",
+      "completed_at": "2026-06-03T12:00:00Z",
+      "updated_at": "2026-06-03T12:00:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

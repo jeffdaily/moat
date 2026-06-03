@@ -350,3 +350,73 @@ Harness/data: agent_space/catboost/e2e/{train.tsv,test.tsv,pool.cd}; app exe + a
 TAucTest (ok:1) and TQueryCrossEntropyTests (ok:4) ran to completion -- so targets-ut is fully green (auc 1 + combination 3 + huber 1 + multilogit 1 + qce 4 + tweedie 1). With the full-app e2e also validated, windows-gfx1151 is marked state=completed, validated_sha=09612d3c, blocked=False. FINAL gfx1151 validation: cuda_util-ut 48/48, gpu_data-ut 20/20, methods-ut histograms 8/8 + exact-leaves 15/15 + multistat 6/6 (only TAddingLangevinNoiseTest fails, rigorously proven NOT a ROCm defect -- GPU NextNormal bit-identical to host over the same seeds; documented, not masked), targets-ut all suites pass, and full-app CPU-vs-GPU e2e (AUC 0.96190 GPU vs 0.96063 CPU, diff 0.0013, deterministic across 2 same-seed runs). Five wave-agnostic GPU-correctness fixes committed (bin-builder overflow, segmented-sort temp-size, exact-leaves leaf-bound+empty-leaf, multistat histogram grid div-by-zero, multistat split rocPRIM DeviceScan temp-alignment).
 
 NOT YET PR-READY: gfx90a + gfx1100 are at state=revalidate (validated_sha b7113fe, stale vs head 09612d3c). Per jeff, both must revalidate at 09612d3c (separate Linux hosts) before the unified port is PR-ready. The 5 fixes are all wave-agnostic/all-platform, so gfx90a/gfx1100 should pass the same UT suite + e2e; their validator CLIs will confirm. Then the upstream PR (moat-port -> upstream) awaits the pr-approved-by-user gate.
+
+## Validation 2026-06-03 (validator, linux-gfx90a) -- 09612d3c -> completed (revalidate)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1). GCD 0 (HIP_VISIBLE_DEVICES=0). Fork HEAD verified: `git ls-remote jeffdaily moat-port` = 09612d3c, then checked out via `git fetch jeffdaily moat-port && git checkout jeffdaily/moat-port`.
+
+Delta from b7113fe9 to 09612d3c: 5 GPU correctness fixes (bin-builder overflow, segmented-sort temp-size -- already in b7113fe; exact-leaves leaf-bound + empty-leaf, multistat histogram grid div-by-zero, multistat split rocPRIM DeviceScan temp-alignment) + Windows build-system and toolchain changes (harmless on Linux/ROCm). Revalidation extends the test suite: added gpu_data-ut (exercises bin-builder fix) and catboost-cuda-methods-ut (exercises histogram/exact-leaves/multistat fixes) -- both new to gfx90a validation.
+
+Build: cmake reconfigured (source changed), then:
+
+```
+source agent_space/catboost/env.sh && export PATH="/opt/conda/envs/py_3.12/bin:$PATH" && export JAVA_HOME=/opt/conda/envs/py_3.12
+utils/timeit.sh catboost compile -- ninja -C /var/lib/jenkins/moat/projects/catboost/src/build_hip/cm -j16 \
+  catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut
+# [4564/4564 targets, SUCCESS, no errors]
+```
+
+GPU: AMD Instinct MI250X / MI250 (compute capability 9.0), gfx90a.
+
+Test 1 -- cuda_util-ut (48 subtests, serial, two runs):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-cuda_util-ut --show-fails
+```
+
+Run 1: [DONE] ok: 48
+Run 2: [DONE] ok: 48 (exit 0 confirmed)
+Deterministic: both runs 48/48, no [bad] results.
+
+Test 2 -- gpu_data-ut (20 subtests, run 1) -- exercises bin-builder overflow fix (split.cu):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-gpu_data-ut --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4 + TestCompressedSplitFloat + TreeBuilderTest32 all PASS), TGridBuilderPerftest 1/1.
+
+Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-methods-ut --show-fails
+```
+
+[DONE] ok: 29, err: 1
+- TExactLeavesEstimationTest: 15/15 PASS (exact-leaves leaf-bound + empty-leaf fixes confirmed)
+- TPairwiseHistogramTest: 4/4 PASS (all bin counts 2..255, Solutions OK / Scores OK throughout)
+- TPointwiseHistogramTest: 4/4 PASS
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (histogram grid div-by-zero fix + scan-alignment fix confirmed; WithoutOneHot1/2/17 + WithOneHot3/13 + FatSplitPropsTest all pass)
+- TAddingLangevinNoiseTest: 0/1 FAIL -- pre-existing upstream test-design issue, proven NOT a ROCm defect (GPU NextNormal bit-identical to host over same seeds; documented in gfx1151 notes); not a blocker.
+
+Test 4 -- e2e GPU training (GBDT histogram kernel correctness):
+
+```
+export HIP_VISIBLE_DEVICES=0
+.../catboost/app/catboost fit --task-type GPU --devices 0 \
+  --learn-set agent_space/catboost/train.tsv \
+  --test-set agent_space/catboost/test.tsv \
+  --column-description agent_space/catboost/train.cd \
+  --iterations 200 --depth 6 --loss-function Logloss --eval-metric AUC --random-seed 42
+```
+
+GPU run 1 bestTest: 0.9632583857 (peak at iter 95)
+GPU run 2 bestTest: 0.9632583857 (peak at iter 95)
+test_error.tsv diff: BIT-IDENTICAL (same-seed determinism confirmed)
+CPU baseline peak AUC (same dataset, prior run): 0.9649400987
+GPU-CPU diff: |0.9632583857 - 0.9649400987| = 0.001682 (~0.0017; within ~0.0025 GBDT GPU/CPU variance ceiling)
+
+Result: PASS -- cuda_util-ut 48/48, gpu_data-ut 20/20 (bin-builder fix confirmed), methods-ut 29/30 effective pass (only Langevin fails, proven not-AMD), e2e AUC within GBDT variance + same-seed deterministic x2. validated_sha: 09612d3c -> completed.
