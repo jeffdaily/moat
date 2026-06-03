@@ -408,3 +408,25 @@ Carry-forward check (binary equivalence):
 
 Decision: carry forward. linux-gfx90a validated_sha advanced c4ed7fad -> 3efd11d.
 No GPU re-run required (binary-equiv confirmed). State: revalidate -> completed.
+
+## Validation 2026-06-03 (gfx1100) -- carry-forward to 3efd11d (Windows include, binary-equiv on Linux)
+
+Revalidate triggered by the fork advancing c4ed7fad -> 3efd11d (a commits-on-top
+Windows build fix). The gfx90a revalidation already established binary equivalence
+and the notes (lines 392, 397-410) explicitly call for a gfx90a/gfx1100 carry-forward.
+
+Delta c4ed7fad..3efd11d: the three rwkv7 fused .cu (rwkv7_clampw /
+rwkv7_state_clampw / rwkv7_statepassing_clampw) each gain a USE_ROCM-gated
+`#include <hip/amd_detail/amd_hip_runtime.h>`. This is needed ONLY for the Windows
+hipcc MSVC-ABI host-stub pass (which does not predefine `__launch_bounds__`, and
+with `_FP32_` the bf16 branch that would otherwise pull hip_runtime.h is skipped).
+On Linux the include is REDUNDANT (the host pass already has __launch_bounds__) ->
+no codegen change, binary-equivalent. NVIDIA untouched. No warp intrinsics, so
+wave32 numerically equivalent.
+
+(The fork's prior validated sha c4ed7fad is reachable via the commits-on-top
+structure but my local build clone is in agent_space/build, so this carry-forward
+rests on the gfx90a revalidation's documented binary-equivalence analysis rather
+than a re-diff here.) The prior gfx1100 validation holds: all RWKV harness
+err-ratios (rwkv7 fp32 ~1e-7, bf16 ~3-5e-3; wkv5_bf16; wkv6; wkv5) match gfx90a.
+validated_sha -> 3efd11d. No GPU re-run, no fork change.
