@@ -78,17 +78,25 @@ def cell(block):
     return EMOJI.get(block.get("state"), "❓")
 
 
+def plat_header(key):
+    """Stacked column header for a platform key: linux-gfx90a -> 'gfx90a<br>Linux'
+    (arch on top of the OS)."""
+    os_part, arch = key.split("-", 1)
+    return f"{arch}<br>{os_part.capitalize()}"
+
+
 def render_table(projects):
     if not projects:
         return EMPTY
     projects = sorted(projects, key=lambda p: (-float(p.get("priority", 0)), p.get("name", "")))
     legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
               "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
-              "Platforms are gfx90a · gfx1100 · gfx1151. The project name links to "
-              "upstream, (fork) to our `moat-port` branch.")
+              "The project name links to upstream, (fork) to our `moat-port` branch.")
+    headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Upstream PR"]
+    aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
     lines = [legend, "",
-             "| Project | gfx90a · gfx1100 · gfx1151 | Upstream PR |",
-             "| --- | --- | --- |"]
+             "| " + " | ".join(headers) + " |",
+             "| " + " | ".join(aligns) + " |"]
     for p in projects:
         name = p.get("name", "?")
         up = p.get("upstream_url")
@@ -97,9 +105,9 @@ def render_table(projects):
         else:
             proj = f"[{name}]({up})"
         plats = p.get("platforms", {})
-        glyphs = " · ".join(cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS)
+        cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
         pr = f"[#{p['pr_number']}]({p['pr_url']})" if p.get("pr_url") else "—"
-        lines.append(f"| {proj} | {glyphs} | {pr} |")
+        lines.append("| " + " | ".join([proj] + cells + [pr]) + " |")
     return "\n".join(lines)
 
 
