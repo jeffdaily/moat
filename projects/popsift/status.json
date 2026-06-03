@@ -7,17 +7,17 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-03T21:26:59Z",
-  "head_sha": "6bb671d4",
+  "updated_at": "2026-06-03T21:50:40Z",
+  "head_sha": "21b8571e",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6bb671d4",
+      "validated_sha": "21b8571e",
       "started_at": "2026-05-30T01:38:56Z",
-      "completed_at": "2026-06-03T21:26:59Z",
-      "updated_at": "2026-06-03T21:26:59Z",
+      "completed_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T21:50:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "6bb671d4",
+        "to": "21b8571e",
         "method": "binary-equiv",
-        "detail": "device ISA + 706 exported symbols identical (codeobj_diff) 5cbf3b2->6bb671d4; delta = comment-only header edits + removal of non-build hip_repro/ diagnostics",
-        "at": "2026-06-03T21:26:59Z"
+        "detail": "device ISA + 706 exported symbols identical (codeobj_diff) 6bb671d4->21b8571e; delta = comment-only (s_extrema.cu); line shift touches only a host-side debug __LINE__ in event_record, no device-code i",
+        "at": "2026-06-03T21:50:40Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6bb671d4",
+      "validated_sha": "21b8571e",
       "started_at": null,
-      "completed_at": "2026-06-03T21:26:59Z",
-      "updated_at": "2026-06-03T21:26:59Z",
+      "completed_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T21:50:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "6bb671d4",
+        "to": "21b8571e",
         "method": "source-class",
-        "detail": "built TUs change comment-only; removed hip_repro/ is standalone (no CMakeLists ref) so compiled source set identical; gfx90a binary-equiv confirms",
-        "at": "2026-06-03T21:26:59Z"
+        "detail": "comment-only (s_extrema.cu extrema_count comment); line shift touches only a host-side debug __LINE__ in event_record, device kernels unaffected; gfx90a binary-equiv confirms",
+        "at": "2026-06-03T21:50:40Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6bb671d4",
+      "validated_sha": "21b8571e",
       "started_at": null,
-      "completed_at": "2026-06-03T21:26:59Z",
-      "updated_at": "2026-06-03T21:26:59Z",
+      "completed_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T21:50:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -91,10 +91,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "6bb671d4",
+        "to": "21b8571e",
         "method": "source-class",
-        "detail": "built TUs change comment-only; removed hip_repro/ is standalone (no CMakeLists ref) so compiled source set identical; gfx90a binary-equiv confirms",
-        "at": "2026-06-03T21:26:59Z"
+        "detail": "comment-only (s_extrema.cu extrema_count comment); line shift touches only a host-side debug __LINE__ in event_record, device kernels unaffected; gfx90a binary-equiv confirms",
+        "at": "2026-06-03T21:50:40Z"
       }
     }
   }
