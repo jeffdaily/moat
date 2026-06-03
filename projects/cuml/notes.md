@@ -603,3 +603,79 @@ windows-gfx1151 stays `port-ready`.
 
 validated_sha: 23511cd5f8fcede1104f0d82c864045ec4a1a21f
 State transition: port-ready -> completed (linux-gfx1100).
+
+## Revalidation 2026-06-03 (validator, linux-gfx90a, fork moat-port 23511cd5)
+
+Platform: linux-gfx90a (MI250X GCD1, HIP_VISIBLE_DEVICES=1, ROCm 7.2.1).
+GPU arch: gfx90a (amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-).
+Trigger: HEAD advanced 9a5812f1 -> 23511cd5 (wave32 host-dispatch fixes for
+gfx1100; gfx90a values are unchanged since raft::WarpSize == raft::warp_size()
+== 64 on gfx90a, but full re-run performed as due diligence).
+
+### Delta (4 files changed, 11 ins / 9 del)
+
+- `cpp/src_prims/selection/kselection.cuh`: warpTopK host dispatch RowsPerBlk,
+  kAligned: raft::WarpSize -> raft::warp_size() (runtime query, = 64 on gfx90a).
+- `cpp/tests/prims/device_utils.cu`: batchedBlockReduceTest smem calc:
+  raft::WarpSize -> raft::warp_size() (= 64 on gfx90a, same value).
+- `cpp/src_prims/linalg/batched/gemv.cuh`: gemvImplY tpb/nWarps:
+  raft::WarpSize -> raft::warp_size() (= 64 on gfx90a, same value).
+- `cpp/src/decisiontree/batched-levelalgo/builder.cuh`: computeSplitSmemSize
+  smem_size_2: raft::WarpSize -> raft::warp_size() (= 64 on gfx90a, same value).
+
+On gfx90a all four sites compute the same value before and after the change.
+
+### Build
+
+Incremental rebuild (4 source files changed -> 40 targets recompiled):
+
+```
+cmake --build projects/cuml/build-hip -j16
+```
+
+Exit 0. Timing: 72.3s (40 targets recompiled, 34 test binaries re-linked).
+CMAKE_HIP_ARCHITECTURES=gfx90a;gfx1100, CUML_LINK_CUVS=ON.
+
+### ctest run (gfx90a real GPU)
+
+```
+export HIP_VISIBLE_DEVICES=1
+export LD_LIBRARY_PATH=_deps/cuvs/install/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+ctest --test-dir projects/cuml/build-hip --output-on-failure -j1
+```
+
+Result: **33/34 PASS**. Timing: 154.5s total.
+
+Passing SG tests (12/13):
+SG_OLS_TEST, SG_RIDGE_TEST, SG_CD_TEST, SG_QUASI_NEWTON, SG_SGD_TEST,
+SG_PCA_TEST, SG_TSVD_TEST, SG_HOLTWINTERS_TEST, SG_SHAP_KERNEL_TEST,
+SG_GENETIC_NODE_TEST, SG_GENETIC_PARAM_TEST, SG_RPROJ_TEST (130.90s PASS).
+
+Passing PRIMS tests (all 21):
+PRIMS_ADD_SUB_DEV_SCALAR_TEST, PRIMS_BATCHED_CSR_TEST,
+PRIMS_BATCHED_GEMV_TEST, PRIMS_BATCHED_MAKE_SYMM_TEST,
+PRIMS_BATCHED_MATRIX_TEST, PRIMS_DECOUPLED_LOOKBACK_TEST,
+PRIMS_DEVICE_UTILS_TEST, PRIMS_ELTWISE2D_TEST, PRIMS_FAST_INT_DIV_TEST,
+PRIMS_FILLNA_TEST, PRIMS_GRID_SYNC_TEST, PRIMS_HINGE_TEST,
+PRIMS_JONES_TRANSFORM_TEST, PRIMS_KSELECTION_TEST, PRIMS_LINALG_BLOCK_TEST,
+PRIMS_LINEARREG_TEST, PRIMS_LOG_TEST, PRIMS_LOGISTICREG_TEST,
+PRIMS_MAKE_ARIMA_TEST, PRIMS_PENALTY_TEST, PRIMS_SIGMOID_TEST.
+
+SG_LARS_TEST: FAIL (4 fitGram/fitX float+double subtests in-process-sequential),
+identical to documented ROCm-7.2.1 known issue. No regression.
+
+### Verdict: PASS
+
+All formal gates met:
+- Multi-arch build: gfx90a+gfx1100, CUML_LINK_CUVS=ON, exit 0.
+- SG_RPROJ_TEST: PASS (130.90s) -- pairwise_distance -> cuvs::distance on gfx90a.
+- PRIMS_KSELECTION_TEST: PASS (wave64 6th-stage bitonic fix unchanged).
+- PRIMS_DEVICE_UTILS_TEST: PASS (wave32 fix, same-value on gfx90a, no regression).
+- PRIMS_BATCHED_GEMV_TEST: PASS.
+- All 33/34 non-LARS tests pass; SG_LARS_TEST sole failure is the documented
+  ROCm-7.2.1 in-process-sequential state-leak, not a port defect.
+- No Stage 2 regression.
+- GPU arch: HIP_VISIBLE_DEVICES=1, gfx90a confirmed.
+
+validated_sha: 23511cd5f8fcede1104f0d82c864045ec4a1a21f
+State transition: revalidate -> completed (linux-gfx90a).
