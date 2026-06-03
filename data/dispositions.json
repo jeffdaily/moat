@@ -196,11 +196,11 @@
     "reason": "already-supported"
   },
   "flashinfer-ai/flashinfer": {
-    "decided": "2026-05-29T23:43:03Z",
+    "decided": "2026-06-03T23:31:16Z",
     "disposition": "skip",
     "full_name": "flashinfer-ai/flashinfer",
-    "note": "AMD ROCm port: github.com/ROCm/flashinfer",
-    "reason": "ported-elsewhere"
+    "note": "CUTLASS/CuTe-centric + sm90 tensor-core PTX (wgmma/tma/mbarrier); no existing AMD path. CUTLASS does not port to ROCm per guide, and sm90 tensor-core PTX maps to a CK/ck_tile MFMA reimplementation (deferred-CK class), not a hipify. AMD may be porting independently.",
+    "reason": "cant-port"
   },
   "florianmattana/sass-king": {
     "decided": "2026-05-30T00:45:17Z",
@@ -475,6 +475,13 @@
     "note": "Intel oneAPI, not CUDA",
     "reason": "not-a-target"
   },
+  "openmm/openmm": {
+    "decided": "2026-06-03T23:50:07Z",
+    "disposition": "skip",
+    "full_name": "openmm/openmm",
+    "note": "HIP in repo languages: OpenMM ships an AMD/HIP compute platform alongside CUDA/OpenCL. Mature AMD support.",
+    "reason": "already-supported"
+  },
   "ornl/hecbench": {
     "decided": "2026-05-30T00:31:01Z",
     "disposition": "skip",
@@ -558,6 +565,13 @@
     "full_name": "spcl/dace",
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
     "reason": "not-a-target"
+  },
+  "stereolabs/zed-sdk": {
+    "decided": "2026-06-03T23:50:07Z",
+    "disposition": "skip",
+    "full_name": "stereolabs/zed-sdk",
+    "note": "Open samples/wrappers around the closed Stereolabs ZED SDK (which contains the CUDA); vendor-proprietary stereo-camera hardware. No portable CUDA in-repo and nothing to upstream.",
+    "reason": "cant-port"
   },
   "stotko/stdgpu": {
     "decided": "2026-05-30T00:04:57Z",
