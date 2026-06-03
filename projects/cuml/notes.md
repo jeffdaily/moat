@@ -679,3 +679,50 @@ All formal gates met:
 
 validated_sha: 23511cd5f8fcede1104f0d82c864045ec4a1a21f
 State transition: revalidate -> completed (linux-gfx90a).
+
+## Windows-gfx1151 attempt 2026-06-03
+
+Platform: windows-gfx1151 (AMD Radeon 8060S gfx1151, RDNA3.5, wave32, Windows 11,
+TheRock ROCm 7). State at entry: port-ready (validate-first follower). Fork moat-port
+@ 23511cd5f8fcede1104f0d82c864045ec4a1a21f.
+
+### Dep-chain analysis (determinative blocker -- no build attempted)
+
+cuml depends_on: rmm, raft, cuvs, cudf. Checked windows-gfx1151 state of each dep
+via projects/<dep>/status.json:
+
+- rmm/windows-gfx1151: completed (validated_sha 565705bf). The only dep that is
+  Windows-buildable.
+- raft/windows-gfx1151: port-ready, blocked=true.
+  blocked_reason: "RAPIDS: no upstream Windows support (Linux-only stack); deferred
+  on windows-gfx1151 per user directive 2026-06-03."
+- cuvs/windows-gfx1151: port-ready, blocked=true. Same reason.
+- cudf/windows-gfx1151: port-ready, blocked=true. Same reason.
+
+cuml's gfx90a/gfx1100 build requires raft installed (all linear algebra, warp
+primitives, and the full cuml::raft:: interface are header-only from raft::raft)
+and cuvs installed (CUML_LINK_CUVS=ON links cuvs::cuvs for Stage 2). Without
+raft and cuvs installed on Windows, cuml cannot configure or link -- there is no
+path to a CMake configure step, let alone a build or GPU test run.
+
+The blocker is the RAPIDS host build infrastructure: rapids-cmake / CPM / conda-based
+toolchain is Linux/conda-oriented. raft and cuvs each require their own Windows build
+(which has not been done), and each themselves would need a Linux-like build environment
+(rapids_cmake bootstrap, CPM fetching, conda packages). This is the host-build-scope
+wall identified in the user directive, not a HIP device-code issue.
+
+### Verdict: BLOCKED
+
+cuml cannot be built on windows-gfx1151 because raft and cuvs (required C++ build
+dependencies) are explicitly blocked on this platform with blocked_reason documenting
+the RAPIDS-no-Windows-support constraint. No source change, no configure attempt, no
+GPU test run was performed -- the dep-chain check is determinative.
+
+Unblock condition: raft/windows-gfx1151 and cuvs/windows-gfx1151 must reach
+state=completed (i.e., a RAPIDS-Windows build path must materialize for those deps).
+rmm is already Windows-complete; cudf is needed only for the Python layer (not the
+in-scope C++ algorithm slice), but raft and cuvs are hard C++ build requirements.
+
+State transition: port-ready -> validation-failed (blocked=true).
+blocked_reason: raft and cuvs deps are blocked on windows-gfx1151 (RAPIDS has no
+native Windows build support; host-build-scope wall, not a HIP device-code issue).

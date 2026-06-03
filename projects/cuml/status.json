@@ -7,7 +7,7 @@
   "priority": 6.614,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-03T09:46:27Z",
+  "updated_at": "2026-06-03T18:40:43Z",
   "head_sha": "23511cd5f8fcede1104f0d82c864045ec4a1a21f",
   "platforms": {
     "linux-gfx90a": {
@@ -35,12 +35,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "raft and cuvs deps are blocked on windows-gfx1151 (RAPIDS has no native Windows build support; host-build-scope wall, not a HIP device-code issue; unblock when raft+cuvs reach windows-gfx1151 completed)",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T07:34:31Z",
+      "updated_at": "2026-06-03T18:40:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
