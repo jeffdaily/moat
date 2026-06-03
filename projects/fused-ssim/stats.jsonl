@@ -9,3 +9,4 @@
 {"kind":"phase","ts":"2026-06-03T20:05:29Z","phase":"compile","seconds":53.625,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/fused-ssim/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a python -m pip install -e . --no-build-isolation -v 2>&1 | tail -30"}
 {"kind":"phase","ts":"2026-06-03T20:08:03Z","phase":"test","seconds":146.252,"exit":0,"cmd":"bash -c cd /tmp && HIP_VISIBLE_DEVICES=0 python /var/lib/jenkins/moat/projects/fused-ssim/src/tests/test.py 2>&1"}
 {"kind":"phase","ts":"2026-06-03T20:08:39Z","phase":"test","seconds":3.874,"exit":0,"cmd":"bash -c cd /tmp && HIP_VISIBLE_DEVICES=0 python /var/lib/jenkins/moat/agent_space/fused_ssim_validate.py 2>&1"}
+{"kind": "tokens", "ts": "2026-06-03T21:15:14Z", "tokens": 29435}
