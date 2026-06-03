@@ -24,7 +24,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | catboost | [catboost/catboost](https://github.com/catboost/catboost) | [catboost](https://github.com/jeffdaily/catboost/tree/moat-port) | revalidate | revalidate | validating (blocked) | - |
 | cudf | [rapidsai/cudf](https://github.com/rapidsai/cudf) | [cudf](https://github.com/jeffdaily/cudf/tree/moat-port) | done | done | validating | - |
 | LMCache | [LMCache/LMCache](https://github.com/LMCache/LMCache) | [LMCache](https://github.com/jeffdaily/LMCache/tree/moat-port) | done | done | validating (blocked) | - |
-| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | done | revalidate | revalidate | [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
+| gsplat | [nerfstudio-project/gsplat](https://github.com/nerfstudio-project/gsplat) | [gsplat](https://github.com/jeffdaily/gsplat/tree/moat-port) | done | done | revalidate | [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
 | llm.c | [karpathy/llm.c](https://github.com/karpathy/llm.c) | [llm.c](https://github.com/jeffdaily/llm.c/tree/moat-port) | done | done | done | - |
 | kaldi | [kaldi-asr/kaldi](https://github.com/kaldi-asr/kaldi) | [kaldi](https://github.com/jeffdaily/kaldi/tree/moat-port) | done | done | validating | - |
 | cuml | [rapidsai/cuml](https://github.com/rapidsai/cuml) | [cuml](https://github.com/jeffdaily/cuml/tree/moat-port) | done | validating | gated | - |
@@ -36,7 +36,7 @@ Status legend: `todo` not started, `planning` / `porting` / `review` / `validati
 | oneflow | [Oneflow-Inc/oneflow](https://github.com/Oneflow-Inc/oneflow) | [oneflow](https://github.com/jeffdaily/oneflow/tree/moat-port) | done | done | validating | - |
 | arrayfire | [arrayfire/arrayfire](https://github.com/arrayfire/arrayfire) | [arrayfire](https://github.com/jeffdaily/arrayfire/tree/moat-port) | done | done | validating | - |
 | CV-CUDA | [CVCUDA/CV-CUDA](https://github.com/CVCUDA/CV-CUDA) | [CV-CUDA](https://github.com/jeffdaily/CV-CUDA/tree/moat-port) | done | done | validating | - |
-| cugraph | [rapidsai/cugraph](https://github.com/rapidsai/cugraph) | [cugraph](https://github.com/jeffdaily/cugraph/tree/moat-port) | planned (blocked) | gated | gated | - |
+| cugraph | [rapidsai/cugraph](https://github.com/rapidsai/cugraph) | [cugraph](https://github.com/jeffdaily/cugraph/tree/moat-port) | done | validating | validating | - |
 | mirage | [mirage-project/mirage](https://github.com/mirage-project/mirage) | - | todo (blocked) | gated | gated | - |
 | k2 | [k2-fsa/k2](https://github.com/k2-fsa/k2) | [k2](https://github.com/jeffdaily/k2/tree/moat-port) | done | done | validating | - |
 | raft | [rapidsai/raft](https://github.com/rapidsai/raft) | [raft](https://github.com/jeffdaily/raft/tree/moat-port) | revalidate | review | validating | - |
