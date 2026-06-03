@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-03T09:29:29Z","phase":"test","seconds":247.107,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 --output-on-failure -j1"}
 {"kind":"phase","ts":"2026-06-03T15:31:46Z","phase":"compile","seconds":72.252,"exit":0,"cmd":"cmake --build projects/cuml/build-hip -j16"}
 {"kind":"phase","ts":"2026-06-03T15:34:38Z","phase":"test","seconds":154.654,"exit":8,"cmd":"ctest --test-dir projects/cuml/build-hip --output-on-failure -j1"}
+{"kind": "tokens", "ts": "2026-06-03T18:41:34Z", "tokens": 60126, "source": "validator"}
