@@ -391,3 +391,20 @@ GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm 7.14, torch 2.12+rocm7.
 - wkv5 default v1d: pre-existing upstream link bug (deferred, not a port defect)
 WINDOWS FIX (commit on top of the gfx90a c4ed7fad): the 3 rwkv7 fused .cu (rwkv7_clampw / rwkv7_state_clampw / rwkv7_statepassing_clampw) needed an include of hip/amd_detail/amd_hip_runtime.h inside the USE_ROCM guard -- the Windows hipcc MSVC-ABI HOST-stub pass does not predefine __launch_bounds__ (the device pass does), and with _FP32_ the bf16 branch that would pull hip_runtime.h is skipped. Redundant on Linux (no codegen change) so gfx90a/gfx1100 carry-forward; NVIDIA untouched. No warp intrinsics -> wave32 numerically equivalent.
 COMMIT STRUCTURE: the validator subagent initially amended the curated c4ed7fad (orphaning gfx90a/gfx1100's validated_sha); I restructured to commits-on-top (c4ed7fad base + fix commit 3efd11d) per the retired-one-commit rule, keeping c4ed7fad reachable.
+
+## Validation 2026-06-03 (revalidate, linux-gfx90a, head 3efd11d)
+
+Delta c4ed7fad..3efd11d: three rwkv7_fast_fused .cu files each gain a USE_ROCM-gated
+`#include <hip/amd_detail/amd_hip_runtime.h>` for the Windows MSVC host-stub pass.
+`moatlib.py classify` verdict: `mixed` (source token count differs) -- not auto-inert.
+
+Carry-forward check (binary equivalence):
+- Built both SHAs in agent_space/rwkv_cmp_old + rwkv_cmp_new, TORCH_EXTENSIONS_DIR
+  = agent_space/rwkv_ext_cmp_old_fp32 / rwkv_ext_cmp_new_fp32.
+- `python3 utils/codeobj_diff.py rwkv_ext_cmp_old_fp32 rwkv_ext_cmp_new_fp32`
+- verdict=identical: rwkv7_clampw.so exported symbols + device ISA identical (2508 exports).
+- The include is already transitively present on Linux; the extra #include is
+  a no-op for the device pass and the Linux host pass -- codegen unchanged on gfx90a.
+
+Decision: carry forward. linux-gfx90a validated_sha advanced c4ed7fad -> 3efd11d.
+No GPU re-run required (binary-equiv confirmed). State: revalidate -> completed.
