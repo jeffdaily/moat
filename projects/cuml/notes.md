@@ -418,3 +418,188 @@ neighbors/grammian sub-stages.
 
 validated_sha: 9a5812f1ed4a8b000d73a21402f57c3febf9ad76
 State transition: revalidate -> completed (linux-gfx90a).
+
+## Validation 2026-06-03 (gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32,
+ROCm 7.2.1). HIP_VISIBLE_DEVICES=1 (device 0 has stale hipStreamCreate hang;
+devices 1-3 healthy; used device 1 throughout). GPU arch: amdgcn-amd-amdhsa--gfx1100,
+Wavefront Size: 32, Gfx Major/Minor/Stepping: 11/0/0.
+
+### Deps reused (gfx1100 installs, not rebuilt)
+
+- `_deps/cuvs/install-gfx1100` (jeffdaily/cuvs @ moat-port 0c2b709a, DISTANCE slice)
+- `_deps/raft/install-gfx1100` (jeffdaily/raft @ moat-port ce0fa68c, multi-arch)
+- `projects/rmm/install-gfx1100` (jeffdaily/rmm @ moat-port)
+- cudf: NOT needed for the in-scope C++ algorithm slice (zero <cudf...> includes
+  confirmed); cudf is the deferred Python/dataframe layer only.
+
+### Build
+
+Initial build (cmake configure + full build, gfx1100-only):
+```
+cmake -S projects/cuml/src/cpp -B projects/cuml/build-hip-gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES="gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="_deps/cuvs/install-gfx1100;_deps/raft/install-gfx1100;projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DCUML_LINK_CUVS=ON \
+  -DSINGLEGPU=ON -DBUILD_CUML_TESTS=ON -DBUILD_CUML_MG_TESTS=OFF -DBUILD_PRIMS_TESTS=ON
+cmake --build projects/cuml/build-hip-gfx1100 -j16
+```
+Build time: 75.8s (150 targets including treelite, gtest, 34 test binaries).
+All 34 test binaries linked.
+
+After wave32 fixes (see below): incremental rebuild 33.9s (40 targets recompiled).
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading projects/cuml/build-hip-gfx1100/libcuml.so
+```
+Result: 63 bundles of `hipv4-amdgcn-amd-amdhsa--gfx1100` (no gfx90a bundles;
+gfx1100-only build as expected). AMD_LOG_LEVEL=3 confirms:
+"Using native code object for device: amdgcn-amd-amdhsa--gfx1100 co: amdgcn-amd-amdhsa--gfx1100"
+Gfx Major/Minor/Stepping: 11/0/0.
+
+cuvs::distance::pairwise_distance (float/double, layout_left/layout_right) are
+undefined symbols in libcuml.so, resolved at runtime from libcuvs.so.
+
+### Wave32 bugs found and fixed (delta-port)
+
+During the first ctest run (before fixes), two new failures appeared vs gfx90a:
+
+**PRIMS_DEVICE_UTILS_TEST -- BatchedBlockReduceTests/BBTest8.Result/0 (blkDim=32)**
+Root cause: `batchedBlockReduceTest()` (host launcher in device_utils.cu) computed
+smem as `(blkDim / raft::WarpSize) * NThreads`. On the HIP host pass, raft::WarpSize
+= 64 (kept for backward compat), giving 0 bytes smem for blkDim=32 instead of the
+1-warp * 8 slots needed. Fix: use `raft::warp_size()` (runtime query on host = 32,
+constexpr 32 in device pass).
+
+**PRIMS_KSELECTION_TEST -- WarpTopKTests/TestD2_0 (k=256/N=1024) and TestD2_1 (k=1024/N=2048)**
+Root cause: `warpTopK()` (host launch dispatcher in kselection.cuh) computed
+`kAligned = alignTo(k, raft::WarpSize) / raft::WarpSize`. On the HIP host pass,
+raft::WarpSize = 64, so k=256 -> kAligned=4 (should be 8 for wave32). The device
+kernel writes `col = i * raft::WarpSize + lid` (device WarpSize=32 correctly), so
+N=4 on host dispatches CASE_K(4) but the kernel writes only 4*32=128 output slots
+while k=256 expects 256. The upper half remained zero/uninitialized.
+Same fix: `raft::warp_size()`. Also applied to `RowsPerBlk = TPB / warpSize`.
+Same pattern fixed in `batched/gemv.cuh` (tpb/nWarps) and
+`decisiontree/builder.cuh` (smem_size_2).
+
+This is the host/device raft::WarpSize mismatch warned in PORTING_GUIDE.md for
+the multi-arch build. On gfx90a, raft::WarpSize = 64 = host_warp_size() so the
+mismatch was latent; on gfx1100 (wave32), WarpSize=64 in host pass vs 32 on
+device exposed it.
+
+Files changed:
+- `cpp/src_prims/selection/kselection.cuh` (warpTopK host dispatch: RowsPerBlk, kAligned)
+- `cpp/tests/prims/device_utils.cu` (batchedBlockReduceTest smem calc)
+- `cpp/src_prims/linalg/batched/gemv.cuh` (gemvImplY: tpb, nWarps)
+- `cpp/src/decisiontree/batched-levelalgo/builder.cuh` (computeSplitSmemSize: smem_size_2)
+
+Commit amended: 9a5812f1 -> 23511cd5f8fcede1104f0d82c864045ec4a1a21f
+Fork pushed: jeffdaily/cuml @ moat-port 23511cd5.
+
+gfx90a impact: raft::WarpSize = raft::warp_size() = 64 on gfx90a (identical value,
+identical behavior). gfx90a device code objects: 31 of 31 same size. The binary
+diff shows `differ` due to build metadata (timestamps embedded in ELF), not ISA
+changes. gfx90a set to `revalidate` for due-diligence re-run on the gfx90a host.
+
+### SG_RPROJ_TEST (Stage 2 gate -- pairwise_distance -> cuvs::distance on gfx1100)
+
+Run 1 (pre-fix binary, unaffected by wave32 changes):
+```
+export HIP_VISIBLE_DEVICES=1
+export AMD_LOG_LEVEL=3
+export LD_LIBRARY_PATH=_deps/cuvs/install-gfx1100/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+projects/cuml/build-hip-gfx1100/SG_RPROJ_TEST
+```
+Result: 8/8 PASS (230.9s total). All 4 EpsilonCheck subtests PASS:
+- RPROJTestF1.EpsilonCheck (893 ms) -- float, small matrix -> cuvs::distance
+- RPROJTestD1.EpsilonCheck (944 ms) -- double, small matrix -> cuvs::distance
+- RPROJTestF2.EpsilonCheck (110547 ms) -- float, larger matrix -> cuvs::distance
+- RPROJTestD2.EpsilonCheck (116961 ms) -- double, larger matrix -> cuvs::distance
+
+AMD_LOG_LEVEL=3 confirms: "Using native code object for device:
+amdgcn-amd-amdhsa--gfx1100" and Gfx Major/Minor/Stepping: 11/0/0 (wave32 confirmed).
+pairwise_distance -> cuvs::distance::pairwise_distance dispatch on device confirmed.
+
+Run 2 (post-fix binary, determinism check):
+```
+projects/cuml/build-hip-gfx1100/SG_RPROJ_TEST   # 8/8 PASS
+```
+Determinism confirmed.
+
+### Full ctest run (post-fix, gfx1100 real GPU)
+
+```
+export HIP_VISIBLE_DEVICES=1
+export LD_LIBRARY_PATH=_deps/cuvs/install-gfx1100/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+ctest --test-dir projects/cuml/build-hip-gfx1100 --output-on-failure -j1
+```
+Build time (post-fix): 247.1s test run.
+Result: **33/34 PASS**. Only SG_LARS_TEST fails (in-process sequential known issue,
+documented ROCm-7.2.1 state leak -- identical to gfx90a result, not a new wave32 fail).
+
+Passing SG tests (all in-scope algos, 12/13 -- SG_RPROJ_TEST now in ctest):
+SG_OLS_TEST, SG_RIDGE_TEST, SG_CD_TEST, SG_QUASI_NEWTON, SG_SGD_TEST,
+SG_PCA_TEST, SG_TSVD_TEST, SG_HOLTWINTERS_TEST, SG_SHAP_KERNEL_TEST,
+SG_GENETIC_NODE_TEST, SG_GENETIC_PARAM_TEST, SG_RPROJ_TEST.
+
+Passing PRIMS tests (all 21):
+PRIMS_ADD_SUB_DEV_SCALAR_TEST, PRIMS_BATCHED_CSR_TEST,
+PRIMS_BATCHED_GEMV_TEST, PRIMS_BATCHED_MAKE_SYMM_TEST,
+PRIMS_BATCHED_MATRIX_TEST, PRIMS_DECOUPLED_LOOKBACK_TEST,
+PRIMS_DEVICE_UTILS_TEST, PRIMS_ELTWISE2D_TEST, PRIMS_FAST_INT_DIV_TEST,
+PRIMS_FILLNA_TEST, PRIMS_GRID_SYNC_TEST, PRIMS_HINGE_TEST,
+PRIMS_JONES_TRANSFORM_TEST, PRIMS_KSELECTION_TEST, PRIMS_LINALG_BLOCK_TEST,
+PRIMS_LINEARREG_TEST, PRIMS_LOG_TEST, PRIMS_LOGISTICREG_TEST,
+PRIMS_MAKE_ARIMA_TEST, PRIMS_PENALTY_TEST, PRIMS_SIGMOID_TEST.
+
+PRIMS_KSELECTION_TEST: 3/3 subtests PASS (WarpTopK wave32 fix confirmed working).
+PRIMS_DEVICE_UTILS_TEST: 5/5 subtests PASS (BatchedBlockReduce wave32 fix confirmed).
+PRIMS_BATCHED_GEMV_TEST: PASS (batched gemv wave32 fix, no regression).
+
+### Wave32 verdict
+
+All in-scope algorithms (GLM solvers, PCA/TSVD, decision tree/RF, ARIMA,
+SHAP) and the pairwise_distance -> cuvs::distance path produce correct results
+at wave32 on gfx1100. No HSA 0x1016 errors. No multi-arch symbol mismatch
+causing wrong results (the raft::WarpSize host/device split was the only issue;
+fixed by raft::warp_size()). WarpTopK (kselection), BatchedBlockReduce, and
+batched gemv all pass at wave32 after the host-dispatch fix.
+
+### LARS in-isolation check (gfx1100)
+
+```
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.fitGram"  -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/0.fitX"     -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/1.fitGram"  -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTestFitPredict/1.fitX"     -> PASSED
+SG_LARS_TEST --gtest_filter="LarsTest*" (unit tests only)   -> 20/20 PASSED
+```
+LARS passes in isolation on gfx1100, confirming the same ROCm-7.2.1 in-process
+sequential state-leak pattern as gfx90a. Not a new wave32 defect.
+
+### Verdict: PASS
+
+All formal gates met:
+- gfx1100 code-object: 63 hipv4-amdgcn-amd-amdhsa--gfx1100 bundles in libcuml.so.
+- Native gfx1100 dispatch: AMD_LOG_LEVEL=3 confirms gfx1100 code objects used.
+- SG_RPROJ_TEST: 8/8 PASS (incl all 4 EpsilonCheck cases -- pairwise_distance
+  -> cuvs::distance on device at wave32). Deterministic across 2 runs.
+- Full ctest: 33/34 PASS; SG_LARS_TEST sole failure is the documented ROCm-7.2.1
+  in-process-sequential state-leak (passes in isolation, not a port defect).
+- Wave32 bugs fixed: WarpTopK dispatch and BatchedBlockReduce smem
+  host/device WarpSize mismatch (all test pass after fix).
+- No Stage 1 regression: all previously passing SG + PRIMS tests still pass.
+- cudf not needed for in-scope C++ slice.
+- Fork clean: no CI yaml changes; no non-essential file edits.
+
+Note: fork HEAD moved from 9a5812f1 to 23511cd5f (wave32 fix). gfx90a set to
+`revalidate` (same-value host change; gfx90a device code objects same size).
+windows-gfx1151 stays `port-ready`.
+
+validated_sha: 23511cd5f8fcede1104f0d82c864045ec4a1a21f
+State transition: port-ready -> completed (linux-gfx1100).

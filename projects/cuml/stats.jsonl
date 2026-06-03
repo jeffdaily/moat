@@ -11,3 +11,8 @@
 {"kind":"phase","ts":"2026-06-02T07:45:44Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./SG_RPROJ_TEST --gtest_verbose"}
 {"kind":"phase","ts":"2026-06-02T07:48:01Z","phase":"test","seconds":132.369,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuml/build-hip/SG_RPROJ_TEST"}
 {"kind":"phase","ts":"2026-06-02T07:50:49Z","phase":"test","seconds":153.983,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-03T08:41:35Z","phase":"compile","seconds":75.772,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-03T08:59:34Z","phase":"test","seconds":244.170,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-03T09:13:53Z","phase":"compile","seconds":9.752,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 -j16 --target PRIMS_KSELECTION_TEST --target PRIMS_DEVICE_UTILS_TEST"}
+{"kind":"phase","ts":"2026-06-03T09:20:21Z","phase":"compile","seconds":33.907,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-03T09:29:29Z","phase":"test","seconds":247.107,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip-gfx1100 --output-on-failure -j1"}
