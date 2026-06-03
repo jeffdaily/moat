@@ -7,7 +7,7 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-03T14:11:17Z",
+  "updated_at": "2026-06-03T17:41:11Z",
   "head_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
   "platforms": {
     "linux-gfx90a": {
@@ -31,15 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
-        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T18:47:56Z"
-      }
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "completed",
@@ -61,14 +53,6 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      },
-      "carry_forward": {
-        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
-        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T18:47:56Z"
       },
       "last_agent": "validator"
     },
@@ -93,15 +77,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "b5c29cc266720fe15de112dca20a8681de0899f8",
-        "to": "221191b2ba4986bf456674be95bfa06d27b42a27",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T18:47:56Z"
-      }
+      "last_agent": "validator"
     }
   }
 }

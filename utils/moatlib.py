@@ -181,6 +181,9 @@ def set_state(name, platform, new_state, agent=None, save=True):
     if new_state == "completed":
         blk["completed_at"] = ts
         blk["validated_sha"] = obj.get("head_sha")
+        # A real-GPU validation supersedes any prior carry-forward tag; drop the
+        # stale annotation so the metadata reflects how this completion was reached.
+        blk.pop("carry_forward", None)
         if platform == LEAD:
             _unblock_followers(obj)
     obj["platforms"][platform] = blk
