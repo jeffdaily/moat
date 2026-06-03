@@ -7,18 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-02T05:30:00Z",
-  "head_sha": "a339d3da49181839e15a809d16a5f7286773f97e",
+  "updated_at": "2026-06-03T15:54:05Z",
+  "head_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a339d3da49181839e15a809d16a5f7286773f97e",
+      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-02T04:45:19Z",
-      "updated_at": "2026-06-02T04:45:19Z",
+      "completed_at": "2026-06-03T15:54:05Z",
+      "updated_at": "2026-06-03T15:54:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": "2026-06-02T04:00:00Z",
         "last_session_at": "2026-06-02T04:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+        "method": "binary-equiv",
+        "detail": "codeobj_diff identical vs a339d3d (libsgm.a + sgm-test device ISA); prep delta is CMake arch-autodetect + cuda_to_hip comment + README, no TU changed",
+        "at": "2026-06-03T15:54:05Z"
+      }
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "a339d3da49181839e15a809d16a5f7286773f97e",
       "started_at": "2026-06-02T01:00:00Z",
       "completed_at": "2026-06-02T05:30:00Z",
-      "updated_at": "2026-06-02T05:30:00Z",
+      "updated_at": "2026-06-03T15:54:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
