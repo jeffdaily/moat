@@ -7,18 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-03T16:02:19Z",
-  "head_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+  "updated_at": "2026-06-03T18:01:47.223805Z",
+  "head_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-03T15:54:05Z",
-      "updated_at": "2026-06-03T15:54:05Z",
+      "completed_at": "2026-06-03T18:01:04Z",
+      "updated_at": "2026-06-03T18:01:04Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+        "to": "5a6e944fda484f14669e5f99da10b29ae41f2474",
         "method": "binary-equiv",
-        "detail": "codeobj_diff identical vs a339d3d (libsgm.a + sgm-test device ISA); prep delta is CMake arch-autodetect + cuda_to_hip comment + README, no TU changed",
-        "at": "2026-06-03T15:54:05Z"
+        "detail": "test/CMakeLists.txt: REQUIRED->QUIET for OpenCV (test code has zero OpenCV usage; Linux builds still find and link OpenCV QUIET same as REQUIRED; no TU or code-object change)",
+        "at": "2026-06-03T18:01:04Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-03T16:02:19Z",
-      "updated_at": "2026-06-03T16:02:19Z",
+      "completed_at": "2026-06-03T18:01:12Z",
+      "updated_at": "2026-06-03T18:01:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,29 +61,36 @@
         "first_session_at": "2026-06-02T01:00:00Z",
         "last_session_at": "2026-06-02T01:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+        "method": "binary-equiv",
+        "detail": "test/CMakeLists.txt: REQUIRED->QUIET for OpenCV (test code has zero OpenCV usage; Linux builds still find and link OpenCV QUIET same as REQUIRED; no TU or code-object change)",
+        "at": "2026-06-03T18:01:12Z"
+      }
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-02T00:58:33Z",
+      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+      "started_at": "2026-06-03T18:01:47.223805Z",
+      "completed_at": "2026-06-03T18:01:47.223805Z",
+      "updated_at": "2026-06-03T18:01:47.223805Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
         "wall_seconds": {
           "thinking": 0,
-          "compile": 0,
-          "test": 0,
+          "compile": 155,
+          "test": 20,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
+        "session_count": 1,
+        "first_session_at": "2026-06-03T18:01:47.223805Z",
+        "last_session_at": "2026-06-03T18:01:47.223805Z"
+      },
+      "last_agent": "validator"
     }
   }
 }

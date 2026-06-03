@@ -407,3 +407,99 @@ No `.cu`/`.cuh` device source changed. With the arch passed explicitly the compi
 libsgm + sgm-test for gfx1100 are byte-identical to the a339d3d build. The prior
 gfx1100 validation holds: sgm-test 67/67 bit-exact, host==device==32 runtime warp
 size, wave32 correct. validated_sha -> fdb9d24. No GPU re-run, no fork change.
+
+## Validation 2026-06-03 (windows-gfx1151)
+
+Platform: windows-gfx1151, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), ROCm 7 (TheRock
+pip wheel), Windows 11 Enterprise 10.0.26100.
+
+### Source delta for this platform
+
+One Windows-only build fix was needed -- committed as 5a6e944 on top of fdb9d24:
+- `test/CMakeLists.txt`: `find_package(OpenCV REQUIRED)` -> `find_package(OpenCV QUIET)`.
+  The test suite does not use OpenCV in any source file (grep of test/*.cpp/*.h shows zero
+  `#include <opencv...>` or `cv::` references); the `find_package(OpenCV REQUIRED)` was
+  vestigial. OpenCV was not available on this Windows host. Making it QUIET allows the test
+  to build and run when OpenCV is absent, while silently using it when present (behavior on
+  gfx90a/gfx1100 Linux builds is unchanged -- they still find and link OpenCV identically).
+  gfx90a and gfx1100 carried forward to 5a6e944 as binary-equiv (no device code change).
+
+### Toolchain
+
+Windows with TheRock ROCm pip wheel and CMake **4.3.2** (required; CMake 3.31 has a bug
+in the all-clang-cl HIP ABI detection path for Windows). All-clang-cl: C, CXX, and HIP
+compiler = `<rocm_root>/lib/llvm/bin/clang-cl.exe`. Host MSVC env (INCLUDE/LIB/LIB) was
+already sourced from vcvars64. MSVC `link.exe` prepended to PATH over MSYS `/usr/bin/link`.
+
+### OpenCV resolution
+
+OpenCV is not installed on this host. Since no test source includes OpenCV headers or uses
+OpenCV types, changing `find_package(OpenCV REQUIRED)` to `find_package(OpenCV QUIET)` is
+the correct minimal fix (dead dependency in the test CMakeLists). Delta-port committed as
+fork commit 5a6e944.
+
+### Build
+
+```
+export PATH="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64:$PATH"
+export HIP_DEVICE_LIB_PATH="D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/amdgcn/bitcode"
+CMAKE4="/c/Users/jdaily/AppData/Local/Temp/pip-uninstall-bkgoot79/cmake.exe"  # 4.3.2
+ROCM_ROOT="/d/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel"
+
+"$CMAKE4" -S projects/libSGM/src -B projects/libSGM/src/build-win-gfx1151 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  "-DCMAKE_HIP_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  "-DCMAKE_C_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  "-DCMAKE_CXX_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_STANDARD=17 -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release \
+  "-DCMAKE_PREFIX_PATH=${ROCM_ROOT}/lib/cmake"
+
+"$CMAKE4" --build projects/libSGM/src/build-win-gfx1151 --config Release -j6
+```
+Build: PASS (warnings only -- nodiscard on hipStream* macros, unsafe buffer access in
+googletest ref code, pre-existing upstream patterns; no errors).
+
+### Runtime DLL deployment (TheRock fix)
+
+Copied TheRock's DLLs next to sgm-test.exe to override the stale System32 amdhip64_7.dll
+(per [[gfx1151-apu-runtime-gaps]]):
+```
+cp "${ROCM_ROOT}/bin/amdhip64_7.dll" build-win-gfx1151/test/
+cp "${ROCM_ROOT}/bin/amd_comgr0713.dll" build-win-gfx1151/test/
+```
+Confirmed at runtime: AMD_LOG_LEVEL=3 shows
+`Runtime Library Path: ...\build-win-gfx1151\test\amdhip64_7.dll` (TheRock's, not System32).
+
+### Code-object evidence
+
+`strings sgm-test.exe | grep gfx1151` shows 10 occurrences of
+`hipv4-amdgcn-amd-amdhsa--gfx1151` -- one per kernel (7 in sgm.lib + gtest stubs) -- all
+gfx1151, no cross-arch fat binary (single-arch build).
+
+### Runtime warp-size confirmation (wave32)
+
+AMD_LOG_LEVEL=3 shows `hipDeviceGetAttribute(attr=87, dev=0)` -> hipSuccess twice (in
+cost_aggregation and winner_takes_all launchers), returning warpSize=32 on gfx1151.
+host == device == 32; launch geometry is correct for wave32 RDNA3.5.
+
+### Test runs
+
+```
+"/d/Develop/moat/projects/libSGM/src/build-win-gfx1151/test/sgm-test.exe"
+```
+Run 1: [==========] 67 tests from 9 test suites ran.  [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran.  [  PASSED  ] 67 tests.
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Test suites covered: CastTest (2), CensusTransformTest (3), SymmetricCensusTest (3),
+CheckConsistencyTest (6), IntegrationTest (1), MedianFilterTest (4),
+CorrectDisparityRangeTest (18), CostAggregationTest (18), WinnerTakesAllTestP (12).
+
+Wave32 verdict: all path-aggregation DP shuffles (width=WARP_SIZE=32), WTA inter-lane
+__syncwarp, and median_filter software SIMD emulation (__vcmpgtu2/4 etc.) produce
+correct bit-exact disparity at wave32. No HSA faults. Results match the gfx90a/gfx1100
+bars (67/67).
+
+Result: 67/67 PASS, deterministic. Transition: port-ready -> completed,
+validated_sha=5a6e944fda484f14669e5f99da10b29ae41f2474.
+gfx90a and gfx1100 carried forward (binary-equiv; no device code change).
