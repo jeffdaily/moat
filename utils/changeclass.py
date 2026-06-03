@@ -44,6 +44,14 @@ DOC_NAMES = ("LICENSE", "NOTICE", "COPYING", "AUTHORS", "CHANGELOG")
 REPO_META_NAMES = (".gitignore", ".gitattributes", ".dockerignore",
                    ".editorconfig", ".mailmap", ".gitmodules")
 
+# CI / continuous-integration config. MOAT validates by building and running the
+# project directly, never through the project's CI, so a CI-config change (and in
+# particular stripping a stray smoketest workflow before a PR) cannot affect the
+# validated artifact. Treated as inert. Detected by path (.github/, .circleci/) or
+# basename (top-level CI files).
+CI_NAMES = (".travis.yml", ".gitlab-ci.yml", "appveyor.yml", "azure-pipelines.yml",
+            ".cirrus.yml", "jenkinsfile")
+
 C_FAMILY = (".c", ".cc", ".cpp", ".cxx", ".cu", ".cuh", ".h", ".hpp", ".hxx",
             ".hip", ".inl", ".inc")
 CMAKE = ("cmakelists.txt",)  # by basename; plus .cmake by suffix
@@ -107,6 +115,11 @@ def _is_doc(path: str) -> bool:
     if path.startswith("docs/") or path.startswith("doc/") or "/docs/" in path:
         return True
     if base in REPO_META_NAMES:
+        return True
+    if path.startswith(".github/") or "/.github/" in path \
+            or path.startswith(".circleci/") or "/.circleci/" in path:
+        return True
+    if base in CI_NAMES:
         return True
     return any(base.startswith(n) for n in DOC_NAMES)
 
