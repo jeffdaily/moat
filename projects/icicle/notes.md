@@ -332,3 +332,87 @@ ctest --test-dir agent_space/icicle_val_build/tests -R PqcTest -V --output-on-fa
 ### Verdict
 
 PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests. Wave32 `__syncwarp()` fix is wave-agnostic; gfx90a wave64 re-passes unchanged. No non-GPU regressions (CPU backend and closed-source MSM/NTT/EC backends out of scope, not built).
+
+## Validation 2026-06-03 (gfx1100) -- barrier fix final gate at d8e04fd
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, amdgcn-amd-amdhsa--gfx1100, wave32, RDNA3). ROCm 7.2.1. HIP_VISIBLE_DEVICES=1. Fork clone projects/icicle/src at d8e04fd, clean.
+
+### Build (fresh, gfx1100)
+
+```
+export HIP_VISIBLE_DEVICES=1
+cmake -S projects/icicle/src/icicle -B agent_space/icicle_val_gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCPU_BACKEND=ON -DHIP_PQC_BACKEND=ON -DCUDA_PQC_BACKEND=OFF \
+  -DPQC=ON -DBUILD_TESTS=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_PREFIX_PATH=/opt/rocm
+# Configuring done (10.2s -- FetchContent deps cached)
+bash utils/timeit.sh icicle compile -- cmake --build agent_space/icicle_val_gfx1100 -j128
+# [100%] Built target test_ml_kem -- exit 0
+```
+
+Architecture verified:
+```
+roc-obj-ls agent_space/icicle_val_gfx1100/backend/hip_pqc/libicicle_backend_hip_pqc.so
+# hipv4-amdgcn-amd-amdhsa--gfx1100  (472776 bytes)
+```
+No gfx90a code present. Correct.
+
+### Kernel dispatch on gfx1100 (AMD_LOG_LEVEL=3)
+
+```
+HIP_VISIBLE_DEVICES=1 AMD_LOG_LEVEL=3 ./test_ml_kem_keygen --gtest_filter="MLKemKeygenTest.ML_KEM_Internal_Keygen512"
+# Using native code object for device: amdgcn-amd-amdhsa--gfx1100
+# ShaderName : void icicle::pqc::ml_kem::ml_kem_keygen_kernel<...>
+HIP_VISIBLE_DEVICES=1 AMD_LOG_LEVEL=3 ./test_ml_kem_encaps --gtest_filter="MLKemEncapsTest.MlKemEncaps512Batch"
+# Using native code object for device: amdgcn-amd-amdhsa--gfx1100
+# ShaderName : void icicle::pqc::ml_kem::ml_kem_encaps_kernel<...>
+```
+
+All three ML-KEM kernels (keygen, encaps, decaps) confirmed launching native code on gfx1100.
+
+### Backend gtests (58 KAT-exact tests, run twice)
+
+Run 1:
+```
+bash utils/timeit.sh icicle test -- ctest --test-dir agent_space/icicle_val_gfx1100/backend/hip_pqc/tests --output-on-failure
+# 100% tests passed, 0 tests failed out of 58 -- Total Test time: 20.96 sec
+```
+
+Run 2:
+```
+HIP_VISIBLE_DEVICES=1 ctest --test-dir agent_space/icicle_val_gfx1100/backend/hip_pqc/tests --output-on-failure
+# 100% tests passed, 0 tests failed out of 58 -- Total Test time: 20.97 sec
+```
+
+Both runs: 58/58 PASS. Bit-exact NIST KAT vectors for ML-KEM-512/768/1024 keygen, encaps, decaps, PKE encrypt/decrypt.
+
+### Frontend dispatch tests (6 tests)
+
+```
+HIP_VISIBLE_DEVICES=1 ctest --test-dir agent_space/icicle_val_gfx1100/tests -R PqcTest --output-on-failure
+# 100% tests passed, 0 tests failed out of 6 -- Total Test time: 1.24 sec
+```
+
+6/6 PASS (MLkemSharedSecretConsistencyTest + MLkemSharedSecretConsistencyTestOnDevice for Kyber512/768/1024, batch 4096). Main-device=HIP-PQC confirmed.
+
+### Determinism (race-fix proof) -- previously non-deterministic cases, 3 runs each
+
+KyberTest.PkeKeygen768 (the previously flaky NIST KAT, non-deterministic wrong dk_pke):
+- Run 1: PASSED (112 ms), Run 2: PASSED (122 ms), Run 3: PASSED (109 ms) -- 3/3 bit-exact.
+
+MLKemTest.KeyCheckTest1024Batch:
+- Run 1: PASSED (755 ms), Run 2: PASSED (695 ms), Run 3: PASSED (713 ms) -- 3/3 bit-exact.
+
+MLKemEncapsTest.MlKemEncaps768Batch + MlKemEncaps1024Batch:
+- Run 1: PASSED (991 ms / 752 ms), Run 2: PASSED (811 ms / 684 ms), Run 3: PASSED (823 ms / 679 ms) -- 3/3 each.
+
+MLKemDecapsTest.MlKemDecaps768Batch + MlKemDecaps1024Batch:
+- Run 1: PASSED (739 ms / 542 ms), Run 2: PASSED (646 ms / 529 ms), Run 3: PASSED (640 ms / 510 ms) -- 3/3 each.
+
+All previously non-deterministic cases are now bit-exact across 3 runs. The wave32 LDS race is confirmed fixed.
+
+### Verdict
+
+PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests on gfx1100 (AMD Radeon Pro W7800, wave32) at d8e04fd. The previously-failing k=768/1024 cases (PkeKeygen768, KeyCheckTest1024Batch, MlKemEncaps768/1024Batch, MlKemDecaps768/1024Batch) are now bit-exact stable across 3 runs -- the single `__syncwarp()` in generate_error_vector at the eta=2 CBD->NTT boundary fixes the wave32 LDS race. No HSA 0x1016, no hang. Fork clean at d8e04fd.
