@@ -5,7 +5,7 @@
 
 [search]
 since_months = 12
-min_stars = 200
+min_stars = 75
 per_query_limit = 1000        # gh --limit; GitHub caps search at 1000 regardless
 throttle_seconds = 2.5        # pause between queries to respect the search rate limit
 exclude = ["pytorch/pytorch", "microsoft/onnxruntime"]
@@ -31,6 +31,19 @@ queries = [
   "topic:gpu topic:cuda",
   "cuda language:C++",
   "cuda language:Python",
+  # Domain recall: bias toward non-LLM domains where ports have been tractable
+  # hipify (vision/graphics/SLAM/physics/signal/genomics), vs the CUTLASS-saturated
+  # attention space. Each returns far under the 1000-result cap, so the lowered
+  # star floor actually surfaces sub-200-star research/application repos here. The
+  # languages-API (min_cuda_bytes) check then drops text-only topic mentions.
+  "topic:point-cloud",
+  "topic:slam",
+  "topic:fft",
+  "topic:computational-fluid-dynamics",
+  "topic:molecular-dynamics",
+  "topic:ray-tracing",
+  "topic:bioinformatics",
+  "topic:computer-vision topic:gpu",
 ]
 
 # Code-search surfacing pass (utils/discover.py --code-search). The repo-search
@@ -76,7 +89,7 @@ throttle_seconds = 12         # pause between code-search calls. Documented limi
 # across the narrow high-signal queries (they page first, so the broad
 # supplementary __global__ query is what gets truncated). Each fetch is
 # core-API (5000/hr), not the tight code-search limit, so this can be generous.
-max_new_repo_fetches = 800
+max_new_repo_fetches = 1500
 
 [weights]
 # priority = stars*log10(stars+1) + forks*log10(forks+1)
