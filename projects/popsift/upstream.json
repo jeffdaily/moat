@@ -4,5 +4,9 @@
   "default_branch": "develop",
   "fork_url": null,
   "ext_type": "unknown",
-  "base_sha": null
+  "base_sha": null,
+  "pr_url": "https://github.com/alicevision/popsift/pull/186",
+  "pr_number": 186,
+  "pr_head_sha": "05e698ec88d77b000f9412a09097853edaa62eae",
+  "pr_opened_at": "2026-06-03"
 }
