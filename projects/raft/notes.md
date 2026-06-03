@@ -1911,3 +1911,61 @@ correct and passing. All prior gfx90a bars met exactly.
 
 validated_sha: 6e925ac531e931ac1b5e76503280891718d33bca.
 State transition: revalidate -> completed (linux-gfx90a).
+
+## Review 2026-06-03 (linux-gfx1100 reviewer, delta ce0fa68..6e925ac)
+
+Reviewer verdict: PASS (delta-ported -> review-passed). The wave32 host/device
+WarpSize template-arg fix is correct and complete on the validated surface. One
+analysis (not code) correction is recorded below; it does not gate the port.
+
+Scope reviewed: git diff ce0fa68..6e925ac = exactly two files (linewise_op.cuh,
+ball_cover/registers-inl.cuh). No unrelated change snuck into the amend. Single
+curated commit, [ROCm] title 68 chars, body mentions Claude, no Co-Authored-By/
+ghstack/CI-yaml/artifacts. CUDA path byte-identical (kLinewiseTailWidth ==
+raft::WarpSize == 32 on CUDA; warp_size() constexpr 32 on CUDA).
+
+Correctness CONFIRMED (kLinewiseTailWidth=32 right on both arches): the
+main/Span linewise kernels are templated on BlockSize (default 256, fixed; see
+line 771), never on WarpSize, so they never had the symbol-mismatch hazard --
+only the two tail kernels did (MaxOffset = max(WarpSize, VecBytes)). After the
+fix both arches' host pass and every device pass request the single ...Lm32E
+instantiation. AlignWarp = Pow2<raft::WarpSize> (line 73) is referenced only in
+__device__ bodies (per-arch, no host symbol), so it is not a host hazard.
+
+ANALYSIS CORRECTION (notes.md line 1775-1776, "AlignWarp ... is used only in
+vectorCols/Span, which the TAIL kernel does not call"): factually wrong. The
+cols tail kernel DOES call L::vectorCols (linewise_op.cuh:348), and vectorCols
+DOES use AlignWarp::Value as its loop stride/warpPad (lines 118, 125). The
+conclusion (32 is correct on both arches) nonetheless holds for a different,
+verified reason: in the tail kernel VecElems == 1 and the vectorCols loop range
+is at most one element (elemsPerWarp is the 0/1 predicate threadOffset<arrOffset
+| threadOffset<len), so the warp-width-dependent AlignWarp::Value only affects a
+loop increment that never triggers a second iteration past in_end -- the single
+iteration's output is identical for AlignWarp 32 or 64. The rows tail kernel
+calls L::vectorRows, which strides purely by BlockSize (=MaxOffset) and never
+touches AlignWarp, so it is warp-width-independent outright. The commit-message
+wording ("MaxOffset is only the tail block width") is accurate; only the
+notes.md justification overstated it. Recommend correcting the notes line; no
+code change needed.
+
+ball_cover (registers-inl.cuh, 7 sites): the eps CSR/xd/max_k kernels are
+launched with the LITERAL tpb template arg 64 and block dim 64 on every arch, so
+no host/device symbol mismatch; only the grid divisor 64/raft::WarpSize ->
+64/raft::warp_size() changed. Host-runtime warp_size() gives gfx90a 64/64=1
+query/block (unchanged) and gfx1100 64/32=2 query/block (restores the wave32
+geometry; kernel-internal num_warps = tpb/WarpSize = 64/32 = 2 matches). Correct
+launch-geometry-int pattern, consistent with the gfx90a runtime-query keystone;
+no new host/device mismatch. These kernels are rocPRIM-DPP build-skipped on
+gfx1100, so the path is not yet exercised there, but the fat binary stays
+correct.
+
+Completeness: repo-wide grep found NO remaining <<<...WarpSize...>>> launch
+lines and no other host-pass constexpr-from-WarpSize feeding a launched kernel's
+template arg. Every other WarpSize / Pow2<WarpSize> use is inside a __device__/
+__global__ body (per-arch, safe). One PRE-EXISTING latent (NOT introduced by
+this delta, OFF the validated path): stats/detail/meanvar.cuh:201 host meanvar()
+builds dim3 bs(WarpSize, BlockSize/WarpSize, 1) from the host WarpSize=64
+constant -- the same wave32 launch-geometry class as ball_cover, but the kernel
+is templated on BlockSize (not WarpSize) so there is no symbol mismatch, and
+STATS is build-disabled under HIP (documented deferred). Flag for whenever STATS
+is brought up; not a blocker for this delta.
