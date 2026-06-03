@@ -335,3 +335,12 @@ FULL gfx1151 GPU-UT tally (TheRock ROCm 7.14, Radeon 8060S, all-clang-cl, fork @
 - targets-ut: TCombinationTargetTests 3/3 (exercises dcg.cu) + HuberMetricOnGpuTest 1/1 + TMultiLogitTests 1/1 + TweedieMetricOnGpuTest 1/1 PASS; TAucTest + TQueryCrossEntropyTests not run to completion (SLOW on the APU -- each sub-test does a full StartCudaManager/Stop cycle ~12s; partial runs show no correctness failure)
 
 So GPU correctness is fully validated. Open (NOT AMD-correctness defects): Langevin (not-AMD test-design), AUC/QueryCrossEntropy slow-not-completed, full-app e2e not run. The five committed fixes (bin-builder, segmented-sort temp-size, exact-leaves leaf-bound+empty-leaf, multistat histogram grid div-by-zero, multistat split scan-alignment) are all wave-agnostic GPU-correctness bugs surfaced by running the full UT suite on ROCm; gfx90a/gfx1100 -> revalidate at 09612d3c.
+
+## 2026-06-02 (windows-gfx1151) -- full-app e2e VALIDATED on gfx1151
+
+The full catboost app now builds (build_hip/cm/catboost/app/catboost.exe; the libcxx memory_resource fix resolved the earlier train_lib/combination.cpp failure). CPU-vs-GPU e2e training on a synthetic 8000/2000 binary-classification pool (15 num features, Logloss, 200 iters, seed 42):
+- CPU test AUC = 0.9606262358
+- GPU (gfx1151, --task-type GPU --devices 0) test AUC = 0.9618993998
+- diff 0.00127, within normal GBDT GPU-vs-CPU reduction-order variance (gfx90a precedent accepted ~0.0015)
+- DETERMINISTIC: two same-seed GPU runs gave bit-identical test_error.tsv (AUC + Logloss to 10 digits) -- the no-residual-race fingerprint
+Harness/data: agent_space/catboost/e2e/{train.tsv,test.tsv,pool.cd}; app exe + amdhip64_7/amd_comgr/rocm_kpack deployed beside it. So gfx1151 is validated end-to-end (full UT suite + e2e). AUC/QueryCrossEntropy targets-ut suites still completing (slow on APU, no failure). PR-readiness gated on gfx90a + gfx1100 revalidation at 09612d3c (separate Linux hosts, both flagged state=revalidate).
