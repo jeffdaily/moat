@@ -327,3 +327,61 @@ Fork clone git status: CLEAN (build-hip/ covered by build*/ gitignore; no artifa
 No code change required for the follower (validate-first confirmed); fork HEAD untouched.
 
 Result: 67/67 PASS, deterministic. Transition: revalidate -> completed, validated_sha=a339d3da49181839e15a809d16a5f7286773f97e.
+
+## Audit 2026-06-03
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1 (GCD1).
+Fork tip verified: `git fetch fork` confirmed fork/moat-port = a339d3da49181839e15a809d16a5f7286773f97e, matching status.json head_sha and validated_sha. Local checkout was one commit behind (fork remote showed stale 4ffe4e9 before fetch).
+
+### Safety
+
+No force-push or rewrite performed. No .github/workflows directory found in the fork (Actions remain disabled).
+
+### Real test discovery
+
+libSGM ships a real googletest suite (-DENABLE_TESTS=ON builds test/sgm-test). 67 tests across 9 suites, every one a GPU kernel call followed by bit-exact comparison against a CPU reference:
+
+- CastTest (2): type-cast kernels
+- CensusTransformTest (3), SymmetricCensusTest (3): census feature extraction
+- CheckConsistencyTest (6): L/R consistency filtering
+- IntegrationTest (1): full census->aggregation->WTA->median->consistency pipeline on random U8 input
+- MedianFilterTest (4): covers the software-emulated __vcmpgtu2/4, __vminu2/4, __vmaxu2/4 intrinsics
+- CorrectDisparityRangeTest (18), CostAggregationTest (18): parametric over disp_size x min_disp x census_type
+- WinnerTakesAllTestP (12): parametric WTA including wave-sensitive inter-lane smem handoff
+
+The test executable is run directly (no ctest integration). OpenCV is required at link time (libopencv-dev 4.6.0 present).
+
+### GPU test run (audit, fresh build at a339d3d)
+
+Build:
+```
+cmake -S /var/lib/jenkins/moat/projects/libSGM/src \
+      -B /var/lib/jenkins/moat/projects/libSGM/src/build-audit \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build /var/lib/jenkins/moat/projects/libSGM/src/build-audit -j$(nproc)
+```
+Build: PASS (warnings only, pre-existing upstream pattern).
+
+Test (run twice):
+```
+HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/libSGM/src/build-audit/test/sgm-test
+```
+Run 1: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Run 2: [==========] 67 tests from 9 test suites ran. [  PASSED  ] 67 tests.
+Deterministic. Build dir removed after audit.
+
+### MOAT-vocabulary scan (git diff e4c669b..a339d3d)
+
+One hit: `src/cuda_to_hip.h` line 20 -- "Strategy A" in a comment:
+```
+// Single compatibility shim for the ROCm/HIP port (Strategy A). On a CUDA build
+```
+This is MOAT-internal jargon and must be scrubbed before the upstream PR. Replacement: drop "(Strategy A)" or rephrase to "compat-header approach". No other MOAT vocabulary (moat-port, head_sha, validated_sha, curated, porter, reviewer, planner, lead/follower) found in the diff. Arch names gfx90a/gfx1100 appear only in technical multi-arch build context -- acceptable.
+
+Also noted: `CMakeLists.txt` line 12 defaults `CMAKE_HIP_ARCHITECTURES` to `"gfx90a"` when USE_HIP=ON and the user does not set it. Upstream reviewers may prefer `native` or a comment; this is a PR style issue, not a correctness defect.
+
+### Verdict
+
+Status: COMPLETED (no change). 67/67 PASS on real gfx90a hardware, deterministic, identical to prior validated runs. One PR-readiness item before upstream submission: scrub "(Strategy A)" from `src/cuda_to_hip.h:20`.
