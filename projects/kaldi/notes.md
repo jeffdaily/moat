@@ -226,6 +226,45 @@ The gfx1100 configure needs the in-tree OpenBLAS (tools/extras/install_openblas.
 
 Verdict: COMPLETED. validated_sha = e8c5613b789eefb6b0a251d8b15867bb53f1a01d. Wave32 verdict: CORRECT -- BackpropLstmNonlinearity passes on gfx1100 with GPU_WARP_SIZE=32, confirming the warp-reduction launch geometry is correct for RDNA3.
 
+## Windows-gfx1151 attempt 2026-06-03
+
+Platform: windows-gfx1151 (AMD Radeon 8060S, gfx1151, RDNA3.5, wave32, Windows 11, TheRock ROCm 7).
+Fork cloned: jeffdaily/kaldi @ moat-port = e8c5613b789eefb6b0a251d8b15867bb53f1a01d (confirmed with git ls-remote + git rev-parse HEAD).
+
+### Verdict: BLOCKED -- POSIX-host-build, not ROCm-port scope
+
+The kaldi ROCm build path is gated exclusively on Linux at the configure script level. `src/configure` `configure_rocm()` function (lines 308-316):
+
+```bash
+# 64bit/32bit? Not Linux? We do not support cross compilation with ROCm so,
+# use direct calls to uname -m here
+if [ "`uname -m`" == "x86_64" ] && [ "`uname`" == "Linux" ] ; then
+    cat makefiles/hip_64bit.mk >> kaldi.mk
+else
+    echo "WARNING: ROCm will not be used!
+         ROCm is only supported with 64-bit Linux builds."
+    exit 1;
+fi
+```
+
+On Windows (including MSYS2/git-bash where `uname` returns `MINGW64_NT-*` not `Linux`), the configure script exits 1 before emitting any HIP build rules. This is a deliberate, designed exclusion in the upstream build system.
+
+The full build chain is POSIX-only:
+
+- `tools/Makefile`: OpenFST 1.8.4 via autoconf `./configure && make`; sox; OpenBLAS via POSIX `make`.
+- `src/configure`: a bash script using `uname`, `sed`, `awk`, POSIX path discovery.
+- `src/makefiles/hip_64bit.mk`: GNU make rules, `$(HIPCC)` invocations, POSIX linker flags.
+- `src/cudamatrix/Makefile` and all peer Makefiles: GNU make, recursive `$(CXX)` rules, no MSVC support.
+
+Alternative build paths investigated:
+
+- `cmake/INSTALL.md` + `CMakeLists.txt`: No ROCm/HIP option anywhere in the CMake tree (grep clean for rocm/ROCm/HIP/hip). The CMake path is CPU-only.
+- `windows/INSTALL.md`: Generates MSVC `.sln` files (Windows/.props); explicitly states "For now (20171121), we do not support CUDA. We might add the support again in the future, but for now we do not express any commitment to do so." No ROCm support added since.
+
+Porting kaldi's autotools+Makefile system to Windows would require rewriting `src/configure` (bash, POSIX) as a Windows-compatible build system, porting OpenFST's autoconf build to MSVC/CMake, providing sox and OpenBLAS on Windows in a form the Makefile can consume, and creating a new Windows HIP build path in `src/makefiles/`. This is a host-build-system port of a POSIX-native project, not the ROCm port (the HIP device code and `hipify.h` are sound and validated on gfx90a + gfx1100). Out of scope per MOAT SCOPE rule.
+
+State: windows-gfx1151 blocked=True, blocked_reason: configure_rocm() explicitly requires uname==Linux; exits 1 on Windows; no Windows-native ROCm build path exists.
+
 ## Validation 2026-05-31 (linux-gfx90a revalidate, moat-port e8c5613b)
 
 Platform: linux-gfx90a. Prior validated_sha: cdc8d2f. New HEAD: e8c5613b789eefb6b0a251d8b15867bb53f1a01d (gfx1100 delta: per-arch GPU_WARP_SIZE + in-tree OpenBLAS sourcing). GPU: 4x AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1.
