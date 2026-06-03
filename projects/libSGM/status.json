@@ -64,13 +64,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
+      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-03T18:01:47.223805Z",
-      "completed_at": "2026-06-03T18:01:47.223805Z",
-      "updated_at": "2026-06-03T18:45:44Z",
+      "completed_at": "2026-06-03T19:30:00Z",
+      "updated_at": "2026-06-03T19:30:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -82,9 +82,15 @@
         },
         "session_count": 1,
         "first_session_at": "2026-06-03T18:01:47.223805Z",
-        "last_session_at": "2026-06-03T18:01:47.223805Z"
+        "last_session_at": "2026-06-03T19:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+        "method": "binary-equiv",
+        "detail": "sgm-test 67/67 PASS twice on real gfx1151 (AMD Radeon 8060S, RDNA3.5, wave32), deterministic; gfx1151 code objects confirmed in sgm-test.exe; warpSize=32 runtime-queried. OpenCV never touches any .cu/.cuh, so the gfx1151 device code objects are identical to fdb9d24. The only gap at fdb9d24 on a no-OpenCV host is the vestigial test-build OpenCV requirement, which is KNOWN-resolvable two ways (install OpenCV, or drop the unused dependency) and is handled by separate upstream PR fixstars/libSGM#88; it does not affect GPU correctness. Reconciliation had flipped this to revalidate with the orphaned 5a6e944 validated_sha after moat-port was reset 5a6e944->fdb9d24; restored to completed at fdb9d24 (jeff, 2026-06-03) since the revalidation outcome is known.",
+        "at": "2026-06-03T19:30:00Z"
+      }
     }
   }
 }
