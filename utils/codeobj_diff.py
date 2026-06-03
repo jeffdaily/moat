@@ -76,6 +76,14 @@ def _gather(root):
     return out
 
 
+# Compiler/runtime-generated symbols that vary between otherwise-identical HIP
+# builds (per-translation-unit GUID tags, fat-binary handles). They are not API
+# and carry no behavior, so they are excluded from the exported-symbol compare;
+# a real exported-symbol change (a renamed entrypoint) is still caught.
+_VOLATILE_SYM_PREFIXES = ("__hip_cuid_", "__cuda_module_", "__hip_gpubin_handle",
+                          "__hip_fatbin")
+
+
 def _exported_symbols(binpath):
     r = _run([NM, "-D", "--defined-only", binpath])
     if r.returncode != 0:
@@ -84,7 +92,10 @@ def _exported_symbols(binpath):
     for line in r.stdout.splitlines():
         parts = line.split()
         if len(parts) >= 3:
-            names.append(parts[-1])
+            sym = parts[-1]
+            if any(sym.startswith(p) for p in _VOLATILE_SYM_PREFIXES):
+                continue
+            names.append(sym)
     return sorted(names)
 
 

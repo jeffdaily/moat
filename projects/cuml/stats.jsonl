@@ -7,3 +7,7 @@
 {"kind":"phase","ts":"2026-06-02T07:34:08Z","phase":"compile","seconds":246.420,"exit":1,"cmd":"cmake --build projects/cuml/build-hip -j8"}
 {"kind":"phase","ts":"2026-06-02T07:35:28Z","phase":"compile","seconds":24.213,"exit":0,"cmd":"cmake --build projects/cuml/build-hip -j8"}
 {"kind":"phase","ts":"2026-06-02T07:41:03Z","phase":"test","seconds":153.833,"exit":8,"cmd":"ctest --test-dir projects/cuml/build-hip --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-02T07:45:31Z","phase":"compile","seconds":0.179,"exit":0,"cmd":"cmake --build projects/cuml/build-hip -j16"}
+{"kind":"phase","ts":"2026-06-02T07:45:44Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./SG_RPROJ_TEST --gtest_verbose"}
+{"kind":"phase","ts":"2026-06-02T07:48:01Z","phase":"test","seconds":132.369,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuml/build-hip/SG_RPROJ_TEST"}
+{"kind":"phase","ts":"2026-06-02T07:50:49Z","phase":"test","seconds":153.983,"exit":8,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuml/build-hip --output-on-failure -j1"}
