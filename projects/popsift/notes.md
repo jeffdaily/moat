@@ -1075,3 +1075,67 @@ with benign vendor-FP differences; it is not consistent with algorithm failure,
 uninitialized memory, or a correctness bug.
 
 linux-gfx90a state: remains `completed` at 3a789a1. No state change.
+
+## Validation 2026-06-03 (windows-gfx1151) -- revalidate at 3a789a13 (wave32 extrema fix): PASS
+
+Platform: AMD Radeon 8060S (gfx1151 APU, RDNA3.5, wave32), Windows 11, TheRock ROCm
+(clang 23.0.0). Trigger: the s_extrema.cu wave32 extrema_count fix (221191b -> 3a789a1)
+changes wave32 codegen, so this host re-validated on real GPU (the prior gfx1151
+"completed" at 221191b2 was a FALSE PASS, same as gfx1100). No source change required;
+the shared commit builds and runs correctly on gfx1151. State: revalidate -> completed.
+
+### Build (all-clang HIP, Ninja, examples + test targets)
+    cmake -S projects/popsift/src -B build-win-gfx1151 -G Ninja \
+      -DUSE_HIP=ON -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON \
+      -DCMAKE_CXX_COMPILER=<devel>/lib/llvm/bin/clang.exe \
+      -DCMAKE_HIP_COMPILER=<devel>/lib/llvm/bin/clang.exe \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_PREFIX_PATH="<devel>;<boost_install>" -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+      -DPopSift_USE_TEST_CMD=ON -DPopSift_TESTFILE_PATH=<oxford> \
+      -DCMAKE_LINKER_TYPE=LLDFIX -DCMAKE_{HIP,CXX,C}_USING_LINKER_LLDFIX=-fuse-ld=lld \
+      -DBoost_COMPILER="-vc143" -DBoost_USE_STATIC_LIBS=ON -DBoost_NO_SYSTEM_PATHS=ON
+    cmake --build build-win-gfx1151 -j4
+Deviations vs the Linux recipe: (1) -G Ninja REQUIRED (the VS generator has no HIP
+language support); (2) Boost 1.87 built from the TheRock source tree to
+agent_space/boost_install (no system Boost) -- b2 install --with-filesystem
+--with-program_options --with-system; (3) CMAKE_C_COMPILER unneeded; (4) the
+--hip-link -fgpu-rdc link flags come from CMakeLists target_link_options, LLDFIX
+inserts -fuse-ld=lld so AMD clang accepts the device link on Windows. 100% built,
+popsift.dll + popsift-demo.exe + popsift-match.exe. `strings popsift.dll | grep gfx`
+-> hipv4-amdgcn-amd-amdhsa--gfx1151 (single arch; llvm-objdump --offloading does not
+read COFF, strings/llvm-readobj confirm).
+
+### Cross-arch Oxford boat gate (downsampling=-1, VLFeat/loop/RootSift) -- EXACT MATCH
+Ran popsift-demo --log --gauss-mode vlfeat --desc-mode loop --popsift-mode --root-sift
+--downsampling -1 on the 6 Oxford boat images (thor.robots.ox.ac.uk/affine/boat.tar.gz):
+
+| Image | gfx1151 feat/desc | gfx90a ref | Match |
+|-------|-------------------|------------|-------|
+| img1  | 8351 / 9874       | 8351/9874  | EXACT |
+| img2  | 7946 / 9452       | 7946/9452  | EXACT |
+| img3  | 6158 / 7280       | 6158/7280  | EXACT |
+| img4  | 4802 / 5799       | 4802/5799  | EXACT |
+| img5  | 4618 / 5476       | 4618/5476  | EXACT |
+| img6  | 3855 / 4618       | 3855/4618  | EXACT |
+
+All 6 counts match gfx90a exactly -- the wave32 extrema_count fix is correct on
+gfx1151 (a count mismatch would be the bug resurfacing). img1 sorted features.txt
+md5 = 3712245bb59826937b55312f22fd803e vs gfx90a 3ad1a0e6d0e7abdb4520aeb2f8b4a4ff:
+counts identical (9874 lines), per-descriptor md5 differs by float rounding across
+arches (acceptable per the gate; gfx1100 likewise differed). Determinism: 5/5 runs
+byte-identical. 0 NaN, 0 Inf in all 9874x133 img1 descriptor values.
+
+### APU texture limit -- NOT hit at downsampling=-1
+The boat images (850x680, ~1700x1360 at 2x upscale) ran cleanly; no texture-alloc
+overflow. The non-layered-3D pyramid fix (alloc_data_planes/alloc_interm_array/
+alloc_dog_array dropping cudaArrayLayered) removed the layered-surface dimension
+constraint that was the earlier APU concern, so downsampling=-1 (the reference config)
+is usable here -- enabling the exact count-match gate, no config divergence.
+
+### hip_repro on gfx1151 (RDNA3.5, warpSize=32) -- informational
+- linear_filter_reject: ACCEPTED (HW linear filtering works on RDNA3.5, like gfx1100;
+  the software bilinear fallback is unnecessary-but-harmless).
+- layered_collapse: COLLAPSED (ROCm/clr#275 holds; layers 1-5 read stale 0.0, layer 0
+  ok; non-layered surf3Dread ALL-FRESH). The non-layered-3D fix is correct + necessary.
+
+All three platforms now completed @ 3a789a13.
