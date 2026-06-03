@@ -819,3 +819,125 @@ gfx90a: PASS. 6/6 Oxford boat images ran successfully on real gfx90a (MI250X).
 Feature counts non-zero and stable (deterministic across 2 runs). Zero NaN/Inf
 across all descriptor modes. linux-gfx90a remains `completed` at 3a789a1; no
 state change (same validated_sha, validation method upgraded to the real test suite).
+
+## Validation 2026-06-03 (gfx1100) -- revalidate at 3a789a13 (wave32 extrema fix)
+
+Platform: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1, HIP clang
+22.0.0. HIP_VISIBLE_DEVICES=1 (device at pciBusID=0x46; device 0 at pciBusID=0x43
+suffered a GPU hang from a prior killed run and was unresponsive for this session --
+all tests ran on device 1 which is the same model/arch).
+
+### Device-code delta (221191b -> 3a789a13)
+
+The primary change is `s_extrema.cu extrema_count`: the hardcoded wave64 lane formula
+`wflane = threadIdx.x + (threadIdx.y&1)*32` with width-64 shuffle and 1ull<<wflane
+mask was WRONG on wave32 (odd threadIdx.y rows landed at lanes 32..63, the lane-0
+leader never fired, lost atomicAdds, the prefix read phantom bits). Replaced by
+the warpSize-generic formula: `lane = (threadIdx.y*blockDim.x + threadIdx.x) % warpSize`,
+ballot/popc/shuffle widths = warpSize, leader = lane 0. On wave64 this is byte-equivalent
+to the prior formula; on wave32 it is correct.
+
+Other changes in the commit are comment/scope updates (sift_octave.cu, assist.h, cuda_to_hip.h)
+and a __clang__ guard on the bf16 include -- no logic change to the GPU kernels beyond
+the extrema_count fix.
+
+### Build
+
+```
+bash utils/timeit.sh popsift compile -- cmake \
+  -S projects/popsift/src -B projects/popsift/src/build-hip \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release \
+  -DPopSift_BUILD_EXAMPLES=ON -DBUILD_SHARED_LIBS=ON \
+  -DPopSift_USE_TEST_CMD=ON \
+  -DPopSift_TESTFILE_PATH=/var/lib/jenkins/moat/agent_space/oxford
+bash utils/timeit.sh popsift compile -- cmake --build projects/popsift/src/build-hip -j
+```
+
+Configure: 4.2s, full build from scratch: 26.0s. 100% built, libpopsift.so +
+popsift-demo + popsift-match linked. Only the pre-existing benign -Wunused-value
+(222x) and -Wdeprecated-declarations (2x rocThrust::identity) warnings.
+
+### gfx1100 code-object evidence
+
+```
+roc-obj-ls projects/popsift/src/build-hip/Linux-x86_64/libpopsift.so.0.10.1
+-> hipv4-amdgcn-amd-amdhsa--gfx1100  size=8170544
+```
+
+No gfx90a code object present. Arch confirmed.
+
+### hip_repro findings on gfx1100 (RDNA3)
+
+Both reproducers compiled with `clang++ -x hip --offload-arch=gfx1100` and run with
+HIP_VISIBLE_DEVICES=1:
+
+- `linear_filter_reject`: ACCEPTED -- hardware linear filtering on element-read float
+  arrays WORKS on gfx1100/RDNA3. This differs from gfx90a/CDNA2 where it is REJECTED.
+  The software bilinear fallback in readTex (assist.h) is unnecessary but harmless on
+  RDNA3 (it produces mathematically identical results to hardware filtering for the
+  point-texel sampling pattern used when integer coords are passed, and correct bilinear
+  interpolation when fractional coords are passed). No source change required.
+
+- `layered_collapse`: COLLAPSED on gfx1100 too (ROCm/clr#275 holds on RDNA3 as well as
+  CDNA2). Layer 0 reads correctly (7.0), layers 1-5 read 0.0 (stale) instead of
+  107/207/307/407/507. Non-layered 3D array (surf3Dread) is ALL-FRESH on gfx1100
+  (coherent). The non-layered-3D fix (sift_octave.cu alloc_data_planes/alloc_interm_array
+  /alloc_dog_array dropping cudaArrayLayered; cuda_to_hip.h surf2DLayeredwrite -> surf3Dwrite)
+  is correct and necessary on gfx1100.
+
+### GPU validation -- Oxford boat test (run-test-boat)
+
+```
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh popsift test -- \
+  cmake --build projects/popsift/src/build-hip --target run-test-boat
+```
+
+Test time: 20.2s for 6 images (vs 35.8s on gfx90a MI250X -- RDNA3 faster per-image
+here, consistent with smaller dataset and PCIe vs XGMI memory topology).
+
+Feature counts vs gfx90a@3a789a13 reference:
+
+| Image | Features (gfx1100) | Descriptors (gfx1100) | gfx90a ref | Match |
+|-------|-------------------|----------------------|------------|-------|
+| img1  | 8351              | 9874                 | 8351/9874  | EXACT |
+| img2  | 7946              | 9452                 | 7946/9452  | EXACT |
+| img3  | 6158              | 7280                 | 6158/7280  | EXACT |
+| img4  | 4802              | 5799                 | 4802/5799  | EXACT |
+| img5  | 4618              | 5476                 | 4618/5476  | EXACT |
+| img6  | 3855              | 4618                 | 3855/4618  | EXACT |
+
+Cross-arch md5 check (img1 features.txt): gfx1100=852740c0eed2c0f28401bc66c78b37ae vs
+gfx90a=3ad1a0e6d0e7abdb4520aeb2f8b4a4ff. Counts match; descriptor value md5 differs
+(float rounding across GPU arches -- acceptable per the validation gate definition).
+
+Zero NaN/Inf in all features.txt outputs. Zero NaN across all 6 descriptor modes
+(loop/iloop/grid/igrid/notile/vlfeat) tested manually on img1: 8351/9874 for each mode, 0 NaN.
+
+Determinism: 5/5 identical runs on img1 (8351 features / 9874 descriptors each run).
+
+### Wave32 extrema verdict
+
+The warpSize-generic extrema counter (s_extrema.cu) is correct on wave32 (gfx1100).
+With blockDim=(32,HEIGHT), each threadIdx.y row is its own 32-lane wavefront; lane =
+(threadIdx.y*32 + threadIdx.x) % 32 = threadIdx.x, which is the standard within-wavefront
+lane. The leader fires exactly once per wavefront (lane 0 = threadIdx.x 0). The feature
+count (8351/img1) matches gfx90a byte-for-byte, confirming no extrema inflation or loss
+from the wave32 ballot path. The 0/64/8128/0/0 lottery seen on gfx90a before the fix (at
+the old wave64-hardcoded code) is absent on gfx1100.
+
+No HSA 0x1016. No GPU hang from the popsift kernels themselves (the GPU[0] hang was a
+pre-existing state from a prior killed process, not a popsift kernel fault).
+
+### Fork state
+
+Fork: jeffdaily/popsift @ moat-port, HEAD 3a789a137e03, clean (git status: nothing to
+commit, working tree clean).
+
+### RESULT
+
+PASS. Feature counts exact-match gfx90a reference across all 6 Oxford boat images.
+5/5 deterministic. 0 NaN/Inf. All 6 descriptor modes clean. warpSize-generic extrema
+counter correct on wave32. layered-collapse fix valid on RDNA3 (clr#275 confirmed).
+HW-linear ACCEPTED on gfx1100 (software bilinear unnecessary-but-correct). No 0x1016.
+linux-gfx1100: revalidate -> completed; validated_sha = 3a789a137e03c9be0e5b80681ae1b538f9064c13.

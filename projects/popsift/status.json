@@ -7,7 +7,7 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-03T04:07:12Z",
+  "updated_at": "2026-06-03T06:26:10Z",
   "head_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
   "platforms": {
     "linux-gfx90a": {
@@ -42,13 +42,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "221191b2ba4986bf456674be95bfa06d27b42a27",
+      "validated_sha": "3a789a137e03c9be0e5b80681ae1b538f9064c13",
       "started_at": null,
-      "completed_at": "2026-05-31T11:46:08Z",
-      "updated_at": "2026-06-03T04:05:54Z",
+      "completed_at": "2026-06-03T06:26:10Z",
+      "updated_at": "2026-06-03T06:26:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -69,7 +69,8 @@
         "class": "doc-only",
         "detail": "no changes",
         "at": "2026-06-02T18:47:56Z"
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "revalidate",
