@@ -361,3 +361,59 @@ Matches the gfx90a/gfx1100 results. No NaN, clean exit, no HIP fault.
   unaffected by the gfx1151-APU runtime gaps that blocked rmm/amgcl -- runs clean on the
   APU like gsplat and GPUMD. No warp-size or any source fix required for gfx1151.
 State: port-ready -> completed (validated_sha 0523b54, fork unchanged).
+
+## Audit 2026-06-03
+
+Auditor: validator agent (gfx90a host). Purpose: verify test rigor and scan for MOAT-internal jargon before upstream PR.
+
+### Fork tip / state consistency
+
+`git fetch fork` -> moat-port tip resolves to `0523b540bf209af49f755c52af49cc2a057b95db`, matching status.json `head_sha`/`validated_sha` 0523b54 on all three platforms. Consistent.
+
+### Real test suite discovery
+
+CudaSift has a project-maintained test suite in `tests/` with three purpose-built binaries built by default (`BUILD_TESTS=ON`):
+
+- `test_extract` (10 checks): basic extraction, threshold sensitivity, octave count, reproducibility, scale-up mode.
+- `test_match` (11 checks): self-matching score, cross-image match, homography estimation, matching speed.
+- `test_homography` (8 checks): translation, rotation, scale change detection, stereo PGM pair RANSAC.
+
+No CTest `add_test` wiring; tests are run directly. No gtest/catch2 framework; custom `CHECK()` macro with pass/fail counters. All test data ships in `data/` (two PNG images + two PGM stereo pairs). No golden/reference pixel-exact files -- correctness is checked by geometric and statistical thresholds (descriptor unit-norm, RANSAC inlier counts, homography recovery within a few pixels). No downloaded data required. These are the same binaries the prior validations ran; the test suite is real, not a demo.
+
+The `.github/workflows/rocm-build-smoketest.yml` in the port commit is a CPU-only compile tripwire; it is NOT a test mechanism.
+
+### GPU test run (this audit, gfx90a, GCD 1, HIP_VISIBLE_DEVICES=1)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a (wave64). Existing build-hip/ at 0523b54 used (gfx90a code objects confirmed via llvm-objdump; CMakeCache shows CMAKE_HIP_ARCHITECTURES=gfx90a).
+
+Run from `projects/CudaSift/src/` so `data/` resolves:
+
+```
+HIP_VISIBLE_DEVICES=1 ./build-hip/test_extract      # 10 passed, 0 failed
+HIP_VISIBLE_DEVICES=1 ./build-hip/test_match        # 11 passed, 0 failed
+HIP_VISIBLE_DEVICES=1 ./build-hip/test_homography   #  8 passed, 0 failed
+```
+
+Total: 29/29 checks pass. Key numbers consistent with prior validations (1910 kpts, 100% reproducibility, RANSAC homography recovered within ~0.3 px, self-match >99%, no GPU fault, no safeCall abort, dmesg clean). Prior validation was NOT a sanity demo only -- it ran the full project test suite and these results confirm it.
+
+### Jargon scan
+
+`git diff ed5ef54..fork/moat-port` on all source/build/CI files, plus `grep -r` across the working tree:
+
+| File | Line | Jargon hit | Severity |
+|------|------|-----------|---------|
+| `cuda_to_hip.h` | 4 | `Strategy A` | must scrub before PR |
+| `CMakeLists.txt` | 153 | `Strategy A, minimal footprint` | must scrub before PR |
+| `.github/workflows/rocm-build-smoketest.yml` | 5 | `MOAT pipeline` | entire file must be removed before PR (policy: no GHA workflows in fork, already noted in prior validation) |
+| `.github/workflows/rocm-build-smoketest.yml` | 9, 11 | `moat-port` (branch refs) | removed with the file |
+| commit message | -- | `follower platforms (gfx1100, gfx1151)` | mild; not in source but visible in git log; acceptable or rephrase to "other targets" at PR time |
+
+`head_sha`, `validated_sha`, `revalidate`, `curated commit`, `porter`, `reviewer`, `validator`, `changes-requested`, `port-ready`, `review-passed` -- none found in any committed file.
+
+Actions required before opening the upstream PR:
+1. Remove `.github/workflows/rocm-build-smoketest.yml` from the curated commit (already noted; Actions disabled on the fork so it has never run).
+2. In `cuda_to_hip.h:4`, replace `Strategy A` with plain English (e.g. "force-included compat header so no per-file edits are needed").
+3. In `CMakeLists.txt:153`, replace `(Strategy A, minimal footprint)` with equivalent plain English.
+4. Rephrase "follower platforms" in the commit body to "other targets" if desired (not urgent, not in source).
+
+State left as `completed` on all three platforms -- all 29 GPU checks pass on gfx90a, no regression.
