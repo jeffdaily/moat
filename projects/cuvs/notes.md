@@ -467,3 +467,99 @@ HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build/g
 RESULT: **410/410 PASS, 0 FAILED** across 48 suites (592511 ms). All metrics (canberra, correlation, cosine, hamming, hellinger, inner-product, jensen-shannon, kl-divergence, l1, l2-expanded + self-distance, l2-sqrt-expanded, l-inf, lp-unexpanded, russell-rao) in float + half + double verified correct vs CPU reference.
 
 **Verdict: PASS. Transition linux-gfx90a review-passed -> completed, validated_sha=0c2b709a2c38e5b699475aa614a19cc79661d01a. Followers linux-gfx1100 and windows-gfx1151 auto-unblocked to port-ready.**
+
+## Validation 2026-06-03 (gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 RDNA3, wave32). ROCm 7.2.1. HIP_VISIBLE_DEVICES=1 (device 0 had a stale hipStreamCreate hang; device 1 is identical gfx1100 W7800 48GB). Fork: jeffdaily/cuvs @ moat-port HEAD 0c2b709a2c38e5b699475aa614a19cc79661d01a. No source changes -- validate-first follower; fork branch reused as-is.
+
+### Dep installs for gfx1100
+
+rmm was already installed at `projects/rmm/install-gfx1100` (validated at 565705bf per rmm notes). raft gfx1100 was built at `projects/raft/build-gfx1100` (validated at 6e925ac per raft notes); installed into `_deps/raft/install-gfx1100` via `cmake --install`. Both dep installs verified:
+- `_deps/raft/install-gfx1100/lib/cmake/raft/raft-config.cmake` present
+- `projects/rmm/install-gfx1100/lib/cmake/rmm/rmm-config.cmake` present
+- `_deps/raft/install-gfx1100/include/raft/util/cuda_dev_essentials.cuh` contains `inline int host_warp_size()` (the ce0fa68c multi-arch keystone -- runtime hipDeviceGetAttribute query). Not a stale pre-ce0fa68c install.
+
+### Build command
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+cmake -S projects/cuvs/src/cpp -B agent_space/cuvs_build_gfx1100 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="/var/lib/jenkins/moat/_deps/raft/install-gfx1100;/var/lib/jenkins/moat/projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX" \
+  -DBUILD_TESTS=ON \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/cuvs/install-gfx1100
+bash utils/timeit.sh cuvs compile -- \
+  ninja -C agent_space/cuvs_build_gfx1100 -j16 cuvs DISTANCE_TEST FUSED_NN_TEST
+```
+
+Configure: 2.2s. Build: 25.1s (63 targets; warnings only, no errors). CMakeCache: `CMAKE_HIP_ARCHITECTURES=gfx1100`, `CUVS_HIP_SLICE=distance`, `USE_HIP=ON`. Dep resolution: `raft_DIR=_deps/raft/install-gfx1100/lib/cmake/raft`, `rmm_DIR=projects/rmm/install-gfx1100/lib/cmake/rmm`.
+
+### gfx1100 code-object evidence
+
+```
+llvm-objdump --offloading agent_space/cuvs_build_gfx1100/libcuvs.so | grep -io 'gfx[0-9a-z]*' | sort -u
+# -> gfx1100
+```
+
+All code objects in libcuvs.so are `hipv4-amdgcn-amd-amdhsa--gfx1100`. No gfx90a code object present. Arch is read from `CMAKE_HIP_ARCHITECTURES=gfx1100` with no source edit -- the follower build uses only the `-DCMAKE_HIP_ARCHITECTURES=gfx1100` flag as documented.
+
+### simt_kernel.cuh guard verified
+
+The fused-NN kernel guard in the cuvs source reads `#if (__CUDA_ARCH__ < 800) || defined(USE_HIP)` (simt_kernel.cuh line 90), matching the gfx90a validated fix. The installed raft compat header (`cuda_to_hip.h`) defines `__CUDA_ARCH__ 800` only on `__HIP_DEVICE_COMPILE__`, so `|| defined(USE_HIP)` keeps the body live on HIP. No multi-arch symbol mismatch: the cuvs distance slice has NO warp-size-templated kernel instantiation (linewise_op is a raft-internal header, not in the cuvs compiled slice); the distance slice templates are on metric/dtype, not WarpSize.
+
+### GPU tests (HIP_VISIBLE_DEVICES=1)
+
+```bash
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:_deps/raft/install-gfx1100/lib:projects/rmm/install-gfx1100/lib:/opt/rocm/lib:${LD_LIBRARY_PATH:-}"
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build_gfx1100/gtests/FUSED_NN_TEST
+HIP_VISIBLE_DEVICES=1 bash utils/timeit.sh cuvs test -- agent_space/cuvs_build_gfx1100/gtests/DISTANCE_TEST --gtest_filter='-BigMatrix*'
+```
+
+**FUSED_NN_TEST: 7/7 PASS** (0.42s). Run 2: 7/7 PASS (0.31s). DETERMINISTIC. The test exercises `cuvs::distance::fusedDistanceNNMinReduce<float,KeyValuePair<int,float>,int>` (forced-SIMT kernel) and checks argmin index + L2 relu-ALWAYS epilogue distance vs independent CPU reference (splitmix64-hashed inputs). The `|| defined(USE_HIP)` guard is confirmed live: a body-less kernel would leave output at FLT_MAX and fail immediately.
+
+**DISTANCE_TEST `--gtest_filter='-BigMatrix*'`: 410/410 PASS, 0 FAILED** (550.8s). 48 suites -- canberra, correlation, cosine, hamming, hellinger, inner-product, jensen-shannon, kl-divergence, l1, l2-expanded (+ self-distance), l2-sqrt-expanded, l-inf, lp-unexpanded, russell-rao, each in float + half + double. All pairwise-distance metrics correct vs CPU reference on gfx1100 wave32. Zero `[  FAILED  ]` lines in the log.
+
+### Wave32 verdict
+
+**Wave32 correctness (pairwise-distance): PASS.** The SIMT pairwise-distance and fused-NN paths use `raft::WarpSize` / `raft::shfl(width=AccThCols)` from the installed raft (6e925ac, `host_warp_size()` runtime query). On gfx1100 (wave32): `WarpSize=32` in the device pass (non-`__GFX9__` branch in cuda_dev_essentials.cuh). The per-row L2 norm reduction (`coalescedReduction`, the `active_mask()` fix from raft) is correct on wave32 -- confirmed by 410/410 DISTANCE_TEST PASS. The SIMT fused-NN per-row mutex walk and shuffles (width=AccThCols, sub-warp) are wave-agnostic by construction.
+
+**No multi-arch symbol mismatch.** The cuvs distance slice has no kernel templated on `raft::WarpSize` as a compile-time template arg. The linewise tail-kernel fix (`kLinewiseTailWidth=32` in raft 6e925ac) is in raft's own header; cuvs does not instantiate that template. Zero "Cannot find Symbol" errors across all test runs.
+
+**No HSA 0x1016.** Zero HSA exceptions or SIGABRTs across both DISTANCE_TEST and FUSED_NN_TEST runs.
+
+**Determinism:** FUSED_NN_TEST 7/7 (run 1) == 7/7 (run 2). DISTANCE_TEST 410/410 (single run; same test suite passed gfx90a@0c2b709 with same 410/410 count). No flakiness observed.
+
+### Fork state
+
+Fork `jeffdaily/cuvs` branch `moat-port` at 0c2b709a2c38e5b699475aa614a19cc79661d01a. NO source changes made on this follower (pure validate-first; no delta-port needed). No CI yaml added. Actions disabled on fork.
+
+### Install as a dependency (updated for gfx1100)
+
+For cuml to consume cuvs on gfx1100:
+
+```bash
+cmake --install agent_space/cuvs_build_gfx1100 --prefix _deps/cuvs/install-gfx1100
+```
+
+Installed to `_deps/cuvs/install-gfx1100`. The `## Install as a dependency` section contract is unchanged; the gfx1100-specific path substitutes `install-gfx1100` for `install` everywhere.
+
+Consume from cuml:
+```
+-DCMAKE_PREFIX_PATH="_deps/cuvs/install-gfx1100;_deps/raft/install-gfx1100;projects/rmm/install-gfx1100;/opt/rocm;$CONDA_PREFIX"
+```
+
+### Verdict
+
+PASS. State transition: port-ready -> completed (validated_sha = 0c2b709a2c38e5b699475aa614a19cc79661d01a).
+
+Results vs gfx90a@0c2b709:
+
+| Test | gfx1100 result | gfx90a bar | Notes |
+|------|----------------|------------|-------|
+| FUSED_NN_TEST | 7/7 PASS (x2, DETERMINISTIC) | 7/7 | Forced-SIMT fused-NN kernel live on HIP; argmin + L2 epilogue correct on wave32 |
+| DISTANCE_TEST (excl BigMatrix) | 410/410 PASS | 410/410 | All 48 metric/dtype suites correct on gfx1100 vs CPU reference |
+| libcuvs.so arch | gfx1100 only | gfx90a+gfx1100 | Single-arch gfx1100 build; no gfx90a object |
+| Wave32 | CORRECT | wave64 | SIMT reductions wave-agnostic via raft::WarpSize; no HSA 0x1016 |
+| Multi-arch symbol mismatch | NONE | NONE | No warp-size-templated kernel in distance slice |
