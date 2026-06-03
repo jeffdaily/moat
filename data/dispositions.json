@@ -342,6 +342,13 @@
     "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
   },
+  "lammps/lammps": {
+    "decided": "2026-06-03T23:28:39Z",
+    "disposition": "skip",
+    "full_name": "lammps/lammps",
+    "note": "AMD support via KOKKOS/GPU HIP backend (HIP in repo languages). DOE/production MD code with established ROCm support.",
+    "reason": "already-supported"
+  },
   "lattice/quda": {
     "decided": "2026-05-30T00:39:37Z",
     "disposition": "skip",
@@ -497,10 +504,10 @@
     "reason": "already-supported"
   },
   "qmcpack/qmcpack": {
-    "decided": "2026-05-30T00:39:37Z",
+    "decided": "2026-06-03T23:28:39Z",
     "disposition": "skip",
     "full_name": "QMCPACK/qmcpack",
-    "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
+    "note": "Mature ROCm/HIP backend: HIP in repo languages, README cites HIP + gfx90, 'full performance portable GPU support'. DOE production code (colleague: DOE projects have mature AMD ports).",
     "reason": "already-supported"
   },
   "rust-gpu/rust-cuda": {
