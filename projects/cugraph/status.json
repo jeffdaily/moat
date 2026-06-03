@@ -7,7 +7,7 @@
   "priority": 6.114,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-03T10:15:00Z",
+  "updated_at": "2026-06-03T14:19:15Z",
   "head_sha": "6f8dcd9",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "RAPIDS: no upstream Windows support (Linux-only stack); deferred on windows-gfx1151 per user directive 2026-06-03. Lead/follower Linux ports stand. Unblock if RAPIDS Windows support materializes.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-03T00:13:30Z",
+      "updated_at": "2026-06-03T14:19:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
