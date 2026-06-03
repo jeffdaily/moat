@@ -215,3 +215,42 @@ PASS. State: windows-gfx1151 port-ready -> completed. validated_sha=1249659 (new
 GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm). 2/2 ctest PASS, byte-identical to the gfx90a reference: gemv_f32 / gemv_q4_0 / gemv_q6_k / gemv_q6_k_large (no-smem) / silu_mul / rmsnorm all exact or within tol. Built all-clang-cl (CMAKE_CXX_COMPILER=CMAKE_HIP_COMPILER=clang-cl, -DCMAKE_HIP_ARCHITECTURES=gfx1151, HIP/CXX std 20, -DNOMINMAX -DWIN32_LEAN_AND_MEAN). Ran with amdhip64_7+amd_comgr0713+rocm_kpack+hiprtc deployed beside the test exe (System32 Adrenalin amdhip64 is device-lib-mismatched).
 
 WINDOWS PORT (new commit 1249659 ON TOP of the gfx90a 144ab93 -- not an amend; 144ab93 stays a reachable ancestor so gfx90a/gfx1100 carry-forward). Five POSIX->Win32 host fixes, all #ifdef _WIN32 (Linux paths byte-identical): a new src/core/platform.h shimming aligned_alloc (_aligned_malloc), mmap (CreateFileMapping/MapViewOfFile), and RAM query (GlobalMemoryStatusEx); types.h includes platform.h before namespace nt; loader.cpp/.h and streamer.cu/.h swap POSIX open/fstat/mmap/munmap/madvise + /proc/meminfo+sysinfo for the Win32 shims under _WIN32; CMakeLists uses /O2 /DNDEBUG instead of -O3 -march=native under WIN32 (clang-cl rejects -march). No warp intrinsics -> wave32 numerically equivalent. gfx90a/gfx1100 -> revalidate at 1249659 (carry-forward expected: the delta is entirely _WIN32-guarded, Linux codegen unchanged).
+
+## Validation 2026-06-03 (linux-gfx90a, revalidate -> carry-forward)
+
+Platform: MI250X gfx90a, ROCm 7.2.1, HIP_VISIBLE_DEVICES=2 (GCD 2).
+Fork: jeffdaily/ntransformer moat-port @ 124965909f8a1746c7d717dc32eba419d3757462.
+Prior validated_sha: 144ab937bbaa7aad3440106358006dc014d776b6.
+
+### Carry-forward check
+
+Delta classify: `class=mixed arch_independent=False` -- full binary-equivalence check required.
+
+Built both SHAs for gfx90a into separate build dirs, then ran `codeobj_diff.py`:
+
+```
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-old \
+  -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build agent_space/ntransformer/build-old -j$(nproc)
+# (src at 144ab937)
+
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-new \
+  -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build agent_space/ntransformer/build-new -j$(nproc)
+# (src at 124965909)
+
+python3 utils/codeobj_diff.py build-old/test_gemm build-new/test_gemm
+python3 utils/codeobj_diff.py build-old/ntransformer build-new/ntransformer
+```
+
+Results:
+- `test_gemm`: `verdict=identical` (exported symbols + device ISA identical, 2 exports)
+- `ntransformer`: `verdict=identical` (exported symbols + device ISA identical, 7 exports)
+- `test_tensor`: no device code objects (pure CPU test; roc-obj-ls "No kernel section found") -- nothing to diff
+
+### Verdict
+CARRY-FORWARD (binary-equiv). New commit 1249659 adds only `#ifdef _WIN32` host-side shims; device ISA on gfx90a is byte-identical to 144ab937. State: linux-gfx90a revalidate -> completed. validated_sha=124965909f8a1746c7d717dc32eba419d3757462.

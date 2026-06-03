@@ -7,17 +7,17 @@
   "priority": 4.348,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:34Z",
-  "updated_at": "2026-06-03T07:38:56Z",
+  "updated_at": "2026-06-03T15:31:37Z",
   "head_sha": "124965909f8a1746c7d717dc32eba419d3757462",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "144ab937bbaa7aad3440106358006dc014d776b6",
+      "validated_sha": "124965909f8a1746c7d717dc32eba419d3757462",
       "started_at": "2026-06-02T05:53:09Z",
-      "completed_at": "2026-06-02T06:30:00Z",
-      "updated_at": "2026-06-03T07:38:54Z",
+      "completed_at": "2026-06-03T15:31:37Z",
+      "updated_at": "2026-06-03T15:31:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "124965909f8a1746c7d717dc32eba419d3757462",
+        "method": "binary-equiv",
+        "detail": "Windows _WIN32 shims only; test_gemm+ntransformer device ISA identical on gfx90a (test_tensor has no device code)",
+        "at": "2026-06-03T15:31:37Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
