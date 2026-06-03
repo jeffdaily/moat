@@ -294,3 +294,41 @@ Fact-checked against the code (not the writeup):
 - Wave-agnostic + minimal: no literal-arch hardcode, no warpSize/32 conditional, no per-arch branch; safe superset on wave64 (gfx90a re-passes, hence the expected advance-head revalidate flip) and on CUDA.
 
 Hygiene: `[ROCm]` title 46 chars; body mentions Claude and now documents the third (wave32) race; Test Plan present; no Co-Authored-By/noreply trailer, no ghstack, no AMD-internal refs, no CI yaml. Scope confined to backend/hip_pqc (cuda_pqc/cpu/cuda trees untouched).
+
+## Validation 2026-06-03 (revalidate, linux-gfx90a, fork moat-port d8e04fd116ff60770d1d04bc731562f2659af7a9)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a, amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-), GCD 2 (HIP_VISIBLE_DEVICES=2). ROCm 7.2.
+
+Delta from prior validated sha d66e92a7: one `__syncwarp()` added in `icicle/backend/hip_pqc/include/ml_kem/samplers/cuda_samplers.cuh` at the `if constexpr (ntt)` boundary in `generate_error_vector` (the wave32 race fix). Classified as `mixed` by moatlib.py -- real-GPU re-run required (no carry-forward).
+
+### Build (incremental from existing build dir)
+
+Source updated to d8e04fd1 via `git reset --hard jeffdaily/moat-port` on the local checkout. Incremental rebuild only recompiled the changed TU.
+
+```
+export HIP_VISIBLE_DEVICES=2
+bash utils/timeit.sh icicle compile -- cmake --build agent_space/icicle_val_build -j128
+# [100%] Built target test_ml_kem -- exit 0
+```
+
+### Backend gtests (58 KAT-exact tests)
+
+```
+bash utils/timeit.sh icicle test -- ctest --test-dir agent_space/icicle_val_build/backend/hip_pqc/tests -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 58 -- Total Test time: 20.45 sec
+```
+
+58/58 PASS. Includes bit-exact NIST KAT vectors for ML-KEM-512/768/1024 keygen, encaps, decaps, PKE encrypt/decrypt. The previously added `__syncwarp()` (wave32 fix) is a safe superset on wave64 -- all k=512/768/1024 variants pass.
+
+### Frontend dispatch tests (6 tests)
+
+```
+ctest --test-dir agent_space/icicle_val_build/tests -R PqcTest -V --output-on-failure
+# 100% tests passed, 0 tests failed out of 6 -- Total Test time: 1.48 sec
+```
+
+6/6 PASS (MLkemSharedSecretConsistencyTest + MLkemSharedSecretConsistencyTestOnDevice for Kyber512/768/1024, batch 4096). Main-device=HIP-PQC confirmed.
+
+### Verdict
+
+PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests. Wave32 `__syncwarp()` fix is wave-agnostic; gfx90a wave64 re-passes unchanged. No non-GPU regressions (CPU backend and closed-source MSM/NTT/EC backends out of scope, not built).
