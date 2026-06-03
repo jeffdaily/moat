@@ -7,7 +7,7 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-03T18:45:44Z",
+  "updated_at": "2026-06-03T19:12:36Z",
   "head_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
   "depends_on": [],
   "platforms": {
@@ -17,8 +17,8 @@
       "blocked_reason": null,
       "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-03T18:45:44Z",
-      "updated_at": "2026-06-03T18:45:44Z",
+      "completed_at": "2026-06-03T19:12:36Z",
+      "updated_at": "2026-06-03T19:12:36Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": "2026-06-02T01:00:00Z",
         "last_session_at": "2026-06-02T01:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+        "method": "binary-equiv",
+        "detail": "prep delta (CMake arch-default + cuda_to_hip.h comment + README) changes no device code (no .cu/.cuh); gfx90a codeobj_diff identical; gfx1100 validated device-equivalent content at a339d3d",
+        "at": "2026-06-03T19:12:36Z"
+      }
     },
     "linux-gfx90a": {
       "state": "completed",
