@@ -1821,3 +1821,93 @@ gfx1100 (separate pre-existing upstream bug, not this regression). Determinism:
 LINALG MatVecOp + the symbol-resolution fix are deterministic across two runs
 (only the DotTestF tolerance flake varies). State transition:
 validation-failed -> delta-ported.
+
+## Validation 2026-06-03 (gfx90a revalidate at 6e925ac5)
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Fork: jeffdaily/raft @
+moat-port, HEAD 6e925ac5. HIP_VISIBLE_DEVICES=1 (GCD 1, isolated per task
+instructions). Build: reconfigured from ce0fa68c -> 6e925ac5 source (git checkout
+fork/moat-port), then incremental ninja; all 93 targets rebuilt/relinked clean.
+Exit 0.
+
+### Delta (ce0fa68c -> 6e925ac5): two source changes
+
+1. `matrix/detail/linewise_op.cuh`: introduced `kLinewiseTailWidth = 32` (HIP) so
+   the unaligned head/tail kernel template instantiation is arch-independent
+   (`...Lm32E` on both gfx90a and gfx1100), fixing the LINALG SIGABRT on gfx1100
+   where the host pass used the kept `WarpSize=64` constant and the device compiled
+   only `...Lm32E`.
+2. `spatial/knn/detail/ball_cover/registers-inl.cuh`: 7 eps CSR/max_k host
+   grid-geometry launch sites changed `raft::WarpSize` -> `raft::warp_size()` (the
+   runtime query) for multi-arch correctness.
+
+gfx90a impact: `kLinewiseTailWidth = 32` replaces the prior `WarpSize = 64` in the
+tail-kernel template arg, switching the gfx90a instantiation from `...Lm64E` to
+`...Lm32E`. The tail-kernel block width is still warp-aligned on wave64 (32 divides
+64) and > VecBytes, so behavior is correct. The ball_cover launch-site changes are
+runtime-query calls at runtime-32 on gfx90a (warp_size() returns 64 at runtime via
+hipDeviceGetAttribute) -- no functional change to the eps CSR grid, which was
+already `ceildiv(n, 64/64) = ceildiv(n,1)` and remains so.
+
+### Build commands (gfx90a, GCD 1)
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+# Source updated to 6e925ac5 (git checkout fork/moat-port in projects/raft/src)
+cmake -S projects/raft/src/cpp -B projects/raft/build -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  "-DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/raft-rmm/install;/opt/rocm;$CONDA_PREFIX" \
+  -DRAPIDS_LOGGER_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/rapids_logger \
+  -DBUILD_TESTS=ON -DRAFT_TEST_NEIGHBORS=ON -DRAFT_TEST_BALL_COVER=ON \
+  -DRAFT_TEST_DISTANCE=ON -DRAFT_TEST_FUSED_NN=ON -DRAFT_TEST_MATRIX_SELECT=ON \
+  -DCMAKE_INSTALL_PREFIX=/var/lib/jenkins/moat/_deps/raft/install
+bash utils/timeit.sh raft compile -- cmake --build projects/raft/build -j$(nproc)
+```
+
+### GPU test commands (HIP_VISIBLE_DEVICES=1)
+
+```bash
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+export LD_LIBRARY_PATH="$CONDA_PREFIX/lib:projects/raft/build:_deps/raft-rmm/install/lib:/opt/rocm/lib"
+export HIP_VISIBLE_DEVICES=1
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/HAVERSINE_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/DISTANCE_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/FUSED_NN_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/LABEL_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/LINALG_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/RANDOM_TEST \
+  --gtest_filter="MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"
+projects/raft/build/gtests/CORE_TEST \
+  --gtest_filter="MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"
+projects/raft/build/gtests/UTILS_TEST \
+  --gtest_filter="-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/MATRIX_SELECT_TEST
+bash utils/timeit.sh raft test -- projects/raft/build/gtests/BALL_COVER_TEST
+```
+
+### Results
+
+GPU arch: gfx90a (MI250X). All tests run on real GPU (HIP_VISIBLE_DEVICES=1,
+GCD 1).
+
+| Test | Result | Notes |
+|------|--------|-------|
+| HAVERSINE_TEST | 1/1 PASS (0.16s) | HaversineKNNTestF.Fit PASS |
+| DISTANCE_TEST | 11/11 PASS (6.0s) | CK MFMA aligned + SIMT fallback unaligned; no regression |
+| FUSED_NN_TEST | 12/12 PASS (6.7s) | CK reducing-epilogue (aligned) + SIMT fallback (unaligned); no regression |
+| LABEL_TEST | 14/14 PASS (0.34s) | no regression |
+| LINALG_TEST | 2017/2018 PASS (115s) | 1 DotTestF pre-existing hipBLAS float-tolerance fail; NO SIGABRT; linewise kLinewiseTailWidth=32 fix CONFIRMED (no Cannot-find-Symbol ...Lm64E) |
+| RANDOM subset | 148/148 PASS (1.0s) | same filter (no Bernoulli); no regression |
+| CORE subset | 171/172 PASS | 1 Raft.InterruptibleOpenMP pre-existing deferred; no regression |
+| UTILS subset | 177/177 PASS | deferred items excluded; no regression |
+| MATRIX_SELECT_TEST | 567+40 skip PASS (927s) | wave64 warp-sort + radix k 1..1700; no regression |
+| BALL_COVER_TEST | 74/74 PASS (1454s) | BallCoverAllKNNTest 9/9, BallCoverKNNQueryTest 9/9, EpsNeighTestFI BruteForce 14/14, EpsNeighRbcTestFI Dense+Sparse+SparseRbcMaxK 42/42; no SIGABRT, no HSA fault |
+
+The key regression check (LINALG_TEST MatVecOpTests, which were SIGABRT on
+gfx1100 due to `...Lm64E` symbol mismatch) confirms NO regression on gfx90a:
+on wave64 the tail kernel is `...Lm32E` (block width 32, warp-aligned on wave64),
+correct and passing. All prior gfx90a bars met exactly.
+
+validated_sha: 6e925ac531e931ac1b5e76503280891718d33bca.
+State transition: revalidate -> completed (linux-gfx90a).

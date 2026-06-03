@@ -114,3 +114,12 @@
 {"kind":"phase","ts":"2026-06-02T05:10:52Z","phase":"test","seconds":19.446,"exit":134,"cmd":"projects/raft/build-gfx1100/gtests/LINALG_TEST"}
 {"kind":"phase","ts":"2026-06-02T05:21:19Z","phase":"compile","seconds":14.865,"exit":0,"cmd":"cmake --build projects/raft/build-gfx1100 -j64"}
 {"kind":"phase","ts":"2026-06-02T05:22:53Z","phase":"test","seconds":75.535,"exit":1,"cmd":"projects/raft/build-gfx1100/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-03T05:58:37Z","phase":"compile","seconds":97.594,"exit":0,"cmd":"cmake --build projects/raft/build -j128"}
+{"kind":"phase","ts":"2026-06-03T05:58:47Z","phase":"test","seconds":0.272,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-03T05:58:59Z","phase":"test","seconds":6.021,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-03T05:59:13Z","phase":"test","seconds":6.673,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-03T05:59:24Z","phase":"test","seconds":0.342,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LABEL_TEST"}
+{"kind":"phase","ts":"2026-06-03T06:01:30Z","phase":"test","seconds":115.060,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-03T06:01:42Z","phase":"test","seconds":1.033,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
+{"kind":"phase","ts":"2026-06-03T06:18:09Z","phase":"test","seconds":927.438,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST"}
+{"kind":"phase","ts":"2026-06-03T06:37:09Z","phase":"test","seconds":1454.204,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/BALL_COVER_TEST"}
