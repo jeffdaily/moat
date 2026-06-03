@@ -22,23 +22,23 @@ END = "<!-- MOAT:TABLE:END -->"
 EMPTY = ("_No projects adopted yet. Run `python3 utils/discover.py` then adopt "
          "rows from `data/candidates.json`._")
 
-# Per-platform status state -> short table token.
-CELL = {
-    "unclaimed": "todo",
-    "planned": "planned",
-    "porting": "porting",
-    "ported": "review",
-    "changes-requested": "porting",
-    "review-passed": "validating",
-    "validating": "validating",
-    "validation-failed": "porting",
-    "validated": "done",
-    "completed": "done",
-    "port-ready": "validating",
-    "delta-ported": "review",
-    "revalidate": "revalidate",
-    "blocked-needs-gfx90a": "gated",
-    "pr-open": "pr-open",
+# Per-platform state -> status glyph (legend is emitted by render_table).
+EMOJI = {
+    "completed": "✅",
+    "validated": "✅",
+    "pr-open": "✅",
+    "port-ready": "🟡",       # follower queued: lead done, not yet validated here
+    "revalidate": "🔄",       # was validated here; HEAD moved -> re-check
+    "validating": "🔧",
+    "review-passed": "🔧",
+    "ported": "🔧",
+    "delta-ported": "🔧",
+    "porting": "🔧",
+    "changes-requested": "🔧",
+    "validation-failed": "🔧",
+    "planned": "🔧",
+    "unclaimed": "⬜",
+    "blocked-needs-gfx90a": "⬜",   # follower gated on the lead (not yet startable)
 }
 
 
@@ -71,31 +71,35 @@ def load_projects():
 
 
 def cell(block):
-    tok = CELL.get(block.get("state"), block.get("state", "?"))
+    """Status glyph for one platform. A blocked=true platform shows the blocked
+    glyph regardless of its underlying state."""
     if block.get("blocked"):
-        tok += " (blocked)"
-    return tok
-
-
-def owner_repo(url):
-    return url.replace("https://github.com/", "").rstrip("/") if url else "?"
+        return "🚫"
+    return EMOJI.get(block.get("state"), "❓")
 
 
 def render_table(projects):
     if not projects:
         return EMPTY
     projects = sorted(projects, key=lambda p: (-float(p.get("priority", 0)), p.get("name", "")))
-    lines = ["| Project | Upstream | Fork | gfx90a | gfx1100 | gfx1151 | Upstream PR |",
-             "| --- | --- | --- | --- | --- | --- | --- |"]
+    legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
+              "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
+              "Platforms are gfx90a · gfx1100 · gfx1151. The project name links to "
+              "upstream, (fork) to our `moat-port` branch.")
+    lines = [legend, "",
+             "| Project | gfx90a · gfx1100 · gfx1151 | Upstream PR |",
+             "| --- | --- | --- |"]
     for p in projects:
         name = p.get("name", "?")
-        up = owner_repo(p.get("upstream_url"))
-        upstream = f"[{up}]({p.get('upstream_url')})"
-        fork = f"[{name}]({p['fork_url']}/tree/{moatlib.PORT_BRANCH})" if p.get("fork_url") else "-"
+        up = p.get("upstream_url")
+        if p.get("fork_url"):
+            proj = f"[{name}]({up}) ([fork]({p['fork_url']}/tree/{moatlib.PORT_BRANCH}))"
+        else:
+            proj = f"[{name}]({up})"
         plats = p.get("platforms", {})
-        cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
-        pr = f"[#{p['pr_number']}]({p['pr_url']})" if p.get("pr_url") else "-"
-        lines.append(f"| {name} | {upstream} | {fork} | {cells[0]} | {cells[1]} | {cells[2]} | {pr} |")
+        glyphs = " · ".join(cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS)
+        pr = f"[#{p['pr_number']}]({p['pr_url']})" if p.get("pr_url") else "—"
+        lines.append(f"| {proj} | {glyphs} | {pr} |")
     return "\n".join(lines)
 
 
