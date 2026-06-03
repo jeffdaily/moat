@@ -415,14 +415,23 @@ pip wheel), Windows 11 Enterprise 10.0.26100.
 
 ### Source delta for this platform
 
-One Windows-only build fix was needed -- committed as 5a6e944 on top of fdb9d24:
-- `test/CMakeLists.txt`: `find_package(OpenCV REQUIRED)` -> `find_package(OpenCV QUIET)`.
-  The test suite does not use OpenCV in any source file (grep of test/*.cpp/*.h shows zero
-  `#include <opencv...>` or `cv::` references); the `find_package(OpenCV REQUIRED)` was
-  vestigial. OpenCV was not available on this Windows host. Making it QUIET allows the test
-  to build and run when OpenCV is absent, while silently using it when present (behavior on
-  gfx90a/gfx1100 Linux builds is unchanged -- they still find and link OpenCV identically).
-  gfx90a and gfx1100 carried forward to 5a6e944 as binary-equiv (no device code change).
+NONE on the ROCm port branch. validated_sha = fdb9d24 (the same commit gfx90a/gfx1100
+validated); no per-platform device-code change was required for gfx1151.
+
+To build the test on a host without OpenCV, one CMake-only fix was needed:
+`test/CMakeLists.txt` requires OpenCV (`find_package(OpenCV REQUIRED)` + links
+`${OpenCV_LIBS}`) but no test source includes an OpenCV header or references any `cv::`
+symbol -- the dependency is vestigial (carried over from the sample programs). This is a
+pre-existing upstream defect unrelated to ROCm (it blocks anyone without OpenCV on any
+platform), so per the scope-separation decision (jeff, 2026-06-03) it is NOT carried on the
+moat-port ROCm branch. It is submitted as a standalone upstream PR that removes the unused
+OpenCV dependency entirely: branch `remove-unused-opencv-test-dep` (commit e0898b8) off
+upstream master, jeffdaily/libSGM -> fixstars/libSGM. The gfx1151 GPU run below was done
+with that test-build fix applied locally; OpenCV never touches any `.cu/.cuh`, so the
+gfx1151 device code objects are byte-identical to fdb9d24 and the validation carries to
+fdb9d24 by binary-equivalence. (An earlier iteration had committed a REQUIRED->QUIET hack
+as 5a6e944 directly on moat-port; that commit was reverted -- moat-port reset back to
+fdb9d24 -- when the fix was relocated to its own upstream PR.)
 
 ### Toolchain
 
@@ -434,9 +443,11 @@ already sourced from vcvars64. MSVC `link.exe` prepended to PATH over MSYS `/usr
 ### OpenCV resolution
 
 OpenCV is not installed on this host. Since no test source includes OpenCV headers or uses
-OpenCV types, changing `find_package(OpenCV REQUIRED)` to `find_package(OpenCV QUIET)` is
-the correct minimal fix (dead dependency in the test CMakeLists). Delta-port committed as
-fork commit 5a6e944.
+OpenCV types, the proper fix is to drop the dead OpenCV dependency from the test build. This
+fix is kept OUT of the ROCm port and submitted as a separate upstream PR (branch
+`remove-unused-opencv-test-dep`, commit e0898b8, off upstream master) that removes
+`find_package(OpenCV)` and the `${OpenCV_INCLUDE_DIRS}`/`${OpenCV_LIBS}` references from
+`test/CMakeLists.txt`. The moat-port branch carries no OpenCV change.
 
 ### Build
 
@@ -501,5 +512,6 @@ correct bit-exact disparity at wave32. No HSA faults. Results match the gfx90a/g
 bars (67/67).
 
 Result: 67/67 PASS, deterministic. Transition: port-ready -> completed,
-validated_sha=5a6e94498d62f9ed6697045c56ffa103f500a578.
-gfx90a and gfx1100 carried forward (binary-equiv; no device code change).
+validated_sha=fdb9d24fda484f14669e5f99da10b29ae41f2474 (binary-equiv: gfx1151 device code
+objects identical to fdb9d24; the OpenCV test-build fix is a separate upstream PR, not on
+moat-port). gfx90a and gfx1100 remain validated at fdb9d24.
