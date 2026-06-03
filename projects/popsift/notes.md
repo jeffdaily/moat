@@ -1322,3 +1322,27 @@ validated tree as a reachable ancestor) and pushed to jeffdaily/popsift moat-por
 delta from validated 3a789a1 to 5cbf3b2 classifies comment-only/arch-independent/inert
 (`moatlib classify popsift 3a789a1 5cbf3b2`), so advance-head carried all three platforms
 forward (head_sha -> 5cbf3b2, all completed) with no GPU re-run.
+
+## 2026-06-03 -- drop hip_repro/ from the PR; binary-equiv carry-forward to 6bb671d4
+
+PR-prep decision (jeff): keep the popsift upstream PR minimal -- drop the standalone
+hip_repro/ diagnostics (not part of the build) and fold the RDNA3 layered-collapse data
+point into the ROCm/clr#275 issue instead. The gfx1100 RDNA3 repro results stay durable
+here in notes.md (the "## Validation 2026-06-03 (gfx1100)" section and the 5cbf3b2 backfill
+note above), so nothing is lost by removing the directory.
+
+Re-squashed to a single clean commit 6bb671d4 on the develop base (b1c81998): removed
+hip_repro/{README.md,linear_filter_reject.cpp,layered_collapse.cpp} and genericized the
+three built-source comments that cited those paths (assist.h x2, cuda_to_hip.h x1) to "a
+standalone reproducer" so nothing dangles.
+
+The 5cbf3b2 -> 6bb671d4 delta classifies `mixed` (changeclass flags the deleted .cpp by
+extension), but that is a false positive of a classifier that does not model the build
+graph: the only changes to compiled translation units are comment-only (per-file verdict),
+and hip_repro/ has zero CMakeLists references, so it is never compiled on any arch. Proven
+on gfx90a by binary-equivalence -- libpopsift.so device ISA + all 706 exported symbols
+identical at 5cbf3b2 vs 6bb671d4 (`utils/codeobj_diff.py`, both built -DUSE_HIP=ON
+-DCMAKE_HIP_ARCHITECTURES=gfx90a). advance-head flipped all three to revalidate (safe
+default for `mixed`); carried forward gfx90a as binary-equiv and gfx1100/gfx1151 as
+source-class (comment-only compiled TUs + non-build file removal -> identical compiled
+source set). All three completed @ 6bb671d4, pr-ready=True, no GPU re-run.
