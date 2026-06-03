@@ -141,3 +141,77 @@ Exact dot-product results (vs gfx90a@144ab93 -- byte-identical):
 
 ### Verdict
 PASS. State: linux-gfx1100 port-ready -> completed. validated_sha=144ab937bbaa7aad3440106358006dc014d776b6.
+
+## Validation 2026-06-03 (windows-gfx1151)
+
+Platform: AMD Radeon 8060S gfx1151 (RDNA3.5, wave32), Windows 11, TheRock ROCm pip wheels (clang-cl 23.0.0git), HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/ntransformer moat-port @ 1249659 (new commit on top of 144ab937; gfx90a/gfx1100 validated_sha=144ab93 is a reachable ancestor, unaffected).
+
+### Windows-specific fixes (new commit 1249659, NOT an amend of 144ab93)
+
+The Linux port at 144ab93 compiles cleanly with clang++ on POSIX but fails on Windows because:
+1. `src/core/types.h`: `aligned_alloc` is POSIX/C11 -- absent from MSVC/UCRT.
+2. `src/model/loader.cpp`: uses `open`/`fstat`/`mmap`/`munmap`/`close`/`madvise` (POSIX mmap).
+3. `src/memory/streamer.cu` + `streamer.h`: uses `sys/sysinfo.h`, `sys/mman.h`, `fcntl.h`, `unistd.h`; `sysinfo()`, `/proc/meminfo`, and `open`/`mmap`/`munmap` in `init_delta`.
+4. `CMakeLists.txt`: `-march=native` is a gcc-driver flag; clang-cl (MSVC frontend) rejects it.
+
+Fix: added `src/core/platform.h` with `#ifdef _WIN32` shims:
+- `NT_ALIGNED_ALLOC`/`NT_ALIGNED_FREE` -> `_aligned_malloc`/`_aligned_free`
+- `NtMmap` struct + `nt_mmap_open`/`nt_mmap_close` -> `CreateFileMapping`/`MapViewOfFile`/`CloseHandle`
+- `nt_available_ram`/`nt_total_ram` -> `GlobalMemoryStatusEx`
+
+All three POSIX-heavy files guarded with `#ifndef _WIN32` / `#ifdef _WIN32` blocks; Linux path byte-for-byte unchanged.
+
+### Build (gfx1151 single-arch, all-clang-cl)
+```
+ROCM_DEVEL=D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-hip \
+  -G Ninja -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1151 -DCMAKE_HIP_STANDARD=20 \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DCMAKE_CXX_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" \
+  -DCMAKE_PREFIX_PATH=$ROCM_DEVEL
+cmake --build agent_space/ntransformer/build-hip -j4
+```
+Result: BUILD CLEAN. nodiscard warnings on hipFree/hipHostFree/hipMemcpyAsync only -- benign (same as Linux, documented). All 27 build objects compiled; `test_gemm.exe`, `test_tensor.exe`, `ntransformer.exe` produced.
+
+### Deploy runtime DLLs (TheRock dlls, not System32 Adrenalin)
+```
+cp $ROCM_DEVEL/../_rocm_sdk_core/bin/amdhip64_7.dll build-hip/
+cp $ROCM_DEVEL/../_rocm_sdk_core/bin/amd_comgr0713.dll build-hip/
+cp $ROCM_DEVEL/../_rocm_sdk_core/bin/rocm_kpack.dll build-hip/
+cp $ROCM_DEVEL/../_rocm_sdk_core/bin/hiprtc*.dll build-hip/
+```
+Note: System32 `amdhip64_7.dll` (Adrenalin) returns `invalid argument` for device library -- must use TheRock DLLs beside the exe.
+
+### ctest (2 deterministic runs)
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir agent_space/ntransformer/build-hip \
+  --output-on-failure -R "test_tensor|test_gemm"
+```
+Run 1: 2/2 PASS (10.11s total). Run 2: 2/2 PASS (10.12s total). Deterministic.
+
+Exact dot-product results (vs gfx90a/gfx1100 @ 144ab93 -- byte-identical):
+- gemv_f32: y[0]=32.0, y[1]=-16.0 PASS
+- gemv_q4_0 (smem): y[0]=32.0, y[1]=-16.0 PASS
+- gemv_q6_k (smem): y[0]=256.0, y[1]=-256.0 PASS
+- gemv_q6_k_large (no-smem): y[0]=32768.0, y[1]=-32768.0 PASS
+- silu_mul: [0.000, 0.731, -0.269, 1.762] within tolerance PASS
+- rmsnorm: [0.365148, 0.730296, 1.095444, 1.460593] exact match PASS
+
+### Wave32 verdict (gfx1151)
+- NT_WARP_MASK = 0xFFFFFFFFFFFFFFFFULL: high 32 bits ignored on wave32 -- all 28 shfl sites correct.
+- warpSize-based reductions (wave32: offset starts at 16, shared[32] = 32 max warps): correct.
+- gemm.cu GEMV logical-32 butterfly native on wave32. Exact q6_k_large y[0]=32768 proves correctness.
+- Zero HSA faults, no NaN, no hang, no wrong output.
+
+### Verdict
+PASS. State: windows-gfx1151 port-ready -> completed. validated_sha=1249659 (new commit on top of 144ab93).
+
+## Windows gfx1151 (2026-06-03): VALIDATED -> completed @ 1249659
+
+GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm). 2/2 ctest PASS, byte-identical to the gfx90a reference: gemv_f32 / gemv_q4_0 / gemv_q6_k / gemv_q6_k_large (no-smem) / silu_mul / rmsnorm all exact or within tol. Built all-clang-cl (CMAKE_CXX_COMPILER=CMAKE_HIP_COMPILER=clang-cl, -DCMAKE_HIP_ARCHITECTURES=gfx1151, HIP/CXX std 20, -DNOMINMAX -DWIN32_LEAN_AND_MEAN). Ran with amdhip64_7+amd_comgr0713+rocm_kpack+hiprtc deployed beside the test exe (System32 Adrenalin amdhip64 is device-lib-mismatched).
+
+WINDOWS PORT (new commit 1249659 ON TOP of the gfx90a 144ab93 -- not an amend; 144ab93 stays a reachable ancestor so gfx90a/gfx1100 carry-forward). Five POSIX->Win32 host fixes, all #ifdef _WIN32 (Linux paths byte-identical): a new src/core/platform.h shimming aligned_alloc (_aligned_malloc), mmap (CreateFileMapping/MapViewOfFile), and RAM query (GlobalMemoryStatusEx); types.h includes platform.h before namespace nt; loader.cpp/.h and streamer.cu/.h swap POSIX open/fstat/mmap/munmap/madvise + /proc/meminfo+sysinfo for the Win32 shims under _WIN32; CMakeLists uses /O2 /DNDEBUG instead of -O3 -march=native under WIN32 (clang-cl rejects -march). No warp intrinsics -> wave32 numerically equivalent. gfx90a/gfx1100 -> revalidate at 1249659 (carry-forward expected: the delta is entirely _WIN32-guarded, Linux codegen unchanged).

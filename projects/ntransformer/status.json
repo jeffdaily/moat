@@ -7,17 +7,17 @@
   "priority": 4.348,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:34Z",
-  "updated_at": "2026-06-02T07:20:00Z",
-  "head_sha": "144ab937bbaa7aad3440106358006dc014d776b6",
+  "updated_at": "2026-06-03T07:38:56Z",
+  "head_sha": "124965909f8a1746c7d717dc32eba419d3757462",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "144ab937bbaa7aad3440106358006dc014d776b6",
       "started_at": "2026-06-02T05:53:09Z",
       "completed_at": "2026-06-02T06:30:00Z",
-      "updated_at": "2026-06-02T06:30:00Z",
+      "updated_at": "2026-06-03T07:38:54Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "144ab937bbaa7aad3440106358006dc014d776b6",
       "started_at": "2026-06-02T07:00:00Z",
       "completed_at": "2026-06-02T07:20:00Z",
-      "updated_at": "2026-06-02T07:20:00Z",
+      "updated_at": "2026-06-03T07:38:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "124965909f8a1746c7d717dc32eba419d3757462",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-02T06:21:02Z",
+      "completed_at": "2026-06-03T07:38:56Z",
+      "updated_at": "2026-06-03T07:38:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   }
 }
