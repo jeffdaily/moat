@@ -7,17 +7,17 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-02T18:24:37Z",
-  "head_sha": "8839b72e43f555622673e060728e7480b0fbf40a",
+  "updated_at": "2026-06-03T06:10:23Z",
+  "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
   "platforms": {
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "8839b72e43f555622673e060728e7480b0fbf40a",
       "started_at": "2026-05-30T09:00:00Z",
       "completed_at": "2026-06-02T18:24:37Z",
-      "updated_at": "2026-06-02T18:24:37Z",
+      "updated_at": "2026-06-03T06:10:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

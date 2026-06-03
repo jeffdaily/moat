@@ -617,3 +617,7 @@ gfx1100 validation applies unchanged: 3DGUT core 108/108, full 312 passed / 38
 nerfacc-gated known-fail baseline, wave32 correct. validated_sha -> 8839b72. No
 GPU re-run, no fork change. (windows-gfx1151 left as-is for a Windows host; the
 same doc-only delta applies there.)
+
+## 2026-06-02 -- head_sha reconciliation (one-commit-era force-amend churn)
+
+status head_sha had drifted to 8839b72e while the fork's actual moat-port HEAD was e17d495, and gfx1100 was falsely "completed @ 8839b72e" (an orphaned commit). Cause: the retired single-curated-commit model -- concurrent gfx90a/gfx1100/gfx1151 CLIs each force-amended the one shared commit, so its sha changed every edit and the recorded head_sha couldn't stay in sync (gfx1100 amended to 8839b72e + set head; gfx90a later force-amended to e17d495 but head_sha never converged). Reconciled from the gfx1151 host via advance_head(gsplat, e17d495): head_sha now = fork HEAD = e17d495; gfx90a stays completed @ e17d495; gfx1100 + gfx1151 correctly at revalidate (their validated commits 8839b72e/0f72aef3 are orphaned, and the classifier marks the 5cdaa15->e17d495 delta -- docs + an experimental/render build.py import-hoist -- as mixed/not-arch-independent, so no auto carry-forward; they re-validate at e17d495, which is quick since the gsplat extension source is untouched). Going forward use commits-on-top (see the retired-one-commit rule); do not amend a validated commit.
