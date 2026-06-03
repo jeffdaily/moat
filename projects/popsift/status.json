@@ -7,17 +7,17 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-03T21:50:40Z",
-  "head_sha": "21b8571e",
+  "updated_at": "2026-06-03T22:10:10Z",
+  "head_sha": "7cd9b723",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "21b8571e",
+      "validated_sha": "7cd9b723",
       "started_at": "2026-05-30T01:38:56Z",
       "completed_at": "2026-06-03T21:50:40Z",
-      "updated_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T22:10:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "21b8571e",
-        "method": "binary-equiv",
-        "detail": "device ISA + 706 exported symbols identical (codeobj_diff) 6bb671d4->21b8571e; delta = comment-only (s_extrema.cu); line shift touches only a host-side debug __LINE__ in event_record, no device-code i",
-        "at": "2026-06-03T21:50:40Z"
+        "from": "21b8571e",
+        "to": "7cd9b723",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-03T22:10:10Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "21b8571e",
+      "validated_sha": "7cd9b723",
       "started_at": null,
       "completed_at": "2026-06-03T21:50:40Z",
-      "updated_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T22:10:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +64,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "21b8571e",
+        "from": "21b8571e",
+        "to": "7cd9b723",
         "method": "source-class",
-        "detail": "comment-only (s_extrema.cu extrema_count comment); line shift touches only a host-side debug __LINE__ in event_record, device kernels unaffected; gfx90a binary-equiv confirms",
-        "at": "2026-06-03T21:50:40Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-03T22:10:10Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "21b8571e",
+      "validated_sha": "7cd9b723",
       "started_at": null,
       "completed_at": "2026-06-03T21:50:40Z",
-      "updated_at": "2026-06-03T21:50:40Z",
+      "updated_at": "2026-06-03T22:10:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -91,10 +95,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "21b8571e",
+        "from": "21b8571e",
+        "to": "7cd9b723",
         "method": "source-class",
-        "detail": "comment-only (s_extrema.cu extrema_count comment); line shift touches only a host-side debug __LINE__ in event_record, device kernels unaffected; gfx90a binary-equiv confirms",
-        "at": "2026-06-03T21:50:40Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-03T22:10:10Z"
       }
     }
   }
