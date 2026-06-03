@@ -501,5 +501,5 @@ correct bit-exact disparity at wave32. No HSA faults. Results match the gfx90a/g
 bars (67/67).
 
 Result: 67/67 PASS, deterministic. Transition: port-ready -> completed,
-validated_sha=5a6e944fda484f14669e5f99da10b29ae41f2474.
+validated_sha=5a6e94498d62f9ed6697045c56ffa103f500a578.
 gfx90a and gfx1100 carried forward (binary-equiv; no device code change).

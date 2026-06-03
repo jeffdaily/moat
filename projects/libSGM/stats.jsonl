@@ -14,3 +14,4 @@
 {"kind":"phase","ts":"2026-06-02T03:41:06Z","phase":"compile","seconds":12.903,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build -j8"}
 {"kind":"phase","ts":"2026-06-02T03:41:43Z","phase":"test","seconds":21.522,"exit":0,"cmd":"bash -c AMD_LOG_LEVEL=3 /var/lib/jenkins/moat/agent_space/libSGM-multiarch-build/test/sgm-test 2>&1 | tee /var/lib/jenkins/moat/agent_space/libSGM-multiarch-run1.log | tail -20"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 45058, "source": "session-2026-06-02/03 backfill: audit"}
+{"kind": "tokens", "ts": "2026-06-03T18:04:11Z", "tokens": 126922, "source": "validator"}

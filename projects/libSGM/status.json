@@ -8,14 +8,14 @@
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
   "updated_at": "2026-06-03T18:01:47.223805Z",
-  "head_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+  "head_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
       "started_at": "2026-06-02T00:47:02Z",
       "completed_at": "2026-06-03T18:01:04Z",
       "updated_at": "2026-06-03T18:01:04Z",
@@ -34,7 +34,7 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+        "to": "5a6e94498d62f9ed6697045c56ffa103f500a578",
         "method": "binary-equiv",
         "detail": "test/CMakeLists.txt: REQUIRED->QUIET for OpenCV (test code has zero OpenCV usage; Linux builds still find and link OpenCV QUIET same as REQUIRED; no TU or code-object change)",
         "at": "2026-06-03T18:01:04Z"
@@ -44,7 +44,7 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
       "started_at": "2026-06-02T01:00:00Z",
       "completed_at": "2026-06-03T18:01:12Z",
       "updated_at": "2026-06-03T18:01:12Z",
@@ -63,7 +63,7 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+        "to": "5a6e94498d62f9ed6697045c56ffa103f500a578",
         "method": "binary-equiv",
         "detail": "test/CMakeLists.txt: REQUIRED->QUIET for OpenCV (test code has zero OpenCV usage; Linux builds still find and link OpenCV QUIET same as REQUIRED; no TU or code-object change)",
         "at": "2026-06-03T18:01:12Z"
@@ -73,7 +73,7 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5a6e944fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "5a6e94498d62f9ed6697045c56ffa103f500a578",
       "started_at": "2026-06-03T18:01:47.223805Z",
       "completed_at": "2026-06-03T18:01:47.223805Z",
       "updated_at": "2026-06-03T18:01:47.223805Z",
