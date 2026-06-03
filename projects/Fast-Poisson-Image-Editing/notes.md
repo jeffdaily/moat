@@ -234,3 +234,29 @@ Proof (rebuilt at 4c6411b via agent_space/fpie_build.sh, all-clang gfx1151):
 
 method=binary-equiv. validated_sha -> 4c6411b. No GPU re-run. All three platforms
 now completed @ 4c6411b.
+
+## Validation 2026-06-03 (gfx1100) -- binary-equiv carry-forward to 4c6411b (own-arch confirm)
+
+Closing a documentation gap: gfx1100 had been set completed @ 4c6411b folded into the
+gfx1151 entry above ("all three platforms"), but the per-arch binary-equivalence proof
+recorded there extracted only the gfx1151 code object. This entry records the first-hand
+gfx1100 confirmation, run on the gfx1100 Jenkins host (2x W7800, ROCm 7.2.1).
+
+gfx1100 GPU-validated core_cuda at 6a41e0b (the 2026-05-30 record above: cuda-vs-numpy
+bit-exact, determinism bit-exact, 8/0 smoke). Delta 6a41e0b..4c6411b is docs + a
+CMakeLists default-arch refactor + a setup.py pip-HIP-autodetect addition; `git diff
+6a41e0b 4c6411b -- '*.cu' '*.cuh' '*.cpp' '*.h'` is EMPTY (zero device source change).
+
+Proof (built both shas via git worktrees, identical cmake invocation, gfx1100):
+- Same cmake line as the GPU validation: `-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release`,
+  `--target core_cuda`. Both built clean.
+- utils/codeobj_diff.py OLD.so NEW.so -> verdict=identical (exported symbols + device
+  ISA identical, 92 exports).
+- Corroboration: 2 gfx1100 code objects per .so (matches original); device ISA disasm
+  sha256 identical (268a634d...f4df06c on both); exported-symbol tables differ ONLY in
+  three auto-generated __hip_cuid_* BSS GUIDs (per-TU compilation markers, non-semantic,
+  unreferenced by name -- same non-semantic-metadata class as the gfx1151 ELF-note diff).
+
+method=binary-equiv. gfx1100 completed @ 4c6411b is now backed by an own-arch artifact.
+No GPU re-run. PR #25 stands as-is. (Builds were throwaway worktrees under agent_space.)
