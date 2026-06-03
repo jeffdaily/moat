@@ -1297,3 +1297,7 @@ The fix is complete and correct for the layered-array collapse (ROCm/clr#275).
 popsift's workaround (dropping hipArrayLayered, using non-layered 3D arrays + surf3Dwrite)
 remains the right fix for ROCm 7.2.x (where PR #6683 is not yet merged); once #6683 lands,
 the original layered pattern would also work.
+
+## clr#275 re-test posted (2026-06-03)
+
+Posted a re-test reply on ROCm/clr#275 (issuecomment-4614003997) confirming ROCm/rocm-systems#6683 fully fixes the layered-array collapse on gfx90a/ROCm 7.2.1: with #6683 all three layered read paths (surf2DLayeredread, tex2DLayered, hipMemcpy3D) return correct per-layer data; root cause was entirely surf2DLayeredwrite routing `layer` into the LOD slot, so no separate tex2DLayered defect. The popsift non-layered-3D workaround stays required for ROCm 7.2.x until #6683 lands. Verified regression reproducer: agent_space/clr275/clr275_repro.cpp (move into hip_repro/ at PR-prep for durability).
