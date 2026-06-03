@@ -31,3 +31,4 @@
 {"kind":"phase","ts":"2026-05-31T11:22:11Z","phase":"compile","seconds":6.418,"exit":0,"cmd":"make -j12 -C projects/kaldi/src/src/cudamatrix test_compile"}
 {"kind":"phase","ts":"2026-05-31T11:23:26Z","phase":"test","seconds":62.583,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 0"}
 {"kind":"phase","ts":"2026-05-31T11:24:32Z","phase":"test","seconds":60.395,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 0"}
+{"kind": "tokens", "ts": "2026-06-03T18:19:42Z", "tokens": 60158, "source": "validator"}
