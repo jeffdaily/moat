@@ -420,3 +420,132 @@ CPU baseline peak AUC (same dataset, prior run): 0.9649400987
 GPU-CPU diff: |0.9632583857 - 0.9649400987| = 0.001682 (~0.0017; within ~0.0025 GBDT GPU/CPU variance ceiling)
 
 Result: PASS -- cuda_util-ut 48/48, gpu_data-ut 20/20 (bin-builder fix confirmed), methods-ut 29/30 effective pass (only Langevin fails, proven not-AMD), e2e AUC within GBDT variance + same-seed deterministic x2. validated_sha: 09612d3c -> completed.
+
+## Validation 2026-06-03 (gfx1100) -- revalidate at 09612d3 (histogram/split kernel rework + 5 GPU correctness fixes)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32, compute capability 11.0), ROCm 7.2.1. HIP_VISIBLE_DEVICES=1 (device 0 has stale hipStreamCreate hang from prior run; devices 1-3 healthy).
+
+### Device delta b7113fe -> 09612d3
+
+Linux-relevant changes (Windows-only files dirent_win.c / libcxxmsvc / contrib/libs/tbb and base64 avx2 windows cmake are off the Linux path):
+
+1. `catboost/cuda/gpu_data/kernel/split.cu` (TBinSplitLoader + WriteCompressedSplitImpl + UpdateBinsFromCompressedIndexImpl): `Value/Mask` split predicate replaced with `BinIdx/FeatureMask/Shift`. Old code computed `value = binIdx << feature.Shift` and `featureVal = CompressedIndex[idx] & (Mask << Shift)`, then compared equality/order in shifted space -- overflowing ui32 for a 1-bit feature at Shift=31 with an out-of-range binIdx, making == splits spuriously match. Fix: extract `(CompressedIndex[idx] >> Shift) & FeatureMask` and compare to `binIdx` directly. Matches CPU; overflow-free; fixes BinBuilderTest TreeBuilderTest4/32 (wrong gpuBin).
+
+2. `catboost/cuda/methods/kernel/exact_estimation.cu/.cuh` + `catboost/cuda/methods/exact_estimation.h`: ComputeWeightedQuantileWithBinarySearchImpl bounded iteration by `objectsCount` instead of `binCount`; also wrong empty-leaf guard. Fixed both: bound by `binCount`, test `begin >= end -> 0` for empty leaves. Fixes TExactLeavesEstimationTest (MAE/Quantile/MAPE configurations, 15 total).
+
+3. `catboost/cuda/methods/greedy_subsets_searcher/kernel/hist.cuh` + `hist_binary/half_byte/one_byte.cu` + `hist_2_one_byte_base.cuh`: introduced `ScaleBlockCountToOccupancy(numBlocks, targetBlocks)` helper that skips the `CeilDivide(targetBlocks, active)` scale-up when `active == 0` (dim was zero). All 16 histogram launch sites updated. Fixes host SIGFPE (integer divide-by-zero) when `partCount == 0` -> `numBlocks.y == 0` before IsGridEmpty check. Fixes TPointwiseMultiStatHistogramTest crash.
+
+4. `catboost/cuda/methods/greedy_subsets_searcher/kernel/split_points.cu` (SortWithoutCub / ReorderOneBitImpl): added 256-byte alignment for the rocPRIM DeviceScan temp offset within the shared buffer. Previously the scan temp started at `tempOffsetsSize = 4*part.Size` (only 4-byte aligned); rocPRIM's lookback tile-state requires 256-byte alignment; misaligned = non-deterministic scan corruption = wrong split indices. `USE_HIP` guarded only. Fixes TPointwiseMultiStatHistogramTest post-split index mismatch.
+
+5. `catboost/cuda/cuda_util/segmented_sort.cpp` (temp-storage sizing query): the `SortKeys`-vs-`SortPairs` path mismatch. TempStorage query passed `(V*)nullptr` unconditionally (sizing for SortKeys), but a pairs-sort Run needs more temp (SortPairs). Fixed to pass `Values.Get()` on the query call so a pairs sort sizes for SortPairs. Fixes segmented sort invalid-arg at runtime.
+
+6. `catboost/cuda/cuda_util/kernel/transform.cu` + `catboost/cuda/targets/kernel/dcg.cu`: drop top-level const from pointer/scalar params to match `transform.cuh`/`dcg.cuh` declarations exactly. Required for clang-cl MSVC-ABI mangling on Windows (Itanium/Linux ignores top-level const, no effect on Linux). Wave-agnostic.
+
+7. `cmake/cuda.cmake`: Windows-only MSVC HIP frontend additions (`/FI` instead of `-include`, WIN32_LEAN_AND_MEAN etc., `/clang:-nostdinc++`). Linux uses the `else` branch unchanged.
+
+8. `CMakeLists.txt`: `include_directories(BEFORE .../flatbuffers/include)` for Windows TheRock ROCm SDK flatbuffers shadowing. Linux unaffected.
+
+9. `contrib/libs/cxxsupp/libcxxmsvc/include/memory_resource` + `type_traits`, `exception_pointer_msvc.ipp`, TBB/base64/float16 Windows cmake: Windows toolchain compatibility fixes, all Windows-only paths.
+
+### Wave32 analysis of the device delta
+
+- `split.cu` TBinSplitLoader: extract-then-compare replaces shift-then-compare. Shift/mask arithmetic is pure integer, wave-agnostic. Same code path on wave32 as wave64. CORRECT.
+- `exact_estimation.cu`: binCount vs objectsCount bound + empty-leaf fix are control-flow corrections. No warp-width dependency. CORRECT on wave32.
+- `hist*.cuh` ScaleBlockCountToOccupancy: host-side pre-launch guard. Does not touch device code. CORRECT.
+- `split_points.cu` 256-align: the rocPRIM DeviceScan temp-alignment bug was already known (PORTING_GUIDE class). The fix is offset arithmetic only; no warp-width dependency. CORRECT on wave32.
+- `segmented_sort.cpp` sizing fix: host-side buffer sizing call. No device code change. CORRECT.
+- DCG/transform top-level const drops: Itanium ABI discards top-level const; device code identical. SAFE on Linux/wave32.
+- All other changes: Windows-only paths. OFF the Linux build. SAFE.
+
+### Build
+
+```
+source agent_space/catboost/env.sh && export JAVA_HOME=/opt/conda/envs/py_3.12
+utils/timeit.sh catboost compile -- ninja -C /var/lib/jenkins/moat/projects/catboost/src/build_hip/cm -j16 \
+  catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut catboost/app/catboost
+# [4681/4681 targets, SUCCESS, no errors; ~598.9s / ~10 min]
+```
+
+Build: SUCCESS (4681/4681 targets, no errors; only nodiscard warning on hipGetDevice). Build time: 598.9s (~10 min).
+
+### Code-object evidence
+
+```
+roc-obj-ls build_hip/cm/catboost/cuda/methods/ut/catboost-cuda-methods-ut | head -4
+# 1  hipv4-amdgcn-amd-amdhsa--gfx1100  file:///...catboost-cuda-methods-ut#offset=...
+```
+
+Every code object in all four binaries: `hipv4-amdgcn-amd-amdhsa--gfx1100`. No gfx90a present. GPU at runtime reported as "AMD Radeon Pro W7800 48GB (compute capability 11.0)".
+
+### Test 1 -- cuda_util-ut (serial, two back-to-back runs):
+
+```
+export HIP_VISIBLE_DEVICES=1
+utils/timeit.sh catboost test -- .../catboost-cuda-cuda_util-ut --show-fails
+```
+
+Run 1: [DONE] ok: 48 (294s)
+Run 2: [DONE] ok: 48 (290s)
+Pass sets: IDENTICAL -- deterministic on wave32.
+
+### Test 2 -- gpu_data-ut:
+
+```
+export HIP_VISIBLE_DEVICES=1
+utils/timeit.sh catboost test -- .../catboost-cuda-gpu_data-ut --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4, TestCompressedSplitFloat, TreeBuilderTest32 PASS -- bin-builder overflow fix confirmed), TGridBuilderPerftest 1/1.
+
+### Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+```
+export HIP_VISIBLE_DEVICES=1
+utils/timeit.sh catboost test -- .../catboost-cuda-methods-ut --show-fails
+```
+
+[DONE] ok: 29, err: 1 (1323s)
+- TExactLeavesEstimationTest: 15/15 PASS (exact-leaves leaf-bound + empty-leaf fixes confirmed)
+- TPairwiseHistogramTest: 4/4 PASS (pairwise histogram kernels correct on wave32)
+- TPointwiseHistogramTest: 4/4 PASS (pointwise histogram kernels, with + without one-hot, correct on wave32)
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (WithoutOneHot1/2/17 + WithOneHot3 + FatSplitPropsTest all pass; histogram grid div-by-zero fix + scan-alignment fix confirmed on gfx1100)
+- TAddingLangevinNoiseTest: 0/1 FAIL (pre-existing upstream test-design issue, proven NOT a ROCm defect; GPU NextNormal bit-identical to host; won't fix)
+
+Matches gfx90a@09612d3 bar: same 29/30 effective pass (only Langevin fails on all platforms). Deterministic.
+
+### Test 4 -- e2e GPU training (GBDT histogram/split correctness):
+
+```
+export HIP_VISIBLE_DEVICES=1
+utils/timeit.sh catboost test -- .../catboost/app/catboost fit --task-type GPU --devices 0 \
+  --learn-set agent_space/catboost/train.tsv \
+  --test-set agent_space/catboost/test.tsv \
+  --column-description agent_space/catboost/train.cd \
+  --iterations 200 --depth 6 --loss-function Logloss --eval-metric AUC --random-seed 42
+```
+
+GPU run 1 bestTest: 0.9762485623 (peak at iter 199)
+GPU run 2 bestTest: 0.9762485623 (peak at iter 199)
+test_error.tsv diff: BIT-IDENTICAL (same-seed determinism confirmed on wave32)
+CPU baseline peak AUC (same dataset): 0.9761284044
+GPU-CPU diff: |0.9762485623 - 0.9761284044| = 0.0001201 (~0.00012; well within ~0.0025 GBDT GPU/CPU variance ceiling)
+
+Note: gfx90a@09612d3 used an older dataset (0.9632583857 GPU / 0.9649400987 CPU). This host uses fresh synthetic data with the same generation recipe (same seed/params), so absolute AUC values differ slightly but the key checks (determinism, GPU-CPU within tolerance) match the bar.
+
+### Wave32 verdict
+
+- FastInBlockReduce/BlockReduceN/SharedReduce4/8 (kernel_helpers.cuh): full __syncthreads tree, wave-agnostic. CORRECT on wave32.
+- CB_FULL_WARP_MASK 64-bit: benign on wave32 (upper 32 bits address no lanes). CORRECT.
+- 32-lane histogram layout (hist_half_byte/one_byte): native on wave32 (wavefront IS 32 lanes). CORRECT. CONFIRMED by TPairwiseHistogramTest 4/4 + TPointwiseHistogramTest 4/4 + TPointwiseMultiStatHistogramTest 6/6.
+- split_points.cu scan-alignment fix: 256-align offset correct regardless of wave width. CONFIRMED by TPointwiseMultiStatHistogramTest 5 small configs + FatSplitPropsTest all pass.
+- TTileReducer<64>: dead code on both arches. SAFE.
+- TBinSplitLoader shift/mask -> extract/compare: wave-agnostic arithmetic. CONFIRMED by BinBuilderTest 3/3.
+- DCG RemoveGroupMeanImpl ShuffleReduce (logicalWarpSize <= 32): on wave32 the full wavefront IS 32 lanes, sub-warp == wavefront. CORRECT. CONFIRMED by TCombinationTargetTests (targets-ut, verified in prior gfx1100 session at b7113fe; no change to dcg kernel logic here).
+- rocPRIM DeviceScan/SegmentedRadixSort paths: clean -- 0x1016 / invalid-arg / alignment fault all absent.
+- No HSA 0x1016, no NaN, no hang observed.
+
+DETERMINISM: two same-seed GPU runs bit-identical (test_error.tsv). No residual wave32 race.
+FORK CLEAN: no changes to the fork (09612d3c18f8). No CI yaml.
+
+Result: PASS (gfx1100 wave32).
+validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
