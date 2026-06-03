@@ -203,3 +203,55 @@ port scope (cf. LMCache POSIX, llm.c makefile). Unblocks automatically when eith
 (a) a TheRock torch wheel ships with #175340-style explicit ctors, or (b) clang
 gains callee-cleanup inherited-ctor export. gsplat avoids this by using
 TORCH_LIBRARY (no pybind Tensor caster instantiation).
+
+## Audit/confirm 2026-06-03
+
+**GPU:** AMD Instinct MI250X / MI250, gfx90a (CDNA2, wave64). ROCm 7.2.1. torch 2.13.0a0+gitb5e90ff, hip 7.2.53211.
+
+**Upstream HEAD check:** upstream advanced to `a7c48d6dd7ac6dc39a7958c7c4452e0b10418f38` (PR #39, "3D fused ssim documentation and tests update"). Diff vs validated sha `666987fb`: README.md only -- the upstream author rolled back the "3D supported on ROCm" claim to "CUDA only". No source file (.cu, .h, setup.py, ext.cpp) changed. The validated sha remains the assessment reference; the source code is identical.
+
+**Warp-size re-verification (ssim.cu + ssim3d.cu at 666987fb):**
+
+Grepped both `.cu` files for: `__shfl* __ballot __activemask __any __all __reduce __popc tiled_partition cg:: warpSize 0xffffffff`. Result: zero matches. The `cg::this_thread_block()` calls (lines ssim.cu:75,302; ssim3d.cu:142,457) are block-level cooperative groups (`block.sync()` = `__syncthreads()`), not warp-level.
+
+The literal-32 pattern (ssim.cu:328-335: `warp_id=tid/32; lane_id=tid%32; num_warps=(T+31)/32; col+=32`) is purely loop-tiling stride distributing 256 block threads over the 26x26 shared tile. No cross-lane operation is present. Correct on wave64 unchanged (gradients confirm). The comment "same warp" at ssim.cu:167 and ssim3d.cu:252 describes shared-mem index proximity, not a warp intrinsic.
+
+**Verdict: genuinely wave-agnostic. No warp-level primitive anywhere in either kernel.**
+
+**Build (Strategy B):**
+
+```
+cd /var/lib/jenkins/moat/projects/fused-ssim/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a python -m pip install -e . --no-build-isolation -v
+```
+
+Compile time: 53.6s. setup.py HIP branch: `['-O3', '-DFUSED_SSIM_CUDA', '-ffast-math']`. All four symbols present; `is_3D_supported=True`.
+
+**Test results (all from /tmp, HIP_VISIBLE_DEVICES=0):**
+
+1. `tests/test.py` (2D, 100 iters, B=5 CH=5 H=1080 W=1920, forward + full-tensor gradient `.all()` vs reference and pytorch_msssim): PASS (exit 0). Fused fwd 3.8ms vs ref 197ms.
+
+2. `tests/test_3D.py` (3D, 10 iters, B=2 CH=1 D=H=W=96, `torch.allclose` rtol=1e-6 atol=1e-8): PASS (exit 0). Fused fwd 0.63ms vs ref 96ms.
+
+3. Independent harness `agent_space/fused_ssim_validate.py` (2D: 4 configs CH=1/3/16, B=1..4; 3D: 3 shapes; determinism):
+   - 2D fwd vs ref: max|diff| 5.6e-09 .. 3.4e-08 (tolerance 1e-4; 4+ orders margin)
+   - 2D grad vs ref: max|diff| 2.3e-10 .. 5.2e-12
+   - 3D fwd vs pm: max|diff| 2.8e-09 .. 5.1e-09
+   - 3D grad vs pm: max|diff| 3.6e-11 .. 5.1e-11
+   - NaN/Inf: none. Determinism: 2D and 3D fwd+grad bitwise identical.
+   - ALL PASS.
+
+**Best-practice assessment:**
+
+| Criterion | Result |
+|---|---|
+| Footprint | Zero source changes (upstream already has AMD support at build-config level) |
+| Strategy | Strategy B (torch hipify at build time) |
+| Warp-size handling | Wave-agnostic: no warp primitives, literal-32 is benign loop-tiling |
+| Fault classes | None (no texture, atomics RMW, cuBLAS/cuFFT/cuRAND, layered arrays) |
+| CI | No GHA workflows added or modified |
+| Wave32 soundness | gfx1100 completion is sound: no arch-specific device code, wave-agnostic kernels confirmed correct on gfx1100 gradients |
+| gfx1151 blocked | c10 inherited-ctor export clang-cl bug (external toolchain, not port); port correct |
+
+PORTING_GUIDE best practices: **MEETS**. This is the cleanest possible AMD port (build-config only, zero kernel edits, wave-agnostic, all real GPU tests pass).
+
+**RESULT: PASS. linux-gfx90a remains completed.**
