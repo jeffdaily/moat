@@ -520,6 +520,30 @@ def commit_and_push(paths, message, push=True, retries=3):
     return False
 
 
+def pr_ready(name):
+    """Is a port ready for its single upstream PR? Only when EVERY platform is
+    terminal: `completed` (validated on real GPU), or `blocked` (a documented
+    non-viable determination, e.g. a Windows/gfx1151 port that is not feasible --
+    that does NOT block the PR; the PR body must then scope its claim to the
+    completed platforms). Any platform still in an actionable state (port-ready,
+    revalidate, porting, planned, ported, review-passed, changes-requested,
+    delta-ported, validation-failed, unclaimed, blocked-needs-gfx90a) means work
+    is pending and BLOCKS the PR -- do not open it.
+    Returns (ready, blocking, nonviable): ready bool; blocking list of
+    (platform, state); nonviable list of platforms."""
+    obj = load_status(name)
+    blocking, nonviable = [], []
+    for plat in PLATFORMS:
+        blk = obj["platforms"][plat]
+        if blk.get("state") == "completed":
+            continue
+        if blk.get("blocked"):
+            nonviable.append(plat)
+        else:
+            blocking.append((plat, blk.get("state")))
+    return (not blocking, blocking, nonviable)
+
+
 def record_tokens(name, tokens, source=None):
     """Append a token-usage record to projects/<name>/stats.jsonl. `tokens` is an
     agent/subagent output-token count for a unit of work (e.g. from a task
@@ -612,6 +636,9 @@ def main(argv=None):
     s.add_argument("tokens", type=int)
     s.add_argument("source", nargs="?", default=None)
 
+    s = sub.add_parser("pr-ready", help="check whether every platform is terminal (completed or non-viable) so the upstream PR may open")
+    s.add_argument("name")
+
     sub.add_parser("unblock-followers")
     s = sub.add_parser("validate")
     s.add_argument("name")
@@ -660,6 +687,14 @@ def main(argv=None):
     elif args.cmd == "record-tokens":
         r = record_tokens(args.name, args.tokens, args.source)
         print(f"recorded {r['tokens']} tokens for {args.name}" + (f" ({args.source})" if args.source else ""))
+    elif args.cmd == "pr-ready":
+        ready, blocking, nonviable = pr_ready(args.name)
+        print(f"{args.name}: PR-ready={ready}")
+        if blocking:
+            print("  BLOCKING (must reach completed or non-viable): " +
+                  ", ".join(f"{p}={s}" for p, s in blocking))
+        if nonviable:
+            print("  non-viable (does not block; scope the PR body): " + ", ".join(nonviable))
     elif args.cmd == "unblock-followers":
         changed = unblock_all_followers()
         print(" ".join(changed) if changed else "(none)")
