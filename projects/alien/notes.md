@@ -173,3 +173,82 @@ Tally: **2973 PASSED, 3 SKIPPED, 2 FAILED** -- matches the gfx90a graph-path bar
 - DataTransferTests.multipleCells_genome_multipleGenes_multipleNodes -- ~1 ULP (7.6e-6) HIP float-rounding delta in cell pos vs exact-float == on a pure set/get round-trip; physically identical.
 
 Wave32 verdict: the SPH fluid cg::reduce shim with PARTIAL TILES (25/81 blocks, last tile 25-of-32) is correct on wave32 -- all ObjectProcessor/fluid tests pass, and the active-lane hardening (identity for non-resident lanes; lane 0 consumed) makes lane 0's sum independent of inactive-lane shuffle behaviour. No fork change, no CI. validated_sha -> dac18fc.
+
+## Validation attempt 2026-06-03 (windows-gfx1151) -- BLOCKED
+
+Host: XSJJDAILYL02, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11 10.0.26100, TheRock ROCm 0.1.0 (clang 23.0.0git, `_rocm_sdk_devel`).
+
+Fork at start: `jeffdaily/alien moat-port @ dac18fc` (gfx1100 validated SHA). New Windows fixes commit pushed on top: `82b22c5fa3de5c06b30f4278c84f5763fe9ef379`.
+
+### Build environment
+- CMake: 4.3.2 (`C:\Users\jdaily\AppData\Local\Temp\pip-uninstall-bkgoot79\cmake.exe`)
+- Compiler: `clang-cl.exe` from `_rocm_sdk_devel/lib/llvm/bin/` for C/CXX/HIP (all-clang-cl)
+- MSVC: 14.50.35717 (VS2022 Community) for system headers/libs
+- Windows SDK: 10.0.26100.0
+- vcpkg: af752f2 (bootstrapped by manually downloading vcpkg.exe 2025-12-16 from microsoft/vcpkg-tool)
+- vcpkg packages: 86 packages installed (boost, openssl, glew, glfw3, imgui, implot, gtest, etc.) from archive cache
+
+### Configure
+
+```
+cmake -S D:/Develop/moat/projects/alien/src -B D:/Develop/moat/projects/alien/src/build -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE=<src>/external/vcpkg/scripts/buildsystems/vcpkg.cmake \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_C_COMPILER=<rocm>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_STANDARD=20 -DVCPKG_TARGET_TRIPLET=x64-windows \
+  -DCMAKE_PREFIX_PATH=<rocm_root>
+```
+
+Configure: SUCCESS after 3 failed attempts that fixed LIB env var setup (Windows SDK path in LIB for lld-link), HIP package location (CMAKE_PREFIX_PATH), and clang-cl flags.
+
+Required env:
+- `LIB=<msvc>/lib/x64;<winsdk>/ucrt/x64;<winsdk>/um/x64`
+- `INCLUDE=<msvc>/include;<winsdk>/ucrt;<winsdk>/um;<winsdk>/shared`
+- `HIP_DEVICE_LIB_PATH=<rocm>/lib/llvm/amdgcn/bitcode`
+- `VCPKG_DISABLE_METRICS=1`
+
+### Windows-specific source fixes committed (fork 82b22c5f, on top of dac18fc)
+
+Five classes of Windows/clang-cl build issues found and fixed:
+
+1. **Force-include flag**: clang-cl requires `/FI<path>` (MSVC form), not `-include<path>` (GCC form). `add_compile_options(-include<path>)` is silently ignored with `-Wunknown-argument` under clang-cl; added MSVC-frontend detection post-`enable_language(HIP)` to set the correct form.
+
+2. **`-ffast-math`**: clang-cl rejects `-ffast-math`; use `/clang:-ffast-math` for the MSVC-frontend HIP build.
+
+3. **NOMINMAX for HIP TUs**: `add_compile_definitions(NOMINMAX)` was CXX-only. HIP TUs include Windows SDK minwindef.h (via DWIN32/D_WINDOWS injected by CMake) which defines `min`/`max` macros that conflict with `std::max` in EngineKernels.
+
+4. **CXX force-include suppressed on Windows**: the `cuda_to_hip.h` force-include on CXX TUs pulls `hip_runtime.h` which pulls `<cmath>/<algorithm>` early. MSVC STL eagerly instantiates these templates against forward-declared project types (e.g. `ParameterSpec` in `SimulationParametersSpecification.h`), causing "incomplete type" errors. Non-engine CXX TUs (Base, EngineInterface, PersisterInterface) do not reference CUDA/HIP types; the one that does (EngineImpl/DescConverterService.cpp) is retagged LANGUAGE HIP.
+
+5. **MSVC STL incomplete-type strictness**: `AlternativeSpec` uses `std::vector<ParameterSpec>` in `Alternatives` when `ParameterSpec` is forward-declared. MSVC STL eagerly instantiates `vector::operator=` on incomplete types (libstdc++ defers this). Fixed by declaring `AlternativeSpec::alternatives()` setters inline and defining them out-of-line in `SimulationParametersSpecification.h` after `ParameterSpec` is fully defined.
+
+These fixes bring CXX compilation to completion: Base.lib, EngineInterface.lib, PersisterInterface.lib all build cleanly.
+
+### Hard blocker: clang-offload-bundler -fgpu-rdc bug on Windows
+
+**ALL HIP TU compilations fail**, 100% reproducible, at `-j1` and `-j4`:
+
+```
+clang-offload-bundler: error: 'source\EngineKernels\CMakeFiles\EngineKernels.dir\ConstantMemory.cu.obj':
+The requested operation cannot be performed on a file with a user-mapped section open.
+clang-cl: error: clang-offload-bundler command failed with exit code 1
+```
+
+Root cause: `clang-cl -x hip -fgpu-rdc` invokes `clang-offload-bundler.exe` to bundle device + host code into the output COFF object. On Windows, the bundler cannot write to the output file because a file section (memory mapping) is already open on it -- left open by an earlier phase of the same compile process. This is a Windows-specific bug in TheRock's `clang-offload-bundler.exe` (v23.0.0git in TheRock 0.1.0 SDK).
+
+alien REQUIRES `-fgpu-rdc` because `ConstantMemory.cu` defines `__constant__ cudaSimulationParameters` as an extern device symbol referenced by device code in sibling EngineKernels TUs. Without `-fgpu-rdc` the device link fails with "undefined protected symbol: cudaSimulationParameters".
+
+Alternatives investigated:
+- `-j1` serial build: same error (not a parallelism race condition)
+- `clang++` (GCC-driver) as HIP compiler: fails CMake HIP ABI test because CMake injects MSVC-style flags (`/DWIN32 /D_WINDOWS /Ob0`) into the GCC-driver HIP test compile
+- No `--allow-overwrite` or similar flag exists in clang-offload-bundler
+- TheRock 0.1.0 SDK is the only available version (pip index shows no newer build)
+
+### Result: BLOCKED -- windows-gfx1151
+
+GPU tests NOT run. EngineTests / CLI smoke NOT executed. Cannot validate gfx1151 GPU correctness until the clang-offload-bundler `-fgpu-rdc` bug is fixed in a newer TheRock SDK release.
+
+The HIP port (dac18fc) is correct -- validated on gfx90a + gfx1100 at 2973/2978 PASSED. The Windows fixes (82b22c5f) address CXX toolchain compatibility but cannot overcome the device-code compilation blocker.
+
+**Retest when**: TheRock SDK is updated to a version with a fixed `clang-offload-bundler.exe` that handles `-fgpu-rdc` on Windows without the user-mapped-section error.

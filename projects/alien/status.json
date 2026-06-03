@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-05-31T03:56:48Z",
-  "head_sha": "dac18fc0a93310a11ef6ad31e01651431a4af24c",
+  "updated_at": "2026-06-03T20:56:09Z",
+  "head_sha": "82b22c5fa3de5c06b30f4278c84f5763fe9ef379",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "dac18fc0a93310a11ef6ad31e01651431a4af24c",
       "started_at": "2026-05-31T00:42:20Z",
       "completed_at": "2026-05-31T03:15:43Z",
-      "updated_at": "2026-05-31T03:15:43Z",
+      "updated_at": "2026-06-03T20:56:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "dac18fc0a93310a11ef6ad31e01651431a4af24c",
       "started_at": null,
       "completed_at": "2026-05-31T03:56:48Z",
-      "updated_at": "2026-05-31T03:56:48Z",
+      "updated_at": "2026-06-03T20:56:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,13 +56,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "validation-failed",
+      "blocked": true,
+      "blocked_reason": "clang-offload-bundler.exe -fgpu-rdc bug in TheRock 0.1.0 SDK on Windows (user-mapped-section-open); alien requires -fgpu-rdc for extern __constant__ cross-TU device symbol; retest when TheRock SDK is updated",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-31T03:15:43Z",
+      "updated_at": "2026-06-03T20:55:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -75,7 +75,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   }
 }
