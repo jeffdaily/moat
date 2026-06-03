@@ -7,7 +7,7 @@
   "priority": 4.518,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-02T16:23:22Z",
+  "updated_at": "2026-06-03T14:17:38Z",
   "head_sha": "4c6411be2d3801babf65fba4b5166a15f5a3d883",
   "platforms": {
     "linux-gfx90a": {
@@ -73,13 +73,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
+      "validated_sha": "4c6411be2d3801babf65fba4b5166a15f5a3d883",
       "started_at": null,
-      "completed_at": "2026-05-31T00:00:00Z",
-      "updated_at": "2026-06-02T16:14:39Z",
+      "completed_at": "2026-06-03T14:17:38Z",
+      "updated_at": "2026-06-03T14:17:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -95,12 +95,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "1f0f6876ab82f887f5d9807be5611eb15b54c2ee",
-        "to": "7c8dbe8bec3a011ee16c0c415826b30af4d26dda",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T15:15:15Z"
+        "to": "4c6411be2d3801babf65fba4b5166a15f5a3d883",
+        "method": "binary-equiv",
+        "detail": "Rebuilt core_cuda at 4c6411b (gfx1151, all-clang); extracted .hip_fat code object: ISA byte-identical (844 instrs) + identical kernel symbols vs the validated 6a41e0b build. Delta 6a41e0b..4c6411b is ",
+        "at": "2026-06-03T14:17:38Z"
       }
     }
   }

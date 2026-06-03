@@ -204,3 +204,33 @@ process.py does `from fpie import core_cuda`, so the .pyd must sit at fpie/core_
   the OpenMP-vs-numpy CPU test; openmp not built). Identical to gfx90a + gfx1100.
 
 RESULT: PASS. Matches gfx90a + gfx1100 exactly. windows-gfx1151 -> completed.
+
+## Validation 2026-06-03 (windows-gfx1151) -- binary-equiv carry-forward to 4c6411b
+
+Revalidate triggered by the fork advancing 6a41e0b -> 4c6411b (a rebase onto newer
+upstream + resha; the recorded validated_sha 7c8dbe8 was an orphaned one-commit-era
+amend). gfx1151 had GPU-validated the core_cuda backend at 6a41e0b (the 2026-05-31
+record above: cuda-vs-numpy bit-identical, 7/1 smoke). Confirmed binary-equivalence
+on this host rather than re-running the GPU:
+
+Delta 6a41e0b..4c6411b (5 files): README.md + docs/{backend,get_start}.rst (docs);
+fpie/core/cuda/CMakeLists.txt (default-arch refactor: `if(NOT CMAKE_HIP_ARCHITECTURES)`
++ REMOVE_DUPLICATES, and dropping MOAT jargon from a comment); setup.py (+_hip_cmake_args
+for `pip install` HIP autodetect). The .cu kernels (equ/grid/utils) are UNTOUCHED. The
+CMakeLists default-arch branch is dead code for the validated build (which passes
+`-DCMAKE_HIP_ARCHITECTURES=gfx1151` explicitly; REMOVE_DUPLICATES is a no-op on one
+arch), and setup.py is off the direct `cmake --build --target core_cuda` validated path.
+
+Proof (rebuilt at 4c6411b via agent_space/fpie_build.sh, all-clang gfx1151):
+- Extracted the embedded device code object from both .pyd: llvm-objcopy --dump-section
+  .hip_fat, clang-offload-bundler --unbundle hipv4-amdgcn-amd-amdhsa--gfx1151.
+- llvm-objdump -d of the two code objects: ISA BYTE-IDENTICAL (844 instruction lines
+  match exactly; the only textual diff is the objdump "file format" header echoing the
+  temp filename).
+- llvm-nm: identical kernel symbol table (iter_equ_kernel, error_equ_kernel,
+  copy_X_equ_kernel, error_sum_equ_kernel, iter_shared_equ_kernel).
+- .hipFatB fatbin wrapper section md5-identical; .hip_fat raw bytes differed only in
+  non-semantic code-object metadata (ELF note), not instructions.
+
+method=binary-equiv. validated_sha -> 4c6411b. No GPU re-run. All three platforms
+now completed @ 4c6411b.
