@@ -29,3 +29,13 @@
 {"kind":"phase","ts":"2026-06-03T10:12:35Z","phase":"test","seconds":71.451,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/SSSP_TEST"}
 {"kind":"phase","ts":"2026-06-03T10:13:37Z","phase":"test","seconds":49.046,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/BFS_TEST"}
 {"kind":"phase","ts":"2026-06-03T10:14:04Z","phase":"test","seconds":14.797,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/PAGERANK_TEST"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 256862, "source": "session-2026-06-02/03 backfill: round resume (non-spectral SG)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 1733, "source": "session-2026-06-02/03 backfill: round 4 b-probe (rate-limited)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 193049, "source": "session-2026-06-02/03 backfill: round 5 (resume WIP)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 346371, "source": "session-2026-06-02/03 backfill: round 6 (link + 16 TUs)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 150081, "source": "session-2026-06-02/03 backfill: round 7 (BFS/SSSP frontier fix)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 122503, "source": "session-2026-06-02/03 backfill: review"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 72579, "source": "session-2026-06-02/03 backfill: validator (validation-failed)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 84403, "source": "session-2026-06-02/03 backfill: round 8 (SSSP delta-assert fix)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 46123, "source": "session-2026-06-02/03 backfill: re-review"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 57853, "source": "session-2026-06-02/03 backfill: final validator"}

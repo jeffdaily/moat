@@ -42,3 +42,6 @@
 {"kind":"phase","ts":"2026-06-03T05:59:21Z","phase":"compile","seconds":25.973,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip -j"}
 {"kind":"phase","ts":"2026-06-03T06:22:56Z","phase":"test","seconds":20.152,"exit":0,"cmd":"cmake --build projects/popsift/src/build-hip --target run-test-boat"}
 {"kind":"phase","ts":"2026-06-03T06:19:24Z","phase":"test","seconds":33.318,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/popsift/src/build-hip --target run-test-boat"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 124343, "source": "session-2026-06-02/03 backfill: fixes porter (wave32/cmake/claims)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 80702, "source": "session-2026-06-02/03 backfill: re-baseline validator (Oxford suite)"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 86744, "source": "session-2026-06-02/03 backfill: golden cmp validator"}

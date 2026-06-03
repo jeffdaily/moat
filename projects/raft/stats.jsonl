@@ -123,3 +123,4 @@
 {"kind":"phase","ts":"2026-06-03T06:01:42Z","phase":"test","seconds":1.033,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
 {"kind":"phase","ts":"2026-06-03T06:18:09Z","phase":"test","seconds":927.438,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST"}
 {"kind":"phase","ts":"2026-06-03T06:37:09Z","phase":"test","seconds":1454.204,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/BALL_COVER_TEST"}
+{"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 123701, "source": "session-2026-06-02/03 backfill: gfx90a revalidation"}

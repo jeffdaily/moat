@@ -520,6 +520,22 @@ def commit_and_push(paths, message, push=True, retries=3):
     return False
 
 
+def record_tokens(name, tokens, source=None):
+    """Append a token-usage record to projects/<name>/stats.jsonl. `tokens` is an
+    agent/subagent output-token count for a unit of work (e.g. from a task
+    completion notification); `source` labels what produced it. statlib sums these
+    as the project's token total. Approximate by nature (output tokens, not full
+    context) -- statlib always reports tokens as approx=True."""
+    rec = {"kind": "tokens", "ts": now_iso(), "tokens": int(tokens)}
+    if source:
+        rec["source"] = source
+    p = PROJECTS / name / "stats.jsonl"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    with open(p, "a") as f:
+        f.write(json.dumps(rec) + "\n")
+    return rec
+
+
 def commit_project(name, message, extra_paths=()):
     """Commit a project's control-plane artifacts together: status.json, notes.md,
     plan.md, and stats.jsonl (whichever exist), plus any extra_paths. Agents call
@@ -591,6 +607,11 @@ def main(argv=None):
     s.add_argument("name")
     s.add_argument("message")
 
+    s = sub.add_parser("record-tokens", help="append a token-usage record to a project's stats.jsonl")
+    s.add_argument("name")
+    s.add_argument("tokens", type=int)
+    s.add_argument("source", nargs="?", default=None)
+
     sub.add_parser("unblock-followers")
     s = sub.add_parser("validate")
     s.add_argument("name")
@@ -636,6 +657,9 @@ def main(argv=None):
     elif args.cmd == "commit-project":
         ok = commit_project(args.name, args.message)
         print(f"committed projects/{args.name} (status/notes/plan/stats)" if ok else "(nothing to commit)")
+    elif args.cmd == "record-tokens":
+        r = record_tokens(args.name, args.tokens, args.source)
+        print(f"recorded {r['tokens']} tokens for {args.name}" + (f" ({args.source})" if args.source else ""))
     elif args.cmd == "unblock-followers":
         changed = unblock_all_followers()
         print(" ".join(changed) if changed else "(none)")
