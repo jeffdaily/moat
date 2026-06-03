@@ -1,5 +1,84 @@
 # CTranslate2 notes
 
+## Validation 2026-06-03 (windows-gfx1151, Radeon 8060S, TheRock ROCm 7.14.0a) -- PASS
+
+Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)
+GPU: AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11
+Compiler: clang-cl 23.0.0 (TheRock ROCm 7.14.0a20260531), cmake 4.3.2, all-clang-cl CMake-HIP
+
+### OpenBLAS resolution
+
+TheRock ships OpenBLAS at `_rocm_sdk_devel/lib/host-math/` (library: `rocm-openblas.lib`, headers: `include/openblas/cblas.h`). Passed explicitly as:
+```
+-DOPENBLAS_INCLUDE_DIR=<rocm>/lib/host-math/include/openblas
+-DOPENBLAS_LIBRARY=<rocm>/lib/host-math/lib/rocm-openblas.lib
+```
+
+### Build command (windows-gfx1151)
+
+```
+ROCM_ROOT=<TheRock venv>/_rocm_sdk_devel
+# set ROCM_PATH=$ROCM_ROOT (Windows env, backslash)
+cmake -S projects/CTranslate2/src -B projects/CTranslate2/build \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_STANDARD=17 \
+  -DWITH_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DWITH_MKL=OFF -DWITH_OPENBLAS=ON \
+  "-DOPENBLAS_INCLUDE_DIR=$ROCM_ROOT/lib/host-math/include/openblas" \
+  "-DOPENBLAS_LIBRARY=$ROCM_ROOT/lib/host-math/lib/rocm-openblas.lib" \
+  -DOPENMP_RUNTIME=NONE \
+  -DBUILD_TESTS=ON -DBUILD_CLI=OFF \
+  "-DCMAKE_CXX_FLAGS=/EHsc /wd4267 -Wno-deprecated-literal-operator -Wno-unused-command-line-argument" \
+  "-DCMAKE_C_FLAGS=-Wno-unused-command-line-argument" \
+  "-DCMAKE_HIP_FLAGS=-Wno-deprecated-literal-operator -Wno-unused-command-line-argument" \
+  "-DCMAKE_PREFIX_PATH=$ROCM_ROOT" \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build projects/CTranslate2/build -j6  # power-safe cap
+```
+
+Build time: 126s. Warnings only (unused-variable, -Wnodiscard on benchmark_ops). No errors.
+
+Windows-specific build notes:
+- cmake 4.3.2 required (3.31.0 cannot detect clang-cl HIP ABI on Windows; working exe at C:\Users\jdaily\AppData\Local\Temp\pip-uninstall-bkgoot79\cmake.exe)
+- OPENMP_RUNTIME=NONE: CMakeLists.txt line 313 adds /openmp compile flag when MSVC=true but never links OpenMP runtime. Using NONE avoids the /openmp compile flag entirely (no omp_get_max_threads undefined at link).
+- /EHsc in CMAKE_CXX_FLAGS: required for exceptions in test .cc files; clang-cl disables exceptions by default without it.
+- -Wno-unused-command-line-argument: suppresses CMake-injected /d2FH4- flag that clang-cl rejects as -Werror.
+- ROCM_PATH env must be set to the Windows SDK root so link_directories($ROCM_PATH/lib) resolves correctly (not /opt/rocm).
+- Runtime deployment: copy amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprand.dll, hipblas.dll, rocsolver.dll, rocblas.dll, libhipblaslt.dll, rocrand.dll, rocm-openblas.dll, gtest.dll, gtest_main.dll beside ctranslate2_test.exe (Windows loader prefers exe dir over System32 for TheRock DLLs).
+- OPENBLAS_NUM_THREADS=1 required at test time: rocm-openblas has internal thread spawning that conflicts with BS::thread_pool (no-OpenMP fallback), causing deadlock in CPU inference tests. Setting OPENBLAS_NUM_THREADS=1 prevents OpenBLAS from spawning worker threads.
+- ROCBLAS_TENSILE_LIBPATH=<sdk_libraries>/bin/rocblas/library/gfx1151 for hipBLAS GPU kernels.
+
+Code-object arch evidence:
+```
+strings ctranslate2.dll | grep gfx1151 | head -3
+# hipv4-amdgcn-amd-amdhsa--gfx1151
+```
+
+### GPU test run 1 (CUDA/* filter):
+```
+cd tests/ && OPENBLAS_NUM_THREADS=1 ROCBLAS_TENSILE_LIBPATH=.../rocblas/library/gfx1151 \
+  ./ctranslate2_test.exe <data_dir> --gtest_filter='CUDA/*'
+```
+Result: **164 PASSED, 3 SKIPPED** (Conv1DGroupNoBiasQuantized x3 dtypes). MATCHES bar.
+
+### GPU test run 2 (CUDA/* filter -- determinism check):
+Same command. Result: **164 PASSED, 3 SKIPPED**. IDENTICAL to run 1 -- BIT-DETERMINISTIC.
+
+wave32 verdict: gfx1151 is RDNA3.5 wave32, same warp class as gfx1100 (already validated). C10_WARP_SIZE=32 matches hardware exactly. No wave-size source change needed.
+
+### Full suite (CPU+GPU, exclude Conv1DGroupNoBiasQuantized):
+```
+cd tests/ && OPENBLAS_NUM_THREADS=1 ROCBLAS_TENSILE_LIBPATH=.../rocblas/library/gfx1151 \
+  ./ctranslate2_test.exe <data_dir> "--gtest_filter=-*Conv1DGroupNoBiasQuantized*"
+```
+Result: **350 PASSED, 1 SKIPPED** (CPU/OpDeviceFPTest.Conv1DDilation -- intentional). MATCHES bar. No non-GPU regressions.
+
+State transition: port-ready -> completed. validated_sha = dfa0d30dd18c4e65863e091f4ac99d7b936a02f1. No source change.
+
 ## Validation 2026-05-31 (linux-gfx1100, gfx1100/W7800, ROCm 7.2.1) -- PASS
 
 Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (unchanged, no follower fork push)

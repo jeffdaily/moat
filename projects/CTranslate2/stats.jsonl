@@ -5,3 +5,5 @@
 {"kind":"phase","ts":"2026-05-31T01:07:56Z","phase":"compile","seconds":119.480,"exit":0,"cmd":"cmake --build projects/CTranslate2/build -j 16"}
 {"kind":"phase","ts":"2026-05-31T01:08:25Z","phase":"test","seconds":2.654,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/CTranslate2/build/tests/ctranslate2_test /var/lib/jenkins/moat/projects/CTranslate2/src/tests/data --gtest_filter=CUDA/*"}
 {"kind":"phase","ts":"2026-05-31T01:08:35Z","phase":"test","seconds":3.401,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/CTranslate2/build/tests/ctranslate2_test /var/lib/jenkins/moat/projects/CTranslate2/src/tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized*"}
+{"kind": "phase", "ts": "2026-06-03T19:09:43Z", "phase": "compile", "seconds": 126.0, "exit": 0, "cmd": "cmake --build projects/CTranslate2/build -j6"}
+{"kind": "phase", "ts": "2026-06-03T19:44:02Z", "phase": "test", "seconds": 3.0, "exit": 0, "cmd": "ctranslate2_test.exe tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized* OPENBLAS_NUM_THREADS=1"}
