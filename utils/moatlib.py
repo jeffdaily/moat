@@ -523,6 +523,53 @@ def commit_and_push(paths, message, push=True, retries=3):
     return False
 
 
+def squash_carry_forward(name, new_sha, repo=None):
+    """Advance head to a PR-prep squash, carrying every already-validated platform
+    forward WITHOUT revalidation. Valid only when new_sha is a TREE-IDENTICAL
+    collapse of the current validated head -- i.e. the squash combined
+    already-validated commits and changed no content -- which is the case when the
+    squash is done at PR-prep AFTER every platform is terminal (pr_ready). Then the
+    squashed commit is known to work everywhere it already worked:
+      - each `completed` platform: validated_sha advanced to new_sha, stays completed;
+      - each `blocked` (non-viable, e.g. Windows-unportable) platform: left UNTOUCHED
+        -- never flipped from non-viable to passing;
+      - any other (actionable) state: left as-is (you should not be squashing yet).
+    REFUSES if new_sha's tree differs from the current head's tree (then the squash
+    introduced unvalidated content; validate it first / use advance_head). The
+    carry-forward is recorded in the shared status.json, so other hosts see the new
+    sha as already-validated and do not re-run -- the force-push history rewrite is
+    irrelevant to them. Returns (ok, info)."""
+    obj = load_status(name)
+    repo = repo or _fork_repo(name)
+    old_head = obj.get("head_sha")
+
+    def _tree(sha):
+        if not sha:
+            return None
+        r = subprocess.run(["git", "rev-parse", f"{sha}^{{tree}}"], cwd=str(repo),
+                           capture_output=True, text=True)
+        return r.stdout.strip() if r.returncode == 0 else None
+
+    t_old, t_new = _tree(old_head), _tree(new_sha)
+    if not t_old or not t_new or t_old != t_new:
+        return (False, f"not a tree-identical squash (old tree {str(t_old)[:8]} != new {str(t_new)[:8]}); "
+                       f"validate the new content first / use advance_head")
+    obj["head_sha"] = new_sha
+    carried, kept_blocked, skipped = [], [], []
+    for plat in PLATFORMS:
+        blk = obj["platforms"][plat]
+        if blk.get("blocked"):
+            kept_blocked.append(plat)
+        elif blk.get("state") == "completed":
+            blk["validated_sha"] = new_sha
+            blk["updated_at"] = now_iso()
+            carried.append(plat)
+        else:
+            skipped.append((plat, blk.get("state")))
+    save_status(name, obj)
+    return (True, {"carried": carried, "kept_blocked": kept_blocked, "skipped": skipped})
+
+
 def pr_ready(name):
     """Is a port ready for its single upstream PR? Only when EVERY platform is
     terminal: `completed` (validated on real GPU), or `blocked` (a documented
@@ -642,6 +689,11 @@ def main(argv=None):
     s = sub.add_parser("pr-ready", help="check whether every platform is terminal (completed or non-viable) so the upstream PR may open")
     s.add_argument("name")
 
+    s = sub.add_parser("squash-carry-forward",
+                       help="advance head to a tree-identical PR-prep squash, carrying validated platforms forward (no revalidation)")
+    s.add_argument("name")
+    s.add_argument("new_sha")
+
     sub.add_parser("unblock-followers")
     s = sub.add_parser("validate")
     s.add_argument("name")
@@ -690,6 +742,15 @@ def main(argv=None):
     elif args.cmd == "record-tokens":
         r = record_tokens(args.name, args.tokens, args.source)
         print(f"recorded {r['tokens']} tokens for {args.name}" + (f" ({args.source})" if args.source else ""))
+    elif args.cmd == "squash-carry-forward":
+        ok, info = squash_carry_forward(args.name, args.new_sha)
+        if not ok:
+            print(f"REFUSED: {info}")
+        else:
+            msg = f"{args.name} -> {args.new_sha[:8]}: carried {info['carried']}; kept-blocked {info['kept_blocked']}"
+            if info["skipped"]:
+                msg += f"; SKIPPED actionable {info['skipped']} (should not squash yet)"
+            print(msg)
     elif args.cmd == "pr-ready":
         ready, blocking, nonviable = pr_ready(args.name)
         print(f"{args.name}: PR-ready={ready}")
