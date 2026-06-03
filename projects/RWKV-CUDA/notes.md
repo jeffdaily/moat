@@ -281,3 +281,104 @@ Claude, no noreply trailer, no ghstack, no em-dash; fork/main == origin/main
 (clean mirror at 9b17d5d); Actions disabled; no AMD-internal references.
 Note: GPU re-run is the validator's job; the porter's recorded err-ratios
 (fp32 ~1e-7, bf16 ~3e-3) are consistent and were not re-executed at review time.
+
+## Validation 2026-06-03 (windows-gfx1151, AMD Radeon 8060S)
+
+GPU: AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11, ROCm 7.14 (TheRock),
+torch 2.12.0+rocm7.14, HIP_VISIBLE_DEVICES=0. Fork cloned to
+agent_space/build/RWKV-CUDA; JIT extensions built there; hipify mirror lands at
+agent_space/build/RWKV-HIP (gitignored).
+
+**Windows build fix (necessary source change, amended into curated commit):**
+On Windows the hipcc host pass does not predefine `__launch_bounds__` unless
+`hip/amd_detail/amd_hip_runtime.h` is included. The three rwkv7_fast_fused .cu
+files use `template<int N> __launch_bounds__(N,2) __global__ void` in the fp32
+path (which includes no HIP headers), causing host-stub compilation failure.
+Fix: add `#include <hip/amd_detail/amd_hip_runtime.h>` inside the
+`USE_ROCM || __HIP_PLATFORM_AMD__` guard at the top of each .cu file,
+unconditionally (before the `_FP32_` ifdef). Device pass is unaffected (gets
+`__launch_bounds__` from the amdgcn built-ins). Linux unchanged. New fork HEAD
+after amend + push: cc48bcceeeb1a4651ca82af7d3fff22f0c6e7575.
+
+**Build commands (JIT, per subproject):**
+```
+set ROCM_DEVEL=D:\Develop\moat\agent_space\venv-gsplat\Lib\site-packages\_rocm_sdk_devel
+set HIP_VISIBLE_DEVICES=0
+set CUDA_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1151
+set ROCM_HOME=%ROCM_DEVEL%
+set ROCM_PATH=%ROCM_DEVEL%
+set HIP_PATH=%ROCM_DEVEL%
+set CC=%ROCM_DEVEL%\lib\llvm\bin\clang-cl.exe
+set CXX=%ROCM_DEVEL%\lib\llvm\bin\clang-cl.exe
+set DISTUTILS_USE_SDK=1
+set HIP_DEVICE_LIB_PATH=%ROCM_DEVEL%\lib\llvm\amdgcn\bitcode
+set PATH=C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.44.35207\bin\HostX64\x64;%PATH%
+# rwkv7_fast_fused (from agent_space/build/RWKV-CUDA/rwkv7_fast_fused):
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_vanilla_fp32
+python rwkv7_cuda_benchmark.py fp32 0
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_vanilla_bf16
+python rwkv7_cuda_benchmark.py bf16 0
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_state_fp32
+python rwkv7_cuda_benchmark_state.py fp32 0
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_state_bf16
+python rwkv7_cuda_benchmark_state.py bf16 0
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_statepassing_fp32
+python rwkv7_cuda_benchmark_state_passing.py fp32 0
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\rwkv7_statepassing_bf16
+python rwkv7_cuda_benchmark_state_passing.py bf16 0
+# wkv5_bf16 (from agent_space/build/RWKV-CUDA/wkv5_bf16):
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\wkv5_bf16
+python run.py
+# wkv6 (from agent_space/build/RWKV-CUDA/wkv6):
+set TORCH_EXTENSIONS_DIR=agent_space\rwkv_ext_gfx1151\wkv6_fwdbwd
+python run.py
+```
+
+**Err ratios (gfx90a reference in parens):**
+
+rwkv7 vanilla fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.68e-7 | g_r 2.31e-7 | g_w 2.75e-7 | g_k 1.70e-7 | g_v 1.90e-7
+  g_a 2.92e-7 | g_b 1.83e-7  PASS
+
+rwkv7 vanilla bf16 (gfx90a ~3.5e-3..4.6e-3):
+- y: 3.57e-3 | g_r 3.94e-3 | g_w 3.74e-3 | g_k 3.86e-3 | g_v 4.06e-3
+  g_a 4.62e-3 | g_b 4.62e-3  PASS
+
+rwkv7 state fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.63e-7 | g_s 1.82e-7 | g_r 2.32e-7 | g_w 3.21e-7 | g_k 1.73e-7
+  g_v 1.91e-7 | g_a 3.23e-7 | g_b 2.08e-7  PASS
+
+rwkv7 state bf16 (gfx90a ~2.8e-3..4.4e-3):
+- y: 3.53e-3 | g_s 2.94e-3 | g_r 3.84e-3 | g_w 3.46e-3 | g_k 3.64e-3
+  g_v 3.79e-3 | g_a 4.33e-3 | g_b 4.42e-3  PASS
+
+rwkv7 state-passing fp32 (gfx90a ~1e-7..3.4e-7):
+- y: 1.67e-7 | sT 1.43e-7 | g_s 2.08e-7 | g_r 2.16e-7 | g_w 2.70e-7
+  g_k 1.74e-7 | g_v 1.92e-7 | g_a 2.95e-7 | g_b 1.94e-7  PASS
+
+rwkv7 state-passing bf16 (gfx90a ~2.7e-3..4.3e-3):
+- y: 3.47e-3 | sT 2.51e-3 | g_s 3.07e-3 | g_r 3.67e-3 | g_w 3.48e-3
+  g_k 3.69e-3 | g_v 3.67e-3 | g_a 4.29e-3 | g_b 4.33e-3  PASS
+
+wkv5_bf16 correctness (v1b, gfx90a: CUDA fwd 1.7e-3, grads 1.2e-3..2e-3):
+- CUDA fwd: 1.66e-3 | g_r 2.02e-3 | g_k 1.73e-3 | g_v 1.73e-3
+  g_w 1.33e-3 | g_u 1.84e-3  PASS
+
+wkv6 fwd+bwd (gfx90a: fwd 1.7e-5, grads 1e-5..1.7e-3):
+- fwd: 2.25e-5 | g_r 3.77e-5 | g_k 6.86e-5 | g_v 3.69e-5
+  g_w 1.82e-3 | g_u 5.78e-5  PASS
+
+**Wave32 verdict:** No warp intrinsics in any kernel; all synchronization via
+`__syncthreads()` over a block of N threads -- wave-width agnostic. Err ratios
+on gfx1151 match gfx90a/gfx1100 within expected hardware FP rounding variance.
+
+**Deferred (unchanged from prior platforms):**
+- wkv5 default CUDA_KERNEL_VERSION='1d': pre-existing upstream link bug.
+- wkv/depthwise_conv1d: JIT+hipify clean; no HIP-specific risk.
+
+**Conclusion:** All validated variants PASS on windows-gfx1151. One necessary
+Windows source fix: `#include <hip/amd_detail/amd_hip_runtime.h>` in the
+USE_ROCM guard of the three rwkv7_fast_fused .cu files so that `__launch_bounds__`
+is available in the fp32 host-stub compilation pass. Fork HEAD after amend:
+cc48bcceeeb1a4651ca82af7d3fff22f0c6e7575. windows-gfx1151 -> completed.
