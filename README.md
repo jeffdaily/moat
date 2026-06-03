@@ -21,10 +21,10 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | --- | --- | --- |
 | [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ · ✅ · 🚫 | — |
 | [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ✅ · ✅ · ✅ | — |
-| [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | 🔄 · 🔄 · ✅ | — |
+| [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | ✅ · 🔄 · ✅ | — |
 | [cudf](https://github.com/rapidsai/cudf) ([fork](https://github.com/jeffdaily/cudf/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [LMCache](https://github.com/LMCache/LMCache) ([fork](https://github.com/jeffdaily/LMCache/tree/moat-port)) | ✅ · ✅ · 🚫 | — |
-| [gsplat](https://github.com/nerfstudio-project/gsplat) ([fork](https://github.com/jeffdaily/gsplat/tree/moat-port)) | ✅ · 🔄 · 🔄 | [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
+| [gsplat](https://github.com/nerfstudio-project/gsplat) ([fork](https://github.com/jeffdaily/gsplat/tree/moat-port)) | ✅ · ✅ · 🔄 | [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
 | [llm.c](https://github.com/karpathy/llm.c) ([fork](https://github.com/jeffdaily/llm.c/tree/moat-port)) | ✅ · ✅ · ✅ | — |
 | [kaldi](https://github.com/kaldi-asr/kaldi) ([fork](https://github.com/jeffdaily/kaldi/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [cuml](https://github.com/rapidsai/cuml) ([fork](https://github.com/jeffdaily/cuml/tree/moat-port)) | ✅ · 🟡 · ⬜ | — |
@@ -39,7 +39,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [cugraph](https://github.com/rapidsai/cugraph) ([fork](https://github.com/jeffdaily/cugraph/tree/moat-port)) | ✅ · 🟡 · 🟡 | — |
 | [mirage](https://github.com/mirage-project/mirage) | 🚫 · ⬜ · ⬜ | — |
 | [k2](https://github.com/k2-fsa/k2) ([fork](https://github.com/jeffdaily/k2/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
-| [raft](https://github.com/rapidsai/raft) ([fork](https://github.com/jeffdaily/raft/tree/moat-port)) | 🔄 · 🔧 · 🟡 | — |
+| [raft](https://github.com/rapidsai/raft) ([fork](https://github.com/jeffdaily/raft/tree/moat-port)) | ✅ · 🔧 · 🟡 | — |
 | [heavydb](https://github.com/heavyai/heavydb) | 🚫 · ⬜ · ⬜ | — |
 | [rmm](https://github.com/rapidsai/rmm) ([fork](https://github.com/jeffdaily/rmm/tree/moat-port)) | ✅ · ✅ · ✅ | — |
 | [cuvs](https://github.com/rapidsai/cuvs) ([fork](https://github.com/jeffdaily/cuvs/tree/moat-port)) | ✅ · 🟡 · 🟡 | — |
@@ -73,7 +73,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [LiteGS](https://github.com/MooreThreads/LiteGS) ([fork](https://github.com/jeffdaily/LiteGS/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [CUDA-L2](https://github.com/deepreinforce-ai/CUDA-L2) | 🚫 · ⬜ · ⬜ | — |
 | [Fast-Poisson-Image-Editing](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing) ([fork](https://github.com/jeffdaily/Fast-Poisson-Image-Editing/tree/moat-port)) | ✅ · ✅ · 🔄 | [#25](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing/pull/25) |
-| [icicle](https://github.com/ingonyama-zk/icicle) | ✅ · 🔧 · 🟡 | — |
+| [icicle](https://github.com/ingonyama-zk/icicle) | ✅ · ✅ · 🟡 | — |
 | [dietgpu](https://github.com/facebookresearch/dietgpu) ([fork](https://github.com/jeffdaily/dietgpu/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [bam](https://github.com/ZaidQureshi/bam) | ⬜ · ⬜ · ⬜ | — |
 | [sparser-faster-llms](https://github.com/SakanaAI/sparser-faster-llms) | ⬜ · ⬜ · ⬜ | — |
@@ -83,7 +83,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [FaithC](https://github.com/Luo-Yihao/FaithC) ([fork](https://github.com/jeffdaily/FaithC/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [rmcl](https://github.com/uos/rmcl) ([fork](https://github.com/jeffdaily/rmagine/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [fused-ssim](https://github.com/rahul-goel/fused-ssim) ([fork](https://github.com/jeffdaily/fused-ssim/tree/moat-port)) | ✅ · ✅ · 🚫 | — |
-| [gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) ([fork](https://github.com/jeffdaily/gpuRIR/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
+| [gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) ([fork](https://github.com/jeffdaily/gpuRIR/tree/moat-port)) | ✅ · ✅ · ✅ | — |
 | [yalm](https://github.com/andrewkchan/yalm) ([fork](https://github.com/jeffdaily/yalm/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [mHC.cu](https://github.com/AndreSlavescu/mHC.cu) ([fork](https://github.com/jeffdaily/mHC.cu/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
 | [EnvGS](https://github.com/zju3dv/EnvGS) ([fork](https://github.com/jeffdaily/EnvGS/tree/moat-port)) | ✅ · ✅ · 🟡 | — |
