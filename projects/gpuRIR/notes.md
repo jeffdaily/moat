@@ -177,3 +177,43 @@ GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm) with the pre-built gpu
 - hipFFT convolution (simulateTrajectory, 5-pose trajectory): finite/non-zero -- PASS
 - examples/example.py (2 src x 3 rcv, cardioid mic, MPLBACKEND=Agg): exit 0 -- PASS
 No warp intrinsics in the kernels; RDNA3 wave32 numerically equivalent to gfx90a/gfx1100. DLL setup: os.add_dll_directory for the build dir + _rocm_sdk_core/bin (amdhip64_7/amd_comgr/rocm_kpack) + _rocm_sdk_libraries_gfx1151/bin (gfx1151 hipfft/rocfft/hiprand/rocrand; device code baked into the per-arch DLLs -- no separate .kpack in this TheRock layout). Marked completed, validated_sha=6c91213.
+
+## Audit 2026-06-03
+
+Audit of commit 6c912137c40fd1b7509722f8188bbc3f6fd0f702 (moat-port = fork/moat-port, matches status.json head_sha and validated_sha for all three platforms). No fork rewrite detected.
+
+### Safety check
+Local moat-port and fork/moat-port are identical at 6c91213. No force-push needed and none was observed.
+
+### Test discovery
+gpuRIR upstream has no formal test suite (no tests/ directory, no pytest, no unittest). The examples/ directory has five scripts (example.py, simulate_trajectory.py, polar_plots.py, time_vs_T60.py, time_vs_nbRIRs.py); none self-validates with assertions -- they produce plots or audio files and rely on visual inspection. simulate_trajectory.py requires a source_signal.wav; time_vs_T60.py and time_vs_nbRIRs.py are timing benchmarks. The only programmatic validation is agent_space/gpuRIR_validate.py (written for this port): shoebox room with known direct-path geometry, checking finite/non-zero output, first significant arrival within 2 samples of the expected round(dist/c*Fs)=168, pre-direct silence, LUT vs exact-sinc agreement <5% of peak, and FFT convolution path finite/non-zero. This is the correct and maximal test achievable for this project.
+
+### Real GPU validation re-run (gfx90a, GCD 2, HIP_VISIBLE_DEVICES=2)
+
+Rebuilt from source at 6c91213 and re-ran on real GPU (MI250X, gfx90a, ROCm 7.2.1):
+
+```
+CMAKE_ARGS="-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm" \
+  bash utils/timeit.sh gpuRIR compile -- \
+  pip install ./projects/gpuRIR/src --no-build-isolation --force-reinstall --no-deps
+
+HIP_VISIBLE_DEVICES=2 bash utils/timeit.sh gpuRIR test -- \
+  python3 agent_space/gpuRIR_validate.py
+```
+
+Results:
+- LUT path: first significant arrival at sample 168 (expected 168), finite/non-zero, pre-direct silent -- PASS
+- exact-sinc path: first significant arrival at sample 168 -- PASS
+- LUT vs sinc: max diff 2.47e-04 / peak 0.43% (< 5% threshold) -- PASS
+- hipFFT convolution (simulateTrajectory, 4-point trajectory): finite/non-zero -- PASS
+- examples/example.py (MPLBACKEND=Agg): exit 0 -- PASS
+
+All checks pass. Status remains `completed` for all three platforms.
+
+### Jargon / yml scan
+"Strategy A" and "colmap model" appear in the commit message body, a CMakeLists.txt comment (line 8 in the USE_HIP block), and the cuda_to_hip.h file banner comment (line 4). These are MOAT-internal vocabulary not meaningful to upstream readers. No other MOAT terms (head_sha, validated_sha, lead, follower, curated, smoketest, MOAT) appear in committed files. No .github/workflows file was added to the fork at any level outside the vendored third_party/pybind11 subtree (which is upstream content, not a moat addition). No spurious CI yaml was committed.
+
+The two "Strategy A / colmap model" occurrences in committed source (CMakeLists.txt and cuda_to_hip.h) are mild PR-readiness issues: they are intelligible without the MOAT context (the colmap project is publicly known as a reference for this pattern) but still carry internal vocabulary. They do not affect correctness. Flag for the porter to neutralize before the upstream PR (e.g., "compat-header pattern" or drop the parenthetical).
+
+### Conclusion
+Real tests: the agent_space/gpuRIR_validate.py harness is the maximal test for this project (upstream has no test suite); it checks physics-grounded correctness (direct-path timing, LUT accuracy, FFT conv). It was run on real gfx90a GPU in this audit and passes. Status: `completed` retained on all platforms, no state change required.
