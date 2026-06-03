@@ -234,3 +234,23 @@ gpuGetLastError after every kernel via GPU_CHECK_KERNEL), no NaN, energy conserv
   construction -- confirmed by the clean energy-conserving runs (same as the gfx1100 wave32
   result). No wave-size or any source fix required for gfx1151.
 State: port-ready -> completed (validated_sha 65b4ded, fork unchanged).
+
+## Carry-forward 2026-06-03 (all platforms) -- doc-only to PR head 98c8bb4
+
+PR-prep rewrote the fork: moat-port advanced 65b4ded -> 98c8bb4 (PR #1538 head), a
+forced update that orphaned 65b4ded (not an ancestor of the new tip). All three
+platforms had GPU-validated at 65b4ded (gfx90a + gfx1100 + gfx1151 records above) and
+their validated_sha was bumped to 98c8bb4 without a recorded classification -- closing
+that documentation gap here.
+
+Net tree delta 65b4ded..98c8bb4 is a single file: `doc/installation.rst` (+16), pure
+documentation. `git diff 65b4ded 98c8bb4` over source/build files (*.cu/*.cuh/*.cpp/*.h,
+makefile*, CMake*) is EMPTY -- zero device source or build change. Formal classifier:
+
+    python3 utils/moatlib.py classify GPUMD 65b4ded 98c8bb4
+    -> class=doc-only arch_independent=True inert=True
+
+Doc-only is arch-independent, so the carry-forward holds for gfx90a, gfx1100 and gfx1151
+with no GPU re-run and no rebuild (the source classifier is the authoritative gate for
+this class; a per-arch binary-equiv build is unnecessary when device source is provably
+untouched). All three remain completed @ 98c8bb4. PR #1538 stands as-is.
