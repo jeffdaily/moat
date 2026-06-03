@@ -262,3 +262,66 @@ failure). Use `<exe> <numPoints> -v -nq <numQueries>` for a fast verify.
   builders agree; only the HOST builder hash differs; identical on CUDA).
 
 RESULT: PASS. Matches gfx90a + gfx1100 exactly. windows-gfx1151 -> completed.
+
+## Audit 2026-06-03
+
+### Real test infrastructure found
+
+The project ships a complete GPU test suite under BUILD_ALL_TESTS:
+
+- `testing/floatN-knn-and-fcp.cu` -- the main test binary (compiled into ~84 per-dim/per-method executables). Each binary accepts a `-v` flag that runs a CPU brute-force oracle (verifyFCP = exhaustive min-dist scan; verifyKNN = std::priority_queue over all points) and compares GPU results query-by-query to rel err <= 1e-6. Throws and prints "verification failed" on any mismatch; prints "verification succeeded... done." on a clean run. This is a genuine self-checking test, not a mere smoke run.
+- `testing/CMakeLists.txt` -- 15 CTest entries covering empty/simple/same-result/issue5/compile-only cases. Registered via add_test(); run by `ctest`.
+- No external test data required; all point sets are generated deterministically in-process.
+
+### What the prior gfx90a validation ran
+
+The prior validation ran the real test suite:
+- FCP 17/17 configs PASS with `-v` (CPU brute-force verifier)
+- kNN 51/51 configs PASS with `-v`
+- CTest 14/15 PASS
+- Spatial tree: standalone harness with CPU brute-force comparison (0 mismatches, maxRel ~1e-7)
+
+Nothing was skipped that could have been run.
+
+### Re-run on gfx90a (HIP_VISIBLE_DEVICES=2, 2026-06-03)
+
+Built from existing build-hip/ (build verified at d2ca74b). Commands run from
+/var/lib/jenkins/moat/projects/cudaKDTree/src/build-hip:
+
+```
+export HIP_VISIBLE_DEVICES=2
+ctest --output-on-failure -j1
+```
+Result: 14/15 PASS. Failure: cukdTestBuildersSameResult (pre-existing host-vs-device tie-break, unchanged from prior run).
+
+Spot-check with `-v` brute-force verifier:
+```
+./cukd_float3-fcp-stackBased    100000 -v -nq 10000   -> verification succeeded
+./cukd_float3-fcp-cct           100000 -v -nq 10000   -> verification succeeded
+./cukd_float3-knn-stackBased    100000 -v -nq 10000 -k 8  -> verification succeeded
+./cukd_float2-fcp-stackBased-xd 100000 -v -nq 10000   -> tree checked, valid; verification succeeded
+./cukd_float4-knn-cct-xd        100000 -v -nq 5000 -k 50 -> tree checked, valid; verification succeeded
+./cukd_float8-fcp-stackFree     100000 -v -nq 5000    -> tree checked, valid; verification succeeded
+./cukd_float3-knn-stackBased    100000 -v -nq 5000 -k 8 --clustered -> verification succeeded
+./cukd_float4-fcp-cct           100000 -v -nq 5000 --clustered      -> verification succeeded
+./cukd_float3-fcp-spatial-stackBased 10000 -nq 5000 -> CHECKSUM 1.30905e+08 (matches cct: identical)
+./cukd_float3-fcp-spatial-cct        10000 -nq 5000 -> CHECKSUM 1.30905e+08
+./cukd_float3-knn-spatial-stackBased 10000 -nq 5000 -> CHECKSUM 5.60516e+08 (completes without fault)
+```
+All pass. No regression vs prior run.
+
+### Jargon scan
+
+`git diff 0e174fe..moat-port` + commit message scanned for MOAT-internal vocabulary.
+
+Hits in the commit message (not in any source file):
+- Commit title: `[ROCm] HIP port for AMD GPUs (gfx90a, Strategy A)` -- "Strategy A" is MOAT-internal.
+- Commit body: `using the colmap model (Strategy A)` -- both "colmap model" and "Strategy A" are MOAT-internal terms not meaningful to an upstream reviewer.
+
+No jargon hits in any changed source file (*.h, *.cu, CMakeLists.txt).
+
+Action needed before upstream PR: reword the commit title (drop "Strategy A") and the body reference ("colmap model (Strategy A)" -> just describe what it is: "one new compat header that aliases CUDA spellings to HIP equivalents"). The commit message is otherwise solid.
+
+### Status
+
+No genuine test failures. Completed status stands. Jargon is commit-message-only and must be fixed before the upstream PR is opened.
