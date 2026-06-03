@@ -7,7 +7,7 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-03T06:28:52Z",
+  "updated_at": "2026-06-03T13:30:29Z",
   "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
   "platforms": {
     "linux-gfx1100": {
@@ -42,13 +42,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0f72aef3ca02100721c4a24c87f6df782a2a31db",
+      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
       "started_at": null,
-      "completed_at": "2026-05-30T21:22:13Z",
-      "updated_at": "2026-06-02T18:03:56Z",
+      "completed_at": "2026-06-03T13:30:29Z",
+      "updated_at": "2026-06-03T13:30:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -64,12 +64,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "5cdaa1551336c1590297a86db03c578a1820b130",
-        "to": "0f72aef3ca02100721c4a24c87f6df782a2a31db",
+        "to": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T16:55:10Z"
+        "detail": "5cdaa15..e17d495 (validated extension content) diff -- gsplat/cuda setup.py is EMPTY; only .gitignore/README/docs/INSTALL_WIN.md + experimental/render build.py import-hoist (renderer skipped on ROCm).",
+        "at": "2026-06-03T13:30:29Z"
       }
     },
     "linux-gfx90a": {

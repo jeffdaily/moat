@@ -630,3 +630,25 @@ gsplat/cuda/** setup.py` is EMPTY -- no device code, no ROCm build path change.
 The prior gfx1100 validation (3DGUT core 108/108, full 312 passed / 38
 nerfacc-gated baseline, wave32 correct) holds. validated_sha -> e17d495. No GPU
 re-run, no fork change.
+
+## Validation 2026-06-03 (windows-gfx1151) -- carry-forward to e17d495 (doc-only)
+
+Revalidate triggered by the head_sha reconciliation advancing the fork to e17d495
+(the recorded validated_sha 0f72aef3 was an orphaned one-commit-era amend of the
+same 5cdaa15 extension content). The extension was GPU-validated on this gfx1151
+host at 5cdaa15 (core 3DGS/2DGS 108/108; full test_basic.py 251 passed / 42 failed
+with 38 nerfacc-only + 4 UT FP-boundary; standalone rasterization fwd/bwd/determinism
+PASS -- see the 2026-05-30 windows-gfx1151 record above). The two-dot diff from that
+validated content to the new head is doc-only:
+
+    git diff 5cdaa15 e17d495 -- gsplat/cuda setup.py   # EMPTY (no ROCm device code,
+                                                       # no ROCm build path change)
+    git diff 5cdaa15 e17d495                           # .gitignore, README.md,
+        docs/INSTALL_WIN.md, experimental/render/kernels/cuda/build.py (import-hoist)
+
+The only non-doc file is experimental/render/kernels/cuda/build.py, the experimental
+HiGS inference renderer's build script -- entirely skipped on ROCm (setup.py fault
+#12, build only gsplat.csrc). No compiled gsplat kernel changed. This is the same
+carry-forward basis gfx1100 used for each of 5fd287a/8839b72/e17d495. validated_sha
+-> e17d495. No GPU re-run, no fork change. All three platforms now completed @
+e17d495.
