@@ -31,20 +31,14 @@ queries = [
   "topic:gpu topic:cuda",
   "cuda language:C++",
   "cuda language:Python",
-  # Domain recall: bias toward non-LLM domains where ports have been tractable
-  # hipify (vision/graphics/SLAM/physics/signal/genomics), vs the CUTLASS-saturated
-  # attention space. Each returns far under the 1000-result cap, so the lowered
-  # star floor actually surfaces sub-200-star research/application repos here. The
-  # languages-API (min_cuda_bytes) check then drops text-only topic mentions.
-  "topic:point-cloud",
-  "topic:slam",
-  "topic:fft",
-  "topic:computational-fluid-dynamics",
-  "topic:molecular-dynamics",
-  "topic:ray-tracing",
-  "topic:bioinformatics",
-  "topic:computer-vision topic:gpu",
 ]
+# Note: we deliberately do NOT enumerate domain topics (point-cloud, slam, fft, ...)
+# -- that pigeonholes discovery to anticipated domains and misses a cool CUDA
+# project in an unforeseen topic. Breadth comes instead from topic-agnostic
+# signals: language:Cuda (any Cuda-dominant repo, any topic) plus the
+# [code_search] pass below, which matches CUDA SOURCE (__global__, cudaMalloc,
+# torch extensions) in ANY repo regardless of topic/name/dominant language. The
+# lowered min_stars then reaches further down each of those topic-blind nets.
 
 # Code-search surfacing pass (utils/discover.py --code-search). The repo-search
 # pass above (gh search repos) only indexes name+description+topics, so a
