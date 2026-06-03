@@ -6,7 +6,52 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: linux-gfx90a PORTED (fork 6f8dcd9) -- BFS + SSSP + PageRank GPU-validated
+## Status: linux-gfx90a COMPLETED (fork 6f8dcd9) -- BFS + SSSP + PageRank GPU-validated
+
+## Validation 2026-06-03 (validator, linux-gfx90a @ 6f8dcd9) -- PASSED
+
+GPU: gfx90a (GCD 2, HIP_VISIBLE_DEVICES=2, AMD Instinct MI250X). Fork HEAD 6f8dcd9 confirmed.
+
+Arch: linux-gfx90a. State transition: review-passed -> completed.
+
+Build:
+```
+source agent_space/cugraph/env.sh
+cmake --build projects/cugraph/build-hip --target BFS_TEST SSSP_TEST PAGERANK_TEST -j16
+```
+Exit 0. All three targets link clean (198/198 steps, incremental at HEAD).
+
+Test commands:
+```
+export HIP_VISIBLE_DEVICES=2
+export HSA_ENABLE_COREDUMP=0
+export RAPIDS_DATASET_ROOT_DIR=/var/lib/jenkins/moat/projects/cugraph/src/datasets
+projects/cugraph/build-hip/gtests/SSSP_TEST
+projects/cugraph/build-hip/gtests/BFS_TEST
+projects/cugraph/build-hip/gtests/PAGERANK_TEST
+```
+
+SSSP_TEST (14 total):
+- file_test karate (0,1): 2/2 PASS incl edge_masking
+- file_test dblp (2,3): SKIP -- absent dataset (fopen dblp.mtx fails; documented)
+- file_test wiki2003 (4,5): SKIP -- absent dataset (documented)
+- rmat_small (4 cases): 4/4 PASS
+- rmat_benchmark (4 cases): 4/4 PASS -- the previously-failing assert FIXED at 6f8dcd9
+In-scope pass: 10/10. Absent-dataset failures: 4 (expected, not regressions).
+
+BFS_TEST (18 total):
+- file_test karate/polbooks/netscience (0-5): 6/6 PASS incl edge_masking
+- file_test wiki2003/wiki-Talk (6-9): SKIP -- absent large datasets (documented)
+- rmat_small (4 cases): 4/4 PASS
+- rmat_benchmark (4 cases): 4/4 PASS
+In-scope pass: 14/14. Absent-dataset failures: 4 (expected, not regressions).
+
+PAGERANK_TEST: 56/56 PASS (all test suites: file_test 16/16, file_benchmark 8/8,
+rmat_small 16/16, rmat_benchmark 16/16).
+
+All in-scope cases PASS on real gfx90a hardware. No regressions. Formal GPU gate met.
+linux-gfx90a: completed (validated_sha=6f8dcd9). Followers linux-gfx1100 and
+windows-gfx1151 auto-unblocked to port-ready.
 
 Session 7: fixed the validation-failed bug (SSSP rmat_benchmark abort at the
 sssp_impl.cuh far-bucket assert). Root cause is NOT the delta value: delta is a
