@@ -254,3 +254,29 @@ Results:
 
 ### Verdict
 CARRY-FORWARD (binary-equiv). New commit 1249659 adds only `#ifdef _WIN32` host-side shims; device ISA on gfx90a is byte-identical to 144ab937. State: linux-gfx90a revalidate -> completed. validated_sha=124965909f8a1746c7d717dc32eba419d3757462.
+
+## Validation 2026-06-03 (gfx1100) -- carry-forward to 1249659 (Windows-only delta)
+
+Revalidate triggered by the fork advancing 144ab93 -> 1249659 (windows-gfx1151
+enablement). The delta is Windows-only; the gfx1100 Linux compiled code is
+functionally identical, so the prior gfx1100 validation carries forward.
+
+Delta analysis (git diff 144ab93 1249659, 7 files):
+- CMakeLists.txt: wraps the MSVC `/O2` flags in `if(WIN32)`; the Linux `else()`
+  branch keeps the original `-O3 -DNDEBUG -march=native` -- Linux flags unchanged.
+- src/core/platform.h (NEW): Win32 `_aligned_malloc`/`HANDLE`-mmap/`nt_*_ram`
+  helpers under `#ifdef _WIN32`; the POSIX `#else` branch defines
+  `NT_ALIGNED_ALLOC(a,s) = aligned_alloc(a,s)` and `NT_ALIGNED_FREE(p) = ::free(p)`
+  -- exactly the original behavior (verified in platform.h:92-93).
+- src/core/types.h: `nt_aligned_alloc/free` route through the `NT_ALIGNED_ALLOC/FREE`
+  macros, which expand to the original `aligned_alloc`/`::free` on Linux -- no-op.
+- src/memory/streamer.cu/.h, src/model/loader.cpp/.h: every added block is
+  `#ifdef _WIN32` (Win32 mmap / `nt_total_ram`/`nt_available_ram`); the `#else`
+  Linux branches are the original `/proc/meminfo`+`sysinfo`+POSIX-`mmap` code
+  (only comment-wording tweaks). No device-kernel change.
+
+Net effect on gfx1100: the device kernels (gemv/attention/rmsnorm) are untouched
+and the Linux host path is functionally identical (macro indirection resolves to
+the original aligned_alloc/free). The prior gfx1100 validation holds: test_gemm +
+test_tensor 2/2, exact dot-products (gemv_q6_k_large y[0]=32768, rmsnorm exact),
+wave32 correct. validated_sha -> 1249659. No GPU re-run, no fork change.
