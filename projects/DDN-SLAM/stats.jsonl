@@ -1,0 +1,17 @@
+{"kind":"phase","ts":"2026-06-01T19:51:00Z","phase":"compile","seconds":113.621,"exit":0,"cmd":"cmake --build _deps/tiny-rocm-nn/build --config RelWithDebInfo -j 16"}
+{"kind":"gate","ts":"2026-06-01T19:52:07Z","stage":"stage0","name":"tiny-rocm-nn mlp_learning_an_image","result":"PASS","detail":"HashGrid+FullyFusedMLP gfx90a: loss 9.40->0.0089 @1000 steps, no NaN/fault; default config loss 9.46->0.16; output image reconstructed"}
+{"kind":"phase","ts":"2026-06-01T20:22:30Z","phase":"compile","seconds":87.262,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:24:07Z","phase":"compile","seconds":10.263,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:28:25Z","phase":"compile","seconds":104.146,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:31:29Z","phase":"compile","seconds":109.107,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:35:45Z","phase":"compile","seconds":18.208,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:37:47Z","phase":"compile","seconds":17.953,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:41:56Z","phase":"compile","seconds":89.189,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:44:13Z","phase":"compile","seconds":28.588,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:47:32Z","phase":"compile","seconds":34.191,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"milestone","ts":"2026-06-01T20:48:08Z","stage":"stage1","name":"instant-ngp-kf ngp library","result":"COMPILES","detail":"libngp.a built under HIP gfx90a (14 TUs incl testbed_nerf 167KB); tcnn<->ngp R1 integration closed via the documented compat shims + half-atomic CAS emulation"}
+{"kind":"phase","ts":"2026-06-01T20:48:37Z","phase":"compile","seconds":4.839,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:51:55Z","phase":"compile","seconds":135.067,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:54:02Z","phase":"compile","seconds":72.351,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-01T20:59:07Z","phase":"compile","seconds":190.434,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-01T21:02:35Z","phase":"compile","seconds":148.528,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
