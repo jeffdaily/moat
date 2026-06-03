@@ -382,3 +382,12 @@ Windows source fix: `#include <hip/amd_detail/amd_hip_runtime.h>` in the
 USE_ROCM guard of the three rwkv7_fast_fused .cu files so that `__launch_bounds__`
 is available in the fp32 host-stub compilation pass. Fork HEAD after amend:
 cc48bcceeeb1a4651ca82af7d3fff22f0c6e7575. windows-gfx1151 -> completed.
+
+## Windows gfx1151 (2026-06-03): VALIDATED -> completed @ 3efd11d
+
+GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm 7.14, torch 2.12+rocm7.14, venv-gsplat). torch CUDA extensions JIT-built with the clang-cl host rule (CC=CXX=<rocm>/lib/llvm/bin/clang-cl.exe, DISTUTILS_USE_SDK=1, HIP_DEVICE_LIB_PATH, MSVC bin on PATH). All variants match the gfx90a reference band:
+- rwkv7 vanilla/state/state-passing fp32: ~1.6-3.2e-7 (PASS); bf16: ~3.5-4.6e-3 (PASS)
+- wkv5_bf16: CUDA fwd 1.66e-3, grads 1.3-2.0e-3 (PASS); wkv6 fwd 2.25e-5, grads up to g_w 1.82e-3 (PASS)
+- wkv5 default v1d: pre-existing upstream link bug (deferred, not a port defect)
+WINDOWS FIX (commit on top of the gfx90a c4ed7fad): the 3 rwkv7 fused .cu (rwkv7_clampw / rwkv7_state_clampw / rwkv7_statepassing_clampw) needed  inside the USE_ROCM guard -- the Windows hipcc MSVC-ABI HOST-stub pass does not predefine __launch_bounds__ (the device pass does), and with _FP32_ the bf16 branch that would pull hip_runtime.h is skipped. Redundant on Linux (no codegen change) so gfx90a/gfx1100 carry-forward; NVIDIA untouched. No warp intrinsics -> wave32 numerically equivalent.
+COMMIT STRUCTURE: the validator subagent initially ed the curated c4ed7fad (orphaning gfx90a/gfx1100's validated_sha); I restructured to commits-on-top (c4ed7fad base + fix commit 3efd11d) per the retired-one-commit rule, keeping c4ed7fad reachable.
