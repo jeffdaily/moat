@@ -6,7 +6,106 @@ branch moat-port. The C++ libcugraph SG (single-GPU) graph-primitive slice is th
 target; MG/MTMG (NCCL/MPI), cugraph_c (links the MG lib), and the Python layer are
 out of scope. See plan.md for the full scope/deferral rationale.
 
-## Status: linux-gfx90a COMPLETED (fork 6f8dcd9) -- BFS + SSSP + PageRank GPU-validated
+## Status: linux-gfx1100 COMPLETED (fork 6f8dcd9) -- BFS + SSSP + PageRank GPU-validated on both gfx90a and gfx1100
+
+## Validation 2026-06-03 (gfx1100) -- PASSED
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). HIP_VISIBLE_DEVICES=1. Fork HEAD 6f8dcd9 confirmed.
+
+Arch: linux-gfx1100. State transition: port-ready -> completed. gfx1100 is the first follower validation.
+
+### Deps reused / built
+
+- raft: reused `_deps/raft/install-gfx1100` (jeffdaily/raft @ moat-port 6e925ac, multi-arch host_warp_size, built with rmm at `projects/rmm/install-gfx1100`).
+- rmm: reused `projects/rmm/install-gfx1100` (jeffdaily/rmm @ moat-port).
+- cudf: NOT needed (cudf is a Python-layer dep only; C++ libcugraph does not link it). cudf build skipped.
+- cuCollections (cuco): jeffdaily/cuCollections @ moat-port HEAD updated to `0fb53f8` ([ROCm] cuco: gate pre-Volta slot guards on __CUDA_ARCH__ defined). Initial shallow clone was at `47ae24d`; a second commit `0fb53f8` was already on the remote with the necessary `#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700` guard (replacing the bare `__CUDA_ARCH__ < 700` in `open_addressing_ref_impl.cuh` at three sites: `insert_and_find` x2 + the `cas_dependent_write`/`back_to_back_cas` branch). The local clone was reset to this commit before the final build.
+
+### Build
+
+cmake configure:
+```
+export CONDA_PREFIX=/opt/conda/envs/py_3.12
+RAFT_INSTALL=/var/lib/jenkins/moat/_deps/raft/install-gfx1100
+RMM_INSTALL=/var/lib/jenkins/moat/projects/rmm/install-gfx1100
+CUCO_SRC=/var/lib/jenkins/moat/projects/cuCollections/src   # @ 0fb53f8
+LIBHIPCXX_INC=/var/lib/jenkins/moat/_deps/libhipcxx/include
+cmake -S projects/cugraph/src/cpp -B projects/cugraph/build-gfx1100 -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="$RAFT_INSTALL;$RMM_INSTALL;/opt/rocm;$CONDA_PREFIX" \
+  -DCUGRAPH_CUCO_SOURCE_DIR=$CUCO_SRC \
+  -DLIBHIPCXX_INCLUDE_DIR=$LIBHIPCXX_INC \
+  -DBUILD_TESTS=ON
+cmake --build projects/cugraph/build-gfx1100 --target BFS_TEST SSSP_TEST PAGERANK_TEST -j16
+```
+cmake configured: "cuGraph HIP: arch=gfx1100 raft=.../install-gfx1100 rmm=.../install-gfx1100". Build exit 0. 132 steps (incremental after first-attempt partial build). Wall time: 336.966 s. CUGRAPH_HOST_WARP_SIZE=32 derived from `gfx1100` matching `^gfx11` pattern.
+
+### gfx1100 code-object evidence
+
+```
+/opt/rocm/llvm/bin/llvm-objdump --offloading projects/cugraph/build-gfx1100/gtests/BFS_TEST
+```
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1100` present (multiple bundles). No gfx90a code object. `CMAKE_HIP_ARCHITECTURES=gfx1100` flows correctly through `HIP_ARCHITECTURES` target property.
+
+### Test commands
+
+```
+export HIP_VISIBLE_DEVICES=1
+export HSA_ENABLE_COREDUMP=0
+export RAPIDS_DATASET_ROOT_DIR=/var/lib/jenkins/moat/projects/cugraph/src/datasets
+export LD_LIBRARY_PATH=<raft_install>/lib:<rmm_install>/lib:$CONDA_PREFIX/lib:/opt/rocm/lib:...
+projects/cugraph/build-gfx1100/gtests/SSSP_TEST
+projects/cugraph/build-gfx1100/gtests/BFS_TEST
+projects/cugraph/build-gfx1100/gtests/PAGERANK_TEST
+```
+
+### Results vs gfx90a@6f8dcd9
+
+SSSP_TEST (14 total):
+- file_test karate (0,1): 2/2 PASS incl edge_masking -- matches gfx90a
+- file_test dblp (2,3): SKIP/FAIL -- absent dataset (fopen dblp.mtx fails; documented)
+- file_test wiki2003 (4,5): SKIP/FAIL -- absent dataset (documented)
+- rmat_small (4 cases): 4/4 PASS -- matches gfx90a
+- rmat_benchmark (4 cases): 4/4 PASS -- the previously-fixed assert CLEAN on wave32
+In-scope pass: 10/10. Absent-dataset failures: 4 (expected, not regressions).
+
+BFS_TEST (18 total):
+- file_test karate/polbooks/netscience (0-5): 6/6 PASS incl edge_masking -- matches gfx90a
+- file_test wiki2003/wiki-Talk (6-9): SKIP/FAIL -- absent large datasets (documented)
+- rmat_small (4 cases): 4/4 PASS -- matches gfx90a
+- rmat_benchmark (4 cases): 4/4 PASS -- matches gfx90a
+In-scope pass: 14/14. Absent-dataset failures: 4 (expected, not regressions).
+
+PAGERANK_TEST: 56/56 PASS (all test suites: file_test 16/16, file_benchmark 8/8,
+rmat_small 16/16, rmat_benchmark 16/16). Matches gfx90a identically.
+
+### Wave32 verdict
+
+All in-scope BFS/SSSP/PAGERANK cases PASS with correct graph results on wave32 (gfx1100). Explicit findings:
+
+1. **CUGRAPH_HOST_WARP_SIZE=32**: cmake derives 32 from `gfx1100` matching `^gfx11` -- correct. `warp_size_ct()` returns 32 in both host pass (via CUGRAPH_HOST_WARP_SIZE) and device pass (via `!__GFX9__ && __HIP_DEVICE_COMPILE__` -> 32).
+
+2. **Ballot/bcast helpers**: `warp_full_ballot_mask()` returns `0xffffffff` on wave32 (raft::warp_size()==32 path). All `warp_ballot`/`warp_bcast`/`warp_ballot_popc`/`warp_ballot_prefix_popc` helpers are correct for wave32 -- they reduce to exactly the upstream CUDA 32-bit operations.
+
+3. **transform_e_packed_bool**: `group_base_lane=0` and `group_ballot_mask=0xffffffff` on wave32; `static_assert(raft::warp_size() == packed_bools_per_word())` is `32==32` -- passes. Arch-unified code is correct for both wave widths.
+
+4. **SSSP far-bucket assert**: `(near>0)||(far>0)` invariant holds on wave32. The delta formula `raft::warp_size() * avg_edge_weight / avg_vertex_degree` evaluates to 32 on wave32 (correct, matches upstream CUDA). The rmat_benchmark cases PASS without assertion errors.
+
+5. **No raft-host-WarpSize dispatch-math issue found**: the `warp_size_ct()` dispatch is via compile-time `CUGRAPH_HOST_WARP_SIZE`, not via `raft::WarpSize` or `host_warp_size()`. No incorrect kernel launch geometry observed. BFS/SSSP distances match reference on rmat graphs (wave32-correct traversal confirmed).
+
+6. **Zero HSA 0x1016 errors**. No GPU memory faults, no hangs.
+
+### Determinism
+
+SSSP_TEST re-run: 10/10 in-scope PASS (identical to first run). Deterministic.
+
+### Fork state
+
+Fork HEAD 6f8dcd9 unchanged. No amendments to cugraph moat-port. No CI yaml added.
+The cuCollections fork was already at `0fb53f8` on the remote (the necessary `defined(__CUDA_ARCH__)` guard was already committed); the local clone was simply updated to track it. No new commits to jeffdaily/cugraph.
+
+linux-gfx1100: completed (validated_sha=6f8dcd9).
 
 ## Validation 2026-06-03 (validator, linux-gfx90a @ 6f8dcd9) -- PASSED
 

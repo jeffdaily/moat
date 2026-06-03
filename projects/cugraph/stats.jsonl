@@ -24,3 +24,8 @@
 {"kind":"phase","ts":"2026-06-03T00:11:45Z","phase":"test","seconds":71.937,"exit":1,"cmd":"projects/cugraph/build-hip/gtests/SSSP_TEST"}
 {"kind":"phase","ts":"2026-06-03T00:12:43Z","phase":"test","seconds":48.510,"exit":1,"cmd":"projects/cugraph/build-hip/gtests/BFS_TEST"}
 {"kind":"phase","ts":"2026-06-03T00:13:15Z","phase":"test","seconds":22.040,"exit":0,"cmd":"projects/cugraph/build-hip/gtests/PAGERANK_TEST"}
+{"kind":"phase","ts":"2026-06-03T09:59:58Z","phase":"compile","seconds":227.620,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cugraph/build-gfx1100 --target BFS_TEST SSSP_TEST PAGERANK_TEST -j16"}
+{"kind":"phase","ts":"2026-06-03T10:10:33Z","phase":"compile","seconds":336.966,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cugraph/build-gfx1100 --target BFS_TEST SSSP_TEST PAGERANK_TEST -j16"}
+{"kind":"phase","ts":"2026-06-03T10:12:35Z","phase":"test","seconds":71.451,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/SSSP_TEST"}
+{"kind":"phase","ts":"2026-06-03T10:13:37Z","phase":"test","seconds":49.046,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/BFS_TEST"}
+{"kind":"phase","ts":"2026-06-03T10:14:04Z","phase":"test","seconds":14.797,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cugraph/build-gfx1100/gtests/PAGERANK_TEST"}
