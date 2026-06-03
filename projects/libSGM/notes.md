@@ -385,3 +385,25 @@ Also noted: `CMakeLists.txt` line 12 defaults `CMAKE_HIP_ARCHITECTURES` to `"gfx
 ### Verdict
 
 Status: COMPLETED (no change). 67/67 PASS on real gfx90a hardware, deterministic, identical to prior validated runs. One PR-readiness item before upstream submission: scrub "(Strategy A)" from `src/cuda_to_hip.h:20`.
+
+## Validation 2026-06-03 (gfx1100) -- carry-forward to fdb9d24 (CMake arch-default refactor + comment)
+
+Revalidate triggered by the fork advancing a339d3d -> fdb9d24. The 4-file delta
+does not change any compiled gfx1100 output, so the prior gfx1100 validation
+carries forward.
+
+Delta analysis (git diff a339d3d fdb9d24):
+- CMakeLists.txt + src/CMakeLists.txt: the HIP `CMAKE_HIP_ARCHITECTURES` gfx90a
+  default was relocated from the top-level file to src/ (after `enable_language(HIP)`
+  auto-detects installed GPUs; gfx90a is only the fallback when nothing is detected;
+  `-DCMAKE_HIP_ARCHITECTURES` overrides). The validator always passes
+  `-DCMAKE_HIP_ARCHITECTURES=gfx1100` explicitly, which overrides the default in BOTH
+  old and new code -> the gfx1100 build selects gfx1100 either way, identical output.
+  `list(REMOVE_DUPLICATES ...)` is a harmless dedup.
+- src/cuda_to_hip.h: COMMENT-ONLY change (drops the "(Strategy A)" MOAT-jargon word
+  per the no-jargon-upstream rule). No code.
+- README.md: docs.
+No `.cu`/`.cuh` device source changed. With the arch passed explicitly the compiled
+libsgm + sgm-test for gfx1100 are byte-identical to the a339d3d build. The prior
+gfx1100 validation holds: sgm-test 67/67 bit-exact, host==device==32 runtime warp
+size, wave32 correct. validated_sha -> fdb9d24. No GPU re-run, no fork change.
