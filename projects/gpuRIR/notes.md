@@ -168,3 +168,12 @@ pip install scipy numpy. Run the shoebox-room harness (4x5x3 room, src (1,1,1.5)
 rcv (3,4,1.5), expect direct-path sample at round(dist/c*Fs)=168, RIR finite/non-zero;
 compare to gfx90a/gfx1100). Status left port-ready (NOT completed -- GPU correctness
 not yet exercised on gfx1151).
+
+## Windows gfx1151 (2026-06-02): VALIDATED -> completed @ 6c91213
+
+GPU-validated on gfx1151 (AMD Radeon 8060S, TheRock ROCm) with the pre-built gpuRIR_bind.cp313-win_amd64.pyd (validate-first follower, no source change). Harness: agent_space/gpurir_validate.py (shoebox 4x5x3, src (1,1,1.5) -> rcv (3,4,1.5), fs 16000). Results match the gfx90a reference:
+- exact-sinc: first significant arrival at sample 168 (expected 168), finite/non-zero, pre-direct silence -- PASS
+- LUT path: direct path also at sample 168; LUT-vs-sinc agreement 0.005% near the direct path (full-RIR max 9.8% lands at sample 1619, deep in the dense reverberant tail = the LUT approximation summed over overlapping images, config-dependent, NOT a LUT-read fault) -- PASS
+- hipFFT convolution (simulateTrajectory, 5-pose trajectory): finite/non-zero -- PASS
+- examples/example.py (2 src x 3 rcv, cardioid mic, MPLBACKEND=Agg): exit 0 -- PASS
+No warp intrinsics in the kernels; RDNA3 wave32 numerically equivalent to gfx90a/gfx1100. DLL setup: os.add_dll_directory for the build dir + _rocm_sdk_core/bin (amdhip64_7/amd_comgr/rocm_kpack) + _rocm_sdk_libraries_gfx1151/bin (gfx1151 hipfft/rocfft/hiprand/rocrand; device code baked into the per-arch DLLs -- no separate .kpack in this TheRock layout). Marked completed, validated_sha=6c91213.
