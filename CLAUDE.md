@@ -35,7 +35,9 @@ Make progress without asking; ask jeff only when truly unavoidable (install miss
 
 # MOAT repo synchronization
 
-This repo is shared by every CLI, so keep it fresh: pull before deciding, push often. orient.sh runs `git pull --rebase` before selecting. Route every status.json transition and artifact write through `moatlib.commit_and_push` (commit on top, pull --rebase, merge, push, bounded retry); push each transition as it happens, not in a batch. status.json conflicts resolve via the `merge=moat-status` driver; notes.md and the PORTING_GUIDE.md changelog use `merge=union`.
+This repo is shared by every CLI, so keep it fresh: pull before deciding, push often. orient.sh runs `git pull --rebase` before selecting. Route every status.json transition and artifact write through `moatlib.commit_and_push` (commit on top, pull --rebase, merge, push, bounded retry); for a project transition prefer `moatlib.commit_project(name, msg)` (or `moatlib.py commit-project`), which also stages that project's `stats.jsonl` so the per-phase telemetry timeit.sh writes is persisted and never accumulates uncommitted. status.json conflicts resolve via the `merge=moat-status` driver; notes.md and the PORTING_GUIDE.md changelog use `merge=union`.
+
+Telemetry: agents wrap build/test phases in `utils/timeit.sh` (wall-clock) and bracket runs with `utils/session.sh` (session wall). Tokens can only be recorded by the ORCHESTRATOR: when a dispatched subagent task completes, its notification reports `subagent_tokens` -- record it with `python3 utils/moatlib.py record-tokens <name> <tokens> "<agent role>"` so token cost is captured for the README/blog metrics (the subagent cannot self-report; the count exists only in the parent's completion notification). statlib.py aggregates compile/test wall, session/thinking wall, and tokens (always approx=True).
 
 # Scratch space
 
