@@ -28,4 +28,4 @@ A `revalidate` is triggered by a HEAD move since this platform's `validated_sha`
 3. Any other verdict (`differ`/`indeterminate`), or if you cannot build both shas, do the normal full real-GPU revalidation. Never carry forward on uncertainty.
 This is most useful for cosmetic comment reworks that shift `__LINE__` and for reformatting (the source classifier flags those as not-arch-independent, but they compile to identical code). An exported-symbol rename correctly shows as `differ` (external callers reference it by name), forcing a real revalidation.
 
-Push status.json + notes.md to the MOAT repo. Escalate hard failures back to the porter (opus) rather than root-causing deeply yourself.
+Push to the MOAT repo with `python3 utils/moatlib.py commit-project <name> "<msg>"` (or `moatlib.commit_project(name, msg)`) -- it stages status.json + notes.md + stats.jsonl together, so the per-phase telemetry timeit.sh records (build/test wall-clock; README/blog metrics) is committed with the transition and never piles up uncommitted. Wrap every build/test phase in `utils/timeit.sh`. Escalate hard failures back to the porter (opus) rather than root-causing deeply yourself.

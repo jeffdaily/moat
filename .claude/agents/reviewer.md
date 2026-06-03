@@ -18,6 +18,6 @@ Review scope: check code, strategy, and analysis correctness. The validator stag
 - Write the review (problems only, per skill philosophy) into notes.md under a dated `## Review <date>` heading.
 - Clean: `python3 utils/moatlib.py set-state <name> <platform> review-passed --agent reviewer`.
 - Problems: `python3 utils/moatlib.py set-state <name> <platform> changes-requested` (back to the porter).
-- Push notes.md + status.json to the MOAT repo.
+- Push to the MOAT repo with `python3 utils/moatlib.py commit-project <name> "<msg>"` (or `moatlib.commit_project(name, msg)`), which stages notes.md + status.json + stats.jsonl together so any recorded telemetry is committed with the transition and the shared tree stays clean.
 
 Every finding must be actionable and cite a file:line on the fork branch.

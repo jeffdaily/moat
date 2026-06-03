@@ -520,6 +520,20 @@ def commit_and_push(paths, message, push=True, retries=3):
     return False
 
 
+def commit_project(name, message, extra_paths=()):
+    """Commit a project's control-plane artifacts together: status.json, notes.md,
+    plan.md, and stats.jsonl (whichever exist), plus any extra_paths. Agents call
+    this for every state transition so the per-phase telemetry in stats.jsonl
+    (compile/test wall-clock etc., written by timeit.sh -- the README/blog metrics)
+    is persisted WITH the transition and never accumulates uncommitted in the
+    shared working tree. Prefer this over commit_and_push for project transitions."""
+    paths = [f"projects/{name}/{fn}" for fn in
+             ("status.json", "notes.md", "plan.md", "stats.jsonl")
+             if (PROJECTS / name / fn).exists()]
+    paths.extend(str(p) for p in extra_paths)
+    return commit_and_push(paths, message)
+
+
 # ---- CLI -------------------------------------------------------------------
 
 def _print_json(obj):
@@ -572,6 +586,11 @@ def main(argv=None):
     s.add_argument("old_sha")
     s.add_argument("new_sha")
 
+    s = sub.add_parser("commit-project",
+                       help="commit a project's status/notes/plan/stats together (telemetry-safe)")
+    s.add_argument("name")
+    s.add_argument("message")
+
     sub.add_parser("unblock-followers")
     s = sub.add_parser("validate")
     s.add_argument("name")
@@ -614,6 +633,9 @@ def main(argv=None):
         else:
             print(f"class={v.cls} arch_independent={v.arch_independent} inert={v.inert}")
             print(v.detail)
+    elif args.cmd == "commit-project":
+        ok = commit_project(args.name, args.message)
+        print(f"committed projects/{args.name} (status/notes/plan/stats)" if ok else "(nothing to commit)")
     elif args.cmd == "unblock-followers":
         changed = unblock_all_followers()
         print(" ".join(changed) if changed else "(none)")
