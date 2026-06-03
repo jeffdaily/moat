@@ -580,3 +580,97 @@ linux-gfx90a: revalidate -> completed; validated_sha = 3bffbf7dccaa488cb5e8cc170
 ## Validation 2026-05-31 (gfx1100) -- carry-forward at 3bffbf7 (bf16-header no-op on ROCm 7.2.1)
 
 Revalidate triggered by the bf16-header forward-compat delta 0ec6f02 -> 3bffbf7. The two-dot diff is 2 files: .gitignore (a build-hip/ entry, cosmetic) and src/popsift/cuda_to_hip.h, which adds a __has_include-guarded include of hip/hip_bf16.h BEFORE the shfl_sync macros so that on NEWER ROCm (where that header defines real shfl_sync functions) the macros do not clobber them. On ROCm 7.2.1 (this host) that header has no such functions, so the early include is a documented NO-OP -- no kernel/logic/ballot change, and it does not touch popsift's wave32-sensitive code (extrema ballot, orientation, descriptor reductions). The same delta was already re-validated at 3bffbf7 on BOTH linux-gfx90a (same Linux ROCm 7.2.1) and windows-gfx1151 (same wave32/RDNA), so the prior gfx1100 real-GPU SIFT validation at 0ec6f02 (2421 features stable across 5 runs, 0 -nan descriptors, wave64-fix degenerates correctly to wave32) applies unchanged. validated_sha -> 3bffbf7. No GPU re-run (no-op on this platform), no fork change.
+
+## Fix 2026-06-03 -- wave32 extrema correctness + linkage + claim-scoping (NEW commit 3a789a1 on top of 221191b)
+
+Human review of the "completed" port found a real wave32 correctness bug (the
+gfx1100 follower completion was a FALSE PASS) plus quality issues. Fixed as a
+NEW commit (3a789a1) on top of the validated base 221191b (NOT amended). All
+changes USE_HIP-guarded; the CUDA path is byte-identical. Validated on real
+gfx90a (MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0).
+
+### What changed
+1. CRITICAL wave32 fix -- s_extrema.cu extrema_count. The HIP path was hardcoded
+   for wave64 (wflane = threadIdx.x + (threadIdx.y&1)*32, __shfl(...,0,64),
+   1ull<<wflane mask, __popcll over 64-bit ballot). Correct on wave64 (gfx90a)
+   but WRONG on wave32 (gfx1100/gfx1151): odd threadIdx.y rows are their own
+   32-lane wavefront, so wflane lands at 32..63, the lane-0 leader never fires
+   (lost atomicAdds), the width-64 shuffle is OOB, the prefix mask reads phantom
+   bits -> wrong extrema count. Now warpSize-generic: lane =
+   (threadIdx.y*blockDim.x + threadIdx.x) % warpSize; ballot/popc/shuffle widths
+   = warpSize; leader = lane 0 of the real wavefront. On wave64 this reduces
+   EXACTLY to the old expression (blockDim.x=32: even rows -> tx, odd rows ->
+   32+tx), so gfx90a output is byte-equivalent; on wave32 it is correct.
+2. Example linkage -- removed LANGUAGE HIP on the host .cpp. popsift now links
+   roc::rocthrust (-> hip::device, which injects "-x hip") PRIVATE and exposes
+   hip::host PUBLIC; main.cpp/match.cpp/pgmread.cpp compile as plain CXX and just
+   link the HIP runtime. cuda_to_hip.h's <hip/hip_bf16.h> include is now gated on
+   __clang__ so a gcc host consumer does not parse that clang-only header.
+3. src/CMakeLists.txt -- the .cu LANGUAGE-HIP collection foreach moved inside the
+   if(USE_HIP) guard (dead work on the CUDA path).
+4. assist.h -- reverted a spurious trailing-whitespace change ("interpolation
+   very " line) to match upstream byte-for-byte.
+5. Comment scoping -- the layered-collapse comments (assist.h, cuda_to_hip.h,
+   sift_octave.cu) now cite ROCm/clr#275 (popsift is the motivating case) and
+   note the partial fix ROCm/rocm-systems#6683 covers only surf2DLayered; the
+   HW-linear comments are reworded "observed on gfx90a, ROCm 7.2.1" (empirical).
+6. hip_repro/ -- two standalone (out-of-build) repros: linear_filter_reject.cpp
+   and layered_collapse.cpp. See the follower section below.
+
+### gfx90a validation (HIP_VISIBLE_DEVICES=0, scene.png 1052x744, VLFeat/loop/RootSift)
+- popsift-demo: 895 features / 1494 descriptors, IDENTICAL 5/5 runs.
+- 0 NaN, 0 Inf in all 191232 descriptor values; 0 all-zero descriptors.
+- per-descriptor L2 in [0.9993, 1.0009], mean 1.0000; bins [0, 0.347] mean 0.0629;
+  x in [59.05, 996.47], y in [34.96, 676.35], scale in [0.0004, 1.3815].
+- Bit-equivalent to the pre-fix gfx90a reference (the warpSize rewrite is
+  byte-equivalent on wave64). popsift-match scene vs scene_rot: real finite
+  distances, sane accept/reject, no NaN.
+- Repros on gfx90a: linear_filter_reject = REJECTED ("operation not supported");
+  layered_collapse = LAYERED COLLAPSED / NON-LAYERED 3D ALL-FRESH (clr#275 holds).
+
+### Wave32 compile check (fat binary)
+cmake -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" built clean; llvm-objdump
+--offloading emits BOTH hipv4-...-gfx90a AND ...-gfx1100 code objects. The
+warpSize-generic extrema code compiles wave32. NO gfx1100 RUN claimed here (that
+is the follower host's job).
+
+## gfx1100 follower: re-verify these arch-scoped findings
+
+The wave32 extrema fix means gfx1100 (and gfx1151) MUST re-validate on their own
+hosts; do NOT carry forward. Two things to do:
+
+1. Re-run BOTH repros on RDNA to establish whether each device limitation holds
+   on wave32/RDNA (it may not):
+   ```
+   /opt/rocm/llvm/bin/clang++ -x hip --offload-arch=gfx1100 -O2 \
+     hip_repro/linear_filter_reject.cpp -o /tmp/lfr -lamdhip64 -L/opt/rocm/lib && \
+     HIP_VISIBLE_DEVICES=0 /tmp/lfr
+   /opt/rocm/llvm/bin/clang++ -x hip --offload-arch=gfx1100 -O2 \
+     hip_repro/layered_collapse.cpp -o /tmp/lc -lamdhip64 -L/opt/rocm/lib && \
+     HIP_VISIBLE_DEVICES=0 /tmp/lc
+   ```
+   gfx90a results: linear = REJECTED, layered = COLLAPSED. If HW-linear is
+   ACCEPTED on gfx1100, the software-bilinear fallback is unnecessary-but-harmless
+   there (still correct). If the layered array is ALL-FRESH on gfx1100, the
+   non-layered-3D fix is likewise unnecessary-but-harmless. Record both results in
+   this notes file; do NOT change the source on that basis (the fallbacks are
+   correct on every arch and keep one code path).
+
+2. Cross-arch consistency gate (replaces the old loose "sane output" gate that
+   false-passed gfx1100). A gfx90a reference is saved at
+   projects/popsift/reference/scene-gfx90a-canonical.txt (1494 descriptors,
+   sorted by x,y,scale, 6 sig fig; md5 780f45f6208401ba104b19a708088511). On
+   gfx1100 run the SAME image (agent_space/popsift_imgs/scene.png) through
+   popsift-demo --log, re-emit in the same canonical sorted form, and DIFF
+   against the reference. SIFT is deterministic, so a real divergence (counts
+   differ, or descriptors differ beyond float-rounding noise) is the wave32
+   extrema bug resurfacing -- treat it as validation-failed, NOT a pass. Note
+   prior gfx1100 runs used a synthetic image and only checked self-stability,
+   which is what let the false pass through; the gate is now a diff against the
+   gfx90a reference on the same scene.png.
+
+### State
+linux-gfx90a: revalidate -> completed at 3a789a1 (full real-GPU re-validation,
+no regression). linux-gfx1100 + windows-gfx1151: revalidate (the wave32 fix
+changes their codegen; they must re-validate on their hosts using the gate
+above).
