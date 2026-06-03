@@ -447,7 +447,8 @@ OpenCV types, the proper fix is to drop the dead OpenCV dependency from the test
 fix is kept OUT of the ROCm port and submitted as a separate upstream PR (branch
 `remove-unused-opencv-test-dep`, commit e0898b8, off upstream master) that removes
 `find_package(OpenCV)` and the `${OpenCV_INCLUDE_DIRS}`/`${OpenCV_LIBS}` references from
-`test/CMakeLists.txt`. The moat-port branch carries no OpenCV change.
+`test/CMakeLists.txt`: **fixstars/libSGM#88** (https://github.com/fixstars/libSGM/pull/88,
+opened 2026-06-03). The moat-port branch carries no OpenCV change.
 
 ### Build
 
