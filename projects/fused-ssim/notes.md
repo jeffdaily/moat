@@ -255,3 +255,9 @@ Compile time: 53.6s. setup.py HIP branch: `['-O3', '-DFUSED_SSIM_CUDA', '-ffast-
 PORTING_GUIDE best practices: **MEETS**. This is the cleanest possible AMD port (build-config only, zero kernel edits, wave-agnostic, all real GPU tests pass).
 
 **RESULT: PASS. linux-gfx90a remains completed.**
+
+## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+
+README sweep finding: rahul-goel/fused-ssim already has AMD/ROCm support upstream. README Hardware Compatibility lists "AMD GPUs (ROCm)" with ROCm install steps, and the acknowledgements credit "Anton Smirnov for adding AMD GPU enablement." ROCm support is merged upstream.
+
+Our port duplicates existing upstream AMD support (same miss class as llm.c/anthonix). Do NOT open an upstream PR. A narrow contribution is only warranted if our coverage genuinely exceeds theirs (e.g. CDNA/gfx90a wave64, gfx1100 wave32, or Windows/gfx1151) AND they lack it -- assess per-project before proposing anything, and prefer contributing the specific delta over a wholesale PR. See [[moat-no-duplicate-amd-ports]].
