@@ -717,3 +717,47 @@ The two GPU device code libs are device-ISA-identical across the two builds. No 
 
 Carried forward with: `moatlib.py carry-forward dietgpu linux-gfx90a 64c792d binary-equiv`
 Transitioning linux-gfx90a to completed (validated_sha=64c792d).
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
+
+validated_sha: 64c792d (zero-churn followers; the CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS Windows
+fix is already in this HEAD from the gfx1151 work). Host = dual-GPU Windows workstation
+(memory windows-gfx1101-gfx1201-host). ROCm 7.14 / TheRock pip SDK.
+
+### Multi-arch fat build (one binary, both GPUs)
+dietgpu's CMake reads CMAKE_HIP_ARCHITECTURES; one configure with a LIST emits both archs.
+Script: agent_space/dietgpu-win/build.sh.
+```
+ROCM=.../_rocm_sdk_devel
+git submodule update --init --recursive   # glog, googletest
+cmake -S . -B build-win -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx1101;gfx1201" \
+  -DCMAKE_C/CXX/HIP_COMPILER=$ROCM/lib/llvm/bin/clang(++).exe -DCMAKE_PREFIX_PATH=$ROCM \
+  -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-win --target ans_test ans_statistics_test batch_prefix_sum_test \
+  float_test gpu_ans gpu_float_compress dietgpu_utils -j64
+```
+
+### RUNTIME DLL TRAP (important, generalizable)
+dietgpu's tests CRASH (silent, after `[ RUN ]`, no gtest output) when the process loads
+`C:\WINDOWS\SYSTEM32\amdhip64_7.dll` (the Adrenalin driver -- present on this host). Putting
+the TheRock bin dirs on PATH does NOT help: the Windows loader searches the EXE's own dir,
+then System32, then PATH -- so System32's amdhip64 wins over PATH. FIX: copy TheRock's
+runtime DLLs INTO the exe dir (build-win/bin) so dir-search #1 beats System32:
+amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll
+(from _rocm_sdk_core/bin). (GPUMD/cudaKDTree happened to run correctly on the System32
+amdhip64 -- their AOT kernels launched fine and were oracle-verified -- but dietgpu's
+runtime path does not tolerate it.) See memory windows-gfx1101-gfx1201-host.
+
+### GPU tests (HIP_DEVICE_LIB_PATH=$ROCM/lib/llvm/amdgcn/bitcode; run per device)
+| suite | gfx1101 (dev0) | gfx1201 (dev1) |
+|-------|----------------|----------------|
+| ans_test (ZeroSized/BatchPointer/BatchPointerLarge/BatchStride) | 4/4 | 4/4 |
+| ans_statistics_test (Histogram/Normalization x3) | 4/4 | 4/4 |
+| batch_prefix_sum_test (OneLevel/TwoLevel) | 2/2 | 2/2 |
+| float_test (Batch/LargeBatch/BatchSize1; fp16/bf16/fp32) | 3/3 | 3/3 |
+| TOTAL | 13/13 | 13/13 |
+
+All exit 0, 0 FAILED. Matches gfx90a/gfx1100/gfx1151 (13/13). One fat binary ran on both
+GPUs. State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha
+64c792d, fork unchanged). All five platforms terminal -> PR-ready.
