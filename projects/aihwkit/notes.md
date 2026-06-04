@@ -153,6 +153,30 @@ session).
 ## Install as a dependency
 Not a base library for other MOAT projects; no dependents.
 
+## Validation 2026-06-04 (validator, linux-gfx90a)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a, wave64). ROCm 7.2.1. HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/aihwkit moat-port @ 9b4f7be7406cc939109690eb9e05f9ba2dcd3a5c.
+
+Build: setup.py build_ext --inplace (scikit-build), USE_HIP=ON USE_CUDA=OFF
+DRPU_CXX_STANDARD=20 CMAKE_HIP_ARCHITECTURES=gfx90a. Build time ~216 s.
+rpu_base.cpython-312-x86_64-linux-gnu.so carries gfx90a code objects (confirmed via
+llvm-objdump --offloading: 20+ amdgcn-amd-amdhsa--gfx90a bundles).
+
+Test results (all with PYTHONPATH=src HIP_VISIBLE_DEVICES=0):
+- tests/test_specific_tiles.py: **18/18 PASSED** (CRITICAL -- bit_line_maker +
+  pulsed-weight-update warp-size path; 9 Cuda-parametrized cases on gfx90a wave64).
+- tests/test_simulator_tiles.py + tests/test_bindings_tiles.py: **531 passed, 56 skipped, 0 failed**.
+  TileTest_Inference::test_program_weights passed this run; TileTest_InferenceCuda::test_program_weights
+  also passed (1 pass in isolation). The stochastic CPU-tile failure documented by the porter was not
+  reproduced; it is a pre-existing non-CUDA stochastic convergence test (global RNG ordering sensitive),
+  not a port regression.
+- tests/test_torch_tiles.py + tests/test_inference_tiles.py: **406 passed, 55 skipped, 0 failed**.
+- tests/test_layers_linear.py + tests/test_layers_convolution.py: **566 passed, 216 skipped, 0 failed**.
+
+Total GPU-gated tests passing: 1521 passed, 383 skipped, 0 failed.
+Verdict: PASS. Transitioning linux-gfx90a to completed (validated_sha 9b4f7be).
+
 ## Review 2026-06-04 (reviewer, linux-gfx90a)
 
 Verdict: review-passed. Strategy A is correct for this standalone scikit-build/CMake
