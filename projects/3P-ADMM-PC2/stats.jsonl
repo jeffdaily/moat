@@ -9,3 +9,4 @@
 {"kind":"phase","ts":"2026-06-04T18:00:46Z","phase":"test","seconds":0.326,"exit":1,"cmd":"C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe agent_space/3p-admm-win/validate_win.py"}
 {"kind":"phase","ts":"2026-06-04T18:01:06Z","phase":"test","seconds":1.029,"exit":1,"cmd":"C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe agent_space/3p-admm-win/validate_win.py"}
 {"kind":"phase","ts":"2026-06-04T18:02:27Z","phase":"test","seconds":12.169,"exit":0,"cmd":"C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe agent_space/3p-admm-win/validate_win.py"}
+{"kind": "tokens", "ts": "2026-06-04T18:05:34Z", "tokens": 74493, "source": "validator"}
