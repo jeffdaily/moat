@@ -325,3 +325,46 @@ Action needed before upstream PR: reword the commit title (drop "Strategy A") an
 ### Status
 
 No genuine test failures. Completed status stands. Jargon is commit-message-only and must be fixed before the upstream PR is opened.
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
+
+validated_sha: d2ca74b (zero-churn followers; fork untouched). Host = dual-GPU Windows
+workstation (memory windows-gfx1101-gfx1201-host). ROCm 7.14 / TheRock pip SDK.
+
+### Multi-arch fat build (one binary, both GPUs)
+cudaKDTree's CMake reads CMAKE_HIP_ARCHITECTURES, so a single configure with a LIST emits
+both archs; the GPU is chosen at run time by HIP_VISIBLE_DEVICES (0=gfx1101 RDNA3,
+1=gfx1201 RDNA4). Script: agent_space/cudakdtree-win/build.sh.
+```
+ROCM=.../_rocm_sdk_devel
+cmake -S . -B build-win -G Ninja \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx1101;gfx1201" -DCMAKE_PREFIX_PATH=$ROCM \
+  -DBUILD_ALL_TESTS=ON -DCUKD_ENABLE_STATS=ON \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win -j64    # 167/167, 83 test exes
+```
+Windows-only INVOCATION deltas (NOT source changes, same as gfx1151): all-clang trio;
+CMAKE_HIP_STANDARD=17 + CMAKE_CXX_STANDARD=17 (Windows HIP TUs default below C++17, which
+rocPRIM rejects); CMAKE_POLICY_VERSION_MINIMUM=3.5; NOMINMAX. Runtime: the three
+_rocm_sdk_{core,devel,libraries}/bin dirs on PATH so the exes load TheRock's amdhip64_7.dll
+(not System32's Adrenalin one). Test exes parse numPoints positionally.
+
+### Validation (real GPU; -v runs a CPU brute-force oracle, rel err <= 1e-6)
+| check | gfx1101 (dev0) | gfx1201 (dev1) |
+|-------|----------------|----------------|
+| verify sweep (`<exe> 50000 -v -nq 3000`, all 48 regular float{2,3,4}x{fcp,knn}x{stackBased,stackFree,cct}[-xd]) | 48/48 PASS | 48/48 PASS |
+| CTest | 14/15 | 14/15 |
+
+The single CTest failure on BOTH archs is #10 cukdTestBuildersSameResult -- the documented
+pre-existing HOST-vs-device widest-split-dim tie-break (the 3 DEVICE builders agree; only
+the HOST-builder hash differs; identical on CUDA and on gfx90a/gfx1100/gfx1151). Not a
+regression, not arch-specific. Spatial-tree `-v` excluded (documented harness segfault:
+host checkTree derefs device-pool memory; identical on CUDA). One fat binary passed on both
+GPUs, proving both code objects are embedded.
+
+State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha d2ca74b,
+fork unchanged). All five platforms terminal -> PR-ready.
