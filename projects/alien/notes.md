@@ -293,3 +293,31 @@ EngineInterfaceTests: host-only (roc-obj-ls: no kernel section); exported symbol
 ```
 
 Device ISA for gfx1100 is byte-identical across all GPU-bearing executables. The SPH-reduce ObjectProcessor kernels (the wave32-sensitive path using reduce.h) are unchanged. Carry-forward applied: validated_sha advanced to 47ab2c9, no GPU re-run needed. linux-gfx1100 -> completed.
+
+## Validation 2026-06-04 (linux-gfx90a revalidate carry-forward)
+
+Revalidate triggered because HEAD advanced dac18fc -> 47ab2c9 (windows-gfx1151 delta-port). Same 4-file delta as the gfx1100 carry-forward above.
+
+Delta analysis for gfx90a (ROCm 7.2.1):
+- `CMakeLists.txt`: all new Linux-visible code is behavior-preserving. The `-ffast-math` flag is still applied on Linux (the non-MSVC `else` branch). The new `add_compile_definitions($<$<COMPILE_LANGUAGE:HIP>:NOMINMAX>)` is inside `if(USE_HIP)` but not WIN32-gated; on Linux it defines a no-op preprocessor guard (no Windows.h min/max macros present). CXX force-include path unchanged on Linux (`NOT MSVC` condition is true). WIN32-gated blocks (`CMAKE_HIP_COMPILE_OBJECT` override, `hip_link_win.py` link wrapper, `alien_link_hip_rdc` Windows libs) are never evaluated on Linux.
+- `cmake/hip_link_win.py`: new file, referenced only from WIN32 blocks. Not compiled on Linux.
+- `source/EngineInterface/SimulationParametersSpecification.h`: host-side C++ header, no device code.
+- `source/hip_compat/cooperative_groups/reduce.h`: `__has_include` guard for ROCm 7.13+. On this host (ROCm 7.2.1), `/opt/rocm/include/hip/amd_detail/amd_hip_cooperative_groups_reduce.h` does NOT exist (confirmed), so `__has_include` is false and the `#else` branch -- the unchanged 7.2.x identity-butterfly shim -- compiles.
+
+Binary-equivalence check: built HEAD (47ab2c9) at gfx90a in `/var/lib/jenkins/moat/build-alien-head-gfx90a` (full configure + build, 238 targets) and compared against the validated_sha (dac18fc) build at `projects/alien/src/build` (same gfx90a, ROCm 7.2.1). Used `python3 utils/codeobj_diff.py` on each GPU-bearing executable:
+
+```
+python3 utils/codeobj_diff.py .../src/build/EngineTests .../build-alien-head-gfx90a/EngineTests
+  -> verdict=identical  (exported symbols + device ISA identical, 39 exports)
+
+python3 utils/codeobj_diff.py .../src/build/cli .../build-alien-head-gfx90a/cli
+  -> verdict=identical  (39 exports)
+
+python3 utils/codeobj_diff.py .../src/build/alien .../build-alien-head-gfx90a/alien
+  -> verdict=identical  (57 exports)
+
+python3 utils/codeobj_diff.py .../src/build/PersisterTests .../build-alien-head-gfx90a/PersisterTests
+  -> verdict=identical  (35 exports)
+```
+
+Device ISA for gfx90a is byte-identical across all GPU-bearing executables at 47ab2c9 vs dac18fc. The SPH-reduce ObjectProcessor kernels (the partial-tile active-lane hardened path) are unchanged. Carry-forward applied: validated_sha advanced to 47ab2c9, no GPU re-run needed. linux-gfx90a -> completed.

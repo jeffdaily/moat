@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-04T09:06:58Z",
+  "updated_at": "2026-06-04T17:59:25Z",
   "head_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dac18fc0a93310a11ef6ad31e01651431a4af24c",
+      "validated_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
       "started_at": "2026-05-31T00:42:20Z",
-      "completed_at": "2026-05-31T03:15:43Z",
-      "updated_at": "2026-06-03T20:56:09Z",
+      "completed_at": "2026-06-04T17:59:25Z",
+      "updated_at": "2026-06-04T17:59:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+        "method": "binary-equiv",
+        "detail": "windows-gfx1151 build plumbing + __has_include ROCm 7.13+ guard in reduce.h (not taken on 7.2.1) + host-side sim-parameter field; gfx90a device ISA byte-identical confirmed",
+        "at": "2026-06-04T17:59:25Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
