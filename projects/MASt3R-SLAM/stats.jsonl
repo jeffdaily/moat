@@ -1,0 +1,8 @@
+{"kind": "tokens", "ts": "2026-06-04T04:03:25Z", "tokens": 76609}
+{"kind":"phase","ts":"2026-06-04T04:08:04Z","phase":"compile","seconds":0.040,"exit":2,"cmd":"env PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-04T04:08:37Z","phase":"compile","seconds":24.616,"exit":1,"cmd":"bash -c cd projects/MASt3R-SLAM/src && PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-04T04:10:36Z","phase":"compile","seconds":52.131,"exit":0,"cmd":"bash -c cd projects/MASt3R-SLAM/src && PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-04T04:11:28Z","phase":"compile","seconds":45.645,"exit":0,"cmd":"bash -c cd projects/MASt3R-SLAM/src/thirdparty/mast3r/dust3r/croco/models/curope && PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-04T04:14:16Z","phase":"test","seconds":5.013,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
+{"kind":"phase","ts":"2026-06-04T04:15:14Z","phase":"test","seconds":4.774,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
+{"kind":"phase","ts":"2026-06-04T04:16:08Z","phase":"test","seconds":4.715,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
