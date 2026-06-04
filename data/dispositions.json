@@ -671,6 +671,13 @@
     "note": "OptiX-centric robot localization; only the CUDA correspondence code is HIP-portable (AMD otherwise via Vulkan); take a closer look",
     "reason": "verify"
   },
+  "usyd-fsalab/fp6_llm": {
+    "decided": "2026-06-04T22:15:55Z",
+    "disposition": "skip",
+    "full_name": "usyd-fsalab/fp6_llm",
+    "note": "PTX assembly for Tensor Core MMA (mma.sync.m16n8k16, ldmatrix, cp.async) has no HIP equivalent. Requires AMD-native kernel rewrite with rocWMMA/CK/MFMA, not mechanical port.",
+    "reason": "cant-port"
+  },
   "vllm-project/vllm": {
     "decided": "2026-05-30T00:01:04Z",
     "disposition": "skip",
