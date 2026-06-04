@@ -126,8 +126,12 @@ so files transplant path-for-path. Per repo:
   -Werror blocked 6 test executables from compiling; fixed PROPERLY (8 files: RAFT_CUDA_TRY incl. one
   library header adj_to_csr.cuh, + a real ball_cover const-predicate fix; no -Wno-error). These build
   fixes are arch-independent ROCm-7.2.x forward-compat, staged locally (patch saved at
-  agent_space/scratch-verify/hipraft-rocm721-build-fixes.patch), NOT yet committed/pushed. Recommendation
-  pending jeff: two PRs -- (1) gfx1100 wave32 CMake gate; (2) ROCm-7.2.x build fixes -- vs one bundle.
+  agent_space/scratch-verify/hipraft-rocm721-build-fixes.patch). Decision (jeff): two-PR split + offer
+  the MeanTestD tolerance loosening. Both branches now pushed to jeffdaily/hipRaft: PR1 `gfx1100-wave32`
+  = 56ab677 (wave32 CMake gate) + 214e536 (MeanTestD tol 1e-8 -> 5e-8, ~6 sigma > the 8.6e-9 sampling SE;
+  STATS then 918/918); PR2 `rocm-7.2-build-fixes` = 2cfff65 (the 8 RAFT_CUDA_TRY/ball_cover fixes, branched
+  off the base). Drafts ready; opening the two ROCm-DS PRs is gated on jeff's explicit go + AMD-internal
+  coordination -- NOT yet opened.
   Finding: the plan's premise (missing host-side runtime warp-size query) was stale -- hipRaft
   already has `raft::host_warp_size` wired into ~12 launch sites (more thorough than the raft
   fork) and the device `raft::WarpSize` resolves per-arch, so there was NO wave32 source to
