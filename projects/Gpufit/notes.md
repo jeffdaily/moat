@@ -591,3 +591,37 @@ windows-gfx1151 -> validation-failed. Bouncing to porter for diagnosis.
 The two Windows build fixes (commit 0a1b3d6) are already pushed to the fork and
 MUST be preserved in any follow-up delta-port. The GPU failure to investigate is
 specifically the LM solver diverging for GAUSS_2D_ELLIPTIC on gfx1151.
+
+## Revalidation 2026-06-04 (linux-gfx1100, binary-equivalence carry-forward)
+
+linux-gfx1100 was in `revalidate` state (validated_sha=5ab0c059, head_sha=0a1b3d67)
+after the windows-gfx1151 delta-port advanced the fork HEAD.
+
+The delta (5ab0c059..0a1b3d67) is 3 CMake files, all Windows/MSVC-targeted:
+
+1. `CMakeLists.txt` (+14): a new `if( USE_HIP AND WIN32 )` block overriding
+   `CMAKE_HIP_COMPILE_OBJECT` to use GNU-style `-o <OBJECT>` instead of MSVC `/Fo`.
+   Completely inert on Linux (WIN32-guarded).
+2. `Gpufit/CMakeLists.txt` (+2-1) and `examples/c++/CMakeLists.txt` (+2-1):
+   the `-include cuda_to_hip.h` compile option is wrapped in a generator expression
+   `$<IF:$<STREQUAL:${CMAKE_HIP_COMPILER_FRONTEND_VARIANT},MSVC>,/FI...,-include...>`.
+   On Linux the HIP compiler frontend variant is GNU (not MSVC), so this expression
+   resolves to the original `-include...` form -- identical flags.
+
+No source (.cu/.cpp/.h) changed. Confirmed binary equivalence by building at
+both SHAs for gfx1100 (cmake -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100)
+and running codeobj_diff.py on `libGpufit.so`:
+
+```
+python3 utils/codeobj_diff.py \
+  projects/Gpufit/src/build-hip/Gpufit/libGpufit.so \
+  projects/Gpufit/src-head/build-hip-head/Gpufit/libGpufit.so
+verdict=identical
+  libGpufit.so vs libGpufit.so: identical (exported symbols + device ISA identical (79 exports))
+```
+
+79 exported symbols and all 3 gfx1100 device code objects (sizes 132784, 9208, 6680 bytes)
+are byte-identical. `libCpufit.so` (CPU-only, no GPU code) is also byte-identical by SHA256.
+No GPU re-run needed.
+
+Result: linux-gfx1100 `revalidate` -> `completed`, validated_sha = 0a1b3d67df3f264d6f3a4602c250155f5f350b54.
