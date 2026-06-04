@@ -7,7 +7,7 @@
   "priority": 6.263,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-05-31T03:20:00Z",
+  "updated_at": "2026-06-04T06:58:13Z",
   "head_sha": "e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e",
   "platforms": {
     "linux-gfx90a": {
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "delta-ported",
+      "blocked": true,
+      "blocked_reason": "Recurring stall on windows-gfx1151 delta-port: TheRock/Windows clang-offload-bundler fails on the project's -fgpu-rdc link path (user-mapped-section / alien-blocker class, see windows-fgpu-rdc-bundler-bug memory); no viable Windows build after repeated attempts. Linux gfx90a+gfx1100 completed. Blocked pending a TheRock bundler fix or an --offload-new-driver path that LichtFeld's CMake accepts.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-04T05:17:03Z",
       "completed_at": null,
-      "updated_at": "2026-05-31T03:05:00Z",
+      "updated_at": "2026-06-04T06:58:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
