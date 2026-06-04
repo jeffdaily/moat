@@ -572,3 +572,96 @@ from the fixed-64-slot layout is that sizeof(ANSWarpState) and all header offset
 compile-time-constant and arch-independent in a multi-arch build -- not write-interop.
 
 Transitioning linux-gfx1100 to completed (validated_sha=b6e0d3f).
+
+## Validation 2026-06-04 (windows-gfx1151)
+
+Platform: windows-gfx1151, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11,
+TheRock ROCm (pip wheel), clang++ 23.0 gcc-driver, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA 64c792d3da5eaa048b3cf5aac6f6632cbc5c22f2.
+State: port-ready (follower) -> completed.
+
+### Windows delta (one CMake line)
+
+The Linux build uses `clang++ -shared` with an ELF linker, which exports all symbols by
+default. The Windows build uses lld-link (MSVC ABI), which requires `__declspec(dllexport)`
+or `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` -- without it the DLL import libs are empty and
+`gpu_ans.dll` / `gpu_float_compress.dll` fail to link against `dietgpu_utils.dll`.
+
+Fix: added `if(WIN32) set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON) endif()` to the USE_HIP
+block in CMakeLists.txt. This is inside the existing `if(USE_HIP)` and the `if(WIN32)`
+guard keeps it out of the Linux path entirely. The Linux platforms' compiled code objects
+are identical (the CMake change does not touch any compiled source or compiler flags on
+Linux); they are in `revalidate` for the binary-equiv check, which is expected to
+carry-forward.
+
+Committed as a new commit on top of b6e0d3f (64c792d), not amending the validated b6e0d3f.
+
+### Build
+
+```
+ROCM_ROOT=D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel
+cd D:/Develop/moat/projects/dietgpu/src
+git submodule update --init --recursive
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_HIP_COMPILER=$ROCM_ROOT/lib/llvm/bin/clang++.exe \
+  -DCMAKE_C_COMPILER=$ROCM_ROOT/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM_ROOT/lib/llvm/bin/clang++.exe \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j6
+# Copy TheRock runtime DLLs next to test executables (System32 amdhip64_7.dll is
+# the broken Adrenalin driver; TheRock's must be in the same dir as the .exe):
+cp $ROCM_ROOT/bin/amdhip64_7.dll build-hip/bin/
+cp $ROCM_ROOT/bin/amd_comgr0713.dll build-hip/bin/
+cp $ROCM_ROOT/bin/rocm_kpack.dll build-hip/bin/
+```
+
+Build: PASS, 16/16 targets, 0 errors, 1 pre-existing upstream warning (FloatTest.cu:306
+braced-scalar-init). Build time: ~11s (timeit).
+
+### gfx1151 code-object evidence
+
+`strings build-hip/bin/gpu_ans.dll | grep hipv4` shows:
+  `hipv4-amdgcn-amd-amdhsa--gfx1151` -- gfx1151 code object present.
+(Windows COFF: llvm-objdump --offloading does not support COFF; use strings on .hipFatB
+section confirmed by llvm-readobj showing `.hipFatB` and `.hip_fat` sections.)
+
+### GPU tests (run directly from build-hip/bin/)
+
+```
+export HIP_VISIBLE_DEVICES=0
+export HIP_DEVICE_LIB_PATH=$ROCM_ROOT/lib/llvm/amdgcn/bitcode
+cd build-hip
+./bin/ans_test.exe
+./bin/ans_statistics_test.exe
+./bin/batch_prefix_sum_test.exe
+./bin/float_test.exe
+```
+
+Results:
+- ans_test.exe: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test.exe: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test.exe: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test.exe: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Total: 13/13 PASS. Test time: ~11s (timeit, includes LargeBatch 6s).
+
+### Tally vs gfx90a and gfx1100 @ b6e0d3f
+
+| Test binary           | gfx90a | gfx1100 | gfx1151 |
+|-----------------------|--------|---------|---------|
+| ans_test              | 4/4    | 4/4     | 4/4     |
+| ans_statistics_test   | 4/4    | 4/4     | 4/4     |
+| batch_prefix_sum_test | 2/2    | 2/2     | 2/2     |
+| float_test            | 3/3    | 3/3     | 3/3     |
+| **Total**             | 13/13  | 13/13   | 13/13   |
+
+### Wave32 verdict (gfx1151)
+
+PASS. Same semantics as gfx1100 (both wave32, both RDNA3-family): device kWarpSize=32
+(GFX9->64 else 32 guard in DeviceDefs.cuh, device-side only), fixed-64-slot archive
+header (kMaxWarpSize=64), host grid divisor via runtime warpSize query. All round-trip
+tests assert EXPECT_EQ(orig, dec) and pass. No HIP faults, clean exit.
+
+Transitioning windows-gfx1151 to completed (validated_sha=64c792d).
