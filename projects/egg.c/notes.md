@@ -190,3 +190,63 @@ Results:
 - Non-GPU regression: d-eggs/test_ternary.cpp builds + passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
 - Fork state: clean at 0472ed5 (no source changes needed; gfx1100 validate-first follower requires no code delta).
 - GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
+
+## Validation 2026-06-04 (validator, windows-gfx1151, fork 0b389ce)
+Verdict: PASS. Real GPU: AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11, TheRock ROCm 7.13.
+
+Delta applied (windows-gfx1151 only): `full_cuda_train_egg.cu` needed two Windows-only guards:
+1. `#include <unistd.h>` guarded `#ifndef _WIN32`; replaced `write(STDOUT_FILENO,...)` in handle_sigint with `fputs(...)` under `_WIN32`.
+2. `clock_gettime(CLOCK_MONOTONIC, ...)` shim via `QueryPerformanceCounter` under `_WIN32` (with `WIN32_LEAN_AND_MEAN` + `NOMINMAX` to suppress min/max macro conflicts with rocPRIM templates).
+Also needed `-std=c++17` on the hipcc command (rocPRIM requires C++17; not needed on Linux where hipcc defaults differ).
+All GPU logic and HIP port headers are unchanged from the reviewed 0472ed5 commit.
+
+Commands run:
+
+```
+# 1. Build for gfx1151
+ROCM_SDK=D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel
+HIP_DEVICE_LIB_PATH="${ROCM_SDK}/lib/llvm/amdgcn/bitcode"
+export HIP_DEVICE_LIB_PATH
+
+utils/timeit.sh egg.c compile -- \
+  "${ROCM_SDK}/bin/hipcc" -O3 --offload-arch=gfx1151 -x hip -std=c++17 \
+  projects/egg.c/src/full_cuda_train_egg.cu \
+  -o agent_space/egg_hip_gfx1151.exe
+
+# Verify code object
+"${ROCM_SDK}/lib/llvm/bin/llvm-objdump.exe" --offloading agent_space/egg_hip_gfx1151.exe \
+  | grep -io 'gfx[0-9a-f]*' | sort -u
+# -> gfx1151
+
+# 2. Deploy TheRock DLLs beside the exe, create input.txt
+cp "${ROCM_SDK}/bin/amdhip64_7.dll" agent_space/
+cp "${ROCM_SDK}/bin/amd_comgr0713.dll" agent_space/
+cp "${ROCM_SDK}/bin/rocm_kpack.dll" agent_space/
+# input.txt: 18000-byte repeating text corpus ("The quick brown fox jumps over the lazy dog. " * 400)
+
+# 3. Two determinism runs (EGG_FIXED_SEED=12345, ~8.5 min each on 20-CU APU)
+# Run via Python subprocess with agent_space;sdk_bin on PATH
+# Run 1 -> agent_space/egg_10min.log  (16 steps, ~510s)
+# Run 2 -> agent_space/egg_run2.log   (16 steps, ~600s)
+
+# 4. Non-GPU regression
+utils/timeit.sh egg.c test -- \
+  g++ -O3 -Iprojects/egg.c/src/d-eggs/include \
+  projects/egg.c/src/d-eggs/test_ternary.cpp \
+  -o agent_space/test_ternary_win.exe
+agent_space/test_ternary_win.exe
+```
+
+Results:
+- Build: clean, 11 pre-existing -Wunused-value warnings (same as Linux), 0 errors.
+- Code-object arch: llvm-objdump confirms gfx1151-only code object in the binary.
+- GPU device: AMD Radeon 8060S (gfx1151), warpSize=32 (confirmed by hipInfo.exe).
+- Step time: ~26-32s/step on gfx1151 APU (20 CUs, unified memory); first output appears ~510s (JIT ~470ms + 16 kernel steps). Steps/s ~0.03-0.04.
+- Loss decreases monotonically across 16 steps: 8.3489 -> 7.6246 -> 6.9552 -> 6.3868 -> 5.8830 -> 5.4134 -> 5.0936 -> 4.7565 -> 4.4101 -> 4.1356 -> 3.8607 -> 3.5874 -> 3.5018 -> 3.4543 -> 3.3883 -> 3.3417.
+- Sample text-like by step 1+: prompt "The quick brown fox jumps over" reproduced; completion increasingly word-like.
+- Determinism: two EGG_FIXED_SEED=12345 runs are BIT-IDENTICAL on Loss, Up+, Up- across all 16 steps. Decisive wave32 fingerprint: a wrong 32-lane partition would produce divergent Up+/Up- counts.
+- Cross-arch trajectory: gfx1151 step 0 Loss=8.3489 is bit-for-bit identical to the gfx90a validation (8.3489) and consistent with gfx1100 (8.3250). EGG_WARP_SIZE=32 logical-warp is correct on wave32 gfx1151.
+- Non-GPU regression: d-eggs/test_ternary.cpp builds (g++ -O3) and passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
+- Fork state: 0b389ce (Windows compat delta on top of 0472ed5).
+- Note: linux-gfx90a and linux-gfx1100 need to revalidate the new 0b389ce head (delta is `#ifdef _WIN32` only; their builds are unaffected, so binary-equivalence carry-forward is expected).
+- GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
