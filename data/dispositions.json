@@ -461,6 +461,13 @@
     "note": "NVIDIA-affiliated org; nowhere to upstream",
     "reason": "not-a-target"
   },
+  "nvidia/cuequivariance": {
+    "decided": "2026-06-04T23:09:44Z",
+    "disposition": "skip",
+    "full_name": "NVIDIA/cuEquivariance",
+    "note": "Closed-source binary kernels: cuequivariance-ops-* packages ship CUDA kernels as prebuilt binary wheels (no source on PyPI or GitHub). The open Apache-2.0 repo contains only Python frontends. A ROCm port would require greenfield kernel reimplementation, not CUDA->HIP translation.",
+    "reason": "cant-port"
+  },
   "nvidia/cutlass": {
     "decided": "2026-05-29T22:55:39Z",
     "disposition": "skip",
