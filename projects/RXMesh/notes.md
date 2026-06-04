@@ -765,3 +765,44 @@ PASS. The binary-equivalence carry-forward state at e80e1a0 is confirmed by a
 real GPU test run. All 25 RXMesh_test tests pass on a real gfx1100 W7800
 (wave32, ROCm 7.2.1). No topology corruption, no hang, no NaN, clean exit.
 linux-gfx1100 `completed` at e80e1a07663e197105ced9fff816e5a1f412043f is earned.
+
+## Validation 2026-06-04 (linux-gfx90a) -- binary-equivalence carry-forward at e80e1a0
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a / CDNA2, wave64), ROCm 7.2.1.
+Revalidate from validated_sha 6b30d8e06bcae62f7b8726fbf45fb5ed50477090 to head e80e1a07663e197105ced9fff816e5a1f412043f.
+Delta: 3 files (same WIN32/host-only delta validated on gfx1100 -- see section above).
+
+### Binary-equivalence analysis (gfx90a)
+
+Built head sha e80e1a0 for gfx90a into `projects/RXMesh/build_head_e80e1a0/` using the same cmake flags (USE_HIP=ON, CMAKE_HIP_ARCHITECTURES=gfx90a, Release, -DCMAKE_POLICY_VERSION_MINIMUM=3.5). Build: 0 errors.
+
+roc-obj-ls on both binaries: exactly one `hipv4-amdgcn-amd-amdhsa--gfx90a` code object in each.
+
+codeobj_diff.py reported `differ (device ISA differs)`. Manual section-by-section analysis:
+
+1. `.text`: 5070084 bytes -- SAME SIZE in both. ONE byte difference:
+   `0xfff92af4` -> `0xfff92ab4` at VMA 0xe74290, inside the kernel prologue of
+   `higher_query<256, Op::VF>`. This is the KD self-pointer constant
+   (PC-relative offset from instruction to the kernel descriptor in .rodata).
+   Difference = 0x40, which exactly matches the 0x40-byte .rodata VMA shift
+   (0xdf8b80 old -> 0xdf8b40 new). No algorithm, register, branch, or control-flow
+   instruction changed.
+
+2. `.rodata`: 463360 bytes -- SAME SIZE in both. 9053 byte diffs, ALL confined to
+   bytes 16-18 of each 64-byte kernel descriptor (the KD self-pointer field).
+   RSRC1, RSRC2, RSRC3 fields (VGPR/SGPR counts, shared memory, occupancy) have
+   ZERO diffs outside bytes 16-18 -- confirmed exhaustively.
+
+3. `.note` / `.dynstr` / `.strtab`: differ only in `.intern.<hash>` name strings
+   (clang hashes over full TU content including host-only cuda_query.h additions).
+
+Root cause (identical to gfx1100): cuda_query.h gained 13 lines of host-only code
+inside `#if !defined(__HIP_PLATFORM_AMD__)`. clang's `.intern.<hash>` recomputes
+over the full TU, so the hash changes, shrinking `.note` by 4 bytes and shifting
+`.rodata` VMA by 0x40, which updates the single KD self-pointer constant. No device
+kernel logic changed.
+
+Conclusion: `differ` is a false positive (same metadata-only shift as gfx1100).
+All device kernel register configurations, shared memory allocations, wave64 ballot/
+sub-warp fixes, and ShmemMutex critical_section() paths are byte-for-byte identical.
+Carry-forward applied: validated_sha -> e80e1a0. No GPU re-run needed.
