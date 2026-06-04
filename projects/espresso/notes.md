@@ -254,3 +254,71 @@ The 88 failures are ALL pre-existing environmental issues unrelated to the HIP p
 - test_install: cmake --install never run (reference file diff fails)
 - ~25 C++ unit_test binaries: GTest not installed on host -> CMake disabled
   "Build unit tests (requires GTest)" -> mpiexec cannot launch missing executables
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
+
+State: port-ready -> completed. GPU: gfx1100 (AMD Radeon Pro W7800 48GB, HIP_VISIBLE_DEVICES=3).
+ROCm 7.2.1. warpSize=32 confirmed via rocminfo. Wavefront Size: 32(0x20).
+Validated sha: 6d36cb6aaf5425c1710b756d79f67ec7fcb9a0ca.
+
+### Build (gfx1100-only, ROCm 7.2.1)
+
+```
+export ROCM_PATH=/opt/rocm
+cmake -S . -B build-hip -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DESPRESSO_BUILD_WITH_CUDA=ON -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES="gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DESPRESSO_BUILD_WITH_WALBERLA=OFF -DESPRESSO_BUILD_WITH_HDF5=OFF \
+  -DESPRESSO_BUILD_WITH_SCAFACOS=OFF -DESPRESSO_BUILD_WITH_STOKESIAN_DYNAMICS=OFF \
+  -DESPRESSO_BUILD_WITH_GSL=OFF -DESPRESSO_BUILD_WITH_NLOPT=OFF \
+  -DESPRESSO_BUILD_WITH_CALIPER=OFF -DESPRESSO_BUILD_WITH_FFTW=ON \
+  -DESPRESSO_BUILD_WITH_PYTHON=ON -DESPRESSO_BUILD_TESTS=ON
+cmake --build build-hip -j16
+cmake --build build-hip --target python_test_data
+cmake --build build-hip --target cuda_test
+```
+
+Build: PASS (234/234). gfx1100 device code objects confirmed in espresso_core.so:
+`llvm-objdump --offloading build-hip/src/core/espresso_core.so | grep gfx`
+-> 4 bundles: hipv4-amdgcn-amd-amdhsa--gfx1100 (all 7 core .cu kernels present).
+
+### Host env note
+
+This gfx1100 Jenkins host has a conda OpenSSL 3.6.2 mismatch against the system
+libcrypto.so.3. The conda libssl.so.3 (OpenSSL 3.6.2) requires OPENSSL_3.3.0 from
+libcrypto, but the system libcrypto.so.3 only has earlier symbols. Setting
+`LD_LIBRARY_PATH=/opt/conda/envs/py_3.12/lib:$LD_LIBRARY_PATH` before ctest ensures
+the conda libcrypto.so.3 is resolved first. This is a host environment issue unrelated
+to the port; the gfx90a host resolves consistently without this workaround.
+
+### GPU tests: 11/11 PASS
+
+```
+export LD_LIBRARY_PATH=/opt/conda/envs/py_3.12/lib:${LD_LIBRARY_PATH:-}
+HIP_VISIBLE_DEVICES=3 ctest -L gpu --timeout 600 -j4 --output-on-failure \
+  -R 'coulomb_cloud_wall$|coulomb_cloud_wall_duplicated|p3m_madelung|p3m_electrostatic_pressure|dawaanr-and-dds-gpu|dipolar_direct_summation|dipolar_interface|coulomb_interface|dipole_field_tracking|gpu_availability'
+HIP_VISIBLE_DEVICES=3 ctest -R cuda_test --timeout 120 --output-on-failure
+```
+
+Core CPU-vs-GPU / GPU-vs-analytic consistency gates (all PASS):
+- coulomb_cloud_wall: PASS
+- coulomb_cloud_wall_duplicated: PASS
+- p3m_madelung (P3M GPU vs analytic Madelung constant; hipFFT R2C/C2R normalization gated): PASS
+- p3m_electrostatic_pressure: PASS
+- dawaanr-and-dds-gpu (DipolarDirectSum GPU vs CPU forces+torques): PASS
+- dipolar_direct_summation: PASS
+- dipolar_interface: PASS
+- coulomb_interface: PASS
+- dipole_field_tracking: PASS
+- gpu_availability: PASS
+- cuda_test (C++ pinned-host allocator unit test): PASS
+
+### Non-GPU baseline spot-check: PASS
+
+```
+HIP_VISIBLE_DEVICES=3 ctest -LE gpu -R "p3m_fft|mmm1d|coulomb_mixed" --timeout 300 -j4
+```
+
+coulomb_mixed_periodicity, mmm1d, p3m_fft: all PASS. No regressions vs gfx90a baseline.
