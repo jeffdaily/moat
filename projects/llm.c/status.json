@@ -7,17 +7,17 @@
   "priority": 6.667,
   "ext_type": "makefile",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-01T20:03:43Z",
-  "head_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
+  "updated_at": "2026-06-04T06:19:18Z",
+  "head_sha": "800b4535da52632935308b630e52d01736c558de",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
+      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
       "started_at": "2026-05-31T00:24:03Z",
-      "completed_at": "2026-06-01T19:34:10Z",
-      "updated_at": "2026-06-01T19:34:10Z",
+      "completed_at": "2026-06-04T06:19:18Z",
+      "updated_at": "2026-06-04T06:19:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "800b4535da52632935308b630e52d01736c558de",
+        "method": "source-class",
+        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
+        "at": "2026-06-04T06:19:18Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
+      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
       "started_at": "2026-05-31T01:25:00Z",
-      "completed_at": "2026-06-01T20:03:43Z",
-      "updated_at": "2026-06-01T20:03:43Z",
+      "completed_at": "2026-06-04T06:19:18Z",
+      "updated_at": "2026-06-04T06:19:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +60,22 @@
         "first_session_at": "2026-05-31T01:25:00Z",
         "last_session_at": "2026-05-31T02:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "800b4535da52632935308b630e52d01736c558de",
+        "method": "source-class",
+        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
+        "at": "2026-06-04T06:19:18Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "25932ddfb7d1cdf5cb7dcb8a2c9ec8ba19fbe300",
+      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
       "started_at": null,
-      "completed_at": "2026-05-31T17:01:41Z",
-      "updated_at": "2026-05-31T17:01:41Z",
+      "completed_at": "2026-06-04T06:19:18Z",
+      "updated_at": "2026-06-04T06:19:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,7 +89,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "800b4535da52632935308b630e52d01736c558de",
+        "method": "source-class",
+        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
+        "at": "2026-06-04T06:19:18Z"
+      }
     }
   },
   "depends_on": []
