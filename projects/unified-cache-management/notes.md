@@ -138,3 +138,60 @@ plain store would not carry the per-store visibility the volatile PTX implied; w
 a one-line comment but not blocking. The new test_hamming_rocm_ref.py is a genuine
 independent CPU popcount reference (exact integer ref, fp16-tolerance compare,
 inf-mask check, two-run determinism) -- a real correctness gate, not a smoketest.
+
+## Validation 2026-06-04 (linux-gfx90a, ROCm 7.2.1, gfx90a / MI250X)
+
+GPU: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1 / HIP 7.2.53211.
+Fork: jeffdaily/unified-cache-management moat-port @ 7a8eb04b96c8045ff5ea1164c42c30fa81399355.
+
+Build commands:
+```
+cmake -S projects/unified-cache-management/src -B projects/unified-cache-management/build_rocm \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=ON -DBUILD_UNIT_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wno-error=unused-result"
+cmake --build projects/unified-cache-management/build_rocm -j16
+
+cmake -S projects/unified-cache-management/src -B projects/unified-cache-management/build_sparse \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=OFF -DBUILD_UCM_SPARSE=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DPython_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python3 \
+  -DCMAKE_CXX_FLAGS="-Wno-error=unused-result"
+cmake --build projects/unified-cache-management/build_sparse -j16 --target hamming
+```
+
+gfx90a code objects confirmed:
+- ucm/shared/trans/rocm/CMakeFiles/kernel.dir/__/cuda/cuda_sm_kernel.cu.o: hipv4-amdgcn-amd-amdhsa--gfx90a
+- ucm/store/nfsstore/device/rocm/CMakeFiles/storedevice.dir/__/cuda/cuda_device.cu.o: hipv4-amdgcn-amd-amdhsa--gfx90a
+- hamming.cpython-312-x86_64-linux-gnu.so: hipv4-amdgcn-amd-amdhsa--gfx90a
+
+C++ gtest (ctest -j1, HIP_VISIBLE_DEVICES=0): 79/80 PASS.
+
+Copy-kernel correctness gates (all PASS):
+- UCTransUnitTest.CopyDataWithCE: PASS (378 ms)
+- UCTransUnitTest.CopyDataWithSM: PASS (343 ms)
+- UCTransUnitTest.CopyDataBatchWithSM: PASS (334 ms)
+- UCPosixTransManagerTest.TransBlock: PASS
+- UCPosixTransManagerTest.TransBlockLayerWise: PASS
+- UCPosixTransQueueTest.TransBlock: PASS
+- UCPosixTransQueueTest.TransBlockLayerWise: PASS
+- SharedCondition/UCCacheTransBufferTest.* (12 tests): all PASS
+
+One failure (pre-existing, NOT a regression): UCMetricsUT.ConcurrentUpdateAndCollect.
+This is a pure CPU multi-threaded counter test in untouched ucm/shared/metrics
+(expectedUpdates=16000, totalCounter=15995 -- host-side atomic race in UpdateStats).
+No GPU, HIP, or ROCm code path involved. Confirmed by inspecting metrics_test.cc:
+it spawns 8 threads calling UpdateStats() concurrently with GetAllStatsAndClear();
+the counter is not losslessly atomic under concurrent clear. Pre-existing in upstream.
+
+Hamming kernel (test_hamming_rocm_ref.py, HIP_VISIBLE_DEVICES=0):
+```
+HAMMING_DIR=build_sparse/ucm/sparse/gsa_on_device/csrc/rocm/ham_dist \
+  python3 ucm/sparse/test/gsa/test_hamming_rocm_ref.py
+```
+- mla: PASS (max_abs_err=42.0, max_rel_err=1.25e-03, within fp16 tolerance)
+- gqa: PASS (max_abs_err=0.0, max_rel_err=0.00e+00, exact)
+- determinism: PASS (two-run bit-identical)
+ALL HAMMING TESTS PASSED
+
+Result: linux-gfx90a COMPLETED at 7a8eb04b96c8045ff5ea1164c42c30fa81399355.
