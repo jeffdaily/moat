@@ -240,3 +240,32 @@ IPO off for HIP, CUDA path byte-identical; commit message [ROCm] 55 chars, Claud
 Test Plan present, no noreply trailer, no MOAT jargon, ASCII-clean, no AMD-internal refs.
 The 1 CPU-tile InferenceCuda program_weights failure is a pre-existing stochastic
 convergence test (passes in isolation, CUDA variant 8/8), not a port regression.
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 native wave32)
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, wave32 native). ROCm 7.2.1. HIP_VISIBLE_DEVICES=1.
+Fork: jeffdaily/aihwkit moat-port @ 9b4f7be7406cc939109690eb9e05f9ba2dcd3a5c.
+
+Build: setup.py build_ext --inplace (scikit-build), USE_HIP=ON USE_CUDA=OFF
+RPU_CXX_STANDARD=20 CMAKE_HIP_ARCHITECTURES=gfx1100. Build time ~2 min.
+rpu_base.cpython-312-x86_64-linux-gnu.so carries gfx1100 code objects (confirmed via
+llvm-objdump --offloading: 28+ amdgcn-amd-amdhsa--gfx1100 bundles).
+
+Wave32 confirmation: gfx1100 is a native wave32 arch -- each physical wavefront is
+exactly one 32-lane logical warp, so the __ballot_sync shift-by-(__lane_id()&0x20) in
+cuda_to_hip.h is always a shift-by-0. The bit_line_maker packed format is word-identical
+to CUDA wave32 by construction, confirmed by test_specific_tiles.py passing below.
+
+Test results (all with PYTHONPATH=src HIP_VISIBLE_DEVICES=1):
+- tests/test_specific_tiles.py: **18/18 PASSED** (CRITICAL -- bit_line_maker +
+  pulsed-weight-update warp-size path on gfx1100 native wave32; 9 Cuda-parametrized cases).
+- tests/test_simulator_tiles.py + tests/test_bindings_tiles.py: **part of 1521 passed, 0 failed**.
+- tests/test_torch_tiles.py + tests/test_inference_tiles.py: **part of 1521 passed, 0 failed**.
+- tests/test_layers_linear.py + tests/test_layers_convolution.py: **part of 1521 passed, 0 failed**.
+
+Total across all suites: 1521 passed, 327 skipped, 0 failed (1848 collected).
+(Lead gfx90a: 1521 passed, 383 skipped -- skip count varies by arch as some tests query
+wave size or arch capabilities; pass count and zero failures match exactly.)
+
+Verdict: PASS. All suites pass on gfx1100 native wave32 with no regressions.
+Transitioning linux-gfx1100 to completed (validated_sha 9b4f7be).
