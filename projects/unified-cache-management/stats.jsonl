@@ -29,3 +29,8 @@
 {"kind":"phase","ts":"2026-06-04T01:30:22Z","phase":"test","seconds":26.501,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/unified-cache-management/src && \\\n  HAMMING_DIR=/var/lib/jenkins/moat/projects/unified-cache-management/build_sparse_gfx1100/ucm/sparse/gsa_on_device/csrc/rocm/ham_dist \\\n  HIP_VISIBLE_DEVICES=2 \\\n  /opt/conda/envs/py_3.12/bin/python3 ucm/sparse/test/gsa/test_hamming_rocm_ref.py 2>&1"}
 {"kind":"session","ts":"2026-06-04T01:30:28Z","epoch":1780536628.806697219,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-04T01:32:58Z", "tokens": 101300, "source": "validator"}
+{"kind":"phase","ts":"2026-06-04T15:02:09Z","phase":"compile","seconds":2.258,"exit":1,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
+{"kind":"phase","ts":"2026-06-04T15:04:54Z","phase":"compile","seconds":15.959,"exit":1,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
+{"kind":"phase","ts":"2026-06-04T15:07:16Z","phase":"compile","seconds":16.406,"exit":127,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
+{"kind":"phase","ts":"2026-06-04T15:10:48Z","phase":"compile","seconds":16.584,"exit":1,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
+{"kind":"phase","ts":"2026-06-04T15:13:25Z","phase":"test","seconds":20.679,"exit":8,"cmd":"D:/Develop/TheRock/.venv/Scripts/ctest.exe --test-dir /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j1 --timeout 120 --output-on-failure -V"}
