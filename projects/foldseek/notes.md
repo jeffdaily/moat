@@ -250,3 +250,43 @@ DPX-forced-off / __hmax2-emulation / wave-mask-widening / pad-32 /
 shared-lib-device-link decisions. No divergence flagged here; the only
 foldseek-specific wiring is the top-level/src CMake gating. Reviewer to re-check
 parity when the MMseqs2 fork lands.
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
+
+Build: cmake configure + cmake --build --target foldseek -j16 for gfx1100.
+libmarv.so confirmed to contain gfx1100 code objects
+(hipv4-amdgcn-amd-amdhsa--gfx1100, via llvm-objdump --offloading). Fork HEAD
+e7471b4 verified on branch moat-port.
+
+GPU arch: gfx1100 (AMD Radeon Pro W7800 48GB). warpSize=32 confirmed via
+hipDeviceProp_t. ROCm 7.2.1. GPU[3] used (GPU[0] had orphaned KFD contexts
+blocking queue creation; GPU[3] was responsive).
+
+Wave32 confirmation: getPaddedQueryLength pins the layout at sizeof(char4)*32
+(literal 32, not warpSize), so host-built layout matches device reads on wave32.
+WARP_FULL_MASK/WarpMaskT are 64-bit on HIP; HIP narrows the mask for wave32
+automatically. The PSSM/SW kernels reduce within cg::tiled_partition<N> tiles
+(N<=32), wave-agnostic. All confirmed wave32-safe.
+
+GPU vs CPU validation (bundled example/, 28 SCOP structures):
+```
+foldseek createdb example/ exDB
+foldseek search exDB exDB aln_cpu tmp_cpu --gpu 0 -e 10
+foldseek makepaddedseqdb exDB exDB_pad
+CUDA_VISIBLE_DEVICES=3 HIP_VISIBLE_DEVICES=3 foldseek search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10
+foldseek convertalis exDB exDB aln_cpu cpu.m8
+foldseek convertalis exDB exDB_pad aln_gpu gpu.m8
+```
+
+Results:
+- CPU hits: 834, GPU hits: 872
+- CPU-only pairs: 0 (all 834 CPU hits reproduced on GPU)
+- GPU-only pairs: 38 (borderline low-bitscore, expected ungapped-prefilter sensitivity difference)
+- Common pairs with identical fields: 834/834 (0 mismatches, byte-identical pident/alnlen/coords/evalue/bitscore)
+
+GPU search log confirmed `ungappedprefilter ... --gpu 1` (libmarv GPU prefilter on gfx1100) ran.
+All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
+
+Cross-arch check: gfx1100 results (834 CPU hits, 38 GPU-only) match gfx90a results exactly.
+
+State: linux-gfx1100 -> completed, validated_sha = e7471b4164e38cbac58b4f2c6c1b592e9bfac330.
