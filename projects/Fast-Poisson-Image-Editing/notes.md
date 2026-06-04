@@ -260,3 +260,43 @@ Proof (built both shas via git worktrees, identical cmake invocation, gfx1100):
 
 method=binary-equiv. gfx1100 completed @ 4c6411b is now backed by an own-arch artifact.
 No GPU re-run. PR #25 stands as-is. (Builds were throwaway worktrees under agent_space.)
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT .pyd) -- follower, NO source change
+
+validated_sha: 4c6411b (zero-churn followers). Host = dual-GPU Windows workstation
+(memory windows-gfx1101-gfx1201-host). ROCm 7.14 / TheRock pip SDK; venv Python 3.12.
+
+### Multi-arch fat build (one .pyd, both GPUs)
+CMake reads CMAKE_HIP_ARCHITECTURES; one configure with a LIST emits both archs into the
+core_cuda pybind module. Script: agent_space/fpie-win/build.sh.
+```
+ROCM=.../_rocm_sdk_devel ; PY=.../venv/Scripts/python.exe
+cmake -S . -B build-win -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx1101;gfx1201" \
+  -DCMAKE_C/CXX/HIP_COMPILER=$ROCM/lib/llvm/bin/clang(++).exe -DCMAKE_PREFIX_PATH=$ROCM \
+  -DPYTHON_EXECUTABLE=$PY -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build build-win --target core_cuda -j64   # -> core_cuda.cp312-win_amd64.pyd
+```
+Deps: `pip install opencv-python-headless pytest` into the venv (numpy already present).
+
+### Runtime
+The .pyd must sit at fpie/core_cuda.*.pyd (process.py does `from fpie import core_cuda`).
+Copy TheRock amdhip64_7.dll/amd_comgr/rocm_kpack/hiprtc into fpie/ (beside the .pyd; beats
+System32 amdhip64 -- the dietgpu lesson), and `os.add_dll_directory()` for fpie/ + the three
+_rocm_sdk_{core,devel,libraries}/bin. Run the harness with `python -u` (the C++ core prints a
+device banner via printf; without -u, Python's buffered stdout is interleaved/lost).
+
+### Validation (real GPU; numpy backend is the per-pixel oracle)
+agent_space/fpie-win/validate_fpie_win.py: 64x64 random src/tgt, random mask, 500 iters,
+Equ + Grid solvers, cuda vs numpy, plus cuda determinism (run1 vs run2):
+| | gfx1101 (dev0) | gfx1201 (dev1) |
+|--|----------------|----------------|
+| Equ  max\|cuda-numpy\| | 0 (bit-identical), det 0 | 0 (bit-identical), det 0 |
+| Grid max\|cuda-numpy\| | 0 (bit-identical), det 0 | 0 (bit-identical), det 0 |
+| pytest tests/test_smoke.py | 7 passed, 1 skipped | (CPU suite, device-independent) |
+
+ALL_BACKEND = ['numpy','cuda'] (core_cuda imported). Bit-identical to numpy on both RDNA3 and
+RDNA4; the openmp skip is expected (openmp backend not built). Matches gfx90a/gfx1100/gfx1151.
+State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha 4c6411b,
+fork unchanged). All five platforms terminal. Upstream PR #25 already merged.
