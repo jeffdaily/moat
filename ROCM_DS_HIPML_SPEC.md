@@ -201,3 +201,35 @@ Scaffolding (DONE): repo-root `rapids_config.cmake` + `overrides.cmake` (copied 
 Deps already installed for reuse: `agent_space/rocm-ds/_deps_rocmds/{hipMM,hipRaft}/install`. Build driver:
 `agent_space/rocm-ds/build_hipml_tier1.sh` (will need updating from the standalone invocation to the
 rapids-cmake-driven `build.sh`-style configure once the CMakeLists is converted). This is a multi-session grind.
+
+## Tier 1 COMPLETE (2026-06-04) -- Family-A conversion done, gfx90a validated
+
+The full Family-A conversion landed: cuML's CUDA-bound rapids-cmake build now configures and
+compiles as HIP (mirroring hipRaft). `libcuml++.so` (ROCm-linked: hipblas/hipblaslt/hipsolver/
+amdhip64, zero CUDA) + all 33 SG/PRIMS test binaries build with 0 failures. **gfx90a ctest 32/33
+PASS** -- matching the MOAT cuML baseline; the lone fail (SG_LARS_TEST) is the documented LARS
+in-process-sequential rocThrust-allocator known issue (all 4 subtests pass in isolation), not a defect.
+
+### Path A resolution (the dominant 25.08-vs-25.02 skew)
+cuML 25.08 needs raft 25.08, NOT the public ROCm-DS hipRaft 25.02. Final wiring: build against the
+validated 25.08 installs via `-DCMAKE_PREFIX_PATH=".../_deps/raft/install;.../_deps/raft-rmm/install;
+/opt/rocm;<conda>"`, with `raft`+`hipmm` removed from versions.json so the ROCm-DS override does not
+redirect to 25.02 (configure log: `CPM: Using local package raft@25.08.00`). This connects to the dev
+feedback: the public ROCm-DS forks are stale; cuML 25.08 must ride 25.08-era raft. AMD will wire their
+own latest raft/rmm; the deliverable is the cuML->HIP port + the Family-A CMake conversion.
+
+### Key conversion edits (all in agent_space/rocm-ds/hipML-build/, gitignored)
+cpp/CMakeLists.txt (Family-A bootstrap: overrides.cmake + ../rapids_config.cmake + option(CUDA_BACKEND)
++ rapids_cpm_package_override + lang_list CXX/HIP + project LANGUAGES; cuml_apply_hip_compat helper;
+HIP runtime/find branch; rapids_make_logger(rapids_logger) -- rmm exports only rmm::rapids_logger so the
+base generation IS needed; hip math libs + gc-sections on cuml++); cpp/cmake/modules/ConfigureHIP.cmake
+(NEW); get_raft.cmake (25.08); tests/CMakeLists.txt (LANGUAGE HIP, hip math libs, RF_TEST->CUDA_BACKEND,
+KNN PRIMS->LINK_CUVS); genetic group += program.cu; the 3 warp_size sites REVERTED to raft::warp_size()
+(25.08 has the host overload); the 25.02 cuda_runtime/cuda_fp16 shims DELETED (shadowed 25.08 raft).
+Full log: agent_space/rocm-ds/hipml_conversion_notes.md.
+
+### Status
+- Tier 1: DONE (gfx90a 32/33). gfx1100 validation = the gfx1100-host track (differentiator).
+- Tier 2 (CUML_LINK_CUVS=ON, hipVS distance): optional follow-on; cuvs-dependent algos were deferred anyway.
+- NEXT: OFFER the port to the ROCm-DS team (they want it as the starting point for AMD's hipML). Publish
+  decision (public jeffdaily/hipML vs private share) is jeff's -- gated create-public-surface action.
