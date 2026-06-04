@@ -262,3 +262,7 @@ kpack_load_code_object error 13 (hipErrorInvalidImage) -- rocSPARSE has no gfx11
 load. NOT an APU hardware limit and NOT the driver bug: the amgcl HIP backend compiles clean
 and the CPU builtin backend solves. This is a TheRock PACKAGING gap; recheck on a newer nightly
 that ships sparse_lib_gfx1151.kpack (or build rocSPARSE for gfx1151). Still blocked until then.
+
+## PR framing note: amgcl is already AMD-capable via OpenCL (2026-06-04)
+
+README sweep: amgcl has backends cuda.hpp / vexcl.hpp / viennacl.hpp + builtin OpenMP. VexCL and ViennaCL are OpenCL-based and already run on AMD GPUs, so amgcl is NOT lacking AMD support; it lacks a NATIVE HIP/ROCm backend (no hip.hpp, 0 HIP code, no ROCm PRs). This is still a valuable port (native ROCm perf + a hipSPARSE/rocSPARSE-style backend alongside the CUDA one), but the PR MUST be framed as "add a native HIP/ROCm backend" and must NOT claim to be the first/only AMD support. Merge-policy fit is good: backends live in-tree (amgcl/backend/*.hpp), so a hip.hpp backend matches the existing pattern. See [[moat-no-duplicate-amd-ports]].
