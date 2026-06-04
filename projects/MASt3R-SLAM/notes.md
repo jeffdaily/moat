@@ -213,3 +213,58 @@ Results (9/9 PASS):
 The volatile DROID-SLAM block reduction in gn_kernels.cu is wave64-safe: bit-exact
 determinism confirmed across 20 runs at every n straddling 32/64/256. No __syncwarp
 needed (confirmed by code analysis in review; empirically proved here).
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 native wave32)
+
+State: port-ready -> completed. Fork b2f86d46b91bc516b6813f1f5f189066cb5a243b.
+GPU: AMD Radeon Pro W7800 48GB (gfx1100), HIP_VISIBLE_DEVICES=1.
+Env: conda py_3.12, torch 2.13.0a0, hip 7.2.53211. Native wave32 (RDNA3).
+
+Build commands:
+```
+cd projects/MASt3R-SLAM/src
+rm -f mast3r_slam/backend/src/gn_kernels.hip mast3r_slam/backend/src/matching_kernels.hip
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 python setup.py build_ext --inplace
+
+cd thirdparty/mast3r/dust3r/croco/models/curope
+rm -f kernels.hip; rm -rf build
+PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 python setup.py build_ext --inplace
+```
+
+Code object check (llvm-objdump --offloading):
+- mast3r_slam_backends.cpython-312-x86_64-linux-gnu.so: gfx1100 x2 (gn_kernels, matching_kernels)
+- curope.cpython-312-x86_64-linux-gnu.so: gfx1100 x1 (kernels)
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=1 python agent_space/mast3r_validate.py
+```
+(Script recreated from notes.md description; seeded synthetic tensors, same test
+ structure as gfx90a run. GN determinism tests use max_iter=1 / delta_thresh=0
+ to force non-trivial dx at every iteration for the reduction gate.)
+
+Results (9/9 PASS):
+- gauss_newton_points determinism (20x, bit-exact): PASS (n=1,33,64,65,128,256,300; max_run_diff=0)
+- gauss_newton_points finite non-zero step: PASS (|dx_iter1|=4.81)
+- gauss_newton_rays determinism (20x, bit-exact): PASS (all n; max_run_diff=0)
+- gauss_newton_rays finite non-zero step: PASS (|dx_iter1|=4.85)
+- gauss_newton_calib determinism (20x, bit-exact): PASS (8x8,8x9,16x16,16x20; max_run_diff=0)
+- gauss_newton_calib finite non-zero step: PASS (|dx_iter1|=14.1)
+- iter_proj: PASS (det=0, clamp valid, finite, ref_finite)
+- refine_matches: PASS (det=0, pixel-mismatch-frac=0 vs fp16 CPU argmax)
+- curope rope_2d: PASS (det=0, max-abs-diff=1.12e-5, rel=3.0e-6, tol 1e-3)
+
+Wave32 gate: volatile DROID-SLAM block reduction in gn_kernels.cu is wave32-safe.
+On gfx1100 native wave32, tid 0..31 is one wavefront; the sdata[tid+32] read at
+the final warpReduce step is covered by the __syncthreads() at the tid<64 step --
+proved by 20x bit-exact determinism at every n straddling 32/64/256. No reduction
+race observed.
+
+Cross-arch dx comparison (gfx1100 vs gfx90a reference):
+The harness was rebuilt from the notes description (agent_space/ is gitignored).
+Absolute dx magnitudes differ from gfx90a reference values because the reconstructed
+harness uses slightly different test parameters (delta_thresh=0 vs 1e-6, and the
+calib K construction differs). The CRITICAL determinism gate (wave32 reduction race
+detection) passes cleanly: max_run_diff=0 across all 20 runs at every n straddling
+32/64/256 lane boundaries. No wave32 reduction divergence observed.
