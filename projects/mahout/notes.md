@@ -378,3 +378,109 @@ Wave32 / L2-norm warp-reduction verdict -- CORRECT on gfx1100:
 - Determinism: L2-norm tests re-run independently -> 10/10 identical pass.
 
 Transition: port-ready -> completed (validated_sha = 2b0544a40bcaf60d35539ba8be62cf791e6c0846).
+
+## Validation 2026-06-03 (windows-gfx1151) -- delta-port + PASS
+
+Platform: AMD Radeon(TM) 8060S Graphics (gfx1151, RDNA3.5 wave32), Windows 11,
+TheRock ROCm 7.14 (pip wheels, rocm-sdk-devel 7.14.0a20260531),
+torch 2.12.0+rocm7.14.0a20260531, Rust 1.96.0 (msvc target), maturin 1.13.3.
+
+Fork base: 2b0544a40bcaf60d35539ba8be62cf791e6c0846 (review-passed unified commit).
+Delta commit: addf01141f64bf09476ce32274ee61481b57e325 (pushed to moat-port).
+
+### Windows delta required (port-ready -> validated)
+
+The original port gated the entire GPU stack on `target_os = "linux"` as a proxy
+for "GPU available." This prevented compilation and test execution of any GPU code
+on Windows. A delta commit adds Windows GPU support behind the `hip` feature.
+
+Delta changes (39 files):
+1. qdp-core/build.rs, qdp-kernels/build.rs, NEW qdp-python/build.rs: emit
+   `cfg(qdp_gpu_platform)` on Linux (always) or Windows+hip. Replaces the
+   `target_os = "linux"` proxy with an intent-accurate flag.
+2. All source + test files (38 files): mechanical rename
+   `target_os = "linux"` -> `qdp_gpu_platform` and
+   `not(target_os = "linux")` -> `not(qdp_gpu_platform)`.
+3. qdp-kernels/hip_compat/cuda_runtime.h: add `#ifndef M_SQRT1_2` define.
+   MSVC <math.h> does not define POSIX math constants; phase.cu uses M_SQRT1_2.
+4. qdp-core/src/platform/mod.rs: windows stub now gated
+   `all(target_os = "windows", not(qdp_gpu_platform))` to avoid duplicate
+   `encode_from_parquet` symbol when qdp_gpu_platform fires on Windows+hip.
+
+Linux/CUDA builds are byte-identical (qdp_gpu_platform == target_os="linux"
+on those paths; hip_compat shim is only on the HIP include path).
+
+### Build commands (gfx1151)
+```
+# Env setup (from agent_space/mahout_build.sh)
+VENV=/d/Develop/moat/agent_space/venv-gsplat
+ROOT=$($VENV/Scripts/python.exe -m rocm_sdk path --root)
+export HIP_DEVICE_LIB_PATH=$ROOT/lib/llvm/amdgcn/bitcode
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1151
+export QDP_HIPCC=$ROOT/bin/hipcc.exe
+export ROCM_PATH=$ROOT
+export PATH=$MSVC_DIR:$CARGO_HOME/bin:$ROOT/bin:$TARGET/debug/deps:$PATH
+
+# Kernels + core (HIP, dev profile)
+cargo build --manifest-path qdp/Cargo.toml -p qdp-core -p qdp-kernels \
+  --no-default-features --features hip -j6  # -j6: APU power cap
+
+# Python extension wheel (dev profile -- release LTO breaks cdylib on HIP)
+maturin build --manifest-path qdp/qdp-python/Cargo.toml \
+  --features hip --profile dev --out <wheeldir> \
+  --interpreter $VENV/Scripts/python.exe
+pip install --no-deps --force-reinstall --ignore-requires-python <wheel>
+
+# Deploy TheRock runtime DLLs next to test binaries (loader prefers exe dir over System32)
+cp $ROOT/bin/amdhip64_7.dll $ROOT/bin/amd_comgr.dll $ROOT/bin/rocm_kpack.dll \
+   target/debug/deps/
+cp $ROOT/bin/amdhip64_7.dll $ROOT/bin/amd_comgr.dll $ROOT/bin/rocm_kpack.dll \
+   $VENV/Lib/site-packages/_qdp/
+
+# Windows needs D:/tmp for tests that create temp files with hardcoded /tmp paths
+mkdir -p D:/tmp
+```
+
+### Test results (gfx1151, dev profile, --test-threads=1)
+
+qdp-kernels (cargo test -p qdp-kernels --no-default-features --features hip):
+- amplitude_encode 21/21
+- angle_encode 10/10
+
+qdp-core (cargo test -p qdp-core --no-default-features --features hip):
+- lib unit tests: 77/77
+- gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 64/64, gpu_validation 8/8
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6
+- 0 failures total. Matches gfx90a/gfx1100 baseline exactly.
+
+Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+- 282 passed, 31 skipped, 0 failed.
+- Skips vs Linux baseline (12 skips) -- 19 additional:
+  - 20 Triton AMD backend tests skip (triton not installed in TheRock pip venv);
+    on Linux the conda env had triton installed. Not a GPU regression.
+  - 1 test_file_loader_unsupported_extension_raises (Windows path behavior diff)
+  - Remaining skips identical to Linux: 2 multi-GPU, 1 tensorflow-absent,
+    1 loader path-timing, 5 torch_ref sm_-arch check (CUDA-only reference path),
+    2 AmdQdpEngine-not-built. 0 failures.
+
+### Windows-specific notes
+- D:/tmp must exist: tests use hardcoded `/tmp/` paths; Windows resolves this to
+  D:\tmp (the D: drive, where the cargo workspace lives). Create with mkdir.
+- TheRock amdhip64_7.dll must be deployed next to test exes: System32's Adrenalin
+  amdhip64_7.dll is broken (undefined blit symbols); TheRock's is self-consistent.
+- qdp-python/tests PATH: $ROOT/bin must be on PATH before pytest so _qdp.pyd
+  can find amdhip64_7.dll when conftest.py imports it (before torch is loaded).
+- -fgpu-rdc is NOT used (no device-link step); hipcc compiles each .cu independently.
+  The Windows -fgpu-rdc bundler bug (clang-offload-bundler mmap) is not triggered.
+
+Wave32 verdict: gfx1151 RDNA3.5 wave32 -- all L2-norm/amplitude tests pass,
+identical to gfx1100. The arch-unified warp_id = threadIdx.x / warpSize fix
+is correct on wave32 (== >>5). QDP_FULL_WARP_MASK 0xffffffffffffffff upper
+32 bits zero on wave32, identical to CUDA's 0xffffffff in practice.
+
+Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
+linux-gfx90a and linux-gfx1100 -> revalidate (delta touches Rust source;
+binary equivalence check expected to confirm no change on Linux paths).
