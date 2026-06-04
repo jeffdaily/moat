@@ -3,3 +3,9 @@
 {"kind":"phase","ts":"2026-06-03T23:47:01Z","phase":"test","seconds":0.334,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=0 ./agent_space/turbofno_validate"}
 {"kind": "tokens", "ts": "2026-06-03T23:51:14Z", "tokens": 152795}
 {"kind": "tokens", "ts": "2026-06-03T23:57:19Z", "tokens": 60004}
+{"kind":"phase","ts":"2026-06-04T00:00:14Z","phase":"compile","seconds":0.005,"exit":127,"cmd":"bash install.sh"}
+{"kind":"phase","ts":"2026-06-04T00:00:19Z","phase":"compile","seconds":0.006,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/TurboFNO/src/install.sh"}
+{"kind":"phase","ts":"2026-06-04T00:01:38Z","phase":"compile","seconds":66.532,"exit":0,"cmd":"bash /tmp/build_turbofno.sh"}
+{"kind":"phase","ts":"2026-06-04T00:02:36Z","phase":"compile","seconds":4.386,"exit":0,"cmd":"bash /tmp/build_validate.sh"}
+{"kind":"phase","ts":"2026-06-04T00:02:42Z","phase":"test","seconds":0.331,"exit":0,"cmd":"bash /tmp/run_validate.sh"}
+{"kind":"phase","ts":"2026-06-04T00:07:58Z","phase":"test","seconds":263.266,"exit":143,"cmd":"bash /tmp/run_smoke.sh"}

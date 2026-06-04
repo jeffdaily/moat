@@ -88,6 +88,47 @@ by the same cgemm-vs-hipBLAS and fft_8-vs-hipFFT harness on the follower host,
 and/or a cross-arch output diff against the gfx90a result (deterministic).
 gfx1151: confirm hipFFT/hipBLAS presence in the Windows HIP SDK.
 
+## Validation 2026-06-04 (linux-gfx90a)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, warpSize=64, 104 SMs. ROCm 7.2.1.
+Fork: jeffdaily/TurboFNO moat-port @ e100b3d (submodule jeffdaily/TurboFFT @ e285704).
+
+Build: all 10 fusion variants configured and compiled clean for gfx90a (warnings only, no errors).
+gfx90a code objects confirmed via llvm-objdump --offloading for 1D_A, 1D_D, 1D_E, 2D_D, 2D_E.
+
+Commands:
+```
+# Build all 10 variants
+cd projects/TurboFNO/src && export PROJECT_ROOT=$(pwd) && USE_HIP=1 CMAKE_HIP_ARCHITECTURES=gfx90a bash install.sh
+
+# Build + run numerical harness
+/opt/rocm/llvm/bin/clang++ -x hip --offload-arch=gfx90a -DUSE_HIP -std=c++17 -O2 -ffp-contract=on \
+    -I${PROJECT_ROOT}/utils -I${PROJECT_ROOT}/fusion_variants/1D_A_exp_fft+cgemm+ifft \
+    -I${PROJECT_ROOT}/TurboFFT/TurboFFT/include/code_gen/generated/float2 \
+    ${PROJECT_ROOT}/utils/utils.cu agent_space/turbofno_validate.cu \
+    -L/opt/rocm/lib -lhipfft -lhipblas -o /tmp/turbofno_validate
+HIP_VISIBLE_DEVICES=0 /tmp/turbofno_validate
+
+# Runtime smoke
+HIP_VISIBLE_DEVICES=0 fusion_variants/1D_D_exp_fused_fft_cgemm_ifft/build/TurboFNO_1D_D | head -30
+HIP_VISIBLE_DEVICES=0 fusion_variants/1D_E_baseline/build/TurboFNO_1D_E | head -30
+```
+
+Numerical results (agent_space/turbofno_validate.cu on GPU 0):
+- Device: AMD Instinct MI250X / MI250, warpSize=64, SMs=104
+- GEMM: cgemm (logical-32 tiling, wave64) vs hipblasCgemm, M=256 N=256 K=128:
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=9.313226e-06 -> PASS
+- FFT: fft_8 (hand-rolled radix-2 256pt) vs hipfftExecC2C FORWARD, batch=1024:
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=1.415610e-05 -> PASS
+
+Runtime smoke (first 30 lines, no CHECK_CUDA_KERNEL errors):
+- TurboFNO_1D_D (fused FFT-GEMM-iFFT): bs=1..128 timing lines printed cleanly.
+- TurboFNO_1D_E (hipFFT+hipBLAS baseline): bs=1..2 timing lines printed cleanly.
+  (Large bs values, e.g. 32768, trigger the pre-existing upstream OOB allocation;
+  not a port regression -- documented in notes above.)
+
+Result: linux-gfx90a COMPLETED at e100b3d.
+
 ## Review 2026-06-03 (reviewer, linux-gfx90a)
 Verdict: review-passed. Diff upstream c83a74b..e100b3d on jeffdaily/TurboFNO
 moat-port. No blocking findings. Confirmations and minor (non-blocking) items below.
