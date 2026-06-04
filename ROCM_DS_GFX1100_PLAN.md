@@ -5,16 +5,30 @@ cross-host handoff: it is committed to the MOAT repo so the gfx1100 host's `orie
 (`git pull --rebase`) makes it available; that host has a real gfx1100 GPU, which this gfx90a
 host does not, and GPU validation on gfx1100 is the whole point.
 
-## Why this is a distinct effort from PR #9
+## Relationship to PR #9, and the two gfx1100 workstreams
 
-PR #9 (ROCm-DS/hipRaft, merged-or-pending) added the **Composable Kernel MFMA** distance
-backend. CK XDL requires matrix cores, which exist on CDNA (gfx90a/gfx942) but NOT on RDNA3
-(gfx1100). So on gfx1100 the CK path must cleanly no-op and fall back to SIMT. gfx1100
-enablement is therefore a *separate* concern: the **wave32 portability layer** that lets the
-ROCm-DS RAPIDS-derived libraries build and run correctly when the wavefront is 32 lanes
-instead of 64. ROCm-DS today is CDNA-only (gfx90a + gfx942) and in places explicitly disables
-RDNA (rocGRAPH hard-comments-out gfx11xx; hipDF gates gfx1100 as experimental/separate-build).
-MOAT already validated all of this on real gfx1100 in our own forks; this effort upstreams it.
+PR #9 (ROCm-DS/hipRaft) added the Composable Kernel distance backend using CK's **XDL** instance
+(`DeviceGemmMultipleD_Xdl_CShuffle`), which targets the CDNA matrix cores (MFMA, gfx90a/gfx942)
+in our fp32 regime. gfx1100 (RDNA3, wave32) enablement is two workstreams:
+
+**A. Wave32 portability layer (library-wide -- the primary, correctness-critical work).** What
+lets the ROCm-DS RAPIDS-derived libraries build and run correctly when the wavefront is 32 lanes
+instead of 64: runtime warp-size, per-arch `WarpSize`, the `active_mask()` partial-wavefront
+handling, and ballot-mask widths. ROCm-DS today is CDNA-only and in places explicitly disables
+RDNA (rocGRAPH hard-comments-out gfx11xx; hipDF gates gfx1100 experimental). MOAT already
+validated all of this on real gfx1100 in our forks; this effort upstreams it.
+
+**B. CK WMMA distance instance for RDNA3 (extends PR #9 -- secondary, perf).** CK *does* support
+RDNA, via WMMA rather than XDL. The install carries `DeviceGemmMultipleD_Wmma_CShuffle` with the
+SAME `CDEElementwiseOperation` epilogue our XDL instance uses, plus `ck::is_gfx11_supported()` /
+`is_xdl_supported()` to arch-gate at runtime (the gfx11 list includes gfx1150/gfx1151, useful for
+the later Strix Halo target). So the distance fast path can be extended to gfx1100 by adding a
+WMMA `DeviceGemm` alongside the XDL one, selected by arch. **Precision caveat (verified in the CK
+WMMA traits):** RDNA3 WMMA inputs are fp16 / bf16 / int8 only -- there is NO fp32-input WMMA on
+gfx11 (fp8/bf8 are gfx12). So the **fp32** distance that PR #9 accelerates has no CK fast path on
+gfx1100 and stays on SIMT there; the WMMA opportunity is the **half / bf16** distance dtypes.
+Net: correctness on gfx1100 comes entirely from workstream A; B is added matrix-core acceleration
+for the reduced-precision distances, and is optional/follow-on.
 
 ## Source material (already gfx1100-validated in MOAT forks)
 
@@ -31,6 +45,18 @@ NOTE: hipRaft already widened its warp mask to 64-bit and uses `__activemask()` 
 MOAT -- do not re-contribute those). The genuine gap is the **wave32 path**: per-arch
 `WarpSize`/`warp_size()` and the host-side runtime dispatch so gfx1100 (wave32) is correct in
 the same build, plus un-gating gfx1100 in the arch lists.
+
+raft is the worked example above; each other target repo has its own gfx1100-validated wave32
+diff in the corresponding MOAT fork (`jeffdaily/<lib>` @ `moat-port`). Per-repo inputs (see
+ROCM_DS_GAP_ANALYSIS.md for the exact file cites already gathered):
+
+| Target ROCm-DS repo | Source MOAT fork | Key wave32 portability code |
+|---|---|---|
+| hipRaft | jeffdaily/raft | util/{warp_primitives,reduction,cudart_utils,cuda_dev_essentials}; runtime host warp-size query |
+| hipMM | jeffdaily/rmm | header-only -- arch flag only, no wave32 code |
+| hipVS | jeffdaily/cuvs | distance SIMT is wave-agnostic via raft::WarpSize; relies on hipRaft's wave32 layer; CAGRA already wave-dynamic upstream |
+| hipDF | jeffdaily/cudf | detail/utilities/hip/warp_primitives.cuh (`ballot_32`/`tile_any_32`), valid_if.cuh, merge.cu logical-32 path |
+| rocGRAPH | jeffdaily/cugraph | utilities/warp_size_ct.hpp (host/device dispatch), the frontier-prim ballot-mask fix |
 
 ## Approach (Family-A contribution playbook, proven by PR #9)
 
@@ -59,8 +85,12 @@ so files transplant path-for-path. Per repo:
 ## Ordering (start small, build confidence)
 
 1. **hipRaft** -- first; we have the fork (`jeffdaily/hipRaft`), an open PR (#9), and the
-   tightest raft wave32 diff. Smallest, highest-confidence gfx1100 win. The CK fallback check
-   (step 6) also de-risks PR #9 on RDNA.
+   tightest raft wave32 diff. Smallest, highest-confidence gfx1100 win (workstream A). The CK
+   fp32 path correctly stays SIMT on gfx1100 -- confirm it compiles and `*_ck_can_dispatch`
+   returns false at runtime on RDNA (step 6), de-risking PR #9 on the non-CDNA arch. Workstream
+   B (CK WMMA half/bf16 distance) is best evaluated here too, since the CK plumbing from PR #9
+   is already in place -- add a `DeviceGemmMultipleD_Wmma_CShuffle` instance arch-gated by
+   `ck::is_gfx11_supported()`.
 2. **hipMM** -- trivial (header-only); just enable the gfx1100 arch flag and validate the rmm
    gtest suite on gfx1100.
 3. **hipVS** -- extend the wave64-only support matrix to RDNA3; distance is the validated slice
