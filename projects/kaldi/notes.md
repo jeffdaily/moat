@@ -316,3 +316,25 @@ Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED (exit 0, both run
 No regression introduced by the gfx1100 follower delta.
 
 Verdict: COMPLETED. validated_sha = e8c5613b789eefb6b0a251d8b15867bb53f1a01d.
+
+
+## CHANGES REQUESTED 2026-06-04 (human review): host warp-size is compile-time -> breaks multi-arch
+
+PR prep was HELD. The port handles DEVICE warp size per-arch correctly (hipify.h: GPU_WARP_SIZE
+via __GFX9__, plus kernels use the runtime builtin warpSize), but the HOST warp size is a single
+COMPILE-TIME constant: hipify.h:298 `#define GPU_WARP_SIZE HIP_WARP_SIZE`, where HIP_WARP_SIZE is
+injected by src/configure (configure:285-291: ROCM_WARP_SIZE starts 32, set to 64 if ANY target is
+gfx9*). So a true multi-arch fat binary `--rocm-targets=gfx90a,gfx1100` bakes HIP_WARP_SIZE=64 into
+the host; the host then sizes block/grid dims (GPU_MAX_WARPS_PER_BLOCK, blockDim.y=CU1DBLOCK/warpSize,
+etc.) for wave64 and MISMATCHES the wave32 gfx1100 device slice at runtime -- the exact hazard fixed
+in libSGM/CTranslate2. It was only validated as two SEPARATE single-arch builds, so the limitation
+was never exercised. Does NOT meet the MOAT multi-arch goal.
+
+Required fix (porter): the HOST must derive warp size at RUNTIME per device from
+hipGetDeviceProperties().warpSize, not the compile-time HIP_WARP_SIZE. kaldi already queries device
+properties on the host (CuDevice, src/cudamatrix/cu-device.*; cudaGetDeviceProperties is aliased to
+hipGetDeviceProperties in hipify.h:173) -- route the host launch geometry through that. Keep the
+device-side __GFX9__ path and the wave64 _diff_lstm_nonlinearity fix unchanged. Then validate a TRUE
+multi-arch fat binary (--rocm-targets=gfx90a,gfx1100), not two single-arch builds. The gfx1100 (wave32)
+correctness of the fat binary is the decisive check; this gfx90a host can only confirm the gfx90a
+slice + that the host now reads warpSize at runtime -- the gfx1100 follower host validates wave32.
