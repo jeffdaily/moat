@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "setuptools-cuda",
   "adopted_at": "2026-06-04T01:07:42Z",
-  "updated_at": "2026-06-04T02:08:44Z",
+  "updated_at": "2026-06-04T02:15:48Z",
   "head_sha": "de517de83010a7351aa2e237f6f72582780dedaa",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "changes-requested",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-04T01:41:19Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T02:08:44Z",
+      "updated_at": "2026-06-04T02:15:48Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
