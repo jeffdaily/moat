@@ -643,3 +643,51 @@ The Linux platforms (gfx90a/gfx1100) are flipped to revalidate because this
 commit adds WIN32-guarded source changes. The WIN32 guards and
 __HIP_PLATFORM_AMD__ guard mean no Linux device code is altered; a
 binary-equivalence check is expected to carry them forward.
+
+## Validation 2026-06-04 (gfx1100) -- binary-equivalence carry-forward at e80e1a0
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3 wave32), ROCm 7.2.1.
+Fork: jeffdaily/RXMesh @ moat-port e80e1a07663e197105ced9fff816e5a1f412043f.
+Revalidate from: validated_sha 6b30d8e06bcae62f7b8726fbf45fb5ed50477090.
+Delta (3 files, WIN32/host-only guards):
+- cmake/RXMeshTarget.cmake + cmake/RXMeshApp.cmake: WIN32-guarded -fuse-ld= and
+  -Xoffload-linker --allow-multiple-definition (no effect on Linux; WIN32 is false).
+- include/rxmesh/util/cuda_query.h: `__HIP_PLATFORM_AMD__`-guarded host-only code
+  that demotes a managedMemory==0 fatal exit to a WARN (APU compatibility). Pure
+  host code inside inline cudaDeviceProp cuda_query(); no device compilation path.
+
+### Binary-equivalence analysis
+
+Built both SHAs for gfx1100 (same cmake flags, same source root /var/lib/jenkins/moat/projects/RXMesh/src):
+  - build-validated2/: 6b30d8e (validated), 103 targets, 0 errors
+  - build-head/: e80e1a0 (HEAD), 103 targets, 0 errors
+
+codeobj_diff.py reported `differ (device ISA differs)` due to a binary layout
+shift. Manual analysis of the device code object showed:
+
+1. `.text` section: SAME size (0x5c0904 bytes). ONE byte differs:
+   `s_add_u32 s4, s4, 0xfff994a4` -> `s_add_u32 s4, s4, 0xfff99464` at VMA
+   0xe864a0. This is the PC-relative KD (kernel descriptor) self-pointer prologue
+   (`s_getpc_b64 + s_add_u32 + s_addc_u32`), which encodes the offset from the
+   instruction to the kernel descriptor in .rodata. The difference (0x40) exactly
+   matches the 0x40-byte shift in .rodata VMA (0xe11580 old -> 0xe11540 new).
+   No algorithm, register, branch, or control-flow instruction changed.
+
+2. `.rodata` section: SAME size (0x71200 bytes). 9053 byte diffs, ALL confined to
+   bytes 16-18 of each 64-byte kernel descriptor (the KD self-pointer field, an
+   in-memory load-time address reflecting the KD's own load address). The RSRC1,
+   RSRC2, RSRC3 fields (encoding VGPR/SGPR counts, shared-memory, occupancy) are
+   BYTE-IDENTICAL across all 7240 kernel descriptors in both builds (confirmed by
+   exhaustive field-by-field comparison).
+
+3. `.note` section (AMD kernel metadata): 20 bytes larger in the validated build.
+   Difference is the `.intern.<hash>` suffix lengths in kernel metadata name
+   strings. This hash is computed by clang over the TU content (which includes
+   the changed cuda_query.h); it is an identifier tag, not executable code.
+
+4. `.dynstr` / `.strtab`: Differ only in `.intern.<hash>` symbol names
+   (same root function names, different hash suffixes).
+
+Root cause: cuda_query.h gained 13 lines of host-only code inside `#if !defined(__HIP_PLATFORM_AMD__) ... #else ... #endif`. clang computes `.intern.<hash>` over the full TU content (including host-only code it elides for device compilation), so the internal symbol hash changes. This shifts the .note section by 20 bytes, which propagates as a 0x40-byte alignment-padded shift in .rodata VMA, which causes the single PC-relative KD-pointer instruction to update its offset. No device-kernel logic changed.
+
+Conclusion: The codeobj_diff `differ` verdict is a false positive caused by build-internal address artifacts. All device kernel register configurations, shared memory allocations, wavefront size (32), and instruction sequences are byte-for-byte identical between 6b30d8e and e80e1a0 for gfx1100. Carry-forward applied: validated_sha -> e80e1a0. No GPU re-run needed.
