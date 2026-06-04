@@ -256,8 +256,11 @@ PORTING_GUIDE best practices: **MEETS**. This is the cleanest possible AMD port 
 
 **RESULT: PASS. linux-gfx90a remains completed.**
 
-## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+## Upstream-PR disposition: VALIDATED outcome, no PR (delta check 2026-06-04)
 
-README sweep finding: rahul-goel/fused-ssim already has AMD/ROCm support upstream. README Hardware Compatibility lists "AMD GPUs (ROCm)" with ROCm install steps, and the acknowledgements credit "Anton Smirnov for adding AMD GPU enablement." ROCm support is merged upstream.
+An earlier README-sweep note here said "DO NOT open a duplicate PR -- upstream already supports ROCm." Retracted as too blunt. Upstream does advertise a ROCm build (setup.py HIP branch, #29; README "AMD GPUs (ROCm)"; Anton Smirnov credit), but the delta check shows our work is real, just not code:
 
-Our port duplicates existing upstream AMD support (same miss class as llm.c/anthonix). Do NOT open an upstream PR. A narrow contribution is only warranted if our coverage genuinely exceeds theirs (e.g. CDNA/gfx90a wave64, gfx1100 wave32, or Windows/gfx1151) AND they lack it -- assess per-project before proposing anything, and prefer contributing the specific delta over a wholesale PR. See [[moat-no-duplicate-amd-ports]].
+- CODE DELTA: NONE. Strategy B (torch hipify), arch-agnostic build, no fork commit -- we validated upstream's own commit 666987fb directly (fork_url/base_sha both null). There is nothing to contribute as a code PR, unlike CTranslate2's 2-line gfx90a arch-list add.
+- VALIDATION DELTA (the value -> outcome=validated): first GPU validation of the ROCm path on gfx90a (CDNA2 wave64) and gfx1100 (RDNA3 wave32) at ROCm 7.2.1; upstream has no AMD GPU CI. Notably the 3D SSIM path: upstream's README disclaims "3D (CUDA only)" -- a claim the author ROLLED BACK TO in PR #39 -- yet fusedssim3d compiles, exports, and matches pytorch_msssim(spatial_dims=3) to ~1e-8 fwd / ~1e-11 grad on both AMD archs. Upstream's docs understate their own ROCm capability; we have the hardware evidence. Confirmed wave-agnostic (no warp primitives).
+
+Outcome = validated (2 arch). No upstream PR: zero code delta, and the only conceivable contribution (a README note that 3D also works on ROCm) is exactly the claim the author deliberately removed in #39, so it would need AMD-CI-grade evidence to be welcome. See [[moat-no-duplicate-amd-ports]].
