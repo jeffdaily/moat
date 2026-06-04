@@ -187,6 +187,17 @@ reached `completed`), so it was safe to amend the single port commit rather than
 stack a new one. Fork moat-port: de517de -> b450d56, force-with-lease (verified
 local == fork tip == status head_sha de517de before the push).
 
+## Re-review 2026-06-04 (reviewer, linux-gfx90a -> review-passed)
+
+Verdict: Approve. The single prior BLOCKER (dead-code "offset=16 wave64 fix" plus a misleading notes/commit narrative) is resolved. The de517de -> b450d56 amend is exactly (a) the six dead-branch offset reverts and (b) the notes/commit-message corrections; the compiled device code is unchanged (binary-equivalent to the prior build), and every previously-approved item (tex3D_TIGRE software trilinear, Siddon Np-cap, _rd->_rn intrinsics, setup.py BUILD_WITH_HIP, commit hygiene) is intact. No new functional change introduced.
+
+Confirmation of the three points:
+1. No `offset = 16`/`offset=16` anywhere in the tree (git grep clean). PICCS.cu / GD_TV.cu / GD_AwTV.cu now differ from upstream master (a07589f) ONLY by `#include "cuda_to_hip.h"` and the `<< <` -> `<<<` chevron normalization -- both required, no remaining functional edit. The `#if (__CUDART_VERSION >= 9000)` shuffle branch is back to upstream's `offset = warpSize/2` (PICCS.cu:203,250; GD_TV.cu:191,239; GD_AwTV.cu:212,260) and the guard line itself is byte-untouched from upstream (no `defined(USE_HIP)` added), so the live path remains `warpReduce`.
+2. notes.md (Reduction section, lines 49-72) and the fork commit body both accurately state that `warpReduce` is the live, wave64-correct reduction path on both back ends and that the `__CUDART_VERSION` shuffle branch is dead (no wave64 bug existed). No lingering false "offset=16 wave64 fix" claims in either (grep clean).
+3. de517de -> b450d56 delta touches only the three reduction `.cu` files, and only the dead `#if` branch (offset revert + removal of the misleading wave32/wave64 comments). No other file changed; the `#else` live `warpReduce` path is unchanged, so device code is binary-equivalent to de517de.
+
+Note for the validator: device code is binary-equivalent to the prior de517de build, which the porter reports validated on real gfx90a (256^3 phantom: Ax interp vs Siddon 0.47%, adjointness 1.2e-05, OS-SART nRMSE 0.15). The real-GPU phantom gate is the validator's call; carry-forward of the prior validation is justified by the binary-equivalence but is not the reviewer's to assert.
+
 ## Install as a dependency
 
 Not a base library for other MOAT projects (no `depends_on` consumers).
