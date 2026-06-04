@@ -7,7 +7,7 @@
   "priority": 4.906,
   "ext_type": "nvcc-shared",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-04T20:48:42Z",
+  "updated_at": "2026-06-04T20:53:56Z",
   "head_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
   "platforms": {
     "linux-gfx90a": {
@@ -80,13 +80,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-04T20:53:56Z",
+      "updated_at": "2026-06-04T20:53:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +99,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "completed",

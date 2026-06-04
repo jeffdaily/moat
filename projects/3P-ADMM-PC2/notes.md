@@ -344,3 +344,23 @@ HIP_VISIBLE_DEVICES=0 .../venv/Scripts/python.exe agent_space/3p-admm-win/valida
 VERDICT: PASS -- port-ready -> completed. gfx1101 matches gfx90a/gfx1100/gfx1151 exactly.
 This is the first real GPU validation on the new Windows host -- it establishes the reusable
 Windows ROCm build + DLL-runtime recipe for the rest of the gfx1101/gfx1201 sweep.
+
+## Validation 2026-06-04 (windows-gfx1201, AMD Radeon RX 9070 XT, RDNA4, ROCm 7.14 / TheRock)
+
+validated_sha: 6ef301f3204579779bbaa1f32a466934f720903a (zero-churn follower; fork untouched)
+
+GPU arch: gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32). HIP_VISIBLE_DEVICES=1 pins gfx1201
+(detect_arch confirms device 1 = gfx1201). Same host/recipe as the gfx1101 run above; only
+`--offload-arch=gfx1201` and the device pin change.
+```
+HIP_ARCH=gfx1201 OUT=.../lib_cufft_gfx1201.dll bash agent_space/3p-admm-win/build_win.sh
+HIP_VISIBLE_DEVICES=1 LIB_CUFFT=.../lib_cufft_gfx1201.dll .../python.exe agent_space/3p-admm-win/validate_win.py
+```
+- Build gfx1201: PASS (lib_cufft_gfx1201.dll, exports init_gpu/run_modexp).
+- modexp vs gmpy2 gold: 6144/6144 EXACT match (same 8 moduli x 3 reps x 256/batch as gfx1101).
+- hipFFT double-FFT rounding margin holds on gfx1201 (RDNA4, wave32, fp64): 0 mismatches.
+- No fork code change (zero-churn follower; same 6ef301f). RDNA4 FP behavior irrelevant -- the
+  gate is bit-exact integer modexp, no wave-size surface in the live path.
+
+VERDICT: PASS -- port-ready -> completed. Both Windows archs (gfx1101 + gfx1201) now match
+gfx90a/gfx1100/gfx1151 exactly; all five platforms terminal -> PR-ready.
