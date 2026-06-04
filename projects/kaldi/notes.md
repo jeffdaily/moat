@@ -514,3 +514,59 @@ All 12 tests passed: cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-s
 Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED. UnitTestBackpropLstmNonlinearity ran float at dim 16-1024 and double at multiple dims; cu-math-test exited 0. Log shows `BackpropLstmNonlinearity 0.404057s` (complete execution, no error). The wave64 _diff_lstm_nonlinearity fix (threadIdx.y==0 writes all 5 self-repair rows) is verified correct from the fat binary's gfx90a slice.
 
 Verdict: COMPLETED. validated_sha = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52. The gfx1100 (wave32) slice of this SAME fat binary is the linux-gfx1100 revalidate on its own host.
+
+## Validation 2026-06-04 (linux-gfx1100 revalidate, runtime warp size, ee7a71cb)
+
+Platform: linux-gfx1100. Fork: jeffdaily/kaldi @ moat-port = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52. GPU: 2x AMD Radeon Pro W7800 48GB (gfx1100 / RDNA3 / wave32), HIP_VISIBLE_DEVICES=0. ROCm 7.2.1.
+
+Purpose: revalidate after the runtime host warp size commit (ee7a71cb on top of 6e65f2ff0). The change makes host launch geometry use runtime queries (hipDeviceGetAttribute(hipDeviceAttributeWarpSize), hipGetDeviceProperties().warpSize) instead of the compile-time HIP_WARP_SIZE constant, enabling correct multi-arch fat binaries where gfx90a (wave64) and gfx1100 (wave32) coexist in one binary.
+
+### Build configuration
+
+Single-arch build for gfx1100 (not a fat binary; that was validated on gfx90a):
+
+```
+cd /var/lib/jenkins/moat/projects/kaldi/src/src
+# Already configured for --rocm-targets=gfx1100 from previous validation
+# kaldi.mk has ROCM_ARCH_FLAGS += --offload-arch=gfx1100 and ROCM_WARP_SIZE = 32
+
+# Clean rebuild
+make clean -C cudamatrix
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    bash -c 'cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j12 depend'
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    make -j12 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile
+```
+
+### Device code verification
+
+```
+roc-obj-ls cu-kernels.o
+  hipv4-amdgcn-amd-amdhsa--gfx1100 (1010632 bytes)
+
+llvm-objdump --offloading cu-math-test
+  hipv4-amdgcn-amd-amdhsa--gfx1100
+```
+
+Confirmed gfx1100 device code only (single-arch build).
+
+### Test results (HIP_VISIBLE_DEVICES=0)
+
+```
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi test -- \
+    bash /var/lib/jenkins/moat/agent_space/run_cudamatrix_gfx1100.sh 0
+```
+
+Run 1: PASS=12 FAIL=0
+Run 2: PASS=12 FAIL=0 (deterministic)
+
+All 12 tests passed both runs:
+cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-sp-matrix-test, cu-packed-matrix-test, cu-tp-matrix-test, cu-block-matrix-test, cu-array-test, cu-sparse-matrix-test, cu-device-test, cu-compressed-matrix-test.
+
+Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED (exit 0, both runs). With the runtime warp size queries, the host correctly detects warpSize=32 on this gfx1100 device, launches with blockDim.y = CU1DBLOCK/32 = 8, and the wave32 kernel executes correctly. The threadIdx.y==0 self-repair loop writes all 5 rows (the wave64 fix from 6e65f2ff is arch-unified and works on both wave32 and wave64).
+
+The runtime warp size fix (ee7a71cb) is verified correct on gfx1100 wave32. No regression introduced by the functional change.
+
+Verdict: COMPLETED. validated_sha = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52.

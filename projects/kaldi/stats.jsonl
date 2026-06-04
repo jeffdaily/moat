@@ -49,3 +49,10 @@
 {"kind":"phase","ts":"2026-06-04T21:38:35Z","phase":"compile","seconds":17.607,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j16 -C cudamatrix"}
 {"kind":"phase","ts":"2026-06-04T21:38:47Z","phase":"compile","seconds":6.511,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j16 -C cudamatrix test_compile"}
 {"kind":"phase","ts":"2026-06-04T21:40:25Z","phase":"test","seconds":61.461,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 1"}
+{"kind":"session","ts":"2026-06-04T23:52:38Z","epoch":1780617158.481547240,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-04T23:53:15Z","phase":"compile","seconds":11.170,"exit":0,"cmd":"bash -c cd projects/kaldi/src/src && make -j12 depend"}
+{"kind":"phase","ts":"2026-06-04T23:53:26Z","phase":"compile","seconds":8.796,"exit":0,"cmd":"make -j12 -C projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-06-04T23:53:45Z","phase":"compile","seconds":4.814,"exit":0,"cmd":"make -j12 -C projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-06-04T23:55:20Z","phase":"test","seconds":72.217,"exit":0,"cmd":"bash agent_space/run_cudamatrix_gfx1100.sh 0"}
+{"kind":"phase","ts":"2026-06-04T23:56:39Z","phase":"test","seconds":75.822,"exit":0,"cmd":"bash agent_space/run_cudamatrix_gfx1100.sh 0"}
+{"kind":"session","ts":"2026-06-04T23:56:46Z","epoch":1780617406.337706671,"event":"end","platform":"linux-gfx1100"}
