@@ -8,3 +8,5 @@
 {"kind": "tokens", "ts": "2026-06-04T08:53:51Z", "tokens": 434710, "source": "porter linux-gfx90a"}
 {"kind":"phase","ts":"2026-06-04T13:47:52Z","phase":"compile","seconds":0.144,"exit":1,"cmd":"cmake --build _build -j16 --target unittest"}
 {"kind": "tokens", "ts": "2026-06-04T13:53:03Z", "tokens": 57662, "source": "reviewer linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-04T20:55:28Z","phase":"compile","seconds":34.621,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
+{"kind":"phase","ts":"2026-06-04T20:57:09Z","phase":"test","seconds":46.828,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 ./projects/qrack/src/_build/unittest --proc-cuda --layer-qengine"}
