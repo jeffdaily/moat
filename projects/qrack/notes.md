@@ -175,3 +175,44 @@ completed assertions passed" porter result and the review-passed verdict both mi
 the slow width-20 tests were never run to completion (they were SIGTERM-excluded). PROCESS LESSON:
 a HIP op orders-of-magnitude slower than the CPU engine, or any SIGTERM-"slow" test, must be
 root-caused -- it can be masking a race/correctness bug -- never silently excluded.
+
+## FIXED 2026-06-04 (linux-gfx90a): hipFree inside a stream-callback deadlocks the HIP runtime
+
+Root cause (confirmed by gdb backtrace of the live hang, not theory): QEngineCUDA dispatches
+each gate asynchronously -- it launches the kernel on `device_context->queue` and registers
+`_PopQueue` via `hipLaunchHostFunc` to retire the queue entry when the kernel finishes. The HIP
+host-callback runs on an internal HIP runtime worker thread, and HIP (like CUDA) forbids calling
+ANY runtime API from that thread. `_PopQueue -> PopQueue() -> wait_queue_items.pop_front()` drops
+the QueueItem's `BufferPtr`s. For most gates those are long-lived pool/state buffers (popping
+frees nothing -> callback stays API-free, which is why Mtrx/X/CNOT/U/S/T all passed on HIP). But
+gates that pass PER-CALL `MakeBuffer` allocations hold the last reference in the QueueItem;
+UniformlyControlledSingleBit builds 3 (uniformBuffer, powersBuffer, nrmInBuffer). Popping the item
+ran the `shared_ptr` deleter `hipFree` on the callback thread -> runtime deadlock. The hang
+backtrace: Thread 3 (HIP worker) stuck in `PopQueue -> ...MakeBuffer lambda... -> hipFree`
+(`sched_yield` spin in libamdhip64); Thread 1 (main) blocked in the runtime from `Prob`. Verbose
+AMD_LOG_LEVEL=3 serialized the API and happened to slip past the deadlock window but raced on the
+data -> wrong-but-fast; a clean run hung.
+
+Fix (fork dcb5e180, on top of e0c9ddfc; USE_HIP-guarded so NVIDIA path is byte-identical): in
+`PopQueue`, move the popped item's buffers into a new `deferredFreeBuffers` member instead of
+releasing them on the callback thread; drain that list (the real hipFree) from `clFinish` and the
+top of `DispatchQueue`, both of which run on a user thread. New member + `DrainDeferredFreeBuffers()`
+helper, all under `#if defined(USE_HIP)`. +41 lines, 2 files (src/qengine/cuda.cu,
+include/qengine_cuda.hpp).
+
+GOTCHA for any HIP port using hipLaunchHostFunc/cudaLaunchHostFunc: the callback MUST NOT call any
+HIP API. A shared_ptr/RAII handle whose deleter calls hipFree/hipStreamDestroy/etc. that drops its
+last ref inside the callback is the trap; defer the release to a user thread. CUDA tolerates it
+more often, so it survives the NVIDIA build and only bites on ROCm.
+
+Validation (real GPU, HIP_VISIBLE_DEVICES=1, MI250X, ROCm 7.2.1):
+- test_ucmtrx: 12/12 consecutive runs PASS 8/8 assertions, ~0.23s each (was hang/wrong).
+- previously-SIGTERM-"slow" gates now complete in ~0.2s each and pass: test_ccnot, test_anticcnot,
+  test_uniform_c_single (16), test_uniform_cry (14), test_uniform_crz (12), test_cuniformparityrz,
+  test_uniformparityrz, test_swap, test_iswap, test_cswap, test_anticswap, test_csqrtswap,
+  test_fsim, test_apply_controlled_single_bit/invert/phase + anti variants, test_timeevolve_uniform.
+  (The "5-10 min per test" in the prior note was the deadlock spinning, NOT real math cost.)
+- FULL --proc-cuda --layer-qengine suite: All tests passed, 9472 assertions in 205 test cases,
+  46.8s total wall (was 4.4+ hours wedged on test_ucmtrx).
+
+State: validation-failed -> porting -> ported.
