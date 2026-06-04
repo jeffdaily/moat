@@ -170,3 +170,46 @@ change requests.
   Test Plan with fenced commands; no MOAT jargon and no AMD-internal references
   in any upstream-visible file; new comments ASCII-only; ROCm-vs-HIP naming
   correct (HIP for the language/hipify, ROCm for the toolchain/build flag).
+
+## Validation 2026-06-04 (validator, linux-gfx90a)
+
+State: review-passed -> completed. Fork b2f86d46b91bc516b6813f1f5f189066cb5a243b.
+GPU: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0 (GCD0).
+Env: conda py_3.12, torch 2.13.0a0+gitb5e90ff, hip 7.2.53211.
+
+Build commands:
+```
+# Clean stale .hip mirrors; rebuild from .cu
+cd projects/MASt3R-SLAM/src
+rm -f mast3r_slam/backend/src/gn_kernels.hip mast3r_slam/backend/src/matching_kernels.hip
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace
+
+cd thirdparty/mast3r/dust3r/croco/models/curope
+rm -f kernels.hip; rm -rf build
+PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 python setup.py build_ext --inplace
+```
+
+Code object check (llvm-objdump --offloading):
+- mast3r_slam_backends.cpython-312-x86_64-linux-gnu.so: gfx90a x2 (gn_kernels, matching_kernels)
+- curope.cpython-312-x86_64-linux-gnu.so: gfx90a x1 (kernels)
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py
+```
+
+Results (9/9 PASS):
+- gauss_newton_rays determinism (20x, bit-exact): PASS (n=1,33,64,65,128,256,300; maxrun-diff=0, finite)
+- gauss_newton_rays finite non-zero step: PASS (|dx_iter1|=0.528, |dx_iter8|=0.282)
+- gauss_newton_points determinism (20x, bit-exact): PASS (all n; maxrun-diff=0, finite)
+- gauss_newton_points finite non-zero step: PASS (|dx_iter1|=2.44, |dx_iter8|=0.748)
+- gauss_newton_calib determinism (20x, bit-exact): PASS (8x8,8x9,16x16,16x20; maxrun-diff=0)
+- gauss_newton_calib finite non-zero step: PASS (|dx_iter1|=0.0328, |dx_iter8|=1.5e-7)
+- iter_proj: PASS (det=0, clamp valid, finite, ref_finite)
+- refine_matches: PASS (det=0, pixel-mismatch-frac=0 vs fp16 CPU argmax)
+- curope rope_2d: PASS (det=0, max-abs-diff=5.29e-7, rel=1.29e-7, tol 1e-3)
+
+The volatile DROID-SLAM block reduction in gn_kernels.cu is wave64-safe: bit-exact
+determinism confirmed across 20 runs at every n straddling 32/64/256. No __syncwarp
+needed (confirmed by code analysis in review; empirically proved here).
