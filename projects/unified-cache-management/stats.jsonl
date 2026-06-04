@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-04T01:29:39Z","phase":"test","seconds":34.288,"exit":8,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/unified-cache-management/build_rocm_gfx1100 && \\\n  HIP_VISIBLE_DEVICES=2 ctest -j1 --output-on-failure 2>&1"}
 {"kind":"phase","ts":"2026-06-04T01:30:22Z","phase":"test","seconds":26.501,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/unified-cache-management/src && \\\n  HAMMING_DIR=/var/lib/jenkins/moat/projects/unified-cache-management/build_sparse_gfx1100/ucm/sparse/gsa_on_device/csrc/rocm/ham_dist \\\n  HIP_VISIBLE_DEVICES=2 \\\n  /opt/conda/envs/py_3.12/bin/python3 ucm/sparse/test/gsa/test_hamming_rocm_ref.py 2>&1"}
 {"kind":"session","ts":"2026-06-04T01:30:28Z","epoch":1780536628.806697219,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T01:32:58Z", "tokens": 101300, "source": "validator"}

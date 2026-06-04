@@ -5,8 +5,10 @@
 projects/*/src/
 projects/*/build/
 projects/*/build-*/
+projects/*/build_*/
 projects/*/install/
 projects/*/install-*/
+projects/*/install_*/
 projects/*/.lock
 projects/*/.claim
 projects/.selection.lock

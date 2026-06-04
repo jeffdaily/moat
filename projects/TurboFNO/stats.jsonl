@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-04T02:06:40Z","phase":"test","seconds":0.247,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /tmp/turbofno_validate_gfx1100 2>&1"}
 {"kind":"phase","ts":"2026-06-04T02:07:39Z","phase":"test","seconds":0.243,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /tmp/turbofno_validate_gfx1100 2>&1 && echo VALIDATE_DONE"}
 {"kind":"phase","ts":"2026-06-04T02:08:01Z","phase":"test","seconds":13.915,"exit":0,"cmd":"bash -c \n  cd /var/lib/jenkins/moat/projects/TurboFNO/src\n  echo '=== TurboFNO_1D_D (fused FFT-GEMM-iFFT) ==='\n  HIP_VISIBLE_DEVICES=2 fusion_variants/1D_D_exp_fused_fft_cgemm_ifft/build/TurboFNO_1D_D 2>&1 | head -30\n  echo ''\n  echo '=== TurboFNO_1D_E (hipFFT+hipBLAS baseline) ==='\n  HIP_VISIBLE_DEVICES=2 fusion_variants/1D_E_baseline/build/TurboFNO_1D_E 2>&1 | head -30\n  echo SMOKE_DONE\n"}
+{"kind": "tokens", "ts": "2026-06-04T02:09:39Z", "tokens": 119487, "source": "validator"}
