@@ -323,3 +323,35 @@ DLL-load failure) and misread as a GPU fault, and CMake's gtest_discover_tests 5
 timeout made linked test exes look like build failures. faiss enable-only port is
 sound on gfx1151. Always run faiss test exes with the DLL-path wrapper (faiss_run.py),
 and the slow IVF suites individually (per-process, as the Linux notes already require).
+
+## Revalidation 2026-06-04 (linux-gfx1100)
+
+Delta: a5c47343..e9fed661 -- single file: faiss/gpu/test/TestCodePacking.cpp (+13/-4).
+Two changes, both test-only and behavior-preserving:
+1. Added `#include "hip/hip_runtime.h"` at the top (harmless on Linux HIP; was already
+   inserted by hipify.sh at configure time, now made explicit in source for MSVC builds).
+2. Four `std::uniform_int_distribution<uint8_t> dist` -> `std::uniform_int_distribution<int> dist{0, 255}`:
+   standards-conformance fix (uint8_t is not a conforming distribution type per N4950
+   [rand.req.genl]/1.5; MSVC's STL rejects it; libstdc++ allowed it as an extension).
+   Same [0,255] value range; behavior-equivalent on Linux.
+
+TestCodePacking.cpp is a test TU, NOT linked into faiss / faiss_gpu_objs / libfaiss.so.
+The gfx1100 device library code objects are unchanged by construction.
+
+TestCodePacking rebuilt and run on gfx1100 (AMD Radeon Pro W7800 48GB, HIP_VISIBLE_DEVICES=0,
+OPENBLAS_NUM_THREADS=1, ROCm 7.2.1):
+  NonInterleavedCodes_UnpackPack  PASSED (0 ms)
+  NonInterleavedCodes_PackUnpack  PASSED (0 ms)
+  InterleavedCodes_UnpackPack     PASSED (74 ms)
+  InterleavedCodes_PackUnpack     PASSED (0 ms)
+  [PASSED] 4/4 tests (76 ms total)
+
+Note: TestCodePacking is a CPU-only pack/unpack correctness test (host logic exercising
+InterleavedCodes.h and non-interleaved codec encode/decode); the `#include "hip/hip_runtime.h"`
+is present but no GPU kernels are invoked. Passes confirms the uint8_t->int fix is correct.
+
+Build: cmake --build projects/faiss/src/build --target TestCodePacking -j 16 (221s, reused
+existing build dir from 2026-06-01 gfx1100 validation; hipify artifacts intact, only
+TestCodePacking.cpp source updated to new HEAD e9fed661).
+
+State: completed. validated_sha = e9fed66127740c0439458eec1d65c92825f56679
