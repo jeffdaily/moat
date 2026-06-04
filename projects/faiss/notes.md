@@ -311,11 +311,21 @@ agent_space/faiss_run.py, serial, OPENBLAS_NUM_THREADS=1):
 ~118 tests across 10 suites. One source delta committed: TestCodePacking.cpp
 uint8_t->int distribution (e9fed66).
 
-DEFERRED (jeff, GPU memory was high): TestGpuMemoryException -- the OOM-exception
-suite. It provokes deliberate out-of-memory to test the exception path and earlier
-gave exit 3 with no gtest summary; likely interacts with the APU hipMemGetInfo gap
-([[gfx1151-apu-runtime-gaps]]). Run it on a free GPU / the gfx1101 box to close the
-last suite; not a functional-correctness gate.
+TestGpuMemoryException (the OOM-exception suite) -- RAN 2026-06-04, DOES NOT PASS on
+the gfx1151 APU, but this is a documented APU unified-memory runtime gap, NOT a port
+defect (host did not crash; process exited 3 cleanly). The single test AddException
+deliberately over-allocates to force OOM and expects faiss to throw a CATCHABLE
+exception. On discrete gfx90a/gfx1100 the oversized hipMalloc fails with
+hipErrorOutOfMemory -> faiss catches -> throws (test passes). On the APU, memory is
+shared with the host (no hard VRAM cap), so the allocation does not fail at malloc
+time; a later kernel launch faults instead with `hipError 719 unspecified launch
+failure`, which trips FAISS_ASSERT(err==hipSuccess) in DeviceVector.cuh:117
+(append) and aborts rather than throwing. The faiss code is correct (it asserts the
+launch result; the launch genuinely failed); the divergence is the APU returning 719
+instead of a clean OOM. Same "not a port defect" class as the OpenBLAS heap artifact
+above. See [[gfx1151-apu-runtime-gaps]]. Re-check on a discrete-memory box (gfx1101)
+where the clean-OOM premise holds. Not a functional-correctness gate; all 10 other
+suites pass, so windows-gfx1151 stays COMPLETED.
 
 KEY LESSON: the original "3.5h stuck" was a pure run-environment red herring, NOT a
 port defect -- the gtest .exe was launched without the ROCm DLLs on PATH (exit 127
