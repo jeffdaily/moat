@@ -55,10 +55,15 @@ CPM. Tiering (from the gap analysis):
 - Tier 2 (add hipVS): pairwise_distance + random_projection (proven), then -- leveraging hipVS's
   full ANN, which exceeds our own cuvs slice -- kmeans/knn/dbscan, distance metrics, etc.
 - Tier 3: tree SHAP, FIL/RF tests, Python layer, multi-GPU.
-A subagent is scoping the concrete restructure + dep-wiring spec; that spec lands here.
+The concrete restructure + dep-wiring spec is in ROCM_DS_HIPML_SPEC.md. Dominant risk: the
+cuML-25.08-vs-hipRaft/hipVS-25.02 dep skew; pre-flight gate is confirming hipRaft 25.02 exports
+`raft::warp_size()` before investing. Source work is small (3 guard lines, cuml:: untouched); the
+build rewrite is mechanical.
 
 ## Status
 
-- hipCIM: NOT STARTED -> in progress on gfx90a this session.
-- hipML: scoping (dep-wiring spec) in progress.
+- hipCIM: candidate tree built (validated cuCIM source + README_ROCM.md + build_rocm.sh,
+  cucim:: names kept); jeffdaily/hipCIM repo creation + push in progress this session.
+- hipML: dep-wiring spec done (ROCM_DS_HIPML_SPEC.md); standup not started (gated behind the
+  hipRaft-25.02 pre-flight check; bigger than hipCIM).
 - AMD proposal: gated, pending validated candidates + jeff's internal roadmap check.
