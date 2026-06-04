@@ -125,5 +125,39 @@ hard blocker; the deps are header libs at `release/rocmds-25.10`. Findings:
 - Tier-2 only (deferred): `cuvs::distance::DistanceType` enum value-compat when CUML_LINK_CUVS=ON.
 
 Seed done: `agent_space/rocm-ds/hipML-build` from cuml@moat-port (25.08) + the 3 warp_size patches.
-NEXT: Family-A wiring (versions.json/get_* repoint/guard migration) then the Tier 1 build
-(`CUML_LINK_CUVS=OFF`), iterating any remaining 25.02 raft-API drift the compiler surfaces.
+
+## Tier 1 build attempt (Approach A) -- compat loop + a strategic blocker (2026-06-04)
+
+Tried Approach A first (reuse the validated standalone `cuml_hip.cmake`, point at installed
+ROCm-DS hipMM+hipRaft 25.02; faster/lower-risk than the full Family-A rapids-cmake rewrite that
+cuML's CUDA-bound CMakeLists would require). Built hipMM + hipRaft installs from the ROCm-DS forks
+(both OK). cuML Tier 1 (`CUML_LINK_CUVS=OFF`, restricted CUML_ALGORITHMS, gfx90a) then surfaced a
+compat loop:
+
+1. `raft::warp_size()` host overload absent in raft 25.02 -> `raft::host_warp_size(stream)` (3 sites). DONE.
+2. `<cub/cub.cuh>` shim came from our raft fork's hip_compat/, not hipRaft 25.02 -> added cuML's own
+   `cpp/src/hip/compat_include/cub/cub.cuh` (alias cub=hipcub). DONE.
+3. **rapids_logger (the substantial one -- a real subsystem skew).** cuML 25.08's logger
+   (`logger.hpp`) uses the full standalone `rapids_logger` spdlog wrapper (`logger`, `sink_ptr`,
+   `stderr_sink_mt`, `basic_file_sink_mt`, `level_enum`, `<rapids_logger/log_levels.h>`). rmm >=25.04
+   re-exports the generated base `rapids_logger::rapids_logger`; **ROCm-DS hipMM (rmm 25.02) only
+   generates its own `rmm::rmm_logger` and does NOT provide the base.** A hand shim is not viable
+   (would reimplement rapids_logger over spdlog). The proper fix is `rapids_make_logger(rapids_logger
+   ...)` -- but that internally does `include(${rapids-cmake-dir}/cpm/spdlog.cmake)` + `rapids_cpm_spdlog`,
+   which requires rapids-cmake to be bootstrapped. The standalone `cuml_hip.cmake` deliberately does
+   NOT bootstrap rapids-cmake (that was the whole point of Approach A).
+
+### Strategic implication
+
+**cuML 25.08 cannot avoid rapids-cmake** -- its logger generation needs it. So Approach A cannot stay
+"minimal": the logger forces the ROCm-DS rapids-cmake (ROCmDS-CMake) bootstrap, which is the Family-A
+wiring (task #10). Two paths:
+- **(B) Commit to Family-A**: bootstrap ROCm-DS rapids-cmake in hipML (rapids_config.cmake +
+  rapids_cpm_init + versions.json), generate rapids_logger via rapids_make_logger, continue the
+  compat loop. Bigger, but the house-style-correct end state. The CUDA-bound parts of cuML's
+  CMakeLists (rapids_cuda_init_architectures, LANGUAGES CUDA, CUDAToolkit) still need HIP conversion.
+- **Version-align the deps**: base hipML on a ROCm-DS hipRaft/hipMM that already exports rapids_logger
+  (rmm >=25.04), or re-derive hipML from cuML 25.02 to match the 25.02 deps (loses our 25.08 validation).
+
+This is the dominant-skew risk the gate flagged, materializing at the logging layer. Decision pending
+with jeff. hipCIM (standalone, no RAPIDS deps) was unaffected by any of this -- already published.
