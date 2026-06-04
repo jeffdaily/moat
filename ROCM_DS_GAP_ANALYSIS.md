@@ -36,13 +36,15 @@ distance backend).
 | MOAT port (base) | ROCm-DS repo (base) | ROCm-DS status | Net standing |
 |---|---|---|---|
 | rmm (25.08) | hipMM (25.02) | Production v3.0.0 | ROCm-DS ahead (Python); MOAT adds gfx1100/Windows |
-| raft (25.08) | hipRaft (25.02) | Production v0.1.0 | mixed; MOAT has CK distance backend hipRaft lacks; ROCm-DS builds more instantiations |
+| raft (25.08) | hipRaft (25.02) \* | Production v0.1.0 | mixed; MOAT has CK distance backend hipRaft lacks; ROCm-DS builds more instantiations |
 | cudf (25.08) | hipDF (25.02) | Production v2.0.0 | ROCm-DS far ahead (full libcudf + cudf.pandas); MOAT adds validated gfx1100 |
 | cuvs (25.08) | hipVS (25.02) | Production v0.1.0 | ROCm-DS far ahead (full ANN + C/Py/Rust); MOAT = distance-only + gfx1100 |
 | cugraph (26.08) | hipGRAPH + rocGRAPH (24.06) | Early-access beta | ROCm-DS broader (MG/MTMG, C-API, Python); MOAT adds RDNA3, which ROCm-DS disables |
 | **cuml (25.08)** | **none** | **MISSING** | greenfield -> propose hipML |
 | **cucim (26.08)** | **none** | **MISSING** | greenfield -> propose hipCIM |
 | cuCollections | none (NVIDIA, not RAPIDS) | - | dependency only; out of scope |
+
+\* Delta-upstreamed instead of re-ported: the MOAT raft port's Composable Kernel distance + fused-NN backend (the one functional gap above) was contributed directly to AMD's ROCm-DS hipRaft rather than maintained as a separate MOAT fork. PR: https://github.com/ROCm-DS/hipRaft/pull/9 (gfx90a-validated against hipRaft's own dependency stack: DISTANCE 11/11, FUSED_NN 12/12).
 
 ROCm-DS org full contents (verified via API): hipMM, hipDF, hipRaft, hipVS, hipGRAPH,
 rocGRAPH, plus infra (ROCm-DS docs, ROCmDS-cmake, rocmds-logger). No hipML, no hipCIM, no
