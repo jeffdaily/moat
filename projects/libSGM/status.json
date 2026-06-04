@@ -7,18 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-04T06:01:19Z",
-  "head_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
+  "updated_at": "2026-06-04T06:09:41Z",
+  "head_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
+      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-04T06:01:19Z",
-      "updated_at": "2026-06-04T06:01:19Z",
+      "completed_at": "2026-06-04T06:09:41Z",
+      "updated_at": "2026-06-04T06:09:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
         "method": "source-class",
-        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
-        "at": "2026-06-04T06:01:19Z"
+        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
+        "at": "2026-06-04T06:09:41Z"
       }
     },
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
+      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
       "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-04T06:01:19Z",
-      "updated_at": "2026-06-04T06:01:19Z",
+      "completed_at": "2026-06-04T06:09:40Z",
+      "updated_at": "2026-06-04T06:09:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,20 +63,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
         "method": "source-class",
-        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
-        "at": "2026-06-04T06:01:19Z"
+        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
+        "at": "2026-06-04T06:09:40Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
+      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
       "started_at": "2026-06-03T18:01:47.223805Z",
-      "completed_at": "2026-06-04T06:01:19Z",
-      "updated_at": "2026-06-04T06:01:19Z",
+      "completed_at": "2026-06-04T06:09:41Z",
+      "updated_at": "2026-06-04T06:09:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -92,10 +92,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
         "method": "source-class",
-        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
-        "at": "2026-06-04T06:01:19Z"
+        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
+        "at": "2026-06-04T06:09:41Z"
       }
     }
   }
