@@ -7,18 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-04T06:09:41Z",
-  "head_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+  "updated_at": "2026-06-04T06:12:10Z",
+  "head_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+      "validated_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-04T06:09:41Z",
-      "updated_at": "2026-06-04T06:09:41Z",
+      "completed_at": "2026-06-04T06:12:09Z",
+      "updated_at": "2026-06-04T06:12:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+        "to": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
         "method": "source-class",
-        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
-        "at": "2026-06-04T06:09:41Z"
+        "detail": "neutral wave64-GCN wording (drop internal test-setup admission); guard identical to validated fdb9d24, comment-only, binary-identical",
+        "at": "2026-06-04T06:12:09Z"
       }
     },
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+      "validated_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
       "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-04T06:09:40Z",
-      "updated_at": "2026-06-04T06:09:40Z",
+      "completed_at": "2026-06-04T06:12:09Z",
+      "updated_at": "2026-06-04T06:12:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,20 +63,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+        "to": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
         "method": "source-class",
-        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
-        "at": "2026-06-04T06:09:40Z"
+        "detail": "neutral wave64-GCN wording (drop internal test-setup admission); guard identical to validated fdb9d24, comment-only, binary-identical",
+        "at": "2026-06-04T06:12:09Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+      "validated_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
       "started_at": "2026-06-03T18:01:47.223805Z",
-      "completed_at": "2026-06-04T06:09:41Z",
-      "updated_at": "2026-06-04T06:09:41Z",
+      "completed_at": "2026-06-04T06:12:10Z",
+      "updated_at": "2026-06-04T06:12:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -92,10 +92,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "00d6f77c34cbaf3a5affb4d2883157e313ea112c",
+        "to": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
         "method": "source-class",
-        "detail": "restored __GFX8__ (correct-per-ISA, just unverifiable: no gfx8 hw) with accurate wording; constants.h device guard now identical to validated fdb9d24 (comment-only diff), binary-identical",
-        "at": "2026-06-04T06:09:41Z"
+        "detail": "neutral wave64-GCN wording (drop internal test-setup admission); guard identical to validated fdb9d24, comment-only, binary-identical",
+        "at": "2026-06-04T06:12:10Z"
       }
     }
   }
