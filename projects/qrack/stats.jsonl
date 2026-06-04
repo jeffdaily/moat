@@ -7,3 +7,4 @@
 {"kind":"phase","ts":"2026-06-04T05:30:46Z","phase":"compile","seconds":36.576,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
 {"kind": "tokens", "ts": "2026-06-04T08:53:51Z", "tokens": 434710, "source": "porter linux-gfx90a"}
 {"kind":"phase","ts":"2026-06-04T13:47:52Z","phase":"compile","seconds":0.144,"exit":1,"cmd":"cmake --build _build -j16 --target unittest"}
+{"kind": "tokens", "ts": "2026-06-04T13:53:03Z", "tokens": 57662, "source": "reviewer linux-gfx90a"}
