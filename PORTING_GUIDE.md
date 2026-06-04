@@ -26,12 +26,14 @@ Upstream-visible text (commit messages, code comments, PR bodies) carries no MOA
 
 ## Before porting: assess existing AMD support
 
-A "port" is not always a fresh CUDA-to-HIP conversion. Check first:
-- Mature ROCm/HIP support already upstream -> skip it (disposition already-supported); no work to do.
-- AMD supported only via OpenCL, Vulkan, or SYCL, with no HIP path -> a ROCm/HIP port of the CUDA code is still valuable.
-- An abandoned or incomplete ROCm/HIP port (stale branch, unmerged PR, old fork) -> finish it rather than starting over.
+A "port" is not always a fresh CUDA-to-HIP conversion, and an existing AMD effort is not always an obvious GitHub fork. Search BROADLY before planning a port -- not just the upstream repo and its fork network, but the web, the ROCm/AMD/GPUOpen GitHub orgs, and AMD docs (rocm.docs.amd.com). The AMD port frequently lives as a SEPARATELY-NAMED project: NVIDIA RAPIDS' AMD port is "ROCm-DS" (rocm.docs.amd.com/projects/rocm-ds), a distinct project, not a fork of rapidsai/*. A GitHub "forked-from" check alone misses that whole class. A web search ("<project> ROCm", "<project> AMD GPU", "<project> HIP", "<project> MI300/gfx9") is a REQUIRED step.
+
+Then classify what you found:
+- Mature ROCm/HIP support upstream, OR a mature separate AMD project (ROCm-DS-style) -> skip (disposition already-supported). We do not duplicate AMD's own work.
+- AMD supported only via OpenCL, Vulkan, or SYCL with no HIP path -> a ROCm/HIP port of the CUDA code is still valuable.
+- An incomplete/unvalidated/abandoned AMD port -- a stale branch, an unmerged PR, an old fork, OR a separate AMD project that lags upstream or was never validated on current ROCm -> the MOAT value shifts to VALIDATING AND IMPROVING THAT port: point MOAT at the existing AMD project (track/clone it), confirm it on real GPU, and contribute fixes -- do NOT re-port from scratch.
 - A ROCm/HIP port exists but is below the best practices here -> improve it (minimal footprint, warp_size abstraction, and so on).
-The planner makes this call per project and records it in plan.md. "Already supports AMD via OpenCL/Vulkan" alone does not mean skip.
+The planner makes this call per project and records it in plan.md WITH the URL of any existing AMD effort found. "Already supports AMD via OpenCL/Vulkan" alone does not mean skip.
 
 Performance-critical kernels (attention, GEMM, quantization) are often tuned to NVIDIA-specific features (CUTLASS/CuTe, Hopper sm90 wgmma/MMA, warp specialization). A straight CUDA-to-HIP translation will compile and run but can leave large performance on the table versus an AMD-native implementation (rocWMMA, Composable Kernel, MFMA intrinsics). For these the planner decides between a mechanical port (correctness first) and an AMD-native rewrite of the hot kernels, and says which in plan.md.
 
