@@ -4,5 +4,7 @@
   "default_branch": "dev",
   "fork_url": "https://github.com/jeffdaily/LMCache",
   "ext_type": "torch-extension",
-  "base_sha": "7eb57ad"
+  "base_sha": "7eb57ad",
+  "outcome": "validated",
+  "outcome_note": "Validated upstream HIP path on gfx90a (CDNA2 wave64) + gfx1100 (RDNA3 wave32); upstream targets gfx942/gfx950 only with build-only CI. Carries a contributable build-rot fix (setup.py rocm_extension c++17->c++20: BUILD_WITH_HIP fails on current torch whose <torch/all.h> uses a c++20 requires-clause). gfx1151 blocked by LMCache lacking any Windows host port (POSIX mmap/NUMA/shm), not ROCm. The c++20 fix is PR-worthy."
 }
