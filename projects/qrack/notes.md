@@ -133,3 +133,45 @@ target_compile_definitions(... __HIP_PLATFORM_AMD__=1) is redundant -- hip::host
 already exports INTERFACE_COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1" (identical
 value, no redefinition warning). Could be dropped at PR-prep but harmless.
 GPU validation run is in progress on GCD0; not gated by this review.
+
+
+## VALIDATION FAILED 2026-06-04 (linux-gfx90a): nondeterministic HIP bug in UCMtrx path
+
+The full unittest suite (`--proc-cuda --layer-qengine -d yes`, no test excluded) wedged on
+`test_ucmtrx` on GCD0 for 4.4+ hours (GPU pegged at 100%) before being killed. Root-cause
+investigation shows this is NOT "a huge/slow test" -- it is a correctness/synchronization defect
+in the HIP `uniformlycontrolled` (UniformlyControlledSingleBit) path.
+
+Evidence:
+- CPU engine (`--proc-cpu --layer-qengine test_ucmtrx`): 1.118s, 8/8 assertions PASS.
+- HIP engine, same binary/GCD, NONDETERMINISTIC across runs of the SAME isolated test:
+  - run A (AMD_LOG_LEVEL=3): finished in 0.000s but FAILED 1 assertion (wrong result); only 4
+    kernel launches + 28 hipMalloc, no relaunch storm.
+  - run B (clean): HUNG >60s (timeout-killed).
+- So: sometimes wrong-and-fast, sometimes hangs. Verbose HIP logging (which serializes API calls)
+  made it complete; the clean run raced and hung. That pattern = an async hazard, not slow math.
+
+Not the kernel or geometry (both ruled out):
+- Kernel `uniformlycontrolled` (src/common/qengine.cu:493) is a clean grid-stride loop with small
+  bounded inner loops; no runaway.
+- Launch geometry is fine: warpSize=64 -> nrmGroupSize=64, GetPreferredConcurrency()~=65536, so
+  Nthreads ~= 65536 (not zero). The grid-stride cannot spin.
+
+Suspected location (for the porter): the host dispatch `QEngineCUDA::UniformlyControlledSingleBit`
+(src/qengine/cuda.cu:1094). It does three per-call `MakeBuffer` allocations (nrmInBuffer,
+uniformBuffer, powersBuffer) + `DISPATCH_WRITE`s + a `WaitCall`, then immediately
+`uniformBuffer.reset()` / `qPowers.reset()`. Likely a missing synchronization between the async
+buffer writes (or the buffer free) and the kernel read on the HIP/ROCm async stream -- i.e. the
+kernel reads a buffer before its DISPATCH_WRITE completes, or a buffer is freed while still
+in flight. Other gates (Mtrx, X, CNOT, U, S/T) pass fast on the same HIP engine, so the engine's
+general dispatch is fine; this op's specific write/alloc/free ordering is the differ.
+
+Reproduce: `HIP_VISIBLE_DEVICES=<idle gcd> ./_build/unittest --proc-cuda --layer-qengine test_ucmtrx`
+-- run it several times; it is nondeterministic (wrong-fast OR hang). The fix must make it pass
+RELIABLY across repeated runs.
+
+State: linux-gfx90a review-passed -> validation-failed (back to porter). The earlier "all
+completed assertions passed" porter result and the review-passed verdict both missed this because
+the slow width-20 tests were never run to completion (they were SIGTERM-excluded). PROCESS LESSON:
+a HIP op orders-of-magnitude slower than the CPU engine, or any SIGTERM-"slow" test, must be
+root-caused -- it can be masking a race/correctness bug -- never silently excluded.
