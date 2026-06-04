@@ -148,3 +148,77 @@ libmarv's 32-lane logic. The fixes here are wave-agnostic: getPaddedQueryLength
 stays at 32 on every arch; WARP_FULL_MASK/WarpMaskT auto-narrow to 32-bit on
 CUDA but on HIP wave32 the 64-bit mask still works (HIP narrows it). Cross-arch
 result diff: gfx1100 GPU hits/scores must match gfx90a GPU and CPU on example/.
+
+## Review 2026-06-04 (reviewer, /pr-review local-branch mode)
+Verdict: review-passed. Reviewed `git diff 718d4217...e7471b41` on moat-port
+(single commit). No correctness defects, no blocking findings. The GPU-vs-CPU
+score-exact result is documented; the validator runs the real GPU gate next.
+
+Verified sound (no action):
+- DPX CC==9 forcing. gfx90a reports hipDeviceAttributeComputeCapabilityMajor==9
+  (collides with NVIDIA sm90). The `__HIPCC__` branch in
+  getOptimalKernelConfigs_gapless (gapless_kernel_config.cuh:345) and
+  getOptimalKernelConfigs_SW (smithwaterman_kernel_config.cuh:301) returns the
+  `_default()` config == `_sm89()`, whose every entry has the dpx field = 0
+  (confirmed: gapless sm89 4th column all 0; SW sm89 4th column all 0). The
+  runtime dispatch `if(!config.dpx)` (cudasw4.cuh:1932/1945/1962/1975) then
+  selects the half2/float SIMT kernels. benchmarking.cuh:1007 supportsDPX is
+  forced false under __HIPCC__. So NO DPX kernel is reachable at runtime on AMD.
+  The DPX *_instantiation_dpx*.cu TUs are KEPT as LANGUAGE HIP (referenced by the
+  dispatcher's extern templates; excluding them breaks the device link) and
+  compile against the scalar DPX emulations in cuda_to_hip.h -- dead but valid
+  device code. The score-exact GPU-vs-CPU result confirms the portable path
+  executes. CONFIRMED correct; merits PORTING_GUIDE promotion (see below).
+- __hmax2/__hmin2 pairwise emulation (cuda_to_hip.h) via scalar __hmax/__hmin on
+  low/high halves. Correct for finite integer-valued alignment scores; the
+  executed gapless reduce (mathops.cuh:123 reduce_max) uses it. Byte-identical.
+- getPaddedQueryLength (kernelhelpers.cuh:9) PINNED at literal `sizeof(char4)*32`
+  (NOT warpSize). Host+device-shared serialized query-layout constant; pinning
+  it keeps the host-built layout matching device reads on wave64. Correct per the
+  PORTING_GUIDE warp-size-dependent-FORMAT class (dietgpu precedent).
+- wave64 lane masks: WARP_FULL_MASK = 0xFFFFFFFFFFFFFFFFull / WarpMaskT =
+  unsigned long long on HIP (cuda_to_hip.h), defaulted to 32-bit on CUDA
+  (hpc_helpers.h:36). warp_max_reduce_broadcast signature widened to WarpMaskT,
+  reduction start changed from literal 16 -> warpSize/2, __reduce_max_sync guard
+  tightened to `defined(__CUDA_ARCH__) && >= 800` (kernelhelpers.cuh:25). All
+  kernels.cuh shuffle masks widened to WARP_FULL_MASK. Executed half2/float
+  reductions use width=group_size (<=32) sub-warp shuffles; the cg::reduce tiles
+  are tiled_partition<groupsize> with groupsize in {4,8,16,32} (confirmed from
+  the FOR_EACH_VALID_CONFIG macros) -- wave-agnostic, tile-relative on wave64.
+- cooperative_groups shim (hip_compat/): reduce() butterfly all-reduce over the
+  tile via shfl_xor, greater/less/plus operators, tile_shfl_xor relaying T as
+  32-bit words (int3=12B=3 words exact, half2=4B=1 word). Matches CUDA cg::reduce
+  for the commutative+associative max/add ops used. reduce.h forwards to it.
+- __CUDACC__/__NVCC__ whole-file guards widened to also accept __HIPCC__ across
+  hpc_helpers, blosum.cu/.hpp, convert.cuh -- correct. The uint64 atomic + ffs
+  overloads in cuda_helpers.cuh kept NVCC-only (HIP provides them natively;
+  widening would collide). lane_id() __HIPCC__ branch uses __lane_id(). ClampToInvalid
+  uint path: __vminu4 -> scalar per-byte clamp under __HIP_DEVICE_COMPILE__.
+- Build: USE_HIP gate (default OFF) threaded top-level -> mmseqs -> libmarv;
+  enable_language(HIP), .cu marked LANGUAGE HIP, headers HEADER_FILE_ONLY,
+  -fgpu-rdc + --hip-link device link inside a SHARED libmarv, force-include
+  cuda_to_hip.h + -Ihip_compat only on HIP. CUDA path byte-identical (else
+  branches unchanged). find_package(CUDAToolkit) stays inside NOT LIBRARY_ONLY
+  (executables not built on the foldseek path) so no CUDA dep leaks to the HIP
+  build. rocThrust/hipCUB resolved via the HIP toolchain include path.
+- Commit hygiene: title `[ROCm] Add HIP/AMD GPU support for the libmarv structure
+  aligner` (<=72), mentions Claude, Test Plan present, no noreply trailer, no
+  jargon/em-dash/internal-account refs in the diff. RAII wrappers already
+  move-only with guarded dtor (unchanged).
+
+PORTING_GUIDE lesson to promote (CC-major collision): on ROCm,
+hipDeviceAttributeComputeCapabilityMajor returns 9 on gfx90a (and other CDNA),
+COLLIDING with NVIDIA Hopper sm90. Any CUDA per-device selector that switches on
+compute-capability major to pick a Hopper-only codepath (DPX, wgmma, TMA, etc.)
+will wrongly select it on AMD. Force the portable/default path under __HIPCC__
+rather than relying on the unrecognized-device fallthrough (the collision means
+there is NO fallthrough -- it matches sm90 exactly). Keep the Hopper-only TUs
+compiling (extern-template device-link reachability) against scalar emulations
+but never launch them.
+
+Cross-reference MMseqs2 (same vendored libmarv): this port establishes the
+approach. MMseqs2 should reuse cuda_to_hip.h + hip_compat/ verbatim and the same
+DPX-forced-off / __hmax2-emulation / wave-mask-widening / pad-32 /
+shared-lib-device-link decisions. No divergence flagged here; the only
+foldseek-specific wiring is the top-level/src CMake gating. Reviewer to re-check
+parity when the MMseqs2 fork lands.

@@ -3,3 +3,4 @@
 {"kind":"phase","ts":"2026-06-04T04:47:55Z","phase":"compile","seconds":9.079,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
 {"kind":"phase","ts":"2026-06-04T05:04:42Z","phase":"compile","seconds":50.917,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
 {"kind":"phase","ts":"2026-06-04T05:08:28Z","phase":"compile","seconds":179.806,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
+{"kind": "tokens", "ts": "2026-06-04T05:22:49Z", "tokens": 233686}
