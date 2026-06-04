@@ -7,7 +7,7 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-04T01:26:55Z",
+  "updated_at": "2026-06-04T09:06:58Z",
   "head_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
   "platforms": {
     "linux-gfx90a": {
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dac18fc0a93310a11ef6ad31e01651431a4af24c",
+      "validated_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
       "started_at": null,
-      "completed_at": "2026-05-31T03:56:48Z",
-      "updated_at": "2026-06-03T20:56:09Z",
+      "completed_at": "2026-06-04T09:06:58Z",
+      "updated_at": "2026-06-04T09:06:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -53,6 +53,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+        "method": "binary-equiv",
+        "detail": "windows-gfx1151 build plumbing + __has_include ROCm 7.13+ guard in reduce.h (not taken on 7.2.1) + host-side sim-parameter field; gfx1100 device ISA byte-identical confirmed",
+        "at": "2026-06-04T09:06:58Z"
       }
     },
     "windows-gfx1151": {

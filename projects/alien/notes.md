@@ -265,3 +265,31 @@ Fixes committed at fork 47ab2c9 (all WIN32 / `__has_include` guarded; Linux gfx9
 Proven on gfx1151: EngineTests.exe, PersisterTests.exe, cli.exe all compile and LINK; gfx1151 device code objects embedded in all three; one real GPU test (`AttackerTests.maxRawEnergyThreshold_belowThreshold`) executed and PASSED on hardware. So the Windows port works end to end.
 
 NOT yet completed: the full EngineTests suite (~26 min sustained GPU on Linux; bar 2973/2978 + cli energy-conserved smoke). That run triggered a host `HYPERVISOR_ERROR (0x20001)` BSOD reboot -- a NEW failure mode vs the earlier Event-41 power-loss reboots, during a pure (serialized, no compile overlap) sustained GPU run. Remaining gap is HOST STABILITY, not the port. Plan to finish: run the suite in SHORT batched `--gtest_filter` chunks with idle gaps (no long sustained-load window), attended, after host mitigations (disable Core Isolation/HVCI+VBS so the hypervisor is out of the GPU compute path; newer KMD; TDP cap). See [[gfx1151-host-power-reboots]]. State: windows-gfx1151 = delta-ported (fixes at 47ab2c9, full GPU validation pending).
+
+## Validation 2026-06-04 (linux-gfx1100 revalidate carry-forward)
+
+Revalidate triggered because HEAD advanced dac18fc -> 47ab2c9 (windows-gfx1151 delta-port). The delta spans 4 files:
+- `CMakeLists.txt`: all new code is inside `if(WIN32)`, `if(CMAKE_HIP_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")`, or `if(MSVC AND USE_HIP)` guards. None of those conditions are true on Linux/gfx1100. Verified by reading the full diff.
+- `cmake/hip_link_win.py`: new file, referenced only from the WIN32 CMakeLists block above. Not compiled on Linux.
+- `source/EngineInterface/SimulationParametersSpecification.h`: host-side C++ header, no device code.
+- `source/hip_compat/cooperative_groups/reduce.h`: adds `#if __has_include(<hip/amd_detail/amd_hip_cooperative_groups_reduce.h>)` guard (ROCm 7.13+ path) / `#else` (the original 7.2.x shim). On this host (ROCm 7.2.1) the header `/opt/rocm/include/hip/amd_detail/amd_hip_cooperative_groups_reduce.h` does NOT exist, so `__has_include` is false and the `#else` branch -- the unchanged 7.2.x identity-butterfly shim -- compiles.
+
+Binary-equivalence check: built HEAD (47ab2c9) at gfx1100 in `/var/lib/jenkins/moat/build-alien-head-gfx1100` and compared against the validated_sha (dac18fc) build at `projects/alien/src/build` (same gfx1100, ROCm 7.2.1). Used `python3 utils/codeobj_diff.py` on each GPU-bearing executable:
+
+```
+python3 utils/codeobj_diff.py .../src/build/EngineTests .../build-alien-head-gfx1100/EngineTests
+  -> verdict=identical  (exported symbols + device ISA identical, 39 exports)
+
+python3 utils/codeobj_diff.py .../src/build/cli .../build-alien-head-gfx1100/cli
+  -> verdict=identical  (39 exports)
+
+python3 utils/codeobj_diff.py .../src/build/alien .../build-alien-head-gfx1100/alien
+  -> verdict=identical  (57 exports)
+
+python3 utils/codeobj_diff.py .../src/build/PersisterTests .../build-alien-head-gfx1100/PersisterTests
+  -> verdict=identical  (35 exports)
+
+EngineInterfaceTests: host-only (roc-obj-ls: no kernel section); exported symbols identical (16 each, no diff)
+```
+
+Device ISA for gfx1100 is byte-identical across all GPU-bearing executables. The SPH-reduce ObjectProcessor kernels (the wave32-sensitive path using reduce.h) are unchanged. Carry-forward applied: validated_sha advanced to 47ab2c9, no GPU re-run needed. linux-gfx1100 -> completed.
