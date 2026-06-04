@@ -55,7 +55,7 @@ distance backend).
 | **cucim (26.08)** | **none** | **MISSING** | greenfield -> propose hipCIM |
 | cuCollections | none (NVIDIA, not RAPIDS) | - | dependency only; out of scope |
 
-\* Delta-upstreamed instead of re-ported: the MOAT raft port's Composable Kernel distance + fused-NN backend (the one functional gap above) was contributed directly to AMD's ROCm-DS hipRaft rather than maintained as a separate MOAT fork. PR: https://github.com/ROCm-DS/hipRaft/pull/9 (gfx90a-validated against hipRaft's own dependency stack: DISTANCE 11/11, FUSED_NN 12/12).
+\* PR #9 (CK distance/fused-NN into ROCm-DS/hipRaft, gfx90a-validated DISTANCE 11/11 + FUSED_NN 12/12) was **CLOSED 2026-06-04** as misdirected: per a ROCm-DS developer, RAPIDS moved distance/NN from raft to cuvs, and AMD already replaced CUTLASS with CK-tile kernels in the private AMD-AIOSS/hipVS. The "CUTLASS commented out" gap was a stale-public-fork artifact (see the CORRECTION note above). https://github.com/ROCm-DS/hipRaft/pull/9
 
 ROCm-DS org full contents (verified via API): hipMM, hipDF, hipRaft, hipVS, hipGRAPH,
 rocGRAPH, plus infra (ROCm-DS docs, ROCmDS-cmake, rocmds-logger). No hipML, no hipCIM, no
