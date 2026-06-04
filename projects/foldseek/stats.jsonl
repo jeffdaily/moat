@@ -4,3 +4,7 @@
 {"kind":"phase","ts":"2026-06-04T05:04:42Z","phase":"compile","seconds":50.917,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
 {"kind":"phase","ts":"2026-06-04T05:08:28Z","phase":"compile","seconds":179.806,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
 {"kind": "tokens", "ts": "2026-06-04T05:22:49Z", "tokens": 233686}
+{"kind": "tokens", "ts": "2026-06-04T05:29:26Z", "tokens": 104536}
+{"kind":"phase","ts":"2026-06-04T05:30:51Z","phase":"compile","seconds":1.850,"exit":0,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
+{"kind":"phase","ts":"2026-06-04T05:31:38Z","phase":"test","seconds":0.026,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/foldseek/build/src/foldseek search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10"}
+{"kind":"phase","ts":"2026-06-04T05:33:09Z","phase":"test","seconds":0.056,"exit":0,"cmd":"bash -c \n  /var/lib/jenkins/moat/projects/foldseek/build/src/foldseek search exDB exDB aln_cpu2 tmp_cpu2 --gpu 0 -e 10 2>&1 | grep -E 'Time for processing' | tail -1 &&\n  /var/lib/jenkins/moat/projects/foldseek/build/src/foldseek search exDB exDB_pad aln_gpu2 tmp_gpu2 --gpu 1 -e 10 2>&1 | grep -E 'ungapped|Time for processing' | head -5 &&\n  echo GPU_DONE\n"}

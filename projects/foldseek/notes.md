@@ -149,6 +149,34 @@ stays at 32 on every arch; WARP_FULL_MASK/WarpMaskT auto-narrow to 32-bit on
 CUDA but on HIP wave32 the 64-bit mask still works (HIP narrows it). Cross-arch
 result diff: gfx1100 GPU hits/scores must match gfx90a GPU and CPU on example/.
 
+## Validation 2026-06-04 (linux-gfx90a, HIP_VISIBLE_DEVICES=2)
+
+Build: incremental cmake --build --target foldseek -j16. libmarv.so confirmed to contain gfx90a
+device code objects (hipv4-amdgcn-amd-amdhsa--gfx90a, 45 MB). Fork HEAD e7471b4 verified.
+
+GPU arch: gfx90a (MI250X GCD, 104 CUs). ROCm 7.2.1.
+
+GPU vs CPU validation (bundled example/, 28 SCOP structures):
+```
+foldseek createdb example/ exDB
+foldseek search exDB exDB aln_cpu tmp_cpu --gpu 0 -e 10
+foldseek makepaddedseqdb exDB exDB_pad
+HIP_VISIBLE_DEVICES=2 foldseek search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10
+foldseek convertalis exDB exDB aln_cpu cpu.m8
+foldseek convertalis exDB exDB_pad aln_gpu gpu.m8
+```
+
+Results:
+- CPU hits: 834, GPU hits: 872
+- CPU-only pairs: 0 (all 834 CPU hits reproduced on GPU)
+- GPU-only pairs: 38 (borderline low-bitscore, bits 1-113, expected ungapped-prefilter sensitivity)
+- Common pairs with identical fields: 834/834 (0 mismatches, byte-identical pident/alnlen/coords/evalue/bitscore)
+
+GPU search log confirmed `ungappedprefilter ... --gpu 1` (libmarv GPU prefilter) ran.
+All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
+
+State: linux-gfx90a -> completed, validated_sha = e7471b4164e38cbac58b4f2c6c1b592e9bfac330.
+
 ## Review 2026-06-04 (reviewer, /pr-review local-branch mode)
 Verdict: review-passed. Reviewed `git diff 718d4217...e7471b41` on moat-port
 (single commit). No correctness defects, no blocking findings. The GPU-vs-CPU
