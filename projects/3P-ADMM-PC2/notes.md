@@ -235,3 +235,64 @@ behavior is identical to wave64. Dead warp-NTT files remain excluded (no live pa
 
 VERDICT: PASS -- port-ready -> completed
 gfx1100 hipFFT Z2Z + Barrett reduction correct at wave32; matches gfx90a@6ef301f exactly.
+
+## Validation 2026-06-04 (windows-gfx1151, gfx1151, AMD Radeon 8060S, TheRock 7.13)
+
+validated_sha: 6ef301f3204579779bbaa1f32a466934f720903a
+
+GPU arch: gfx1151 (AMD Radeon 8060S, RDNA3.5, wave32, TheRock ROCm 7.13 pip wheels)
+
+No code change from gfx90a lead -- zero-churn follower validation, fork untouched at 6ef301f.
+
+### Windows-specific build notes
+
+On Windows the build_hip.sh Linux recipe needs two adaptations:
+1. Remove `-fPIC` (unsupported on MSVC target; position-independent code is implicit for Windows DLLs).
+2. Add a `.def` file to the linker so `init_gpu` and `run_modexp` are exported. On Windows with
+   clang/MSVC-ABI, `extern "C"` functions in a DLL are NOT auto-exported (unlike Linux .so);
+   `__declspec(dllexport)` is silently ignored in device-code TUs compiled with hipcc, so a
+   `/DEF:lib_cufft.def` passed via `-Wl,/DEF:...` is the clean solution.
+3. DLL runtime env: copy TheRock DLLs (amdhip64_7.dll, amd_comgr0713.dll, rocm_kpack.dll,
+   hipfft.dll, rocfft.dll, hiprtc07013.dll, hiprtc-builtins07013.dll) from
+   `_rocm_sdk_devel/bin/` + `_rocm_sdk_libraries_gfx1151/bin/` to the same directory as
+   lib_cufft.dll. Windows loader searches the DLL's own directory first, so this ensures
+   TheRock's runtime loads instead of the broken System32 Adrenalin amdhip64_7.dll. In the
+   Python ctypes loader, call `os.add_dll_directory(dll_dir)` before loading.
+
+The hipfft.dll and rocfft.dll from `_rocm_sdk_libraries_gfx1151/bin/` (the gfx1151-specific
+package) contain the precompiled gfx1151 device kernels; no separate .kpack file needed.
+
+Commands run:
+```
+# Build (agent_space/3p-admm-win/build_win.sh)
+HIP_ARCH=gfx1151 bash utils/timeit.sh 3P-ADMM-PC2 compile -- \
+  bash agent_space/3p-admm-win/build_win.sh
+# -> lib_cufft.dll (150 KB, exports: init_gpu, run_modexp)
+
+# modexp gold match
+bash utils/timeit.sh 3P-ADMM-PC2 test -- \
+  C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe \
+  agent_space/3p-admm-win/validate_win.py
+
+# CPU regression (PYTHONUTF8=1 works around upstream Chinese print() on cp1252 terminal)
+PYTHONPATH=projects/3P-ADMM-PC2/src PYTHONUTF8=1 python crypto/test_paillier.py
+PYTHONPATH=projects/3P-ADMM-PC2/src PYTHONUTF8=1 python crypto/test_quantization.py
+PYTHONPATH=projects/3P-ADMM-PC2/src PYTHONUTF8=1 python crypto/test_full_chain.py
+```
+
+Results:
+- Build gfx1151: PASS -- 1 benign warning (`--ld-path` unused during linking); DLL exports
+  confirmed (dumpbin: init_gpu @ 0x28A0, run_modexp @ 0x28B0)
+- modexp vs gmpy2 gold: 6144/6144 exact match
+  n at 255/510/511/768/1022/1023/1535/2046 bits, 256/batch, 3 reps, varied m_bits
+- hipFFT double-FFT rounding margin holds on gfx1151 (RDNA3.5, wave32, fp64 via f64 ALU):
+  0 mismatches across all 6144 crypto-significant cases
+- CPU regression: test_paillier PASS, test_quantization PASS, test_full_chain PASS
+  (max error 1.33e-09, identical to gfx90a/gfx1100)
+- No fork code change needed (zero-delta follower; same commit as gfx90a)
+
+LOW-NUMERIC-RISK target confirmed: the gfx1151 RDNA3.5 FP-divergence class does NOT apply here
+because the correctness gate is BIT-EXACT integer modexp against gmpy2 (not FP tolerance), and
+the Z2Z double-FFT rounding margin holds at < 0.5 limb error even on gfx1151.
+
+VERDICT: PASS -- port-ready -> completed
