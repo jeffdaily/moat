@@ -101,3 +101,35 @@ buffers everything and loses it when a timeout SIGTERMs the run).
 Reuse this fork branch; validate first. No wave-size source delta anticipated
 (source already compiles wave32). fp16 path (FPPOW<5, __half2) is NOT built on
 the default float config and is unvalidated -- a follow-up if needed.
+
+## Review 2026-06-04
+Reviewer pass on fork moat-port @ e0c9ddfc vs base 49d2efc7 (linux-gfx90a),
+via /pr-review local-branch mode. Verdict: review-passed (no must-fix).
+Fault classes fact-checked against source, all clean:
+- Wave size: no __shfl/__ballot/__activemask/warpSize/hardcoded-32 anywhere in
+  device code (verified by grep over the 3 .cu + 2 .cuh). SUM_LOCAL reduction
+  (qengine.cu:209) is a __syncthreads-fenced shared-mem tree that syncs at
+  every halving level with no last-warp elision; block dim = runtime
+  properties.warpSize. Wave-agnostic; same source builds gfx90a + gfx1100.
+- Rule-of-five: CUDADeviceContext only ever made via std::make_shared and held
+  as DeviceContextPtr (shared_ptr); no value-copy path. The four = delete
+  copy/move (cudaengine.cuh:86-89) are the correct contract; nothing regresses.
+- Shim coverage: every cudaXxx token used by the backend (enumerated) is
+  aliased in cuda_to_hip.h. All cudaMemcpy kinds used (H2D/D2H/D2D) present;
+  cudaMemsetAsync present; no plain cudaMemset/cudaEventCreate/cudaGetErrorString
+  used. std::to_string(error) works on hipError_t (enum).
+- CUDART_CB -> empty define; correct for the hipLaunchHostFunc callback.
+- No texture/surface/neighbor reads; OOB-clamp / 256B-pitch checks N/A.
+- No library swaps needed (none present).
+Build system: USE_HIP option default OFF; enable_language(HIP); 3 .cu LANGUAGE
+HIP; HIP target_sources matches the CUDA branch byte-for-byte (same 5 entries
+incl. qhybrid.cpp/qunitmulti.cpp); nvcc-only flags gated behind non-HIP path;
+HIP gets -ffp-contract=on. CUDA/NVIDIA path is byte-identical (elseif branch
+unchanged). Strategy A correct; minimal footprint (6 files).
+Commit hygiene: title 50 chars, [ROCm] prefix, Test Plan present, Claude named,
+no Co-Authored-By-noreply, no ghstack, no em-dash/non-ASCII, no MOAT jargon.
+Non-blocking note (not a defect): cmake/CUDA.cmake:42
+target_compile_definitions(... __HIP_PLATFORM_AMD__=1) is redundant -- hip::host
+already exports INTERFACE_COMPILE_DEFINITIONS "__HIP_PLATFORM_AMD__=1" (identical
+value, no redefinition warning). Could be dropped at PR-prep but harmless.
+GPU validation run is in progress on GCD0; not gated by this review.
