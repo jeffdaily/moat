@@ -7,7 +7,7 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-04T19:41:52Z",
+  "updated_at": "2026-06-04T20:43:16Z",
   "head_sha": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Bundled 3rdparty (TBB -fPIC, then VTK/assimp/embree) fails to build under the all-clang toolchain USE_HIP forces on Windows; host build infra, not the GPU/HIP port (validated on gfx90a+gfx1100, 499 tests). Arch-independent. Reversible: supply system libs via vcpkg USE_SYSTEM_*. See notes.md Validation 2026-06-04.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-04T20:43:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -80,12 +80,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Bundled 3rdparty (TBB -fPIC, then VTK/assimp/embree) fails to build under the all-clang toolchain USE_HIP forces on Windows; host build infra, not the GPU/HIP port (validated on gfx90a+gfx1100, 499 tests). Arch-independent. Reversible: supply system libs via vcpkg USE_SYSTEM_*. See notes.md Validation 2026-06-04.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-04T20:43:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
