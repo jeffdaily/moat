@@ -1,0 +1,7 @@
+{"kind": "tokens", "ts": "2026-06-04T05:21:05Z", "tokens": 69834}
+{"kind":"phase","ts":"2026-06-04T05:28:19Z","phase":"misc","seconds":0.145,"exit":1,"cmd":"cmake -S . -B _build -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-04T05:28:28Z","phase":"misc","seconds":3.130,"exit":0,"cmd":"cmake -S projects/qrack/src -B projects/qrack/src/_build -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DENABLE_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-04T05:28:34Z","phase":"compile","seconds":0.329,"exit":2,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
+{"kind":"phase","ts":"2026-06-04T05:29:31Z","phase":"misc","seconds":3.353,"exit":0,"cmd":"cmake -S projects/qrack/src -B projects/qrack/src/_build -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-04T05:29:51Z","phase":"compile","seconds":15.394,"exit":2,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
+{"kind":"phase","ts":"2026-06-04T05:30:46Z","phase":"compile","seconds":36.576,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
