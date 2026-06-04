@@ -152,3 +152,67 @@ session).
 
 ## Install as a dependency
 Not a base library for other MOAT projects; no dependents.
+
+## Review 2026-06-04 (reviewer, linux-gfx90a)
+
+Verdict: review-passed. Strategy A is correct for this standalone scikit-build/CMake
+backend (Torch headers/linkage only, no torch cpp_extension), so a compat header +
+USE_HIP LANGUAGE-HIP path is right, not Strategy B. Diff is minimal (8 files, +302).
+Every load-bearing claim was verified by reading the ROCm 7.2.1 headers and the
+producer/consumer source, not by trusting the build.
+
+No blocking findings. Items below are non-defects, recorded for completeness:
+
+- cuda_to_hip.h defines __shfl_down_sync but the backend never uses it (only
+  __shfl_up_sync, __shfl_sync, __ballot_sync are used; all in bit_line_maker.cu).
+  Harmless dead coverage; defensible as intrinsic-set completeness. No action.
+- rpu_linearstep_device.h:72 ctor rename (SoftBoundsRPUDeviceMetaParameter<T>() ->
+  SoftBoundsRPUDeviceMetaParameter()) is the one UNCONDITIONAL edit to a CPU/CUDA-shared
+  header (not USE_HIP-guarded). It is a strict C++ conformance fix (a template-id is
+  ill-formed as an injected-class-name constructor declarator) that is behavior-identical
+  on the CUDA/CPU path; acceptable and minimal. Latent upstream bug exposed only because
+  the newer Torch forces C++20.
+
+Verified directly:
+
+(a) bit_line_maker byte-identical-format correctness -- SOUND. The compat-header
+__rpu_logical_warp32_ballot takes the full-wavefront __ballot() (HIP: returns
+unsigned long long, 64 bits on wave64 / low 32 on wave32) and shifts by
+(__lane_id() & 0x20): wave32 lane_id<=31 so shift always 0; wave64 lanes 0-31 -> 0,
+lanes 32-63 -> 32. Cast to unsigned int then yields exactly the calling lane's own
+32-lane subgroup as a 32-bit word == what CUDA __ballot_sync(0xFFFFFFFF,...) gives a
+32-lane warp. The redefined width-32 __shfl/__shfl_up confirmed (amd_warp_functions.h)
+to compute the source lane WITHIN the caller's 32-lane subgroup ((self & ~31) term),
+so __shfl_sync(...,0) broadcasts each subgroup's own lane-0 and __shfl_up(...,32) stays
+in-subgroup. Producer geometry already per-32-subgroup: laneId = threadIdx.x & 0x1f
+(two leaders 0/32 on wave64), sourceId = (tid+i_stride)>>5 and
+blockIdx.x*(blockDim.x>>5)+(threadIdx.x>>5) (distinct source per subgroup), word width
+stays 32, consumer pwu_kernel.h (>>5/&0x1f/__popc on a 32-bit word) unchanged. No mask
+widened to 64. The first kernel's __shfl_up_sync(...,kidthread) is also safe: nKthreads
+divides 32 (constraint 32%Kplus1==0) so nKthreads-groups never straddle a 32-lane
+boundary. On-device bitstream is wave-width-invariant by construction; the fat-binary
+gfx90a;gfx1100 check + wave64 test pass are corroborating, not the proof.
+
+(b) cuRAND distinct-type mapping -- CORRECT. The backend uses CudaArray<curandState>
+(bit_line_maker.cu:90,131; test_helper.cu:42), CudaArray<curandState_t> at call sites
+(cuda_util.h:414-415,504; cuda_util.cu:179), AND an explicit instantiation + method
+specializations of CudaArray<curandStateXORWOW> (cuda_util.cu:1102/1165/1168/1171/1407).
+In CUDA all three are the one XORWOW type. Aliasing all three to hiprandState_t makes
+the explicit instantiation match every call-site type; mapping curandStateXORWOW to
+hiprandStateXORWOW_t separately would leave CudaArray<hiprandState>'s specializations
+undefined -> the exact ImportError the porter hit. No layout conflation: hipRAND's
+default state IS the XORWOW state, and producer+consumer share the single aliased type
+within this build, so there is no two-different-layouts hazard.
+
+Also confirmed: cuBLAS status switch has no duplicate-case collision
+(LICENSE_ERROR->UNKNOWN=11 is distinct from the 7 other mapped values, hipblas-common.h);
+device-side cuBLAS (kernelCublasCreateDevice/getDeviceHandle) is fully inside
+#ifdef RPU_WITH_CUBLAS_DEVICE which is never defined in any build path; host DEVICE
+pointer-mode (nrm2) is on the host handle and hipBLAS-supported; BlockScan TempStorage
+used exactly once (no wave64 reuse race); pinned mem cudaMallocHost/cudaFreeHost aliased;
+ATen stream swap preserves at::cuda::getCurrentCUDAStream() at all 9 call sites; CMake
+CMAKE_HIP_ARCHITECTURES default gfx90a only-when-unset (no hardcode), USE_HIP default OFF,
+IPO off for HIP, CUDA path byte-identical; commit message [ROCm] 55 chars, Claude named,
+Test Plan present, no noreply trailer, no MOAT jargon, ASCII-clean, no AMD-internal refs.
+The 1 CPU-tile InferenceCuda program_weights failure is a pre-existing stochastic
+convergence test (passes in isolation, CUDA variant 8/8), not a port regression.
