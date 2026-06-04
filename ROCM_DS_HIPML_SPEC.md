@@ -159,5 +159,45 @@ wiring (task #10). Two paths:
 - **Version-align the deps**: base hipML on a ROCm-DS hipRaft/hipMM that already exports rapids_logger
   (rmm >=25.04), or re-derive hipML from cuML 25.02 to match the 25.02 deps (loses our 25.08 validation).
 
-This is the dominant-skew risk the gate flagged, materializing at the logging layer. Decision pending
-with jeff. hipCIM (standalone, no RAPIDS deps) was unaffected by any of this -- already published.
+This is the dominant-skew risk the gate flagged, materializing at the logging layer. hipCIM
+(standalone, no RAPIDS deps) was unaffected by any of this -- already published.
+
+## DECISION (jeff, 2026-06-04): commit to full Family-A conversion
+
+Convert cuML's CUDA-bound rapids-cmake build to HIP, mirroring hipRaft. This makes rapids-cmake
+available (solving the rapids_logger blocker) and is the house-style-correct end state.
+
+### Conversion checklist (execute in focused chunks; build after each major step)
+
+Scaffolding (DONE): repo-root `rapids_config.cmake` + `overrides.cmake` (copied from hipRaft) +
+`versions.json` (pins hipMM/hipRaft/hipVS) now in `agent_space/rocm-ds/hipML-build`.
+
+1. **cpp/CMakeLists.txt top** -- replace `if(USE_HIP) include(cmake/hip/cuml_hip.cmake) return() endif()`
+   with hipRaft's pattern:
+   - `set(CMAKE_USER_MAKE_RULES_OVERRIDE "${CMAKE_CURRENT_LIST_DIR}/../overrides.cmake")`
+   - `include(../rapids_config.cmake)` (ROCm-DS bootstrap; NOT cuML's NVIDIA `../cmake/rapids_config.cmake`)
+   - includes: rapids-cmake/cpm/export/find; `option(CUDA_BACKEND ... OFF)`; lang_list = CUDA_BACKEND ?
+     (rapids-cuda + rapids_cuda_init_architectures(CUML) + CUDA) : (rapids-hip + rapids_hip_init_architectures(CUML) + HIP)
+   - `project(CUML VERSION ${RAPIDS_VERSION} LANGUAGES ${lang_list})`
+   - `rapids_cpm_init()` then `rapids_cpm_package_override(${CMAKE_CURRENT_LIST_DIR}/../versions.json)`
+2. **Deps** -- under the HIP branch replace `rapids_find_package(CUDAToolkit)` + `rapids_cuda_init_runtime`
+   with `find_package(hip/hipblas/hipblaslt/hipsolver/hiprand/hipsparse CONFIG PATHS /opt/rocm)`
+   (hipRaft CMakeLists:281-285). get_rmm/get_raft/get_cuvs: the versions.json override redirects CPM to
+   the ROCm-DS forks; get_raft header-only with RAFT_VERSION 25.02 hard-coded; get_cuvs gated on CUML_LINK_CUVS.
+3. **Logger** -- `rapids_cpm_rapids_logger()` already at cpp/CMakeLists.txt:246-247; it now works (rapids-cmake
+   bootstrapped) and generates the base rapids_logger -> resolves the blocker. Revert the failed manual
+   `rapids_make_logger` block in cuml_hip.cmake.
+4. **Integrate cuML HIP specifics into the rapids path** (currently in cuml_hip.cmake's cuml_configure_target):
+   the `src/hip/rmm_compat` + `src/hip/compat_include` BEFORE-include dirs, the force-include
+   `-include src/hip/cuda_to_hip.h`, compile defs (use `__HIP_PLATFORM_AMD__`, drop `USE_HIP`),
+   `--offload-compress`, the curated CUML_ALGORITHMS source selection. `.cu` compiles as HIP via overrides.cmake.
+5. **Guard migration** -- the 3 single-guard sites USE_HIP -> __HIP_PLATFORM_AMD__ (preprocess.cuh:149,
+   ridge.cuh:73, pairwise_distance.cu:89/197); the build no longer defines USE_HIP.
+6. **Scattered CUDA-isms** -- ConfigureAlgorithms.cmake, test CMakeLists, FIL/treelite: convert
+   enable_language(CUDA)/CUDA:: targets/.cu LANGUAGE CUDA to HIP. The grind; iterate the build.
+7. **Build + carry the compat fixes already applied** (warp_size host_warp_size x3, cub/cub.cuh shim) +
+   triage new drift. Then gfx90a validation (MOAT baseline), Tier 2 (CUML_LINK_CUVS=ON), publish (gated).
+
+Deps already installed for reuse: `agent_space/rocm-ds/_deps_rocmds/{hipMM,hipRaft}/install`. Build driver:
+`agent_space/rocm-ds/build_hipml_tier1.sh` (will need updating from the standalone invocation to the
+rapids-cmake-driven `build.sh`-style configure once the CMakeLists is converted). This is a multi-session grind.
