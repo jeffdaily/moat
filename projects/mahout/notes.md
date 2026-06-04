@@ -485,6 +485,46 @@ Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274e
 linux-gfx90a and linux-gfx1100 -> revalidate (delta touches Rust source;
 binary equivalence check expected to confirm no change on Linux paths).
 
+## Validation 2026-06-04 (gfx90a, revalidate, binary-equiv carry-forward)
+
+Platform: linux-gfx90a, GPU: MI250X gfx90a (wave64), ROCm 7.2.1.
+Transition: revalidate -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
+Method: binary-equivalence carry-forward (no GPU re-run required).
+
+Delta (2b0544a..addf01141f, 39 files):
+- 2 modified build.rs (qdp-core, qdp-kernels): emit `cfg(qdp_gpu_platform)` on Linux (always) or Windows+hip. On Linux `qdp_gpu_platform` is always set -- identical to old `target_os = "linux"` condition.
+- 1 new qdp-python/build.rs: same cfg emit for Windows+hip support.
+- 35 Rust source + test files: mechanical rename `#[cfg(target_os = "linux")]` -> `#[cfg(qdp_gpu_platform)]` and `#[cfg(not(target_os = "linux"))]` -> `#[cfg(not(qdp_gpu_platform))]`.
+- 1 qdp-kernels/hip_compat/cuda_runtime.h: added `#ifndef M_SQRT1_2` guard (MSVC POSIX math constant); this header is only on the HIP include path and only affects Windows MSVC compilation.
+- 1 qdp-core/src/platform/mod.rs: windows stub gated `all(target_os = "windows", not(qdp_gpu_platform))` to avoid duplicate symbol on Windows+hip.
+None of the 6 .cu kernel source files changed. On Linux, every cfg evaluation is identical: `qdp_gpu_platform` is always true (same as `target_os = "linux"` was), and the M_SQRT1_2 shim is only reached by Windows MSVC, not by Linux/hipcc.
+
+Binary-equivalence check:
+- git worktree at validated_sha (2b0544a40b) built into `/tmp/mahout-old-gfx90a-target`; HEAD (addf01141f) built into the default target dir. Both: `QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm --no-default-features --features hip -j 16` -> exit 0.
+- Compared libkernels.a (archive of 6 .cu HIP kernel objects) with `python3 utils/codeobj_diff.py`.
+- Result: `verdict=identical` -- exported symbols + device ISA identical (0 exports). All 6 gfx90a kernel TUs compile to byte-identical device code objects.
+- 256-byte .a size difference is AR metadata (build.rs cfg strings), not GPU code.
+
+Build commands:
+```
+source "$HOME/.cargo/env"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm
+# HEAD build
+bash utils/timeit.sh mahout compile -- cargo build \
+  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+# validated_sha build (worktree)
+cd projects/mahout/src && git worktree add /tmp/mahout-old-gfx90a 2b0544a40bcaf60d35539ba8be62cf791e6c0846
+CARGO_TARGET_DIR=/tmp/mahout-old-gfx90a-target cargo build \
+  --manifest-path /tmp/mahout-old-gfx90a/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+# compare
+python3 utils/codeobj_diff.py \
+  /tmp/mahout-old-gfx90a-target/debug/build/qdp-kernels-e8e72e39df1ee785/out/libkernels.a \
+  projects/mahout/src/qdp/target/debug/build/qdp-kernels-e8e72e39df1ee785/out/libkernels.a
+# verdict=identical
+```
+
 ## Validation 2026-06-04 (gfx1100, revalidate, binary-equiv carry-forward)
 
 Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), ROCm 7.2.1.
