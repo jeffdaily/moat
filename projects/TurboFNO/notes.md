@@ -88,6 +88,59 @@ by the same cgemm-vs-hipBLAS and fft_8-vs-hipFFT harness on the follower host,
 and/or a cross-arch output diff against the gfx90a result (deterministic).
 gfx1151: confirm hipFFT/hipBLAS presence in the Windows HIP SDK.
 
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, warpSize=32, 35 CUs. ROCm 7.2.1.
+Fork: jeffdaily/TurboFNO moat-port @ e100b3d (submodule jeffdaily/TurboFFT @ e285704).
+
+Note on host GPU accessibility: this host has 4 W7800 GPUs (gfx1100). GPUs 0, 1, 3
+were clock-gated at 0 MHz and the ROCm 7.2.1 runtime hung during queue creation on
+them (acquireQueue spin-wait; a known ROCm/driver issue with deep GFXOFF on RDNA3
+when orphaned KFD contexts are present). GPU 2 was clocked up (2948 MHz, active
+from another session) and was responsive. All validation ran on GPU 2 (HIP_VISIBLE_DEVICES=2).
+
+Build: all 10 fusion variants configured and compiled clean for gfx1100 (~45s, warnings only, no errors).
+gfx1100 code objects confirmed via llvm-objdump --offloading for 1D_A, 1D_D, 1D_E, 2D_D, 2D_E
+(all show `hipv4-amdgcn-amd-amdhsa--gfx1100`).
+
+Commands:
+```
+# Build all 10 variants
+cd projects/TurboFNO/src && export PROJECT_ROOT=$(pwd)
+USE_HIP=1 CMAKE_HIP_ARCHITECTURES=gfx1100 bash install.sh
+
+# Build + run numerical harness (column-major matrices; cgemm.cuh is col-major throughout)
+/opt/rocm/llvm/bin/clang++ -x hip --offload-arch=gfx1100 -DUSE_HIP -std=c++17 -O2 -ffp-contract=on \
+    -I${PROJECT_ROOT}/utils -I${PROJECT_ROOT}/fusion_variants/1D_A_exp_fft+cgemm+ifft \
+    -I${PROJECT_ROOT}/TurboFFT/TurboFFT/include/code_gen/generated/float2 \
+    ${PROJECT_ROOT}/utils/utils.cu agent_space/turbofno_validate.cu \
+    -L/opt/rocm/lib -lhipfft -lhipblas -o /tmp/turbofno_validate_gfx1100
+HIP_VISIBLE_DEVICES=2 /tmp/turbofno_validate_gfx1100
+
+# Runtime smoke
+HIP_VISIBLE_DEVICES=2 fusion_variants/1D_D_exp_fused_fft_cgemm_ifft/build/TurboFNO_1D_D | head -30
+HIP_VISIBLE_DEVICES=2 fusion_variants/1D_E_baseline/build/TurboFNO_1D_E | head -30
+```
+
+Numerical results (agent_space/turbofno_validate.cu on GPU 2):
+- Device: AMD Radeon Pro W7800 48GB, warpSize=32, CUs=35
+- GEMM: cgemm (logical-32 tiling, wave32) vs hipblasCgemm M=256 N=256 K=128 (col-maj):
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=3.487317e-05 -> PASS
+- FFT: fft_8 (hand-rolled radix-2 256pt) vs hipfftExecC2C FORWARD, batch=1024:
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=8.255286e-05 -> PASS
+
+Wave32 GEMM tiling confirmation: the cgemm kernel uses WID=threadIdx.x/32, WARP_M=32,
+and __syncthreads for synchronization -- a block-level fence that is wave-size-agnostic.
+On wave32 each logical tile (32 threads) is exactly one wavefront. No warp-collective
+ops (no __shfl/__ballot/__syncwarp). The numerical PASS (max_rel_diff ~3.5e-5, 0 outliers)
+on wave32 confirms the tiling is correct as-is.
+
+Runtime smoke (first 30 lines, no CHECK_CUDA_KERNEL errors):
+- TurboFNO_1D_D (fused FFT-GEMM-iFFT): bs=1, dimX=1, DY=128, N=64..128, K=8..112 timing lines printed cleanly.
+- TurboFNO_1D_E (hipFFT+hipBLAS baseline): bs=1, dimX=1, DY=128, N=64..128, K=8..112 timing lines printed cleanly.
+
+Result: linux-gfx1100 COMPLETED at e100b3d.
+
 ## Validation 2026-06-04 (linux-gfx90a)
 
 GPU: AMD Instinct MI250X / MI250, gfx90a, warpSize=64, 104 SMs. ROCm 7.2.1.

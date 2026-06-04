@@ -10,3 +10,9 @@
 {"kind":"phase","ts":"2026-06-04T00:02:42Z","phase":"test","seconds":0.331,"exit":0,"cmd":"bash /tmp/run_validate.sh"}
 {"kind":"phase","ts":"2026-06-04T00:07:58Z","phase":"test","seconds":263.266,"exit":143,"cmd":"bash /tmp/run_smoke.sh"}
 {"kind": "tokens", "ts": "2026-06-04T00:11:27Z", "tokens": 77928}
+{"kind":"phase","ts":"2026-06-04T01:34:22Z","phase":"compile","seconds":0.007,"exit":127,"cmd":"bash -c USE_HIP=1 CMAKE_HIP_ARCHITECTURES=gfx1100 bash install.sh"}
+{"kind":"phase","ts":"2026-06-04T01:35:12Z","phase":"compile","seconds":45.092,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TurboFNO/src && export PROJECT_ROOT=/var/lib/jenkins/moat/projects/TurboFNO/src && USE_HIP=1 CMAKE_HIP_ARCHITECTURES=gfx1100 bash install.sh"}
+{"kind":"phase","ts":"2026-06-04T01:44:55Z","phase":"test","seconds":342.362,"exit":143,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /tmp/turbofno_validate_gfx1100"}
+{"kind":"phase","ts":"2026-06-04T02:06:40Z","phase":"test","seconds":0.247,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /tmp/turbofno_validate_gfx1100 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:07:39Z","phase":"test","seconds":0.243,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 /tmp/turbofno_validate_gfx1100 2>&1 && echo VALIDATE_DONE"}
+{"kind":"phase","ts":"2026-06-04T02:08:01Z","phase":"test","seconds":13.915,"exit":0,"cmd":"bash -c \n  cd /var/lib/jenkins/moat/projects/TurboFNO/src\n  echo '=== TurboFNO_1D_D (fused FFT-GEMM-iFFT) ==='\n  HIP_VISIBLE_DEVICES=2 fusion_variants/1D_D_exp_fused_fft_cgemm_ifft/build/TurboFNO_1D_D 2>&1 | head -30\n  echo ''\n  echo '=== TurboFNO_1D_E (hipFFT+hipBLAS baseline) ==='\n  HIP_VISIBLE_DEVICES=2 fusion_variants/1D_E_baseline/build/TurboFNO_1D_E 2>&1 | head -30\n  echo SMOKE_DONE\n"}
