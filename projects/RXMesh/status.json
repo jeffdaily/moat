@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-05-30T22:26:12Z",
-  "head_sha": "6b30d8e06bcae62f7b8726fbf45fb5ed50477090",
+  "updated_at": "2026-06-04T14:42:16Z",
+  "head_sha": "e80e1a07663e197105ced9fff816e5a1f412043f",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "6b30d8e06bcae62f7b8726fbf45fb5ed50477090",
       "started_at": "2026-05-30T09:21:09Z",
       "completed_at": "2026-05-30T22:22:30Z",
-      "updated_at": "2026-05-30T22:22:30Z",
+      "updated_at": "2026-06-04T14:41:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "6b30d8e06bcae62f7b8726fbf45fb5ed50477090",
       "started_at": "2026-05-30T21:08:00Z",
       "completed_at": "2026-05-30T22:26:12Z",
-      "updated_at": "2026-05-30T22:26:12Z",
+      "updated_at": "2026-06-04T14:41:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "e80e1a07663e197105ced9fff816e5a1f412043f",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-05-30T20:50:24Z",
+      "completed_at": "2026-06-04T14:42:16Z",
+      "updated_at": "2026-06-04T14:42:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

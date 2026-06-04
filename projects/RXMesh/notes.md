@@ -500,3 +500,146 @@ Fork commit d50370b is validated on linux-gfx1100. State: completed.
 ## Validation 2026-05-30 (gfx1100) -- carry-forward at 6b30d8e (tree-identical squash)
 
 The fork was squashed to a single curated commit (d50370b -> 6b30d8e). `git rev-parse 6b30d8e^{tree}` == `git rev-parse d50370b^{tree}` == bad32dde416667d1ef029d8fb0faece857c98b88 -- the source tree is BYTE-FOR-BYTE identical, only the commit history changed. The prior gfx1100 real-GPU validation at d50370b (RXMesh_test 25/25 deterministic, WARP_SIZE=32 confirmed, wave64 ballot/sub-warp fixes degenerate correctly, ShmemMutex no-deadlock) therefore applies unchanged; a re-run on identical objects would yield identical results. validated_sha -> 6b30d8e. No GPU re-run (identical tree), no fork change.
+
+## Validation 2026-06-04 (windows-gfx1151)
+
+Platform: windows-gfx1151, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32),
+Windows 11, TheRock ROCm (pip wheel), clang++ 23.0 gcc-driver mode,
+HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/RXMesh @ moat-port e80e1a07663e197105ced9fff816e5a1f412043f
+(new commit on top of 6b30d8e).
+
+### Windows delta (3 files, committed at e80e1a0)
+
+Three changes were required to build and run on Windows:
+
+**cmake/RXMeshTarget.cmake and cmake/RXMeshApp.cmake (WIN32-guarded link options):**
+- `-fuse-ld=` (empty): CMake's Windows-Clang platform module injects
+  `-fuse-ld=lld-link` into all link commands; clang++ (gcc-driver mode)
+  rejects `lld-link` as a linker name when clang-linker-wrapper drives the
+  HIP device-link step under -fgpu-rdc. An empty `-fuse-ld=` appended after
+  it in the link flags resets the linker to the default. Linux paths are
+  unaffected (WIN32 is false on Linux).
+- `-Xoffload-linker --allow-multiple-definition`: the HIP cooperative_groups
+  SDK header defines `cooperative_groups::this_cluster()` as a non-inline
+  `__device__` function; under -fgpu-rdc this appears as a duplicate strong
+  symbol in the AMDGCN device linker on Windows PE (Linux ELF/COMDAT handles
+  it transparently by treating header-defined functions as weak).
+
+**include/rxmesh/util/cuda_query.h (`__HIP_PLATFORM_AMD__` guard):**
+On integrated AMD APU devices (gfx1151 on Windows, Strix Halo),
+`hipDeviceProp_t::managedMemory` returns 0 even though device kernels run
+fine. The RXMesh core mesh-data-structure path never calls hipMallocManaged,
+so the missing capability is not a correctness issue. Demote the fatal exit
+to a WARN on HIP targets (`managedMemory == 0` warning logged and continuing).
+
+Note: the `-fuse-ld=lld-link` injected by CMake comes after our target link
+option in the Ninja LINK_FLAGS. During the build, a post-generation
+build.ninja patch (`python3 -c "..."`) removes the trailing `-fuse-ld=lld-link`
+from the link step; see build recipe below.
+
+### Build commands
+
+```
+ROCM_ROOT=D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel
+CMAKE=D:/Develop/TheRock/.venv/Scripts/cmake.exe  # CMake 4.3.2 required
+CLANGPP=$ROCM_ROOT/lib/llvm/bin/clang++.exe
+CLANG=$ROCM_ROOT/lib/llvm/bin/clang.exe
+
+# Pre-populate CPM.cmake cache (SSL cert issue on this host):
+mkdir -p projects/RXMesh/build/cmake
+curl -k -L https://github.com/cpm-cmake/CPM.cmake/releases/download/v0.39.0/CPM.cmake \
+  -o projects/RXMesh/build/cmake/CPM_0.39.0.cmake
+
+HIP_DEVICE_LIB_PATH=$ROCM_ROOT/lib/llvm/amdgcn/bitcode \
+HIP_PATH=$ROCM_ROOT \
+$CMAKE -S projects/RXMesh/src -B projects/RXMesh/build -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_HIP_COMPILER=$CLANGPP \
+  -DCMAKE_C_COMPILER=$CLANG \
+  -DCMAKE_CXX_COMPILER=$CLANGPP \
+  -DCMAKE_HIP_STANDARD=17 \
+  -DCMAKE_PREFIX_PATH=$ROCM_ROOT \
+  -DRX_USE_POLYSCOPE=OFF -DRX_BUILD_APPS=OFF -DRX_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+# Remove -fuse-ld=lld-link injected by CMake Windows-Clang platform module:
+python3 -c "
+f=open('projects/RXMesh/build/build.ninja','r+');
+c=f.read(); f.seek(0)
+f.write(c.replace(' --rtlib=compiler-rt -fuse-ld=lld-link',' --rtlib=compiler-rt').replace(' -fuse-ld=lld-link',''))
+f.truncate(); f.close()
+"
+
+HIP_DEVICE_LIB_PATH=$ROCM_ROOT/lib/llvm/amdgcn/bitcode \
+$CMAKE --build projects/RXMesh/build --target RXMesh RXMesh_test -j6
+
+# Deploy TheRock runtime DLLs beside exe (System32 Adrenalin amdhip64 is broken):
+for dll in amdhip64_7.dll amd_comgr0713.dll rocm_kpack.dll \
+           hipblas.dll hipsparse.dll hipsolver.dll \
+           rocblas.dll rocsparse.dll rocsolver.dll libhipblaslt.dll; do
+  cp $ROCM_ROOT/bin/$dll projects/RXMesh/build/bin/
+done
+```
+
+### gfx1151 code-object evidence
+
+```
+strings projects/RXMesh/build/bin/RXMesh_test.exe | grep "hipv4-amdgcn"
+  -> hipv4-amdgcn-amd-amdhsa--gfx1151   (exactly one device code object)
+```
+
+### WARP_SIZE = 32 on gfx1151
+
+gfx1151 is RDNA3.5 (wave32). macros.h defines WARP_SIZE = 64 on `__GFX9__`
+(CDNA2) and 32 on all other AMD targets. On gfx1151, `__GFX9__` is NOT
+defined; the else-branch fires: WARP_SIZE = 32. All wave64 fixes
+(ballot_sub_warp_32, ShmemMutex::critical_section) degenerate correctly to
+wave32 (identical to gfx1100 -- see gfx1100 validation section above).
+
+### Test results (HIP_VISIBLE_DEVICES=0, sphere3.obj)
+
+Filter: RXMeshStatic.*:RXMesh.*:Util.*:RXMeshDynamic.PatchScheduler:
+RXMeshDynamic.PatchLock:RXMeshDynamic.Validate:RXMeshDynamic.RandomFlips:
+RXMeshDynamic.RandomCollapse:RXMeshDynamic.TriangleRefinement:
+RXMeshDynamic.PatchSlicing
+
+Run 1: 25/25 PASSED (1649 ms)
+Run 2: 25/25 PASSED (1537 ms)
+
+Individual results (run 1, subset):
+- RXMeshStatic.Queries (VV/VE/VF/EV/EF/FV/FE/FF x 1000 iters vs CPU ref): OK
+- RXMeshStatic.Oriented_VV_Open: OK
+- RXMeshStatic.Oriented_VV_Closed: OK
+- RXMeshStatic.EVDiamond: OK
+- RXMeshStatic.MultiQueries: OK
+- RXMeshStatic.BoundaryVertex: OK
+- RXMeshStatic.ForEach: OK
+- RXMeshStatic.ForEachOnDevice: OK
+- RXMeshStatic.Export: OK
+- RXMesh.Iterator: OK
+- RXMesh.LPPair: OK
+- RXMesh.LPHashTable: OK
+- Util.Scan (hipCUB): OK
+- Util.AtomicMin/AtomicAdd/Align/BlockMatrixTranspose/Tet: OK
+- RXMeshDynamic.PatchLock: OK (no flake on gfx1151 wave32)
+- RXMeshDynamic.PatchScheduler: OK
+- RXMeshDynamic.Validate: OK
+- RXMeshDynamic.RandomFlips: OK
+- RXMeshDynamic.RandomCollapse: OK
+- RXMeshDynamic.TriangleRefinement: OK (input bumpy-cube.obj)
+- RXMeshDynamic.PatchSlicing: OK
+
+### Verdict
+
+PASS. All 25 RXMesh_test tests pass on real GPU hardware (gfx1151, wave32,
+RDNA3.5) in two deterministic runs. The wave32 code path (same as gfx1100,
+which also validated at 25/25) is confirmed working. No hang, no corrupted
+topology, clean exit. Fork commit e80e1a0 validated on windows-gfx1151.
+State: completed.
+
+The Linux platforms (gfx90a/gfx1100) are flipped to revalidate because this
+commit adds WIN32-guarded source changes. The WIN32 guards and
+__HIP_PLATFORM_AMD__ guard mean no Linux device code is altered; a
+binary-equivalence check is expected to carry them forward.
