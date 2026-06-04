@@ -343,8 +343,12 @@ Verification trail (all load-bearing claims independently re-derived from the fo
 - GPU run not re-executed at review (validator's stage, per PORTING_GUIDE 2026-05-30); porter recorded
   CUDA/* 164/167 +3 skip, full 350/351 +1 skip, determinism bit-identical. Not a blocker for review.
 
-## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+## Upstream-PR disposition: SMALL DELTA PR is warranted (corrected 2026-06-04)
 
-README sweep finding: OpenNMT/CTranslate2 already has AMD/ROCm support upstream. README install section: "If you have an AMD ROCm GPU, we provide specific Python wheels on the releases page." ROCm support is integrated in core with dedicated release wheels.
+An earlier README-sweep note here said "DO NOT open a duplicate PR -- upstream already supports ROCm." That was WRONG and is retracted. Upstream has a mature HIP backend (the planner knew this: disposition was verify/modernize, not fresh port), but our port genuinely EXTENDS it, and the delta is contributable:
 
-Our port duplicates existing upstream AMD support (same miss class as llm.c/anthonix). Do NOT open an upstream PR. A narrow contribution is only warranted if our coverage genuinely exceeds theirs (e.g. CDNA/gfx90a wave64, gfx1100 wave32, or Windows/gfx1151) AND they lack it -- assess per-project before proposing anything, and prefer contributing the specific delta over a wholesale PR. See [[moat-no-duplicate-amd-ports]].
+1. gfx90a (CDNA2) enablement -- the entire code delta is 2 lines: prepend `gfx90a` to the ROCm arch lists in docker/Dockerfile_rocm and python/tools/prepare_build_environment_linux_rocm.sh. Upstream's HIP backend is RDNA-only (gfx1030;gfx11xx;gfx12xx); gfx90a/MI250X is absent from every arch list, docker image, and CI, so MI-class users cannot use the prebuilt ROCm wheels.
+2. First GPU validation of the ROCm path on ANY arch. Upstream CI compiles ROCm wheels in a CPU-only container and only builds docker images (zero GPU execution). We ran the full gtest suite on gfx90a (wave64, first CDNA run), gfx1100 (wave32), and gfx1151 (wave32, Windows/TheRock).
+3. wave64 de-risk finding (no fix needed): `C10_WARP_SIZE 32` (helpers.h:398) LOOKS like the FBGEMM wave64 fault class but is benign here -- it feeds a shared-memory PARTITION reduction (`smem[lane*C10_WARP_SIZE+i]`, __syncthreads-bracketed), not __shfl masks/lane indexing, so it is a tiling constant, not a hardware-warp-width assumption; correct on a 64-wide wave, left untouched.
+
+PR framing: "Add gfx90a (CDNA2) to the ROCm build arch lists; validated on MI250X." Minimal, NVIDIA/RDNA-safe, welcome to a project that actively maintains its HIP backend. NOT a duplicate to skip. See [[moat-no-duplicate-amd-ports]].
