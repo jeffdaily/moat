@@ -1,0 +1,9 @@
+{"kind": "tokens", "ts": "2026-06-04T04:49:42Z", "tokens": 80348}
+{"kind":"phase","ts":"2026-06-04T04:57:52Z","phase":"compile","seconds":8.138,"exit":1,"cmd":"cmake --build projects/espresso/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-06-04T04:59:52Z","phase":"compile","seconds":29.342,"exit":1,"cmd":"cmake --build projects/espresso/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-06-04T05:02:37Z","phase":"compile","seconds":97.767,"exit":0,"cmd":"cmake --build projects/espresso/src/build-hip -j16"}
+{"kind":"phase","ts":"2026-06-04T05:03:54Z","phase":"test","seconds":11.789,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -R dawaanr-and-dds-gpu|p3m_madelung|coulomb_cloud_wall$|coulomb_cloud_wall_duplicated|dipolar_direct_summation|p3m_electrostatic_pressure --output-on-failure"}
+{"kind":"phase","ts":"2026-06-04T05:05:19Z","phase":"test","seconds":43.586,"exit":0,"cmd":"ctest --test-dir projects/espresso/src/build-hip -R dawaanr-and-dds-gpu|p3m_madelung|coulomb_cloud_wall$|coulomb_cloud_wall_duplicated|dipolar_direct_summation|p3m_electrostatic_pressure --output-on-failure"}
+{"kind":"phase","ts":"2026-06-04T05:05:58Z","phase":"test","seconds":30.136,"exit":0,"cmd":"ctest --test-dir projects/espresso/src/build-hip -R dipolar_interface|coulomb_interface|dipole_field_tracking|gpu_availability|analyze_energy --output-on-failure"}
+{"kind":"phase","ts":"2026-06-04T05:13:13Z","phase":"test","seconds":7.116,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -LE gpu -R coulomb_mixed_periodicity|p3m_tuning_exceptions|coulomb_cloud_wall_cpu|elc$|mmm1d|coulomb_interface --output-on-failure"}
+{"kind":"phase","ts":"2026-06-04T05:13:29Z","phase":"test","seconds":8.881,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -LE gpu -R p3m_tuning_exceptions|mmm1d|coulomb_interface|elc$|elc_vs_analytic|coulomb_mixed_periodicity|p3m_fft --output-on-failure"}
