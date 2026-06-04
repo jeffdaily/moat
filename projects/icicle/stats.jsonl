@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-03T05:58:08Z","phase":"test","seconds":20.591,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_val_build/backend/hip_pqc/tests -V --output-on-failure"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 33853, "source": "session-2026-06-02/03 backfill: gfx90a revalidation"}
 {"kind":"phase","ts":"2026-06-04T09:15:17Z","phase":"compile","seconds":1.662,"exit":1,"cmd":"cmake --build /d/Develop/moat/agent_space/icicle_win_build -j6"}
+{"kind": "tokens", "ts": "2026-06-04T09:18:24Z", "tokens": 78867, "source": "validator"}
