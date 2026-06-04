@@ -9,3 +9,7 @@
 {"kind":"phase","ts":"2026-06-04T05:13:29Z","phase":"test","seconds":8.881,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -LE gpu -R p3m_tuning_exceptions|mmm1d|coulomb_interface|elc$|elc_vs_analytic|coulomb_mixed_periodicity|p3m_fft --output-on-failure"}
 {"kind": "tokens", "ts": "2026-06-04T05:17:04Z", "tokens": 157007}
 {"kind": "tokens", "ts": "2026-06-04T05:25:45Z", "tokens": 69274}
+{"kind": "tokens", "ts": "2026-06-04T05:29:26Z", "tokens": 26393}
+{"kind":"phase","ts":"2026-06-04T05:30:28Z","phase":"compile","seconds":7.722,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/espresso/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-04T05:31:18Z","phase":"test","seconds":0.143,"exit":0,"cmd":"ctest -L gpu --timeout 600 -j4 --output-on-failure -R coulomb_cloud_wall|coulomb_cloud_wall_duplicated|p3m_madelung|p3m_electrostatic_pressure|dawaanr-and-dds-gpu|dipolar_direct_summation|dipolar_interface|coulomb_interface|dipole_field_tracking|gpu_availability"}
+{"kind":"phase","ts":"2026-06-04T05:31:58Z","phase":"test","seconds":33.926,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/espresso/src/build-hip && ctest -L gpu --timeout 600 -j4 --output-on-failure -R 'coulomb_cloud_wall|coulomb_cloud_wall_duplicated|p3m_madelung|p3m_electrostatic_pressure|dawaanr-and-dds-gpu|dipolar_direct_summation|dipolar_interface|coulomb_interface|dipole_field_tracking|gpu_availability'"}
