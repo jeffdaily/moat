@@ -77,8 +77,13 @@ def load_projects():
 
 def cell(block):
     """Status glyph for one platform. A blocked=true platform shows the blocked
-    glyph regardless of its underlying state."""
+    glyph (🚫) unless the block reason indicates a retired/optional platform
+    (gfx1151), in which case we show n/a (—) to avoid misleading stop signs."""
     if block.get("blocked"):
+        reason = block.get("blocked_reason", "")
+        # Retired platforms (gfx1151) are optional, not failed gates
+        if "gfx1151 host retired" in reason:
+            return "—"
         return "🚫"
     return EMOJI.get(block.get("state"), "❓")
 
