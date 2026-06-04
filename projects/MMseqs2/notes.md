@@ -263,3 +263,58 @@ CPU-only build (build-cpu/src/mmseqs, no USE_HIP) with --gpu 0: 12901 hits --
 identical to GPU build --gpu 0 path. No regression.
 
 VERDICT: PASS. State -> completed (validated_sha = c755847ab4114fe8a470bf9ca9832a61f37ed56f).
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm 7.2.1).
+HIP_VISIBLE_DEVICES=1 CUDA_VISIBLE_DEVICES=1 (GPU 0 had orphaned KFD context; GPU 1 responsive).
+warpSize=32 confirmed on gfx1100 native wave32.
+
+### Build
+
+Fork cloned fresh at c755847ab4114fe8a470bf9ca9832a61f37ed56f (matches head_sha).
+
+```
+cd projects/MMseqs2/src
+cmake -S . -B build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/rocm
+utils/timeit.sh MMseqs2 compile -- cmake --build build-hip -j16 --target mmseqs
+```
+
+Build succeeded. gfx1100 code object confirmed in libmarv.so:
+`llvm-objdump --offloading` reports `hipv4-amdgcn-amd-amdhsa--gfx1100`.
+
+### GPU vs CPU validation
+
+```
+MMSEQS=projects/MMseqs2/src/build-hip/src/mmseqs
+mmseqs createdb examples/DB.fasta VALDIR/targetDB
+mmseqs makepaddedseqdb VALDIR/targetDB VALDIR/targetDB_padded
+HIP_VISIBLE_DEVICES=1 CUDA_VISIBLE_DEVICES=1 utils/timeit.sh MMseqs2 test -- \
+  mmseqs easy-search examples/QUERY.fasta VALDIR/targetDB_padded VALDIR/gpu.m8 VALDIR/tmp_gpu --gpu 1
+mmseqs easy-search examples/QUERY.fasta VALDIR/targetDB VALDIR/cpu.m8 VALDIR/tmp_cpu --gpu 0
+```
+
+Results:
+- GPU (--gpu 1): 14482 hit pairs
+- CPU (--gpu 0): 12901 hit pairs
+- Common pairs: 12438
+- GPU-only pairs: 2044 (prefilter-boundary, low-score; median bitscore 60)
+- CPU-only pairs: 463 (prefilter-boundary; median bitscore 70)
+- Pairs with |bitscore diff| > 0.5: 0
+- Pairs with |pident diff| > 0.5: 0
+- Max bitscore diff: 0.0000, max pident diff: 0.0000
+
+All 12438 common pairs: GPU Smith-Waterman scores match CPU oracle EXACTLY on real
+gfx1100 native wave32. Results are identical to the gfx90a lead validation
+(12438 common, 2044 GPU-only, 463 CPU-only, 0 mismatches). Wave32 path is correct:
+cooperative-groups tile butterfly (marv_tile_reduce) iterates group.size()/2..1
+within the tile, arch-agnostic; SIMD emulations are lane-count tied to SIMD word
+width, never warpSize.
+
+### Non-GPU regression check
+
+CPU oracle (--gpu 0 path in GPU build): 12901 hits -- identical to gfx90a lead. No regression.
+
+VERDICT: PASS. State -> completed (validated_sha = c755847ab4114fe8a470bf9ca9832a61f37ed56f).
