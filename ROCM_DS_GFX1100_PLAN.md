@@ -114,4 +114,23 @@ so files transplant path-for-path. Per repo:
 ## Status
 
 - gfx90a CK backend: done, PR #9 (https://github.com/ROCm-DS/hipRaft/pull/9).
-- gfx1100 enablement: NOT STARTED -- to be executed on the gfx1100 host per this plan.
+- gfx1100 enablement, hipRaft: DONE on the fork, awaiting jeff's go for the ROCm-DS PR.
+  Branch `gfx1100-wave32` on `jeffdaily/hipRaft` @ `56ab677fb807fefe1c21c38b300311742c5edd7c`.
+  Finding: the plan's premise (missing host-side runtime warp-size query) was stale -- hipRaft
+  already has `raft::host_warp_size` wired into ~12 launch sites (more thorough than the raft
+  fork) and the device `raft::WarpSize` resolves per-arch, so there was NO wave32 source to
+  transplant; device and host wave-size handling were already at/beyond parity. The one genuine
+  gap was build-system gating: the cuco hashmap dep hard-errors on gfx11xx unless `USE_WARPSIZE_32`
+  is ON. Fix = a +27-line block in `cpp/CMakeLists.txt` auto-enabling `USE_WARPSIZE_32` for an
+  all-wave32 arch list (rejects mixed wave32+wave64; CUDA/CDNA unchanged). Validated on a real
+  W7800 (gfx1100/wave32, ROCm 7.2.1): UTILS 181/181, LINALG 2070/2070, NEIGHBORS_UTILS 14/14,
+  MATRIX/SELECT/CORE/RANDOM/LABEL all pass; STATS 916/918 (2 large-N double MeanTestD failures are
+  reduction accumulation-order fp drift ~1.7e-7 at 1e-8 tol, not a logic bug); no HSA faults, no
+  ballot/reduction nondeterminism. Two orthogonal pre-existing blockers a maintainer should know:
+  (1) ROCm 7.2.1 `nodiscard hipError_t` under `-Werror` breaks several arch-independent TEST
+  sources (not fixed here, to keep the PR scoped); (2) PR #9's CK distance backend is NOT in
+  `release/rocmds-25.10` (CUTLASS still commented out), so the CK-on-RDNA SIMT-fallback check must
+  be run against PR #9's branch separately -- N/A here. Implication for the other repos: each may
+  be further along than the gap analysis (written from an earlier snapshot) assumed -- re-verify the
+  live tree before transplanting.
+- gfx1100 enablement, hipMM / hipVS / hipDF / rocGRAPH: NOT STARTED.
