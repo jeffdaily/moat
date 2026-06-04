@@ -625,3 +625,35 @@ are byte-identical. `libCpufit.so` (CPU-only, no GPU code) is also byte-identica
 No GPU re-run needed.
 
 Result: linux-gfx1100 `revalidate` -> `completed`, validated_sha = 0a1b3d67df3f264d6f3a4602c250155f5f350b54.
+
+## Revalidation 2026-06-04 (linux-gfx90a, binary-equivalence carry-forward)
+
+linux-gfx90a was in `revalidate` state (validated_sha=5ab0c059, head_sha=0a1b3d67)
+after the windows-gfx1151 delta-port advanced the fork HEAD.
+
+The delta (5ab0c059..0a1b3d67) is 3 CMake files, all Windows/MSVC-targeted --
+same delta as the gfx1100 carry-forward above. The Linux-side behavior is
+identical: WIN32-guarded block is inert, and the generator expression on the
+force-include resolves to the original `-include` form on GNU frontend.
+
+Built at both SHAs for gfx90a (cmake -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a):
+
+- Old (5ab0c059): existing `projects/Gpufit/src/build-hip/Gpufit/libGpufit.so`
+  (confirmed gfx90a, 3 code objects: sizes 129728, 10280, 7280 bytes)
+- New (0a1b3d67): worktree at `agent_space/Gpufit-head`, built into
+  `agent_space/Gpufit-head/build-gfx90a/Gpufit/libGpufit.so`
+  (confirmed gfx90a, 3 code objects: sizes 129728, 10280, 7288 bytes)
+
+```
+python3 utils/codeobj_diff.py \
+  projects/Gpufit/src/build-hip/Gpufit/libGpufit.so \
+  agent_space/Gpufit-head/build-gfx90a/Gpufit/libGpufit.so
+verdict=identical
+  libGpufit.so vs libGpufit.so: identical (exported symbols + device ISA identical (79 exports))
+```
+
+The 8-byte size difference in the third code object is a layout artifact
+(not an ISA difference); the normalized disassembly is byte-identical.
+79 exported symbols match. No GPU re-run needed.
+
+Result: linux-gfx90a `revalidate` -> `completed`, validated_sha = 0a1b3d67df3f264d6f3a4602c250155f5f350b54.
