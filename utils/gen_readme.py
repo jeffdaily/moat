@@ -56,14 +56,15 @@ def load_projects():
         except json.JSONDecodeError:
             sys.stderr.write(f"gen_readme: skipping unparseable {sp}\n")
             continue
-        # An open upstream PR lives in upstream.json (its presence implies the
-        # port is upstreamed; there is no separate pr-open state to track).
+        # An upstream PR lives in upstream.json; pr_state (open/merged/closed)
+        # drives the colored-circle glyph in the PR column (GitHub convention).
         up = d / "upstream.json"
         if up.exists():
             try:
                 u = json.loads(up.read_text())
                 rec["pr_url"] = u.get("pr_url")
                 rec["pr_number"] = u.get("pr_number")
+                rec["pr_state"] = u.get("pr_state")
             except json.JSONDecodeError:
                 pass
         out.append(rec)
@@ -94,6 +95,7 @@ def render_table(projects):
     projects = sorted(projects, key=lambda p: p.get("name", "").lower())
     legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
               "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
+              "Upstream PR: 🟢 open · 🟣 merged · 🔴 closed. "
               "The project name links to upstream, (fork) to our `moat-port` branch.")
     headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Upstream PR"]
     aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
@@ -109,7 +111,11 @@ def render_table(projects):
             proj = f"[{name}]({up})"
         plats = p.get("platforms", {})
         cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
-        pr = f"[#{p['pr_number']}]({p['pr_url']})" if p.get("pr_url") else "—"
+        if p.get("pr_url"):
+            glyph = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(p.get("pr_state") or "open", "🟢")
+            pr = f"{glyph} [#{p['pr_number']}]({p['pr_url']})"
+        else:
+            pr = "—"
         lines.append("| " + " | ".join([proj] + cells + [pr]) + " |")
     return "\n".join(lines)
 
