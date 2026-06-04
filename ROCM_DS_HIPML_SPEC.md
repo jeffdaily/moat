@@ -104,3 +104,26 @@ convention.)
 Bottom line: small source work (3 guard lines, cuml:: untouched), mechanical build rewrite; the
 25.08-vs-25.02 dep skew is the real threat -- gate on `raft::warp_size()` in hipRaft 25.02 before
 investing, and budget a compat-fix loop. Tier 1 is the right first milestone.
+
+## Pre-flight gate result (2026-06-04) -- PASS, bounded compat set
+
+Checked hipRaft 25.02 headers (`agent_space/rocm-ds/hipRaft-fork`) against cuML 25.08's needs. No
+hard blocker; the deps are header libs at `release/rocmds-25.10`. Findings:
+
+- `raft::WarpSize` (device constexpr) -- PRESENT (`util/cuda_dev_essentials.cuh`); cuML's 12
+  device-context uses are fine.
+- `raft::warp_size()` -- in hipRaft 25.02 it is `__device__`-only (`util/cudart_utils.hpp:68`); the
+  host runtime query is `raft::host_warp_size(stream)` / `host_warp_size(device_id)` (NO no-arg
+  form). Our raft 25.08 added a host overload `inline int warp_size(){return host_warp_size();}`
+  that hipRaft 25.02 lacks -> cuML's 3 HOST call sites must use `host_warp_size(...)`. **Patch
+  applied to the seed:**
+  - `cpp/src_prims/selection/kselection.cuh:367` -> `raft::host_warp_size(stream)`
+  - `cpp/src_prims/linalg/batched/gemv.cuh:120` -> `raft::host_warp_size(stream)`
+  - `cpp/src/decisiontree/batched-levelalgo/builder.cuh:509` -> `raft::host_warp_size(builder_stream)`
+- `raft::linalg::gemv` / `gemm` (the GLM hipBLASLt reroutes in preprocess.cuh/ridge.cuh) -- PRESENT
+  with `raft::resources const& handle` signatures; verify exact args at build (low risk).
+- Tier-2 only (deferred): `cuvs::distance::DistanceType` enum value-compat when CUML_LINK_CUVS=ON.
+
+Seed done: `agent_space/rocm-ds/hipML-build` from cuml@moat-port (25.08) + the 3 warp_size patches.
+NEXT: Family-A wiring (versions.json/get_* repoint/guard migration) then the Tier 1 build
+(`CUML_LINK_CUVS=OFF`), iterating any remaining 25.02 raft-API drift the compiler surfaces.
