@@ -138,3 +138,80 @@ pin, the SHARED-lib RDC build, and the hpc_helpers `__CUDACC__/__NVCC__` ->
 `||__HIPCC__` edits. The deciding facts (gfx90a reports cc 9.0 so DPX would RUN;
 .cuh must not be compiled as TUs; do NOT define __CUDACC__) are libmarv-intrinsic
 and will recur in foldseek.
+
+## Review 2026-06-04 (reviewer: review-passed)
+
+Verdict: APPROVE. No changes-requested. Reviewed git diff 11933403...c755847a
+(fork moat-port). All ROCm fault classes checked; the diff is contained
+(25 files, +612/-38), additive, and the CUDA/CPU paths are untouched.
+
+Non-blocking observations (kept for the validator and the prep phase; none gate
+the merge):
+
+1. Validation scope nuance (not a defect). The GPU-vs-CPU score-exact result
+   (12438 pairs, 0 differ >0.5) exercises the LIVE path only, which the config
+   pin forces to half2 gapless + float Smith-Waterman. The emulated DPX integer
+   / short2 intrinsics (__viaddmax_s16x2[_relu], __vimax3_s16x2[_relu],
+   __vibmax_*, __viaddmax_s32[_relu], etc.) are force-instantiated and must
+   compile/link, but are NOT runtime-selected on gfx90a, so their numerics are
+   NOT covered by that score compare. Their correctness rests on code review +
+   CUDA Math API semantics + the foldseek cross-check (below), which is solid.
+   If a future arch/config ever selects dpx=1 / short2 on AMD, that path needs
+   its own runtime check. The notes/commit phrasing "validates the emulations"
+   should be read as "validates the live half2/float path and that the
+   emulations compile and link cleanly".
+
+2. DPX add is WRAPPING, intentionally. marv_simd_amd.cuh __viaddmax_s16x2 (and
+   the _relu form, lines 100-119) casts the per-lane sum through unsigned short
+   then back to short = two's-complement wrap, matching CUDA __viaddmax_*
+   (max(a+b,c) with modular add; saturation is only in the dedicated _sat
+   forms). Consistent with __vadd2 (also wrapping). Correct.
+
+3. __vibmax_u16x2 (UNSIGNED) backs MathOps<short2>::max(a,b,bool*,bool*) which is
+   commented "max(a,b)" (signed). Verified the short2 bool-output max/add_max
+   variants have NO callers in pssmkernels_* (grep clean), so the signed-vs-
+   unsigned mismatch is dead in practice; matches upstream/foldseek anyway.
+   __vibmax_s32 (signed) likewise has no live caller. No action.
+
+4. ptx_wrappers.cuh: HAS_BLACKWELL_INT8_PTX stays undefined on HIP
+   (__CUDACC_VER_MAJOR__ and __CUDA_ARCH_FAMILY_SPECIFIC__ both absent), and the
+   ptx_* wrappers are unreferenced on HIP (MathOps<u8x4> #else routes to
+   __vmaxu4/__vadd4/__vaddus4/__vsubus4), so the bodyless extern __device__ stub
+   is never referenced. No missing-return UB. Confirmed.
+
+5. WARPSIZE(32) in hpc_helpers/cuda_helpers.cuh is defined and UNUSED across
+   libmarv (only the #define site). No warp-width geometry in any layout, so the
+   serialized-format fault class does not apply (unlike foldseek's
+   getPaddedQueryLength pad-32, which is in foldseek's own code, not libmarv).
+   Confirmed.
+
+6. Foldseek consistency (same vendored libmarv). The DPX/video emulations are
+   SEMANTICALLY IDENTICAL between the two ports (same wrap add, same >=/> tie-
+   breaks, same relu-at-0, same unsigned __vibmax_u16x2, same __hmax2). Two
+   independent ports converging on the same semantics is a strong correctness
+   signal. They DIVERGE structurally, prep-phase cleanup candidates if the two
+   forks ever share one upstream libmarv change:
+     - MMseqs2 splits emulations into marv_simd_amd.cuh; foldseek inlines them
+       into cuda_to_hip.h.
+     - header guard MARV_CUDA_TO_HIP_H vs LIBMARV_CUDA_TO_HIP_H.
+     - shuffle-mask strategy: MMseqs2 routes __shfl_*_sync -> maskless __shfl_*
+       and adds generic vector __shfl overloads (short2/int2/float2/int3);
+       foldseek defines a 64-bit WARP_FULL_MASK and keeps the _sync calls. Both
+       valid; pick one before any joint upstreaming.
+
+7. CC-9.0 collision: CONFIRMED as a PORTING_GUIDE promotion. gfx90a reports
+   compute capability 9.0; a cc-keyed kernel-config selector (here
+   getOptimalKernelConfigs_gapless / _SW) silently selects the Hopper sm90
+   (dpx=1) path AT RUNTIME on AMD. Found independently by both MMseqs2 and
+   foldseek. General lesson: any CUDA selector keyed on cc major/minor must be
+   audited on AMD, because ROCm maps gfx90a->9.0 and will land on the Hopper
+   branch. The fix pattern is a USE_HIP branch pinning a conservative
+   (small-tile, non-DPX) config that also respects the AMD shared-memory ceiling.
+
+Build wiring verified against the local ROCm 7.2.1: roc::rocthrust target
+exists, hip_LIB_INSTALL_DIR is set by hip-config.cmake, libamdhip64.so present,
+and the porter's build-hip/src/mmseqs binary exists (HIP build succeeded).
+Commit message is clean ([ROCm], <=72-char title, Claude disclosed, no noreply
+trailer, Test Plan with literal commands, root cause explained). No MOAT jargon
+upstream-visible. ASCII, ROCm casing correct. GPU revalidation by the validator
+is the remaining gate (expected; not a review blocker).
