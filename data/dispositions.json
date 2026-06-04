@@ -524,6 +524,13 @@
     "note": "Rust GPU codegen toolchain, not a CUDA app",
     "reason": "not-a-target"
   },
+  "sakanaai/sparser-faster-llms": {
+    "decided": "2026-06-04T22:07:19Z",
+    "disposition": "skip",
+    "full_name": "SakanaAI/sparser-faster-llms",
+    "note": "TwELL CUDA kernels use NVIDIA Hopper PTX (WGMMA, TMA, thread clusters) with no AMD equivalent. Requires ground-up rewrite, not a port.",
+    "reason": "cant-port"
+  },
   "sgl-project/sglang": {
     "decided": "2026-05-29T23:41:51Z",
     "disposition": "skip",
