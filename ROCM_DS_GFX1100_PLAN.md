@@ -114,8 +114,20 @@ so files transplant path-for-path. Per repo:
 ## Status
 
 - gfx90a CK backend: done, PR #9 (https://github.com/ROCm-DS/hipRaft/pull/9).
-- gfx1100 enablement, hipRaft: DONE on the fork, awaiting jeff's go for the ROCm-DS PR.
+- gfx1100 enablement, hipRaft: VALIDATED on the fork, awaiting jeff's PR-structure decision (gated).
   Branch `gfx1100-wave32` on `jeffdaily/hipRaft` @ `56ab677fb807fefe1c21c38b300311742c5edd7c`.
+  Full gfx1100/wave32 test suite (W7800, ROCm 7.2.1) passes except 2 non-defect cases: UTILS 181/181,
+  CORE 269 (+1 skip), LABEL 14/14, LINALG 2070/2070, NEIGHBORS 75/75, SPARSE 405 (+56 skip), STATS 916/918.
+  The 2 STATS MeanTestD 2^27/double/1e-8 failures are NOT a wave32 bug: the GPU mean matches a CPU
+  long-double/Kahan reference of the same data to ~1e-17, and a perfect CPU mean misses the asserted 0.1
+  by the same 1.7e-8 (~2 sigma of the 8.6e-9 sampling SE) -- an over-tight test (tolerance < sampling
+  noise) exposed only because the lane-indexed RNG draws a different sample on wave32; both 2^27 cases use
+  wave-independent Kahan-compensated summation. Separately, ROCm 7.2.1's nodiscard hipError_t under
+  -Werror blocked 6 test executables from compiling; fixed PROPERLY (8 files: RAFT_CUDA_TRY incl. one
+  library header adj_to_csr.cuh, + a real ball_cover const-predicate fix; no -Wno-error). These build
+  fixes are arch-independent ROCm-7.2.x forward-compat, staged locally (patch saved at
+  agent_space/scratch-verify/hipraft-rocm721-build-fixes.patch), NOT yet committed/pushed. Recommendation
+  pending jeff: two PRs -- (1) gfx1100 wave32 CMake gate; (2) ROCm-7.2.x build fixes -- vs one bundle.
   Finding: the plan's premise (missing host-side runtime warp-size query) was stale -- hipRaft
   already has `raft::host_warp_size` wired into ~12 launch sites (more thorough than the raft
   fork) and the device `raft::WarpSize` resolves per-arch, so there was NO wave32 source to
