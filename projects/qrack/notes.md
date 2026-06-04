@@ -251,3 +251,24 @@ scope block (cuda.cu:348) to bound the lock_guard; this matches the existing
 file idiom (AddQueueItem qengine_cuda.hpp:556, DispatchQueue cuda.cu:408), so it
 is consistent and fine.
 GPU re-validation (full suite at the new HEAD) runs next in the validator stage.
+
+## Validation 2026-06-04 (linux-gfx90a, final GPU gate)
+
+Platform: MI250X gfx90a, ROCm 7.2.1. Fork jeffdaily/qrack moat-port @ dcb5e180.
+GCD: HIP_VISIBLE_DEVICES=1 (GCDs 0/1/3 idle; 2 busy).
+
+Build: incremental `cmake --build _build -j16 --target unittest` (no recompile needed;
+binary freshly built from the dcb5e180 commit at 20:55 UTC same day as sources at 20:54).
+Config: -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DENABLE_CUDA=ON
+-DENABLE_OPENCL=OFF -DENABLE_TESTS=ON
+
+Full suite: `HIP_VISIBLE_DEVICES=1 ./_build/unittest --proc-cuda --layer-qengine -d yes`
+Result: All tests passed -- 9472 assertions in 205 test cases.
+Wall time: ~46s.
+
+test_ucmtrx repeat runs (deferred-free fix confirmation):
+12/12 consecutive runs: All tests passed (8 assertions in 1 test case each), ~0.23s per run.
+No hang, no wrong result. The deadlock is gone; the fix is deterministic.
+
+Status: linux-gfx90a -> completed at dcb5e180. Followers linux-gfx1100,
+windows-gfx1101, windows-gfx1201 unblocked to port-ready.

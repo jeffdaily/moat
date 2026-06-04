@@ -11,3 +11,7 @@
 {"kind":"phase","ts":"2026-06-04T20:55:28Z","phase":"compile","seconds":34.621,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
 {"kind":"phase","ts":"2026-06-04T20:57:09Z","phase":"test","seconds":46.828,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 ./projects/qrack/src/_build/unittest --proc-cuda --layer-qengine"}
 {"kind": "tokens", "ts": "2026-06-04T20:59:48Z", "tokens": 80158, "source": "porter linux-gfx90a fix"}
+{"kind": "tokens", "ts": "2026-06-04T21:03:12Z", "tokens": 48064, "source": "reviewer linux-gfx90a fix"}
+{"kind":"phase","ts":"2026-06-04T21:04:00Z","phase":"compile","seconds":0.146,"exit":1,"cmd":"cmake --build _build -j16 --target unittest"}
+{"kind":"phase","ts":"2026-06-04T21:04:10Z","phase":"compile","seconds":0.320,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
+{"kind":"phase","ts":"2026-06-04T21:05:08Z","phase":"test","seconds":46.791,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 projects/qrack/src/_build/unittest --proc-cuda --layer-qengine -d yes"}
