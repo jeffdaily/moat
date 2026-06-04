@@ -692,3 +692,28 @@ the two builds. No GPU re-run required; carrying validation forward.
 
 Carried forward with: `moatlib.py carry-forward dietgpu linux-gfx1100 64c792d binary-equiv`
 Transitioning linux-gfx1100 to completed (validated_sha=64c792d).
+
+## Revalidation 2026-06-04 (linux-gfx90a, binary-equivalence carry-forward)
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2.1.
+Previous validated_sha: b6e0d3f. New HEAD: 64c792d.
+Delta: one commit -- "Enable symbol export for Windows DLL builds". The change adds
+`if(WIN32) set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON) endif()` inside the existing
+`if(USE_HIP)` block in CMakeLists.txt. On Linux, WIN32 is false; this block never
+executes, so no compiler flags, no source files, and no device code are affected.
+
+### Binary-equivalence check
+
+Built both b6e0d3f and 64c792d for gfx90a (`-DCMAKE_HIP_ARCHITECTURES=gfx90a`), each
+in an isolated build dir. Ran `utils/codeobj_diff.py` on the two trees:
+
+- libgpu_ans.so: identical (exported symbols + device ISA identical, 162 exports)
+- libgpu_float_compress.so: identical (exported symbols + device ISA identical, 332 exports)
+- libdietgpu_utils.so, libglog.so.0.6.0, libgtest*.so: host-only (no device code); roc-obj-ls
+  exits non-zero causing codeobj_diff to report indeterminate -- same as gfx1100 observed;
+  these libs carry no GPU ISA to compare.
+
+The two GPU device code libs are device-ISA-identical across the two builds. No GPU re-run required.
+
+Carried forward with: `moatlib.py carry-forward dietgpu linux-gfx90a 64c792d binary-equiv`
+Transitioning linux-gfx90a to completed (validated_sha=64c792d).
