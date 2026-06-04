@@ -19,6 +19,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 
 | Project | gfx90a<br>Linux | gfx1100<br>Linux | gfx1151<br>Windows | Upstream PR |
 | --- | :---: | :---: | :---: | --- |
+| [3](https://github.com/mumax/3) ([fork](https://github.com/jeffdaily/3/tree/moat-port)) | ✅ | 🟡 | 🟡 | — |
 | [3DGS-LM](https://github.com/lukasHoel/3DGS-LM) ([fork](https://github.com/jeffdaily/3DGS-LM/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) ([fork](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) ([fork](https://github.com/jeffdaily/3P-ADMM-PC2/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
@@ -48,6 +49,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [egg.c](https://github.com/d0rc/egg.c) ([fork](https://github.com/jeffdaily/egg.c/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [ElasticFusion](https://github.com/mp3guy/ElasticFusion) ([fork](https://github.com/jeffdaily/ElasticFusion/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [EnvGS](https://github.com/zju3dv/EnvGS) ([fork](https://github.com/jeffdaily/EnvGS/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
+| [espresso](https://github.com/espressomd/espresso) ([fork](https://github.com/jeffdaily/espresso/tree/moat-port)) | 🔧 | ⬜ | ⬜ | — |
 | [evogp](https://github.com/EMI-Group/evogp) ([fork](https://github.com/jeffdaily/evogp/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [faiss](https://github.com/facebookresearch/faiss) ([fork](https://github.com/jeffdaily/faiss/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [FaithC](https://github.com/Luo-Yihao/FaithC) ([fork](https://github.com/jeffdaily/FaithC/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
@@ -56,6 +58,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [FlashKDA](https://github.com/MoonshotAI/FlashKDA) | 🔧 | ⬜ | ⬜ | — |
 | [FlashMoE](https://github.com/osayamenja/FlashMoE) | ⬜ | ⬜ | ⬜ | — |
 | [FlashRT](https://github.com/LiangSu8899/FlashRT) | ⬜ | ⬜ | ⬜ | — |
+| [foldseek](https://github.com/steineggerlab/foldseek) ([fork](https://github.com/jeffdaily/foldseek/tree/moat-port)) | ✅ | 🟡 | 🟡 | — |
 | [fp6_llm](https://github.com/usyd-fsalab/fp6_llm) | ⬜ | ⬜ | ⬜ | — |
 | [fused-ssim](https://github.com/rahul-goel/fused-ssim) ([fork](https://github.com/jeffdaily/fused-ssim/tree/moat-port)) | ✅ | ✅ | 🚫 | — |
 | [gaussian_splatting](https://github.com/joeyan/gaussian_splatting) ([fork](https://github.com/jeffdaily/gaussian_splatting/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
@@ -77,11 +80,12 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [llm.c](https://github.com/karpathy/llm.c) ([fork](https://github.com/jeffdaily/llm.c/tree/moat-port)) | ✅ | ✅ | ✅ | — |
 | [llmq](https://github.com/IST-DASLab/llmq) | 🚫 | ⬜ | ⬜ | — |
 | [LMCache](https://github.com/LMCache/LMCache) ([fork](https://github.com/jeffdaily/LMCache/tree/moat-port)) | ✅ | ✅ | 🚫 | — |
-| [mahout](https://github.com/apache/mahout) ([fork](https://github.com/jeffdaily/mahout/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
+| [mahout](https://github.com/apache/mahout) ([fork](https://github.com/jeffdaily/mahout/tree/moat-port)) | 🔄 | 🔄 | ✅ | — |
 | [marian-dev](https://github.com/marian-nmt/marian-dev) ([fork](https://github.com/jeffdaily/marian-dev/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
-| [MASt3R-SLAM](https://github.com/rmurai0610/MASt3R-SLAM) | 🔧 | ⬜ | ⬜ | — |
+| [MASt3R-SLAM](https://github.com/rmurai0610/MASt3R-SLAM) ([fork](https://github.com/jeffdaily/MASt3R-SLAM/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [mHC.cu](https://github.com/AndreSlavescu/mHC.cu) ([fork](https://github.com/jeffdaily/mHC.cu/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [mirage](https://github.com/mirage-project/mirage) | 🚫 | ⬜ | ⬜ | — |
+| [MMseqs2](https://github.com/soedinglab/MMseqs2) ([fork](https://github.com/jeffdaily/MMseqs2/tree/moat-port)) | ✅ | 🟡 | 🟡 | — |
 | [MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) ([fork](https://github.com/jeffdaily/MPPI-Generic/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
 | [NATTEN](https://github.com/SHI-Labs/NATTEN) | 🚫 | 🚫 | 🚫 | — |
 | [ntransformer](https://github.com/xaskasdf/ntransformer) ([fork](https://github.com/jeffdaily/ntransformer/tree/moat-port)) | ✅ | ✅ | ✅ | — |
@@ -90,7 +94,8 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ | ✅ | 🚫 | — |
 | [PhoenixOS](https://github.com/SJTU-IPADS/PhoenixOS) | ⬜ | ⬜ | ⬜ | — |
 | [popsift](https://github.com/alicevision/popsift) ([fork](https://github.com/jeffdaily/popsift/tree/moat-port)) | ✅ | ✅ | ✅ | 🟢 [#186](https://github.com/alicevision/popsift/pull/186) |
-| [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ✅ | ✅ | ✅ | — |
+| [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ✅ | ✅ | ✅ | 🟣 [#2039](https://github.com/facebookresearch/pytorch3d/pull/2039) |
+| [qrack](https://github.com/unitaryfoundation/qrack) ([fork](https://github.com/jeffdaily/qrack/tree/moat-port)) | 🔧 | ⬜ | ⬜ | — |
 | [Quest](https://github.com/mit-han-lab/Quest) | 🔧 | ⬜ | ⬜ | — |
 | [raft](https://github.com/rapidsai/raft) ([fork](https://github.com/jeffdaily/raft/tree/moat-port)) | ✅ | ✅ | 🚫 | — |
 | [rmcl](https://github.com/uos/rmcl) ([fork](https://github.com/jeffdaily/rmagine/tree/moat-port)) | ✅ | ✅ | 🟡 | — |
