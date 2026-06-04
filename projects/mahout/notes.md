@@ -484,3 +484,48 @@ is correct on wave32 (== >>5). QDP_FULL_WARP_MASK 0xffffffffffffffff upper
 Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
 linux-gfx90a and linux-gfx1100 -> revalidate (delta touches Rust source;
 binary equivalence check expected to confirm no change on Linux paths).
+
+## Validation 2026-06-04 (gfx1100, revalidate, binary-equiv carry-forward)
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), ROCm 7.2.1.
+Transition: revalidate -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
+Method: binary-equivalence carry-forward (no GPU re-run required).
+
+Delta (2b0544a..addf01141f, 39 Rust files + build.rs):
+Mechanical rename of `#[cfg(target_os = "linux")]` -> `#[cfg(qdp_gpu_platform)]` across all
+GPU-gated code paths. build.rs now emits `cargo::rustc-cfg=qdp_gpu_platform` when
+`is_linux || (is_windows && hip_feature)`. On Linux, `is_linux` is always true, so
+`qdp_gpu_platform` is always set -- the compiled Linux output is byte-identical to the
+old `target_os = "linux"` build. No `.cu` kernel source files changed.
+
+Binary-equivalence check:
+- Built at validated_sha (2b0544a40b) with `CARGO_TARGET_DIR` pointing to a separate dir
+  (git worktree) and at HEAD (addf01141f) in the default target dir, both with
+  `QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1100 ROCM_PATH=/opt/rocm --no-default-features --features hip`.
+  Both builds: `cargo build -p qdp-core -p qdp-kernels --manifest-path ... -j 16` -> exit 0.
+- Compared libkernels.a (the archive of the 6 .cu HIP kernel objects -- the only artifact
+  containing device code) using `python3 utils/codeobj_diff.py <old>/libkernels.a <head>/libkernels.a`.
+- Result: `verdict=identical` -- exported symbols + device ISA identical (0 exports).
+  All 6 gfx1100 kernel TUs (amplitude.cu, basis.cu, angle.cu, validation.cu, iqp.cu, phase.cu)
+  compile to byte-identical device code objects.
+- The 94-byte size difference in the .a files is in host-side AR metadata (build.rs cfg
+  strings), not in the GPU code objects.
+
+Build commands:
+```
+source "$HOME/.cargo/env"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1100 ROCM_PATH=/opt/rocm
+# HEAD build
+cargo build --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+# validated_sha build (worktree)
+git worktree add /tmp/mahout-old 2b0544a40bcaf60d35539ba8be62cf791e6c0846
+CARGO_TARGET_DIR=/tmp/mahout-old-target cargo build \
+  --manifest-path /tmp/mahout-old/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+# compare
+python3 utils/codeobj_diff.py \
+  /tmp/mahout-old-target/debug/build/qdp-kernels-e8e72e39df1ee785/out/libkernels.a \
+  projects/mahout/src/qdp/target/debug/build/qdp-kernels-e8e72e39df1ee785/out/libkernels.a
+# verdict=identical
+```
