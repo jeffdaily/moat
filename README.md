@@ -22,7 +22,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [3](https://github.com/mumax/3) ([fork](https://github.com/jeffdaily/3/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [3DGS-LM](https://github.com/lukasHoel/3DGS-LM) ([fork](https://github.com/jeffdaily/3DGS-LM/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) ([fork](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
-| [3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) ([fork](https://github.com/jeffdaily/3P-ADMM-PC2/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
+| [3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) ([fork](https://github.com/jeffdaily/3P-ADMM-PC2/tree/moat-port)) | ✅ | ✅ | ✅ | 🟡 | ✅ | — |
 | [aihwkit](https://github.com/IBM/aihwkit) ([fork](https://github.com/jeffdaily/aihwkit/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [alien](https://github.com/chrxh/alien) ([fork](https://github.com/jeffdaily/alien/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [amgcl](https://github.com/ddemidov/amgcl) ([fork](https://github.com/jeffdaily/amgcl/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
@@ -72,7 +72,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [heavydb](https://github.com/heavyai/heavydb) | 🚫 | ⬜ | ⬜ | ⬜ | 🚫 | — |
 | [icicle](https://github.com/ingonyama-zk/icicle) ([fork](https://github.com/jeffdaily/icicle/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [k2](https://github.com/k2-fsa/k2) ([fork](https://github.com/jeffdaily/k2/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
-| [kaldi](https://github.com/kaldi-asr/kaldi) ([fork](https://github.com/jeffdaily/kaldi/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
+| [kaldi](https://github.com/kaldi-asr/kaldi) ([fork](https://github.com/jeffdaily/kaldi/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | — |
 | [lc0](https://github.com/LeelaChessZero/lc0) ([fork](https://github.com/jeffdaily/lc0/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [LEAP](https://github.com/llnl/LEAP) ([fork](https://github.com/jeffdaily/LEAP/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [libSGM](https://github.com/fixstars/libSGM) ([fork](https://github.com/jeffdaily/libSGM/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟢 [#89](https://github.com/fixstars/libSGM/pull/89) |
@@ -92,7 +92,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [ntransformer](https://github.com/xaskasdf/ntransformer) ([fork](https://github.com/jeffdaily/ntransformer/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [oneflow](https://github.com/Oneflow-Inc/oneflow) ([fork](https://github.com/jeffdaily/oneflow/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [op43dgs](https://github.com/LetianHuang/op43dgs) ([fork](https://github.com/jeffdaily/op43dgs/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
-| [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
+| [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | — |
 | [PhoenixOS](https://github.com/SJTU-IPADS/PhoenixOS) | ⬜ | ⬜ | ⬜ | ⬜ | 🚫 | — |
 | [popsift](https://github.com/alicevision/popsift) ([fork](https://github.com/jeffdaily/popsift/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟢 [#186](https://github.com/alicevision/popsift/pull/186) |
 | [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟣 [#2039](https://github.com/facebookresearch/pytorch3d/pull/2039) |
