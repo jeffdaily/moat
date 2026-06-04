@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/SJTU-IPADS/PhoenixOS",
   "default_branch": "v0",
   "fork_url": null,
-  "ext_type": "unknown",
+  "ext_type": "meson",
   "base_sha": null
 }
