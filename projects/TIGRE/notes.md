@@ -46,13 +46,30 @@ the linear (accuracy<=1) branch uses `tex3D_TIGRE`. Siddon projectors stay
 POINT-filtered and unchanged. The arrays are NON-layered 3D, so no
 layered-collapse workaround is needed.
 
-### Reduction loop wave64 fix (MEDIUM)
-PICCS.cu / GD_TV.cu / GD_AwTV.cu block reductions (reduceNorm2 + reduceSum, 6
-sites) drove the final warp shuffle reduction from `offset = warpSize/2`. The
-shuffle width is the literal 32, so on wave64 (warpSize=64) the first iteration
-shuffled offset=32 across the width-32 logical-warp boundary -> wrong sum. Fixed
-to `offset = 16` (the loop is now driven by the shuffle width, not warpSize):
-correct on wave32 and wave64. No wave size hardcoded.
+### Reduction path (no wave64 bug -- analysis corrected 2026-06-04)
+PICCS.cu / GD_TV.cu / GD_AwTV.cu block reductions (reduceNorm2 + reduceSum) each
+have two final-warp implementations selected by `#if (__CUDART_VERSION >= 9000)`:
+a `__shfl_down_sync` loop in the `#if` branch and a volatile shared-memory
+`warpReduce(sdata, tid)` in the `#else` branch. The guard uses the
+double-underscore `__CUDART_VERSION`, which is NOT a real macro (CUDA defines
+`CUDART_VERSION`, no leading underscores) and is undefined under HIP -- verified:
+a hipcc TU sees neither spelling defined. So on BOTH back ends the compiler takes
+the `#else` branch and the LIVE reduction is `warpReduce`, the shuffle branch is
+dead. `warpReduce` is entered under `if (tid < 32)`; on gfx90a those 32 threads
+are the low half of one 64-lane wavefront and run the unrolled volatile chain in
+lockstep, so the result is correct on wave32 and wave64 with no change needed --
+there was no wave64 reduction bug to fix.
+
+An earlier port attempt edited the dead shuffle branch (`offset = warpSize/2` ->
+`offset = 16`) and documented it as the live wave64 fix; that was an analysis
+error (the edit was never compiled). Reverted those six edits on 2026-06-04 so
+the reduction files differ from upstream only by `#include "cuda_to_hip.h"` and
+the kernel-launch chevron normalization (`<< <`/`>> >` -> `<<<`/`>>>`, which the
+clang HIP front end requires and nvcc accepts both ways). The `__CUDART_VERSION`
+guard is left as-is on purpose: "fixing" the upstream typo would make the shuffle
+branch live on CUDA and diverge the byte-identical CUDA path -- out of scope. The
+revert touches only dead code, so the compiled device code is unchanged from the
+prior build.
 
 ### Siddon ray-loop runaway (NEW fault class, HIGH severity at scale)
 The Siddon forward projectors (Siddon_projection.cu, Siddon_projection_parallel.cu)
@@ -115,8 +132,8 @@ while exercising every kernel at full image size). Results on gfx90a
   reference-free cross-arch follower gate.
 - Solver sweep (agent_space/tigre_solvers.py, 64^3): sart/ossart/sirt/cgls/fista
   and the TV-regularized asd_pocs/awasd_pocs/os_asd_pocs (which use the GD_TV/
-  GD_AwTV/PICCS reduction kernels) all finite with sensible stop-criteria
-  values, confirming the wave64 reduction-loop fix.
+  GD_AwTV/PICCS reduction kernels via the live `warpReduce` path) all finite with
+  sensible stop-criteria values.
 
 Note: the upstream Python/tests/algorithm_test.py harness uses device-name
 matching (no gpuids=None hook) and a config-file generator; the direct solver
@@ -143,6 +160,32 @@ Required: either (a) correct notes.md + the commit body to state that warpReduce
 - __fsqrt_rd/__frcp_rd -> _rn (cuda_to_hip.h): the directed-rounding intrinsics feed only step magnitudes (axu/ayu/azu) and maxlength scaling, never an equality test; the exact-equality branches use __fdividef values, not _rd. 1-ULP nearest-vs-directed is immaterial under nRMSE/adjointness grading.
 - setup.py BUILD_WITH_HIP: CUDA path fully preserved in the else branch; HIP skips locate_cuda(), swaps to hipcc -x hip --offload-arch (env HIP_ARCH, gfx90a default, comma-list multi-arch), links amdhip64, host .cpp TUs get USE_HIP + __HIP_PLATFORM_AMD__. hipRAND device functions are header-only so no separate link needed. No per-arch hardcode.
 - Commit hygiene: [ROCm] title (51 chars), AI disclosure present, Test Plan with commands, no noreply trailer, no MOAT jargon, ROCm/HIP naming correct, author jeff.daily@amd.com.
+
+## Porter response 2026-06-04 (changes-requested -> ported)
+
+Addressed the reviewer's BLOCKER with option (a), the minimal behavior-preserving
+fix. Reverted the six dead-branch `offset = 16` edits (PICCS.cu x2, GD_TV.cu x2,
+GD_AwTV.cu x2) back to upstream's `offset = warpSize/2` and removed the misleading
+"drive the loop from the shuffle width" comments; the reduction files now differ
+from upstream only by the compat-header include and the chevron normalization.
+Did NOT touch the `__CUDART_VERSION` guard (making the shuffle branch live would
+diverge the byte-identical CUDA path). Corrected the notes "Reduction" section and
+the fork commit body to state that `warpReduce` is the live, wave64-correct path
+on both back ends and the shuffle branch is dead -- there was no wave64 reduction
+bug.
+
+The revert is entirely in dead code, so the compiled device code is unchanged from
+the prior build (de517de); rebuilt for gfx90a (BUILD_WITH_HIP=1, ROCM_PATH=/opt/
+rocm, HIP_ARCH=gfx90a, `pip install -e . --no-build-isolation`) and it compiles
+clean -- all 8 extensions rebuilt, the three reduction extensions
+(_minTV/_minPICCS/_AwminTV) recompiled. Full phantom re-validation not re-run: the
+live device code paths are identical to the validated de517de binary, so this is a
+build-confirms-compile with binary-equivalent device code.
+
+The commit was `changes-requested` (never a real-GPU validated_sha; it never
+reached `completed`), so it was safe to amend the single port commit rather than
+stack a new one. Fork moat-port: de517de -> b450d56, force-with-lease (verified
+local == fork tip == status head_sha de517de before the push).
 
 ## Install as a dependency
 
