@@ -1,0 +1,5 @@
+{"kind": "tokens", "ts": "2026-06-04T04:34:57Z", "tokens": 89529}
+{"kind":"phase","ts":"2026-06-04T04:47:39Z","phase":"compile","seconds":6.823,"exit":0,"cmd":"cmake -S projects/foldseek/src -B projects/foldseek/build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++"}
+{"kind":"phase","ts":"2026-06-04T04:47:55Z","phase":"compile","seconds":9.079,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
+{"kind":"phase","ts":"2026-06-04T05:04:42Z","phase":"compile","seconds":50.917,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
+{"kind":"phase","ts":"2026-06-04T05:08:28Z","phase":"compile","seconds":179.806,"exit":2,"cmd":"cmake --build projects/foldseek/build --target foldseek -j16"}
