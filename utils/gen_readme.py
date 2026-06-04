@@ -56,8 +56,10 @@ def load_projects():
         except json.JSONDecodeError:
             sys.stderr.write(f"gen_readme: skipping unparseable {sp}\n")
             continue
-        # An upstream PR lives in upstream.json; pr_state (open/merged/closed)
-        # drives the colored-circle glyph in the PR column (GitHub convention).
+        # Delivery tracking lives in upstream.json. pr_state (open/merged/closed)
+        # drives the PR glyph; `outcome` records the terminal disposition for
+        # projects whose success is NOT an upstream PR (e.g. we GPU-validated an
+        # existing ROCm backend across archs). See outcome_cell() for the vocab.
         up = d / "upstream.json"
         if up.exists():
             try:
@@ -65,6 +67,8 @@ def load_projects():
                 rec["pr_url"] = u.get("pr_url")
                 rec["pr_number"] = u.get("pr_number")
                 rec["pr_state"] = u.get("pr_state")
+                rec["outcome"] = u.get("outcome")
+                rec["outcome_note"] = u.get("outcome_note")
             except json.JSONDecodeError:
                 pass
         out.append(rec)
@@ -86,6 +90,40 @@ def plat_header(key):
     return f"{arch}<br>{os_part.capitalize()}"
 
 
+def _validated_arch_count(p):
+    """Number of platforms validated on real hardware (completed, not blocked)."""
+    return sum(1 for b in p.get("platforms", {}).values()
+               if b.get("state") == "completed" and not b.get("blocked"))
+
+
+def outcome_cell(p):
+    """The Outcome column: what this project actually delivered. An upstream PR
+    (any state) is shown by its glyph + number. Projects without a PR carry an
+    explicit `outcome` in upstream.json:
+      validated  -- upstream already had a ROCm path; we GPU-validated it across
+                    N archs (often extending coverage, e.g. first CDNA). 🔵
+      fork       -- delivered as a working standalone fork; an upstream PR is not
+                    appropriate (e.g. a kernel-experiments repo). 🍴
+      superseded -- upstream/community already covers our archs; no value-add. ⚪
+      blocked    -- non-viable. ⛔
+    No PR and no outcome yet -> pending (—)."""
+    if p.get("pr_url"):
+        glyph = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(p.get("pr_state") or "open", "🟢")
+        return f"{glyph} [#{p['pr_number']}]({p['pr_url']})"
+    oc = p.get("outcome")
+    if oc == "validated":
+        n = _validated_arch_count(p)
+        return f"🔵 validated ({n} arch)" if n else "🔵 validated"
+    if oc == "fork":
+        fu = p.get("fork_url")
+        return f"🍴 [fork]({fu}/tree/{moatlib.PORT_BRANCH})" if fu else "🍴 fork"
+    if oc == "superseded":
+        return "⚪ superseded"
+    if oc == "blocked":
+        return "⛔ blocked"
+    return "—"
+
+
 def render_table(projects):
     if not projects:
         return EMPTY
@@ -95,9 +133,10 @@ def render_table(projects):
     projects = sorted(projects, key=lambda p: p.get("name", "").lower())
     legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
               "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
-              "Upstream PR: 🟢 open · 🟣 merged · 🔴 closed. "
+              "Outcome: 🟣 PR merged · 🟢 PR open · 🔴 PR closed · 🔵 validated (existing ROCm confirmed on N archs) · "
+              "🍴 fork-only · ⚪ superseded · — pending. "
               "The project name links to upstream, (fork) to our `moat-port` branch.")
-    headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Upstream PR"]
+    headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Outcome"]
     aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
     lines = [legend, "",
              "| " + " | ".join(headers) + " |",
@@ -111,12 +150,7 @@ def render_table(projects):
             proj = f"[{name}]({up})"
         plats = p.get("platforms", {})
         cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
-        if p.get("pr_url"):
-            glyph = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(p.get("pr_state") or "open", "🟢")
-            pr = f"{glyph} [#{p['pr_number']}]({p['pr_url']})"
-        else:
-            pr = "—"
-        lines.append("| " + " | ".join([proj] + cells + [pr]) + " |")
+        lines.append("| " + " | ".join([proj] + cells + [outcome_cell(p)]) + " |")
     return "\n".join(lines)
 
 

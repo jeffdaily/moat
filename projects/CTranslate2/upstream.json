@@ -4,5 +4,7 @@
   "default_branch": "master",
   "fork_url": "https://github.com/jeffdaily/CTranslate2",
   "ext_type": "cmake",
-  "base_sha": "5dfc5d8"
+  "base_sha": "5dfc5d8",
+  "outcome": "validated",
+  "outcome_note": "First GPU validation of upstream's RDNA-only HIP backend across 3 archs (gfx90a/CDNA2 wave64 -- first CDNA coverage; gfx1100; gfx1151/Windows-TheRock). gfx90a needs only a 2-line arch-list add; C10_WARP_SIZE=32 verified benign on wave64. No upstream PR by design."
 }
