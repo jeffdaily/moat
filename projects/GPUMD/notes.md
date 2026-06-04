@@ -254,3 +254,56 @@ Doc-only is arch-independent, so the carry-forward holds for gfx90a, gfx1100 and
 with no GPU re-run and no rebuild (the source classifier is the authoritative gate for
 this class; a per-arch binary-equiv build is unnecessary when device source is provably
 untouched). All three remain completed @ 98c8bb4. PR #1538 stands as-is.
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
+
+validated_sha: 6231243f (zero-churn followers; fork untouched). Host = the dual-GPU
+Windows workstation (memory windows-gfx1101-gfx1201-host). ROCm 7.14 / TheRock pip SDK.
+
+### Multi-arch fat binary (one build, both GPUs)
+Built ONE binary embedding gfx1101 + gfx1201 device code, selected at run time by
+HIP_VISIBLE_DEVICES (0=gfx1101 Radeon PRO V710 RDNA3, 1=gfx1201 RX 9070 XT RDNA4):
+```
+ROCM=.../_rocm_sdk_devel ; export HIP_PATH=$ROCM
+export HIP_DEVICE_LIB_PATH=$ROCM/lib/llvm/amdgcn/bitcode
+export PATH="<MSVC HostX64/x64>:$ROCM/bin:$ROCM/lib/llvm/bin:$PATH"
+cd projects/GPUMD/src/src
+mingw32-make -f makefile.hip gpumd \
+  CFLAGS="-O3 --offload-arch=gfx1101 --offload-arch=gfx1201 -DUSE_HIP -std=c++17" \
+  LDFLAGS="-L$ROCM/lib" -j64
+```
+(scripts: agent_space/gpumd-win/.) The single gpumd.exe runs clean on BOTH devices.
+
+Windows-specific INVOCATION flags (NOT source/makefile edits, so no fork HEAD churn):
+- `-std=c++17` in CFLAGS: Linux hipcc defaults to C++17, but clang targeting
+  x86_64-pc-windows-msvc here does not propagate C++17 to the MSVC STL, so rocPRIM's
+  std::variant / "rocPRIM requires at least C++17" hard-errors (neighbor/dp/nep_multigpu
+  TUs) without it. The lead deliberately un-pinned -std relying on the Linux default;
+  Windows needs it explicit.
+- `LDFLAGS=-L$ROCM/lib` so lld-link finds the hipblas/hipsolver/hipfft import libs.
+- HIP_DEVICE_LIB_PATH so hipcc finds the amdgcn device bitcode; rename output gpumd -> gpumd.exe.
+
+### MULTI-ARCH FOLLOW-UP (PR-prep, deferred): makefile.hip currently takes a single
+`--offload-arch=$(HIP_ARCH)`; the fat binary above is produced via a CFLAGS override.
+To make GPUMD natively multi-arch (per the project standard that every port supports
+multi-arch builds), makefile.hip should turn HIP_ARCH into a LIST -> one --offload-arch
+per element (clang rejects a comma list in one flag). Do this at PR-prep, NOT now: a
+makefile edit churns HEAD and flips the completed gfx90a/gfx1100/gfx1151 to revalidate,
+and the RETIRED gfx1151 host cannot revalidate -- it would strand and block the PR.
+
+### Validation (real GPU, acceptance gate per the gfx90a/gfx1100/gfx1151 records:
+clean exit, empty stderr, no HIP fault, no NaN, energy conservation; chaotic MD is not
+bit-exact run-to-run or cross-vendor)
+
+| case | gfx1101 (dev0) | gfx1201 (dev1) |
+|------|----------------|----------------|
+| carbon (NEP4 NVE, 100 steps) | exit 0, T=300.53, Etot drift 1.37e-6, no NaN, PE vs CUDA ref 5.2e-5 | exit 0, T=300.42, Etot drift 8.06e-7, no NaN, PE vs CUDA ref 4.23e-6 |
+| graphene_dos (Tersoff + hipFFT DOS, 2x10000) | dos.out 200x4 finite, non-negative | dos.out 200x4 finite, non-negative |
+| graphene_kappa_emd (Green-Kubo EMD, 2x10000) | hac.out 50x11 finite | hac.out 50x11 finite |
+
+All exit 0, empty stderr, no NaN. Energy conservation ~1e-6 (matches gfx90a 2.6e-7 /
+gfx1100 9.8e-7 / gfx1151 ~9e-7). hipFFT DOS path works on both RDNA3 and RDNA4. No warp
+intrinsics (block __syncthreads reductions), so wave32 is correct by construction on both.
+
+State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha 6231243f,
+fork unchanged). All five platforms now terminal -> PR-ready.
