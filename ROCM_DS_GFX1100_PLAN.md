@@ -130,8 +130,9 @@ so files transplant path-for-path. Per repo:
   the MeanTestD tolerance loosening. Both branches now pushed to jeffdaily/hipRaft: PR1 `gfx1100-wave32`
   = 56ab677 (wave32 CMake gate) + 214e536 (MeanTestD tol 1e-8 -> 5e-8, ~6 sigma > the 8.6e-9 sampling SE;
   STATS then 918/918); PR2 `rocm-7.2-build-fixes` = 2cfff65 (the 8 RAFT_CUDA_TRY/ball_cover fixes, branched
-  off the base). Drafts ready; opening the two ROCm-DS PRs is gated on jeff's explicit go + AMD-internal
-  coordination -- NOT yet opened.
+  off the base). OPENED (jeff approved 2026-06-04): ROCm-DS/hipRaft#11 (gfx1100 wave32, head gfx1100-wave32)
+  and ROCm-DS/hipRaft#10 (ROCm 7.2 build fixes, head rocm-7.2-build-fixes); cross-linked. Awaiting
+  maintainer review.
   Finding: the plan's premise (missing host-side runtime warp-size query) was stale -- hipRaft
   already has `raft::host_warp_size` wired into ~12 launch sites (more thorough than the raft
   fork) and the device `raft::WarpSize` resolves per-arch, so there was NO wave32 source to
