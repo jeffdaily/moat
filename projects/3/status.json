@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-04T05:33:24Z",
-  "head_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
+  "updated_at": "2026-06-04T06:40:10Z",
+  "head_sha": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
       "started_at": "2026-06-04T04:33:12Z",
       "completed_at": "2026-06-04T05:33:24Z",
-      "updated_at": "2026-06-04T05:33:24Z",
+      "updated_at": "2026-06-04T06:39:32Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T05:33:24Z",
+      "validated_sha": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
+      "started_at": "2026-06-04T06:40:10Z",
+      "completed_at": "2026-06-04T06:40:10Z",
+      "updated_at": "2026-06-04T06:40:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +54,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

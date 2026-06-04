@@ -201,3 +201,43 @@ Headline gates:
 - standardproblem5 mx/my/mz within 1e-4: mx=-0.23488 (OK), my=-0.09453 (OK), mz=0.02296 (OK) -- PASS.
 
 Verdict: PASS. State -> completed.
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 native wave32)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1.
+Fork sha: 7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286 (adds TestModule arch fix on top of 64cb1c7).
+Wave size: ATTRIBUTE_WARP_SIZE = 32 (confirmed by TestDevice output -- RDNA3 native wave32).
+gfx1100 code object: confirmed by boot log "using gfx1100 code object" at runtime.
+
+Build commands:
+```
+export GOROOT=/var/lib/jenkins/goroot
+export PATH=/var/lib/jenkins/goroot/bin:/opt/rocm/bin:$PATH
+export GOPATH=/var/lib/jenkins/go
+export CGO_ENABLED=1 GOFLAGS=-mod=mod HIP_VISIBLE_DEVICES=1
+cd projects/3/src/cuda
+make wrappers CUDA_CC=gfx1100   # hipcc --genco --offload-arch=gfx1100 per .cu -> embeds gfx1100 code objects
+cd ..
+go install github.com/mumax/3/...
+```
+
+Build result: PASS (binary at /var/lib/jenkins/go/bin/mumax3, 15 MB; deprecated HIP ctx API warnings only, no errors).
+
+Note: GPU[0] (HIP_VISIBLE_DEVICES=0) had an orphaned KFD context that blocked queue creation (hipMemsetD32 hung indefinitely); GPU[1] (HIP_VISIBLE_DEVICES=1) and GPU[3] were responsive. All tests run on GPU[1].
+
+TestModule fix: module_test.go hardcoded testdata/testmodule_gfx90a.co, causing hipErrorInvalidImage on gfx1100. Fixed to query Device.ArchName() and load testdata/testmodule_<arch>.co; added testdata/testmodule_gfx1100.co built from testmodule.cu with hipcc --genco --offload-arch=gfx1100. Committed as a new commit on top (does not amend the gfx90a-validated sha). On gfx90a the fix loads testmodule_gfx90a.co as before.
+
+Test results:
+- `go test ./cuda/...`: 8 tests PASS (TestBuffer, TestReduceSum, TestReduceDot, TestReduceMaxAbs, TestSlice, TestCpy, TestSliceFree, TestSliceHost; plus cufft FFT1D test). Wave32 reduction tests (TestReduceSum, TestReduceDot, TestReduceMaxAbs) all PASS -- the reduce.h fix (all-__syncthreads tree, no unrolled 32-lane tail) is correct on RDNA3 native wave32.
+- `go test ./cuda/cu/...`: 12 tests PASS (TestContext, TestDevice, TestMalloc, TestMemAddressRange, TestMemGetInfo, TestMemsetAsync, TestMemset, TestMemcpy, TestMemcpyAsync, TestMemcpyAsyncRegistered, TestModule, TestVersion).
+- `go test ./data/... ./httpfs/...`: PASS (non-GPU regression tests).
+- `mumax3 -vet *.mx3`: 176/176 scripts OK.
+- `mumax3 -paranoid=false -failfast -cache /tmp -http "" -f *.go *.mx3`: 181 OK, 0 failed.
+
+Headline gates:
+- standardproblem4 (M.Average() within 1e-3): computed (-0.9846119, 0.1260456, 0.0432690) vs expected (-0.9846124, 0.1260409, 0.0432712) -- PASS. Cross-arch comparison vs gfx90a reference (-0.98461187, 0.12604699, 0.04326887): difference at 7th decimal place (max delta 5e-7) -- no wave32 reduction fault.
+- standardproblem5 mx/my/mz within 1e-4: mx=-0.23488 (|diff|=8.6e-5, OK), my=-0.09453 (|diff|=3.0e-6, OK), mz=0.02296 (|diff|=1.8e-6, OK). Cross-arch comparison vs gfx90a reference (mx=-0.23488, my=-0.09453, mz=0.02296): matching to 5 significant figures -- PASS.
+
+atomicFmaxabs: TestReduceMaxAbs PASS on wave32 confirms the atomicCAS loop works correctly on gfx1100.
+
+Verdict: PASS. State -> completed. validated_sha = 7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286.

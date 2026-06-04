@@ -6,3 +6,11 @@
 {"kind":"phase","ts":"2026-06-04T05:00:18Z","phase":"test","seconds":0.219,"exit":0,"cmd":"bash -c cd projects/3/src/test && /var/lib/jenkins/go/bin/mumax3 -vet *.mx3 2>&1 | tail -5; echo \"vet exit ${PIPESTATUS[0]}\""}
 {"kind": "tokens", "ts": "2026-06-04T05:14:47Z", "tokens": 249115}
 {"kind": "tokens", "ts": "2026-06-04T05:20:26Z", "tokens": 127434}
+{"kind":"phase","ts":"2026-06-04T06:08:41Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make wrappers CUDA_CC=gfx1100"}
+{"kind":"phase","ts":"2026-06-04T06:08:54Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make wrappers CUDA_CC=gfx1100"}
+{"kind":"phase","ts":"2026-06-04T06:10:27Z","phase":"compile","seconds":0.118,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/build_mumax3_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-04T06:20:52Z","phase":"test","seconds":603.995,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_cuda_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-04T06:22:13Z","phase":"test","seconds":1.150,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_cuda_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-04T06:24:12Z","phase":"test","seconds":3.241,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_all_go_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-04T06:25:52Z","phase":"test","seconds":0.142,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_vet_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-04T06:38:21Z","phase":"test","seconds":719.960,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_full_gfx1100.sh"}
