@@ -101,3 +101,40 @@ cmake --build build_sparse -j16 --target hamming
   store/trans C++ gtests (no torch) are a sufficient GPU gate on their own.
 - The UCMetricsUT.ConcurrentUpdateAndCollect failure is pre-existing/CPU-only;
   do not attribute it to the port.
+
+## Review 2026-06-04 (reviewer, linux-gfx90a)
+Verdict: review-passed. Additive Strategy-A rocm backend; NVIDIA path is guard-only
+(no change inside any `#if defined(__CUDA_ARCH__)` branch), other backends untouched.
+No must-fix defects. Fault-class sweep clean: no hardcoded warpSize/32 (the
+`CUDA_TRANS_BLOCK_NUMBER (32)` is the grid block count `<<<32,256>>>`, not a wave
+width); no warp collectives (copy kernels are grid-stride memcpy, hamming uses
+512-thread blocks + __syncthreads + __popc/__popcll only -- wave-agnostic); no
+textures/surfaces/resource handles (rule-of-five N/A); no library swaps; uint4
+vector path inherits the same 16B alignment requirement the PTX .v4.b32/.v2.u64
+already imposed, so no new OOB/alignment fault. cp_async.cuh PTX is excluded under
+hipcc (FLASHINFER_CP_ASYNC_ENABLED gated on __CUDACC_VER_MAJOR__) -> portable uint4
+fallback, as claimed. Commit hygiene clean ([ROCm] subject 63 chars, Claude
+disclosed, no noreply trailer, no MOAT jargon, Test Plan present).
+
+Verified (not a defect, recorded so it is not re-flagged): the rocm trans target
+omits gdr sources in ucm/shared/trans/rocm/CMakeLists.txt, but the parent
+ucm/shared/trans/CMakeLists.txt appends gdr_mr_buffer.cc/gdr_config.cc via
+target_sources for every non-cuda backend and sets UCM_ENABLE_GDR_STREAM=0, so the
+unconditional GdrMrBuffer::* calls in cuda_buffer.cc/cuda_device.cc resolve. A clean
+reconfigure from the committed tree reproduces the gdr objects in libtrans.a.
+
+Volatile-store / uint4 semantic-equivalence judgment (the key question): EQUIVALENT.
+The PTX st.volatile.global / st.global.cg qualifiers are within-kernel
+compiler/cache-policy hints (defeat dead-store elimination + write-combining,
+streaming bypass of L1); they do NOT encode a cross-kernel ordering or
+host-visibility guarantee. Each thread writes a disjoint 32B/16B unit, so there is
+no intra-grid reader and inter-thread store ordering is irrelevant. The only
+consumer is the host after hipStreamSynchronize / the stream callback, and the
+kernel-completion barrier makes all device writes globally visible regardless of the
+volatile qualifier. The HIP path casts away the parameter's `volatile` and does a
+plain uint4 store -- safe here. Caveat (informational only, no consumer exists): if a
+future change added a mid-kernel peer/host poller of the destination buffer, the
+plain store would not carry the per-store visibility the volatile PTX implied; worth
+a one-line comment but not blocking. The new test_hamming_rocm_ref.py is a genuine
+independent CPU popcount reference (exact integer ref, fp16-tolerance compare,
+inf-mask check, two-run determinism) -- a real correctness gate, not a smoketest.
