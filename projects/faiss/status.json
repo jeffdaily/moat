@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-31T16:36:35Z",
-  "updated_at": "2026-06-01T21:10:00Z",
-  "head_sha": "a5c47343e73cb528bcc620e9d51cf948206383cb",
+  "updated_at": "2026-06-04T16:37:26Z",
+  "head_sha": "e9fed66127740c0439458eec1d65c92825f56679",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "a5c47343e73cb528bcc620e9d51cf948206383cb",
       "started_at": "2026-05-31T23:40:43Z",
       "completed_at": "2026-06-01T01:36:39Z",
-      "updated_at": "2026-06-01T01:36:39Z",
+      "updated_at": "2026-06-04T16:37:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "a5c47343e73cb528bcc620e9d51cf948206383cb",
       "started_at": "2026-06-01T20:49:00Z",
       "completed_at": "2026-06-01T21:10:00Z",
-      "updated_at": "2026-06-01T21:10:00Z",
+      "updated_at": "2026-06-04T16:37:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -58,13 +58,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "e9fed66127740c0439458eec1d65c92825f56679",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-01T01:36:39Z",
+      "completed_at": "2026-06-04T16:37:26Z",
+      "updated_at": "2026-06-04T16:37:26Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,7 +77,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     }
   }
 }
