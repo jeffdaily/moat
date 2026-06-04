@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-04T05:11:55Z",
+  "updated_at": "2026-06-04T05:19:18Z",
   "head_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "review-passed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
       "started_at": "2026-06-04T04:33:12Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T05:11:55Z",
+      "updated_at": "2026-06-04T05:19:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

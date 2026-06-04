@@ -4,3 +4,4 @@
 {"kind":"phase","ts":"2026-06-04T04:55:07Z","phase":"compile","seconds":5.411,"exit":0,"cmd":"bash -c cd projects/3/src && go build ./... 2>/tmp/allbuild.txt; echo \"go build ./... exit $?\"; grep -iE \"\\.go:[0-9]+:[0-9]+:|error:|undefined\" /tmp/allbuild.txt | grep -viE \"deprecated|declared here\" | head -30"}
 {"kind":"phase","ts":"2026-06-04T04:57:13Z","phase":"compile","seconds":1.711,"exit":0,"cmd":"bash -c cd projects/3/src && go install github.com/mumax/3/... 2>/tmp/inst.txt; echo \"install exit $?\"; grep -iE \"error\" /tmp/inst.txt | grep -viE \"deprecated\" | head"}
 {"kind":"phase","ts":"2026-06-04T05:00:18Z","phase":"test","seconds":0.219,"exit":0,"cmd":"bash -c cd projects/3/src/test && /var/lib/jenkins/go/bin/mumax3 -vet *.mx3 2>&1 | tail -5; echo \"vet exit ${PIPESTATUS[0]}\""}
+{"kind": "tokens", "ts": "2026-06-04T05:14:47Z", "tokens": 249115}
