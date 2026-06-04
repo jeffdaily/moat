@@ -195,3 +195,67 @@ HAMMING_DIR=build_sparse/ucm/sparse/gsa_on_device/csrc/rocm/ham_dist \
 ALL HAMMING TESTS PASSED
 
 Result: linux-gfx90a COMPLETED at 7a8eb04b96c8045ff5ea1164c42c30fa81399355.
+
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 / AMD Radeon Pro W7800 48GB)
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100), HIP_VISIBLE_DEVICES=2 (4x W7800 system;
+device 0 was under heavy external GPU load -- 100% busy with ~128W draw from another
+workload; switched to the idle device 2 / PCI 0000:23:00.0 = rocm-smi GPU[0]).
+ROCm 7.2.1 / HIP 7.2.53211.
+Fork: jeffdaily/unified-cache-management moat-port @ 7a8eb04b96c8045ff5ea1164c42c30fa81399355.
+
+Build commands (gfx1100 substituted for gfx90a):
+```
+cmake -S projects/unified-cache-management/src -B projects/unified-cache-management/build_rocm_gfx1100 \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=ON -DBUILD_UNIT_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_FLAGS="-Wno-error=unused-result"
+cmake --build projects/unified-cache-management/build_rocm_gfx1100 -j16
+
+cmake -S projects/unified-cache-management/src -B projects/unified-cache-management/build_sparse_gfx1100 \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=OFF -DBUILD_UCM_SPARSE=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DPython_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python3 \
+  -DCMAKE_CXX_FLAGS="-Wno-error=unused-result"
+cmake --build projects/unified-cache-management/build_sparse_gfx1100 -j16 --target hamming
+```
+
+gfx1100 code objects confirmed (roc-obj listing):
+- ucm/shared/trans/rocm/CMakeFiles/kernel.dir/__/cuda/cuda_sm_kernel.cu.o: hipv4-amdgcn-amd-amdhsa--gfx1100
+- ucm/store/nfsstore/device/rocm/CMakeFiles/storedevice.dir/__/cuda/cuda_device.cu.o: hipv4-amdgcn-amd-amdhsa--gfx1100
+- hamming.cpython-312-x86_64-linux-gnu.so: hipv4-amdgcn-amd-amdhsa--gfx1100
+
+C++ gtest (ctest -j1, HIP_VISIBLE_DEVICES=2): 79/80 PASS. Total time: 34.16 sec.
+
+Copy-kernel correctness gates (all PASS):
+- UCTransUnitTest.CopyDataWithCE: PASS (0.34 sec)
+- UCTransUnitTest.CopyDataWithSM: PASS (0.49 sec)
+- UCTransUnitTest.CopyDataBatchWithSM: PASS (0.45 sec)
+- UCPosixTransManagerTest.TransBlock: PASS
+- UCPosixTransManagerTest.TransBlockLayerWise: PASS
+- UCPosixTransQueueTest.TransBlock: PASS
+- UCPosixTransQueueTest.TransBlockLayerWise: PASS
+- SharedCondition/UCCacheTransBufferTest.* (12 tests): all PASS
+
+One failure (pre-existing, NOT a regression): UCMetricsUT.ConcurrentUpdateAndCollect.
+Pure CPU multi-threaded counter test (same failure as gfx90a, expectedUpdates=16000,
+totalCounter=15997 -- host-side atomic race in UpdateStats). No GPU code path involved.
+
+Hamming kernel (test_hamming_rocm_ref.py, HIP_VISIBLE_DEVICES=2):
+```
+HAMMING_DIR=build_sparse_gfx1100/ucm/sparse/gsa_on_device/csrc/rocm/ham_dist \
+  HIP_VISIBLE_DEVICES=2 \
+  python3 ucm/sparse/test/gsa/test_hamming_rocm_ref.py
+```
+- mla: PASS (max_abs_err=42.0, max_rel_err=1.25e-03, within fp16 tolerance)
+- gqa: PASS (max_abs_err=0.0, max_rel_err=0.00e+00, exact)
+- determinism: PASS (two-run bit-identical)
+ALL HAMMING TESTS PASSED
+
+Note on device selection: this 4x W7800 system was under heavy external GPU load on
+HIP device 0 (rocm-smi GPU[2], PCI 0000:43:00, ~128W / 100% compute) from other
+workloads during this validation. HIP_VISIBLE_DEVICES=2 (rocm-smi GPU[0],
+PCI 0000:23:00, idle) was used. All four GPUs are identical gfx1100 W7800 cards;
+device selection does not affect code-object correctness.
+
+Result: linux-gfx1100 COMPLETED at 7a8eb04b96c8045ff5ea1164c42c30fa81399355.
