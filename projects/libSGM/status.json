@@ -7,18 +7,18 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-03T19:12:36Z",
-  "head_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+  "updated_at": "2026-06-04T06:01:19Z",
+  "head_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-03T19:12:36Z",
-      "updated_at": "2026-06-03T19:12:36Z",
+      "completed_at": "2026-06-04T06:01:19Z",
+      "updated_at": "2026-06-04T06:01:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-        "method": "binary-equiv",
-        "detail": "prep delta (CMake arch-default + cuda_to_hip.h comment + README) changes no device code (no .cu/.cuh); gfx90a codeobj_diff identical; gfx1100 validated device-equivalent content at a339d3d",
-        "at": "2026-06-03T19:12:36Z"
+        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "method": "source-class",
+        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
+        "at": "2026-06-04T06:01:19Z"
       }
     },
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
       "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-03T18:45:44Z",
-      "updated_at": "2026-06-03T18:45:44Z",
+      "completed_at": "2026-06-04T06:01:19Z",
+      "updated_at": "2026-06-04T06:01:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,16 +61,22 @@
         "first_session_at": "2026-06-02T04:00:00Z",
         "last_session_at": "2026-06-02T04:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "method": "source-class",
+        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
+        "at": "2026-06-04T06:01:19Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
+      "validated_sha": "96e05c44849da86d0954629d6d1f94e3f4616490",
       "started_at": "2026-06-03T18:01:47.223805Z",
-      "completed_at": "2026-06-03T19:30:00Z",
-      "updated_at": "2026-06-03T19:30:00Z",
+      "completed_at": "2026-06-04T06:01:19Z",
+      "updated_at": "2026-06-04T06:01:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -86,10 +92,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "fdb9d24fda484f14669e5f99da10b29ae41f2474",
-        "method": "binary-equiv",
-        "detail": "sgm-test 67/67 PASS twice on real gfx1151 (AMD Radeon 8060S, RDNA3.5, wave32), deterministic; gfx1151 code objects confirmed in sgm-test.exe; warpSize=32 runtime-queried. OpenCV never touches any .cu/.cuh, so the gfx1151 device code objects are identical to fdb9d24. The only gap at fdb9d24 on a no-OpenCV host is the vestigial test-build OpenCV requirement, which is KNOWN-resolvable two ways (install OpenCV, or drop the unused dependency) and is handled by separate upstream PR fixstars/libSGM#88; it does not affect GPU correctness. Reconciliation had flipped this to revalidate with the orphaned 5a6e944 validated_sha after moat-port was reset 5a6e944->fdb9d24; restored to completed at fdb9d24 (jeff, 2026-06-03) since the revalidation outcome is known.",
-        "at": "2026-06-03T19:30:00Z"
+        "to": "96e05c44849da86d0954629d6d1f94e3f4616490",
+        "method": "source-class",
+        "detail": "dropped __GFX8__ from the device-pass WARP_SIZE guard (constants.h) + comment/commit-msg fix; the __GFX8__ branch is unreachable for every built arch (gfx90a->__GFX9__->64; gfx1100/gfx1151->else->32; ",
+        "at": "2026-06-04T06:01:19Z"
       }
     }
   }
