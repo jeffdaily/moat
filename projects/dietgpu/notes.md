@@ -665,3 +665,30 @@ header (kMaxWarpSize=64), host grid divisor via runtime warpSize query. All roun
 tests assert EXPECT_EQ(orig, dec) and pass. No HIP faults, clean exit.
 
 Transitioning windows-gfx1151 to completed (validated_sha=64c792d).
+
+## Revalidation 2026-06-04 (linux-gfx1100, binary-equivalence carry-forward)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1.
+Previous validated_sha: b6e0d3f. New HEAD: 64c792d.
+Delta: one commit -- "Enable symbol export for Windows DLL builds". The change adds
+`if(WIN32) set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON) endif()` inside the existing
+`if(USE_HIP)` block in CMakeLists.txt. On Linux, WIN32 is false; this block never
+executes, so no compiler flags, no source files, and no device code are affected.
+
+### Binary-equivalence check
+
+Built both b6e0d3f and 64c792d for gfx1100 (`-DCMAKE_HIP_ARCHITECTURES=gfx1100`), each
+in an isolated build dir. Ran `utils/codeobj_diff.py` on the two trees:
+
+- libgpu_ans.so: **identical** (exported symbols + device ISA identical, 162 exports)
+- libgpu_float_compress.so: **identical** (exported symbols + device ISA identical, 332 exports)
+- libdietgpu_utils.so, libglog.so.0.6.0, libgtest*.so: host-only (no device code); roc-obj-ls
+  exits non-zero ("No kernel section found") causing codeobj_diff to report indeterminate for
+  these -- but manual llvm-nm confirms all three have zero symbol diffs (78/158/872/1 exports
+  each, identical between the two builds). These libs carry no GPU ISA to compare.
+
+The GPU device code libs (libgpu_ans.so, libgpu_float_compress.so) are byte-identical across
+the two builds. No GPU re-run required; carrying validation forward.
+
+Carried forward with: `moatlib.py carry-forward dietgpu linux-gfx1100 64c792d binary-equiv`
+Transitioning linux-gfx1100 to completed (validated_sha=64c792d).
