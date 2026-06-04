@@ -7,3 +7,4 @@
 {"kind":"phase","ts":"2026-06-04T05:05:58Z","phase":"test","seconds":30.136,"exit":0,"cmd":"ctest --test-dir projects/espresso/src/build-hip -R dipolar_interface|coulomb_interface|dipole_field_tracking|gpu_availability|analyze_energy --output-on-failure"}
 {"kind":"phase","ts":"2026-06-04T05:13:13Z","phase":"test","seconds":7.116,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -LE gpu -R coulomb_mixed_periodicity|p3m_tuning_exceptions|coulomb_cloud_wall_cpu|elc$|mmm1d|coulomb_interface --output-on-failure"}
 {"kind":"phase","ts":"2026-06-04T05:13:29Z","phase":"test","seconds":8.881,"exit":8,"cmd":"ctest --test-dir projects/espresso/src/build-hip -LE gpu -R p3m_tuning_exceptions|mmm1d|coulomb_interface|elc$|elc_vs_analytic|coulomb_mixed_periodicity|p3m_fft --output-on-failure"}
+{"kind": "tokens", "ts": "2026-06-04T05:17:04Z", "tokens": 157007}

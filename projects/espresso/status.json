@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T04:43:45Z",
-  "updated_at": "2026-06-04T05:15:02Z",
+  "updated_at": "2026-06-04T05:20:36Z",
   "head_sha": "00149db4459acda290e52a38b2e0e88c4f81d8fd",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "ported",
+      "state": "changes-requested",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-04T04:51:40Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T05:15:02Z",
+      "updated_at": "2026-06-04T05:20:36Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

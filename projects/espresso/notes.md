@@ -113,3 +113,64 @@ fix was needed; the gfx90a/gfx1100 fat binary covers the followers.
 `option(USE_HIP ...)` (default OFF). With ESPRESSO_BUILD_WITH_CUDA=ON it enables
 language HIP, defaults CMAKE_HIP_ARCHITECTURES to gfx90a only-if-unset, flips the
 7 core .cu to LANGUAGE HIP, links hip::hipfft, and pins -ffp-contract=on.
+
+## Review 2026-06-04
+
+Verdict: changes-requested (one defect; everything else verified sound). The
+fault-class analysis (the __CUDACC__/__HIPCC__ device-qualifier fix and the
+Thrust-header-only decision both confirmed correct) holds; the only blocker is
+a commit-hygiene violation that the porter must fix before validation.
+
+### Commit Hygiene
+- Commit 00149db4 title is 75 chars, over the 72-char limit (CLAUDE.md / pr-review
+  checklist 7): "[ROCm] Add AMD GPU (HIP) support for the core electrostatics/magnetostatics".
+  Shorten, e.g. "[ROCm] Add AMD GPU (HIP) support for core electrostatics" (54).
+  Amending is safe here: no platform has validated this sha (validated_sha=null),
+  so no validated commit is orphaned.
+
+### Verified sound (no action; recorded so the next reviewer need not re-derive)
+- __CUDACC__ vs __HIPCC__ fix (device_qualifier.hpp:22, utils.cuh:22): correct.
+  clang -x hip defines BOTH __HIPCC__ and __HIP__ (confirmed via clang++ -dM -E
+  -x hip --offload-arch=gfx90a), so DEVICE_QUALIFIER now expands to
+  __host__ __device__ and the shared bspline/sinc helpers (bspline.hpp:43,202)
+  are device-callable under HIP. CUDA path unchanged (still keys on __CUDACC__).
+  The remaining __CUDACC__-only spellings in the tree are all under
+  src/walberla_bridge/, which is out of scope (WITH_WALBERLA=OFF) -- correct not
+  to touch them.
+- Minor inconsistency, not a defect: the shim and cuda_test guard on __HIP__
+  (cuda_to_hip.h:31, cuda_test.cu:198) while device_qualifier/utils.cuh guard on
+  __HIPCC__. Both macros are defined together by clang-HIP, so behavior is
+  identical; left as-is.
+- cuFFT->hipFFT (cuda_to_hip.h:74-87): 1:1 macro/alias swap (R2C/C2R/D2Z/Z2D,
+  Plan3d, Destroy, Complex types, CUFFT_* enums). Round-trip 1/N is absorbed in
+  the analytic G_hat influence function (p3m_gpu_cuda.cu:252) -- identical code
+  both vendors, both libs leave transforms unnormalized. p3m_madelung compares
+  GPU result to the analytic Madelung constant, so a factor-of-N would fail it;
+  it passes -> normalization parity genuinely gated.
+- Thrust header-only / no roc::rocthrust link (src/core/CMakeLists.txt:64): sound,
+  not fragile. Traced roc::rocthrust -> roc::rocprim_hip -> "roc::rocprim;hip::device";
+  hip::device's INTERFACE_COMPILE_OPTIONS inject "-x hip" (hip-config-amd.cmake:159),
+  which would poison the host .cpp TUs. hip::hipfft links only hip::host
+  (hipfft-targets.cmake:63), safe. thrust headers resolve from /opt/rocm/include
+  (device_vector/reduce/copy/device_ptr/raw_pointer_cast only -- all header-only).
+- Rule-of-five on P3MGpuFftPlan (p3m_gpu_cuda.cu:110-141): handles default to 0,
+  guarded lambda destroy resets to 0. colmap pattern, arch-unified, CUDA-safe
+  (avoids cufftDestroy(garbage); behavior-preserving for an initialized plan).
+- -ffp-contract=on (CMakeLists.txt CMAKE_HIP_FLAGS), 2-arg cudaMallocHost inline
+  forwarder (cuda_to_hip.h, returns hipError_t for the void** call at
+  CudaHostAllocator.cu:27), cstdlib/cstring-before-hip_runtime ordering, and the
+  clang-HIP explicit shim include in the .cu files: each behavior-preserving and
+  CUDA-path-safe.
+- cuda_test.cu:198 error-string fork (__HIP__): cudaErrorNotPermitted aliases to
+  hipErrorNotSupported ("operation not supported"); the guarded expected-string
+  matches the alias. Correct test adaptation, NVIDIA branch unchanged.
+- Scoping: WITH_WALBERLA=OFF (LB/EK GPU out of scope) documented in commit body,
+  plan.md, and notes.md. sample_*/benchmark_*_with_gpu -L gpu failures are missing
+  local_samples test data (notes "Test data targets"), fail identically on CUDA --
+  not regressions.
+- No warp intrinsics / hardcoded 32 / warpSize anywhere in src/core (grep clean) --
+  wave-size fault class has no trigger; gfx90a+gfx1100 fat binary covers followers.
+- ESPRESSO_OPENMP_CUDA refactor (src/core/CMakeLists.txt:88, consumed in
+  p3m/CMakeLists.txt): set before add_subdirectory(p3m) at line 104, visible in the
+  child scope; empty on HIP (drops the CUDA-language OpenMP target, correct), still
+  OpenMP::OpenMP_CUDA on a plain CUDA build -- behavior-preserving.
