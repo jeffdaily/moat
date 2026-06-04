@@ -7,7 +7,7 @@
   "priority": 4.918,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-04T21:22:42Z",
+  "updated_at": "2026-06-04T21:23:22Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
@@ -35,12 +35,12 @@
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Lead platform (linux-gfx90a) blocked: cant-port (100% CUTLASS/CuTe SM90+, no portable HIP path). No follower work possible.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-30T00:46:51Z",
+      "updated_at": "2026-06-04T21:23:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,12 +57,12 @@
     },
     "windows-gfx1101": {
       "state": "blocked-needs-gfx90a",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Lead platform (linux-gfx90a) blocked: cant-port (100% CUTLASS/CuTe SM90+, no portable HIP path). No follower work possible.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-04T21:23:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,12 +79,12 @@
     },
     "windows-gfx1201": {
       "state": "blocked-needs-gfx90a",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Lead platform (linux-gfx90a) blocked: cant-port (100% CUTLASS/CuTe SM90+, no portable HIP path). No follower work possible.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-04T21:23:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
