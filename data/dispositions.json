@@ -447,6 +447,13 @@
     "note": "LLVM-based CUDA JIT compiler, not a kernel port",
     "reason": "cant-port"
   },
+  "nv-tlabs/3dgrut": {
+    "decided": "2026-06-04T23:56:48Z",
+    "disposition": "skip",
+    "full_name": "nv-tlabs/3dgrut",
+    "note": "OptiX RT cores (no HIPRT equivalent API), tiny-cuda-nn (PTX inline asm), NVRTC runtime compilation, Slang->CUDA (no HIP target). Each is independently blocking; project is fundamentally NVIDIA-exclusive.",
+    "reason": "cant-port"
+  },
   "nv-tlabs/nksr": {
     "decided": "2026-05-30T00:45:18Z",
     "disposition": "skip",
