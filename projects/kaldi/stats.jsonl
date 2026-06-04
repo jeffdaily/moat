@@ -32,3 +32,12 @@
 {"kind":"phase","ts":"2026-05-31T11:23:26Z","phase":"test","seconds":62.583,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 0"}
 {"kind":"phase","ts":"2026-05-31T11:24:32Z","phase":"test","seconds":60.395,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 0"}
 {"kind": "tokens", "ts": "2026-06-03T18:19:42Z", "tokens": 60158, "source": "validator"}
+{"kind":"phase","ts":"2026-06-04T21:23:11Z","phase":"compile","seconds":0.641,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/kaldi/src/src && ./configure --use-rocm --rocm-dir=/opt/rocm --rocm-targets=gfx90a,gfx1100 --use-cuda=no --mathlib=OPENBLAS --openblas-root=/var/lib/jenkins/moat/projects/kaldi/src/tools/OpenBLAS/install"}
+{"kind":"phase","ts":"2026-06-04T21:23:44Z","phase":"compile","seconds":14.456,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src depend"}
+{"kind":"phase","ts":"2026-06-04T21:24:10Z","phase":"compile","seconds":17.254,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-06-04T21:24:37Z","phase":"compile","seconds":6.416,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-06-04T21:25:59Z","phase":"test","seconds":62.530,"exit":0,"cmd":"bash agent_space/kaldi_build/run_cudamatrix_tests.sh 1"}
+{"kind":"phase","ts":"2026-06-04T21:26:54Z","phase":"compile","seconds":11.321,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudafeat"}
+{"kind":"phase","ts":"2026-06-04T21:27:27Z","phase":"compile","seconds":17.604,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
+{"kind":"phase","ts":"2026-06-04T21:27:40Z","phase":"compile","seconds":6.406,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
+{"kind":"phase","ts":"2026-06-04T21:28:38Z","phase":"test","seconds":58.103,"exit":0,"cmd":"bash agent_space/kaldi_build/run_cudamatrix_tests.sh 1"}
