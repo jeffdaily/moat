@@ -27,6 +27,13 @@
     "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
+  "acfr-rpg/dynosam": {
+    "decided": "2026-06-04T23:52:13Z",
+    "disposition": "skip",
+    "full_name": "ACFR-RPG/DynOSAM",
+    "note": "TensorRT (NVIDIA proprietary) is core dependency with no ROCm equivalent. OpenCV CUDA modules also have no ROCm build. Would require complete inference backend rewrite, not a CUDA-to-HIP port.",
+    "reason": "cant-port"
+  },
   "albond/dgx_spark_qwen3.5-122b-a10b-ar-int4": {
     "decided": "2026-05-30T00:45:18Z",
     "disposition": "skip",
