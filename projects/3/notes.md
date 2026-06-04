@@ -171,3 +171,33 @@ PORTING_GUIDE promotion (recommend to the validator/next prep phase):
 - PROMOTE (general cgo): hiprand.h `typedef __half half` breaks the cgo C-preamble parse (AMD __half is a C++ struct); fix with `typedef _Float16 __half;` in the contiguous comment block immediately above import "C", prose rationale in a SEPARATE Go comment. Applies to any cgo binding over a roc*/hip* header that re-typedefs __half.
 - PROMOTE (general): deprecated HIP context API (hipCtxSynchronize, hipCtxGetApiVersion) returns hipErrorNotSupported on ROCm 7.2.1; route synchronization through stream.Synchronize() (hipStreamSynchronize), not the context API.
 - KEEP project-local (mumax-specific): the -include hip/hip_runtime.h + -I. cuComplex shim hipcc flags -- a kernel-build detail tied to mumax's CUDA-spelled-unmodified .cu strategy; not broadly general. Note the -include-builtins trick in the guide as a one-liner only if another --genco port needs it.
+
+## Validation 2026-06-04 (linux-gfx90a, validator)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork sha: 64cb1c7cb5c3cb560b9407b9a3a1492e6491d813.
+
+Build commands:
+```
+export GOROOT=/var/lib/jenkins/goroot
+export PATH=/var/lib/jenkins/goroot/bin:/opt/rocm/bin:$PATH
+export GOPATH=/var/lib/jenkins/go
+export CGO_ENABLED=1 GOFLAGS=-mod=mod HIP_VISIBLE_DEVICES=0
+cd projects/3/src/cuda && make wrappers CUDA_CC=gfx90a  # code objects already present, no-op
+cd .. && go install github.com/mumax/3/...
+```
+
+Build result: PASS (binary at /var/lib/jenkins/go/bin/mumax3, 15 MB; deprecated HIP ctx API warnings only, no errors).
+
+Test results:
+- `go test ./cuda/...`: 8 tests PASS (TestBuffer, TestReduceSum, TestReduceDot, TestReduceMaxAbs, TestSlice, TestCpy, TestSliceFree, TestSliceHost; plus cufft FFT1D test).
+- `go test ./cuda/cu/...`: 12 tests PASS (TestContext, TestDevice, TestMalloc, TestMemAddressRange, TestMemGetInfo, TestMemsetAsync, TestMemset, TestMemcpy, TestMemcpyAsync, TestMemcpyAsyncRegistered, TestModule, TestVersion).
+- `go test ./data/... ./httpfs/...`: PASS (non-GPU regression tests).
+- `mumax3 -vet *.mx3`: 176/176 scripts OK.
+- `mumax3 -paranoid=false -failfast -cache /tmp -http "" -f *.go *.mx3`: 181 OK, 0 failed.
+
+Headline gates:
+- standardproblem4 (M.Average() within 1e-3): computed (-0.98461187, 0.12604699, 0.04326887) vs expected (-0.98461241, 0.12604089, 0.04327124) -- PASS.
+- standardproblem5 mx/my/mz within 1e-4: mx=-0.23488 (OK), my=-0.09453 (OK), mz=0.02296 (OK) -- PASS.
+
+Verdict: PASS. State -> completed.
