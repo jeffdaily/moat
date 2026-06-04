@@ -266,3 +266,19 @@ Binary-equivalence check:
 - Result: `verdict=identical` -- exported symbols + device ISA identical (5 exports)
 
 Carry-forward applied: linux-gfx1100 -> completed at 0b389ceb. No GPU re-run needed.
+
+## Revalidation 2026-06-04 (linux-gfx90a, binary-equivalence carry-forward)
+
+Delta 0472ed58..0b389ceb: single file `full_cuda_train_egg.cu`, +22/-0 lines. Every added line is `_WIN32`-guarded host code:
+1. `#ifndef _WIN32` / `#else` guard around `#include <unistd.h>`; the `#else` branch provides a `clock_gettime()` shim via `QueryPerformanceCounter` (Windows only).
+2. `#ifdef _WIN32` guard in `handle_sigint()`: `fputs(msg, stdout)` on Windows vs the original `write(STDOUT_FILENO, msg, ...)` on Linux.
+
+On Linux gfx90a the `_WIN32` branch is never compiled; the HIP device kernels and all HIP/CUB port headers are byte-identical to the validated 0472ed58 build.
+
+Binary-equivalence check:
+- Built at 0472ed58 (detached HEAD): `agent_space/egg_hip_old`
+- Built at 0b389ceb (HEAD): `agent_space/egg_hip_new`
+- `python3 utils/codeobj_diff.py agent_space/egg_hip_old agent_space/egg_hip_new`
+- Result: `verdict=identical` -- exported symbols + device ISA identical (5 exports)
+
+Carry-forward applied: linux-gfx90a -> completed at 0b389ceb. No GPU re-run needed.
