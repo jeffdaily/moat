@@ -5,3 +5,8 @@
 {"kind":"phase","ts":"2026-06-04T05:19:02Z","phase":"compile","seconds":1.010,"exit":0,"cmd":"/usr/bin/cmake --build /var/lib/jenkins/moat/projects/MMseqs2/src/build-hip -j16 --target mmseqs"}
 {"kind":"phase","ts":"2026-06-04T05:19:43Z","phase":"test","seconds":0.023,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta targetDB_padded gpu.m8 tmp_gpu --gpu 1"}
 {"kind": "tokens", "ts": "2026-06-04T05:26:45Z", "tokens": 243290}
+{"kind": "tokens", "ts": "2026-06-04T05:33:36Z", "tokens": 101388}
+{"kind":"phase","ts":"2026-06-04T05:36:23Z","phase":"compile","seconds":3.009,"exit":1,"cmd":"cmake --build build-hip -j16 --target mmseqs"}
+{"kind":"phase","ts":"2026-06-04T05:36:34Z","phase":"compile","seconds":1.732,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/MMseqs2/src/build-hip -j16 --target mmseqs"}
+{"kind":"phase","ts":"2026-06-04T05:36:59Z","phase":"test","seconds":0.025,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta targetDB_padded gpu.m8 tmp_gpu --gpu 1"}
+{"kind":"phase","ts":"2026-06-04T05:37:59Z","phase":"test","seconds":45.024,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta /var/lib/jenkins/moat/agent_space/mmseqs2_val/targetDB_padded /var/lib/jenkins/moat/agent_space/mmseqs2_val/gpu.m8 /var/lib/jenkins/moat/agent_space/mmseqs2_val/tmp_gpu --gpu 1"}

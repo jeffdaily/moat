@@ -215,3 +215,51 @@ Commit message is clean ([ROCm], <=72-char title, Claude disclosed, no noreply
 trailer, Test Plan with literal commands, root cause explained). No MOAT jargon
 upstream-visible. ASCII, ROCm casing correct. GPU revalidation by the validator
 is the remaining gate (expected; not a review blocker).
+
+## Validation 2026-06-04 (linux-gfx90a, GCD2, validated_sha c755847a)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1). HIP_VISIBLE_DEVICES=2.
+
+### Build
+
+Fork clone already at c755847ab4114fe8a470bf9ca9832a61f37ed56f (porter's build intact).
+libmarv.so contains gfx90a code object (25819904 bytes,
+`hipv4-amdgcn-amd-amdhsa--gfx90a` confirmed via roc-obj-ls). Incremental
+rebuild confirmed clean:
+
+```
+cd projects/MMseqs2/src
+utils/timeit.sh MMseqs2 compile -- cmake --build build-hip -j16 --target mmseqs
+```
+
+### GPU vs CPU validation
+
+```
+MMSEQS=projects/MMseqs2/src/build-hip/src/mmseqs
+mmseqs createdb examples/DB.fasta VALDIR/targetDB
+mmseqs makepaddedseqdb VALDIR/targetDB VALDIR/targetDB_padded
+HIP_VISIBLE_DEVICES=2 CUDA_VISIBLE_DEVICES=2 utils/timeit.sh MMseqs2 test -- \
+  mmseqs easy-search examples/QUERY.fasta VALDIR/targetDB_padded VALDIR/gpu.m8 VALDIR/tmp_gpu --gpu 1
+HIP_VISIBLE_DEVICES=2 CUDA_VISIBLE_DEVICES=2 \
+  mmseqs easy-search examples/QUERY.fasta VALDIR/targetDB VALDIR/cpu.m8 VALDIR/tmp_cpu --gpu 0
+```
+
+Results:
+- GPU (--gpu 1): 14482 hit pairs
+- CPU (--gpu 0): 12901 hit pairs
+- Common pairs: 12438
+- GPU-only pairs: 2044 (prefilter-boundary, low-score; expected recall difference)
+- CPU-only pairs: 463 (prefilter-boundary; expected)
+- Pairs with |bitscore diff| > 0.5: 0
+- Pairs with |pident diff| > 0.5: 0
+- Max bitscore diff: 0.0000, max pident diff: 0.0000
+
+All 12438 common pairs: GPU Smith-Waterman scores match CPU oracle EXACTLY.
+Exercises the live half2 gapless + float Smith-Waterman path on real gfx90a wave64.
+
+### Non-GPU regression check
+
+CPU-only build (build-cpu/src/mmseqs, no USE_HIP) with --gpu 0: 12901 hits --
+identical to GPU build --gpu 0 path. No regression.
+
+VERDICT: PASS. State -> completed (validated_sha = c755847ab4114fe8a470bf9ca9832a61f37ed56f).
