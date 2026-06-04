@@ -1,0 +1,7 @@
+{"kind": "tokens", "ts": "2026-06-04T01:14:02Z", "tokens": 81938}
+{"kind":"phase","ts":"2026-06-04T01:22:05Z","phase":"compile","seconds":4.199,"exit":1,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T01:22:52Z","phase":"compile","seconds":10.668,"exit":1,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T01:24:25Z","phase":"compile","seconds":33.396,"exit":1,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T01:25:15Z","phase":"compile","seconds":34.056,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:02:15Z","phase":"compile","seconds":66.034,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:06:48Z","phase":"test","seconds":13.064,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && python3 -u /var/lib/jenkins/moat/agent_space/tigre_validate.py 2>&1"}
