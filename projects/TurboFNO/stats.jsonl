@@ -9,3 +9,4 @@
 {"kind":"phase","ts":"2026-06-04T00:02:36Z","phase":"compile","seconds":4.386,"exit":0,"cmd":"bash /tmp/build_validate.sh"}
 {"kind":"phase","ts":"2026-06-04T00:02:42Z","phase":"test","seconds":0.331,"exit":0,"cmd":"bash /tmp/run_validate.sh"}
 {"kind":"phase","ts":"2026-06-04T00:07:58Z","phase":"test","seconds":263.266,"exit":143,"cmd":"bash /tmp/run_smoke.sh"}
+{"kind": "tokens", "ts": "2026-06-04T00:11:27Z", "tokens": 77928}

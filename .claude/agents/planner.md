@@ -30,9 +30,10 @@ A port is not always a fresh CUDA-to-HIP conversion, and an existing AMD effort 
 Then decide whether the port adds value:
 - Mature ROCm/HIP support upstream, OR a mature separate AMD project (ROCm-DS-style) -> recommend a skip (already-supported) in plan.md and stop. We do NOT duplicate AMD's own work.
 - AMD supported only via OpenCL/Vulkan/SYCL with no HIP path -> a ROCm/HIP port of the CUDA code still adds value; proceed.
-- An incomplete/unvalidated/abandoned AMD port -- a stale branch, an unmerged PR, an old fork, OR a separate AMD project that lags upstream or was never validated on current ROCm -> the value shifts to VALIDATING AND IMPROVING THAT port: plan to point MOAT at the existing AMD project (track/clone it), validate on real GPU, and contribute fixes -- not a from-scratch re-port. Record its URL.
-- A ROCm/HIP port exists but is below PORTING_GUIDE best practices -> plan to improve it.
-Record the finding (with the URL of any existing AMD effort) and the decision in plan.md; if no port is warranted, set the disposition with `python3 utils/triage.py skip <repo> --reason already-supported`.
+- An AUTHORITATIVE but incomplete AMD port (AMD-official WIP, a sound upstream rocm/hip branch, a good-practice unmerged PR) -> the value shifts to VALIDATING AND IMPROVING it: plan to point MOAT at it, validate on real GPU, contribute fixes -- not a from-scratch re-port. Record its URL.
+- A NON-authoritative community fork (one-off personal fork, consumer-GPU-only, unvalidated, hacky) -> do NOT adopt it as a base; its `.cu` edits are not assumed SOTA and may carry hazards this guide forbids (wave64 hardcodes, `HSA_OVERRIDE_GFX_VERSION` crutches, missing-return UB) that we would then have to find and undo. Plan a from-scratch port our way; treat the community fork as a non-authoritative HINT only, never code to inherit.
+- A ROCm/HIP port that is otherwise sound but below PORTING_GUIDE best practices -> plan to improve it; a hacky community fork does not qualify (prefer from-scratch).
+Authoritativeness is the deciding axis, not mere existence. Record the finding (URL + a one-line authoritative-vs-community judgment) and the decision in plan.md; if no port is warranted, set the disposition with `python3 utils/triage.py skip <repo> --reason already-supported`.
 
 For performance-critical kernels (attention, GEMM, quantization) that are NVIDIA-tuned (CUTLASS/CuTe, Hopper wgmma, warp specialization), note that a mechanical HIP translation can underperform an AMD-native (rocWMMA / Composable Kernel / MFMA) rewrite. Decide port-vs-rewrite and state it in plan.md; a correctness-first mechanical port is a valid first step even if a later AMD-native pass is wanted.
 
