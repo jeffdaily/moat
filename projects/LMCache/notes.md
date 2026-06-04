@@ -286,8 +286,11 @@ portability effort that is SEPARATE from the ROCm/HIP port and out of scope here
 HIP kernels themselves (mem_kernels.hip) are unaffected (they hipify). gfx90a/gfx1100 (Linux)
 pass. Blocked; revisit if/when LMCache gains a Windows host-allocator/networking port upstream.
 
-## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+## Upstream-PR disposition: VALIDATED + a contributable build-rot fix (delta check 2026-06-04)
 
-README sweep finding: LMCache/LMCache has extensive MERGED ROCm support despite the README still saying "Works on Linux NVIDIA GPU platform" (stale). Merged PRs: #3070 (self-sufficient ROCm install), #3092 (Triton block-sparse attention for CacheBlend), #3101 (AMD Instinct Dockerfiles), #3395 (gfx950/MI350X), #3079 (HIP fix); plus open #2991. The repo carries a `rocm` topic tag (the tell that the README was stale).
+An earlier README-sweep note here said "superseded, DO NOT open a PR -- upstream already supports ROCm." Retracted; it was the most wrong of the three sweep REDs. Upstream does have mature ROCm scaffolding (merged #3070/#3092/#3101/#3395 gfx950-MI350X/#3079), but the delta check shows real, contributable value:
 
-Do NOT open an upstream PR. Lesson reinforced: check the repo's merged PRs/branches/topic tags, not just the README prose, which can lag the actual platform support. See [[moat-no-duplicate-amd-ports]].
+- CONTRIBUTABLE BUILD-ROT FIX: the fork's only diff is setup.py rocm_extension() `-std=c++17` -> `-std=c++20`. Without it, BUILD_WITH_HIP=1 fails to compile the plain .cpp TUs on CURRENT PyTorch: torch's ROCm BuildExtension compiles the .hip sources at c++20, and the .cpp sources include the same <torch/all.h>, which now uses a c++20 `requires`-constrained template (c10/core/TensorImpl.h:2516). Upstream's ROCm CI uses older torch (c++17-clean headers) + gfx942/gfx950, and NVIDIA CI never exercises the HIP path, so they never hit it. This fixes the HIP build for everyone on modern torch, ALL arches -- a genuine bugfix PR, stronger than CTranslate2's arch-list line.
+- ARCH COVERAGE + FIRST GPU VALIDATION: upstream targets gfx942/gfx950 (CDNA3/CDNA4) only, with build-only ROCm CI. We GPU-validated the full c_ops suite (parity 105, mem-kernels 56, mp-mem 40, memory-mgmt 47, recorders 17, CacheGen 5/5 bit-exact) on gfx90a (CDNA2 wave64) AND gfx1100 (RDNA3 wave32) -- first evidence the HIP path runs correctly on CDNA2 + RDNA3. Wave-agnostic (syncthreads-only; warp_scan/warp_copy are misnamed block-wide ops). gfx1151 blocked only by LMCache's total lack of a Windows host port (POSIX mmap/NUMA/hugepage/shm) -- external, not ROCm.
+
+Outcome = validated (2 arch). The c++20 fix IS PR-worthy (real build break on current torch); flagged for a decision rather than auto-skipped. See [[moat-no-duplicate-amd-ports]].
