@@ -5,3 +5,4 @@
 {"kind":"phase","ts":"2026-06-04T05:29:31Z","phase":"misc","seconds":3.353,"exit":0,"cmd":"cmake -S projects/qrack/src -B projects/qrack/src/_build -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON"}
 {"kind":"phase","ts":"2026-06-04T05:29:51Z","phase":"compile","seconds":15.394,"exit":2,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
 {"kind":"phase","ts":"2026-06-04T05:30:46Z","phase":"compile","seconds":36.576,"exit":0,"cmd":"cmake --build projects/qrack/src/_build -j16 --target unittest"}
+{"kind": "tokens", "ts": "2026-06-04T08:53:51Z", "tokens": 434710, "source": "porter linux-gfx90a"}
