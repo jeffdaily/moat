@@ -334,6 +334,17 @@ timeout made linked test exes look like build failures. faiss enable-only port i
 sound on gfx1151. Always run faiss test exes with the DLL-path wrapper (faiss_run.py),
 and the slow IVF suites individually (per-process, as the Linux notes already require).
 
+## Revalidation 2026-06-04 (linux-gfx90a) -> carry-forward completed
+
+Delta: a5c47343..e9fed661 -- single file: faiss/gpu/test/TestCodePacking.cpp (+13/-4).
+- classifier verdict: mixed (token count differs); not arch-independent per static analysis.
+- build at both SHAs: incremental rebuild at e9fed661 recompiled TestCodePacking.cpp only (test TU, not linked into faiss_gpu_objs or libfaiss.so).
+- codeobj_diff.py verdict=identical: libfaiss.so device code objects + exported symbols (10191 exports) are bit-for-bit identical between a5c47343 and e9fed661.
+- carry-forward applied: linux-gfx90a validated_sha advanced to e9fed661 (binary-equiv).
+- No GPU re-run required (device code unchanged).
+
+State: completed. validated_sha = e9fed66127740c0439458eec1d65c92825f56679
+
 ## Revalidation 2026-06-04 (linux-gfx1100)
 
 Delta: a5c47343..e9fed661 -- single file: faiss/gpu/test/TestCodePacking.cpp (+13/-4).

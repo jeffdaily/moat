@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-31T16:36:35Z",
-  "updated_at": "2026-06-04T16:54:31Z",
+  "updated_at": "2026-06-04T17:57:44Z",
   "head_sha": "e9fed66127740c0439458eec1d65c92825f56679",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a5c47343e73cb528bcc620e9d51cf948206383cb",
+      "validated_sha": "e9fed66127740c0439458eec1d65c92825f56679",
       "started_at": "2026-05-31T23:40:43Z",
-      "completed_at": "2026-06-01T01:36:39Z",
-      "updated_at": "2026-06-04T16:37:17Z",
+      "completed_at": "2026-06-04T17:57:44Z",
+      "updated_at": "2026-06-04T17:57:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "e9fed66127740c0439458eec1d65c92825f56679",
+        "method": "binary-equiv",
+        "detail": "TestCodePacking.cpp test-only change (uint8_t->int conformance + hip_runtime include); libfaiss.so device code objects + 10191 exported symbols identical between a5c47343 and e9fed661",
+        "at": "2026-06-04T17:57:44Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
