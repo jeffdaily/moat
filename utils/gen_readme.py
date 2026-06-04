@@ -88,7 +88,10 @@ def plat_header(key):
 def render_table(projects):
     if not projects:
         return EMPTY
-    projects = sorted(projects, key=lambda p: (-float(p.get("priority", 0)), p.get("name", "")))
+    # Alphabetical by name (case-insensitive) so the table is a lookup-by-name
+    # reference; the per-row glyphs still convey status. (Popularity/priority order
+    # buried manually-adopted projects at priority 0 and told no progress story.)
+    projects = sorted(projects, key=lambda p: p.get("name", "").lower())
     legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
               "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
               "The project name links to upstream, (fork) to our `moat-port` branch.")
