@@ -10,3 +10,4 @@
 {"kind":"phase","ts":"2026-06-04T18:12:55Z","phase":"compile","seconds":9.100,"exit":0,"cmd":"D:/Develop/TheRock/.venv/Scripts/hipcc.exe -O3 --offload-arch=gfx1151 -x hip -std=c++17 /d/Develop/moat/projects/egg.c/src/full_cuda_train_egg.cu -o /d/Develop/moat/agent_space/egg_hip_gfx1151.exe"}
 {"kind":"phase","ts":"2026-06-04T18:18:10Z","phase":"test","seconds":241.325,"exit":1,"cmd":"python3 /d/Develop/moat/agent_space/run_egg.py 12345 egg_val_gfx1151_run1.log"}
 {"kind":"phase","ts":"2026-06-04T19:16:33Z","phase":"test","seconds":1.630,"exit":0,"cmd":"g++ -O3 -I/d/Develop/moat/projects/egg.c/src/d-eggs/include /d/Develop/moat/projects/egg.c/src/d-eggs/test_ternary.cpp -o /d/Develop/moat/agent_space/test_ternary_win.exe"}
+{"kind": "tokens", "ts": "2026-06-04T19:21:09Z", "tokens": 159725, "source": "validator"}
