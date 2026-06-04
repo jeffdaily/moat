@@ -394,3 +394,31 @@ SE_Layer_NHWC uses pure shared-memory reduction (`__syncthreads()` + `sharedData
 | Wave32 SE/conv reduction correct | n/a | PASS |
 
 validated_sha = 1a6c3e3597b96153e733de94eda576cc2fc6ae88. Transition: port-ready -> completed.
+
+## windows-gfx1151 (BLOCKED 2026-06-04): value-head numerical defect
+
+The Windows/gfx1151 port BUILDS and RUNS: meson setup (cross-files/windows-clang-cl.ini)
++ ninja produce lc0.exe; `benchmark --backend=hip --nodes=20` runs all 34 positions clean
+(885 nodes, exit 0, sane bestmoves). The blocker is correctness, not a hang.
+
+Check backend (`--backend=check --backend-opts=hipfp32(backend=hip),blasref(backend=blas)`)
+at the gfx90a/gfx1100 bar (atol=1e-3, rtol=1e-2) fails EVERY batch with
+"value incorrect (but policy ok)". mode=display magnitudes (vs blas reference):
+- policy head: absolute ~1e-6, relative ~1e-5  -> bit-identical. Trunk + the large
+  policy GEMM are correct on gfx1151.
+- value head:  absolute 4-6e-2, relative up to 2.0 (sign flips on near-zero Q).
+
+So the trunk is provably correct (policy perfect); the defect is localized to the value
+head's own path on gfx1151 ONLY -- gfx90a (wave64) and gfx1100 (wave32, same RDNA wave
+size as gfx1151) both PASS this identical check. Not a wave-size issue (gfx1100 would
+fail too) and not FP noise (0.05 abs on a [-1,1] Q with sign inversion is gross).
+
+Likely suspects for a future attempt (unconfirmed): the value-head GEMM compute-type shim
+(lc0HipGemmStridedBatchedEx hipDataType->HIPBLAS_COMPUTE_*) selecting a different/buggy
+gfx1151 rocBLAS/Tensile kernel for the value head's small GEMM shapes, or the value head's
+globalAvgPool/SE reduction. The Linux build logs show benign "Cannot find Cijk" rocBLAS
+Tensile messages; a gfx1151 Tensile fallback kernel for the value GEMM shape is the leading
+hypothesis. Prior session stalled chasing this without converging.
+
+Decision (jeff, 2026-06-04): BLOCK windows-gfx1151, move on. Linux gfx90a + gfx1100 remain
+completed at 1a6c3e35. Reopen if a gfx1151 rocBLAS/value-head fix is identified.
