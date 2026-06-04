@@ -584,3 +584,51 @@ Evidence: HIP_VERSION=70253211 printed from <hip/hip_version.h> on this host;
 guard boundary 71300000 = HIP 7.13. The change cannot reach the gfx1100 Linux
 device code. gfx90a is completed at 25932dd. validated_sha advanced 15f5e1a ->
 25932dd (carry-forward, no GPU run).
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
+
+validated_sha: d19a322 (zero-churn followers; the Windows makefile delta is already in this
+HEAD from the gfx1151 work). Host = dual-GPU Windows workstation (memory
+windows-gfx1101-gfx1201-host). ROCm 7.14 / TheRock pip SDK.
+
+### Multi-arch fat build (makefile natively multi-arch)
+The Makefile does `$(addprefix --offload-arch=,$(AMDGPU_TARGETS))`, so a SPACE-separated
+AMDGPU_TARGETS yields one --offload-arch per arch -> a fat binary (build log confirms both
+--offload-arch=gfx1101 and =gfx1201). Both are wave32 so LLMC_WARP_SIZE=32. Script:
+agent_space/llmc-win/build.sh.
+```
+ROCM=.../_rocm_sdk_devel ; export HIP_PATH=$ROCM HIP_DEVICE_LIB_PATH=$ROCM/lib/llvm/amdgcn/bitcode
+PATH=<MSVC HostX64/x64>:$ROCM/bin:$ROCM/lib/llvm/bin:$PATH
+cd projects/llm.c/src
+mingw32-make SHELL=cmd.exe USE_HIP=1 AMDGPU_TARGETS="gfx1101 gfx1201" \
+  HIP_LIB_DIR=$ROCM/lib LLMC_WARP_SIZE=32 NO_MULTI_GPU=1 NO_USE_MPI=1 test_gpt2fp32cu
+```
+
+### Runtime (two host-specific fixes)
+1. Copy TheRock amdhip64_7.dll/amd_comgr/rocm_kpack/hiprtc into the exe dir (beats System32's
+   Adrenalin amdhip64 -- the dietgpu DLL-search lesson).
+2. **ROCBLAS_TENSILE_LIBPATH** = `_rocm_sdk_libraries/bin/rocblas/library`: rocblas.dll loads
+   from `_rocm_sdk_devel/bin`, which has NO rocblas/library/ subdir, so rocBLAS fails to load
+   its gfx1101/gfx1201 Tensile GEMM kernels (`Cannot read .../rocblas/library/TensileLibrary.dat`).
+   The kernels live under `_rocm_sdk_libraries/bin/rocblas/library/`; point ROCBLAS_TENSILE_LIBPATH
+   there. (Generalizable for any hipBLAS/rocBLAS-using port on this host.)
+Reference data (gpt2_124M.bin, gpt2_124M_debug_state.bin, gpt2_tokenizer.bin) fetched from
+huggingface karpathy/llmc-starter-pack into src/.
+
+### Result: FP32 strict gate (test_gpt2fp32cu) -- the Windows-validated gate
+| | gfx1101 (dev0) | gfx1201 (dev1) |
+|--|----------------|----------------|
+| test_gpt2fp32cu | overall okay: 1 (exit 0) | overall okay: 1 (exit 0) |
+
+All 10 training steps match the PyTorch reference (step 9 loss 0.376502 gfx1101 / 0.376499
+gfx1201 vs ref 0.376511); LOGITS/LOSS/all gradient tensors OK at 1e-2. Full FP32 fwd+bwd
+kernel suite (rocBLAS GEMM, attention, layernorm/butterfly reductions, AdamW) correct on
+both RDNA3 and RDNA4.
+
+KNOWN LIMITATION (carried from gfx1151, NOT a regression): the BF16 driver (test_gpt2cu,
+default precision) builds but its GEMM crashes inside libhipblaslt.dll on TheRock's
+hipBLASLt. The FP32 strict gate is the Windows correctness gate; wave32 correctness is
+proven by it. Same determination on gfx1101/gfx1201 as gfx1151.
+
+State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha d19a322,
+fork unchanged). All five platforms terminal -> PR-ready.
