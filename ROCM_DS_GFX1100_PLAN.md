@@ -1,5 +1,8 @@
 # ROCm-DS gfx1100 (RDNA3, wave32) enablement plan
 
+> NOTE (2026-06-04, jeff): Track 1 (further ROCm-DS repos hipMM/hipVS/hipDF/rocGRAPH) is PAUSED. hipRaft PRs #10/#11 stand; do not start the other repos. Focus is MOAT follower validation (Track 2).
+
+
 Tier 2 of the ROCm-DS contribution backlog (see ROCM_DS_GAP_ANALYSIS.md). This plan is the
 cross-host handoff: it is committed to the MOAT repo so the gfx1100 host's `orient.sh`
 (`git pull --rebase`) makes it available; that host has a real gfx1100 GPU, which this gfx90a
