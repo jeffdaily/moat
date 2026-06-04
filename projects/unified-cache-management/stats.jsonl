@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-04T15:07:16Z","phase":"compile","seconds":16.406,"exit":127,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
 {"kind":"phase","ts":"2026-06-04T15:10:48Z","phase":"compile","seconds":16.584,"exit":1,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
 {"kind":"phase","ts":"2026-06-04T15:13:25Z","phase":"test","seconds":20.679,"exit":8,"cmd":"D:/Develop/TheRock/.venv/Scripts/ctest.exe --test-dir /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j1 --timeout 120 --output-on-failure -V"}
+{"kind": "tokens", "ts": "2026-06-04T15:19:27Z", "tokens": 141694, "source": "validator"}
