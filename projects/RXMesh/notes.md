@@ -806,3 +806,42 @@ Conclusion: `differ` is a false positive (same metadata-only shift as gfx1100).
 All device kernel register configurations, shared memory allocations, wave64 ballot/
 sub-warp fixes, and ShmemMutex critical_section() paths are byte-for-byte identical.
 Carry-forward applied: validated_sha -> e80e1a0. No GPU re-run needed.
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
+
+validated_sha: e80e1a0 (zero-churn followers; the 3-file Windows delta -fuse-ld reset,
+--allow-multiple-definition, managedMemory WARN-demote is already in this HEAD from the
+gfx1151 work). Host = dual-GPU Windows workstation (memory windows-gfx1101-gfx1201-host).
+
+### Multi-arch fat build (one binary, both GPUs)
+CMake reads CMAKE_HIP_ARCHITECTURES; one configure with a LIST emits both archs. Scripts:
+agent_space/rxmesh-win/. cmake 4.3.1 + CMAKE_POLICY_VERSION_MINIMUM=3.5.
+```
+ROCM=.../_rocm_sdk_devel ; export CPM_SOURCE_CACHE=<cache> HIP_DEVICE_LIB_PATH=$ROCM/lib/llvm/amdgcn/bitcode HIP_PATH=$ROCM
+cmake -S projects/RXMesh/src -B projects/RXMesh/build -G Ninja -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES="gfx1101;gfx1201" \
+  -DCMAKE_C/CXX/HIP_COMPILER=$ROCM/lib/llvm/bin/clang(++).exe -DCMAKE_PREFIX_PATH=$ROCM \
+  -DCMAKE_HIP_STANDARD=17 -DRX_USE_POLYSCOPE=OFF -DRX_BUILD_APPS=OFF -DRX_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_TLS_VERIFY=OFF
+# strip CMake-injected -fuse-ld=lld-link from build.ninja (per gfx1151 note), then:
+cmake --build projects/RXMesh/build --target RXMesh_test -j64
+```
+CPM fetched its deps fine via CPM_SOURCE_CACHE + CMAKE_TLS_VERIFY=OFF (no SSL pre-fetch
+needed on this host).
+
+### Runtime
+RXMesh links hipBLAS, so the rocm bin dirs must be on PATH (hipblas/rocblas/...); AND
+TheRock's amdhip64_7.dll/amd_comgr/rocm_kpack/hiprtc copied into build/bin (the exe dir)
+so it beats System32's Adrenalin amdhip64 (the dietgpu DLL-search lesson). Run from
+projects/RXMesh/src so input/*.obj resolves. Device detected: AMD Radeon PRO V710 (gfx1101)
+/ RX 9070 XT (gfx1201); the managedMemory=0 APU/driver warning is demoted to WARN and
+continues (RXMesh core does not use hipMallocManaged).
+
+### Results (full RXMesh_test suite, no filter)
+| | gfx1101 (dev0) | gfx1201 (dev1) |
+|--|----------------|----------------|
+| RXMesh_test | 25/25 PASS, exit 0 | 25/25 PASS, exit 0 |
+
+0 FAILED on both. Matches gfx90a/gfx1100/gfx1151 (25/25). One fat binary ran on both GPUs.
+State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha e80e1a0,
+fork unchanged). All five platforms terminal -> PR-ready.
