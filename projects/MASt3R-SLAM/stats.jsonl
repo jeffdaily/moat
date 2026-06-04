@@ -6,3 +6,4 @@
 {"kind":"phase","ts":"2026-06-04T04:14:16Z","phase":"test","seconds":5.013,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
 {"kind":"phase","ts":"2026-06-04T04:15:14Z","phase":"test","seconds":4.774,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
 {"kind":"phase","ts":"2026-06-04T04:16:08Z","phase":"test","seconds":4.715,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate.py"}
+{"kind": "tokens", "ts": "2026-06-04T04:20:31Z", "tokens": 129275}

@@ -112,3 +112,61 @@ clamps u,v to [1,w-2]/[1,h-2] first, so +1 stays in bounds (safe on AMD).
 A single short TUM sequence via `main.py` would be a stronger gate but needs the
 2.6 GB checkpoints + a dataset; out of egress budget. The kernel-level gate is
 the validation of record.
+
+## Review 2026-06-04 (reviewer, linux-gfx90a)
+Verdict: review-passed. No defects found; diff is exactly the 5 files described,
+minimal-footprint Strategy-B port. Items below are notes for the validator, not
+change requests.
+
+- Volatile reduction (gn_kernels.cu:36-55) ACCEPT AS-IS, no __syncwarp required.
+  Verified by code analysis: blockReduce reduces the full 256-lane sdata with a
+  __syncthreads() after each of the 256->128->64 steps. The final `if(tid<32)
+  warpReduce` first read `sdata[tid+32]` (lanes 32..63) is covered by the
+  __syncthreads() terminating the `<64` step, so wave64 (tid 0..63 = one
+  wavefront) is safe; all subsequent volatile steps read within lanes 0..31 of
+  the same wavefront. No lane width is hardcoded, so wave32 is equally safe (tid
+  0..31 = one wavefront, the +32 read still covered by the same __syncthreads).
+  sdata is filled for ALL 256 threads (vi/vj/hij zero-init beyond the data
+  count), so the reduction is data-count-independent -- the 20x determinism test
+  at n straddling 32/64/256 is a meaningful gate. Empirical bit-exact
+  determinism + __syncthreads coverage is sufficient here; a defensive
+  __syncwarp would be belt-and-suspenders but is NOT needed and would be churn.
+
+- API-drift edits are SAFE on the CUDA path (all unconditional, not HIP-guarded):
+  * torch::linalg::linalg_norm -> torch::linalg_norm (x3): same overload, the
+    nested namespace was an alias; behavior-identical on CUDA.
+  * Tensor::type() -> scalar_type() (matching_kernels, curope): the modern
+    AT_DISPATCH spelling; .type() is the deprecated form; identical dispatch.
+  * <cuda/std/limits> + ::cuda::std::numeric_limits -> <limits> +
+    std::numeric_limits in refine_matches_kernel: behavior-identical. NOTE for
+    the record: for the at::Half dispatch case NEITHER libcu++ nor this torch's
+    c10 specializes numeric_limits<c10::Half>, so both old and new hit the
+    primary template and return T()==0 as the max_score seed; for float/double
+    both return smallest-positive-normal (an upstream quirk -- ::min() not
+    ::lowest() -- that predates the port and is preserved). The refine_matches
+    EXACT-match-vs-CPU validation covers the half path, so this is confirmed
+    behavior-preserving, device-correct, and valid on CUDA.
+
+- Fault-class sweep clean: no warpSize/__shfl/__ballot/__popc, no atomics, no
+  textures/pitch/layered arrays, no library calls (cublas/cusparse/...), no
+  HSA_OVERRIDE crutch, no rule-of-five handles. iter_proj/refine_matches clamp
+  u,v to [1,w-2]/[1,h-2] before the +1 neighbor read so u11+1<=w-1 stays in
+  bounds (verified matching_kernels.cu:143-144,167-170,220-221) -- no OOB.
+
+- setup.py gating correct: CUDA branch (torch.version.hip is None) is byte-for-
+  byte the original -gencode/--ptxas-options/--use_fast_math + get_gencode_flags
+  set; HIP branch passes only -O3 and relies on --offload-arch. CUDA build path
+  unchanged.
+
+- Validation adequacy: the kernel-level gate (9/9) is the correct validation of
+  record given egress-bound model/dataset access. It exercises every ported
+  kernel including the reduction (GN ops) and the OOB-relevant clamps, with
+  tolerance compares for fp drift and exact compares where deterministic.
+  RECOMMENDATION TO VALIDATOR: re-run agent_space/mast3r_validate.py on real
+  gfx90a to confirm 9/9 (the GPU run is the validator's job; the harness is the
+  gate, not a substitute). Full-SLAM end-to-end remains aspirational/egress-bound.
+
+- House style clean: [ROCm] subject 48 chars, Claude named, no noreply trailer,
+  Test Plan with fenced commands; no MOAT jargon and no AMD-internal references
+  in any upstream-visible file; new comments ASCII-only; ROCm-vs-HIP naming
+  correct (HIP for the language/hipify, ROCm for the toolchain/build flag).
