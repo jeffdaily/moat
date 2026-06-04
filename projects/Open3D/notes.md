@@ -370,3 +370,50 @@ boringssl/curl). That is host-3rdparty Windows-build porting, out of ROCm-port s
 (cf. LMCache POSIX, llm.c makefile). The HIP/ROCm port itself is sound (validated on
 gfx90a + gfx1100). Unblocks when those bundled host libs are made to build on
 Windows-clang (or pre-supplied as prebuilt), then re-run the build + GPU tests.
+
+## Validation 2026-06-04 (windows-gfx1101, AMD Radeon PRO V710, ROCm 7.14 / TheRock)
+
+Host: the gfx1101+gfx1201 Windows workstation (memory windows-gfx1101-gfx1201-host).
+GPU pinned HIP_VISIBLE_DEVICES=0 (gfx1101). 64-core, -j64 builds.
+
+### Working Windows ROCm toolchain (REUSABLE -- established here for the first time)
+Single self-contained ROCm root = the pip rocm-sdk-devel tree:
+`B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel`
+(has clang++, hipcc, hip cmake, AND hipblas/hipsolver/hipsparse/rocblas/rocthrust --
+version 60850-d34cbb64, matching torch.version.hip). Configure (all-clang; USE_HIP
+forces all-clang, MSVC-host is refused) succeeds in 16s:
+```
+ROCM=.../_rocm_sdk_devel
+cmake -G Ninja -S projects/Open3D/src -B projects/Open3D/src/build \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DCMAKE_PREFIX_PATH=$ROCM -DCMAKE_TLS_VERIFY=OFF \
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" \
+  <same module-OFF flags as gfx90a> -DBUILD_UNIT_TESTS=ON
+```
+(script: agent_space/open3d_cfg_gfx1101.sh.) hipBLAS/hipSOLVER/hipSPARSE all resolve
+from this root -- the earlier `find_package(hipblas)` miss was from pointing at the
+TheRock/build compiler-only tree; the pip devel tree is the complete SDK.
+
+### Result: PROGRESSES PAST the gfx1151 wall, blocked deeper on 3rdparty-under-clang
+`cmake --build ... -j64 --target tests` reaches ninja [232/813] (gfx1151 stopped at
+185). The bundled libjpeg-turbo and curl that blocked gfx1151 BUILD FINE on this host.
+New blocker is bundled TBB: every tbb .cpp fails with
+`clang++: error: unsupported option '-fPIC' for target 'x86_64-pc-windows-msvc'`
+-- TBB's own cmake adds -fPIC on the "Clang" branch, invalid for the windows-msvc
+target clang uses. After TBB, Open3D's other heavy bundled deps (VTK, assimp, embree,
+...) would each surface their own Windows-clang build issues; upstream Open3D builds
+Windows with MSVC, not the all-clang toolchain USE_HIP forces, so this is an
+unsupported-upstream build configuration. This is the SAME class as the gfx1151
+determination (bundled host 3rdparty not building under Windows-clang), arch-INDEPENDENT
+and out of ROCm-port scope -- the GPU/HIP port is proven on gfx90a + gfx1100 (499 tests).
+
+DETERMINATION: windows-gfx1101 BLOCKED, reason = bundled 3rdparty (TBB -fPIC under the
+all-clang toolchain USE_HIP forces; VTK/assimp/embree to follow) does not build on
+Windows-clang -- host build infra, not the GPU port. Same arch-independent wall applies
+to windows-gfx1201. REVERSIBLE: supply the heavy 3rdparty (tbb, vtk, assimp, embree,
+jpeg, curl, openssl) as prebuilt system packages (vcpkg x64-windows) via the
+USE_SYSTEM_* options and re-run; the toolchain + GPU port are ready, only host-lib
+provisioning remains.
