@@ -52,7 +52,7 @@ def load_projects():
         if not sp.exists():
             continue
         try:
-            rec = json.loads(sp.read_text())
+            rec = json.loads(sp.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
             sys.stderr.write(f"gen_readme: skipping unparseable {sp}\n")
             continue
@@ -63,7 +63,7 @@ def load_projects():
         up = d / "upstream.json"
         if up.exists():
             try:
-                u = json.loads(up.read_text())
+                u = json.loads(up.read_text(encoding="utf-8"))
                 rec["pr_url"] = u.get("pr_url")
                 rec["pr_number"] = u.get("pr_number")
                 rec["pr_state"] = u.get("pr_state")
@@ -166,7 +166,7 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="gen_readme")
     ap.add_argument("--check", action="store_true", help="exit 1 if README is stale")
     args = ap.parse_args(argv)
-    current = README.read_text()
+    current = README.read_text(encoding="utf-8")
     new = splice(current, render_table(load_projects()))
     if args.check:
         if new != current:
@@ -174,7 +174,7 @@ def main(argv=None):
             return 1
         print("README.md table is up to date")
         return 0
-    README.write_text(new)
+    README.write_text(new, encoding="utf-8")
     print("README.md table regenerated")
     return 0
 

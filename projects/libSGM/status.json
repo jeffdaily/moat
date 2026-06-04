@@ -7,10 +7,39 @@
   "priority": 4.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:07:50Z",
-  "updated_at": "2026-06-04T06:12:10Z",
+  "updated_at": "2026-06-04T19:41:52Z",
   "head_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
   "depends_on": [],
   "platforms": {
+    "linux-gfx90a": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
+      "started_at": "2026-06-02T00:47:02Z",
+      "completed_at": "2026-06-04T06:12:09Z",
+      "updated_at": "2026-06-04T06:12:09Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 1,
+        "first_session_at": "2026-06-02T04:00:00Z",
+        "last_session_at": "2026-06-02T04:30:00Z"
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
+        "method": "source-class",
+        "detail": "neutral wave64-GCN wording (drop internal test-setup admission); guard identical to validated fdb9d24, comment-only, binary-identical",
+        "at": "2026-06-04T06:12:09Z"
+      }
+    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
@@ -40,14 +69,14 @@
         "at": "2026-06-04T06:12:09Z"
       }
     },
-    "linux-gfx90a": {
-      "state": "completed",
+    "windows-gfx1101": {
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
-      "started_at": "2026-06-02T00:47:02Z",
-      "completed_at": "2026-06-04T06:12:09Z",
-      "updated_at": "2026-06-04T06:12:09Z",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,16 +86,31 @@
           "test": 0,
           "misc": 0
         },
-        "session_count": 1,
-        "first_session_at": "2026-06-02T04:00:00Z",
-        "last_session_at": "2026-06-02T04:30:00Z"
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "19df416d9647bfbd03491a0f6dc72404a4b4cb72",
-        "method": "source-class",
-        "detail": "neutral wave64-GCN wording (drop internal test-setup admission); guard identical to validated fdb9d24, comment-only, binary-identical",
-        "at": "2026-06-04T06:12:09Z"
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1201": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
       }
     },
     "windows-gfx1151": {

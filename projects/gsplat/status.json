@@ -7,9 +7,40 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-03T13:30:29Z",
+  "updated_at": "2026-06-04T19:41:52Z",
   "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
   "platforms": {
+    "linux-gfx90a": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+      "started_at": "2026-05-30T07:12:53Z",
+      "completed_at": "2026-06-02T18:15:00Z",
+      "updated_at": "2026-06-02T18:23:49Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 2,
+        "first_session_at": "2026-05-30T23:00:00Z",
+        "last_session_at": "2026-06-02T18:15:00Z"
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "8839b72e43f555622673e060728e7480b0fbf40a",
+        "to": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-02T18:23:49Z"
+      }
+    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
@@ -41,6 +72,50 @@
         "at": "2026-06-02T16:55:10Z"
       }
     },
+    "windows-gfx1101": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1201": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
@@ -68,37 +143,6 @@
         "method": "source-class",
         "detail": "5cdaa15..e17d495 (validated extension content) diff -- gsplat/cuda setup.py is EMPTY; only .gitignore/README/docs/INSTALL_WIN.md + experimental/render build.py import-hoist (renderer skipped on ROCm).",
         "at": "2026-06-03T13:30:29Z"
-      }
-    },
-    "linux-gfx90a": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
-      "started_at": "2026-05-30T07:12:53Z",
-      "completed_at": "2026-06-02T18:15:00Z",
-      "updated_at": "2026-06-02T18:23:49Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 2,
-        "first_session_at": "2026-05-30T23:00:00Z",
-        "last_session_at": "2026-06-02T18:15:00Z"
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "8839b72e43f555622673e060728e7480b0fbf40a",
-        "to": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-02T18:23:49Z"
       }
     }
   }

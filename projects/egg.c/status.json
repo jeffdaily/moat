@@ -7,9 +7,31 @@
   "priority": 4.12,
   "ext_type": "make",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-04T19:29:03Z",
-  "head_sha": "0b389cebd90b24accabd6d33b2df280bc437fa03",
+  "updated_at": "2026-06-04T19:41:52Z",
+  "head_sha": "0472ed580a800a58de68007405f1c62a2cab5651",
   "platforms": {
+    "windows-gfx1201": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
     "linux-gfx90a": {
       "state": "revalidate",
       "blocked": false,
@@ -62,14 +84,36 @@
         "at": "2026-06-04T19:29:03Z"
       }
     },
-    "windows-gfx1151": {
-      "state": "completed",
+    "windows-gfx1101": {
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0b389cebd90b24accabd6d33b2df280bc437fa03",
+      "validated_sha": null,
       "started_at": null,
-      "completed_at": "2026-06-04T19:19:43Z",
-      "updated_at": "2026-06-04T19:19:43Z",
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1151": {
+      "state": "port-ready",
+      "blocked": true,
+      "blocked_reason": "windows-gfx1151 host retired (superseded by the gfx1101/gfx1201 machine); validation moved to windows-gfx1101 and windows-gfx1201",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T19:41:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

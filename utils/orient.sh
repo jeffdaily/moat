@@ -22,7 +22,7 @@ if ! arch_out=$(bash utils/detect_arch.sh 2>/dev/null); then
 fi
 eval "$arch_out"   # sets GFX_ARCH GFX_TRIPLE PLATFORM
 
-VALID="linux-gfx90a linux-gfx1100 windows-gfx1151"
+VALID="linux-gfx90a linux-gfx1100 windows-gfx1101 windows-gfx1201 windows-gfx1151"
 echo "== MOAT orient =="
 echo "platform : $PLATFORM (gfx=$GFX_ARCH)"
 case " $VALID " in

@@ -21,7 +21,14 @@ PROJECTS = REPO_ROOT / "projects"
 SCHEMA_VERSION = 1
 
 LEAD = "linux-gfx90a"
-PLATFORMS = ["linux-gfx90a", "linux-gfx1100", "windows-gfx1151"]
+# Windows is validated on two distinct archs (gfx1101 RDNA3, gfx1201 RDNA4) hosted
+# on one multi-GPU machine; each is its own validation target. windows-gfx1151 is
+# the retired Strix Halo host (superseded by this machine): its already-completed
+# blocks are preserved as real validation records, but it is scheduled no new work
+# -- per project its non-completed gfx1151 block carries blocked=true, which
+# `actionable` skips and `pr_ready` treats as terminal (non-viable, never blocks a PR).
+PLATFORMS = ["linux-gfx90a", "linux-gfx1100",
+             "windows-gfx1101", "windows-gfx1201", "windows-gfx1151"]
 PORT_BRANCH = "moat-port"  # the topic branch that holds the port on each fork
 
 # Per-platform pipeline. blocked-needs-gfx90a is the follower start state; the
@@ -208,6 +215,8 @@ def _unblock_followers(obj):
         if plat == LEAD:
             continue
         blk = obj["platforms"][plat]
+        if blk.get("blocked"):  # retired/non-viable platform: never schedule it
+            continue
         if blk["state"] == "blocked-needs-gfx90a":
             blk["state"] = "port-ready"
             blk["updated_at"] = now_iso()
@@ -374,6 +383,8 @@ def unblock_all_followers():
             if plat == LEAD:
                 continue
             blk = obj["platforms"][plat]
+            if blk.get("blocked"):  # retired/non-viable platform: never schedule it
+                continue
             if blk["state"] == "blocked-needs-gfx90a":
                 blk["state"] = "port-ready"
                 blk["updated_at"] = now_iso()
@@ -465,6 +476,8 @@ def scaffold_project(full_name, upstream_url=None, default_branch="main",
         "platforms": {
             LEAD: _platform_block("unclaimed"),
             "linux-gfx1100": _platform_block("blocked-needs-gfx90a"),
+            "windows-gfx1101": _platform_block("blocked-needs-gfx90a"),
+            "windows-gfx1201": _platform_block("blocked-needs-gfx90a"),
             "windows-gfx1151": _platform_block("blocked-needs-gfx90a"),
         },
     }
