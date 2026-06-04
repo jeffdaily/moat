@@ -31,3 +31,5 @@ Push to the MOAT repo as each transition happens with `python3 utils/moatlib.py 
 
 ## Stop and ask
 After `max_attempts` (config/moat.toml, default 3) failed validation cycles with unclear root cause, set `blocked` with a concrete reason and ask. Never thrash.
+
+Within a single attempt, the same circuit-breaker as the validator applies (budget ~60 min wall-clock / ~300k tokens): never re-run an IDENTICAL failing command more than twice (a third identical retry is forbidden -- change the hypothesis or stop); triage the error class before grinding (a Windows exit-127 / "DLL"/"cannot load" / `hipErrorLaunchFailure (719)` is a runtime-environment problem, not a port fault -- fix the DLL path once, do not rebuild against it); and always leave partial value in notes (what built, what passed, the verbatim blocking error) so a stop resumes from there, never from zero. A crisp diagnosis beats an hour of grinding.
