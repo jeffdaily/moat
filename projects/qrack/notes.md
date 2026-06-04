@@ -272,3 +272,42 @@ No hang, no wrong result. The deadlock is gone; the fix is deterministic.
 
 Status: linux-gfx90a -> completed at dcb5e180. Followers linux-gfx1100,
 windows-gfx1101, windows-gfx1201 unblocked to port-ready.
+
+## Validation 2026-06-04 (linux-gfx1100, follower)
+
+Platform: AMD Radeon Pro W7800 48GB gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+Fork: jeffdaily/qrack moat-port @ dcb5e180 (same commit as lead gfx90a).
+GPU: HIP_VISIBLE_DEVICES=0.
+
+Build: Clean build from scratch for gfx1100.
+```
+cd projects/qrack/src
+cmake -S . -B _build -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON
+cmake --build _build -j16 --target unittest
+```
+Config detected QBCAPPOW=7, FPPOW=5 (float). All three .cu compiled as HIP
+(wave32 RDNA3 code objects), linked libqrack.a + unittest executable cleanly.
+
+Full suite: `HIP_VISIBLE_DEVICES=0 ./_build/unittest --proc-cuda --layer-qengine -d yes`
+Result: All tests passed -- 9472 assertions in 205 test cases.
+Wall time: ~67s.
+
+Wave-size validation: gfx1100 is RDNA3 wave32 (vs gfx90a CDNA wave64). The port's
+wave-agnostic design (runtime warpSize query, __syncthreads-fenced shared-mem
+reductions with no last-warp elision, no hardcoded 32/64) worked correctly on
+wave32 with zero source changes. The same dcb5e180 commit built and validated
+on both wave64 (gfx90a) and wave32 (gfx1100) from one source.
+
+Key observations:
+- test_ucmtrx (the deferred-free fix target): 0.015s, passed (8/8 assertions).
+  No hang, no wrong result. The hipFree-in-callback deadlock fix is correct on
+  wave32.
+- All previously-slow tests (ccnot, swap, fsim, uniform_c*, apply_controlled_*)
+  completed quickly (~0.002-0.021s each) and passed.
+- Two longer tests (test_m_array: 22.8s, test_bell_m: 44.1s) are measurement-
+  sampling tests that run many shots; they passed with correct probabilities.
+
+Status: linux-gfx1100 port-ready -> completed at dcb5e180.
