@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "3",
   "upstream_url": "https://github.com/mumax/3",
-  "fork_url": null,
-  "fork_default_branch": "main",
+  "fork_url": "https://github.com/jeffdaily/3",
+  "fork_default_branch": "master",
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-04T04:30:15Z",
-  "head_sha": null,
+  "updated_at": "2026-06-04T05:11:55Z",
+  "head_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
+      "validated_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
+      "started_at": "2026-06-04T04:33:12Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T04:30:15Z",
+      "updated_at": "2026-06-04T05:11:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
