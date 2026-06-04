@@ -2,12 +2,12 @@
   "schema_version": 1,
   "name": "icicle",
   "upstream_url": "https://github.com/ingonyama-zk/icicle",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/icicle",
   "fork_default_branch": "main",
   "priority": 4.507,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-03T06:50:59Z",
+  "updated_at": "2026-06-04T09:17:14Z",
   "head_sha": "d8e04fd116ff60770d1d04bc731562f2659af7a9",
   "platforms": {
     "linux-gfx90a": {
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1151": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "validation-failed",
+      "blocked": true,
+      "blocked_reason": "no-windows-support-in-icicle-host-framework: runtime.cpp uses POSIX dlopen/dlfcn.h/dirent.h and contains #error Unsupported operating system for non-Linux/macOS; utils.h uses cxxabi.h (GCC ABI, no Windows equivalent); test_base.h uses POSIX setenv. This is upstream icicle framework missing Windows support, not a HIP-PQC backend issue.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-02T03:20:56Z",
+      "updated_at": "2026-06-04T09:17:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

@@ -416,3 +416,55 @@ All previously non-deterministic cases are now bit-exact across 3 runs. The wave
 ### Verdict
 
 PASS. 58/58 backend KAT gtests + 6/6 frontend dispatch tests on gfx1100 (AMD Radeon Pro W7800, wave32) at d8e04fd. The previously-failing k=768/1024 cases (PkeKeygen768, KeyCheckTest1024Batch, MlKemEncaps768/1024Batch, MlKemDecaps768/1024Batch) are now bit-exact stable across 3 runs -- the single `__syncwarp()` in generate_error_vector at the eta=2 CBD->NTT boundary fixes the wave32 LDS race. No HSA 0x1016, no hang. Fork clean at d8e04fd.
+
+## Validation 2026-06-04 (windows-gfx1151) -- BLOCKED: icicle host framework has no Windows support
+
+GPU: AMD Radeon 8060S (gfx1151, RDNA3.5, wave32). Windows 11. TheRock ROCm (venv-gsplat). Fork moat-port @ d8e04fd.
+
+### Attempt
+
+Clone: `git clone --branch moat-port --single-branch https://github.com/jeffdaily/icicle projects/icicle/src` -- OK.
+
+Configure:
+```
+cmake -S projects/icicle/src/icicle -B agent_space/icicle_win_build \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=<rocm>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+  -DCPU_BACKEND=ON -DHIP_PQC_BACKEND=ON -DCUDA_PQC_BACKEND=OFF \
+  -DPQC=ON -DBUILD_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_PREFIX_PATH=<rocm_win> \
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST=agent_space/googletest
+```
+Configure succeeded (28.5s, FetchContent resolved via local googletest + fetched Taskflow).
+
+Build (cmake --build ... -j6) -- FAIL at first compilation:
+```
+D:/Develop/moat/projects/icicle/src/icicle/src/runtime.cpp:2:10: fatal error: 'dlfcn.h' file not found
+```
+AND (device-code TU):
+```
+D:/Develop/moat/projects/icicle/src/icicle/include/icicle/utils/utils.h:4:10:
+  fatal error: 'cxxabi.h' file not found
+```
+
+### Root cause
+
+The icicle host framework (the `icicle_device` library) has zero Windows support:
+
+1. `icicle/src/runtime.cpp` (the backend loader): hard-depends on POSIX `dlfcn.h`/`dlopen`/`RTLD_LOCAL`/`RTLD_GLOBAL`, `dirent.h`/`opendir`/`readdir`/`closedir`, and `sys/stat.h`. Line 285 contains a literal `#error "Unsupported operating system"` for any platform that is not Linux or macOS.
+2. `icicle/include/icicle/utils/utils.h`: includes `cxxabi.h` (GCC ABI demangling) for the `demangle<T>()` utility; Windows/MSVC has no equivalent.
+3. `icicle/tests/test_base.h`: uses `setenv()` (POSIX) to set `ICICLE_BACKEND_INSTALL_DIR`.
+
+The backend-loading architecture -- tests call `icicle_load_backend_from_env_or_default()` which scans a directory with `opendir`/`readdir` and loads each backend .dll via `dlopen` -- has no Windows (LoadLibrary) implementation. The `#error` in runtime.cpp is explicit that Windows is unsupported.
+
+### Scope
+
+This is not a delta to our HIP-PQC backend (backend/hip_pqc/). The HIP device kernels, cuda_to_hip.h shim, and wave-agnostic fixes are all correct and compile-clean. The blocker is entirely in the upstream icicle host framework code, which would require a separate multi-file Windows port (runtime.cpp LoadLibrary replacement, cxxabi.h demangling alternative, setenv -> _putenv_s, SHARED_LIB_EXTENSION ".dll"). That is upstream-scope work beyond the MOAT port boundary.
+
+### Verdict
+
+BLOCKED. No GPU run possible. Reason: `no-windows-support-in-icicle-host-framework`. The `icicle_device` runtime.cpp explicitly errors at compile time on non-Linux/macOS with `#error "Unsupported operating system"` and uses POSIX-only dlopen/dirent APIs throughout the backend loader. This is an upstream icicle limitation, not a HIP-PQC backend issue. The HIP-PQC GPU kernels and wave-agnostic shims are correct (validated on gfx90a and gfx1100). Escalate to upstream icicle for Windows support.
