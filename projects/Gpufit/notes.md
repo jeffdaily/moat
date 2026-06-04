@@ -447,3 +447,147 @@ relaxed it to 3e-6f (2.65x observed error, HIP-only #if guard). No regression in
 No NaN, no divergence, clean exit 0 on all suites.
 
 Result: linux-gfx1100 review-passed -> completed, validated_sha = 5ab0c059ed761d571c3e66a519f3246a62184145.
+
+## Validation 2026-06-04 (windows-gfx1151) -- validation-failed
+
+GPU: AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11, TheRock ROCm 7.13.
+
+### Delta-port required: Windows clang-cl build fixes
+
+The fork at 5ab0c059 (linux-validated) does not build on Windows with clang-cl
+(MSVC frontend). Two faults:
+
+1. **`CMAKE_HIP_COMPILE_OBJECT` / `/Fo` drops device fatbinary silently.**
+   CMake's `Windows-MSVC.cmake` (`__windows_compiler_msvc(HIP)`) unconditionally
+   sets the HIP compile-object rule to use `/Fo<out>` (MSVC output flag). With
+   `/Fo`, clang-cl routes the host object through the same path it passes to
+   `clang-offload-bundler` as input; Windows blocks the write
+   (ERROR_USER_MAPPED_FILE) and the device fatbinary is silently dropped from the
+   COFF object. The final DLL ends up host-only. Fix: in the top-level
+   `CMakeLists.txt`, after `enable_language(HIP)` runs, override
+   `CMAKE_HIP_COMPILE_OBJECT` to use GNU-style `-o <OBJECT>` (guarded WIN32).
+
+2. **`-include` ignored by clang-cl -> must use `/FI`.**
+   The `target_compile_options(-include<hdr>)` for the force-include of
+   `cuda_to_hip.h` is silently dropped by clang-cl (MSVC frontend). Fix:
+   use a generator expression to pick `/FI<hdr>` when
+   `CMAKE_HIP_COMPILER_FRONTEND_VARIANT == MSVC`.
+
+Both fixes are in `CMakeLists.txt`, `Gpufit/CMakeLists.txt`, and
+`examples/c++/CMakeLists.txt`. They are guarded `WIN32` / by frontend variant
+so the Linux build is byte-for-byte unchanged. Committed as a new top commit:
+fork SHA `0a1b3d6` (pushed to jeffdaily/Gpufit moat-port).
+
+Additional configure-time requirements on Windows (not committed -- build recipe
+only):
+- `CMAKE_TOOLCHAIN_FILE=agent_space/gfx1151_hip_toolchain.cmake` (clang-cl for
+  C/CXX/HIP, MSVC_RUNTIME_LIBRARY empty options for HIP language)
+- `CMAKE_HIP_FLAGS="-x hip -MD"` (`-x hip` forces HIP device compilation mode in
+  clang-cl, overriding the `-TP` force-C++ from the compile rule; `-MD` matches
+  the CXX runtime library to avoid /failifmismatch at link)
+
+### Build (clean at 0a1b3d6)
+
+```
+cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-win-gfx1151 -G Ninja \
+  -DCMAKE_TOOLCHAIN_FILE="agent_space/gfx1151_hip_toolchain.cmake" \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF \
+  -DBOOST_ROOT="agent_space/boost_install" \
+  -DBOOST_INCLUDEDIR="agent_space/boost_install/include/boost-1_87" \
+  -DBoost_NO_BOOST_CMAKE=ON \
+  -DCMAKE_PREFIX_PATH="D:/Develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel" \
+  "-DCMAKE_HIP_FLAGS=-x hip -MD"
+
+bash utils/timeit.sh Gpufit compile -- \
+  cmake --build projects/Gpufit/src/build-win-gfx1151 \
+    --target Gpufit Simple_Example CUDA_Interface_Example \
+      Gpufit_Test_Error_Handling Gpufit_Test_Linear_Fit_1D \
+      Gpufit_Test_Gauss_Fit_1D Gpufit_Test_Gauss_Fit_2D \
+      Gpufit_Test_Gauss_Fit_2D_Elliptic Gpufit_Test_Gauss_Fit_2D_Rotated \
+      Gpufit_Test_Cauchy_Fit_2D_Elliptic Gpufit_Test_Fletcher_Powell_Helix_Fit \
+      Gpufit_Test_Brown_Dennis_Fit Cpufit_Gpufit_Test_Consistency -j6
+```
+
+Build: clean (100%). Gpufit.dll, all test exes, Simple_Example.exe,
+CUDA_Interface_Example.exe.
+
+### gfx1151 device code confirmation
+
+`Gpufit.dll` PE sections include `.hip_fat` (VirtualSize=0x6D1D0 = 447KB) and
+`.hipFatB`. String `gfx1151` appears 6x in the DLL. Device code confirmed on
+gfx1151. (COFF/PE embeds the fatbinary during link via `lld-link --hip-link`,
+not per-TU as on ELF/Linux.)
+
+### Runtime deployment
+
+Copied TheRock's self-consistent runtime DLLs beside the test exes:
+`amdhip64_7.dll`, `amd_comgr0713.dll`, `rocm_kpack.dll`, `hiprtc07013.dll`,
+`hiprtc-builtins07013.dll` (from `_rocm_sdk_devel/bin/`, `_rocm_sdk_core/bin/`).
+
+### Test results (HIP_VISIBLE_DEVICES=0, AMD Radeon 8060S, gfx1151, wave32)
+
+```
+bash utils/timeit.sh Gpufit test -- \
+  bash -c "cd projects/Gpufit/src/build-win-gfx1151 && ctest --output-on-failure -j1 2>&1"
+```
+
+| Test | Result |
+|------|--------|
+| Gpufit_Test_Error_Handling | PASS |
+| Gpufit_Test_Linear_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_2D | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Elliptic | FAIL |
+| Gpufit_Test_Gauss_Fit_2D_Rotated | PASS |
+| Gpufit_Test_Cauchy_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Fletcher_Powell_Helix_Fit | PASS |
+| Gpufit_Test_Brown_Dennis_Fit | PASS |
+| Cpufit_Gpufit_Test_Consistency | FAIL (gauss_2d_elliptic subtest) |
+
+8/10 PASS, 2/10 FAIL. Total test time: 7.67 sec.
+
+### Gauss_Fit_2D_Elliptic failure analysis
+
+The LM solver DIVERGES on gfx1151 for the 2D elliptic Gaussian fit with the
+test's standard initial params `{2, 1.8, 2.2, 0.5, 0.5, 0}` (true: `{4, 2, 2,
+0.4, 0.6, 1}`):
+- `status == 0` (converged): passes -- solver declares convergence
+- `output_chi_square < 1e-6f`: FAILS -- actual chi2 = 16.34 (expected ~0)
+- All 6 parameter assertions fail; output = `{-0.038, -36.4, 0.344, 28.9, 58.7,
+  1.28}` (completely wrong -- sigma terms diverge to ~30-60)
+
+Deterministic: same result on every run. NOT a tolerance issue -- DIVERGED.
+
+The same test PASSES on gfx90a (wave64) and gfx1100 (wave32/Linux). gfx1151
+is RDNA3.5 (Strix Halo iGPU), a different die than gfx1100 (RDNA3 discrete).
+
+Diagnostic checks:
+- CPU solver (Cpufit) gives correct result in 6 iterations with same initial params
+- GAUSS_2D (non-elliptic) PASSES correctly on gfx1151
+- Cauchy_Fit_2D_Elliptic PASSES (same model structure but Cauchy distribution)
+- With exact initial params (=true), the GPU solver also converges in 1 step
+- With perturbed init near true, converges in 27 iterations but only to chi2=0.014
+  (not < 1e-6) -- loose convergence
+- With original test init, always 10 iterations then "converged" with chi2=16
+
+The solver diverges when the LM step moves sigma_x and sigma_y toward very large
+values (28-58), making the Gaussian nearly flat. With a flat function the gradient
+is nearly zero and the solver stalls -- it reports "converged" because the relative
+chi2 change drops below the 0.001 tolerance even though chi2 is ~16.
+
+Root cause: the gradient/hessian computation in `cuda_kernels.cu` or the
+`gauss_2d_elliptic.cuh` kernel produces numerically different results on gfx1151
+vs gfx1100, causing the LM update step to choose a bad direction. This is NOT
+exposed by: gfx90a (wave64), gfx1100 (wave32/Linux), GAUSS_2D, or Cauchy models.
+
+The gfx1100 gfx1151 architecture difference (RDNA3 vs RDNA3.5) may explain the
+divergence -- different FP rounding in intermediate GJ solver steps could shift
+the Hessian conditioning.
+
+### State
+
+windows-gfx1151 -> validation-failed. Bouncing to porter for diagnosis.
+The two Windows build fixes (commit 0a1b3d6) are already pushed to the fork and
+MUST be preserved in any follow-up delta-port. The GPU failure to investigate is
+specifically the LM solver diverging for GAUSS_2D_ELLIPTIC on gfx1151.
