@@ -79,7 +79,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [libSGM](https://github.com/fixstars/libSGM) ([fork](https://github.com/jeffdaily/libSGM/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟢 [#89](https://github.com/fixstars/libSGM/pull/89) |
 | [LichtFeld-Studio](https://github.com/MrNeRF/LichtFeld-Studio) ([fork](https://github.com/jeffdaily/LichtFeld-Studio/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [LiteGS](https://github.com/MooreThreads/LiteGS) ([fork](https://github.com/jeffdaily/LiteGS/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
-| [llm.c](https://github.com/karpathy/llm.c) ([fork](https://github.com/jeffdaily/llm.c/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟢 [#854](https://github.com/karpathy/llm.c/pull/854) |
+| [llm.c](https://github.com/karpathy/llm.c) ([fork](https://github.com/jeffdaily/llm.c/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🟢 [#854](https://github.com/karpathy/llm.c/pull/854) |
 | [llmq](https://github.com/IST-DASLab/llmq) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [LMCache](https://github.com/LMCache/LMCache) ([fork](https://github.com/jeffdaily/LMCache/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | 🔵 validated (2 arch) |
 | [mahout](https://github.com/apache/mahout) ([fork](https://github.com/jeffdaily/mahout/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
