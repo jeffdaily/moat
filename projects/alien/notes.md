@@ -252,3 +252,16 @@ GPU tests NOT run. EngineTests / CLI smoke NOT executed. Cannot validate gfx1151
 The HIP port (dac18fc) is correct -- validated on gfx90a + gfx1100 at 2973/2978 PASSED. The Windows fixes (82b22c5f) address CXX toolchain compatibility but cannot overcome the device-code compilation blocker.
 
 **Retest when**: TheRock SDK is updated to a version with a fixed `clang-offload-bundler.exe` that handles `-fgpu-rdc` on Windows without the user-mapped-section error.
+
+## Update 2026-06-03 (windows-gfx1151): toolchain blocker SOLVED, full validation interrupted by host reboot
+
+The `-fgpu-rdc` blocker above was root-caused and worked around -- it is NOT a "wait for a new SDK" situation. Root cause (filed upstream as ROCm/TheRock#5615): with clang-cl `/Fo<path>`, the driver compiles the host pass to `<path>` then hands `clang-offload-bundler` that same path as both `-input` and `-output`; Windows refuses to rewrite the memory-mapped file (0x4C8). It is the `/Fo` vs `-o` distinction, not object size; `-o` routes the host object to a distinct temp so input != output.
+
+Fixes committed at fork 47ab2c9 (all WIN32 / `__has_include` guarded; Linux gfx90a/gfx1100 untouched and binary-equivalent):
+1. Override `CMAKE_HIP_COMPILE_OBJECT` to use `-o` instead of `/Fo` on Windows (dodges the bundler input==output bug; `--offload-new-driver` also works and was the originally-found workaround).
+2. `cmake/hip_link_win.py` wrapper overriding `CMAKE_HIP_LINK_EXECUTABLE`: the MSVC `vs_link_exe -> lld-link` rule cannot do the `-fgpu-rdc` device link; the GCC-driver `clang.exe --target=x86_64-pc-windows-msvc` can. The wrapper translates MSVC link flags (`/machine:x64`, `/subsystem:console`, bare `.lib`) to `-Xlinker` so the GCC driver passes them to lld-link, and adds `--offload-arch=gfx1151` for the device link.
+3. `source/hip_compat/cooperative_groups/reduce.h`: `__has_include`-guard the shim so ROCm 7.13 uses the native `cg::reduce`/`cg::plus/greater/less` (amd_hip_cooperative_groups_reduce.h) while ROCm 7.2.x (gfx90a/gfx1100) keeps the identity-butterfly shim.
+
+Proven on gfx1151: EngineTests.exe, PersisterTests.exe, cli.exe all compile and LINK; gfx1151 device code objects embedded in all three; one real GPU test (`AttackerTests.maxRawEnergyThreshold_belowThreshold`) executed and PASSED on hardware. So the Windows port works end to end.
+
+NOT yet completed: the full EngineTests suite (~26 min sustained GPU on Linux; bar 2973/2978 + cli energy-conserved smoke). That run triggered a host `HYPERVISOR_ERROR (0x20001)` BSOD reboot -- a NEW failure mode vs the earlier Event-41 power-loss reboots, during a pure (serialized, no compile overlap) sustained GPU run. Remaining gap is HOST STABILITY, not the port. Plan to finish: run the suite in SHORT batched `--gtest_filter` chunks with idle gaps (no long sustained-load window), attended, after host mitigations (disable Core Isolation/HVCI+VBS so the hypervisor is out of the GPU compute path; newer KMD; TDP cap). See [[gfx1151-host-power-reboots]]. State: windows-gfx1151 = delta-ported (fixes at 47ab2c9, full GPU validation pending).

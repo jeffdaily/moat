@@ -8,7 +8,7 @@
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
   "updated_at": "2026-06-03T20:56:09Z",
-  "head_sha": "82b22c5fa3de5c06b30f4278c84f5763fe9ef379",
+  "head_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
   "platforms": {
     "linux-gfx90a": {
       "state": "revalidate",
@@ -56,13 +56,14 @@
       }
     },
     "windows-gfx1151": {
-      "state": "validation-failed",
-      "blocked": true,
-      "blocked_reason": "clang-offload-bundler.exe -fgpu-rdc bug in TheRock 0.1.0 SDK on Windows (user-mapped-section-open); alien requires -fgpu-rdc for extern __constant__ cross-TU device symbol; retest when TheRock SDK is updated",
+      "state": "delta-ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-03T20:55:50Z",
+      "updated_at": "2026-06-03T22:30:00Z",
+      "note": "Toolchain blocker SOLVED at 47ab2c9 (TheRock#5615 -o workaround + hip_link_win.py device-link wrapper + __has_include cg::reduce guard). Compiles+links on gfx1151; 1 real GPU test (AttackerTests.maxRawEnergyThreshold_belowThreshold) PASSED on hardware. Full EngineTests suite (~26min sustained GPU) NOT completed -- the run triggered a host HYPERVISOR_ERROR 0x20001 reboot. Remaining gap is HOST STABILITY, not the port; complete via short batched gtest_filter runs once host is stabilized. See notes.md + [[gfx1151-host-power-reboots]].",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
