@@ -10,3 +10,8 @@
 {"kind":"phase","ts":"2026-06-04T02:20:17Z","phase":"compile","seconds":0.338,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-04T02:20:45Z","phase":"compile","seconds":23.082,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/TIGRE/src --no-build-isolation"}
 {"kind": "tokens", "ts": "2026-06-04T02:23:09Z", "tokens": 51469}
+{"kind": "tokens", "ts": "2026-06-04T02:26:15Z", "tokens": 40414}
+{"kind":"phase","ts":"2026-06-04T02:26:53Z","phase":"compile","seconds":0.342,"exit":1,"cmd":"bash -c export BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a && cd projects/TIGRE/src && pip install -e Python --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:27:28Z","phase":"compile","seconds":3.342,"exit":0,"cmd":"bash -c export BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a && cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:27:50Z","phase":"test","seconds":13.177,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/tigre_validate.py 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:28:10Z","phase":"test","seconds":15.147,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/tigre_solvers.py 2>&1"}

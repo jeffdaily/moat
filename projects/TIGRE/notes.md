@@ -198,6 +198,45 @@ Confirmation of the three points:
 
 Note for the validator: device code is binary-equivalent to the prior de517de build, which the porter reports validated on real gfx90a (256^3 phantom: Ax interp vs Siddon 0.47%, adjointness 1.2e-05, OS-SART nRMSE 0.15). The real-GPU phantom gate is the validator's call; carry-forward of the prior validation is justified by the binary-equivalence but is not the reviewer's to assert.
 
+## Validation 2026-06-04 (linux-gfx90a, real GPU, completed)
+
+GPU: MI250X / MI250 gfx90a, ROCm 7.2.1. HIP_VISIBLE_DEVICES=0. validated_sha b450d56.
+
+Build:
+```
+BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a pip install -e . --no-build-isolation
+```
+Build re-confirmed clean at b450d56. gfx90a code objects present in all 8 extensions
+(_Ax, _Atb, _minTV, _minPICCS, _AwminTV, _tv_proximal, _gpuUtils, _RandomNumberGenerator).
+
+Test (agent_space/tigre_validate.py, 256^3 head phantom, 32 angles):
+```
+HIP_VISIBLE_DEVICES=0 python3 agent_space/tigre_validate.py
+HIP_VISIBLE_DEVICES=0 python3 agent_space/tigre_solvers.py
+```
+
+Results:
+- Ax Siddon:       shape=(32,256,256) finite=True min=0 max=110.7 mean=27.46
+- Ax interpolated: shape=(32,256,256) finite=True min=0 max=109.9 mean=27.46
+- ||Ax_interp - Ax_siddon|| / ||Ax_siddon|| = 0.0047 (SW-trilinear texture correctness confirmed)
+- nRMSE FDK    = 0.2904 (< 0.5, finite)
+- nRMSE OS-SART = 0.1507 (< FDK as expected)
+- Adjointness <Ax,y> = 1.180344e+08, <x,Atb(y)> = 1.180330e+08, rel residual = 1.186e-05
+  (adjoint to float precision; pass < 0.05)
+
+Solver sweep (agent_space/tigre_solvers.py, 64^3, 5 iter, TV-regularized solvers exercise
+GD_TV/GD_AwTV/PICCS reduction kernels via the live warpReduce path):
+- sart:     finite=True nRMSE=1.2545 -- PASS
+- ossart:   finite=True nRMSE=1.1090 -- PASS
+- sirt:     finite=True nRMSE=1.3487 -- PASS
+- cgls:     finite=True nRMSE=0.9529 -- PASS
+- fista:    finite=True nRMSE=0.9936 -- PASS
+- asd_pocs: finite=True nRMSE=1.2505, stop criteria met -- PASS
+- awasd:    finite=True nRMSE=1.2543, stop criteria met -- PASS
+- ossart_tv: finite=True nRMSE=1.1347, stop criteria met -- PASS
+
+Outcome: VALIDATION PASS and SOLVERS PASS. linux-gfx90a -> completed.
+
 ## Install as a dependency
 
 Not a base library for other MOAT projects (no `depends_on` consumers).
