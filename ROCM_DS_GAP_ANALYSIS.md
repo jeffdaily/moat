@@ -31,6 +31,17 @@ out-feature ROCm-DS on the existing five libraries except on architecture reach 
 two genuinely-missing libraries (cuML, cuCIM), plus one real functional gap in hipRaft (CK
 distance backend).
 
+> **CORRECTION (2026-06-04, from a ROCm-DS developer).** This analysis was built on the PUBLIC
+> ROCm-DS forks, which are pinned to an OLDER RAPIDS version; AMD's latest ports are unreleased
+> and partly in other orgs. Three corrections: (1) the AMD RAPIDS-on-ROCm ecosystem spans
+> multiple orgs -- **ROCm-DS** + **ROCm-LS** (Life Sciences) + **AMD-AIOSS** (private). (2) cuCIM
+> is NOT a gap: **ROCm-LS/hipCIM** is an official, active port (CDNA gfx942/gfx950 only). (3) the
+> hipRaft CUTLASS-distance gap is a STALE-PUBLIC artifact: RAPIDS moved distance/NN from raft to
+> cuvs, and AMD already replaced CUTLASS with **CK-tile** kernels in the private AMD-AIOSS/hipVS
+> (amd-integration). So PR #9 (CK in hipRaft) is misdirected+duplicative. The one durable MOAT
+> value-add across all of these remains **RDNA3/gfx1100 (consumer) coverage**, which every AMD
+> port omits. cuML/hipML IS genuinely greenfield and wanted by the ROCm-DS team.
+
 ## Library-to-library map
 
 | MOAT port (base) | ROCm-DS repo (base) | ROCm-DS status | Net standing |
