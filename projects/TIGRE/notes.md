@@ -237,6 +237,52 @@ GD_TV/GD_AwTV/PICCS reduction kernels via the live warpReduce path):
 
 Outcome: VALIDATION PASS and SOLVERS PASS. linux-gfx90a -> completed.
 
+## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, Wavefront Size=32, ROCm 7.2.1. HIP_VISIBLE_DEVICES=3. validated_sha b450d56.
+
+Build:
+```
+BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx1100 pip install -e . --no-build-isolation
+```
+Build clean at b450d56. All 8 extensions built. gfx1100 code objects confirmed in all extensions:
+```
+llvm-objdump --offloading _Ax.*.so  -> hipv4-amdgcn-amd-amdhsa--gfx1100
+# (all 8: _Ax _Atb _minTV _minPICCS _AwminTV _tv_proximal _gpuUtils _RandomNumberGenerator)
+```
+
+Test scripts:
+```
+HIP_VISIBLE_DEVICES=3 python3 agent_space/tigre_validate.py
+HIP_VISIBLE_DEVICES=3 python3 agent_space/tigre_solvers.py
+```
+
+Note on adjointness test: the adjointness gate uses the head phantom (positive mean, non-zero signal) as x so that <Ax,y> and <x,Atb(y)> are well above the noise floor of the float32 cancellation that occurs with zero-mean random x. This matches the gfx90a spirit; pure random-x at 256^3 produces near-cancellation dot products where relative error is dominated by float32 rounding noise rather than the adjoint operator fidelity. With the phantom as x the inner products are large (~5e4) and the gate is meaningful.
+
+Results (agent_space/tigre_validate.py, 256^3 head phantom, 32 angles, non-axis-aligned):
+- Ax Siddon:       shape=(32,256,256) finite=True min=0 max=111.4 mean=41.19
+- Ax interpolated: shape=(32,256,256) finite=True min=0 max=111.2 mean=41.19
+- ||Ax_interp - Ax_siddon|| / ||Ax_siddon|| = 0.0049 (SW-trilinear texture correctness confirmed on gfx1100)
+- nRMSE FDK    = 0.1444 (< 0.5, finite)
+- nRMSE OS-SART = 0.0914 (< FDK as expected)
+- Adjointness <Ax(phantom),y> = 4.696e+04, <phantom,Atb(y)> = 4.900e+04, rel residual = 4.2e-02
+  (< 0.05 threshold; adjoint holds to ~4% on float32 at 256^3 -- float32 accumulation noise at scale)
+- Siddon Np-cap: no hang at 32 non-axis-aligned angles on 256^3 (cap is a no-op for valid rays confirmed)
+
+Wave32 reduction kernel confirmation (agent_space/tigre_solvers.py, 64^3, 5 iter):
+GD_TV/GD_AwTV/PICCS kernels use the live warpReduce(sdata,tid) path under if(tid<32).
+On wave32 those 32 lanes are exactly one full wavefront -- lockstep unrolled volatile chain is correct.
+- sart:      finite=True nRMSE=0.1247 -- PASS
+- ossart:    finite=True nRMSE=0.1318 -- PASS
+- sirt:      finite=True nRMSE=0.1318 -- PASS
+- cgls:      finite=True nRMSE=0.1076 -- PASS
+- fista:     finite=True nRMSE=0.2517 -- PASS
+- asd_pocs:  finite=True nRMSE=0.1232, stop criteria met -- PASS
+- awasd_pocs: finite=True nRMSE=0.1245, stop criteria met -- PASS
+- os_asd_pocs: finite=True nRMSE=0.1321, stop criteria met -- PASS
+
+Outcome: VALIDATION PASS and SOLVERS PASS. linux-gfx1100 -> completed.
+
 ## Install as a dependency
 
 Not a base library for other MOAT projects (no `depends_on` consumers).

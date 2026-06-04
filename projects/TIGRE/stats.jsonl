@@ -15,3 +15,12 @@
 {"kind":"phase","ts":"2026-06-04T02:27:28Z","phase":"compile","seconds":3.342,"exit":0,"cmd":"bash -c export BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a && cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
 {"kind":"phase","ts":"2026-06-04T02:27:50Z","phase":"test","seconds":13.177,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/tigre_validate.py 2>&1"}
 {"kind":"phase","ts":"2026-06-04T02:28:10Z","phase":"test","seconds":15.147,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/tigre_solvers.py 2>&1"}
+{"kind":"session","ts":"2026-06-04T02:47:29Z","epoch":1780541249.941039079,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-04T02:48:02Z","phase":"compile","seconds":0.276,"exit":1,"cmd":"bash -c \nexport BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx1100\npip install -e . --no-build-isolation 2>&1\n"}
+{"kind":"phase","ts":"2026-06-04T02:48:56Z","phase":"compile","seconds":46.997,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx1100 pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-04T02:50:19Z","phase":"test","seconds":0.582,"exit":1,"cmd":"python3 agent_space/tigre_validate.py"}
+{"kind":"phase","ts":"2026-06-04T02:50:27Z","phase":"test","seconds":0.526,"exit":1,"cmd":"python3 agent_space/tigre_validate.py"}
+{"kind":"phase","ts":"2026-06-04T02:51:13Z","phase":"test","seconds":10.911,"exit":1,"cmd":"python3 agent_space/tigre_validate.py"}
+{"kind":"phase","ts":"2026-06-04T02:56:30Z","phase":"test","seconds":10.520,"exit":0,"cmd":"python3 agent_space/tigre_validate.py"}
+{"kind":"phase","ts":"2026-06-04T02:56:43Z","phase":"test","seconds":6.504,"exit":0,"cmd":"python3 agent_space/tigre_solvers.py"}
+{"kind":"session","ts":"2026-06-04T02:56:59Z","epoch":1780541819.207399427,"event":"end","platform":"linux-gfx1100"}

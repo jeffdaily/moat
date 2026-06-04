@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "setuptools-cuda",
   "adopted_at": "2026-06-04T01:07:42Z",
-  "updated_at": "2026-06-04T02:28:58Z",
+  "updated_at": "2026-06-04T02:57:40Z",
   "head_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T02:28:58Z",
+      "completed_at": "2026-06-04T02:57:40Z",
+      "updated_at": "2026-06-04T02:57:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
