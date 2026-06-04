@@ -342,3 +342,9 @@ Verification trail (all load-bearing claims independently re-derived from the fo
   identity, permitted). Fork Actions disabled ("enabled":false).
 - GPU run not re-executed at review (validator's stage, per PORTING_GUIDE 2026-05-30); porter recorded
   CUDA/* 164/167 +3 skip, full 350/351 +1 skip, determinism bit-identical. Not a blocker for review.
+
+## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+
+README sweep finding: OpenNMT/CTranslate2 already has AMD/ROCm support upstream. README install section: "If you have an AMD ROCm GPU, we provide specific Python wheels on the releases page." ROCm support is integrated in core with dedicated release wheels.
+
+Our port duplicates existing upstream AMD support (same miss class as llm.c/anthonix). Do NOT open an upstream PR. A narrow contribution is only warranted if our coverage genuinely exceeds theirs (e.g. CDNA/gfx90a wave64, gfx1100 wave32, or Windows/gfx1151) AND they lack it -- assess per-project before proposing anything, and prefer contributing the specific delta over a wholesale PR. See [[moat-no-duplicate-amd-ports]].
