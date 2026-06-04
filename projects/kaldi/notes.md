@@ -460,3 +460,57 @@ No defects (problems-only per skill philosophy). Verifications recorded so a re-
 Note for validator: validated_sha carries forward only after the GPU run. The decisive check is the gfx1100 (wave32)
 slice of the SAME fat binary on the gfx1100 host (linux-gfx1100 was flipped completed->revalidate by advance_head);
 this gfx90a review does not gate on the GPU run. gfx90a slice + runtime-query behavior already confirmed by the porter.
+
+## Validation 2026-06-04 (linux-gfx90a, fat binary gfx90a;gfx1100, ee7a71cb)
+
+Platform: linux-gfx90a. Fork: jeffdaily/kaldi @ moat-port = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52. GPU: AMD Instinct MI250X (gfx90a, wave64), HIP_VISIBLE_DEVICES=1 (idle GCD). ROCm 7.2.1.
+
+### Fat-binary build and code-object evidence
+
+Configure for BOTH arches:
+
+```
+cd /var/lib/jenkins/moat/projects/kaldi/src/src
+./configure --use-rocm --rocm-dir=/opt/rocm --rocm-targets=gfx90a,gfx1100 \
+    --use-cuda=no --mathlib=OPENBLAS \
+    --openblas-root=/var/lib/jenkins/moat/projects/kaldi/src/tools/OpenBLAS/install
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    bash -c 'cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j16 depend'
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    bash -c 'cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j16 -C cudamatrix'
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi compile -- \
+    bash -c 'cd /var/lib/jenkins/moat/projects/kaldi/src/src && make -j16 -C cudamatrix test_compile'
+```
+
+kaldi.mk after configure: `ROCM_ARCH_FLAGS += --offload-arch=gfx90a` AND `--offload-arch=gfx1100`. `ROCM_WARP_SIZE = 64` (configure sets 64 because gfx9* target is present; this is now the fallback default only, as runtime query overrides it).
+
+roc-obj-ls cu-kernels.o:
+- `hipv4-amdgcn-amd-amdhsa--gfx1100` (1010632 bytes)
+- `hipv4-amdgcn-amd-amdhsa--gfx90a` (1054088 bytes)
+
+llvm-objdump --offloading cu-math-test: both gfx1100 and gfx90a bundles present. TRUE fat binary confirmed.
+
+### Runtime warp size probe (gfx90a slice, HIP_VISIBLE_DEVICES=1)
+
+```
+hipDeviceGetAttribute warpSize = 64
+hipGetDeviceProperties warpSize = 64
+device name = AMD Instinct MI250X / MI250
+```
+
+KaldiHipWarpSize() and GpuWarpSize() return the runtime 64 on this gfx90a device. Host launch geometry (blockDim.y = CU1DBLOCK/GpuWarpSize() = 256/64 = 4; self-repair loop writes all 5 rows via threadIdx.y==0) is correct for wave64.
+
+### Test results (HIP_VISIBLE_DEVICES=1, fat binary gfx90a slice)
+
+```
+bash /var/lib/jenkins/moat/utils/timeit.sh kaldi test -- \
+    bash /var/lib/jenkins/moat/agent_space/kaldi_build/run_cudamatrix_tests.sh 1
+```
+
+PASS=12 FAIL=0.
+
+All 12 tests passed: cu-vector-test, cu-matrix-test, cu-math-test, cu-test, cu-sp-matrix-test, cu-packed-matrix-test, cu-tp-matrix-test, cu-block-matrix-test, cu-array-test, cu-sparse-matrix-test, cu-device-test, cu-compressed-matrix-test.
+
+Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED. UnitTestBackpropLstmNonlinearity ran float at dim 16-1024 and double at multiple dims; cu-math-test exited 0. Log shows `BackpropLstmNonlinearity 0.404057s` (complete execution, no error). The wave64 _diff_lstm_nonlinearity fix (threadIdx.y==0 writes all 5 self-repair rows) is verified correct from the fat binary's gfx90a slice.
+
+Verdict: COMPLETED. validated_sha = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52. The gfx1100 (wave32) slice of this SAME fat binary is the linux-gfx1100 revalidate on its own host.
