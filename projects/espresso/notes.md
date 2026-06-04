@@ -174,3 +174,14 @@ a commit-hygiene violation that the porter must fix before validation.
   p3m/CMakeLists.txt): set before add_subdirectory(p3m) at line 104, visible in the
   child scope; empty on HIP (drops the CUDA-language OpenMP target, correct), still
   OpenMP::OpenMP_CUDA on a plain CUDA build -- behavior-preserving.
+
+## Review 2026-06-04 (re-review after changes-requested)
+
+Verdict: review-passed. The sole prior blocker (commit-title 75 > 72) is fixed.
+- New title "[ROCm] Add HIP support for core electrostatics and magnetostatics" = 65 chars.
+- 00149db4 -> 6d36cb6a is a title-only amend: git diff is empty, both commits share
+  tree 44c92340e953cba40ce5d05a5fc8a5ae57a65fe1 (tree-identical), so the entire prior
+  code approval carries unchanged.
+- Body hygiene re-verified clean: Claude disclosed, Test Plan with literal fenced
+  commands, no noreply/Co-Authored trailer, no MOAT jargon, no em-dash, [ROCm] prefix.
+No new problems. Ready for the validator (real-GPU run pending, expected at this stage).
