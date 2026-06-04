@@ -5,3 +5,4 @@
 {"kind":"phase","ts":"2026-06-04T01:25:15Z","phase":"compile","seconds":34.056,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
 {"kind":"phase","ts":"2026-06-04T02:02:15Z","phase":"compile","seconds":66.034,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && pip install -e . --no-build-isolation 2>&1"}
 {"kind":"phase","ts":"2026-06-04T02:06:48Z","phase":"test","seconds":13.064,"exit":0,"cmd":"bash -c cd projects/TIGRE/src && python3 -u /var/lib/jenkins/moat/agent_space/tigre_validate.py 2>&1"}
+{"kind": "tokens", "ts": "2026-06-04T02:10:48Z", "tokens": 252423}
