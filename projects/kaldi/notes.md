@@ -406,3 +406,57 @@ cd projects/kaldi/src/src && ./configure --use-rocm --rocm-dir=/opt/rocm \
 make -j16 depend && make -j16 -C cudamatrix && make -j16 -C cudafeat
 make -j16 -C cudamatrix test_compile
 bash agent_space/kaldi_build/run_cudamatrix_tests.sh 1   # PASS=12 FAIL=0
+
+## Review 2026-06-04 (linux-gfx90a, moat-port ee7a71cb vs 6e65f2f) -- reviewer
+Verdict: review-passed. Reviewed only the new runtime host-warp-size commit (ee7a71cb) on top of
+6e65f2f; the underlying modernization + wave64 LSTM commit was already review-passed and is untouched
+by this delta (git diff confirms hipify.h, the __GFX9__ device path, and the _diff_lstm_nonlinearity
+self_repair fix are all unchanged). Delta is 12 files, all launch-geometry-only, NVIDIA-path byte-identical.
+No defects (problems-only per skill philosophy). Verifications recorded so a re-review need not redo them:
+
+- Runtime accessors sound. cu-common.h KaldiHipWarpSize() uses hipGetDevice + hipDeviceGetAttribute(
+  hipDeviceAttributeWarpSize) -- the exact idiom ROCm's own hip_runtime_api.h uses; correct attribute,
+  GPU_WARP_SIZE fallback on either failure. cu-device.h CuDevice::WarpSize() returns properties_.warpSize
+  (properties_ is the static cudaDeviceProp populated by cudaGetDeviceProperties at SelectGpuId, cu-device.cc:297),
+  Enabled()-guarded with GPU_WARP_SIZE fallback; free GpuWarpSize() wraps it on HIP, returns GPU_WARP_SIZE on CUDA.
+  .cc sites use the cached property (no per-launch query); .cu sites query per launch (negligible vs launch cost).
+
+- Completeness verified by exhaustive grep. After the fix the only residual GPU_WARP_SIZE/GPU_MAX_WARPS_PER_BLOCK
+  uses in src/cudamatrix and src/cudafeat host+device code are: (a) device-pass kernel bodies / cub::BlockReduce
+  and WarpReduce shared-memory template+array dims (online-ivector-feature-cuda-kernels.cu:39,42-43,55,62,148-152;
+  feature-spectral*.cu:139,73) -- these correctly resolve per-arch via __GFX9__ in the device pass; (b) the CUDA
+  #else branches (cu-kernels.cu:67,1181-1182) -- compile-time-correct on NVIDIA; (c) comments. No host launch site
+  still sizes block/grid dims by the compile-time constant. The porter's ~30-site list matches reality.
+
+- Warp-tiled dual-instantiation + dispatch correct for 32 AND 64. _trace_mat_mat and _copy_from_mat_trans declare
+  __shared__[TileDim][TileDim+1] and index blockIdx.x*TileDim+threadIdx.x, so TileDim MUST equal blockDim.x.
+  KALDI_LAUNCH_WARP_TILED dispatches <64> when (Bl).x>=64 else <32>. Every caller builds Bl as
+  dimBlock(GpuWarpSize(), CU1DBLOCK/GpuWarpSize()) (cu-matrix.cc:250,2183,2405 -> callers at 257,2198,2412), so
+  Bl.x == runtime warp size == the dispatched TileDim on both arches. No caller passes a divergent x extent.
+
+- trace_mat_mat_trans_atomic refactor holds (the called-out cub BLOCK_DIM_X == blockDim.x requirement).
+  launch_trace_mat_mat_trans_atomic<Real,THREADS_X,THREADS_Y> builds thrds(THREADS_X,THREADS_Y) and launches
+  _frobenius_norm_atomic / _trace_mat_mat_trans_atomic<Real,THREADS_X,THREADS_Y,4>, so the cub BLOCK_DIM_X
+  (THREADS_X) is by construction the launched blockDim.x. The HIP branch dispatches on KaldiHipWarpSize()>=64
+  passing 64 or 32 as both THREADS_X and the x extent; THREADS_Y = GPU_MAX_THREADS_PER_BLOCK/warp/2 keeps total
+  = max/2 (== old GPU_MAX_WARPS_PER_BLOCK/2 on each arch). No host-supplied Bl, so no mismatch path. Correct 32 and 64.
+
+- cudafeat device kernels whose smem/WarpReduce key on the device-pass GPU_WARP_SIZE (e.g. batched_gemv_reduce_kernel
+  s_A[GPU_MAX_WARPS_PER_BLOCK][GPU_WARP_SIZE+1]) now have hosts launching dim3(warp,warps_per_block) at runtime;
+  device GPU_WARP_SIZE and host runtime warpSize agree per device (gfx9->64, gfx11->32) so the contract holds in the
+  fat binary. Macro headers reachable everywhere: cu-common.h (KALDI_WARP_* / KaldiHipWarpSize) included directly in
+  the two ivector .cu, transitively via cu-matrix.h/cu-vector.h in the cmvn/spectral .cu; cu-device.h (GpuWarpSize)
+  included by all four .cc. Objects rebuilt clean in the fat build.
+
+- NVIDIA/CPU byte-identical: KaldiHipWarpSize/WarpSize under __IS_HIP_COMPILE__; KALDI_WARP_GEOMETRY/KALDI_WARP_WIDTH/
+  KALDI_LAUNCH_WARP_TILED and the atomic dispatch all have CUDA #else branches collapsing to the original compile-time
+  GPU_WARP_SIZE expressions. Every .cc substitution sits inside the preexisting CuDevice::Instantiate().Enabled() block.
+
+- Hygiene: title "[ROCm] Derive host warp size at runtime for multi-arch GPU builds" = 64 chars; body gives root cause
+  (compile-time HIP_WARP_SIZE baked wave64 into the host -> wrong on the wave32 fat-binary slice), a review order, Claude
+  disclosure, Test Plan with fenced fat-binary build+roc-obj-ls+test commands; no Co-Authored-By/noreply, no ghstack,
+  ASCII, no em-dash, no MOAT jargon. Delta is a new commit (6e65f2f stays a reachable ancestor), not an amend.
+
+Note for validator: validated_sha carries forward only after the GPU run. The decisive check is the gfx1100 (wave32)
+slice of the SAME fat binary on the gfx1100 host (linux-gfx1100 was flipped completed->revalidate by advance_head);
+this gfx90a review does not gate on the GPU run. gfx90a slice + runtime-query behavior already confirmed by the porter.

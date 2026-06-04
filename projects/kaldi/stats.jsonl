@@ -41,3 +41,4 @@
 {"kind":"phase","ts":"2026-06-04T21:27:27Z","phase":"compile","seconds":17.604,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix"}
 {"kind":"phase","ts":"2026-06-04T21:27:40Z","phase":"compile","seconds":6.406,"exit":0,"cmd":"make -j16 -C /var/lib/jenkins/moat/projects/kaldi/src/src/cudamatrix test_compile"}
 {"kind":"phase","ts":"2026-06-04T21:28:38Z","phase":"test","seconds":58.103,"exit":0,"cmd":"bash agent_space/kaldi_build/run_cudamatrix_tests.sh 1"}
+{"kind": "tokens", "ts": "2026-06-04T21:31:28Z", "tokens": 170800, "source": "porter linux-gfx90a multiarch-warpsize"}
