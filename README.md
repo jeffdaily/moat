@@ -28,14 +28,14 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [amgcl](https://github.com/ddemidov/amgcl) ([fork](https://github.com/jeffdaily/amgcl/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [arrayfire](https://github.com/arrayfire/arrayfire) ([fork](https://github.com/jeffdaily/arrayfire/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) ([fork](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
-| [bam](https://github.com/ZaidQureshi/bam) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [bam](https://github.com/ZaidQureshi/bam) ([fork](https://github.com/jeffdaily/bam/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [CPM.cu](https://github.com/OpenBMB/CPM.cu) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [CTranslate2](https://github.com/OpenNMT/CTranslate2) ([fork](https://github.com/jeffdaily/CTranslate2/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🔵 validated (3 arch) |
 | [cucim](https://github.com/rapidsai/cucim) ([fork](https://github.com/jeffdaily/cucim/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [cuCollections](https://github.com/NVIDIA/cuCollections) ([fork](https://github.com/jeffdaily/cuCollections/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [CUDA-L2](https://github.com/deepreinforce-ai/CUDA-L2) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
-| [cudaKDTree](https://github.com/ingowald/cudaKDTree) ([fork](https://github.com/jeffdaily/cudaKDTree/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
+| [cudaKDTree](https://github.com/ingowald/cudaKDTree) ([fork](https://github.com/jeffdaily/cudaKDTree/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | — |
 | [CudaSift](https://github.com/Celebrandil/CudaSift) ([fork](https://github.com/jeffdaily/CudaSift/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [cudf](https://github.com/rapidsai/cudf) ([fork](https://github.com/jeffdaily/cudf/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [cuEquivariance](https://github.com/NVIDIA/cuEquivariance) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
@@ -55,10 +55,10 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [faiss](https://github.com/facebookresearch/faiss) ([fork](https://github.com/jeffdaily/faiss/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [FaithC](https://github.com/Luo-Yihao/FaithC) ([fork](https://github.com/jeffdaily/FaithC/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [Fast-Poisson-Image-Editing](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing) ([fork](https://github.com/jeffdaily/Fast-Poisson-Image-Editing/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟣 [#25](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing/pull/25) |
-| [ffpa-attn](https://github.com/xlite-dev/ffpa-attn) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [ffpa-attn](https://github.com/xlite-dev/ffpa-attn) ([fork](https://github.com/jeffdaily/ffpa-attn/tree/moat-port)) | 🔧 | ⬜ | ⬜ | ⬜ | — | — |
 | [FlashKDA](https://github.com/MoonshotAI/FlashKDA) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
-| [FlashMoE](https://github.com/osayamenja/FlashMoE) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
-| [FlashRT](https://github.com/LiangSu8899/FlashRT) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [FlashMoE](https://github.com/osayamenja/FlashMoE) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
+| [FlashRT](https://github.com/LiangSu8899/FlashRT) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [foldseek](https://github.com/steineggerlab/foldseek) ([fork](https://github.com/jeffdaily/foldseek/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [fp6_llm](https://github.com/usyd-fsalab/fp6_llm) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
 | [fused-ssim](https://github.com/rahul-goel/fused-ssim) ([fork](https://github.com/jeffdaily/fused-ssim/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | 🔵 validated (2 arch) |
@@ -93,10 +93,10 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [oneflow](https://github.com/Oneflow-Inc/oneflow) ([fork](https://github.com/jeffdaily/oneflow/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [op43dgs](https://github.com/LetianHuang/op43dgs) ([fork](https://github.com/jeffdaily/op43dgs/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | 🚫 | — |
-| [PhoenixOS](https://github.com/SJTU-IPADS/PhoenixOS) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [PhoenixOS](https://github.com/SJTU-IPADS/PhoenixOS) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [popsift](https://github.com/alicevision/popsift) ([fork](https://github.com/jeffdaily/popsift/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟢 [#186](https://github.com/alicevision/popsift/pull/186) |
 | [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | 🟣 [#2039](https://github.com/facebookresearch/pytorch3d/pull/2039) |
-| [qrack](https://github.com/unitaryfoundation/qrack) ([fork](https://github.com/jeffdaily/qrack/tree/moat-port)) | ✅ | 🟡 | 🟡 | 🟡 | — | — |
+| [qrack](https://github.com/unitaryfoundation/qrack) ([fork](https://github.com/jeffdaily/qrack/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [Quest](https://github.com/mit-han-lab/Quest) ([fork](https://github.com/jeffdaily/Quest/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [raft](https://github.com/rapidsai/raft) ([fork](https://github.com/jeffdaily/raft/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [rmcl](https://github.com/uos/rmcl) ([fork](https://github.com/jeffdaily/rmagine/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
@@ -104,9 +104,9 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA) ([fork](https://github.com/jeffdaily/RWKV-CUDA/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [RXMesh](https://github.com/owensgroup/RXMesh) ([fork](https://github.com/jeffdaily/RXMesh/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [SpargeAttn](https://github.com/thu-ml/SpargeAttn) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
-| [sparser-faster-llms](https://github.com/SakanaAI/sparser-faster-llms) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [sparser-faster-llms](https://github.com/SakanaAI/sparser-faster-llms) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
 | [splatad](https://github.com/carlinds/splatad) ([fork](https://github.com/jeffdaily/splatad/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
-| [sppark](https://github.com/supranational/sppark) | ⬜ | ⬜ | ⬜ | ⬜ | — | — |
+| [sppark](https://github.com/supranational/sppark) ([fork](https://github.com/jeffdaily/sppark/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [STRUMPACK](https://github.com/pghysels/STRUMPACK) ([fork](https://github.com/jeffdaily/STRUMPACK/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [TIGRE](https://github.com/CERN/TIGRE) ([fork](https://github.com/jeffdaily/TIGRE/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [TurboFNO](https://github.com/shixun404/TurboFNO) ([fork](https://github.com/jeffdaily/TurboFNO/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
