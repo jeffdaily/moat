@@ -285,3 +285,9 @@ pinned allocators + redis/fs storage backends) to Win32 -- a substantial Windows
 portability effort that is SEPARATE from the ROCm/HIP port and out of scope here. The ROCm
 HIP kernels themselves (mem_kernels.hip) are unaffected (they hipify). gfx90a/gfx1100 (Linux)
 pass. Blocked; revisit if/when LMCache gains a Windows host-allocator/networking port upstream.
+
+## DO NOT open a duplicate upstream PR -- upstream already supports ROCm (2026-06-04)
+
+README sweep finding: LMCache/LMCache has extensive MERGED ROCm support despite the README still saying "Works on Linux NVIDIA GPU platform" (stale). Merged PRs: #3070 (self-sufficient ROCm install), #3092 (Triton block-sparse attention for CacheBlend), #3101 (AMD Instinct Dockerfiles), #3395 (gfx950/MI350X), #3079 (HIP fix); plus open #2991. The repo carries a `rocm` topic tag (the tell that the README was stale).
+
+Do NOT open an upstream PR. Lesson reinforced: check the repo's merged PRs/branches/topic tags, not just the README prose, which can lag the actual platform support. See [[moat-no-duplicate-amd-ports]].
