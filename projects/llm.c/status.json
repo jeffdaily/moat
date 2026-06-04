@@ -7,17 +7,17 @@
   "priority": 6.667,
   "ext_type": "makefile",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-04T06:19:18Z",
-  "head_sha": "800b4535da52632935308b630e52d01736c558de",
+  "updated_at": "2026-06-04T06:37:40Z",
+  "head_sha": "b69b9847",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
+      "validated_sha": "b69b9847",
       "started_at": "2026-05-31T00:24:03Z",
-      "completed_at": "2026-06-04T06:19:18Z",
-      "updated_at": "2026-06-04T06:19:18Z",
+      "completed_at": "2026-06-04T06:37:40Z",
+      "updated_at": "2026-06-04T06:37:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "800b4535da52632935308b630e52d01736c558de",
+        "to": "b69b9847",
         "method": "source-class",
-        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
-        "at": "2026-06-04T06:19:18Z"
+        "detail": "PR prep: add amdgpu-arch auto-detect to Makefile USE_HIP path (mirrors the nvidia-smi compute_cap query) + scrub stale lead/follower comment; auto-detect resolves to the same gfx90a/wave64 on the lead",
+        "at": "2026-06-04T06:37:40Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
+      "validated_sha": "b69b9847",
       "started_at": "2026-05-31T01:25:00Z",
-      "completed_at": "2026-06-04T06:19:18Z",
-      "updated_at": "2026-06-04T06:19:18Z",
+      "completed_at": "2026-06-04T06:37:40Z",
+      "updated_at": "2026-06-04T06:37:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "800b4535da52632935308b630e52d01736c558de",
+        "to": "b69b9847",
         "method": "source-class",
-        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
-        "at": "2026-06-04T06:19:18Z"
+        "detail": "PR prep: add amdgpu-arch auto-detect to Makefile USE_HIP path (mirrors the nvidia-smi compute_cap query) + scrub stale lead/follower comment; auto-detect resolves to the same gfx90a/wave64 on the lead",
+        "at": "2026-06-04T06:37:40Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "800b4535da52632935308b630e52d01736c558de",
+      "validated_sha": "b69b9847",
       "started_at": null,
-      "completed_at": "2026-06-04T06:19:18Z",
-      "updated_at": "2026-06-04T06:19:18Z",
+      "completed_at": "2026-06-04T06:37:40Z",
+      "updated_at": "2026-06-04T06:37:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -91,10 +91,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "800b4535da52632935308b630e52d01736c558de",
+        "to": "b69b9847",
         "method": "source-class",
-        "detail": "PR prep: scrub MOAT/Strategy-A/Followers jargon from commit msg + .gitignore comment, generalize title (drop gfx90a); .gitignore inert + message-only, device code unchanged",
-        "at": "2026-06-04T06:19:18Z"
+        "detail": "PR prep: add amdgpu-arch auto-detect to Makefile USE_HIP path (mirrors the nvidia-smi compute_cap query) + scrub stale lead/follower comment; auto-detect resolves to the same gfx90a/wave64 on the lead",
+        "at": "2026-06-04T06:37:40Z"
       }
     }
   },
