@@ -296,3 +296,51 @@ because the correctness gate is BIT-EXACT integer modexp against gmpy2 (not FP t
 the Z2Z double-FFT rounding margin holds at < 0.5 limb error even on gfx1151.
 
 VERDICT: PASS -- port-ready -> completed
+
+## Validation 2026-06-04 (windows-gfx1101, AMD Radeon PRO V710, RDNA3, ROCm 7.14 / TheRock)
+
+validated_sha: 6ef301f3204579779bbaa1f32a466934f720903a (zero-churn follower; fork untouched)
+
+GPU arch: gfx1101 (AMD Radeon PRO V710, RDNA3, wave32). Host = the gfx1101+gfx1201 Windows
+workstation (memory windows-gfx1101-gfx1201-host); HIP_VISIBLE_DEVICES=0 pins gfx1101 (the
+only visible device this process). TheRock pip ROCm SDK 7.14 (rocm-sdk-devel @ 60850-d34cbb64).
+
+### Windows gfx1101 build recipe (REUSABLE; scripts in agent_space/3p-admm-win/, not committed)
+Single ROCm root = the pip rocm-sdk-devel tree
+`.../site-packages/_rocm_sdk_devel` (clang++, hipcc, hip cmake, hipfft.lib all present).
+build_win.sh adapts gpu/build_hip.sh for Windows, same two adaptations the gfx1151 note found:
+1. NO -fPIC (clang rejects it for the x86_64-pc-windows-msvc target; PIC is implicit on Windows).
+2. Export init_gpu/run_modexp via a `.def` (`-Wl,/DEF:lib_cufft.def`) -- extern "C" funcs are
+   not auto-exported from a Windows DLL.
+Link `-L$ROCM/lib -lhipfft` (resolves hipfft.lib). hipcc all-clang, `--offload-arch=gfx1101`.
+Output lib_cufft.dll (143 KB; only the benign `--ld-path unused` warning). PATH must include
+`$ROCM/bin:$ROCM/lib/llvm/bin` so hipcc finds clang + lld-link.
+
+### Windows DLL runtime (no per-arch library package needed)
+There is NO _rocm_sdk_libraries_gfx1101 package on this host; the multi-arch `_rocm_sdk_libraries`
+plus rocFFT runtime kernel generation cover gfx1101 (AMD_LOG_LEVEL=3 shows rocFFT RTC-compiling
+its FFT kernels at run time). The validate harness calls `os.add_dll_directory()` for
+`_rocm_sdk_core/bin`, `_rocm_sdk_devel/bin`, and `_rocm_sdk_libraries/bin` before loading
+lib_cufft.dll, so TheRock's amdhip64_7.dll / amd_comgr.dll / rocm_kpack.dll / hiprtc0714.dll /
+hipfft.dll / rocfft.dll load instead of the broken System32 Adrenalin amdhip64. gmpy2 was
+pip-installed into the TheRock venv. The repo's crypto/paillier_gpu.py hardcodes
+`/tmp/lib_cufft.so`; the harness monkeypatches `paillier_gpu._lib` to the built DLL.
+
+### Result
+```
+# build (HIP_ARCH=gfx1101)
+bash utils/timeit.sh 3P-ADMM-PC2 compile -- bash agent_space/3p-admm-win/build_win.sh
+# modexp gold (HIP_VISIBLE_DEVICES=0 = gfx1101)
+HIP_VISIBLE_DEVICES=0 .../venv/Scripts/python.exe agent_space/3p-admm-win/validate_win.py
+```
+- Build gfx1101: PASS (lib_cufft.dll, exports init_gpu/run_modexp).
+- modexp vs gmpy2 gold: 6144/6144 EXACT match -- n at 255/510/511/768/1022/1023/1535/2046 bits,
+  256/batch, 3 reps/size, varied m_bits (64 / nb/2 / nb-1), g < n precondition honored.
+- hipFFT double-FFT rounding margin holds on gfx1101 (RDNA3, wave32, fp64): 0 mismatches.
+- Native gfx1101 dispatch: only gfx1101 visible (HIP_VISIBLE_DEVICES=0), hipGetDevice success,
+  rocFFT RTC-compiled device kernels; bit-exact GPU results (the .cu kernels are GPU-only, so a
+  silent CPU fallback is impossible). No fork code change (zero-churn follower; same 6ef301f).
+
+VERDICT: PASS -- port-ready -> completed. gfx1101 matches gfx90a/gfx1100/gfx1151 exactly.
+This is the first real GPU validation on the new Windows host -- it establishes the reusable
+Windows ROCm build + DLL-runtime recipe for the rest of the gfx1101/gfx1201 sweep.
