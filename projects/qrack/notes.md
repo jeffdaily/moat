@@ -216,3 +216,38 @@ Validation (real GPU, HIP_VISIBLE_DEVICES=1, MI250X, ROCm 7.2.1):
   46.8s total wall (was 4.4+ hours wedged on test_ucmtrx).
 
 State: validation-failed -> porting -> ported.
+
+## Review 2026-06-04 (deferred-free fix dcb5e180)
+Reviewer pass on fork moat-port, delta e0c9ddfc..dcb5e180 (linux-gfx90a), via
+/pr-review local-branch mode. Verdict: review-passed (no must-fix). The +41-line
+fix (deferredFreeBuffers + DrainDeferredFreeBuffers) is correct and fully
+USE_HIP-guarded.
+
+Fact-checked against source:
+- Deferred-free correctness: the only callback-thread ref-drop is in PopQueue.
+  PopQueue takes a local copy `item = wait_queue_items.front()` (cuda.cu:374) so
+  the subsequent pop_front() (383) does not zero the refcount; the buffers are
+  then std::move'd into deferredFreeBuffers (393-396) and the real hipFree runs
+  later on a user thread. Correct.
+- No leak / no unbounded growth: every enqueue routes AddQueueItem ->
+  DispatchQueue (qengine_cuda.hpp:553/561), and DispatchQueue drains at its top
+  (cuda.cu:402-404), so each new op frees the prior op's deferrals. The tail is
+  caught by clFinish (cuda.cu:319-321) and by teardown
+  (~QEngineCUDA -> FreeAll -> ZeroAmplitudes -> clDump -> clFinish -> drain).
+- Drain frees only completed-op buffers: a buffer reaches deferredFreeBuffers
+  only after its callback fired (kernel done), so it is never in-flight when
+  freed. Draining at DispatchQueue top before the empty-check is safe.
+- Thread-safety: deferredFreeBuffers is touched only under queue_mutex --
+  producer PopQueue holds it for the whole body (cuda.cu:359), consumer
+  DrainDeferredFreeBuffers holds it for the swap (349-350). No double-lock:
+  clFinish does not hold queue_mutex when it calls the drain; DispatchQueue
+  drains before taking its own lock. No recursive lock.
+- NVIDIA path byte-identical: all 5 hunks are inside #if defined(USE_HIP);
+  the CUDA build sees no change.
+Commit hygiene: subject 58 chars, [ROCm] prefix, root cause + Test Plan present,
+Claude named, no Co-Authored-By-noreply, no ghstack, ASCII clean, no MOAT jargon.
+Non-blocking observation (not a defect): the helper uses an `if (true) { ... }`
+scope block (cuda.cu:348) to bound the lock_guard; this matches the existing
+file idiom (AddQueueItem qengine_cuda.hpp:556, DispatchQueue cuda.cu:408), so it
+is consistent and fine.
+GPU re-validation (full suite at the new HEAD) runs next in the validator stage.
