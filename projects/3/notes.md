@@ -241,3 +241,20 @@ Headline gates:
 atomicFmaxabs: TestReduceMaxAbs PASS on wave32 confirms the atomicCAS loop works correctly on gfx1100.
 
 Verdict: PASS. State -> completed. validated_sha = 7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286.
+
+## Validation 2026-06-04 (linux-gfx90a, revalidate carry-forward)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1.
+Revalidate trigger: head advanced from gfx90a validated_sha 64cb1c7c to 7ef67aa4 (gfx1151 follower delta-port commit).
+
+Delta: 2 files -- cuda/cu/module_test.go (TestModule arch fix) and cuda/cu/testdata/testmodule_gfx1100.co (gfx1100 test code object). No device source (.cu/.cuh) changed.
+
+Binary-equivalence check:
+```
+# Extracted all 65 gfx90a .co files at both shas; compared md5sum:
+md5sum old/*_gfx90a.co == md5sum new/*_gfx90a.co  # all 65 byte-identical
+# Confirmed via clang-offload-bundler unbundle on a sample:
+md5sum cellindices_old_gfx90a.elf cellindices_new_gfx90a.elf  # identical
+```
+
+Verdict: binary-equiv carry-forward. All 65 gfx90a code objects byte-identical; test-only delta does not affect device ISA. State -> completed at 7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286. No GPU re-run required.

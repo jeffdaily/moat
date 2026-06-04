@@ -14,3 +14,5 @@
 {"kind":"phase","ts":"2026-06-04T06:24:12Z","phase":"test","seconds":3.241,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_all_go_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-04T06:25:52Z","phase":"test","seconds":0.142,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_vet_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-04T06:38:21Z","phase":"test","seconds":719.960,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_full_gfx1100.sh"}
+{"kind": "tokens", "ts": "2026-06-04T05:35:26Z", "tokens": 62149}
+{"kind":"phase","ts":"2026-06-04T17:53:08Z","phase":"compile","seconds":0.022,"exit":0,"cmd":"go install github.com/mumax/3/..."}

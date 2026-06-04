@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-04T06:40:10Z",
+  "updated_at": "2026-06-04T17:55:07Z",
   "head_sha": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "64cb1c7cb5c3cb560b9407b9a3a1492e6491d813",
+      "validated_sha": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
       "started_at": "2026-06-04T04:33:12Z",
-      "completed_at": "2026-06-04T05:33:24Z",
-      "updated_at": "2026-06-04T06:39:32Z",
+      "completed_at": "2026-06-04T17:55:07Z",
+      "updated_at": "2026-06-04T17:55:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
+        "method": "binary-equiv",
+        "detail": "test-only delta (module_test.go + testdata/testmodule_gfx1100.co); all 65 gfx90a code objects byte-identical across 64cb1c7c->7ef67aa4",
+        "at": "2026-06-04T17:55:07Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
