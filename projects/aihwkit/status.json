@@ -3,7 +3,7 @@
   "name": "aihwkit",
   "upstream_url": "https://github.com/IBM/aihwkit",
   "fork_url": "https://github.com/jeffdaily/aihwkit",
-  "fork_default_branch": "main",
+  "fork_default_branch": "master",
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
