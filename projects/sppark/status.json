@@ -2,22 +2,22 @@
   "schema_version": 1,
   "name": "sppark",
   "upstream_url": "https://github.com/supranational/sppark",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/sppark",
   "fork_default_branch": "main",
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-04T21:46:50Z",
+  "updated_at": "2026-06-04T22:26:26Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "porting",
+      "blocked": true,
+      "blocked_reason": "upstream HIP support is partial: NTT works (7/7 fields pass), MSM broken (mont_t.hip is 25% of mont_t.cuh, missing fp2 HIP device code). completing MSM HIP would require ~900 lines of new code. recommend skip as already-supported-partial or report upstream.",
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T21:46:50Z",
+      "updated_at": "2026-06-04T22:26:26Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
