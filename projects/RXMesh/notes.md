@@ -691,3 +691,77 @@ shift. Manual analysis of the device code object showed:
 Root cause: cuda_query.h gained 13 lines of host-only code inside `#if !defined(__HIP_PLATFORM_AMD__) ... #else ... #endif`. clang computes `.intern.<hash>` over the full TU content (including host-only code it elides for device compilation), so the internal symbol hash changes. This shifts the .note section by 20 bytes, which propagates as a 0x40-byte alignment-padded shift in .rodata VMA, which causes the single PC-relative KD-pointer instruction to update its offset. No device-kernel logic changed.
 
 Conclusion: The codeobj_diff `differ` verdict is a false positive caused by build-internal address artifacts. All device kernel register configurations, shared memory allocations, wavefront size (32), and instruction sequences are byte-for-byte identical between 6b30d8e and e80e1a0 for gfx1100. Carry-forward applied: validated_sha -> e80e1a0. No GPU re-run needed.
+
+## Validation 2026-06-04 (linux-gfx1100, GPU-confirmed revalidation)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3, wave32),
+ROCm 7.2.1, HIP_VISIBLE_DEVICES=1 (GPU 0 was orphaned-KFD; GPUs 1/3 responsive,
+GPU 2 busy; selected GPU 1 idle at 0% use).
+Fork: jeffdaily/RXMesh @ moat-port e80e1a07663e197105ced9fff816e5a1f412043f (HEAD).
+Binary: projects/RXMesh/src/build/bin/RXMesh_test (existing HEAD gfx1100 build,
+roc-obj-ls confirms one gfx1100 code object, 42566000 bytes, no rebuild needed).
+
+This run is the explicit real-GPU confirmation of the binary-equivalence
+carry-forward from 2026-06-04 recorded above. The carry-forward analysis was
+sound (the codeobj_diff `differ` was metadata-only: `.intern.<hash>` name change
+from host-only cuda_query.h additions, propagating a 0x40 .rodata VMA shift
+and single PC-relative KD-pointer constant update; all 7240 RSRC1/2/3 fields
+byte-identical), but MOAT's rule requires a real GPU run when codeobj_diff
+reports `differ`. This run satisfies that requirement.
+
+### warpSize confirmation
+
+Device initialized as AMD Radeon Pro W7800 48GB, Compute Capability 11.0 (gfx1100).
+warpSize = 32 (RDNA3, not __GFX9__). ShmemMutex::critical_section() uses
+32-bit __ballot on wave32; all wave64 fixes (ballot_sub_warp_32, ShmemMutex)
+degenerate correctly.
+
+### Test results (RXMesh_test, gfx1100 GPU 1, sphere3.obj + bumpy-cube.obj)
+
+Filter: RXMeshStatic.*:RXMesh.*:Util.*:RXMeshDynamic.PatchScheduler:
+RXMeshDynamic.PatchLock:RXMeshDynamic.Validate:RXMeshDynamic.RandomFlips:
+RXMeshDynamic.RandomCollapse:RXMeshDynamic.TriangleRefinement:
+RXMeshDynamic.PatchSlicing
+
+Run: 25/25 PASSED (1379 ms)
+
+Individual results:
+- RXMeshStatic.BoundaryVertex: OK (417 ms)
+- RXMeshStatic.EVDiamond: OK (16 ms)
+- RXMeshStatic.Export: OK (19 ms)
+- RXMeshStatic.ForEach: OK (13 ms)
+- RXMeshStatic.ForEachOnDevice: OK (18 ms)
+- RXMeshStatic.MultiQueries: OK (14 ms)
+- RXMeshStatic.Queries (VV/VE/VF/EV/EF/FV/FE/FF x 1000 iters vs CPU ref): OK (390 ms)
+- RXMeshStatic.Oriented_VV_Open: OK (13 ms)
+- RXMeshStatic.Oriented_VV_Closed: OK (15 ms)
+- RXMeshDynamic.RandomFlips: OK (25 ms)
+- RXMeshDynamic.RandomCollapse: OK (17 ms)
+- RXMeshDynamic.PatchLock: OK (83 ms) -- no flake on gfx1100 wave32
+- RXMeshDynamic.PatchScheduler: OK (50 ms)
+- RXMeshDynamic.PatchSlicing: OK (26 ms)
+- RXMeshDynamic.TriangleRefinement: OK (198 ms, input bumpy-cube.obj)
+- RXMeshDynamic.Validate: OK (48 ms)
+- RXMesh.Iterator: OK
+- RXMesh.LPPair: OK
+- RXMesh.LPHashTable: OK
+- Util.Scan (hipCUB): OK
+- Util.AtomicMin / AtomicAdd / Align / BlockMatrixTranspose / Tet: OK
+
+### Comparison with prior validated run
+
+Prior validated real-GPU run (2026-05-30, @ d50370b/6b30d8e, gfx1100):
+  Run 1: 25/25 PASSED (1181 ms)
+  Run 2: 25/25 PASSED (1220 ms)
+
+This run: 25/25 PASSED (1379 ms). All 25 tests pass; test selection, individual
+test outcomes, and dynamic-editing results match. The small wall-clock difference
+(1179-1379 ms range) is within normal GPU-scheduling variance on a 4-GPU host
+with concurrent load.
+
+### Verdict
+
+PASS. The binary-equivalence carry-forward state at e80e1a0 is confirmed by a
+real GPU test run. All 25 RXMesh_test tests pass on a real gfx1100 W7800
+(wave32, ROCm 7.2.1). No topology corruption, no hang, no NaN, clean exit.
+linux-gfx1100 `completed` at e80e1a07663e197105ced9fff816e5a1f412043f is earned.
