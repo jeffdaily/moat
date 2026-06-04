@@ -7,7 +7,7 @@
   "priority": 6.236,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-05-31T09:42:50Z",
+  "updated_at": "2026-06-04T09:09:14Z",
   "head_sha": "68718f03829384b530ba97c32b18e5937629ec09",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Deferred to incoming gfx1101 box (not attempted on this APU host): 1.3GB monolith liboneflow.so link + PyTorch-ROCm validation oracle is too heavy/memory-risky for the power-constrained Strix Halo APU (hard-reboot history). Linux gfx90a+gfx1100 completed at 68718f03. Reopen on gfx1101.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-31T09:42:50Z",
+      "updated_at": "2026-06-04T09:09:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
