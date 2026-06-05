@@ -122,3 +122,48 @@ build/bin/teststdgpu
 **Determinism:** Confirmed (ran test suite twice, all 702 tests passed both times)
 
 **Verdict:** VALIDATED at 718d206
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+**Platform:** AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.x, wave32
+
+**Build command:**
+```bash
+HIP_VISIBLE_DEVICES=0 cmake -B build -S . \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DSTDGPU_BUILD_TESTS=ON \
+  -DSTDGPU_BUILD_EXAMPLES=ON \
+  -DSTDGPU_BUILD_BENCHMARKS=OFF
+
+HIP_VISIBLE_DEVICES=0 cmake --build build -j$(nproc)
+```
+
+**Build result:** SUCCESS
+
+**Test command:**
+```bash
+HIP_VISIBLE_DEVICES=0 build/bin/teststdgpu
+```
+
+**Test results:** PASS
+- All 702 tests passed (58.9s)
+- Zero memory leaks (184538/184538 device, 180605/180605 host)
+
+**Critical tests verified (wave-lock serialization):**
+- `stdgpu_unordered_map.insert_range_unique_parallel` - PASS (10ms)
+- `stdgpu_unordered_map.insert_range_unique_parallel_custom_execution_policy` - PASS (10ms)
+- `stdgpu_unordered_map.erase_range_unique_parallel` - PASS (11ms)
+- `stdgpu_unordered_map.erase_range_unique_parallel_custom_execution_policy` - PASS (11ms)
+- `stdgpu_unordered_set.insert_range_unique_parallel` - PASS (10ms)
+- `stdgpu_unordered_set.insert_range_unique_parallel_custom_execution_policy` - PASS (10ms)
+- `stdgpu_unordered_set.erase_range_unique_parallel` - PASS (11ms)
+- `stdgpu_unordered_set.erase_range_unique_parallel_custom_execution_policy` - PASS (12ms)
+- `stdgpu_deque.simultaneous_push_back_and_pop_back` - PASS (6ms)
+- `stdgpu_deque.simultaneous_push_front_and_pop_front` - PASS (6ms)
+- `stdgpu_deque.simultaneous_push_front_and_pop_back` - PASS (6ms)
+- `stdgpu_deque.simultaneous_push_back_and_pop_front` - PASS (6ms)
+- `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS (5ms)
+
+**Verdict:** VALIDATED at 718d206
