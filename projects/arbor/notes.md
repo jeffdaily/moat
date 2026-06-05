@@ -348,3 +348,59 @@ CUDA code path unchanged. gfx90a revalidation passed (all 1182 tests).
 
 ### Recommendation
 **Approve** -- ready for GPU validation on gfx1100.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+**Platform**: linux-gfx1100 (RDNA3, wave32)
+**GPU**: AMD Radeon Pro W7800 48GB (gfx1100)
+**ROCm**: 7.x
+
+### Build Configuration
+```bash
+cd /var/lib/jenkins/moat/projects/arbor/src/build
+cmake .. \
+  -DARB_GPU=hip \
+  -DARB_HIP_ARCHITECTURES="gfx1100" \
+  -DARB_WITH_PYTHON=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=hipcc \
+  -DCMAKE_C_COMPILER=clang
+
+cmake --build . -j32
+cmake --build . --target unit -j32
+```
+
+### Test Results
+**Command**: `HIP_VISIBLE_DEVICES=0 ./bin/unit`
+
+**Result**: PASS
+- Total tests: 1182 from 182 test suites
+- Passed: 1182
+- Failed: 0
+- Total time: 7.840 seconds
+
+### Critical Tests Validated (wave32-specific fixes)
+All reduce_by_key tests passed (these failed before the wave32 fix):
+- reduce_by_key.no_repetitions: PASS (0ms)
+- reduce_by_key.single_repeated_index: PASS (2ms)
+- reduce_by_key.scatter: PASS (0ms)
+- reduce_by_key.scatter_twice: PASS (0ms)
+
+### GPU-Specific Tests
+All GPU tests passed:
+- abi.gpu_initialisation: PASS (226ms)
+- cable_cell_group.gpu_test: PASS (719ms)
+- event_stream_gpu.single_step: PASS (0ms)
+- event_stream_gpu.multi_step: PASS (8ms)
+- spikes_gpu.threshold_watcher: PASS (1ms)
+- spikes_gpu.threshold_watcher_interpolation: PASS (31ms)
+
+### Port Validation
+The wave32 fixes are validated on real gfx1100 hardware:
+- num_lanes calculation (`64 - __clzll`) correctly computes lane count for wave32
+- Native HIP `__shfl_up`/`__shfl_down` intrinsics correctly handle boundary conditions
+- Wave-size abstraction (`threads_per_warp()`) correctly returns 32 for RDNA/gfx1100
+- All warp-level reductions work correctly on wave32 architecture
+
+### Conclusion
+All 1182 unit tests pass on gfx1100, including the 4 reduce_by_key tests that previously failed before the wave32 fixes. The delta-port correctly handles both wave64 (gfx90a) and wave32 (gfx1100) architectures.
