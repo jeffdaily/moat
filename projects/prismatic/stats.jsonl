@@ -29,3 +29,5 @@
 {"kind":"phase","ts":"2026-06-05T10:12:55Z","phase":"test","seconds":0.877,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_ms.h5 -a m -g 1"}
 {"kind":"phase","ts":"2026-06-05T10:13:03Z","phase":"test","seconds":0.803,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1"}
 {"kind":"session","ts":"2026-06-05T10:13:11Z","epoch":1780654391.051782486,"event":"end","platform":"linux-gfx90a"}
+{"kind":"session","ts":"2026-06-05T15:40:36Z","epoch":1780674036.073972575,"event":"start","platform":"linux-gfx1100"}
+{"kind":"session","ts":"2026-06-05T15:43:20Z","epoch":1780674200.667772038,"event":"end","platform":"linux-gfx1100"}
