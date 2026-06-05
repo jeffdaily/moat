@@ -93,3 +93,54 @@ The porter suspected warp size handling. However:
 1. Unit testing the biginteger arithmetic against known values
 2. Comparing RNG output between CUDA and HIP builds
 3. Step-by-step comparison of a simple encrypt/decrypt operation
+
+## Porter Debug Attempt 1 (2026-06-05)
+
+### Components Verified Working
+
+1. **Barrett modular multiplication**: Tested with 1024 random 36-bit inputs, all correct including edge cases (max values, zero, one).
+
+2. **128-bit subtraction**: Tested 8 cases including borrow propagation, all correct.
+
+3. **128-bit multiplication** (`__umul64hi`): Implicitly verified through Barrett test passing.
+
+4. **Ternary RNG**: `modular_ternary_random_number` produces valid ternary values (-1, 0, 1 mod q). Distribution is skewed (50% -1, 25% 0, 25% 1) but this matches the original algorithm logic and doesn't cause complete failure.
+
+5. **hiprand device API**: `hiprand_init`/`hiprand` produce reasonable random values with good distribution.
+
+6. **Encode/decode roundtrip**: Works perfectly, confirming NTT/INTT with the library's own tables is functional.
+
+### Key Finding
+
+Tested `pk[0] + pk[1]*sk` (pointwise in NTT domain): values are NOT small. Expected: small Gaussian error (|e| < 50 for std_dev=3.2). Actual: values like 34 billion (half of 68B modulus).
+
+This means the public key relationship `pk[0] = -a*s + e, pk[1] = a` is NOT being satisfied. The bug is in either:
+- Public key generation kernel (`publickey_gen_kernel`)
+- NTT transformation of the involved polynomials
+- Data layout mismatch (wrong RNS component being used)
+
+Note: Cannot directly verify pk[0]+pk[1]*sk=e in NTT domain because e in NTT domain is NOT small (NTT spreads energy). The relationship only holds algebraically for polynomial multiplication. However, the observed values are so large (50% of modulus) that even accounting for this, something is fundamentally wrong.
+
+### What the Error Pattern Tells Us
+
+Encryption of ALL-ZEROS produces decrypted values of magnitude ~50% of plain_modulus (max error ~515840 out of 1032193). This is NOT noise, it's complete garbage. If only the noise were wrong, we'd see small but incorrect noise. The magnitude indicates the core algebraic relationship is broken.
+
+### Remaining Hypotheses
+
+1. **NTT table generation bug**: Tables are generated on CPU. If the primitive roots or powers are wrong, all NTT-domain operations fail.
+
+2. **Inconsistent RNS indexing**: The various kernels (keygen, encrypt, decrypt) might use different conventions for indexing RNS components.
+
+3. **modulus_->data() ordering**: The array of moduli on GPU might not match what kernels expect.
+
+4. **NTT layout mismatch**: `ntt_rns_configuration.ntt_layout = gpuntt::PerPolynomial` might behave differently than expected.
+
+### Next Steps (for attempt 2)
+
+1. Test NTT roundtrip directly: allocate buffer, fill with known values, NTT, INTT, verify identical.
+
+2. Dump the actual modulus values from `ctx->modulus_->data()` and verify they match expected.
+
+3. Trace through `publickey_gen_kernel` line by line to verify the formula `-a*s + e`.
+
+4. Compare NTT table values between a working CUDA build and this HIP build (requires CUDA hardware or reference output).
