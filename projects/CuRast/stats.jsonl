@@ -2,3 +2,9 @@
 {"kind": "tokens", "ts": "2026-06-05T10:38:11Z", "tokens": 169449, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T10:41:29Z", "tokens": 101934, "source": "reviewer"}
 {"kind": "tokens", "ts": "2026-06-05T10:42:48Z", "tokens": 20653, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T10:44:38Z", "tokens": 72929, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T10:45:05Z","phase":"compile","seconds":4.234,"exit":0,"cmd":"cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -B /var/lib/jenkins/moat/projects/CuRast/src/build"}
+{"kind":"phase","ts":"2026-06-05T10:45:28Z","phase":"compile","seconds":19.300,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/CuRast/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T10:45:43Z","phase":"test","seconds":0.155,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/CuRast/src/build/CuRast --help"}
+{"kind":"phase","ts":"2026-06-05T10:45:54Z","phase":"test","seconds":0.308,"exit":1,"cmd":"xvfb-run -a /var/lib/jenkins/moat/projects/CuRast/src/build/CuRast"}
+{"kind":"phase","ts":"2026-06-05T10:46:21Z","phase":"test","seconds":0.465,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/CuRast/test_gpu_init"}
