@@ -10,3 +10,8 @@
 {"kind":"phase","ts":"2026-06-05T05:23:12Z","phase":"test","seconds":49.614,"exit":0,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_ffpa_bwd.py -v --tb=short"}
 {"kind":"phase","ts":"2026-06-05T05:26:12Z","phase":"test","seconds":58.300,"exit":0,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/ffpa-attn/src/tests/ -v --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_triton_autotune_mode.py --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_persistent_autotune_config.py --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_perf_tflops.py --tb=short"}
 {"kind": "tokens", "ts": "2026-06-05T05:27:43Z", "tokens": 128965, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T05:30:51Z", "tokens": 50001, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T05:31:25Z","phase":"build","seconds":0.321,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T05:31:35Z","phase":"build","seconds":6.157,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T05:32:03Z","phase":"test","seconds":18.935,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pytest tests/ -v --tb=short --maxfail=10 2>&1"}
+{"kind":"phase","ts":"2026-06-05T05:33:07Z","phase":"test","seconds":59.370,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pytest tests/ -v --tb=short --maxfail=10 --ignore=tests/test_perf_tflops.py 2>&1"}

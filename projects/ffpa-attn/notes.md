@@ -65,3 +65,44 @@ No issues. Title `[ROCm] Enable AMD GPU support via Triton backend` (48 chars, u
 **Approve** (review-passed)
 
 The port is correct and the test infrastructure changes are appropriate. The mock signature fix in `test_ffpa_fwd.py` is a legitimate upstream bug fix that happens to be discovered during ROCm validation -- note this in the upstream PR description. GPU validation will confirm correctness on gfx90a.
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a
+
+**Hardware**: AMD Instinct MI250X / MI250 (gfx90a), HIP_VISIBLE_DEVICES=2
+**ROCm**: 7.2.53211
+**PyTorch**: 2.13.0a0+gitb5e90ff (ROCm)
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/ffpa-attn/src
+pip install -e . --no-build-isolation
+```
+
+Build successful. Pure Python/Triton install, no CUDA extension compiled.
+
+### Test Results
+
+```bash
+HIP_VISIBLE_DEVICES=2 pytest tests/ -v --ignore=tests/test_perf_tflops.py
+```
+
+**Results**: 687 passed, 127 skipped, 3 xfailed, 1 failed (upstream bug)
+
+- **687 PASSED**: All forward/backward GPU tests pass with Triton backend
+- **127 SKIPPED**: CUDA/CuTeDSL backend tests (NVIDIA-specific PTX, correctly skipped on AMD)
+- **3 XFAILED**: Known GQA backward dk gradient precision issues at N>=8192 with high GQA ratios (8:1, MQA)
+  - `test_ffpa_bwd_gqa[32-4-8192-320-fp16]`
+  - `test_ffpa_bwd_gqa[32-8-16384-512-fp16]`
+  - `test_ffpa_bwd_gqa[8-1-8192-320-fp16]`
+- **1 FAILED**: `test_triton_autotune_mode.py::test_autotune_wrappers_are_dtype_scoped` -- pre-existing upstream test bug (missing argument in test code), confirmed to fail identically at upstream commit 67e3fff, NOT a ROCm regression
+
+### Verification
+
+Confirmed the test failure exists in upstream by testing at commit 67e3fff (upstream HEAD). The failing test has a bug in the test code itself: `_get_pre_autotune(False, "fast", "bf16")` is missing the required `dtype` positional argument. This is not a GPU or ROCm-specific issue.
+
+### Summary
+
+GPU validation PASSED. The Triton backend works correctly on gfx90a. All functional tests pass. The single test failure is a pre-existing upstream test code bug unrelated to ROCm. The 3 xfailed tests are expected precision issues documented in the port notes.
