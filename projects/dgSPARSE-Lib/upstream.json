@@ -1,0 +1,8 @@
+{
+  "full_name": "dgSPARSE/dgSPARSE-Lib",
+  "upstream_url": "https://github.com/dgSPARSE/dgSPARSE-Lib",
+  "default_branch": "main",
+  "fork_url": null,
+  "ext_type": "torch-extension",
+  "base_sha": null
+}
