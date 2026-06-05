@@ -1,0 +1,9 @@
+{"kind": "tokens", "ts": "2026-06-05T00:10:54Z", "tokens": 68636, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:17:41Z","phase":"compile","seconds":11.128,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T00:21:09Z","phase":"compile","seconds":73.192,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T00:35:37Z","phase":"test","seconds":0.186,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*reduce_by_key*"}
+{"kind":"phase","ts":"2026-06-05T00:42:56Z","phase":"test","seconds":0.198,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*reduce_by_key*"}
+{"kind":"phase","ts":"2026-06-05T00:48:47Z","phase":"test","seconds":0.202,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*reduce_by_key*"}
+{"kind":"phase","ts":"2026-06-05T00:52:33Z","phase":"test","seconds":0.196,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*reduce_by_key*"}
+{"kind":"phase","ts":"2026-06-05T00:52:39Z","phase":"test","seconds":1.218,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*gpu*:*event_stream*:*stack*:*vector*:*spikes*"}
+{"kind":"phase","ts":"2026-06-05T00:52:54Z","phase":"test","seconds":12.269,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
