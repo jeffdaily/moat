@@ -384,6 +384,13 @@
     "note": "real/current HIP backend (research-confirmed)",
     "reason": "already-supported"
   },
+  "luigifreda/pyslam": {
+    "decided": "2026-06-05T00:06:37Z",
+    "disposition": "skip",
+    "full_name": "luigifreda/pyslam",
+    "note": "Framework composition layer with no native CUDA code. All CUDA in bundled thirdparty submodules (lietorch, diff-gaussian-rasterization, simple-knn) which are separate porting targets. pyslam core is pure Python/C++. See plan.md for full analysis.",
+    "reason": "not-a-target"
+  },
   "luisagroup/luisacompute": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
