@@ -36,3 +36,4 @@
 {"kind":"phase","ts":"2026-06-05T15:15:54Z","phase":"test","seconds":3.641,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
 {"kind":"phase","ts":"2026-06-05T15:16:21Z","phase":"test","seconds":10.099,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
 {"kind":"phase","ts":"2026-06-05T15:18:15Z","phase":"test","seconds":14.127,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind": "tokens", "ts": "2026-06-05T15:20:16Z", "tokens": 101333, "source": "validator"}

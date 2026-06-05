@@ -288,27 +288,15 @@ Attempted `DEMdemo_SingleSphereCollide`:
 - JIT compilation succeeds for most kernels
 - **Runtime failure**: `hipModuleLaunchKernel failed for 'prepareForceArrays': invalid argument`
 
-**Root cause investigation needed**:
-The JitKernel argument packing (JitKernel.inl:23-27) creates a buffer for each argument and passes pointers to those buffers via `hipModuleLaunchKernel`. The "invalid argument" error suggests either:
-1. Grid/block dimensions are incorrect
-2. Argument pointer array format is wrong for hipModuleLaunchKernel
-3. A kernel parameter type mismatch
+**Root cause identified**: The error occurred when `nContactPairs=0`, leading to `blocks_needed_for_force_prep=0` and a kernel launch with `grid=(0,1,1)`. HIP returns `hipErrorInvalidValue` for grid dimension of 0, while CUDA silently treats it as a no-op.
 
-**Stopping point**: 73k tokens used, ~60 minutes wall-clock. Per circuit-breaker discipline, stopping to report partial state rather than grinding on the kernel launch issue.
+**Fix applied**: Added a check in `KernelLauncher::launchRaw()` to skip the launch when any grid dimension is zero. This is semantically correct (no work means no kernel launch needed).
 
 ### Validation Result
 
-**FAILED**: Runtime kernel launch failure prevents GPU validation.
+**PASSED**: Both `DEMdemo_SingleSphereCollide` and `DEMdemo_BallDrop2D` complete successfully on gfx90a.
 
-### Files Modified (beyond curated commit 84d9c716)
+### Changes Committed (a54c50c8)
 
-- `src/DEM/API.h` - Removed curand default includes
-- `src/core/utils/JitHelper.cpp` - Added hiprtc include paths, hip_runtime.h prepend
-- `src/core/utils/cuda_to_hip.h` - Added directed rounding shims, hipMemoryType fallback
-- `src/kernel/CUDAMathHelpers.cuh` - HIP trap builtin
-
-All changes committed and pushed to jeffdaily/DEM-Engine@84d9c716 (force-updated).
-
-### Next Steps for Porter
-
-The kernel compilation infrastructure is fully working. The remaining issue is the runtime kernel launch API bridge between DEM-Engine's calling convention and hipModuleLaunchKernel's expectations. Likely needs adjustment to the argument packing or launch parameter setup in JitKernel_hip.cpp:383-392.
+All fixes from the previous curated commit plus:
+- `src/core/utils/JitKernel_hip.cpp` - Skip kernel launch when grid has zero dimension
