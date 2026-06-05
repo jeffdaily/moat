@@ -1,209 +1,152 @@
-# fp6_llm Port Plan
+# fp6_llm Porting Plan (linux-gfx90a)
 
 ## Project
 
-- **Name**: fp6_llm (Quant-LLM)
+- **Name**: fp6_llm
 - **Upstream**: https://github.com/usyd-fsalab/fp6_llm
 - **Default branch**: main
-- **Description**: FP6-LLM provides efficient GPU support for LLM inference with 6-bit quantization (FP6) and other x-bit formats (FP5). It implements TC-FPx, a Tensor Core-based scheme for mixed-precision GEMM with quantized weights.
+- **Description**: FP6-LLM provides efficient GPU support for LLM inference with 6-bit (FP6) and 5-bit (FP5) quantization. It uses custom CUDA kernels with Tensor Core support for mixed-precision (FP6/FP5 weights + FP16 activations) matrix multiplication.
 
-## Existing AMD support
+## Existing AMD Support
 
-**Finding**: No existing AMD/ROCm/HIP support found.
+**Assessment**: No existing AMD/ROCm support.
 
-Searches performed:
-- `grep -rniE 'amd|rocm|hip|gfx[0-9]' README* docs/` in upstream: no matches
-- WebSearch for "fp6_llm ROCm", "fp6_llm AMD GPU", "fp6_llm HIP": no results
-- GitHub forks API scan: 22 forks examined, none from ROCm/AMD/GPUOpen orgs or with rocm/hip/amd in name
-- gh search repos for "fp6 llm rocm", "TC-FPx amd": no results
+- Grep of upstream docs for amd/rocm/hip: No matches.
+- No AMD/ROCm forks found in the repository's fork list.
+- No upstream branches with rocm/hip/amd names.
+- No issues or PRs related to AMD/ROCm.
+- Web search: No existing port found.
 
-The upstream README explicitly states: "Currently, FP6-LLM is only tested and verified on A100 GPUs" and targets "Tensor Core GPUs like NVIDIA H100 and GH200." No AMD/ROCm branch or PR exists.
+**Related AMD work**: AMD ROCm 7.0+ added native FP6/MXFP6 support for MI350/MI355X series GPUs via MFMA instructions, but this is a different hardware-accelerated path, not a port of fp6_llm's SIMT-dequant + Tensor-Core-MMA approach. The fp6_llm kernel design is fundamentally tied to NVIDIA Tensor Core architecture.
 
-**Decision**: Proceed with a from-scratch port. However, this project is a REWRITE-REQUIRED case, not a mechanical HIP translation. See Risk list below.
+**Decision**: This project is NOT a candidate for mechanical HIP translation. The kernels are fundamentally NVIDIA Tensor-Core-specific and require an AMD-native rewrite, not a port. **Recommend SKIP with disposition `cant-port`.**
 
-## Build classification
+## Build Classification
 
-**Type**: PyTorch extension (torch-extension)
+- **Type**: pytorch extension (Strategy B)
+- **Evidence**:
+  - `setup.py` line 2: `from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension`
+  - `setup.py` lines 32-40: Uses `CUDAExtension` to build `fp6_llm_cuda` from `pybind.cpp` and `fp6_linear.cu`
+  - NVCC-specific flags: `-maxrregcount=255`, `-gencode=arch=compute_80,code=sm_80`
 
-**Evidence**: `setup.py` lines 2, 32-41:
-```python
-from torch.utils.cpp_extension import BuildExtension, CUDAExtension, CppExtension
-...
-ext_modules=[
-    CUDAExtension(
-        name="fp6_llm_cuda",
-        sources=["fp6_llm/csrc/pybind.cpp", "fp6_llm/csrc/fp6_linear.cu"],
-        extra_compile_args=extra_compile_args,
-    ),
-],
+## Port Strategy
+
+**Assessment: NOT PORTWORTHY via mechanical HIP translation.**
+
+This project cannot be ported to HIP via the standard Strategy A or Strategy B approaches. The core GEMM kernel is built entirely around NVIDIA-specific features:
+
+### 1. NVIDIA Tensor Core PTX (No HIP Equivalent)
+
+The entire kernel is designed around NVIDIA's `mma.sync.aligned.m16n8k16` instruction (ptx_mma.cuh:62-70):
+```cuda
+asm volatile("mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32"
+             "{ %0, %1, %2, %3},"
+             "{ %4, %5, %6, %7 },"
+             "{ %8, %9 },"
+             "{ %10, %11, %12, %13 };"
+             ...);
 ```
+AMD CDNA (gfx90a) has MFMA (Matrix Fused Multiply-Add) instructions, but:
+- Different ISA: MFMA is not a 1:1 mapping from `mma.sync`
+- Different tile shapes: NVIDIA m16n8k16 vs AMD's mfma_f32_16x16x16f16, etc.
+- Different register layouts and data movement patterns
+- Requires complete kernel redesign, not symbol substitution
 
-The project also has standalone Makefiles for building a C++ shared library (`fp6_llm/Makefile`) and C++ tests (`tests/cpp/Makefile`), but the primary interface is the PyTorch extension.
+### 2. PTX ldmatrix Instructions (No HIP Equivalent)
 
-## Port strategy
+The kernel uses `ldmatrix.sync.aligned.x2/x4.m8n8.shared.b16` (ptx_mma.cuh:43-56) for efficient shared-memory-to-register loads. These are Ampere+ PTX instructions with no HIP/AMDGPU equivalent. The entire shared memory staging and register allocation strategy is designed around ldmatrix.
 
-**CRITICAL: This project CANNOT be mechanically ported to ROCm/HIP.**
+### 3. PTX cp.async Instructions (Partial HIP Support)
 
-FP6-LLM is fundamentally built around NVIDIA Tensor Cores and uses:
-1. **PTX assembly for Tensor Core MMA operations** (`mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32`)
-2. **PTX assembly for async copy** (`cp.async.cg.shared.global`, `cp.async.commit_group`, `cp.async.wait_group`)
-3. **PTX assembly for ldmatrix** (`ldmatrix.sync.aligned.x2.m8n8.shared.b16`, `ldmatrix.sync.aligned.x4.m8n8.shared.b16`)
-4. **PTX `__cvta_generic_to_shared`** for address space conversion
+Uses `cp.async.cg.shared.global` for async global-to-shared copies (ptx_cp.async.cuh:27-34). HIP has `__builtin_nontemporal_load` and async copy APIs, but the commit/wait_group semantics differ. This is the only component with a partial HIP path.
 
-These are NVIDIA-specific instructions with NO HIP/AMD equivalents. There is no `hipify` or compat-header solution for PTX assembly.
+### 4. `__cvta_generic_to_shared` (No Direct HIP Equivalent)
 
-**Recommended approach**: AMD-native rewrite using one of:
-1. **rocWMMA** (Wavefront Matrix Multiply Accumulate) - AMD's equivalent to Tensor Core MMA operations
-2. **Composable Kernel (CK)** - AMD's high-performance kernel library for GEMM and similar ops
-3. **MFMA intrinsics** - Direct Matrix Fused Multiply-Add intrinsics for CDNA GPUs
+Used in ptx_mma.cuh:41 and ptx_cp.async.cuh:26 for address space conversion. HIP has no direct equivalent; shared memory pointers work differently.
 
-The algorithmic innovations (FP6 bit-packing, ahead-of-time weight prepacking, SIMT-efficient dequantization) are portable, but the compute kernel (`QUANT_GEMM_Kernel`) requires a ground-up rewrite to use AMD matrix instructions.
+### 5. Hardcoded WARP_SIZE = 32
 
-**Disposition recommendation**: Mark as `blocked` with reason `rewrite-required` unless there is explicit appetite for an AMD-native kernel rewrite (a multi-week effort, not a mechanical port).
+configs.h:9 defines `#define WARP_SIZE 32`. While this could be made wave-size-aware, the entire tiling scheme (WARP_M=64, WARP_K=64, MMA_16x8x16 tiles) is designed for 32-lane warps feeding Tensor Core instructions. The tiling arithmetic assumes 32 threads per warp.
 
-## CUDA surface inventory
+### 6. Architecture-Specific Design
 
-### PTX Assembly (NOT portable)
+The kernel is explicitly designed for A100/sm80:
+- setup.py: `-gencode=arch=compute_80,code=sm_80`
+- README: "only tested and verified on A100 GPUs"
+- The entire TC-FPx design scheme is built around NVIDIA Tensor Core characteristics
 
-| File | Line | PTX Instruction | Purpose |
-|------|------|-----------------|---------|
-| `ptx_mma.cuh:43-45` | `ldmatrix.sync.aligned.x2.m8n8.shared.b16` | Load matrix from shared memory for MMA |
-| `ptx_mma.cuh:51-53` | `ldmatrix.sync.aligned.x4.m8n8.shared.b16` | Load matrix from shared memory for MMA |
-| `ptx_mma.cuh:62-70` | `mma.sync.aligned.m16n8k16.row.col.f32.f16.f16.f32` | Tensor Core matrix multiply-accumulate |
-| `ptx_cp.async.cuh:27-34` | `cp.async.cg.shared.global` | Async copy from global to shared memory |
-| `ptx_cp.async.cuh:40` | `cp.async.commit_group` | Commit async copy group |
-| `ptx_cp.async.cuh:46` | `cp.async.wait_group N` | Wait for async copy group |
-| `ptx_cp.async.cuh:55` | `cp.async.wait_all` | Wait for all async copies |
-| `ptx_mma.cuh:41` | `__cvta_generic_to_shared` | Address space conversion |
-| `ptx_cp.async.cuh:26` | `__cvta_generic_to_shared` | Address space conversion |
+## CUDA Surface Inventory
 
-### Warp Intrinsics
+| Category | Elements | HIP Equivalent | Risk |
+|----------|----------|----------------|------|
+| PTX mma.sync | mma.sync.aligned.m16n8k16 | **NONE** - requires MFMA rewrite | BLOCKER |
+| PTX ldmatrix | ldmatrix.sync.aligned.x2/x4 | **NONE** | BLOCKER |
+| PTX cp.async | cp.async.cg.shared.global, commit_group, wait_group | Partial via HIP async APIs | HIGH |
+| Address conversion | __cvta_generic_to_shared | **NONE** direct | HIGH |
+| Warp intrinsics | __shfl_sync (1 occurrence) | hipShflSync (needs 64-bit mask) | LOW |
+| Hardcoded warp size | WARP_SIZE=32 | Needs wave-size abstraction | HIGH |
+| CUDA headers | cuda.h, cuda_fp16.h, cuda_runtime.h | HIP equivalents exist | LOW |
+| PyTorch extension | CUDAExtension, torch/extension.h | HIPExtension via ROCm torch | LOW |
+| cuBLAS | None (uses custom kernel) | N/A | NONE |
+| Streams | cudaStream_t | hipStream_t | LOW |
 
-| File | Line | Intrinsic | Notes |
-|------|------|-----------|-------|
-| `utils_parallel_dequant.cuh:111` | `__shfl_sync(0xffffffff, tmpReg, i, 4)` | Width=4 subwarp shuffle for scale broadcast |
+## Risk List
 
-The `__shfl_sync` with width=4 operates within a 4-lane subgroup, which is portable to HIP with a 64-bit mask fix. However, this is a minor part of the codebase compared to the PTX assembly.
+1. **BLOCKER: NVIDIA Tensor Core PTX** - The `mma.sync.aligned.m16n8k16` instruction is the computational core. No HIP equivalent; requires AMD MFMA rewrite.
 
-### Hardcoded Warp Size
+2. **BLOCKER: ldmatrix PTX** - The `ldmatrix.sync` instructions for efficient shared-to-register data movement have no HIP equivalent. Requires redesign of data movement.
 
-| File | Line | Value | Usage |
-|------|------|-------|-------|
-| `configs.h:9` | `#define WARP_SIZE 32` | Used throughout for lane_id, warpId, loop bounds, block dimensions |
+3. **HIGH: Architectural mismatch** - The entire kernel design (tiling, register allocation, shared memory layout, software pipelining) is optimized for NVIDIA Ampere Tensor Cores. A HIP port would require a ground-up rewrite using AMD's MFMA or rocWMMA.
 
-This is used in:
-- Block dimension: `dim3 BlockDim(WARP_SIZE * TilingConfig::BLOCK_WARPS, 1, 1)`
-- Lane calculations: `threadIdx.x % WARP_SIZE`, `threadIdx.x / WARP_SIZE`
-- Loop bounds: `SMEM_SIZE_IN_BYTES_PER_WARP/WARP_SIZE`
-- Static config: `BLOCK_THREADS = BLOCK_WARPS * WARP_SIZE`
+4. **HIGH: No ROCm torch integration** - While torch.utils.cpp_extension supports HIPExtension, the PTX assembly blocks would fail at hipcc compile time.
 
-On AMD CDNA (gfx90a), warp size is 64. The tiling strategy, shared memory layout, and register allocation are all tuned for 32-wide warps. An AMD port would need to re-derive these parameters for 64-wide wavefronts.
+5. **MEDIUM: __cvta_generic_to_shared** - HIP shared memory works differently; needs address space handling redesign.
 
-### CUDA Runtime API
+6. **LOW: Wave size** - Hardcoded WARP_SIZE=32, but this is moot given the Tensor Core dependency.
 
-Standard `cuda*` calls that could be hipified:
-- `cudaFuncSetAttribute` (fp6_linear.cu:31)
-- `cudaGetLastError` (fp6_linear.cu:103)
-- `cudaStream_t` (fp6_linear.cu:14, etc.)
-- `cudaError_t` (fp6_linear.cu:47, etc.)
-
-These are trivially portable via hipify or compat-header.
-
-### Library Dependencies
-
-- **cuBLAS**: Used only in tests as a baseline for correctness comparison (`-lcublas` in tests/cpp/Makefile)
-- **PyTorch**: ATen/CUDA for tensor operations and stream management (`<ATen/cuda/CUDAContext.h>`)
-
-### Host-side Code (Portable)
-
-The following are CPU-only and fully portable:
-- `utils/weight_prepacking.h` - FP6 bit packing (pure C++)
-- `utils/weight_dequant.h` - FP6 to FP16 dequantization (pure C++)
-- `utils/weight_quant.h` - FP16 to FP6 quantization (pure C++)
-
-## Risk list
-
-1. **PTX Assembly (BLOCKER)**: The core GEMM kernel uses NVIDIA PTX assembly for Tensor Core operations. There is NO mechanical translation path. Requires AMD-native rewrite with rocWMMA/CK/MFMA.
-
-2. **Tensor Core Tiling Strategy**: The M16N8K16 MMA shape, shared memory layout, and register allocation are optimized for NVIDIA Tensor Cores. AMD's matrix units have different shapes (e.g., MFMA 16x16x16, 32x32x8) requiring algorithmic rework.
-
-3. **Async Copy**: `cp.async` is NVIDIA-specific. HIP/ROCm does not have an exact equivalent. Would need to restructure memory prefetching using standard `hipMemcpyAsync` or remove the multi-stage pipeline.
-
-4. **Warp Size 32 -> 64**: The entire kernel is designed around 32-lane warps. Block sizes, loop unrolling factors, and register allocation would need adjustment for 64-lane wavefronts on CDNA.
-
-5. **Performance Parity Uncertain**: Even with a correct AMD rewrite, FP6-LLM's performance claims (2.6x vs cuBLAS, 7.2x vs bitsandbytes) may not transfer to AMD hardware without extensive tuning.
-
-6. **FP6 Native Support on MI350+**: AMD's MI355X natively supports FP4/FP6 datatypes via MFMA scale instructions (per ROCm 7.0.0 release notes). A port targeting MI300 (gfx90a) would use emulated FP6, but MI350+ could potentially use native instructions. This affects the optimal implementation strategy.
-
-## File-by-file change list
-
-Given the rewrite-required nature, a detailed file-by-file list is not applicable. However, if an AMD-native rewrite were undertaken:
-
-**Files to rewrite from scratch (keep algorithm, replace instructions):**
-- `csrc/include/ptx_mma.cuh` -> AMD MFMA/rocWMMA version
-- `csrc/include/ptx_cp.async.cuh` -> Standard HIP memory operations
-- `csrc/include/kernel_matmul.cuh` -> Re-derived for AMD matrix units
-- `csrc/include/utils_gmem.cuh` -> Standard HIP async copy
-
-**Files to adapt (minor changes):**
-- `csrc/include/configs.h` -> WARP_SIZE=64 for CDNA, adjust tiling
-- `csrc/include/utils_core.cuh` -> Adjust for wavefront size
-- `csrc/include/utils_parallel_dequant.cuh` -> Fix `__shfl_sync` mask to 64-bit
-
-**Files portable as-is:**
-- `csrc/utils/weight_prepacking.h`
-- `csrc/utils/weight_dequant.h`
-- `csrc/utils/weight_quant.h`
-- `csrc/utils/common.h`
-
-**Build files to modify:**
-- `setup.py` -> Add ROCm/HIP extension path
-- `fp6_llm/Makefile` -> hipcc instead of nvcc
-- `tests/cpp/Makefile` -> hipcc, hipBLAS
-
-## Build commands
-
-N/A - Project cannot be built for ROCm without kernel rewrite.
-
-If it could be built (hypothetically after rewrite):
-```bash
-# PyTorch extension (after HIP enablement)
-HIP_VISIBLE_DEVICES=0 pip install .
-
-# C++ shared library
-cd fp6_llm && make HIPCC=hipcc SMS=gfx90a
-```
-
-## Test plan
-
-N/A until kernel rewrite is complete.
-
-The upstream test suite:
-1. **Python tests** (`tests/python/run.sh`): Correctness and performance comparison vs cuBLAS baseline
-2. **C++ tests** (`tests/cpp/make && ./run.sh`): Standalone kernel tests
-
-For an AMD port, the test plan would:
-1. Compare FP6-LLM output against rocBLAS FP16 baseline
-2. Verify relative error matches upstream tolerance
-3. Measure performance vs rocBLAS/hipBLAS
-
-## Open questions
-
-1. **Proceed with rewrite?** This is a significant engineering effort (estimated 2-4 weeks for an experienced GPU programmer). Is there explicit demand for FP6 quantization on AMD?
-
-2. **Target architecture?** gfx90a (MI200 series) uses emulated FP6. gfx94x (MI300 series) may have different matrix unit characteristics. gfx950 (MI350/MI355) has native FP4/FP6 support.
-
-3. **rocWMMA vs Composable Kernel?** CK has more examples and may be faster to implement, but rocWMMA is closer to the upstream WMMA style.
-
-4. **Upstream appetite?** Given the project is "NVIDIA Tensor Core focused," would upstream accept an AMD-native alternative implementation?
+7. **LOW: __shfl_sync mask** - Single usage needs 64-bit mask for HIP, but again moot.
 
 ## Recommendation
 
-**Set `blocked` with reason `rewrite-required`**.
+**SKIP this project with disposition `cant-port`.**
 
-This project is not a porting candidate in the usual MOAT sense. It requires an AMD-native kernel implementation from scratch rather than mechanical CUDA-to-HIP translation. The effort level is comparable to writing a new library feature rather than porting an existing one.
+### Rationale
 
-If AMD FP6 quantization for LLMs is a priority, consider:
-1. Contributing to an existing AMD quantization effort (e.g., check if Composable Kernel or rocm-ds has FP6 GEMM)
-2. Building on AMD's native FP6 support in MI350+ (gfx950) when that hardware is available
-3. Commissioning a dedicated AMD-native implementation rather than treating this as a "port"
+This is not a mechanical porting candidate. The fp6_llm kernels are a showcase of NVIDIA-specific features:
+- PTX inline assembly for Tensor Core MMA
+- PTX ldmatrix for efficient data staging
+- PTX cp.async for async memory transfers
+- Tiling and pipeline design tuned for Ampere Tensor Core characteristics
+
+A "port" would require reimplementing the FP6 quantized GEMM kernel from scratch using:
+- AMD MFMA intrinsics (rocWMMA or direct amdgcn intrinsics)
+- AMD-appropriate tiling (e.g., 32x32x8 or 16x16x16 for MFMA)
+- AMD async copy patterns
+- Wave64-appropriate data layouts
+
+This is a REWRITE, not a port, and is out of scope for MOAT's mechanical HIP translation mission.
+
+### Alternative AMD Path
+
+For FP6 quantization on AMD GPUs, users should consider:
+1. **Native ROCm FP6** (ROCm 7.0+): MI350/MI355X GPUs have native MXFP6 hardware support via MFMA scale instructions
+2. **AMD Quark**: AMD's quantization toolkit supports FP6/MXFP6 for vLLM/SGLang inference
+3. **Composable Kernel (CK)**: AMD-native tensor operations library for writing efficient GEMM kernels
+
+## File-by-file Change List
+
+N/A - Project is not a porting candidate.
+
+## Build Commands
+
+N/A - Project is not a porting candidate.
+
+## Test Plan
+
+N/A - Project is not a porting candidate.
+
+## Open Questions
+
+1. Should MOAT track "rewrite candidates" separately from "port candidates"? Projects like fp6_llm require AMD-native implementations rather than HIP translations.
+
+2. Should we document the AMD-native alternatives (Quark, native MXFP6, CK) in a "recommended alternatives" section for cant-port projects?
