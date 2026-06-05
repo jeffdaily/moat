@@ -112,7 +112,7 @@ All other 124 tests pass cleanly, including double precision variants and all ot
 Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB)
 Validated SHA: 69ab9137ab8c3663409598b7d521384e07c14c87
 ROCm version: 7.2.1
-GPU: HIP_VISIBLE_DEVICES=0
+GPU: HIP_VISIBLE_DEVICES=1
 
 Build commands:
 ```bash
@@ -123,7 +123,7 @@ cmake --build build -- -j$(nproc)
 
 Test command:
 ```bash
-HIP_VISIBLE_DEVICES=0 ctest --test-dir build --output-on-failure
+HIP_VISIBLE_DEVICES=1 ctest --test-dir build --output-on-failure
 ```
 
 Test results: 124/125 tests passed (99% pass rate)
