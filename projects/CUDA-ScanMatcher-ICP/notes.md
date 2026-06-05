@@ -70,3 +70,14 @@ The port breaks the CUDA build path due to direct use of HIP-specific symbols in
 - Replace `hipSetDevice` with `cudaSetDevice` in main.cpp:80
 - Replace `hipError_t`/`hipSuccess`/`hipGetErrorString` with `cudaError_t`/`cudaSuccess`/`cudaGetErrorString` in main.cpp:133-139
 - Consider marking only `.cu` files as LANGUAGE HIP (minor, but per Strategy A guidelines)
+
+## Fix 2026-06-05
+
+Resolved review findings:
+1. Added `cudaSetDevice` mapping to cuda_to_hip.h
+2. Changed `hipSetDevice(gpuDevice)` to `cudaSetDevice(gpuDevice)` in main.cpp:80
+3. Changed `hipError_t`/`hipSuccess`/`hipGetErrorString` to `cudaError_t`/`cudaSuccess`/`cudaGetErrorString` in main.cpp:133-139
+
+The port now uses CUDA spellings consistently; cuda_to_hip.h performs translation on HIP builds. CUDA build path (USE_HIP=OFF) should work unchanged.
+
+Kept all sources as LANGUAGE HIP because gotcha #5: hip::host CMake target adds USE_PROF_API=1 which breaks hip_prof_str.h under plain gcc. Compiling .cpp files with hipcc avoids this.

@@ -1,3 +1,5 @@
 {"kind": "tokens", "ts": "2026-06-05T06:39:43Z", "tokens": 102117, "source": "planner"}
 {"kind":"phase","ts":"2026-06-05T06:41:54Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake --build . --parallel"}
 {"kind": "tokens", "ts": "2026-06-05T06:57:54Z", "tokens": 189585, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T06:59:47Z", "tokens": 80259, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T07:00:50Z","phase":"compile","seconds":11.135,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build --parallel"}
