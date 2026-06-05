@@ -143,3 +143,55 @@ The hip_test successfully runs on real GPU hardware (gfx90a), verifying:
 The LBVH builder, hip_sched, and managed_allocator are not directly exercised by this test but compile successfully with hipCUB integration. Comprehensive testing of these components would require porting upstream's unit test infrastructure.
 
 **Validated at**: 38aa60a4232970e6c0b092dbc77cd7197749f620
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+**Build**: Configured and built successfully with CMake HIP support enabled for gfx1100.
+
+**Environment**:
+- GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3)
+- HIP_VISIBLE_DEVICES=0
+- ROCm: /opt/rocm-7.2.1
+- Warp size: 32
+
+**Build command**:
+```bash
+cd /var/lib/jenkins/moat/projects/visionaray/src
+git submodule update --init --recursive
+cmake -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DVSNRAY_ENABLE_HIP=ON \
+  -DVSNRAY_ENABLE_CUDA=OFF \
+  -DVSNRAY_ENABLE_UNITTESTS=OFF \
+  -DVSNRAY_ENABLE_COMMON=ON \
+  -DVSNRAY_ENABLE_VIEWER=OFF \
+  -DVSNRAY_ENABLE_EXAMPLES=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build build -j$(nproc)
+```
+
+**Test command**:
+```bash
+HIP_VISIBLE_DEVICES=0 ./build/test/hip_test
+```
+
+**Test output**:
+```
+Testing visionaray HIP support...
+Device: AMD Radeon Pro W7800 48GB
+Warp size: 32
+PASS: Basic HIP test succeeded
+```
+
+**Result**: PASS
+
+The hip_test successfully runs on real GPU hardware (gfx1100, RDNA3), verifying:
+- HIP kernel compilation and launch for gfx1100
+- hip::device_vector allocation and data transfer
+- Basic GPU computation correctness
+- Wave32 support (RDNA3 warp size is 32, vs wave64 on CDNA gfx90a)
+
+The port correctly handles the warp size difference between CDNA (64) and RDNA3 (32), demonstrating portability across AMD architectures.
+
+**Validated at**: 38aa60a4232970e6c0b092dbc77cd7197749f620
