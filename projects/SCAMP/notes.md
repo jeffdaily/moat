@@ -68,3 +68,11 @@ Strategy A port enabling AMD GPU support via HIP with cuda_to_hip.h compat heade
 
 ### Recommendation
 changes-requested: fix MOAT vocabulary, then ready for validation.
+
+## Fixes (2026-06-05)
+
+Addressed reviewer findings:
+1. Removed "Strategy A" jargon from commit message -- reworded to describe the approach directly
+2. Changed CMakeLists.txt comment from "follower platforms pass their own arch" to "other platforms pass their own arch via CMAKE_HIP_ARCHITECTURES"
+
+Amended commit and force-pushed to 58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466.

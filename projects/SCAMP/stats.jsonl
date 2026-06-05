@@ -6,3 +6,4 @@
 {"kind":"phase","ts":"2026-06-05T00:31:42Z","phase":"test","seconds":0.395,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/SCAMP/src/test/run_tests.sh /var/lib/jenkins/moat/projects/SCAMP/src/build/SCAMP /tmp/scamp_test_results.txt "}
 {"kind":"phase","ts":"2026-06-05T00:31:46Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash ./run_tests.sh ../build/SCAMP /tmp/scamp_test_results.txt "}
 {"kind": "tokens", "ts": "2026-06-05T00:34:10Z", "tokens": 53682, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T00:38:08Z", "tokens": 81719, "source": "reviewer"}
