@@ -140,3 +140,34 @@ The fix is correct. The bounds check `if(AtomA >= System[compA].size || AtomB >=
 **Commit Hygiene**: Clean (36-char title, Claude disclosure, Test Plan, no noreply trailer)
 
 **Verdict**: APPROVE -- ready for gfx90a validation.
+
+## Re-Validation 2026-06-05 (linux-gfx90a, MI250X gfx90a, HIP_VISIBLE_DEVICES=1)
+
+**Build**: Clean build from scratch at commit ddf08ad4208fc4a426bbf0897d6f7186878bc48e
+```bash
+cd /var/lib/jenkins/moat/projects/gRASPA/src/build
+HIP_VISIBLE_DEVICES=1 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+HIP_VISIBLE_DEVICES=1 cmake --build . -j$(nproc)
+```
+Executable: `build/src_clean/graspa` (2.2MB)
+ROCm: 7.2.1, HIP: 7.2.53211
+
+**Test Results** (all with HIP_VISIBLE_DEVICES=1):
+
+1. CO2-MFI GCMC benchmark (Examples/CO2-MFI):
+   - PASS: Completed successfully
+   - 18 CO2 molecules adsorbed (C_co2 pseudoatoms: 18)
+   - Zero energy drift (all components 0.00000)
+
+2. Methane-TMMC (Examples/Methane-TMMC):
+   - PASS: Completed successfully without crashes
+   - Previously crashed with memory access fault during final energy check
+   - Now completes cleanly after OOB fix
+
+3. Tail-Correction (Examples/Tail-Correction):
+   - PASS: Completed successfully without crashes
+   - 1327 Argon molecules (Ar[20] pseudoatoms: 1327)
+   - Previously crashed with memory access fault during final energy check
+   - Now completes cleanly after OOB fix
+
+**Verdict**: VALIDATED -- All three benchmark simulations pass. The OOB memory access fix in TotalVDWRealCoulomb kernel resolved the crashes in larger molecule count simulations. The port correctly implements HIP support with Strategy A (cuda_to_hip.h header, .cu files marked LANGUAGE HIP).

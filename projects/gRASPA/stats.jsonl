@@ -14,3 +14,10 @@
 {"kind": "tokens", "ts": "2026-06-05T09:39:46Z", "tokens": 45294, "source": "validator"}
 {"kind":"phase","ts":"2026-06-05T09:41:51Z","phase":"compile","seconds":6.666,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gRASPA/src/build -j128"}
 {"kind": "tokens", "ts": "2026-06-05T09:55:40Z", "tokens": 56612, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:58:21Z", "tokens": 67594, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T10:01:17Z","phase":"compile","seconds":0.131,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a"}
+{"kind":"phase","ts":"2026-06-05T10:01:23Z","phase":"compile","seconds":2.963,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/build && cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a"}
+{"kind":"phase","ts":"2026-06-05T10:01:37Z","phase":"compile","seconds":10.662,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T10:06:29Z","phase":"test","seconds":285.253,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/CO2-MFI && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
+{"kind":"phase","ts":"2026-06-05T10:09:34Z","phase":"test","seconds":166.260,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Methane-TMMC && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
+{"kind":"phase","ts":"2026-06-05T10:10:34Z","phase":"test","seconds":53.813,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Tail-Correction && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
