@@ -1,1 +1,6 @@
 {"kind": "tokens", "ts": "2026-06-05T09:20:03Z", "tokens": 105800, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T09:25:45Z","phase":"compile","seconds":11.252,"exit":2,"cmd":"cmake --build projects/ohm/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T09:26:37Z","phase":"compile","seconds":1.583,"exit":1,"cmd":"cmake --build projects/ohm/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T09:27:49Z","phase":"compile","seconds":11.379,"exit":2,"cmd":"cmake --build projects/ohm/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T09:32:17Z","phase":"test","seconds":3.719,"exit":0,"cmd":"projects/ohm/src/build/bin/gputiltesthip"}
+{"kind":"phase","ts":"2026-06-05T09:33:37Z","phase":"test","seconds":70.483,"exit":0,"cmd":"projects/ohm/src/build/bin/ohmtesthip"}
