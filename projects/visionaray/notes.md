@@ -92,3 +92,54 @@ Note for validator: The hip_test exercises hip::device_vector and a basic kernel
 
 ### Recommendation
 **Approve** -- proceed to validation.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+**Build**: Configured and built successfully with CMake HIP support enabled.
+
+**Environment**:
+- GPU: AMD Instinct MI250X / MI250 (gfx90a)
+- HIP_VISIBLE_DEVICES=1
+- ROCm: /opt/rocm
+- Warp size: 64
+
+**Build command**:
+```bash
+cd /var/lib/jenkins/moat/projects/visionaray/src
+git submodule update --init --recursive
+cmake -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DVSNRAY_ENABLE_HIP=ON \
+  -DVSNRAY_ENABLE_CUDA=OFF \
+  -DVSNRAY_ENABLE_UNITTESTS=OFF \
+  -DVSNRAY_ENABLE_COMMON=ON \
+  -DVSNRAY_ENABLE_VIEWER=OFF \
+  -DVSNRAY_ENABLE_EXAMPLES=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build build -j$(nproc)
+```
+
+**Test command**:
+```bash
+HIP_VISIBLE_DEVICES=1 ./build/test/hip_test
+```
+
+**Test output**:
+```
+Testing visionaray HIP support...
+Device: AMD Instinct MI250X / MI250
+Warp size: 64
+PASS: Basic HIP test succeeded
+```
+
+**Result**: PASS
+
+The hip_test successfully runs on real GPU hardware (gfx90a), verifying:
+- HIP kernel compilation and launch
+- hip::device_vector allocation and data transfer
+- Basic GPU computation correctness
+
+The LBVH builder, hip_sched, and managed_allocator are not directly exercised by this test but compile successfully with hipCUB integration. Comprehensive testing of these components would require porting upstream's unit test infrastructure.
+
+**Validated at**: 38aa60a4232970e6c0b092dbc77cd7197749f620
