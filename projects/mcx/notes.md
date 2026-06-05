@@ -50,6 +50,96 @@ vs hipcc, leading to field offset mismatches (e.g., flog at offset 520 vs
 536). The fix is to add `__align__(16)` to float4/uint4/int4 definitions
 in mcx_vector_types.h.
 
+## Validation 2026-06-05 (linux-gfx90a)
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/mcx/src
+rm -rf build && mkdir build && cd build
+cmake ../src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+
+Build time: ~40 seconds on 128-core gfx90a host.
+
+### Test Results
+
+GPU: AMD Instinct MI250X (gfx90a)
+Command: `HIP_VISIBLE_DEVICES=0 ./test/testmcx.sh`
+Result: **11 of 40 tests FAIL**
+
+Passing tests (29/40):
+- Binary/libraries/execution/version/help/info tests
+- Default options
+- Homogeneous domain simulation
+- Cyclic boundary condition
+- Isotropic/cone beam sources
+- Boundary detector flags
+- 2D simulation, unitinmm
+- Heterogeneous domain
+- Detect photon data -w flag
+- Progress bar, RNG tests
+- Trajectory feature -D M
+- Memory access (valgrind)
+
+Failing tests (11/40) -- ALL reflection-related:
+1. cube60b benchmark (DoMismatch=true): absorbed 18.27% vs expected ~27%
+2. cube60 -b 1 (manual reflection flag): absorbed 18.27% vs expected ~27%
+3. cube60 -B flag (facet boundary condition): expected ~27%
+4. cube60planar benchmark: fails
+5. Photon detection in cube60b: fails
+6. Fourier source: fails
+7. Pencil array source: fails
+8. Saving photon seeds: fails
+9. Photon replay -E flag: fails
+10. Photon replay: fails
+11. JSON dump with volume from builtin example: fails
+
+### Root Cause Investigation
+
+Verified the following are CORRECT:
+1. Template parameter `isreflect=1` for reflection-enabled kernels (switch case 1000 at line 3782)
+2. Runtime constant `gcfg->doreflect=1` read correctly from constant memory (confirmed via printf)
+3. Constant memory transfer via `hipMemcpyToSymbol` works (aliased correctly in cuda_to_hip.h)
+4. Struct layout: `MCXParam` has correct alignment, `float3` is 12 bytes in both host and device code
+5. Host-side configuration: `cfg->isreflect=1` for cube60b, correctly copied to `param.doreflect`
+
+The configuration flags are correct. The bug is in the PHYSICS: reflection/transmission decisions or Fresnel coefficient calculations produce wrong results on HIP compared to CUDA.
+
+Possible causes (not yet isolated):
+1. Subtle floating-point precision difference in Fresnel equation (lines 2748-2762)
+2. RNG stream divergence causing different reflection/transmission decisions (line 2775: `rand_next_reflect(t) > Rtotal`)
+3. Unidentified HIP/CUDA behavior difference in `fabsf`, `sqrtf`, or division operations
+4. Miscompilation of complex conditional at lines 2736-2740
+
+### Added -ffast-math
+
+Modified `src/CMakeLists.txt` line 49 to add `-ffast-math` to HIP flags, matching CUDA's `-use_fast_math` (line 139). This is a correctness improvement for parity but did NOT fix the reflection failures (absorption still 18.27%).
+
+### Verdict
+
+**VALIDATION FAILED: correctness bug in reflection physics**
+
+Core photon transport validates, but boundary reflection gives numerically wrong results (~9% absorption error). This is not a minor numerical difference -- a Monte Carlo photon simulator with broken reflection cannot be upstreamed. The porter needs to isolate whether this is:
+- A HIP compiler miscompilation (compare generated code objects)
+- A floating-point math library difference (compare intermediate Rtotal values)
+- An RNG divergence (compare random streams with fixed seed)
+- A logic error introduced in porting (diff the reflection code path against upstream)
+
+Recommend: debug cube60b reflection step-by-step with printf/logging to find where HIP diverges from CUDA. The reflection coefficient calculation (lines 2748-2762) and the reflection/transmission decision (line 2775) are the prime suspects.
+
+### Platform Stats
+
+Arch: gfx90a (MI250X)
+ROCm: 7.2
+Compile time: ~40s
+Test time: ~3 minutes (full test suite)
+Passing core tests: 29/40
+Blocking failures: 11/40 (all reflection-related)
+
 ## Review 2026-06-05
 
 ### Summary
