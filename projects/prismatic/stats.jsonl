@@ -16,3 +16,6 @@
 {"kind":"phase","ts":"2026-06-05T09:49:40Z","phase":"test","seconds":0.845,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && ./build/prismatic -i SI100.XYZ -o test_ms.h5 -a m -g 1"}
 {"kind":"phase","ts":"2026-06-05T09:49:46Z","phase":"test","seconds":0.803,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1"}
 {"kind":"session","ts":"2026-06-05T09:52:04Z","epoch":1780653124.865063485,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T09:53:29Z", "tokens": 57326, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T09:58:29Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T09:58:41Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake --build . -j128"}
