@@ -7,7 +7,7 @@
   "priority": 5.284,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-05T17:38:55Z",
+  "updated_at": "2026-06-05T17:40:03Z",
   "head_sha": "fdc5694737970ba7329a81cb347d92dd48ceb802",
   "platforms": {
     "linux-gfx90a": {
@@ -116,11 +116,11 @@
     "windows-gfx1151": {
       "state": "port-ready",
       "blocked": true,
-      "blocked_reason": "Blocked on the BUILD only: the vendored stdgpu 1.3.0 submodule is not Windows-ported (forces -fPIC on the windows-msvc target; C++17/<variant>/cudaStream_t errors under clang-Windows in stdgpu/flann) -- a dependency-level Windows build port. The earlier 'APU thrust runtime gap' concern was wrong: rocThrust runs fine on gfx1151 with TheRock's runtime (see rmm root-cause). Not a cupoch defect (gfx90a/gfx1100 pass).",
+      "blocked_reason": "Retired host (gfx1151 APU, integrated GPU). Build issues that blocked it (stdgpu -fPIC, C++17, min/max macros, M_PI, cudaStream_t) were all fixed in fdc5694 for the discrete GPU hosts (gfx1101/gfx1201). The gfx1151 host is retired; no new validation scheduled.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-05-31T00:40:23Z",
+      "updated_at": "2026-06-05T17:40:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
