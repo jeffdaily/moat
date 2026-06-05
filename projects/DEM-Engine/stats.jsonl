@@ -77,3 +77,6 @@
 {"kind":"phase","ts":"2026-06-05T17:59:48Z","phase":"test","seconds":30.071,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_Repose"}
 {"kind": "tokens", "ts": "2026-06-05T18:01:12Z", "tokens": 49559, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-05T17:29:05Z", "tokens": 65908, "source": "porter (gfx1100 delta-port)"}
+{"kind": "tokens", "ts": "2026-06-05T18:38:19Z", "tokens": 38808, "source": "reviewer (gfx1100)"}
+{"kind":"phase","ts":"2026-06-05T19:10:32Z","phase":"compile","seconds":45.379,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/DEM-Engine/build-gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-05T19:10:50Z","phase":"test","seconds":10.758,"exit":141,"cmd":"/var/lib/jenkins/moat/projects/DEM-Engine/build-gfx1100/bin/DEMdemo_SingleSphereCollide"}
