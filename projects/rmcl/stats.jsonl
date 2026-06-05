@@ -24,3 +24,6 @@
 {"kind":"phase","ts":"2026-06-01T23:01:59Z","phase":"compile","seconds":7.382,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build -j64"}
 {"kind":"phase","ts":"2026-06-01T23:02:16Z","phase":"test","seconds":1.973,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build --output-on-failure -R ^cuda_"}
 {"kind":"phase","ts":"2026-06-01T23:02:24Z","phase":"test","seconds":2.712,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_build --output-on-failure -R ^core_"}
+{"kind":"phase","ts":"2026-06-05T16:57:18Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build build_hiprt -j 128"}
+{"kind":"phase","ts":"2026-06-05T16:57:30Z","phase":"compile","seconds":9.065,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/rmcl/src/build_hiprt -j 128"}
+{"kind":"phase","ts":"2026-06-05T17:00:17Z","phase":"compile","seconds":1.946,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/rmcl/src/build_hiprt -j 128"}

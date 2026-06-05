@@ -156,38 +156,50 @@ separate HIPRT reimplementation stage, to be done AFTER EnvGS Stage 2 lands and
 proves the HIPRT pattern on this host. EnvGS Stage 2 is now complete (validated
 on gfx90a and gfx1100), so Stage 2 is unblocked.
 
-### Stage 2 work in progress (2026-06-05)
+### Stage 2 Pinhole proof-of-concept COMPLETED (2026-06-05)
 
-Started Pinhole-only proof-of-concept in `src/rmagine_hiprt/` (~1300 LOC skeleton):
+Implemented and validated rmagine_hiprt Pinhole ray-tracing backend. Fork HEAD
+4d2cd26 @ moat-port.
 
-Structure created:
+Structure:
 - `include/rmagine/util/hiprt/HiprtContext.hpp` -- HIPRT context wrapper
 - `include/rmagine/map/hiprt/HiprtMesh.hpp` -- triangle mesh for HIPRT
 - `include/rmagine/map/hiprt/HiprtScene.hpp` -- scene/BVH management
 - `include/rmagine/simulation/hiprt/sim_program_data.h` -- kernel data structs
-- `include/rmagine/simulation/hiprt/pinhole_trace_kernel.h` -- JIT kernel source
 - `include/rmagine/simulation/PinholeSimulatorHiprt.hpp` -- Pinhole simulator
 - Implementation files in `src/util/`, `src/map/`, `src/simulation/`
-- CMakeLists.txt wiring (USE_HIP-gated)
+- CMakeLists.txt wiring (USE_HIP-gated, requires HIPRT_PATH)
 
 Key mapping (OptiX -> HIPRT):
 - optixAccelBuild (triangle GAS) -> hiprtCreateGeometry + hiprtBuildGeometry
-- raygen/closesthit/miss programs -> single HIP kernel (pinhole_trace_kernel.h)
-- optixTrace -> hiprtGeomTraversalClosest + getNextHit() loop
+- raygen/closesthit/miss programs -> single HIP kernel (embedded source, JIT)
+- optixTrace -> hiprtGeomTraversalClosest + getNextHit()
 - SBT records -> HiprtMeshData structs passed as kernel args
 - launch params -> kernel args (PinholeTraceParams)
+- optixModuleCreate -> hiprtBuildTraceKernels (JIT, cached)
+- optixLaunch -> hipModuleLaunchKernel (HIP driver API)
 
-NOT yet implemented (proof-of-concept gaps):
-- hiprtBuildTraceKernels JIT compilation (kernel source ships, JIT not wired)
-- Multi-mesh scene support (current impl merges into one mesh)
-- Validation harness
-- Integration with rmagine's build system (needs top-level CMake threading)
+Implementation notes:
+- Kernel source is embedded as a C++ raw string literal (not a separate file)
+  because hiprtBuildTraceKernels takes source, not a file path
+- BVH build requires temp buffer from hiprtGetGeometryBuildTemporaryBufferSize
+- HIPRT module lifecycle managed by HIPRT's JIT cache (not manually unloaded)
+- PinholeModelDev struct layout must match rmagine::PinholeModel exactly:
+  width, height, range{min,max}, f[2], c[2]
+- Transform3f uses Quaternionf{x,y,z,w} + Vector3f{x,y,z} (matches rmagine)
 
-Next steps to complete Pinhole proof-of-concept:
-1. Wire hiprtBuildTraceKernels to JIT compile pinhole_trace_kernel.h
-2. Build a minimal test (trace rays against a triangle mesh)
-3. Validate ranges/hits match expected values
-4. Then scale to Sphere/OnDn/O1Dn sensors
+Validated on gfx90a (MI250X, ROCm 7.2.1):
+- Test harness (agent_space/rmcl_hiprt_test/test_pinhole) traces 8x8 rays from
+  a Pinhole camera against a 2x2 quad at z=2
+- Center pixel reports range=2.0 (exact)
+- 25/64 rays hit the quad (correct given FOV/geometry)
+- Stage 1 rmagine_cuda tests 7/7 PASS (no regression)
+
+Remaining Stage 2 work:
+- Spherical/O1Dn/OnDn sensor simulators (same pattern, different ray generation)
+- Multi-mesh scene support (current impl merges meshes into one geometry)
+- Face normals computation (currently not used)
+- Integration with rmcl's MCL localization path
 
 Original scope:
 - rmagine ships an OptiX ray-mesh-intersection backend (rmagine_optix:
