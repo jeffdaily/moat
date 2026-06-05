@@ -472,3 +472,12 @@ Blocked. Cannot fix torch::cuda::is_available()=false in standalone C++ exe with
 modifying the TheRock PyTorch Windows build (lld-link .CRT$XCU omission). The HIP
 port itself compiles and native HIP kernel tests pass on real gfx1101 GPU.
 A TheRock fix would allow re-running tests from port-ready -> completed.
+
+### Note for linux-gfx90a and linux-gfx1100 revalidators
+
+The new commit (eebecaf) adds Windows-only changes. All new source files have
+`#if defined(_WIN32)` top-level guards; all cmake changes for OIIO/OpenMesh are
+inside `if(NOT WIN32)`. The Linux builds (gfx90a, gfx1100) compile NONE of the
+new .cpp stubs and follow the SAME cmake paths as before. Binary-equivalence check
+via `utils/codeobj_diff.py` between builds at e24593f and eebecaf is expected to
+yield `verdict=identical` for Linux arches -- use carry-forward if confirmed.
