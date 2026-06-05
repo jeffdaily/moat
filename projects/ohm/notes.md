@@ -63,3 +63,28 @@ The port correctly adds a HIP backend that mirrors the existing CUDA backend arc
 6. **Commit hygiene**: Title 43 chars, properly prefixed `[ROCm]`, mentions Claude, no noreply trailer, no MOAT jargon.
 
 No issues found. Ready for validation.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+**GPU arch**: gfx90a (MI250X)  
+**ROCm version**: 7.2.1  
+**Build command**:
+```bash
+cmake -B build_gfx90a -S . \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DOHM_FEATURE_HIP=ON \
+  -DOHM_FEATURE_CUDA=OFF \
+  -DOHM_FEATURE_OPENCL=OFF \
+  -DOHM_FEATURE_TEST=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a
+
+cmake --build build_gfx90a -j$(nproc)
+```
+
+**Test results**:
+- `gputiltesthip`: 8/8 tests PASSED
+- `ohmtesthip`: 58/58 tests PASSED
+
+**Total**: 66/66 tests PASSED
+
+All GPU tests executed successfully on real hardware with no failures.
