@@ -98,3 +98,28 @@ Implemented wave-serialized spin-lock in spikequeue.h for AMD GPUs. The fix uses
 The fix is guarded by `#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)` so the CUDA path remains unchanged.
 
 Verified: compiled and ran a synapse test on gfx90a (HIP_VISIBLE_DEVICES=1) with 100 neurons, 1032 synapses, and 1ms delay -- exercises push_bundles spike queue code path.
+
+## Review 2026-06-05 (re-review after porter fix)
+
+### Summary
+
+Re-reviewed the brian2cuda HIP port at 5b961a6. The porter addressed the wave64 spin-lock deadlock hazard from the previous review by implementing wave-serialized locking using ballot + leader election in spikequeue.h. The fix is correct.
+
+### Findings
+
+**None.** The port is ready for validation.
+
+### Technical Notes
+
+The wave64 fix (spikequeue.h:26-53) uses `__ballot(1)` to identify active lanes and serializes lock acquisition so only one lane at a time proceeds. In practice, this is defense-in-depth since the semaphore functions are only ever called by tid==0 per block (lines 356, 432, 515, 527), meaning only one thread per block ever contends -- and different blocks have their tid==0 in different wavefronts. The original CUDA pattern was therefore safe in this specific usage, but the fix adds correct safety for the wave64 SIMT model without introducing bugs.
+
+All other aspects of the port are correct:
+- Compat header maps all used symbols
+- Runtime warpSize query (props.warpSize at objects.cu:363)
+- No hardcoded warp size 32
+- HIP makefile has correct -fgpu-rdc and -lhiprand
+- Commit message follows conventions
+
+### Recommendation
+
+**Approve** -- ready for GPU validation on gfx90a.
