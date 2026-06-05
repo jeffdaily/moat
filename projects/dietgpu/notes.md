@@ -866,3 +866,39 @@ python3 utils/moatlib.py carry-forward dietgpu linux-gfx1100 8b0aec3 binary-equi
 ```
 
 Transitioning linux-gfx1100 to completed (validated_sha=8b0aec3).
+
+## Revalidation 2026-06-05 (windows-gfx1101, binary-equivalence carry-forward to 8b0aec3)
+
+Platform: windows-gfx1101, Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11, TheRock ROCm 7.14.
+Previous validated_sha: 2499fb6 (squash-era sha, functionally equivalent to 64c792d content). New HEAD: 8b0aec3.
+State: revalidate -> completed (binary-equiv carry-forward).
+
+### Delta analysis (64c792d -> 8b0aec3)
+
+Two commits between the prior Windows validation state and new HEAD:
+1. 03005c7: Squashed commit (tree-identical to 64c792d, as previously established by squash-carry-forward)
+2. 8b0aec3: Fix build regression in the squash -- restored LANGUAGE HIP marking for DeviceUtils.cpp/StackDeviceMemory.cpp in dietgpu/utils/CMakeLists.txt; removed erroneous hip::host reference; one GpuANSUtils.cuh change: added `#if defined(USE_HIP)` guard around `kMaxWarpSize = 64`, with `#else` branch for CUDA (kMaxWarpSize = kWarpSize). On Windows HIP builds USE_HIP is always defined, so kMaxWarpSize=64 is unchanged. Comment text updated.
+
+The only compiled change is the CMakeLists.txt pattern (LANGUAGE HIP marking and ${CUDA_LIBRARIES} linkage restored). The device code in GpuANSUtils.cuh is unchanged on any HIP build.
+
+### Binary-equivalence check
+
+Built both 64c792d and 8b0aec3 for gfx1101;gfx1201 (two-arch fat binary), each in an isolated build dir (build-win-old / build-win-new). Compared on Windows using COFF-aware tooling (llvm-readobj --coff-exports, CLANG_OFFLOAD_BUNDLE extraction + llvm-objdump -d normalization):
+
+**DLL exports (llvm-readobj --coff-exports):**
+- gpu_ans.dll: IDENTICAL (148 exports)
+- gpu_float_compress.dll: IDENTICAL (249 exports)
+
+**Device ISA (CLANG_OFFLOAD_BUNDLE extraction + normalized disassembly):**
+- gpu_ans.dll: gfx1101 ISA IDENTICAL (3 code objects), gfx1201 ISA IDENTICAL (3 code objects)
+- gpu_float_compress.dll: gfx1101 ISA IDENTICAL (3 code objects), gfx1201 ISA IDENTICAL (3 code objects)
+
+Raw bundle SHA256 hashes differ between builds (embedded build timestamps/paths), but after disassembly and normalization (addresses stripped, comment offsets stripped), all instruction streams are byte-identical. Same result as the linux-gfx1100 binary-equiv check for the same delta.
+
+Carried validation forward with:
+```
+python3 utils/moatlib.py carry-forward dietgpu windows-gfx1101 8b0aec3 binary-equiv \
+  "Comment/guard in GpuANSUtils.cuh: kMaxWarpSize=64 unchanged on HIP; DLL exports (148/249) + gfx1101+gfx1201 ISA identical across builds"
+```
+
+Transitioning windows-gfx1101 to completed (validated_sha=8b0aec3).
