@@ -81,3 +81,13 @@ To validate with the model:
    ```
 
 The reference output is in `reference.txt` for comparison.
+
+## Review 2026-06-05
+
+### Commit Hygiene
+**MOAT jargon in upstream-visible text**:
+- `src/cuda_to_hip.h:4`: Comment says "Strategy A" which is MOAT internal vocabulary. Reword to describe what it does without the label (e.g., "keep CUDA spellings in source, alias to HIP on AMD").
+- Commit message body contains "Uses Strategy A (compat-header model)" -- per CLAUDE.md, MOAT vocabulary must not appear in upstream-visible text. Reword to describe the approach without the label.
+
+### Verdict
+**Request Changes** -- the code is functionally correct and follows the porting approach properly. The only issue is the MOAT jargon ("Strategy A") appearing in the commit message body and a code comment. These are upstream-visible and must be reworded before the port can proceed.
