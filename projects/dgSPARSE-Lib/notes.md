@@ -40,3 +40,20 @@ Tests require torch_geometric, ogb, and torch_sparse. torch_sparse needs to be b
 - **Strategy**: Correctly uses Strategy B (torch-hipify) for this PyTorch extension.
 - **No Co-Authored-By noreply trailer**: Correct.
 - **Author**: Uses jeffdaily fork, jeff.daily@amd.com (external AMD email, not internal).
+
+## Review 2026-06-05 (re-review)
+
+Re-review of commit c262d8b after porter fixed the MOAT jargon issue.
+
+### Verified Fixed
+- Commit message no longer contains "Strategy B" -- now says "torch's built-in hipify"
+
+### Verified OK
+- **FULLMASK**: 64-bit on ROCm (0xffffffffffffffffULL)
+- **Width-32 shuffles**: Arch-agnostic (work on wave64 as 32-lane subgroups)
+- **Strategy B compliance**: No manual HIP symbol renames; only necessary fixes
+- **setup.py**: Correctly detects ROCm and links hipsparse
+- **Commit hygiene**: Title under 72 chars, no Co-Authored-By trailer, external AMD email
+
+### Recommendation
+**Approve** -- ready for validation.
