@@ -8,3 +8,7 @@
 {"kind":"phase","ts":"2026-06-05T00:52:39Z","phase":"test","seconds":1.218,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit --gtest_filter=*gpu*:*event_stream*:*stack*:*vector*:*spikes*"}
 {"kind":"phase","ts":"2026-06-05T00:52:54Z","phase":"test","seconds":12.269,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
 {"kind": "tokens", "ts": "2026-06-05T00:54:57Z", "tokens": 104504, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T00:56:41Z", "tokens": 63436, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T00:57:02Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T00:57:11Z","phase":"compile","seconds":0.126,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T01:10:47Z","phase":"test","seconds":13.640,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}

@@ -80,7 +80,7 @@ cmake .. -DARB_HIP_ARCHITECTURES="gfx1201" ...  # Windows gfx1201
 
 ## Review 2026-06-05
 
-### changes-requested
+### changes-requested (FIXED)
 
 **DEFECT: Generated mechanism code uses 32-bit lane mask (gpuprinter.cpp:394)**
 
@@ -96,7 +96,7 @@ This generates code with:
 
 On wave64 devices, `arb::gpu::ballot()` returns a 64-bit value, but this generated code truncates it to 32 bits. The generated `lane_mask_` then feeds `reduce_by_key(..., lane_mask_)` which expects a `lane_mask_type` (64-bit on HIP). The upper 32 lanes of the wavefront are masked out, causing incorrect reductions in generated mechanism kernels.
 
-**Fix required**: In modcc/printer/gpuprinter.cpp, change line 394 to:
+**Fix applied**: In modcc/printer/gpuprinter.cpp, changed line 394 to:
 ```cpp
 out << "arb::gpu::lane_mask_type lane_mask_ = arb::gpu::ballot(arb::gpu::lane_mask_type(-1), tid_<n_);\n";
 ```
@@ -104,3 +104,7 @@ out << "arb::gpu::lane_mask_type lane_mask_ = arb::gpu::ballot(arb::gpu::lane_ma
 This ensures generated mechanism code uses the same 64-bit mask type and full-mask pattern as the test code.
 
 Note: The hand-written test file (test_reduce_by_key.cu) was correctly updated to use `gpu::lane_mask_type(-1)` but the code generator was not updated to match.
+
+### Post-fix verification (gfx90a)
+
+All 1182 unit tests pass after the fix. Generated mechanism code now uses the correct 64-bit lane mask type.
