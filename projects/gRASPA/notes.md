@@ -58,3 +58,39 @@ Commit hygiene clean:
 - Body mentions Claude, no noreply trailer, no MOAT jargon
 
 Ready for gfx90a validation.
+
+## Validation 2026-06-05 (linux-gfx90a, MI250X gfx90a)
+
+**Build**: Clean build successful with HIP_VISIBLE_DEVICES=1
+```bash
+cd /var/lib/jenkins/moat/projects/gRASPA/src
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+cmake --build . -j$(nproc)
+```
+Executable: `build/src_clean/graspa` (2.2MB)
+
+**Test Results**:
+
+CO2-MFI GCMC benchmark (Examples/CO2-MFI):
+- PASS: 26 CO2 molecules adsorbed
+- PASS: Zero energy drift (all components 0.00000)
+- Completed successfully without errors
+
+Methane-TMMC (Examples/Methane-TMMC):
+- FAIL: Memory access fault during final energy check
+- Crash at "CHECKING FINAL ENERGY FOR SYSTEM [0]" after successful simulation completion
+- Error: "Memory access fault by GPU node-3 on address 0x73fd2f6bd000"
+- Exit code 141 (SIGPIPE)
+
+Tail-Correction (Examples/Tail-Correction):
+- FAIL: Same memory access fault during final energy check
+- Simulation completed successfully (52 seconds), crash only at final validation
+- Error: "Memory access fault by GPU node-3 on address 0x7187094c6000"
+
+**Analysis**:
+The core Monte Carlo simulation works correctly. CO2-MFI completes all phases including final energy check. Larger simulations (Methane-TMMC with 63 molecules, Tail-Correction with 1300+ molecules) crash during the post-simulation final energy validation step, immediately after printing component energies in VDW_Coulomb.cu:222. The crash is consistent across GPU devices (tested on both HIP_VISIBLE_DEVICES=0 and 1, both gfx90a MI250X).
+
+**Verdict**: VALIDATION FAILED
+
+Bug in final energy check code for simulations with larger molecule counts. The primary CO2-MFI benchmark passes, but the broader test suite fails. Needs porter investigation of the final energy calculation routine.
