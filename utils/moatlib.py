@@ -33,6 +33,7 @@ PORT_BRANCH = "moat-port"  # the topic branch that holds the port on each fork
 
 # Per-platform pipeline. blocked-needs-gfx90a is the follower start state; the
 # `blocked` boolean (needs user input) is orthogonal and set separately.
+# pr-open and upstream-landed are LEAD-only states (followers stay at completed).
 ALLOWED = {
     "unclaimed": {"planned"},
     "blocked-needs-gfx90a": {"port-ready"},
@@ -45,7 +46,9 @@ ALLOWED = {
     "port-ready": {"completed", "validation-failed"},
     "delta-ported": {"review-passed", "changes-requested"},
     "revalidate": {"completed", "validation-failed"},
-    "completed": {"revalidate"},
+    "completed": {"revalidate", "pr-open"},
+    "pr-open": {"upstream-landed"},
+    "upstream-landed": {},  # terminal
 }
 STATES = set(ALLOWED) | {s for v in ALLOWED.values() for s in v}
 
@@ -76,7 +79,7 @@ SELECT_RANK = {
     "unclaimed": 9,
 }
 # States that take no agent action (terminal or gated or awaiting user).
-INERT = {"completed", "pr-open", "blocked-needs-gfx90a"}
+INERT = {"completed", "pr-open", "upstream-landed", "blocked-needs-gfx90a"}
 
 
 def now_iso():
@@ -205,6 +208,40 @@ def set_blocked(name, platform, blocked, reason=None):
     blk["blocked"] = bool(blocked)
     blk["blocked_reason"] = reason if blocked else None
     blk["updated_at"] = now_iso()
+    save_status(name, obj)
+    return obj
+
+
+def set_pr_open(name, pr_url, pr_number):
+    """Set lead platform to pr-open state and record PR metadata.
+    Call this after successfully creating the upstream PR."""
+    obj = load_status(name)
+    obj["pr_url"] = pr_url
+    obj["pr_number"] = int(pr_number)
+    obj["pr_opened_at"] = now_iso()
+    # Only the lead platform transitions to pr-open; followers stay at completed
+    lead = obj["platforms"][LEAD]
+    if lead["state"] != "completed":
+        raise ValueError(f"{name}: can only open PR from completed state (lead is {lead['state']})")
+    lead["state"] = "pr-open"
+    lead["updated_at"] = now_iso()
+    save_status(name, obj)
+    return obj
+
+
+def set_pr_merged(name):
+    """Set lead platform to upstream-landed state and record merge timestamp.
+    Call this after the upstream PR has been merged."""
+    obj = load_status(name)
+    if "pr_url" not in obj:
+        raise ValueError(f"{name}: no PR recorded, cannot mark as merged")
+    obj["pr_merged_at"] = now_iso()
+    lead = obj["platforms"][LEAD]
+    if lead["state"] != "pr-open":
+        raise ValueError(f"{name}: can only merge from pr-open state (lead is {lead['state']})")
+    lead["state"] = "upstream-landed"
+    lead["updated_at"] = now_iso()
+    lead["last_agent"] = "upstream-landed"
     save_status(name, obj)
     return obj
 
@@ -593,24 +630,23 @@ def pr_ready(name):
     delta-ported, validation-failed, unclaimed, blocked-needs-gfx90a) means work
     is pending and BLOCKS the PR -- do not open it.
 
-    Returns False if a PR already exists (any platform in pr-open state, or
-    lead platform has last_agent=upstream-landed).
+    Returns False if a PR already exists (lead platform in pr-open or upstream-landed state).
 
     Returns (ready, blocking, nonviable): ready bool; blocking list of
     (platform, state); nonviable list of platforms."""
     obj = load_status(name)
 
-    # Check if PR already exists
+    # Check if PR already exists (lead-only states)
     lead = obj["platforms"][LEAD]
-    if lead.get("last_agent") == "upstream-landed":
-        return (False, [("PR already merged upstream", None)], [])
+    lead_state = lead.get("state")
+    if lead_state == "pr-open":
+        return (False, [(LEAD, "pr-open (PR already opened)")], [])
+    if lead_state == "upstream-landed":
+        return (False, [(LEAD, "upstream-landed (PR already merged)")], [])
 
     blocking, nonviable = [], []
     for plat in PLATFORMS:
         blk = obj["platforms"][plat]
-        if blk.get("state") == "pr-open":
-            blocking.append((plat, "pr-open (PR already opened)"))
-            continue
         if blk.get("state") == "completed":
             continue
         if blk.get("blocked"):
@@ -715,6 +751,14 @@ def main(argv=None):
     s = sub.add_parser("pr-ready", help="check whether every platform is terminal (completed or non-viable) so the upstream PR may open")
     s.add_argument("name")
 
+    s = sub.add_parser("set-pr-open", help="mark lead as pr-open and record PR metadata after creating upstream PR")
+    s.add_argument("name")
+    s.add_argument("pr_url")
+    s.add_argument("pr_number", type=int)
+
+    s = sub.add_parser("set-pr-merged", help="mark lead as upstream-landed after PR merges")
+    s.add_argument("name")
+
     s = sub.add_parser("squash-carry-forward",
                        help="advance head to a tree-identical PR-prep squash, carrying validated platforms forward (no revalidation)")
     s.add_argument("name")
@@ -785,6 +829,13 @@ def main(argv=None):
                   ", ".join(f"{p}={s}" for p, s in blocking))
         if nonviable:
             print("  non-viable (does not block; scope the PR body): " + ", ".join(nonviable))
+    elif args.cmd == "set-pr-open":
+        set_pr_open(args.name, args.pr_url, args.pr_number)
+        print(f"{args.name}: PR opened -> {args.pr_url}")
+    elif args.cmd == "set-pr-merged":
+        set_pr_merged(args.name)
+        obj = load_status(args.name)
+        print(f"{args.name}: PR merged (lead -> upstream-landed)")
     elif args.cmd == "unblock-followers":
         changed = unblock_all_followers()
         print(" ".join(changed) if changed else "(none)")

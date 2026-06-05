@@ -7,18 +7,18 @@
   "priority": 7.075,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-01T22:24:35Z",
-  "updated_at": "2026-06-05T00:01:41Z",
+  "updated_at": "2026-06-05T19:24:30Z",
   "head_sha": "b73d735ecf194c31de812feffef3a55cc3726128",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "upstream-landed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b73d735ecf194c31de812feffef3a55cc3726128",
       "started_at": "2026-06-01T22:26:01Z",
       "completed_at": "2026-06-01T22:26:01Z",
-      "updated_at": "2026-06-01T22:26:01Z",
+      "updated_at": "2026-06-05T19:24:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -125,5 +125,9 @@
       },
       "last_agent": "validator"
     }
-  }
+  },
+  "pr_url": "https://github.com/facebookresearch/pytorch3d/pull/2039",
+  "pr_number": 2039,
+  "pr_opened_at": "2026-06-05T19:24:30Z",
+  "pr_merged_at": "2026-06-05T19:24:30Z"
 }

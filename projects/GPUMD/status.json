@@ -7,17 +7,17 @@
   "priority": 5.508,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-04T21:27:57Z",
+  "updated_at": "2026-06-05T19:24:45Z",
   "head_sha": "6231243f",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "upstream-landed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "6231243f",
       "started_at": "2026-05-30T06:58:13Z",
       "completed_at": "2026-06-03T22:51:48Z",
-      "updated_at": "2026-06-03T22:51:48Z",
+      "updated_at": "2026-06-05T19:24:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
+      "last_agent": "upstream-landed",
       "carry_forward": {
         "to": "6231243f",
         "method": "source-class",
@@ -143,5 +143,9 @@
         "at": "2026-06-03T22:51:48Z"
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/brucefan1983/GPUMD/pull/1538",
+  "pr_number": 1538,
+  "pr_opened_at": "2026-06-05T19:24:45Z",
+  "pr_merged_at": "2026-06-05T19:24:45Z"
 }
