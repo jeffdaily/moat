@@ -11,3 +11,16 @@
 {"kind":"phase","ts":"2026-05-31T03:06:03Z","phase":"compile","seconds":2.743,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/lfs_build_gfx1100.sh"}
 {"kind":"phase","ts":"2026-05-31T03:09:41Z","phase":"compile","seconds":166.615,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/lfs_build_gfx1100.sh"}
 {"kind":"phase","ts":"2026-05-31T03:10:18Z","phase":"test","seconds":10.771,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip-gfx1100/cmake/hip_tests/lfs_compute_tests"}
+{"kind":"phase","ts":"2026-06-05T08:19:22Z","phase":"compile","seconds":0.069,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/LichtFeld-Studio/build-win-gfx1101 --target lfs_compute_tests -j64"}
+{"kind":"phase","ts":"2026-06-05T08:21:27Z","phase":"compile","seconds":86.139,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/LichtFeld-Studio/build-win-gfx1101 --target lfs_compute_tests -j64"}
+{"kind":"phase","ts":"2026-06-05T09:02:39Z","phase":"test","seconds":5.091,"exit":0,"cmd":"python3 B:/develop/moat/agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T09:14:25Z","phase":"compile","seconds":0.187,"exit":1,"cmd":"python3 agent_space/lfs_win_rebuild.py"}
+{"kind":"phase","ts":"2026-06-05T09:17:37Z","phase":"compile","seconds":0.906,"exit":1,"cmd":"python3 agent_space/lfs_win_rebuild.py"}
+{"kind":"phase","ts":"2026-06-05T09:17:53Z","phase":"compile","seconds":0.440,"exit":1,"cmd":"python3 agent_space/lfs_win_rebuild.py"}
+{"kind":"phase","ts":"2026-06-05T09:18:29Z","phase":"compile","seconds":1.175,"exit":1,"cmd":"python3 agent_space/lfs_win_rebuild.py"}
+{"kind":"phase","ts":"2026-06-05T09:27:07Z","phase":"test","seconds":5.123,"exit":0,"cmd":"python3 agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T10:49:30Z","phase":"test","seconds":5.077,"exit":0,"cmd":"python B:/develop/moat/agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T10:49:44Z","phase":"test","seconds":5.108,"exit":0,"cmd":"python B:/develop/moat/agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T10:49:54Z","phase":"test","seconds":5.147,"exit":0,"cmd":"python B:/develop/moat/agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T10:50:04Z","phase":"test","seconds":5.154,"exit":0,"cmd":"python B:/develop/moat/agent_space/run_lfs_test_full.py"}
+{"kind":"phase","ts":"2026-06-05T10:50:14Z","phase":"test","seconds":5.192,"exit":0,"cmd":"python B:/develop/moat/agent_space/run_lfs_test_full.py"}

@@ -362,3 +362,113 @@ is wave-agnostic; on gfx1100 it maps to a single 32-lane wavefront. Correct.
 
 ### Verdict: PASS (follower linux-gfx1100)
 validated_sha = e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e
+
+## Validation 2026-06-05 (windows-gfx1101, Radeon PRO V710, RDNA3 gfx1101)
+
+Arch: gfx1101 (Radeon PRO V710, RDNA3, wave32). HIP_VISIBLE_DEVICES=0.
+Fork branch tip: eebecafc51d7d77c77f0b6e61a9a3c3ad5557fdc (moat-port, adds Windows build fixes on top of e24593f).
+Host: Windows 11 Pro, TheRock PyTorch venv (torch 2.9.1+rocm7.14.0a20260604, ROCm 7.14).
+
+### Windows build changes (new commit eebecaf on top of e24593f)
+
+The following Windows-specific changes were required to compile the compute tranche
+on this host and are committed to the fork as the second commit:
+
+- cmake/HipCompute.cmake: add NOMINMAX/_USE_MATH_DEFINES on WIN32; link amdhip64
+  explicitly via CUDA::cudart (plain .cpp files including <cuda_runtime.h> need it
+  on Windows); find and link clang_rt.builtins-x86_64 for float16 helpers that
+  --nostdlib omits; gate OpenImageIO/OpenMesh find_library inside if(NOT WIN32).
+- src/core/CMakeLists.txt: use image_io_win_stub.cpp and mesh_data_win_stub.cpp on
+  WIN32 instead of OIIO/OpenMesh-dependent originals; drop those link entries.
+- src/core/cuda/CMakeLists.txt: add exportable_storage_win_stub.cpp on WIN32 under
+  USE_HIP (lld-link requires all symbols resolved at link time).
+- src/core/logger.cpp: broaden #ifdef WIN32 to #if defined(WIN32)||defined(_WIN32)
+  (clang on Windows defines _WIN32, not WIN32).
+- src/core/tensor/internal/tensor_functors.hpp: explicit double casts for std::pow
+  and std::fmod to resolve MSVC C2666 overload ambiguity on float args.
+- src/hip_compat/c10/cuda/CUDACachingAllocator.h: shim redirecting
+  <c10/cuda/CUDACachingAllocator.h> to the HIP counterpart + cuda namespace alias.
+
+### Build
+
+```
+cmake -S projects/LichtFeld-Studio/src -B projects/LichtFeld-Studio/build-win-gfx1101 -G Ninja ^
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1101 ^
+  -DCMAKE_HIP_COMPILER=<venv>/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe ^
+  -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release ^
+  -DTorch_DIR=<venv>/Lib/site-packages/torch/share/cmake/Torch ^
+  -DGTest_DIR=<moat>/_deps/gtest/install-md/lib/cmake/GTest ^
+  -DROCM_PATH=<venv>/Lib/site-packages/_rocm_sdk_devel
+cmake --build projects/LichtFeld-Studio/build-win-gfx1101 --target lfs_compute_tests
+```
+
+Result: 177/177 targets, lfs_compute_tests.exe produced. gfx1101 device code confirmed
+embedded. HIP_VISIBLE_DEVICES=0 throughout.
+
+### GPU test run
+
+```
+HIP_VISIBLE_DEVICES=0 lfs_compute_tests.exe
+```
+
+Run 1: 914 tests from 48 suites ran (4516 ms). 320 passed, 564 failed, 30 skipped.
+Run 2: 914 tests from 48 suites ran (4449 ms). 320 passed, 564 failed, 30 skipped.
+Consistent across both runs.
+
+Native HIP confirmed: hipGetDeviceCount() = 1 (gfx1101 present), err=0.
+hipcc-compiled kernel tests that do NOT call torch::cuda::is_available() PASS.
+
+### Root cause of failures (platform-level blocker)
+
+torch::cuda::is_available() returns false in the standalone C++ exe. Traced to:
+1. torch_hip.dll is built with lld-link (TheRock Windows PyTorch build).
+   lld-link does NOT emit a .CRT$XCU section (no MSVC global constructor table).
+2. _DllMainCRTStartup CRT init ptr (at RVA 0x399e8f0 in torch_hip.dll) = NULL.
+   _initterm is never called -> REGISTER_CUDA_HOOKS static initializers never run.
+3. TLS callbacks in torch_hip.dll (at RVA 0x0288aa90 and 0x0288ab40) trigger only
+   on DLL_THREAD_ATTACH and DLL_THREAD/PROCESS_DETACH respectively; neither fires
+   on DLL_PROCESS_ATTACH. DLL_PROCESS_ATTACH handler calls DisableThreadLibraryCalls.
+4. CUDAHooksRegistry in torch_cpu.dll stays empty.
+5. getCUDAHooks() constructs a stub implementing all methods as no-ops (hasCUDA()=false).
+6. torch::cuda::is_available() -> getCUDAHooks().hasCUDA() -> false.
+
+The ctypes path (Python import torch) bypasses CUDAHooksRegistry and works correctly
+(torch._C._cuda_getDeviceCount() > 0 -> True). This is a TheRock Windows build
+limitation, not a port defect.
+
+### Failures (564 + 30 skipped, all same root cause)
+
+564 tests fail: each begins with ASSERT_TRUE(torch::cuda::is_available()), which
+immediately fails. Categories affected: TensorBasicTest (31), TensorOpsTest (55),
+TensorReductionTest (35), TensorMathTest (35), TensorMatrixTest (32),
+TensorBroadcastTest (29), TensorMaskingTest (74), TensorRandomTest (43),
+TensorRandomAdvancedTest (23), TensorVsTorchTest (28), TensorFillVsTorchTest (12),
+TensorClampTest (30), NaNInfGPUCheckTest (65), BoolReductionKernel (11),
+BoolReduction (16), BoolAnyAllTest (31), CurandBufferOverflowTest (10),
+FusedL1SSIMTest (14), MaskedFusedL1SSIMTest (9), MaskLossTest (19),
+ActivationGradientsTest (5), GradientAccumulationTest (4), MCMCTest (3),
+MCMCTensorOps (8), AppendGather (3), InplaceCat (2), MemoryLeak (3),
+MCMCDeadMaskTest (21), MCMCNaNFixTest (4), MCMCLogitVerificationTest (7),
+RelocateGsEdgeCasesTest (47), DensificationTensorOpsTest (59),
+GsplatRasterizerTest (2), LfsSchedulerTest (17), PPISPCudaVsTorchTest (13),
+PPISPRegularizationTest (15), ADMMSparsityOptimizerTest (3).
+30 skipped: AnalyticalGradientTest (25) and CUDAKernelGradientTest (5) -- skip
+themselves when is_available() is false.
+1 disabled.
+
+### Passing tests (320/914 -- real gfx1101 GPU, confirmed)
+
+Suites that do NOT assert is_available() first:
+TensorReductionAlignmentTest (7), TensorBoolTest (11), MinimalSortDebugTest (7),
+CPUDtypeConversionTest (22), CPULargeTensorTest (15), TensorMathTest (sub-set),
+TensorBroadcastTest (sub-set), TensorMaskingTest (sub-set), TensorFillVsTorchTest
+(CPU sub-set), TensorClampTest (sub-set), MCMCRelocateOptimizerStateTest (3),
+ImageKernelsTest (4). These exercise the custom HIP reduction kernels, tensor math,
+and masking ops directly without the torch::cuda gate. GPU execution confirmed via
+non-trivial kernel runtimes (TensorReductionAlignmentTest total 223 ms).
+
+### Verdict: VALIDATION-FAILED (windows-gfx1101)
+Blocked. Cannot fix torch::cuda::is_available()=false in standalone C++ exe without
+modifying the TheRock PyTorch Windows build (lld-link .CRT$XCU omission). The HIP
+port itself compiles and native HIP kernel tests pass on real gfx1101 GPU.
+A TheRock fix would allow re-running tests from port-ready -> completed.

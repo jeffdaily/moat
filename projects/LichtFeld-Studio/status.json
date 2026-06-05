@@ -7,17 +7,17 @@
   "priority": 6.263,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e",
+  "updated_at": "2026-06-05T10:57:22Z",
+  "head_sha": "eebecafc51d7d77c77f0b6e61a9a3c3ad5557fdc",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e",
       "started_at": "2026-05-31T01:11:33Z",
       "completed_at": "2026-05-31T03:05:00Z",
-      "updated_at": "2026-05-31T03:05:00Z",
+      "updated_at": "2026-06-05T10:56:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "e24593f4ea6b1aff0f45b1dd98cab2209b0fd17e",
       "started_at": "2026-05-31T03:10:00Z",
       "completed_at": "2026-05-31T03:20:00Z",
-      "updated_at": "2026-05-31T03:20:00Z",
+      "updated_at": "2026-06-05T10:56:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1101": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "validation-failed",
+      "blocked": true,
+      "blocked_reason": "torch::cuda::is_available() returns false in standalone C++ exe on Windows TheRock build: CUDAHooksRegistry stays empty because torch_hip.dll REGISTER_CUDA_HOOKS global constructors do not run via PE loader (lld-link omits .CRT$XCU table; _DllMainCRTStartup CRT init ptr is null; TLS callbacks fire only on thread-attach, not process-attach). Native HIP kernel tests 320/914 pass on real gfx1101 GPU (hipGetDeviceCount=1 confirmed); 564 tests fail because each guards on torch::cuda::is_available(); 30 are skipped for same reason. Torch parity oracle and tensor creation tests all require is_available()=true. Cannot fix without rebuilding torch_hip.dll with MSVC link.exe or explicitly registering CUDAHooks at exe startup.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T10:57:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1201": {
       "state": "port-ready",
