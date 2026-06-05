@@ -47,3 +47,46 @@ Fixed with arch-dependent macros:
 
 - BUILD_APPS=ON fails due to API mismatch in onlinelp.cpp (upstream issue, not port-related)
 - Requires HiGHS 1.6.0 specifically; 1.10.0 causes segfault in Init_Scaling (API incompatibility)
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a (AMD Instinct MI250X / MI250)
+### Arch: gfx90a (wave64, CDNA2)
+### ROCm: 7.2.53211
+
+Build:
+```bash
+cd /var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/../install -DBUILD_SHARED_LIBS=ON
+make -j$(nproc) && make install
+export HIGHS_HOME=/var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/install
+
+cd /var/lib/jenkins/moat/projects/cuPDLP-C/src/build
+HIP_VISIBLE_DEVICES=2 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+Tests (HIP_VISIBLE_DEVICES=2):
+```bash
+LD_LIBRARY_PATH=$HIGHS_HOME/lib:$PWD/lib ./bin/testcudalin
+# Output: 0.0, 1.0, 4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 81.0 (PASS)
+
+LD_LIBRARY_PATH=$HIGHS_HOME/lib:$PWD/lib ./bin/testcublas
+# Output: 2-norm is :0.000000 (PASS)
+
+LD_LIBRARY_PATH=$HIGHS_HOME/lib:$PWD/lib ./bin/plc -fname ../example/afiro.mps -nIterLim 5000
+# Solving information: Optimal current solution
+# Primal objective: -464.75088
+# Dual objective: -464.83139
+# Primal infeas: 2.69e-02 / 3.21e-05 (relative)
+# Dual infeas: 3.97e-05 / 3.59e-06 (relative)
+# Duality gap: 8.05e-02 / 8.65e-05 (relative)
+# 200 iterations, all tolerances < 1e-4 (PASS)
+```
+
+Result: ALL TESTS PASS
+- testcudalin: element-wise GPU operations correct
+- testcublas: hipBLAS nrm2 correct
+- plc afiro.mps: LP solver converges to OPTIMAL solution with correct objective -464.75
+
+Wave64 reduction kernels (movement_1_kernel, movement_2_kernel, sum_kernel) work correctly on gfx90a CDNA2 with the __GFX9__ guards and warp-size-independent code.
