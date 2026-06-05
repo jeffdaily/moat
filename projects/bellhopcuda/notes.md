@@ -35,3 +35,23 @@ cmake --build . -j$(nproc)
 9. `src/util/UtilsCUDA.cuh`: Add HIP guards for error checking
 10. `src/util/atomics.hpp`: Use `__HIP_DEVICE_COMPILE__` guard
 11. `src/util/errors.hpp`: Use HIP atomics in device code
+
+## Review 2026-06-05
+
+Strategy A port reviewed against PORTING_GUIDE patterns and AMD fault classes.
+
+### Verified clean
+- No warp intrinsics -- code stores warpSize but never uses it for kernel logic
+- No textures/surfaces
+- atomicAdd/atomicOr on managed memory (ErrState) -- NOT affected by gfx90a coarse-grained bug (only atomicMin/atomicMax are)
+- No hardcoded warp size 32 in kernel logic
+- No rule-of-five issues
+
+### Build system
+- CMAKE_HIP_ARCHITECTURES defaults only when unset; followers can override via -DCMAKE_HIP_ARCHITECTURES=<arch>
+- CUDA path preserved; .cu sources marked LANGUAGE HIP only when BHC_ENABLE_HIP=ON
+
+### Commit hygiene
+- Proper [ROCm] prefix, no noreply trailer, test plan present
+
+**Approved for validation.**
