@@ -1,0 +1,5 @@
+{"kind": "tokens", "ts": "2026-06-05T08:13:48Z", "tokens": 138520, "source": "planner"}
+{"kind": "tokens", "ts": "2026-06-05T08:17:35Z", "tokens": 119316, "source": "planner-dup"}
+{"kind":"phase","ts":"2026-06-05T08:22:29Z","phase":"compile","seconds":4.172,"exit":0,"cmd":"python3 agent_space/test_brian2cuda_hip_compile.py"}
+{"kind":"phase","ts":"2026-06-05T08:29:31Z","phase":"compile","seconds":9.729,"exit":1,"cmd":"python3 agent_space/test_brian2cuda_hip_run.py"}
+{"kind":"phase","ts":"2026-06-05T08:30:06Z","phase":"compile","seconds":9.657,"exit":0,"cmd":"python3 agent_space/test_brian2cuda_hip_run.py"}
