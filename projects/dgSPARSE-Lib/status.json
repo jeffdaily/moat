@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:25:53Z",
-  "updated_at": "2026-06-05T08:58:09Z",
-  "head_sha": "b190a83a3c8270aacca8df142894437e2c52e24c",
+  "updated_at": "2026-06-05T08:59:10Z",
+  "head_sha": "c262d8bc35cdcfd6360e96d4ee687f622af85b37",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "changes-requested",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-05T08:59:07Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T08:58:09Z",
+      "updated_at": "2026-06-05T08:59:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
