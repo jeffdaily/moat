@@ -30,3 +30,9 @@
 {"kind": "tokens", "ts": "2026-06-05T17:06:45Z", "tokens": 162758, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T17:57:02Z", "tokens": 106002, "source": "reviewer"}
 {"kind": "tokens", "ts": "2026-06-05T18:04:21Z", "tokens": 56764, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T18:05:12Z","phase":"compile","seconds":3.184,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/rmcl/src -B /var/lib/jenkins/moat/agent_space/rmcl_hiprt_stage2_build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON -DRMAGINE_BUILD_TOOLS=OFF"}
+{"kind":"phase","ts":"2026-06-05T18:05:26Z","phase":"compile","seconds":9.159,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/rmcl_hiprt_stage2_build -j"}
+{"kind":"phase","ts":"2026-06-05T18:06:38Z","phase":"test","seconds":0.476,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/rmcl_hiprt_test/build/test_pinhole"}
+{"kind":"phase","ts":"2026-06-05T18:08:15Z","phase":"test","seconds":0.483,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/rmcl_hiprt_test/build/test_pinhole"}
+{"kind":"phase","ts":"2026-06-05T18:08:29Z","phase":"test","seconds":0.143,"exit":0,"cmd":"ctest --output-on-failure -R ^cuda_"}
+{"kind":"phase","ts":"2026-06-05T18:08:36Z","phase":"test","seconds":2.378,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_hiprt_stage2_build --output-on-failure -R ^cuda_"}
