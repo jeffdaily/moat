@@ -99,3 +99,20 @@ Fixed both instances of "Strategy A" per reviewer feedback:
 2. Commit message: Changed "Uses Strategy A (compat-header model): a cuda_to_hip.h header..." to "A cuda_to_hip.h header aliases CUDA spellings to HIP..."
 
 Rebuilt and verified compilation still passes. Pushed 4297b8c to moat-port.
+
+## Review 2026-06-05 (re-review after jargon fix)
+
+Re-reviewed the port after jargon fixes. Both instances of "Strategy A" have been removed:
+- `src/cuda_to_hip.h` line 4: Now says "Keeps CUDA spellings in source and aliases them to HIP on AMD GPUs"
+- Commit message body: Jargon removed
+
+Verified all fault classes:
+- 64-bit lane masks: WARP_FULL_MASK correctly 0xffffffffffffffffULL for HIP
+- The `threadIdx.x % 32` in ropeKernel/ropeKernelDecode (lines 95, 287) are HEAD_DIM frequency index math, not warpSize
+- The `thread_id == 32` in pagedAttentionKernel is part of a wave-size-agnostic reduction: the 16/8/4/2/1 shuffle tree with width=64 correctly reduces lanes 0-31 to thread 0 and lanes 32-63 to thread 32, then combines via shared memory + __syncthreads()
+- No textures, streams, events (no rule-of-five concerns)
+- cuBLAS -> hipBLAS mappings correct
+- Build system properly guarded (USE_HIP option, default OFF)
+- Commit hygiene clean (no noreply, no MOAT jargon, [ROCm] title, Claude mentioned)
+
+**Verdict: Approve** -- ready for validation. Validator needs HuggingFace access for Llama 3.2 1B model weights.
