@@ -44,3 +44,30 @@ No problems found. This is an exemplary minimal Strategy B port:
 - 300/300 tests passed on gfx90a
 
 Ready for validation.
+
+## Validation 2026-06-05
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.53211)
+Validated at: bef0d9317d896706c5d36fbf5ec24ddf6909c876
+
+Build:
+```bash
+cd projects/FastGeodis/src
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a pip install -e . --no-build-isolation
+```
+Build time: 55.6s
+
+Test:
+```bash
+cd projects/FastGeodis/src
+HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v
+```
+Test time: 76.3s
+
+Result: PASS
+- 300/300 tests passed
+- GPU tests (TestFastGeodis, TestFastGeodisSigned, TestGSF with cuda device) all passed
+- CPU tests (TestToivanen, TestPixelQueue, TestFastMarch) all passed - no regression
+- All test classes cover: shape validation, euclidean distance output correctness, zero input, ones mask, ill-formed input handling
+
+The port is validated. PyTorch's auto-hipify successfully translated all CUDA kernels (cudaMemcpyToSymbol to constant memory, __syncthreads() barriers). No numeric divergence observed on gfx90a.
