@@ -97,3 +97,47 @@ No issues. The CUDA path is preserved via `elseif ("${CUDA_ENABLED}")` in CMake 
 ### Recommendation
 
 **Approve** -- The port is correct, minimal, and ready for validation.
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a (AMD Instinct MI250X)
+
+Built from scratch at commit baae8b3c91db20e5a45c332500c8da2200941fe0.
+
+### Build
+```bash
+cd /var/lib/jenkins/moat/projects/fdtd3d/src/build
+HIP_VISIBLE_DEVICES=3 cmake .. \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DSOLVER_DIM_MODES=DIM3 \
+  -DVALUE_TYPE=d \
+  -DCOMPLEX_FIELD_VALUES=ON \
+  -DPRINT_MESSAGE=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+cmake --build . -j$(nproc)
+```
+Build time: 312.8s (5.2 minutes)
+
+### Test Results
+All tests passed on real GPU hardware.
+
+1. **GPU unit test**: `unit-test-cuda-grid 0`
+   - Status: PASS
+   - Duration: 0.255s
+   - Tests grid operations on device
+
+2. **3D electromagnetic simulation**: 
+   ```
+   ./Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100
+   ```
+   - Status: PASS
+   - Duration: 0.587s (simulation runtime: 0.277s)
+   - Completed all 100 time steps
+   - Grid size: 20x20x20
+   - Device: AMD Instinct MI250X
+   - No numerical errors
+
+### Summary
+Port validated successfully on gfx90a. Both GPU tests pass with correct numerical output.

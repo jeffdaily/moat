@@ -17,3 +17,10 @@
 {"kind":"phase","ts":"2026-06-05T08:37:14Z","phase":"test","seconds":0.018,"exit":11,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size-x 20 --size-y 20 --size-z 20 --cuda-num-gpus 1 --cuda-gpus-id 0 --time-steps 100 --courant-num 1.0 --layout-type 2 --eps-sphere 4.0"}
 {"kind":"phase","ts":"2026-06-05T08:37:22Z","phase":"test","seconds":0.587,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}
 {"kind": "tokens", "ts": "2026-06-05T08:39:09Z", "tokens": 146617, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T08:41:33Z", "tokens": 78887, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T08:42:02Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSOLVER_DIM_MODES=DIM3 -DVALUE_TYPE=d -DCOMPLEX_FIELD_VALUES=ON -DPRINT_MESSAGE=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-05T08:47:38Z","phase":"test","seconds":0.159,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid 3"}
+{"kind":"phase","ts":"2026-06-05T08:47:50Z","phase":"test","seconds":0.255,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid 0"}
+{"kind":"phase","ts":"2026-06-05T08:47:54Z","phase":"test","seconds":0.587,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}
+{"kind":"phase","ts":"2026-06-05T08:48:10Z","phase":"compile","seconds":0.145,"exit":1,"cmd":"bash -c cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T08:53:26Z","phase":"compile","seconds":312.841,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/fdtd3d/src/build && cmake --build . -j$(nproc)"}
