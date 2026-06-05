@@ -120,3 +120,23 @@ This is a pre-existing bug in upstream code that happens to not crash on CUDA (l
 - Tail-Correction (1327 molecules): PASS, completes without fault
 
 Commit ddf08ad pushed to jeffdaily/gRASPA moat-port branch.
+
+## Re-Review 2026-06-05
+
+**Scope**: Re-review following porter fix for OOB memory access in TotalVDWRealCoulomb kernel.
+
+**Verification of OOB Fix (VDW_Coulomb.cu:1544-1546)**:
+The fix is correct. The bounds check `if(AtomA >= System[compA].size || AtomB >= System[compB].size) continue;` now occurs BEFORE the MolID array accesses `MolA = System[compA].MolID[AtomA];` and `MolB = System[compB].MolID[AtomB];`. In the original code, the array access happened first, causing memory faults on larger simulations where thread counts exceed valid atom pairs.
+
+**Fault Class Review**:
+- No warp primitives (wave-size agnostic)
+- No textures/surfaces
+- No rule-of-five concerns
+- cudaMallocManaged usage is for small control structures, no atomicMin/atomicMax on managed memory
+- All reductions use __syncthreads() tree reduction
+
+**Build System**: Correct (enable_language(HIP), USE_HIP option, parameterized CMAKE_HIP_ARCHITECTURES)
+
+**Commit Hygiene**: Clean (36-char title, Claude disclosure, Test Plan, no noreply trailer)
+
+**Verdict**: APPROVE -- ready for gfx90a validation.
