@@ -5,3 +5,10 @@
 {"kind": "tokens", "ts": "2026-06-05T05:17:39Z", "tokens": 71757, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T05:18:21Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -G Ninja"}
 {"kind":"phase","ts":"2026-06-05T05:18:33Z","phase":"compile","seconds":9.284,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/tiny-vllm/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -G Ninja && cmake --build build"}
+{"kind": "tokens", "ts": "2026-06-05T05:22:44Z", "tokens": 56926, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T05:23:09Z","epoch":1780636989.609074674,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T05:23:27Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -G Ninja"}
+{"kind":"phase","ts":"2026-06-05T05:23:36Z","phase":"compile","seconds":0.139,"exit":0,"cmd":"bash -c cmake --build build -j128 2>&1 | tee /tmp/tiny-vllm-build.log"}
+{"kind":"phase","ts":"2026-06-05T05:23:46Z","phase":"compile","seconds":6.631,"exit":0,"cmd":"bash -c cd projects/tiny-vllm/src && cmake --build build -j128 2>&1 | tee /tmp/tiny-vllm-build.log"}
+{"kind":"phase","ts":"2026-06-05T05:26:44Z","phase":"test","seconds":0.890,"exit":0,"cmd":"bash -c \nset -e\necho '=== tiny-vllm ROCm Port Validation ==='\necho\necho '1. GPU Detection:'\ncd /var/lib/jenkins/moat/projects/tiny-vllm/src\nHIP_VISIBLE_DEVICES=1 timeout 10 ./build/tiny-vllm 2>&1 | head -7\necho\necho '2. Embedding Kernel Test:'\nHIP_VISIBLE_DEVICES=1 /tmp/test_kernel\necho\necho '3. Warp Shuffle (64-bit mask) Test:'\nHIP_VISIBLE_DEVICES=1 /tmp/test_shuffle2\necho\necho '4. hipBLAS bfloat16 GEMM Test:'\nHIP_VISIBLE_DEVICES=1 /tmp/test_gemm\necho\necho '=== All Tests PASSED ==='\n"}
+{"kind":"session","ts":"2026-06-05T05:27:38Z","epoch":1780637258.542374176,"event":"end","platform":"linux-gfx90a"}
