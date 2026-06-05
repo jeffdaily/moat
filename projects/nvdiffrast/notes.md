@@ -181,3 +181,34 @@ Mark gfx90a as blocked; proceed with gfx1100 (wave32) validation. The port is ar
 - `csrc/common/common.h` -- HIP intrinsic macros
 - `csrc/torch/torch_common.inl` -- HIP-compatible device check
 - `csrc/common/hipraster/` -- Parallel HIP rasterizer (from ATLAS reference)
+
+---
+
+## Review 2026-06-05
+
+### Port Correctness
+The port uses a cuda_compat.h header approach (Strategy A variant) for the pytorch extension because the cudaraster module contains PTX assembly that torch hipify cannot handle. This is a justified deviation from Strategy B -- the plan explicitly called for either a hipraster/ parallel module or a compat header, and the porter chose the header approach. The implementation correctly provides portable C++ implementations of the PTX intrinsics.
+
+### Minimal Footprint Issue
+**csrc/common/cudaraster/impl/Util.inl:23-28**: The `getLo`/`getHi`/`combineLoHi` functions are changed UNCONDITIONALLY (not guarded by `#if defined(__HIP_PLATFORM_AMD__)`). The CUDA path now uses portable C++ (`(U32)a`, `(U32)(a >> 32)`, shifts and ors) instead of the original NVIDIA intrinsics (`__double2loint`, `__double2hiint`, `__hiloint2double`, `__longlong_as_double`, `__double_as_longlong`). While semantically equivalent and likely compiled to identical code by nvcc, this violates the minimal footprint principle. The CUDA code path should remain unchanged.
+
+**Suggested fix**: Guard the portable implementations with `#if defined(__HIP_PLATFORM_AMD__) || defined(USE_ROCM)` and keep the original intrinsic-based implementations in an `#else` branch.
+
+### Wave64 Risk
+The cuda_compat.h header contains hardcoded `32` in lane mask and `__match_any_sync` emulation. There is no compile-time guard to prevent building for wave64 architectures (gfx90a). While gfx90a is blocked in MOAT, downstream users could build for wave64 and get silent corruption. Consider adding a static_assert or #error when `__GFX9__` is defined.
+
+### Strategy
+Acceptable. This is a pytorch extension with PTX assembly that hipify cannot handle. The compat header approach is justified.
+
+### Build System
+setup.py correctly detects ROCm via `torch.version.hip`, sets appropriate flags (`-DUSE_ROCM`, `-D__HIP_PLATFORM_AMD__`), and handles .inl file copying for hipify.
+
+### Commit Hygiene
+- Title: `[ROCm] Add HIP support for AMD GPUs` (35 chars, compliant)
+- No noreply trailer
+- Body mentions Claude
+- Has Test Plan section
+- Author: jeffdaily (not AMD-internal)
+
+### Verdict
+**Approve with note**: The unconditional change to `getLo`/`getHi`/`combineLoHi` is a minor footprint issue, but it is semantically correct and unlikely to cause observable differences on CUDA builds. The portable implementations will compile to equivalent code. This does not rise to the level of changes-requested, but should be fixed in a future cleanup if an upstream PR is planned.
