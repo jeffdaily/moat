@@ -548,3 +548,89 @@ pass. Results IDENTICAL to e24593f validation (911/3 split).
 
 ### Verdict: PASS (linux-gfx90a revalidation)
 validated_sha = 13e585d4775b69961221e21f8cddcb567d66b752
+
+## Revalidation 2026-06-05 (linux-gfx1100, AMD Radeon Pro W7800, RDNA3 gfx1100)
+
+Arch: gfx1100 (AMD Radeon Pro W7800 48GB, RDNA3, wave32). HIP_VISIBLE_DEVICES=0.
+Fork validated at: 13e585d4775b69961221e21f8cddcb567d66b752 (moat-port).
+
+### HEAD movement: e24593f -> 13e585d
+
+The Windows commit (13e585d) added Windows-specific build changes on top of the
+validated Linux port (e24593f). Changes analyzed:
+- New files: all have `#if defined(_WIN32)` top-level guards; not compiled on Linux.
+- CMake changes: OpenImageIO/OpenMesh handling gated by `if(NOT WIN32)`; additional
+  WIN32-only flags (NOMINMAX, _USE_MATH_DEFINES) and lib links (amdhip64 explicit,
+  clang_rt.builtins for float16).
+- src/hip_compat/c10/cuda/CUDACachingAllocator.h: new shim with `#if defined(_WIN32)`
+  for the namespace alias; `#include_next` on Linux (pulls real hipified header).
+- src/core/logger.cpp: broadens existing `#ifdef WIN32` to also check `_WIN32`
+  (clang on Windows defines `_WIN32`). Linux still takes the `#else` branch; no change.
+- src/core/tensor/internal/tensor_functors.hpp: adds explicit double casts to
+  std::pow and std::fmod in the host code path (not `__CUDA_ARCH__`). This resolves
+  MSVC overload ambiguity on Windows. On Linux it is mathematically identical
+  (float->double->pow->T vs float->pow->T), just a different overload resolution.
+
+Binary comparison (e24593f vs 13e585d) attempted via codeobj_diff.py: verdict=differ
+due to the tensor_functors.hpp changes linking `fmod@GLIBC_2.38` instead of
+`fmodf@GLIBC_2.38` and `pow@GLIBC_2.27` vs `powf@GLIBC_2.27`. The explicit double
+casts change which glibc symbols are linked, so the binaries are NOT bitwise-identical,
+though the math is equivalent. Full GPU revalidation required (not carry-forward eligible).
+
+### Build
+
+From-scratch build at 13e585d (same CMake command as gfx1100 validation 2026-05-31):
+
+```
+export HIP_VISIBLE_DEVICES=0
+export CMAKE_PREFIX_PATH="<torch>:<gtest>:/opt/conda/envs/py_3.12:/usr"
+cmake -S projects/LichtFeld-Studio/src -B lfs-new-gfx1100 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+  -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release \
+  -DTorch_DIR=/opt/conda/envs/py_3.12/.../torch/share/cmake/Torch \
+  -DLFS_GLM_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/glm-1.0.1 \
+  -DLFS_ARGS_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/lfs_args
+cmake --build lfs-new-gfx1100 --target lfs_compute_tests -j16
+```
+
+Result: 177/177 targets built, lfs_compute_tests linked. ZERO errors.
+
+### GPU test results
+
+```
+HIP_VISIBLE_DEVICES=0 ./lfs-new-gfx1100/cmake/hip_tests/lfs_compute_tests
+```
+
+Run 1: 914 tests from 48 suites ran (9115 ms). 912 passed, 2 failed.
+Run 2: 914 tests from 48 suites ran (9191 ms). 912 passed, 2 failed.
+BIT-IDENTICAL across both runs (determinism confirmed).
+
+### Failures (2 total, same documented non-bugs as previous gfx1100 validation)
+
+1. MCMCTest.RemoveGaussiansSoftDeletesRows -- DOCUMENTED (pre-existing). Reads raw
+   uint8 quant exp_avg as float; zero-point=128 means "0.0" stored as 0x80808080
+   (NaN as float). Pure integer quantization design mismatch. Identical on any GPU.
+2. MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows -- DOCUMENTED
+   (pre-existing). Same class: raw uint8 quant bytes read as float give NaN. NOT
+   a HIP/wave32 defect.
+
+Results IDENTICAL to e24593f validation (912/2 split). The ImageKernelsTest.FusedCanny
+test that passed on gfx1100 at e24593f still passes at 13e585d (wave32 FP rounding
+lands on the passing side of the NMS hysteresis discontinuity). The wave32-critical
+subset (tensor reductions, warp/block reductions, gsplat + fastgs rasterizers,
+cg::reduce shim, SSIM, MCMC, sort) ALL pass.
+
+### tensor_functors.hpp double-cast impact
+
+The explicit double casts in tensor_functors.hpp (std::pow(double,double) and
+std::fmod(double,double) instead of powf/fmodf) execute in the host code path
+(not `__CUDA_ARCH__`) for CPU tensors. The test suite includes CPU tensor tests
+(CPUDtypeConversionTest, CPULargeTensorTest) that exercise these paths; all pass.
+The GPU device code path (under `__CUDA_ARCH__`) still uses powf/fmodf unchanged.
+No regressions observed; the change is Windows-specific overload resolution, not
+a semantic change on Linux.
+
+### Verdict: PASS (linux-gfx1100 revalidation)
+validated_sha = 13e585d4775b69961221e21f8cddcb567d66b752
