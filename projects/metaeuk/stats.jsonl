@@ -3,3 +3,11 @@
 {"kind":"phase","ts":"2026-06-05T09:25:39Z","phase":"compile","seconds":8.205,"exit":2,"cmd":"cmake --build projects/metaeuk/build -j16"}
 {"kind":"phase","ts":"2026-06-05T09:51:41Z","phase":"compile","seconds":458.213,"exit":0,"cmd":"cmake --build projects/metaeuk/build -j16"}
 {"kind": "tokens", "ts": "2026-06-05T09:53:04Z", "tokens": 171217, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:55:59Z", "tokens": 97877, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T09:56:21Z","epoch":1780653381.953596047,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T09:56:27Z","phase":"linux-gfx90a","seconds":0.004,"exit":127,"cmd":"compile -- bash -c HIP_VISIBLE_DEVICES=0 cmake -S projects/metaeuk/src -B projects/metaeuk/build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DENABLE_CUDA=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ && HIP_VISIBLE_DEVICES=0 cmake --build projects/metaeuk/build -j16"}
+{"kind":"phase","ts":"2026-06-05T10:07:57Z","phase":"compile","seconds":683.285,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 cmake -S /var/lib/jenkins/moat/projects/metaeuk/src -B /var/lib/jenkins/moat/projects/metaeuk/build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DENABLE_CUDA=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ && HIP_VISIBLE_DEVICES=0 cmake --build /var/lib/jenkins/moat/projects/metaeuk/build -j16"}
+{"kind":"phase","ts":"2026-06-05T10:08:57Z","phase":"test","seconds":0.008,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ./run.sh ../../build/src/metaeuk 2>&1 | tee /tmp/metaeuk_cpu_test.log"}
+{"kind":"phase","ts":"2026-06-05T10:09:24Z","phase":"test","seconds":22.514,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/metaeuk/src/tests && HIP_VISIBLE_DEVICES=0 ./run.sh /var/lib/jenkins/moat/projects/metaeuk/build/src/metaeuk 2>&1 | tee /tmp/metaeuk_cpu_test.log"}
+{"kind":"phase","ts":"2026-06-05T10:10:02Z","phase":"test","seconds":11.526,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /tmp/metaeuk_gpu_test.sh /var/lib/jenkins/moat/projects/metaeuk/build/src/metaeuk 2>&1 | tee /tmp/metaeuk_gpu_test.log"}
+{"kind":"session","ts":"2026-06-05T10:12:10Z","epoch":1780654330.126220362,"event":"end","platform":"linux-gfx90a"}
