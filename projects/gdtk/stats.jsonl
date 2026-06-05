@@ -1,0 +1,2 @@
+{"kind": "tokens", "ts": "2026-06-05T08:58:41Z", "tokens": 101237, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T09:00:38Z","phase":"compile","seconds":0.251,"exit":0,"cmd":"make HIP=1 HIP_ARCH=gfx90a"}
