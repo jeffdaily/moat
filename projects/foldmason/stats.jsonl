@@ -1,0 +1,4 @@
+{"kind": "tokens", "ts": "2026-06-05T01:21:52Z", "tokens": 91481, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T06:12:24Z","phase":"compile","seconds":0.136,"exit":1,"cmd":"cmake --build build --target foldmason -j16"}
+{"kind":"phase","ts":"2026-06-05T06:20:44Z","phase":"compile","seconds":497.139,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/foldmason/build --target foldmason -j16"}
+{"kind":"phase","ts":"2026-06-05T06:22:01Z","phase":"test","seconds":0.005,"exit":127,"cmd":"bash regression/run_regression.sh /var/lib/jenkins/moat/projects/foldmason/build/src/foldmason /var/lib/jenkins/moat/projects/foldmason/validation/regression_tmp"}
