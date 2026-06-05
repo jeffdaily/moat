@@ -1148,11 +1148,11 @@
     "reason": "cant-port"
   },
   "nvidia/cutlass": {
-    "decided": "2026-05-29T22:55:39Z",
+    "decided": "2026-06-05T08:06:38Z",
     "disposition": "skip",
-    "full_name": "NVIDIA/cutlass",
-    "note": "NVIDIA tensor-core arch specific; ROCm analog is Composable Kernel",
-    "reason": "cant-port"
+    "full_name": "nvidia/cutlass",
+    "note": "AMD equivalent is Composable Kernel (CK) for GEMM/attention/conv kernels, rocWMMA for tensor core abstractions, and FlyDSL for CuTe-style Python DSL. CUTLASS is deeply tied to NVIDIA PTX inline assembly (~3100 asm blocks) and tensor core ISA (mma.sync, ldmatrix) which have no HIP equivalent. See projects/cutlass/plan.md for full assessment.",
+    "reason": "already-supported"
   },
   "oneapi-src/oneapi-samples": {
     "decided": "2026-05-29T23:13:18Z",
