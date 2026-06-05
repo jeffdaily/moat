@@ -165,3 +165,57 @@ Re-reviewing DEM-Engine after the porter addressed three issues from the first r
 Required fixes:
 1. Remove or fix the `ProgramCache::clear()` function in JitKernel_cuda.cpp (lines 142-145) -- either delete the body or add the missing members.
 2. Replace the `__AMDGCN_WAVEFRONT_SIZE__` logic in Defines.h with runtime detection in JitHelper::buildProgram, querying `hipGetDeviceProperties().warpSize` at JIT compile time and substituting the actual device's warp size.
+
+## Fixes Applied 2026-06-05 (Second Round)
+
+### 1. CUDA ProgramCache::clear() (JitKernel_cuda.cpp)
+
+Made `ProgramCache::clear()` a no-op (same as HIP backend):
+```cpp
+void ProgramCache::clear() {
+    // No-op: jitify::JitCache doesn't expose a clear method
+}
+```
+The previous implementation referenced non-existent `impl_->mutex` and `impl_->programs` members. Since jitify::JitCache doesn't expose a clear method anyway, a no-op is the correct behavior.
+
+### 2. Multi-arch warp size (Defines.h + APIPrivate.cpp)
+
+Two-part fix for correct warp size on both wave32 (gfx1100) and wave64 (gfx90a) architectures:
+
+**Defines.h** - Use `__GFX*__` guards for device code per PORTING_GUIDE:
+```cpp
+#if defined(__HIP_DEVICE_COMPILE__)
+    #if defined(__GFX8__) || defined(__GFX9__)
+        #define DEME_WARP_SIZE 64  // CDNA/GCN: wave64
+    #elif defined(__GFX10__) || defined(__GFX11__) || defined(__GFX12__)
+        #define DEME_WARP_SIZE 32  // RDNA: wave32
+    #else
+        #define DEME_WARP_SIZE 64  // Unknown AMD: assume wave64
+    #endif
+#elif defined(__HIP_PLATFORM_AMD__)
+    #define DEME_WARP_SIZE 32  // Host code: safe minimum
+#else
+    #define DEME_WARP_SIZE 32  // CUDA
+#endif
+```
+
+**APIPrivate.cpp** - Query runtime device warp size for JIT substitution:
+```cpp
+int runtimeWarpSize = DEME_CUDA_WARP_SIZE;  // Compile-time fallback
+#if defined(USE_HIP)
+{
+    int dev = 0;
+    cudaDeviceProp prop;
+    if (cudaGetDevice(&dev) == cudaSuccess && cudaGetDeviceProperties(&prop, dev) == cudaSuccess) {
+        runtimeWarpSize = prop.warpSize;  // 64 on gfx90a, 32 on gfx1100
+    }
+}
+#endif
+clumpComponentOffset_t nActiveLoadingThreads = static_cast<clumpComponentOffset_t>(
+    DEME_MIN(DEME_MIN(runtimeWarpSize, DEME_KT_CD_NTHREADS_PER_BLOCK), DEME_NUM_BODIES_PER_BLOCK));
+strMap["_nActiveLoadingThreads_"] = std::to_string(nActiveLoadingThreads);
+```
+
+This ensures `_nActiveLoadingThreads_` is substituted with the correct device-specific warp size at JIT compile time, rather than a compile-time constant that may be wrong for the runtime device.
+
+Build verified: all demos compile successfully.

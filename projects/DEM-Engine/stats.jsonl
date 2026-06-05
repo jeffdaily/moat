@@ -5,3 +5,7 @@
 {"kind": "tokens", "ts": "2026-06-05T14:42:04Z", "tokens": 75786, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T14:45:25Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind": "tokens", "ts": "2026-06-05T14:48:48Z", "tokens": 70860, "source": "porter (review fixes)"}
+{"kind": "tokens", "ts": "2026-06-05T14:52:03Z", "tokens": 74183, "source": "reviewer (re-review)"}
+{"kind":"phase","ts":"2026-06-05T14:54:20Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T14:55:57Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T14:56:07Z","phase":"compile","seconds":0.261,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc)"}
