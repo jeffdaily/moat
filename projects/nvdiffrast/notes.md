@@ -1,5 +1,37 @@
 # nvdiffrast notes
 
+## Validation 2026-06-05 (linux-gfx1100)
+
+### GPU: AMD Radeon Pro W7800 (gfx1100)
+### Commit: cbf2e7f1c15ddb64cc257e697140c42c8272fc1c
+
+### Build
+```bash
+cd /var/lib/jenkins/moat/projects/nvdiffrast/src
+HIP_VISIBLE_DEVICES=1 pip install --no-build-isolation -e .
+```
+Build: PASS
+
+### Test Results
+All core GPU operations validated successfully:
+
+**Comprehensive operator test:**
+- `dr.RasterizeCudaContext()`: PASS (context creation)
+- `dr.rasterize()`: PASS (forward pass, output shape [1,256,256,4])
+- `dr.interpolate()`: PASS (forward pass, output shape [1,256,256,3])
+- Backward gradients: PASS (pos.grad and attr.grad computed correctly)
+- `dr.antialias()`: PASS (edge antialiasing, output shape [1,256,256,3])
+- `dr.texture()`: PASS (linear filtering, output shape [1,256,256,3])
+
+**Sample scripts:**
+- `samples/torch/triangle.py`: PASS (renders RGB triangle to tri.png)
+- `samples/torch/earth.py --max-iter 10`: PASS (texture fitting converges, psnr=11.30)
+
+### Verdict: PASS
+All core rasterization, interpolation, texture sampling, antialiasing, and gradient computation operations work correctly on gfx1100 (wave32). The port is production-ready for RDNA3 and later wave32-capable AMD GPUs.
+
+---
+
 ## Port Completed 2026-06-05 (linux-gfx1100)
 
 ### Status: ported

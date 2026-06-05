@@ -14,3 +14,9 @@
 {"kind": "tokens", "ts": "2026-06-05T14:10:59Z", "tokens": 144261, "source": "porter (wave64 attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T14:33:47Z", "tokens": 138710, "source": "porter (shuffle scans attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T16:36:06Z", "tokens": 64138, "source": "porter (gfx1100)"}
+{"kind": "tokens", "ts": "2026-06-05T16:48:10Z", "tokens": 77434, "source": "reviewer (gfx1100)"}
+{"kind":"session","ts":"2026-06-05T16:49:26Z","epoch":1780678166.524063800,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T16:49:55Z","phase":"compile","seconds":0.306,"exit":1,"cmd":"pip install --no-build-isolation -v -e ."}
+{"kind":"phase","ts":"2026-06-05T16:51:40Z","phase":"compile","seconds":101.964,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && pip install --no-build-isolation -v -e ."}
+{"kind":"phase","ts":"2026-06-05T16:51:59Z","phase":"test","seconds":1.926,"exit":0,"cmd":"python3 -c import nvdiffrast.torch as dr; ctx = dr.RasterizeCudaContext(); print('RasterizeCudaContext created successfully'); print(f'Context: {ctx}')"}
+{"kind":"session","ts":"2026-06-05T16:55:01Z","epoch":1780678501.769866264,"event":"end","platform":"linux-gfx1100"}
