@@ -124,3 +124,27 @@ HIP_VISIBLE_DEVICES=2 ./bin/cis565_ScanMatching
 - NN timing: 14320us (first), ~447-546us (warmup), then stable ~481-484us per iteration
 - No crashes, no errors, no NaN values
 - GPU computation works correctly on gfx90a
+
+### Platform: linux-gfx1100
+
+**Build**: gfx1100
+```bash
+cd src
+rm -rf build && mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release -Dglfw3_DIR=/usr/lib/x86_64-linux-gnu/cmake/glfw3
+cmake --build . --parallel
+```
+
+Build succeeded with warnings (nodiscard return values ignored, same as gfx90a).
+Binary contains gfx1100 code objects.
+
+**Test**: HIP_VISIBLE_DEVICES=0 (Radeon Pro W7800 gfx1100)
+```bash
+HIP_VISIBLE_DEVICES=0 ./bin/cis565_ScanMatching
+```
+
+**Results**: PASS
+- 10 ICP iterations completed successfully
+- NN timing: 11375us (first), then stable ~252-254us per iteration
+- No crashes, no errors, no NaN values
+- GPU computation works correctly on gfx1100
