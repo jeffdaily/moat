@@ -7,7 +7,7 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-05T19:32:44Z",
+  "updated_at": "2026-06-05T19:50:30Z",
   "head_sha": "b623ccc",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4a860c8fe1b57b0ebfbbf7a87b65f4528fc6dc41",
+      "validated_sha": "b623ccc",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-05-30T07:35:00Z",
-      "updated_at": "2026-06-05T19:08:19Z",
+      "completed_at": "2026-06-05T19:50:30Z",
+      "updated_at": "2026-06-05T19:50:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-05-30T07:18:00Z",
         "last_session_at": "2026-05-30T07:35:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "b623ccc",
+        "method": "binary-equiv",
+        "detail": "GPU code objects and exported symbols byte-for-byte identical; change guards processthreadsapi.h with !__HIP_DEVICE_COMPILE__ on Windows only, inert on Linux (confirmed via codeobj_diff.py)",
+        "at": "2026-06-05T19:50:30Z"
+      }
     },
     "windows-gfx1101": {
       "state": "completed",
