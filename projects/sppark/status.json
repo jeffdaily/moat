@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-05T14:39:01Z",
+  "updated_at": "2026-06-05T14:56:51Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "MSM blocked: hipcc device pass parses host functions that call __device__-only mont_t operators. Would require making mont_t __host__ __device__ (CPU field arithmetic) or code restructuring. NTT works (7/7 fields).",
+      "blocked_reason": "MSM blocked: __host__ __device__ stub approach FAILED (runtime crash). hipcc dual-pass compilation fundamentally incompatible with sppark's nvcc-style type separation. NTT works (7/7 fields). See notes.md for detailed analysis.",
       "validated_sha": null,
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T14:39:01Z",
+      "updated_at": "2026-06-05T14:56:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
