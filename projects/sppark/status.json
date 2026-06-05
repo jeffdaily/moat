@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-04T22:26:26Z",
+  "updated_at": "2026-06-05T14:16:03Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "upstream HIP support is partial: NTT works (7/7 fields pass), MSM broken (mont_t.hip is 25% of mont_t.cuh, missing fp2 HIP device code). completing MSM HIP would require ~900 lines of new code. recommend skip as already-supported-partial or report upstream.",
+      "blocked_reason": "MSM HIP port blocked by hipcc dual-pass compilation: __device__ functions fail in host pass. mont_t.hip extended (+500 lines), fp2 files patched, but sort.cuh/pippenger.cuh cannot compile. NTT still works.",
       "validated_sha": null,
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,
-      "updated_at": "2026-06-04T22:26:26Z",
+      "updated_at": "2026-06-05T14:16:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
