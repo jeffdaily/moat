@@ -91,3 +91,15 @@ However, **residual jargon found in code**:
 - `internal/cuda_to_hip.h:7`: Comment says "Strategy A port: keep all source files in CUDA spelling; this header handles the translation to HIP." This is upstream-visible code and must not contain MOAT vocabulary.
 
 Porter must amend the file comment to remove "Strategy A port" and describe the approach in plain language (e.g., "Compatibility header port: sources remain in CUDA spelling; this header handles the translation to HIP.").
+
+## Review 2026-06-05 (re-review #2)
+
+Verified fix at b114e2dcec9f9d35165b2f9355b13016c648fbc0:
+
+- `internal/cuda_to_hip.h:7`: Now reads "Compatibility header port: sources remain in CUDA spelling; this header handles the translation to HIP." -- MOAT jargon removed.
+
+Full jargon search across all source files: PASS (no Strategy A/B, lead, follower, head_sha, validated_sha, moat-port, curated commit).
+
+Commit messages: PASS (both db25223 and b114e2d use plain language, no noreply trailer).
+
+Ready for validation.
