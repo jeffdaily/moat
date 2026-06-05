@@ -1,0 +1,4 @@
+{"kind": "tokens", "ts": "2026-06-05T09:49:35Z", "tokens": 66344, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T09:50:28Z","phase":"compile","seconds":0.350,"exit":1,"cmd":"pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-05T09:52:25Z","phase":"compile","seconds":113.814,"exit":0,"cmd":"pip install --no-build-isolation -e /var/lib/jenkins/moat/projects/torch-linear-assignment/src"}
+{"kind":"phase","ts":"2026-06-05T09:52:39Z","phase":"test","seconds":3.420,"exit":1,"cmd":"pytest /var/lib/jenkins/moat/projects/torch-linear-assignment/src/tests/ -v"}
