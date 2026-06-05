@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:16:31Z",
-  "updated_at": "2026-06-05T06:35:12Z",
+  "updated_at": "2026-06-05T15:39:25Z",
   "head_sha": "e7f5b62d0ddcfc088ca20e25eda507458425bc10",
   "depends_on": [],
   "platforms": {
@@ -38,7 +38,7 @@
       "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "b58f888d8c7b7d45e75ee32e9ea3d1f4b5ca7b4e",
       "started_at": null,
       "completed_at": null,
       "updated_at": "2026-06-05T06:35:12Z",

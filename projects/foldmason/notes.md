@@ -95,3 +95,52 @@ Bundled regression tests (run_easymsa, run_structuremsa, run_msa2lddt) show mino
 ### Summary
 
 GPU search (libmarv ungappedprefilter) works correctly on gfx90a with deterministic results. Non-GPU tests do not regress beyond expected MSA algorithm variance. The port reuses the validated foldseek HIP port and inherits its correctness.
+
+## Validation 2026-06-05 (linux-gfx1100, RDNA3 gfx1100)
+
+**Verdict: PASS**
+
+Validated at commit b58f888d8c7b7d45e75ee32e9ea3d1f4b5ca7b4e.
+
+### Build
+
+Required CMake 4.x compatibility fix: CMP0060 OLD policy no longer supported, now conditionally set only for CMake < 4.0.0.
+
+```bash
+HIP_VISIBLE_DEVICES=1 cmake -S projects/foldmason/src -B projects/foldmason/build-gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+HIP_VISIBLE_DEVICES=1 cmake --build projects/foldmason/build-gfx1100 --target foldmason -j16
+```
+
+Build succeeded. libmarv.so contains gfx1100 device code objects.
+
+### GPU search validation
+
+**CPU reference:**
+```bash
+foldmason search exDB exDB aln_cpu tmp_cpu --gpu 0 -e 10
+```
+Result: 837 alignments
+
+**GPU test:**
+```bash
+HIP_VISIBLE_DEVICES=1 foldmason search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10
+```
+Result: 874 alignments
+
+**Correctness:** All 837 CPU hits present in GPU results with byte-identical alignment scores (GPU is a strict superset with higher sensitivity, matching gfx90a behavior).
+
+**Determinism:** Two independent GPU runs produce identical results (when sorted).
+
+### Non-GPU regression
+
+Bundled regression tests (run_easymsa, run_structuremsa, run_msa2lddt) show same minor differences in MSA gap placements as gfx90a. These are CPU-based MSA algorithms (not GPU code paths), and the differences are expected for algorithms with multiple valid alignments.
+
+### Summary
+
+GPU search works correctly on gfx1100 with deterministic results matching gfx90a behavior. The wave32 architecture requires no code changes; the foldseek HIP port is wave-agnostic as designed.
