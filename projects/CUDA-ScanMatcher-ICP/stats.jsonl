@@ -1,2 +1,3 @@
 {"kind": "tokens", "ts": "2026-06-05T06:39:43Z", "tokens": 102117, "source": "planner"}
 {"kind":"phase","ts":"2026-06-05T06:41:54Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake --build . --parallel"}
+{"kind": "tokens", "ts": "2026-06-05T06:57:54Z", "tokens": 189585, "source": "porter"}

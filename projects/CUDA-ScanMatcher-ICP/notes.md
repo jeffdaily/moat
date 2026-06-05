@@ -42,3 +42,31 @@ HIP_VISIBLE_DEVICES=2 ./bin/cis565_ScanMatching
    on HIP; ported to modern hipGraphicsGLRegisterBuffer/MapResources API
 5. hip::host CMake target adds USE_PROF_API=1 which breaks hip_prof_str.h under plain gcc;
    compile all sources as HIP to avoid
+
+## Review 2026-06-05
+
+### Port Correctness
+
+1. **main.cpp:80** -- Direct use of `hipSetDevice(gpuDevice)` instead of going through the compat header. This breaks the CUDA build because `hipSetDevice` is not defined without HIP headers. Should use `cudaSetDevice` and add the mapping to cuda_to_hip.h.
+
+2. **main.cpp:133-139** -- Mixed HIP/CUDA symbols in the same code block: uses `cudaGraphicsGLRegisterBuffer` (compat-mapped) but directly uses `hipError_t`, `hipSuccess`, and `hipGetErrorString` without mappings. These HIP-specific symbols will cause CUDA build failures. The error handling code should use the CUDA spellings (`cudaError_t`, `cudaSuccess`, `cudaGetErrorString`) which the compat header already maps.
+
+### Minimal Footprint
+
+3. **CMakeLists.txt:112** -- All sources including host `.cpp` files are marked as `LANGUAGE HIP`. Per PORTING_GUIDE Strategy A, only `.cu` files should be marked HIP; host C++ should remain untouched by the HIP toolchain. The current approach compiles main.cpp, glslUtility.cpp, and utilityCore.cpp with hipcc, which is unnecessary and deviates from the minimal-footprint principle.
+
+### Backward Compatibility (upstream)
+
+4. **The CUDA build is broken** -- Due to issues #1 and #2 above, building with `USE_HIP=OFF` will fail. The compat header should map:
+   - `cudaSetDevice` -> `hipSetDevice`
+   - And code should use CUDA spellings consistently, letting the compat header do the translation.
+
+### Recommendation
+
+**Request Changes**
+
+The port breaks the CUDA build path due to direct use of HIP-specific symbols in main.cpp. All four issues must be fixed:
+- Add `cudaSetDevice` mapping to cuda_to_hip.h
+- Replace `hipSetDevice` with `cudaSetDevice` in main.cpp:80
+- Replace `hipError_t`/`hipSuccess`/`hipGetErrorString` with `cudaError_t`/`cudaSuccess`/`cudaGetErrorString` in main.cpp:133-139
+- Consider marking only `.cu` files as LANGUAGE HIP (minor, but per Strategy A guidelines)
