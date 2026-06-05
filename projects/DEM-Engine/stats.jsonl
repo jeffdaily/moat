@@ -10,3 +10,29 @@
 {"kind":"phase","ts":"2026-06-05T14:55:57Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T14:56:07Z","phase":"compile","seconds":0.261,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc)"}
 {"kind": "tokens", "ts": "2026-06-05T14:58:09Z", "tokens": 70601, "source": "porter (re-review fixes)"}
+{"kind": "tokens", "ts": "2026-06-05T15:00:58Z", "tokens": 59107, "source": "reviewer (final)"}
+{"kind":"phase","ts":"2026-06-05T15:02:36Z","phase":"compile","seconds":69.557,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T15:02:52Z","phase":"test","seconds":0.006,"exit":127,"cmd":"timeout 60 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:02:58Z","phase":"test","seconds":2.496,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 60 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:04:06Z","phase":"compile","seconds":4.616,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T15:04:12Z","phase":"test","seconds":2.494,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 60 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:04:51Z","phase":"compile","seconds":4.614,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T15:04:57Z","phase":"test","seconds":2.348,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 120 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:05:21Z","phase":"compile","seconds":4.598,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:05:27Z","phase":"test","seconds":2.529,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 120 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:07:10Z","phase":"compile","seconds":61.647,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:08:49Z","phase":"compile","seconds":66.128,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:08:56Z","phase":"test","seconds":3.783,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 120 ./bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:09:33Z","phase":"compile","seconds":4.605,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:09:40Z","phase":"test","seconds":3.805,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 120 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:10:32Z","phase":"compile","seconds":19.060,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:10:39Z","phase":"test","seconds":2.972,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 180 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:11:03Z","phase":"compile","seconds":4.626,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:11:10Z","phase":"test","seconds":3.086,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 180 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:11:43Z","phase":"compile","seconds":12.246,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-05T15:14:11Z","phase":"compile","seconds":65.430,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -40"}
+{"kind":"phase","ts":"2026-06-05T15:14:20Z","phase":"test","seconds":4.182,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:15:46Z","phase":"compile","seconds":67.436,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && cmake --build . -j$(nproc) 2>&1 | tail -20"}
+{"kind":"phase","ts":"2026-06-05T15:15:54Z","phase":"test","seconds":3.641,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:16:21Z","phase":"test","seconds":10.099,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
+{"kind":"phase","ts":"2026-06-05T15:18:15Z","phase":"test","seconds":14.127,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
