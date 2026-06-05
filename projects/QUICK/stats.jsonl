@@ -1,1 +1,12 @@
 {"kind": "tokens", "ts": "2026-06-05T00:11:04Z", "tokens": 87100, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:13:36Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -j16"}
+{"kind":"phase","ts":"2026-06-05T00:15:41Z","phase":"compile","seconds":118.058,"exit":2,"cmd":"make -C /var/lib/jenkins/moat/projects/QUICK/src/build -j16"}
+{"kind":"phase","ts":"2026-06-05T00:18:12Z","phase":"compile","seconds":110.665,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/projects/QUICK/src/build -j16"}
+{"kind":"phase","ts":"2026-06-05T00:19:05Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:19:11Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash ./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:19:14Z","phase":"test","seconds":0.041,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:19:27Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:19:35Z","phase":"test","seconds":0.004,"exit":127,"cmd":"bash runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:19:39Z","phase":"test","seconds":0.130,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:48:33Z","phase":"test","seconds":1726.025,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:49:49Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./runtest --hip --ene --nolog"}
