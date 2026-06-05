@@ -62,3 +62,32 @@ No blocking issues found.
 
 ### Recommendation
 **Approve** -- ready for validator to run GPU tests.
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a
+**GPU arch**: gfx90a (HIP_VISIBLE_DEVICES=2)
+**Validated commit**: 0611e58c81772564f732d0a87c80570e8ec98619
+
+### Build Commands
+```bash
+cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src
+git submodule update --init --recursive
+cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON
+cmake --build build -j8
+```
+
+### Test Commands
+```bash
+HIP_VISIBLE_DEVICES=2 ./build/tests/tests
+```
+
+### Test Results
+**PASS**: 44/44 tests passed on real GPU
+
+- BAD descriptor tests: 22/22 PASS
+- HashSIFT descriptor tests: 22/22 PASS
+
+Total runtime: 26270 ms
+
+All tests pass on gfx90a. Wave64 shuffle divergence fixes confirmed working correctly on AMD hardware.

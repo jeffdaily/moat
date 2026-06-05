@@ -18,3 +18,8 @@
 {"kind":"phase","ts":"2026-06-05T09:15:57Z","phase":"compile","seconds":0.008,"exit":127,"cmd":"timeout 300 bash -c HIP_VISIBLE_DEVICES=2 ./build/tests/tests 2>&1"}
 {"kind":"phase","ts":"2026-06-05T09:16:27Z","phase":"test","seconds":26.246,"exit":0,"cmd":"timeout 300 bash -c HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/cuda-efficient-features/src/build/tests/tests 2>&1"}
 {"kind": "tokens", "ts": "2026-06-05T09:21:02Z", "tokens": 176517, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:23:31Z", "tokens": 98479, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T09:23:52Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"bash -c cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON && cmake --build build -j8"}
+{"kind":"phase","ts":"2026-06-05T09:23:59Z","phase":"compile","seconds":3.444,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON && cmake --build build -j8"}
+{"kind":"phase","ts":"2026-06-05T09:24:41Z","phase":"compile","seconds":17.698,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON && cmake --build build -j8"}
+{"kind":"phase","ts":"2026-06-05T09:25:13Z","phase":"test","seconds":26.470,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src && HIP_VISIBLE_DEVICES=2 ./build/tests/tests"}
