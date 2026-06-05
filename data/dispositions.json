@@ -1077,6 +1077,13 @@
     "note": "Same org as faster-gaussian-splatting; GS framework already being planned",
     "reason": "duplicate"
   },
+  "nickkarpowicz/lightwaveexplorer": {
+    "decided": "2026-06-05T07:21:52Z",
+    "disposition": "skip",
+    "full_name": "NickKarpowicz/LightwaveExplorer",
+    "note": "AMD GPU support exists via SYCL/AMDGCN backend using Intel DPC++ compiler. Documented in README lines 106-116. Uses rocFFT via oneMath. Not HIP-native but functionally targets AMD GPUs.",
+    "reason": "already-supported"
+  },
   "ninazero/tron": {
     "decided": "2026-05-30T00:45:18Z",
     "disposition": "skip",
