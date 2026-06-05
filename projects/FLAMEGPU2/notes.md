@@ -101,3 +101,15 @@ The CMake changes are well-structured:
 ### Recommendation
 
 **Request Changes** -- the hiprand typo is a confirmed defect that must be fixed before validation.
+
+## Porter fixes (2026-06-05)
+
+Addressed both required and recommended fixes from review:
+
+1. **hiprand typo fix**: Changed `hipandStateMRG32k3a_t` to `hiprandStateMRG32k3a_t` in `include/flamegpu/detail/curand.cuh:26`
+
+2. **Rule-of-five fix**: Added deleted copy/move operations to CUDAEventTimer in `include/flamegpu/detail/CUDAEventTimer.cuh` to prevent accidental double-destroy of GPU event handles
+
+Commit: e1bb7068 "[ROCm] Fix hiprand typo and add rule-of-five to CUDAEventTimer"
+
+Build verified with `cmake --build build --target flamegpu boids_bruteforce tests -j$(nproc)`
