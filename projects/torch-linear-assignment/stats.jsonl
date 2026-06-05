@@ -8,3 +8,5 @@
 {"kind":"phase","ts":"2026-06-05T09:57:27Z","phase":"linux-gfx90a","seconds":0.004,"exit":127,"cmd":"build -- pip install --no-build-isolation -e ."}
 {"kind":"phase","ts":"2026-06-05T09:57:32Z","phase":"compile","seconds":0.347,"exit":1,"cmd":"pip install --no-build-isolation -e ."}
 {"kind":"session","ts":"2026-06-05T10:00:19Z","epoch":1780653619.915448622,"event":"end","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T15:47:09Z","phase":"compile","seconds":85.585,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/torch-linear-assignment/src && HIP_VISIBLE_DEVICES=3 pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-05T15:47:23Z","phase":"test","seconds":2.836,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/torch-linear-assignment/src && HIP_VISIBLE_DEVICES=3 pytest tests/ -v"}
