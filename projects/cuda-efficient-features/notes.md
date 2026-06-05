@@ -2,7 +2,7 @@
 
 ## Port Status (2026-06-05)
 
-Port in progress. Compiles and runs on GPU but tests hang (likely kernel execution issue).
+Port complete. All 44 tests pass on linux-gfx90a.
 
 ### What Works
 - HIP compilation of all .cu files (Strategy A: cuda_to_hip.h compat header)
@@ -12,21 +12,20 @@ Port in progress. Compiles and runs on GPU but tests hang (likely kernel executi
 - Custom HIP-native GpuMat class that replaces OpenCV's GpuMat for memory management
 - HIP-native Stream and HostMem wrappers
 - All 20 source files compile successfully
+- BAD descriptor tests (22 cases): PASS
+- HashSIFT descriptor tests (22 cases): PASS
 
-### What Blocks
+### Key Fixes (from previous blocked state)
 
-Tests hang with GPU at 100% utilization. This indicates a kernel stuck in an infinite loop or deadlock. Root cause investigation needed:
-- Possible warp size assumptions (WARP_SIZE=32 vs wave64 on gfx90a) - reviewed and looks OK
-- Possible atomic operation or synchronization issues
-- Need to isolate which kernel is hanging
+Two root causes for test hangs and incorrect results:
 
-### Progress Made (from previous blocked state)
+1. **Wave64 shuffle divergence**: AMD gfx90a uses 64-lane waves, and `__shfl_xor_sync` requires ALL threads in the wave to participate. CUDA's 32-lane warp allows threads to skip shuffles via early return, but wave64 hangs if any lanes exit before the shuffle. Fixed by moving shuffles outside conditionals so all threads participate, with inactive threads contributing zero and ignoring the result.
 
-The OpenCV CUDA runtime dependency has been resolved by creating a complete HIP-native GpuMat replacement:
-- `hip_compat/opencv2/core/cuda.hpp` - Full GpuMat class with upload/download/create/setTo/copyTo using HIP runtime
-- `hip_compat/opencv2/core/cuda_stream_accessor.hpp` - StreamAccessor shim for HIP
-- Modified all source files to use HIP-native types under USE_HIP guard
-- Converted InputArray/OutputArray handling to avoid OpenCV CUDA backend calls
+2. **Column vector stride**: GpuMat::create aligned step to 256 bytes even for single-column matrices. This broke array indexing when kernel code treats keypoints as a flat float4 array (keypoints[i]) rather than using row-indexed access. Now single-column matrices use natural stride.
+
+Affected kernels:
+- computeBADKernel: Move keypoint load inside bounds check to avoid OOB read, move shuffles outside the kpIdx < nkeypoints guard
+- normalizeDescriptors (HashSIFT): Keep computation under threadIdx.y == 0 guard, but all threads participate in the reduction shuffle
 
 ### Build Commands
 
@@ -41,9 +40,3 @@ cmake --build build -j8
 ```bash
 HIP_VISIBLE_DEVICES=2 ./build/tests/tests
 ```
-
-### Next Steps
-
-1. Debug kernel hang: add prints before/after each kernel launch to identify which kernel is stuck
-2. Check for race conditions in shared memory usage
-3. Verify PtrStepSz conversions are correct for all kernel arguments

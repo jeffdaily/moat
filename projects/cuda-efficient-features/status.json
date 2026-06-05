@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-05T08:53:32Z",
-  "head_sha": "406348b",
+  "updated_at": "2026-06-05T09:20:18Z",
+  "head_sha": "0611e58",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "ported",
       "blocked": true,
       "blocked_reason": "Kernel execution hangs (GPU 100% utilization). Build succeeds with HIP-native GpuMat replacement; tests hang. Need to debug which kernel is stuck.",
       "validated_sha": null,
       "started_at": "2026-06-05T08:23:04Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T08:37:02Z",
+      "updated_at": "2026-06-05T09:20:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
