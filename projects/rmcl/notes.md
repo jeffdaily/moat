@@ -822,3 +822,100 @@ PASS on gfx90a. No regression. Matches prior gfx90a validation at 3d098d5.
 Stage 2 (HIPRT Pinhole backend): VALIDATED on gfx90a (db7f064). The HIPRT_PATH
 environment variable must be set to the HIPRT SDK root for JIT kernel source
 discovery. With this set, BVH build and ray tracing work correctly.
+
+## Validation 2026-06-05 (linux-gfx90a Stage 2 HIPRT All Simulators) -- PASS
+
+Fork: jeffdaily/rmagine moat-port HEAD 4223818 (Stage 2 complete: all 4 HIPRT
+sensor simulators). Build: agent_space/rmcl_stage2_validation (fresh). GPU: AMD
+Instinct MI250X / MI250, gfx90a:sramecc+:xnack-, ROCm 7.2.1, GCD 1
+(HIP_VISIBLE_DEVICES=1).
+
+### Build (PASSED)
+
+```
+export HIP_VISIBLE_DEVICES=1
+export HIPRT_PATH=/var/lib/jenkins/moat/third_party/HIPRT
+export LD_LIBRARY_PATH=$HIPRT_PATH/dist/bin/Release:$LD_LIBRARY_PATH
+cmake -S /var/lib/jenkins/moat/projects/rmcl/src \
+      -B /var/lib/jenkins/moat/agent_space/rmcl_stage2_validation \
+      -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
+      -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON \
+      -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON \
+      -DRMAGINE_BUILD_TOOLS=OFF
+cmake --build /var/lib/jenkins/moat/agent_space/rmcl_stage2_validation -j
+```
+
+84/84 targets built cleanly (includes rmagine_hiprt library). Only pre-existing
+nodiscard warnings on hipFree/hipMemcpy/hipMemset (cosmetic).
+
+### Stage 1 rmagine_cuda tests (PASSED -- NO REGRESSION)
+
+```
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_stage2_validation \
+      --output-on-failure -R '^cuda_'
+```
+
+7/7 PASS (2.21 s):
+- cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd,
+  cuda_math_statistics, cuda_math_reduction, cuda_math_reduction_correctness
+
+### Stage 1 core tests (PASSED -- NO REGRESSION)
+
+```
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_stage2_validation \
+      --output-on-failure -R '^core_'
+```
+
+12/12 PASS (3.06 s):
+- core_math, core_memory, core_memory_slicing, core_quaternion, core_math_svd,
+  core_math_statistics, core_math_cov_transform, core_math_gaussians,
+  core_math_matrix_slicing, core_math_reduction, core_math_cholesky,
+  core_math_lie
+
+### Stage 2 HIPRT all simulators test (PASSED)
+
+Test harness: agent_space/rmcl_hiprt_test/test_all_simulators (built against
+rmagine_stage2_validation).
+
+```
+export HIP_VISIBLE_DEVICES=1
+export HIPRT_PATH=/var/lib/jenkins/moat/third_party/HIPRT
+export LD_LIBRARY_PATH=$HIPRT_PATH/dist/bin/Release:$LD_LIBRARY_PATH
+/var/lib/jenkins/moat/agent_space/rmcl_hiprt_test/build_stage2/test_all_simulators
+```
+
+All 4 HIPRT simulators PASSED (5/5 test cases):
+1. **PinholeSimulatorHiprt**: 25/64 hits, center range=2.0 (exact)
+2. **SphericalSimulatorHiprt**: 0/25 hits (rays point +X, not at quad, expected)
+3. **SphericalSimulatorHiprt (rotated pose)**: 25/25 hits at phi=pi/2, center
+   range=2.0 (exact)
+4. **O1DnSimulatorHiprt**: 4/4 hits, avg range=2.08 (correct given ray angles)
+5. **OnDnSimulatorHiprt**: 4/4 hits, avg range=2.0 (exact, all rays point +Z)
+
+### GPU dispatch confirmed (AMD_LOG_LEVEL=3)
+
+Trace kernels confirmed dispatched on `amdgcn-amd-amdhsa--gfx90a:sramecc+:xnack-`:
+- `pinhole_trace_kernel`
+- `spherical_trace_kernel`
+- `o1dn_trace_kernel`
+- `ondn_trace_kernel`
+
+Plus BVH build kernels:
+- `InitGeomData`, `ComputeCentroidBox_TriangleMesh`,
+  `ComputeMortonCodes_TriangleMesh`, `EmitTopologyAndFitBounds_TriangleMesh`,
+  `Collapse_TrianglePairNode_ScratchNode`, `CompactTasks`,
+  `PackLeaves_TriangleMesh_TrianglePairNode`
+
+### Verdict
+
+Stage 1 (rmagine_cuda HIP compute backend): VALIDATED. 7/7 cuda_ tests + 12/12
+core_ tests PASS on gfx90a. No regression from prior validations.
+
+Stage 2 (rmagine_hiprt HIPRT ray-tracing backend): VALIDATED on gfx90a (4223818).
+All four sensor simulators (Pinhole, Spherical, O1Dn, OnDn) trace rays correctly
+against test geometry. BVH build and ray tracing kernels execute successfully on
+AMD Instinct MI250X gfx90a. HIPRT_PATH environment variable required for JIT
+kernel source discovery (Orochi subsystem).
