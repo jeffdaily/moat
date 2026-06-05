@@ -6,3 +6,4 @@
 {"kind":"phase","ts":"2026-06-05T00:01:46Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash test/testmcx.sh"}
 {"kind":"phase","ts":"2026-06-05T00:01:54Z","phase":"test","seconds":0.007,"exit":100,"cmd":"/var/lib/jenkins/moat/projects/mcx/src/test/testmcx.sh"}
 {"kind":"phase","ts":"2026-06-05T00:01:58Z","phase":"test","seconds":0.005,"exit":127,"cmd":"bash -c ./test/testmcx.sh"}
+{"kind": "tokens", "ts": "2026-06-05T00:06:36Z", "tokens": 184692, "source": "porter"}
