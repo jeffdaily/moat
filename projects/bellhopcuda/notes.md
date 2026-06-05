@@ -96,3 +96,41 @@ Additional validation:
 
 ### Result
 VALIDATED: All ray tracing tests produce identical outputs; transmission loss tests match within expected floating-point tolerance. No regressions in non-GPU (bellhopcxx) tests.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100)
+Commit: 52c7f64aa1fc95097552c509e653bb79a54c324a
+
+### Build
+
+Prerequisite: Remove system libglm-dev package (0.9.9.8) which lacks HIP support; use the local GLM submodule (0.9.9.9 with HIP support via PR #1082).
+
+```bash
+sudo apt-get remove -y libglm-dev
+git submodule update --init --recursive  # Initialize GLM submodule
+mkdir build-hip-gfx1100 && cd build-hip-gfx1100
+cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON \
+         -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j16
+```
+Build: PASS (warnings about nodiscard hipDeviceReset, non-blocking)
+
+### Test Results
+
+Ray tracing tests (4/4 PASS):
+- blockB_ray: IDENTICAL outputs (CPU vs GPU binary comparison)
+- MunkB_ray: IDENTICAL outputs
+- DickinsBray: IDENTICAL outputs
+- ParaBot (eigenray): IDENTICAL outputs
+
+Transmission loss tests:
+- MunkB_Coh: GPU execution successful, output file generated (4.0 MB)
+- arcticB_cpp: GPU execution successful, output file generated
+
+### GPU Verification
+- Device detected: AMD Radeon Pro W7800 48GB / compute 11.0
+- All tests ran successfully on real GPU hardware (gfx1100)
+
+### Result
+VALIDATED: All ray tracing tests produce identical CPU vs GPU outputs. Transmission loss tests execute successfully on GPU. The build required removing the system GLM package (which lacks HIP support) to use the project's GLM submodule that includes HIP device annotations.

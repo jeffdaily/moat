@@ -12,3 +12,8 @@
 {"kind":"phase","ts":"2026-06-05T05:12:28Z","phase":"test","seconds":0.408,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/validate_hip.sh"}
 {"kind":"phase","ts":"2026-06-05T05:13:02Z","phase":"test","seconds":9.272,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/validate_hip_v2.sh"}
 {"kind":"session","ts":"2026-06-05T05:14:06Z","epoch":1780636446.243281455,"event":"end","platform":"linux-gfx90a"}
+{"kind":"session","ts":"2026-06-05T06:06:13Z","epoch":1780639573.837245456,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T06:06:23Z","phase":"linux-gfx1100","seconds":0.003,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && mkdir -p build-hip-gfx1100 && cd build-hip-gfx1100 && cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release && cmake --build . -j32"}
+{"kind":"phase","ts":"2026-06-05T06:06:39Z","phase":"compile","seconds":10.342,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && mkdir -p build-hip-gfx1100 && cd build-hip-gfx1100 && cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release && cmake --build . -j32"}
+{"kind":"phase","ts":"2026-06-05T13:16:38Z","phase":"test","seconds":0.020,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && bin/bellhopcuda test/in/MunkB_ray test/in/MunkB test/in/bottom.bty && ls -lh MunkB_ray.ray"}
+{"kind":"phase","ts":"2026-06-05T13:16:45Z","phase":"test","seconds":0.646,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && bin/bellhopcuda test/in/MunkB_ray && ls -lh MunkB_ray.ray"}
