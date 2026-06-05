@@ -139,3 +139,29 @@ Made `DEME_CUDA_WARP_SIZE` platform-aware:
 ```
 
 Build verified: all 27 demo executables compile successfully on gfx90a.
+
+## Review 2026-06-05 (Second)
+
+### Summary
+
+Re-reviewing DEM-Engine after the porter addressed three issues from the first review. The lazy compilation approach for hiprtc is correct, and the return-by-value fix removes the use-after-move bug. However, two new issues surfaced.
+
+### Port Correctness
+
+1. **CUDA backend ProgramCache::clear() references non-existent members (JitKernel_cuda.cpp:143-144)**: The `ProgramCache::clear()` function calls `impl_->mutex` and `impl_->programs`, but `struct ProgramCache::Impl` (line 117) only contains `jitify::JitCache cache;` -- those members do not exist. This will cause a CUDA build failure. The HIP backend's Impl struct does not have these members either, and its `clear()` is a no-op (line 343-345), which is correct. Fix: either add the missing members to the CUDA Impl, or make `clear()` a no-op like the HIP backend.
+
+### Fault Classes
+
+2. **`__AMDGCN_WAVEFRONT_SIZE__` does not exist in ROCm 7.2.x (Defines.h:33-40)**: The PORTING_GUIDE explicitly states "There is no `__AMDGCN_WAVEFRONT_SIZE__` macro in ROCm 7.2.x; the `__GFX*__` guards are the supported per-arch compile-time selector." Verified empirically: a test kernel that checks `#ifdef __AMDGCN_WAVEFRONT_SIZE__` returns -999 (not defined) on gfx90a, while `#ifdef __GFX9__` correctly triggers on gfx90a returning 64.
+
+   Current logic: the code checks `defined(__AMDGCN_WAVEFRONT_SIZE__)` which is NEVER true, so it ALWAYS falls into the first branch (`defined(__HIP_PLATFORM_AMD__) && !defined(__AMDGCN_WAVEFRONT_SIZE__)`) giving 64 for ALL AMD GPUs. This is WRONG for RDNA (gfx1100, gfx1151) where wavefront is 32. The macro value is computed at host compile time and substituted into JIT kernels via `_nActiveLoadingThreads_`. A multi-arch fat binary will embed the WRONG value for wave32 archs.
+
+   The correct approach for host compile-time warp size is impossible without runtime detection, but this value is JIT-substituted at RUNTIME when `buildProgram()` is called. Therefore, the fix should query `hipGetDeviceProperties().warpSize` at JIT compilation time (in JitHelper::buildProgram) and substitute that value, NOT a compile-time constant. Alternatively, for device-only code, use `__GFX9__` -> 64, `__GFX10__ || __GFX11__ || __GFX12__` -> 32.
+
+### Recommendation
+
+**Request Changes**
+
+Required fixes:
+1. Remove or fix the `ProgramCache::clear()` function in JitKernel_cuda.cpp (lines 142-145) -- either delete the body or add the missing members.
+2. Replace the `__AMDGCN_WAVEFRONT_SIZE__` logic in Defines.h with runtime detection in JitHelper::buildProgram, querying `hipGetDeviceProperties().warpSize` at JIT compile time and substituting the actual device's warp size.

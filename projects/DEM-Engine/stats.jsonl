@@ -4,3 +4,4 @@
 {"kind": "tokens", "ts": "2026-06-05T14:38:24Z", "tokens": 172182, "source": "porter (JitKernel abstraction)"}
 {"kind": "tokens", "ts": "2026-06-05T14:42:04Z", "tokens": 75786, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T14:45:25Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind": "tokens", "ts": "2026-06-05T14:48:48Z", "tokens": 70860, "source": "porter (review fixes)"}
