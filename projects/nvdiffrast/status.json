@@ -12,7 +12,7 @@
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "blocked",
       "blocked": true,
       "blocked_reason": "cudaraster/hipraster algorithm requires 32-lane warps; gfx90a wave64 is architecturally incompatible",
       "validated_sha": null,
