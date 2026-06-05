@@ -286,6 +286,43 @@ portability effort that is SEPARATE from the ROCm/HIP port and out of scope here
 HIP kernels themselves (mem_kernels.hip) are unaffected (they hipify). gfx90a/gfx1100 (Linux)
 pass. Blocked; revisit if/when LMCache gains a Windows host-allocator/networking port upstream.
 
+## Validation 2026-06-04 (windows-gfx1101) -- BLOCKED (same POSIX host-layer blocker as gfx1151)
+
+Platform: windows-gfx1101, AMD Radeon PRO V710 (RDNA3, gfx1101), TheRock ROCm 7.14.0a20260604,
+torch 2.9.1+rocm7.14.0a20260604. HIP_VISIBLE_DEVICES=0.
+
+Build attempt:
+
+    VENV=B:/develop/TheRock/external-builds/pytorch/.venv
+    export PATH="$VENV/Lib/site-packages/_rocm_sdk_devel/bin:..."
+    export HIP_VISIBLE_DEVICES=0
+    export BUILD_WITH_HIP=1 CXX=hipcc PYTORCH_ROCM_ARCH=gfx1101 DISTUTILS_USE_SDK=1
+    cd B:/develop/moat/projects/LMCache/src
+    python setup.py build_ext --inplace
+
+HIP hipify stage: "Successfully preprocessed all matching files", 0 unsupported CUDA
+calls, 0 replaced kernel launches -- ROCm/HIP GPU surface is clean on Windows too.
+
+Build failure: identical to gfx1151. The first extension built is `native_storage_ops`:
+`csrc/storage_manager/bitmap.cpp` references `__builtin_popcount`/`__builtin_ctz` (GCC
+builtins, not available in MSVC). The `windows-partial-fixes.patch` has a fix for that,
+but that is not on the fork commit. Even if applied, the c_ops extension would fail next:
+`csrc/mem_alloc.cpp` includes `<sys/mman.h>`, `<sys/syscall.h>`, `<linux/mman.h>`,
+`<linux/mempolicy.h>` -- Linux kernel headers, unconditionally (zero `_WIN32`/`_MSC_VER`
+guards anywhere in csrc/). No Windows equivalent for the POSIX+Linux mmap/NUMA/hugepage/
+shm pinned-allocator stack without a full Win32 rewrite (VirtualAlloc + large pages +
+Win32 shared memory). This is LMCache's total lack of a Windows host port, not a ROCm
+defect.
+
+Exact first build error:
+
+    B:\...\csrc\storage_manager\bitmap.cpp(62): error C3861: '__builtin_popcount': identifier not found
+    B:\...\csrc\storage_manager\bitmap.cpp(88): error C3861: '__builtin_ctz': identifier not found
+
+Blocker: same as gfx1151 -- not ROCm, not gfx1101. The GPU kernels hipify cleanly;
+the host allocator requires porting LMCache's POSIX layer to Win32, which is out of
+scope for the ROCm port. Blocked.
+
 ## Upstream-PR disposition: VALIDATED + a contributable build-rot fix (delta check 2026-06-04)
 
 An earlier README-sweep note here said "superseded, DO NOT open a PR -- upstream already supports ROCm." Retracted; it was the most wrong of the three sweep REDs. Upstream does have mature ROCm scaffolding (merged #3070/#3092/#3101/#3395 gfx950-MI350X/#3079), but the delta check shows real, contributable value:

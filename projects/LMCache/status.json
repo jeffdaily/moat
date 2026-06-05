@@ -7,7 +7,7 @@
   "priority": 6.967,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-04T19:41:52Z",
+  "updated_at": "2026-06-05T04:41:17Z",
   "head_sha": "e1d94420d5d96b4946d26704b5b0350b88fb11d6",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Never Windows-ported (even for CUDA): zero _WIN32 guards in csrc/. The ROCm/HIP GPU kernels hipify cleanly (0 unsupported CUDA calls), but csrc/mem_alloc.cpp (the c_ops host allocator) includes <linux/mman.h>/<linux/mempolicy.h> and uses mmap/NUMA/hugepage/shm pinned allocators with no Windows equivalent. First build error: bitmap.cpp __builtin_popcount/__builtin_ctz undefined in MSVC. Windows GPU validation requires a full Win32 host-layer port (VirtualAlloc+large-pages+Win32-shared-memory) that is separate from and out of scope for the ROCm port. Same root cause as gfx1151 block. gfx90a/gfx1100 (Linux) validated.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T04:41:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
