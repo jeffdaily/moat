@@ -31,3 +31,4 @@
 {"kind":"phase","ts":"2026-06-05T17:46:58Z","phase":"test","seconds":86.193,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx90a.sh"}
 {"kind":"phase","ts":"2026-06-05T17:49:02Z","phase":"test","seconds":104.034,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx90a.sh"}
 {"kind":"session","ts":"2026-06-05T17:51:43Z","epoch":1780681903.811888341,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T17:54:15Z", "tokens": 87475, "source": "validator"}
