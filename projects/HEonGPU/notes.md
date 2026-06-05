@@ -135,12 +135,32 @@ Encryption of ALL-ZEROS produces decrypted values of magnitude ~50% of plain_mod
 
 4. **NTT layout mismatch**: `ntt_rns_configuration.ntt_layout = gpuntt::PerPolynomial` might behave differently than expected.
 
+### Continued Analysis
+
+**Key test**: Verified that `pk[0] + pk[1]*sk` in NTT domain produces values that are ~50% of the modulus (should be small Gaussian error). This means the fundamental relationship is broken.
+
+The public key formula is `pk[0] = -(s*a + e), pk[1] = a` (verified by reading publickey_gen_kernel). The relationship `pk[0] + pk[1]*sk = -e` should hold in NTT domain.
+
+**Verified components**:
+1. CPU Barrett multiplication (used in NTT table generation): works
+2. GPU Barrett multiplication: works
+3. 128-bit subtraction/multiplication: works
+4. hiprand device API: works
+5. Encode/decode (plaintext NTT): works
+
+**Open question**: The GPU-NTT RNS API call semantics. The keygenerator calls `GPU_NTT_Inplace(errors_a.data(), ..., Q_prime_size, Q_prime_size)` where errors_a has 2*Q_prime_size*n elements but the call pattern suggests only Q_prime_size*n elements are processed (only error_poly, not a_poly). This is the ORIGINAL code pattern -- if this were wrong, upstream CUDA would also fail. Need to understand the batch_size/mod_count semantics to confirm.
+
+**Hypotheses**:
+1. NTT table generation produces wrong values on HIP (despite CPU Barrett working)
+2. There's a subtle difference in GPU kernel execution (memory layout, register usage) between CUDA and HIP that corrupts NTT results
+3. The `__umul64hi` intrinsic or 128-bit subtraction has edge cases we haven't tested
+
 ### Next Steps (for attempt 2)
 
-1. Test NTT roundtrip directly: allocate buffer, fill with known values, NTT, INTT, verify identical.
+1. Create a direct NTT roundtrip test using the coefficient moduli tables to verify NTT/INTT work correctly
 
-2. Dump the actual modulus values from `ctx->modulus_->data()` and verify they match expected.
+2. Add debug output to publickey_gen_kernel to print intermediate values on GPU
 
-3. Trace through `publickey_gen_kernel` line by line to verify the formula `-a*s + e`.
+3. Test with a simpler configuration (smaller polynomial, single modulus) to isolate the bug
 
-4. Compare NTT table values between a working CUDA build and this HIP build (requires CUDA hardware or reference output).
+4. Binary comparison of GPU memory after NTT between CUDA (if accessible) and HIP builds
