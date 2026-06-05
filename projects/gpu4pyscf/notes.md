@@ -430,3 +430,32 @@ All three formal gates pass:
 
 validated_sha=8cb88067f72652557788a3dc7be075a38b717c82. linux-gfx90a -> completed.
 Followers (linux-gfx1100) unblocked to port-ready.
+
+## Validation 2026-06-05 (windows-gfx1101 + windows-gfx1201) -- BLOCKED
+
+Platform: Windows 11 (gfx1101 Radeon PRO V710, gfx1201 RX 9070 XT), ROCm 7.14 TheRock nightly.
+Attempted: validate-first follower at fork 8cb88067f726 (moat-port).
+
+### Blocker: CuPy-ROCm has no Windows distribution
+
+gpu4pyscf's Python layer is built entirely on CuPy-ROCm: all GPU arrays are
+`cupy.ndarray`, BLAS/solver/sparse access goes through `cupy_backends.cuda.libs.*`,
+and the DFT/HF Python driver is built around `cupyx`. The PyPI package
+`cupy-rocm-7-0` (14.1.1, the version used on Linux) ships ONLY Linux
+`manylinux2014_x86_64` wheels -- confirmed via PyPI JSON API and `pip index versions`.
+No Windows wheels exist. There is no other distribution channel with a Windows
+CuPy-ROCm build.
+
+The TheRock PyTorch venv (the active MOAT Windows build environment) has no cupy
+installed and no mechanism to acquire a Windows CuPy-ROCm wheel. Building CuPy
+from source on Windows against the TheRock ROCm SDK is a multi-day effort (CuPy's
+Windows build is complex and not tested against a nightly ROCm) and is outside the
+scope of a one-attempt validation.
+
+No kernel .dll build was attempted because there is no Python driver to exercise
+them: even a successful compile of the 8 HIP shared libraries as Windows DLLs
+would leave no way to run the HF/integral test suite (pytest + pyscf + cupy).
+
+Resolution: windows-gfx1101 and windows-gfx1201 both blocked with reason above.
+These platforms are non-viable for gpu4pyscf until a Windows CuPy-ROCm wheel is
+published. The port itself (linux-gfx90a + linux-gfx1100) is complete and validated.

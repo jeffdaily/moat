@@ -7,7 +7,7 @@
   "priority": 4.871,
   "ext_type": "cmake-cupy-plugin",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-04T19:41:52Z",
+  "updated_at": "2026-06-05T21:10:34Z",
   "head_sha": "8cb88067f72652557788a3dc7be075a38b717c82",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "cupy-rocm has no Windows distribution (manylinux2014-only wheels); gpu4pyscf Python layer is entirely CuPy-ROCm-based (cupy.ndarray, cupy_backends.cuda.libs.*); no CuPy-ROCm on Windows means no GPU test path is exercisable on this host",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T21:10:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -80,12 +80,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "cupy-rocm has no Windows distribution (manylinux2014-only wheels); same host as gfx1101, same blocker",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T21:10:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
