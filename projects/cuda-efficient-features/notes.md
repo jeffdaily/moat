@@ -40,3 +40,25 @@ cmake --build build -j8
 ```bash
 HIP_VISIBLE_DEVICES=2 ./build/tests/tests
 ```
+
+## Review 2026-06-05
+
+### Summary
+Clean port implementing HIP/ROCm support for cuda-efficient-features, a CUDA keypoint detection and descriptor extraction library. The port correctly uses Strategy A (compat header + LANGUAGE HIP), fixes wave64 shuffle divergence, and adds a HIP-native GpuMat to replace OpenCV CUDA dependency.
+
+### Findings
+No blocking issues found.
+
+### Verified
+1. **Port Strategy**: Strategy A (compat header) correctly applied; CMake properly gates USE_HIP, marks .cu files as LANGUAGE HIP, swaps cuBLAS -> hipBLAS
+2. **Wave64 shuffle fix (cuda_bad.cu:321-325, cuda_hash_sift.cu:199-201)**: Correct -- shuffles moved outside conditionals so all 64 lanes participate; inactive threads contribute zero
+3. **FULL_WARP_MASK (cuda_to_hip.h:55)**: Correctly defined as 64-bit `0xffffffffffffffffULL` for HIP
+4. **WARP_SIZE=32 in cuda_hash_sift.cu:46**: Safe -- used as loop stride over 128-element descriptor, not physical wave width; shuffle widths (1-16) work on both wave64 and wave32
+5. **GpuMat column vector stride fix (cuda.hpp:220)**: Single-column matrices use natural stride (no 256B alignment) so flat array indexing works
+6. **CUDA build preserved**: All else() branches maintain original CUDA path
+7. **Commit messages**: Properly prefixed [ROCm], under 72 chars, mention Claude, no noreply trailers
+8. **No MOAT jargon**: Code and commits clean of internal vocabulary
+9. **Library swaps**: cuBLAS -> hipBLAS via abstraction layer in cuda_hash_sift.cpp; Thrust execution policy via USE_HIP guard
+
+### Recommendation
+**Approve** -- ready for validator to run GPU tests.
