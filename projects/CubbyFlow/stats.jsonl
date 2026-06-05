@@ -1,0 +1,3 @@
+{"kind": "tokens", "ts": "2026-06-05T01:23:10Z", "tokens": 74590, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T04:54:33Z","phase":"compile","seconds":0.135,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T04:54:46Z","phase":"compile","seconds":9.382,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/CubbyFlow/src/build -j128"}
