@@ -28,3 +28,19 @@ plus CPU-only algorithms (Toivanen, pixelqueue, fastmarch).
 
 - ROCm detection: Original setup.py only checks `CUDA_HOME`, which is None on pure ROCm
   systems. Fixed by also checking `ROCM_HOME` from `torch.utils.cpp_extension`.
+
+## Review 2026-06-05
+
+Reviewed by: reviewer agent
+
+**Verdict: Approve**
+
+No problems found. This is an exemplary minimal Strategy B port:
+- setup.py change correctly detects ROCM_HOME as alternative to CUDA_HOME
+- No kernel changes needed -- hipify handles cudaMemcpyToSymbol and __syncthreads() 1:1
+- No warp intrinsics, textures, CUDA libraries, or RAII handles -- no fault classes apply
+- CUDA build preserved (additive change)
+- Commit message correct: [ROCm] prefix, Claude mention, Test Plan, no noreply trailer
+- 300/300 tests passed on gfx90a
+
+Ready for validation.
