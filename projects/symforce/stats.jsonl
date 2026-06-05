@@ -19,3 +19,7 @@
 {"kind":"phase","ts":"2026-06-05T01:00:20Z","phase":"compile","seconds":35.941,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
 {"kind":"phase","ts":"2026-06-05T01:01:00Z","phase":"compile","seconds":35.860,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
 {"kind":"phase","ts":"2026-06-05T01:01:40Z","phase":"compile","seconds":35.357,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind": "tokens", "ts": "2026-06-05T01:02:56Z", "tokens": 101920, "source": "porter"}
+{"kind":"phase","ts":"2026-06-05T01:04:48Z","phase":"test","seconds":35.529,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/projects/symforce/test_hip_validation.py"}
+{"kind":"phase","ts":"2026-06-05T01:06:53Z","phase":"test","seconds":35.896,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/projects/symforce/test_hip_validation.py"}
+{"kind":"phase","ts":"2026-06-05T01:06:57Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a"}

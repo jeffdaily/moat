@@ -158,3 +158,74 @@ Test command:
 HIP_VISIBLE_DEVICES=0 python3 test_symforce_hip.py
 # Output: SUCCESS! All tests passed.
 ```
+
+## Re-validation linux-gfx90a 2026-06-05
+
+Full GPU validation after porter fixes.
+
+### Runtime library build
+
+Standalone runtime library:
+```bash
+cd symforce/caspar/source/runtime
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+make -j$(nproc)
+```
+
+Result: libcaspar_runtime.a built successfully with gfx90a device code:
+```
+llvm-objdump --offloading build/CMakeFiles/caspar_runtime.dir/shared_indices.cu.o
+# shows: hipv4-amdgcn-amd-amdhsa--gfx90a
+```
+
+### Generated kernel test
+
+Test script that exercises the full code generation pipeline:
+1. Creates CasparLibrary with a symbolic kernel
+2. Generates code from Jinja templates
+3. Compiles with HIP backend (use_hip=True, hip_arch="gfx90a")
+4. Executes kernel on GPU with PyTorch tensors
+5. Verifies numerical results
+
+```bash
+HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py
+```
+
+Output:
+```
+PyTorch version: 2.13.0a0+gitb5e90ff
+CUDA available: True
+Device: AMD Instinct MI250X / MI250
+Generating kernel code...
+Compiling with HIP for gfx90a...
+Running GPU test...
+Verifying results...
+All checks passed!
+
+=== VALIDATION PASSED ===
+```
+
+The test validates:
+- Jinja templates correctly emit cuda_to_hip.h includes
+- Generated code compiles with HIP
+- Kernel execution on GPU (cooperative groups, shared memory atomics)
+- Correct numerical output (AddSharedSum and WriteIndexed memory patterns)
+
+### Test coverage
+
+The generated kernel exercises:
+- ReadShared and ReadUnique memory patterns
+- AddSharedSum reduction (uses atomicAdd on shared memory)
+- WriteIndexed scatter
+- Trigonometric operations (sin/cos)
+- Arithmetic operations
+- Shared indices lookup
+
+All porter fixes validated on real GPU:
+1. Templates include cuda_to_hip.h correctly
+2. cudaSetDevice/cudaGetDevice/cudaPointerGetAttributes mappings work
+3. FlushSumBlock/FlushSumBlockAdd shared-memory atomics execute correctly
+4. HIP target linking and pybind compilation work
+
+VALIDATION PASSED on gfx90a (AMD Instinct MI250X).
