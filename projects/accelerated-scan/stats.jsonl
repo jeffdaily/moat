@@ -14,3 +14,4 @@
 {"kind":"phase","ts":"2026-06-05T07:59:08Z","phase":"test","seconds":10.764,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/accelerated-scan/src && export HIP_VISIBLE_DEVICES=1 && pytest tests/test_eq.py -v"}
 {"kind":"phase","ts":"2026-06-05T07:59:44Z","phase":"test","seconds":14.539,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/accelerated-scan/src && export HIP_VISIBLE_DEVICES=1 && pytest tests/tests_eq_complex.py -v 2>&1 | tail -50"}
 {"kind":"session","ts":"2026-06-05T08:00:49Z","epoch":1780646449.961195043,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T14:34:52Z", "tokens": 44184, "source": "validator (gfx1100)"}

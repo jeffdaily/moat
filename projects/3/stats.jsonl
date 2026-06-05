@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-04T06:38:21Z","phase":"test","seconds":719.960,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/test_full_gfx1100.sh"}
 {"kind": "tokens", "ts": "2026-06-04T05:35:26Z", "tokens": 62149}
 {"kind":"phase","ts":"2026-06-04T17:53:08Z","phase":"compile","seconds":0.022,"exit":0,"cmd":"go install github.com/mumax/3/..."}
+{"kind": "tokens", "ts": "2026-06-04T06:42:44Z", "tokens": 87359, "source": "validator"}

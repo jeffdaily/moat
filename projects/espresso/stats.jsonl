@@ -22,3 +22,4 @@
 {"kind":"phase","ts":"2026-06-04T08:54:58Z","phase":"test","seconds":0.307,"exit":0,"cmd":"bash -c \nexport HIP_VISIBLE_DEVICES=3\nexport LD_LIBRARY_PATH=/opt/conda/envs/py_3.12/lib:${LD_LIBRARY_PATH:-}\ncd /var/lib/jenkins/moat/projects/espresso/src/build-hip\nctest -R cuda_test --timeout 120 --output-on-failure 2>&1\n"}
 {"kind":"phase","ts":"2026-06-04T08:55:08Z","phase":"test","seconds":2.810,"exit":0,"cmd":"bash -c \nexport HIP_VISIBLE_DEVICES=3\nexport LD_LIBRARY_PATH=/opt/conda/envs/py_3.12/lib:${LD_LIBRARY_PATH:-}\ncd /var/lib/jenkins/moat/projects/espresso/src/build-hip\nctest -LE gpu -R \"p3m_fft|mmm1d|coulomb_mixed\" --timeout 300 -j4 --output-on-failure 2>&1\n"}
 {"kind":"session","ts":"2026-06-04T08:56:23Z","epoch":1780563383.596329203,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T08:57:12Z", "tokens": 52382, "source": "validator"}

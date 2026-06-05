@@ -10,3 +10,6 @@
 {"kind":"phase","ts":"2026-06-02T05:47:27Z","phase":"compile","seconds":0.027,"exit":0,"cmd":"ninja -C agent_space/cuvs_build -j32 cuvs DISTANCE_TEST FUSED_NN_TEST"}
 {"kind":"phase","ts":"2026-06-02T05:57:50Z","phase":"test","seconds":592.715,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cuvs_build/gtests/DISTANCE_TEST --gtest_filter=-BigMatrix*"}
 {"kind":"phase","ts":"2026-06-02T05:57:58Z","phase":"test","seconds":0.525,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cuvs_build/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-03T08:23:10Z","phase":"compile","seconds":25.111,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/agent_space/cuvs_build_gfx1100 -j16 cuvs DISTANCE_TEST FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-03T08:23:37Z","phase":"test","seconds":0.422,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cuvs_build_gfx1100/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-03T08:32:58Z","phase":"test","seconds":550.985,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cuvs_build_gfx1100/gtests/DISTANCE_TEST --gtest_filter=-BigMatrix*"}

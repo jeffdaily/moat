@@ -3,3 +3,6 @@
 {"kind":"phase","ts":"2026-06-01T20:27:14Z","phase":"compile","seconds":114.316,"exit":0,"cmd":"bash agent_space/3dgslm_build.sh"}
 {"kind":"phase","ts":"2026-06-02T00:33:28Z","phase":"compile","seconds":115.917,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3dgslm_build.sh"}
 {"kind":"phase","ts":"2026-06-02T00:38:38Z","phase":"test","seconds":7.348,"exit":0,"cmd":"bash -c AMD_LOG_LEVEL=3 /opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/3dgslm_div.py 2>&1"}
+{"kind":"phase","ts":"2026-06-02T00:45:51Z","phase":"compile","seconds":86.526,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3dgslm_build_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-02T01:06:17Z","phase":"test","seconds":4.349,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 /opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/3dgslm_div.py"}
+{"kind":"phase","ts":"2026-06-02T01:06:42Z","phase":"test","seconds":9.142,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/3dgslm_val.py all"}

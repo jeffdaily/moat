@@ -19,3 +19,5 @@
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 33853, "source": "session-2026-06-02/03 backfill: gfx90a revalidation"}
 {"kind":"phase","ts":"2026-06-04T09:15:17Z","phase":"compile","seconds":1.662,"exit":1,"cmd":"cmake --build /d/Develop/moat/agent_space/icicle_win_build -j6"}
 {"kind": "tokens", "ts": "2026-06-04T09:18:24Z", "tokens": 78867, "source": "validator"}
+{"kind":"phase","ts":"2026-06-03T06:31:26Z","phase":"compile","seconds":17.700,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/icicle_val_gfx1100 -j128"}
+{"kind":"phase","ts":"2026-06-03T06:47:48Z","phase":"test","seconds":21.077,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_val_gfx1100/backend/hip_pqc/tests --output-on-failure"}

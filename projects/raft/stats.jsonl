@@ -124,3 +124,15 @@
 {"kind":"phase","ts":"2026-06-03T06:18:09Z","phase":"test","seconds":927.438,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/MATRIX_SELECT_TEST"}
 {"kind":"phase","ts":"2026-06-03T06:37:09Z","phase":"test","seconds":1454.204,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build/gtests/BALL_COVER_TEST"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 123701, "source": "session-2026-06-02/03 backfill: gfx90a revalidation"}
+{"kind":"phase","ts":"2026-06-03T07:00:03Z","phase":"test","seconds":0.005,"exit":127,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:15:16Z","phase":"test","seconds":151.259,"exit":143,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:18:51Z","phase":"test","seconds":75.351,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:19:22Z","phase":"test","seconds":0.226,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:19:32Z","phase":"test","seconds":1.971,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/DISTANCE_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:19:46Z","phase":"test","seconds":2.124,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/FUSED_NN_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:19:50Z","phase":"test","seconds":0.272,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LABEL_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:20:05Z","phase":"test","seconds":0.897,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/RANDOM_TEST --gtest_filter=MakeBlobsTest*:RngTest*:RngNormalTable*:Permutation*:RmatGenTest*:-*Bernoulli*"}
+{"kind":"phase","ts":"2026-06-03T07:20:27Z","phase":"test","seconds":14.001,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/CORE_TEST --gtest_filter=MathDevice*:OperatorsDevice*:MathHost*:OperatorsHost*:Span*:GPUSpan*:NumPySerializer*:MemoryTypeTests*:BitmapTest*:SparseMatrix*:CoordinateStructure*:Raft.*:MDSpan.Basic:MDSpan.LayoutRightPadded:MDSpan.MDSpanPaddingType"}
+{"kind":"phase","ts":"2026-06-03T07:20:44Z","phase":"test","seconds":15.080,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/UTILS_TEST --gtest_filter=-MemoryTypeDispatcher.FromDevice:MemoryTypeDispatcher.FromManaged:MemoryTypeDispatcher.FromPinned:ReductionTest*:BinaryReductionTest*"}
+{"kind":"phase","ts":"2026-06-03T07:21:02Z","phase":"test","seconds":0.225,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/HAVERSINE_TEST"}
+{"kind":"phase","ts":"2026-06-03T07:22:11Z","phase":"test","seconds":75.289,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/raft/build-gfx1100/gtests/LINALG_TEST"}

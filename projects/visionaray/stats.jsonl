@@ -8,3 +8,4 @@
 {"kind":"phase","ts":"2026-06-05T00:02:14Z","phase":"compile","seconds":1.154,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/visionaray/src && cmake -B build -DCMAKE_BUILD_TYPE=Release -DVSNRAY_ENABLE_HIP=ON -DVSNRAY_ENABLE_CUDA=OFF -DVSNRAY_ENABLE_UNITTESTS=OFF -DVSNRAY_ENABLE_COMMON=ON -DVSNRAY_ENABLE_VIEWER=OFF -DVSNRAY_ENABLE_EXAMPLES=OFF -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ && cmake --build build -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T00:02:20Z","phase":"test","seconds":0.193,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/visionaray/src && HIP_VISIBLE_DEVICES=1 ./build/test/hip_test"}
 {"kind":"session","ts":"2026-06-05T00:03:19Z","epoch":1780617799.994887069,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T02:02:13Z", "tokens": 55745, "source": "validator (gfx1100)"}

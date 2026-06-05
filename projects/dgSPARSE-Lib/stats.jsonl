@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-05T15:04:40Z","phase":"test","seconds":2.785,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
 {"kind":"phase","ts":"2026-06-05T15:16:14Z","phase":"test","seconds":2.902,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
 {"kind":"phase","ts":"2026-06-05T15:16:36Z","phase":"test","seconds":2.918,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
+{"kind": "tokens", "ts": "2026-06-05T15:17:49Z", "tokens": 60454, "source": "validator (gfx1100)"}

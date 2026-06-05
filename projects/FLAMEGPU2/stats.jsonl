@@ -17,3 +17,4 @@
 {"kind":"phase","ts":"2026-06-05T05:38:47Z","phase":"compile","seconds":185.294,"exit":0,"cmd":"bash -c cd projects/FLAMEGPU2/src && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DFLAMEGPU_GPU=HIP -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/clang++ -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/clang -DFLAMEGPU_BUILD_TESTS=ON 2>&1 | tee /tmp/flamegpu2-configure.log && cmake --build build --target flamegpu boids_bruteforce tests -j$(nproc) 2>&1 | tee /tmp/flamegpu2-build.log"}
 {"kind":"phase","ts":"2026-06-05T05:39:30Z","phase":"test","seconds":32.657,"exit":0,"cmd":"bash -c cd projects/FLAMEGPU2/src/build && ./bin/Release/tests --gtest_output=xml:test_results.xml 2>&1 | tee /tmp/flamegpu2-tests.log"}
 {"kind":"session","ts":"2026-06-05T05:39:53Z","epoch":1780637993.136353575,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T05:41:03Z", "tokens": 42216, "source": "validator (gfx1100)"}

@@ -14,3 +14,4 @@
 {"kind":"phase","ts":"2026-06-04T08:17:02Z","phase":"compile","seconds":220.686,"exit":0,"cmd":"cmake --build projects/MMseqs2/src/build-hip -j16 --target mmseqs"}
 {"kind":"phase","ts":"2026-06-04T08:17:54Z","phase":"test","seconds":24.998,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta /tmp/mmseqs2_val/targetDB_padded /tmp/mmseqs2_val/gpu.m8 /tmp/mmseqs2_val/tmp_gpu --gpu 1"}
 {"kind":"session","ts":"2026-06-04T08:18:29Z","epoch":1780561109.591205649,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T08:19:51Z", "tokens": 39511, "source": "validator"}

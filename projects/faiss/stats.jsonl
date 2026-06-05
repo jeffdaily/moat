@@ -41,3 +41,4 @@
 {"kind":"phase","ts":"2026-06-04T16:53:30Z","phase":"test","seconds":0.145,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 /var/lib/jenkins/moat/projects/faiss/src/build/faiss/gpu/test/TestCodePacking --gtest_output=xml:/tmp/TestCodePacking_gfx1100_result.xml 2>&1"}
 {"kind":"session","ts":"2026-06-04T16:53:36Z","epoch":1780592016.271250489,"event":"end","platform":"linux-gfx1100"}
 {"kind":"phase","ts":"2026-06-04T17:56:59Z","phase":"compile","seconds":239.299,"exit":0,"cmd":"cmake --build projects/faiss/src/build --target TestCodePacking faiss faiss_gpu_objs -j 16"}
+{"kind": "tokens", "ts": "2026-06-04T16:55:28Z", "tokens": 53126, "source": "validator"}

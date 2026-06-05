@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-05T13:59:19Z","phase":"test","seconds":0.692,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuRast && HIP_VISIBLE_DEVICES=0 /opt/rocm/bin/hipcc test_hip_gfx1100.cpp -o test_hip_gfx1100 -I/opt/rocm/include -L/opt/rocm/lib -lhiprtc -lamdhip64 && HIP_VISIBLE_DEVICES=0 ./test_hip_gfx1100"}
 {"kind":"phase","ts":"2026-06-05T13:59:32Z","phase":"test","seconds":1.867,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuRast && HIP_VISIBLE_DEVICES=0 /opt/rocm/bin/hipcc test_hip_gfx1100.cpp -o test_hip_gfx1100 -I/opt/rocm/include -L/opt/rocm/lib -lhiprtc -lamdhip64 && HIP_VISIBLE_DEVICES=0 ./test_hip_gfx1100"}
 {"kind":"session","ts":"2026-06-05T14:00:26Z","epoch":1780668026.343330771,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T14:01:12Z", "tokens": 53668, "source": "validator (gfx1100)"}

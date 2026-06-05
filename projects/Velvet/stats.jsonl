@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-05T06:02:35Z","phase":"compile","seconds":14.880,"exit":0,"cmd":"bash -c export PATH=/var/lib/jenkins/.cargo/bin:/var/lib/jenkins/.local/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:/opt/cache/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin && cd projects/Velvet/src && cmake --build build -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T06:03:32Z","phase":"test","seconds":1.578,"exit":0,"cmd":"bash -c cd agent_space && /opt/rocm/bin/hipcc -o velvet_kernel_test_gfx1100 velvet_kernel_test_gfx1100.cpp --offload-arch=gfx1100 && ./velvet_kernel_test_gfx1100"}
 {"kind":"session","ts":"2026-06-05T06:04:17Z","epoch":1780639457.507873093,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T06:05:35Z", "tokens": 58721, "source": "validator (gfx1100)"}

@@ -14,3 +14,4 @@
 {"kind":"phase","ts":"2026-06-05T07:17:50Z","phase":"test","seconds":70.7,"exit":0,"cmd":"pytest tests/ -v"}
 {"kind":"phase","ts":"2026-06-05T14:02:39Z","phase":"compile","seconds":38.309,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-05T14:02:50Z","phase":"test","seconds":6.714,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v"}
+{"kind": "tokens", "ts": "2026-06-05T14:03:55Z", "tokens": 47616, "source": "validator (gfx1100)"}

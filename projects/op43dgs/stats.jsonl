@@ -18,3 +18,18 @@
 {"kind":"phase","ts":"2026-06-01T01:31:31Z","phase":"test","seconds":3.470,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/op43dgs/tier1_forward.py panorama"}
 {"kind":"phase","ts":"2026-06-01T01:31:39Z","phase":"test","seconds":3.753,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/op43dgs/tier2_backward.py panorama"}
 {"kind":"phase","ts":"2026-06-01T01:31:50Z","phase":"test","seconds":6.052,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/op43dgs/fish_fit.py panorama"}
+{"kind":"phase","ts":"2026-06-01T20:36:26Z","phase":"compile","seconds":36.763,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python -m pip install /var/lib/jenkins/moat/projects/op43dgs/src/submodules/simple-knn --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-01T20:37:20Z","phase":"compile","seconds":37.964,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python -m pip install /var/lib/jenkins/moat/projects/op43dgs/src/submodules/diff-gaussian-rasterization-pinhole --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-01T20:38:17Z","phase":"test","seconds":2.362,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier1_forward.py pinhole"}
+{"kind":"phase","ts":"2026-06-01T20:38:40Z","phase":"test","seconds":2.380,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier1_forward.py pinhole"}
+{"kind":"phase","ts":"2026-06-01T20:39:23Z","phase":"test","seconds":2.650,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier2_backward.py pinhole"}
+{"kind":"phase","ts":"2026-06-01T20:40:07Z","phase":"test","seconds":5.024,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier3_train.py pinhole"}
+{"kind":"phase","ts":"2026-06-01T20:40:24Z","phase":"test","seconds":2.064,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/val_simpleknn.py"}
+{"kind":"phase","ts":"2026-06-01T20:41:31Z","phase":"compile","seconds":37.530,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python -m pip install /var/lib/jenkins/moat/projects/op43dgs/src/submodules/diff-gaussian-rasterization-fisheye --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-01T20:41:57Z","phase":"test","seconds":2.332,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier1_forward.py fisheye"}
+{"kind":"phase","ts":"2026-06-01T20:42:06Z","phase":"test","seconds":2.648,"exit":1,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier2_backward.py fisheye"}
+{"kind":"phase","ts":"2026-06-01T20:44:29Z","phase":"test","seconds":3.498,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/fish_fit.py fisheye"}
+{"kind":"phase","ts":"2026-06-01T20:45:21Z","phase":"compile","seconds":37.551,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python -m pip install /var/lib/jenkins/moat/projects/op43dgs/src/submodules/diff-gaussian-rasterization-panorama --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-01T20:45:36Z","phase":"test","seconds":2.377,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier1_forward.py panorama"}
+{"kind":"phase","ts":"2026-06-01T20:45:47Z","phase":"test","seconds":2.618,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/tier2_backward.py panorama"}
+{"kind":"phase","ts":"2026-06-01T20:46:00Z","phase":"test","seconds":3.507,"exit":0,"cmd":"/opt/conda/envs/py_3.12/bin/python agent_space/op43dgs/fish_fit.py panorama"}

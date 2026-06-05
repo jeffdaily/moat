@@ -56,3 +56,4 @@
 {"kind":"phase","ts":"2026-06-04T23:55:20Z","phase":"test","seconds":72.217,"exit":0,"cmd":"bash agent_space/run_cudamatrix_gfx1100.sh 0"}
 {"kind":"phase","ts":"2026-06-04T23:56:39Z","phase":"test","seconds":75.822,"exit":0,"cmd":"bash agent_space/run_cudamatrix_gfx1100.sh 0"}
 {"kind":"session","ts":"2026-06-04T23:56:46Z","epoch":1780617406.337706671,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T23:57:59Z", "tokens": 68576, "source": "validator (gfx1100 revalidate)"}

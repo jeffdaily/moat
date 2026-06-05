@@ -24,3 +24,11 @@
 {"kind":"phase","ts":"2026-06-05T08:47:54Z","phase":"test","seconds":0.587,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}
 {"kind":"phase","ts":"2026-06-05T08:48:10Z","phase":"compile","seconds":0.145,"exit":1,"cmd":"bash -c cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T08:53:26Z","phase":"compile","seconds":312.841,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/fdtd3d/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T15:22:57Z","phase":"compile","seconds":0.125,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSOLVER_DIM_MODES=DIM3 -DVALUE_TYPE=d -DCOMPLEX_FIELD_VALUES=ON -DPRINT_MESSAGE=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-05T15:23:02Z","phase":"compile","seconds":0.121,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/fdtd3d/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSOLVER_DIM_MODES=DIM3 -DVALUE_TYPE=d -DCOMPLEX_FIELD_VALUES=ON -DPRINT_MESSAGE=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-05T15:23:07Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/fdtd3d/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSOLVER_DIM_MODES=DIM3 -DVALUE_TYPE=d -DCOMPLEX_FIELD_VALUES=ON -DPRINT_MESSAGE=ON -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++"}
+{"kind":"phase","ts":"2026-06-05T15:23:26Z","phase":"compile","seconds":0.188,"exit":2,"cmd":"cmake --build . -j64"}
+{"kind":"phase","ts":"2026-06-05T15:23:42Z","phase":"compile","seconds":0.127,"exit":2,"cmd":"cmake --build . --target fdtd3d -j64"}
+{"kind":"phase","ts":"2026-06-05T15:27:39Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./Source/UnitTests/unit-test-cuda-grid 0"}
+{"kind":"phase","ts":"2026-06-05T15:27:45Z","phase":"test","seconds":0.367,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid 0"}
+{"kind":"phase","ts":"2026-06-05T15:27:49Z","phase":"test","seconds":0.702,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}

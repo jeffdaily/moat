@@ -114,3 +114,56 @@ make HIP=1 test
 ### Verdict
 
 **VALIDATED**: All unit tests and GPU simulations passed on gfx90a. The HIP port correctly utilizes AMD GPU acceleration with no runtime errors or numerical issues.
+
+## Validation 2026-06-05 (gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon RX 7900 XTX, HIP_VISIBLE_DEVICES=3)
+Commit: b611ce03f7f301a0b1bd93b7dca361ffa5ca2387
+
+### Build
+
+Built from scratch with HIP=1 HIP_ARCH=gfx1100:
+
+```bash
+cd src/chicken
+make HIP=1 HIP_ARCH=gfx1100 install -j$(nproc)
+```
+
+Build succeeded with only expected warnings:
+- nlohmann/json.hpp deprecated literal operator warnings (upstream)
+- Unused hipFree return value warnings (5 instances in block.cu cleanup)
+
+Binary installed to /var/lib/jenkins/gdtkinst/bin/chkn-run.
+
+### Unit tests
+
+All 4 unit tests passed:
+
+```bash
+cd src/chicken/test
+make HIP=1 test
+```
+
+- gas_test: PASS (GasModel and GasState thermodynamics)
+- rsla_test: PASS (linear algebra solver)
+- vector3_test: PASS (3D vector operations)
+- spline_test: PASS (cubic spline interpolation)
+
+### GPU simulations
+
+1. **shock-tube** (Sod shock tube problem):
+   - 400 cells, 100 time steps
+   - Completed successfully in 0.146s
+   - HIP device detected and used
+   - Final time: t=6.069e-04
+
+2. **isentropic-vortex** (convected vortex):
+   - 28800 cells, 880 time steps
+   - Completed successfully in 1.040s
+   - HIP device detected and used
+   - Final time: t=5.005e-02
+   - 49 flow field snapshots written
+
+### Verdict
+
+**VALIDATED**: All unit tests and GPU simulations passed on gfx1100. The HIP port correctly utilizes AMD RDNA3 GPU acceleration with no runtime errors or numerical issues.

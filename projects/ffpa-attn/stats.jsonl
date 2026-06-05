@@ -18,3 +18,4 @@
 {"kind":"session","ts":"2026-06-05T05:41:43Z","epoch":1780638103.902010670,"event":"start","platform":"linux-gfx1100"}
 {"kind":"session","ts":"2026-06-05T05:54:48Z","epoch":1780638888.003798608,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-05T05:56:48Z", "tokens": 58354, "source": "validator (gfx1100)"}
+{"kind": "tokens", "ts": "2026-06-05T13:54:01Z", "tokens": 60405, "source": "porter (gfx1100 blocked assessment)"}

@@ -21,3 +21,4 @@
 {"kind":"phase","ts":"2026-06-05T01:19:22Z","phase":"test","seconds":1.794,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuMesh/src/examples && python3 simplify.py 2>&1"}
 {"kind":"phase","ts":"2026-06-05T01:19:55Z","phase":"test","seconds":23.871,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/CuMesh/src/examples\necho '=== simplify.py ==='\npython3 simplify.py\necho '=== fill_holes.py ==='\npython3 fill_holes.py\necho '=== remove_duplicate_faces.py ==='\npython3 remove_duplicate_faces.py\necho '=== unify_orientations.py ==='\npython3 unify_orientations.py\necho '=== uv_unwrap.py ==='\npython3 uv_unwrap.py\necho '=== remesh.py ==='\npython3 remesh.py\necho '=== All tests completed ==='\n"}
 {"kind":"session","ts":"2026-06-05T01:20:00Z","epoch":1780622400.586571207,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T01:21:33Z", "tokens": 55482, "source": "validator (gfx1100)"}

@@ -17,3 +17,4 @@
 {"kind":"phase","ts":"2026-06-04T21:05:08Z","phase":"test","seconds":46.791,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 projects/qrack/src/_build/unittest --proc-cuda --layer-qengine -d yes"}
 {"kind":"session","ts":"2026-06-04T23:05:13Z","epoch":1780614313.949003968,"event":"start","platform":"linux-gfx1100"}
 {"kind":"session","ts":"2026-06-04T23:07:25Z","epoch":1780614445.690098699,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T23:08:57Z", "tokens": 52149, "source": "validator (gfx1100)"}

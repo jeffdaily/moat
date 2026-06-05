@@ -17,3 +17,5 @@
 {"kind":"phase","ts":"2026-06-05T06:06:39Z","phase":"compile","seconds":10.342,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && mkdir -p build-hip-gfx1100 && cd build-hip-gfx1100 && cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release && cmake --build . -j32"}
 {"kind":"phase","ts":"2026-06-05T13:16:38Z","phase":"test","seconds":0.020,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && bin/bellhopcuda test/in/MunkB_ray test/in/MunkB test/in/bottom.bty && ls -lh MunkB_ray.ray"}
 {"kind":"phase","ts":"2026-06-05T13:16:45Z","phase":"test","seconds":0.646,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/bellhopcuda/src && bin/bellhopcuda test/in/MunkB_ray && ls -lh MunkB_ray.ray"}
+{"kind":"session","ts":"2026-06-05T13:20:06Z","epoch":1780665606.054756874,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T13:20:30Z", "tokens": 69588, "source": "validator (gfx1100)"}

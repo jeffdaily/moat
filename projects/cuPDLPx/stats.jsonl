@@ -19,3 +19,4 @@
 {"kind":"phase","ts":"2026-06-05T14:48:55Z","phase":"compile","seconds":6.837,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && cmake --build build -j32"}
 {"kind":"phase","ts":"2026-06-05T14:49:08Z","phase":"test","seconds":0.575,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 ROCM_LOG_LEVEL=4 ./build/cupdlpx 2club200v15p5scn.mps.gz . -v"}
 {"kind":"phase","ts":"2026-06-05T14:49:20Z","phase":"test","seconds":1.120,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 ./build/cupdlpx datt256.mps.gz . -v"}
+{"kind": "tokens", "ts": "2026-06-05T14:51:40Z", "tokens": 51454, "source": "validator (gfx1100)"}

@@ -13,3 +13,4 @@
 {"kind":"phase","ts":"2026-06-05T01:25:06Z","phase":"compile","seconds":1.069,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/SCAMP/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_SCAMP_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
 {"kind":"phase","ts":"2026-06-05T01:25:32Z","phase":"compile","seconds":22.942,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/SCAMP/src && cmake --build build -j64"}
 {"kind":"phase","ts":"2026-06-05T01:26:54Z","phase":"test","seconds":69.048,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/SCAMP/src/test && bash run_tests.sh ../build/SCAMP /tmp/scamp-gfx1100-results.txt ''"}
+{"kind": "tokens", "ts": "2026-06-05T01:28:09Z", "tokens": 48242, "source": "validator (gfx1100)"}

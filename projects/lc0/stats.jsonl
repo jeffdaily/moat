@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-05T12:36:01Z","phase":"compile","seconds":59.182,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-validated -j16"}
 {"kind":"phase","ts":"2026-06-05T12:37:17Z","phase":"compile","seconds":61.072,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/lc0/src/build-head -j16"}
 {"kind": "tokens", "ts": "2026-06-05T12:03:34Z", "tokens": 41423, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-05T13:36:26Z", "tokens": 63231, "source": "validator (gfx1100 revalidate)"}

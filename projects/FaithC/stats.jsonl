@@ -6,3 +6,7 @@
 {"kind":"phase","ts":"2026-06-02T07:20:19Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-02T07:21:38Z","phase":"compile","seconds":73.242,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-02T07:21:58Z","phase":"test","seconds":4.187,"exit":0,"cmd":"python /var/lib/jenkins/moat/agent_space/faithc_harness.py"}
+{"kind":"phase","ts":"2026-06-02T07:36:03Z","phase":"compile","seconds":0.035,"exit":2,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:36:46Z","phase":"compile","seconds":35.688,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-02T07:38:29Z","phase":"test","seconds":2.017,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 python /var/lib/jenkins/moat/agent_space/faithc_harness.py"}
+{"kind":"phase","ts":"2026-06-02T07:40:48Z","phase":"test","seconds":2.319,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 python /var/lib/jenkins/moat/agent_space/faithc_harness.py 2>&1 | grep -E \"^GPU:|^Loaded:|^---|^  (PASS|FAIL)|^=|Results|ALL|FAILURES|Using native code\""}

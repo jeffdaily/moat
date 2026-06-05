@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-04T19:28:48Z","phase":"compile","seconds":11.179,"exit":0,"cmd":"/opt/rocm/bin/hipcc -O3 --offload-arch=gfx1100 -x hip /var/lib/jenkins/moat/agent_space/egg_worktree_old/full_cuda_train_egg.cu -o /var/lib/jenkins/moat/agent_space/egg_hip_gfx1100_old"}
 {"kind":"phase","ts":"2026-06-04T21:15:20Z","phase":"compile","seconds":15.386,"exit":0,"cmd":"/opt/rocm/bin/hipcc -O3 --offload-arch=gfx90a -x hip /var/lib/jenkins/moat/projects/egg.c/src/full_cuda_train_egg.cu -o /var/lib/jenkins/moat/agent_space/egg_hip_old"}
 {"kind":"phase","ts":"2026-06-04T21:15:44Z","phase":"compile","seconds":16.101,"exit":0,"cmd":"/opt/rocm/bin/hipcc -O3 --offload-arch=gfx90a -x hip /var/lib/jenkins/moat/projects/egg.c/src/full_cuda_train_egg.cu -o /var/lib/jenkins/moat/agent_space/egg_hip_new"}
+{"kind": "tokens", "ts": "2026-06-04T19:30:05Z", "tokens": 39735, "source": "validator"}

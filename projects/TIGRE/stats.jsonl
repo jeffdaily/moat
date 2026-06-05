@@ -24,3 +24,4 @@
 {"kind":"phase","ts":"2026-06-04T02:56:30Z","phase":"test","seconds":10.520,"exit":0,"cmd":"python3 agent_space/tigre_validate.py"}
 {"kind":"phase","ts":"2026-06-04T02:56:43Z","phase":"test","seconds":6.504,"exit":0,"cmd":"python3 agent_space/tigre_solvers.py"}
 {"kind":"session","ts":"2026-06-04T02:56:59Z","epoch":1780541819.207399427,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-04T02:59:07Z", "tokens": 77364, "source": "validator"}

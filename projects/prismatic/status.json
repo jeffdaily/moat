@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:24:38Z",
-  "updated_at": "2026-06-05T11:00:45Z",
+  "updated_at": "2026-06-05T13:20:31Z",
   "head_sha": "08b5d2e6",
   "depends_on": [],
   "platforms": {
@@ -41,29 +41,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T11:00:45Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1101": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-05T11:00:45Z",
+      "updated_at": "2026-06-05T13:20:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -85,7 +63,29 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T11:00:45Z",
+      "updated_at": "2026-06-05T13:20:31Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1101": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-05T13:20:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -107,7 +107,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T11:00:45Z",
+      "updated_at": "2026-06-05T13:20:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

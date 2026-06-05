@@ -10,3 +10,5 @@
 {"kind":"phase","ts":"2026-06-04T18:01:06Z","phase":"test","seconds":1.029,"exit":1,"cmd":"C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe agent_space/3p-admm-win/validate_win.py"}
 {"kind":"phase","ts":"2026-06-04T18:02:27Z","phase":"test","seconds":12.169,"exit":0,"cmd":"C:/Users/jdaily/AppData/Local/Programs/Python/Python313/python.exe agent_space/3p-admm-win/validate_win.py"}
 {"kind": "tokens", "ts": "2026-06-04T18:05:34Z", "tokens": 74493, "source": "validator"}
+{"kind":"phase","ts":"2026-06-02T06:26:57Z","phase":"compile","seconds":2.378,"exit":0,"cmd":"bash projects/3P-ADMM-PC2/src/gpu/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-02T06:28:26Z","phase":"test","seconds":13.720,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/3p-admm-gfx1100/validate.py"}

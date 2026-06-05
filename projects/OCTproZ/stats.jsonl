@@ -22,3 +22,4 @@
 {"kind":"phase","ts":"2026-06-05T05:59:01Z","phase":"test","seconds":0.031,"exit":1,"cmd":"hipcc --offload-arch=gfx1100 -o octproz_gpu_test octproz_gpu_test.hip -lhipfft -lm"}
 {"kind":"phase","ts":"2026-06-05T05:59:12Z","phase":"test","seconds":1.352,"exit":0,"cmd":"hipcc --offload-arch=gfx1100 -o /tmp/octproz_gpu_test /tmp/octproz_gpu_test.hip -lhipfft -lm"}
 {"kind":"phase","ts":"2026-06-05T05:59:16Z","phase":"test","seconds":0.221,"exit":0,"cmd":"/tmp/octproz_gpu_test"}
+{"kind": "tokens", "ts": "2026-06-05T06:00:30Z", "tokens": 50769, "source": "validator (gfx1100)"}
