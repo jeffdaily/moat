@@ -4,3 +4,4 @@
 {"kind":"phase","ts":"2026-06-05T05:26:32Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release"}
 {"kind":"phase","ts":"2026-06-05T05:26:41Z","phase":"compile","seconds":3.011,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/Velvet/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release"}
 {"kind":"phase","ts":"2026-06-05T05:27:06Z","phase":"compile","seconds":22.588,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/Velvet/src && cmake --build build -j$(nproc)"}
+{"kind": "tokens", "ts": "2026-06-05T05:28:05Z", "tokens": 29693, "source": "porter"}

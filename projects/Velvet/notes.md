@@ -76,3 +76,39 @@ Fixed both issues:
 1. **CUDA_CALL macros**: Changed `#ifdef __CUDACC__` to `#if defined(__CUDACC__) || defined(__HIPCC__)` so kernel launches work on HIP.
 
 2. **.gitignore**: Restored upstream Windows ignores (*.user, x64/, x86/, .vs/) and added `build/` at end.
+
+## Re-review 2026-06-05
+
+Previous findings verified as fixed:
+
+1. **CUDA_CALL macros** -- `Velvet/Common.cuh:34` now checks `defined(__CUDACC__) || defined(__HIPCC__)`. Kernel launches will work on HIP.
+
+2. **.gitignore** -- Upstream Windows ignores (*.user, x64/, x86/, .vs/) restored; `build/` appended. No minimal footprint violation.
+
+3. **VtCallback template rename** -- The `TArgs -> Args` change at method level (line 91) is harmless: it removes a name shadow with the class-level `TArgs` (line 82). Method template parameters are never explicitly named in calls, so this is non-breaking.
+
+### Fault Class Verification
+
+- **warpSize/32**: No warp intrinsics (__shfl*, __ballot, __activemask). No hardcoded 32 for warp operations. BLOCK_SIZE=256 is a launch config, not a warp assumption.
+- **Rule-of-five**: VtBuffer/VtRegisteredBuffer/VtMergedBuffer delete copy constructors/assignment. No texture/surface handles requiring special cleanup.
+- **OOB neighbor reads**: Neighbor caching in SpatialHashGPU.cu clamps via `cellEnd[h]` and uses sentinel 0xffffffff.
+- **Texture pitch**: No texture usage in this project.
+- **Library swaps**: CUB -> hipCUB via namespace alias (SpatialHashGPU.cu:3-6). rocThrust via THRUST_DEVICE_SYSTEM=5 in cuda_to_hip.h.
+- **Arch-unified**: No per-arch fixes; single unified port.
+
+### Build System
+
+- CMakeLists.txt correctly uses `enable_language(HIP)` when USE_HIP=ON, `enable_language(CUDA)` otherwise.
+- CMAKE_HIP_ARCHITECTURES defaulted to gfx90a but can be overridden.
+- CUDA build path preserved (USE_HIP=OFF).
+
+### Commit Hygiene
+
+- `[ROCm]` prefix present on both commits.
+- No `Co-Authored-By: noreply` trailer.
+- Mentions Claude by name.
+- No AMD-internal account references.
+
+### Recommendation
+
+**Approve** -- ready for validation.
