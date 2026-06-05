@@ -41,3 +41,8 @@
 {"kind":"phase","ts":"2026-06-05T18:34:36Z","phase":"build-gfx1100","seconds":7.226,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate -j"}
 {"kind":"phase","ts":"2026-06-05T18:34:50Z","phase":"test-gfx1100","seconds":1.937,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate --output-on-failure -R ^cuda_"}
 {"kind":"session","ts":"2026-06-05T18:35:12Z","epoch":1780684512.297572583,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T18:11:50Z", "tokens": 85087, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T18:53:19Z","phase":"compile","seconds":3.226,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/rmcl/src -B /var/lib/jenkins/moat/agent_space/rmcl_stage2_build -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON -DRMAGINE_BUILD_TOOLS=OFF"}
+{"kind":"phase","ts":"2026-06-05T18:53:32Z","phase":"compile","seconds":9.112,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/rmcl_stage2_build -j"}
+{"kind":"phase","ts":"2026-06-05T18:53:43Z","phase":"test","seconds":2.418,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_stage2_build --output-on-failure -R ^cuda_"}
+{"kind":"phase","ts":"2026-06-05T18:55:51Z","phase":"test","seconds":0.796,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/rmcl_hiprt_test/build/test_all_simulators"}
