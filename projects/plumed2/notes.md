@@ -98,3 +98,32 @@ Porter reports 32/32 regression tests pass on gfx90a. This is the correct valida
 ## Review fix 2026-06-05
 
 Amended commit message to remove MOAT jargon "Strategy A pattern" -- now reads "uses a compatibility header approach". Pushed as 2ba581c3b.
+
+## Review 2026-06-05 (re-review after jargon fix)
+
+Re-reviewed commit 2ba581c3b after porter amended the commit message.
+
+### Jargon fix verified
+
+The previous review requested removal of "Strategy A pattern" MOAT jargon from the commit message. The porter amended it to "uses a compatibility header approach". This is now correct -- no MOAT-internal vocabulary remains.
+
+### All ROCm fault classes verified (no issues)
+
+- Warp size: No hardcoded warpSize, no warp-level intrinsics
+- Rule-of-five: Stream handles managed in ctor/dtor, class not copied
+- OOB neighbor reads: Tile-based iteration with explicit bounds
+- 256B texture pitch: Not applicable, no textures
+- BlockReduce TempStorage: Single use per kernel, no reuse races
+- Library swaps: CUB -> hipCUB via `#define cub hipcub`
+- hipFuncGetAttributes workaround: Queries device attributes, appropriate fallback
+
+### Commit hygiene
+
+- Title: `[ROCm]` prefix, 37 chars. OK.
+- Body: Discloses Claude assistance. OK.
+- No Co-Authored-By noreply trailer. OK.
+- No MOAT jargon. OK.
+
+### Result
+
+Approved for validation. State: review-passed.

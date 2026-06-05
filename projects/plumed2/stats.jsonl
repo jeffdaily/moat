@@ -4,3 +4,4 @@
 {"kind":"phase","ts":"2026-06-05T06:25:31Z","phase":"test","seconds":0.246,"exit":0,"cmd":"make check"}
 {"kind": "tokens", "ts": "2026-06-05T06:28:44Z", "tokens": 150019, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T06:30:43Z", "tokens": 86668, "source": "reviewer"}
+{"kind": "tokens", "ts": "2026-06-05T06:31:56Z", "tokens": 19861, "source": "porter"}
