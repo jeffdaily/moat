@@ -12,3 +12,13 @@
 {"kind":"phase","ts":"2026-06-05T05:07:33Z","phase":"compile","seconds":22.143,"exit":0,"cmd":"make -j128"}
 {"kind":"phase","ts":"2026-06-05T05:09:07Z","phase":"test","seconds":0.039,"exit":1,"cmd":"/opt/rocm/bin/hipcc -DUSE_HIP --offload-arch=gfx90a octproz_kernel_test.cu -o octproz_kernel_test -lhipfft"}
 {"kind":"phase","ts":"2026-06-05T05:09:17Z","phase":"test","seconds":2.000,"exit":0,"cmd":"/opt/rocm/bin/hipcc -DUSE_HIP --offload-arch=gfx90a /var/lib/jenkins/moat/agent_space/octproz_kernel_test.cu -o /var/lib/jenkins/moat/agent_space/octproz_kernel_test -lhipfft"}
+{"kind":"phase","ts":"2026-06-05T05:57:29Z","phase":"compile","seconds":0.003,"exit":127,"cmd":"qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx1100 ../octproz_project.pro"}
+{"kind":"phase","ts":"2026-06-05T05:57:47Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx1100 ../octproz_project.pro"}
+{"kind":"phase","ts":"2026-06-05T05:57:53Z","phase":"compile","seconds":0.008,"exit":2,"cmd":"qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx1100 ../octproz_project/octproz_project.pro"}
+{"kind":"phase","ts":"2026-06-05T05:57:58Z","phase":"compile","seconds":0.008,"exit":2,"cmd":"qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx1100 ../octproz_project/octproz_project.pro"}
+{"kind":"phase","ts":"2026-06-05T05:58:03Z","phase":"compile","seconds":0.041,"exit":0,"cmd":"qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx1100 /var/lib/jenkins/moat/projects/OCTproZ/src/octproz_project/octproz_project.pro"}
+{"kind":"phase","ts":"2026-06-05T05:58:24Z","phase":"compile","seconds":17.799,"exit":0,"cmd":"make -j64"}
+{"kind":"phase","ts":"2026-06-05T05:58:58Z","phase":"test","seconds":0.034,"exit":1,"cmd":"hipcc --offload-arch=gfx1100 -o octproz_gpu_test octproz_gpu_test.cpp -lhipfft -lm"}
+{"kind":"phase","ts":"2026-06-05T05:59:01Z","phase":"test","seconds":0.031,"exit":1,"cmd":"hipcc --offload-arch=gfx1100 -o octproz_gpu_test octproz_gpu_test.hip -lhipfft -lm"}
+{"kind":"phase","ts":"2026-06-05T05:59:12Z","phase":"test","seconds":1.352,"exit":0,"cmd":"hipcc --offload-arch=gfx1100 -o /tmp/octproz_gpu_test /tmp/octproz_gpu_test.hip -lhipfft -lm"}
+{"kind":"phase","ts":"2026-06-05T05:59:16Z","phase":"test","seconds":0.221,"exit":0,"cmd":"/tmp/octproz_gpu_test"}
