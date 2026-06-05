@@ -2,3 +2,4 @@
 {"kind":"phase","ts":"2026-06-05T09:38:37Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:38:45Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:41:43Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./prismatic-tests --log_level=all"}
+{"kind": "tokens", "ts": "2026-06-05T09:44:24Z", "tokens": 155453, "source": "porter"}
