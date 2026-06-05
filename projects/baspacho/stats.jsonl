@@ -2,3 +2,4 @@
 {"kind":"phase","ts":"2026-06-05T08:12:23Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build build -- -j128"}
 {"kind":"phase","ts":"2026-06-05T08:12:27Z","phase":"compile","seconds":0.132,"exit":1,"cmd":"cmake --build build -- -j128"}
 {"kind": "tokens", "ts": "2026-06-05T08:12:40Z", "tokens": 94997, "source": "planner-dup"}
+{"kind": "tokens", "ts": "2026-06-05T08:18:01Z", "tokens": 115855, "source": "porter"}
