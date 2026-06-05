@@ -2,3 +2,6 @@
 {"kind":"phase","ts":"2026-06-05T05:39:15Z","phase":"compile","seconds":6.417,"exit":0,"cmd":"make -j128"}
 {"kind":"phase","ts":"2026-06-05T05:53:02Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T05:58:07Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind": "tokens", "ts": "2026-06-05T06:04:29Z", "tokens": 135744, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T06:08:02Z", "tokens": 121473, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T06:12:25Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j128"}
