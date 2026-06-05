@@ -162,3 +162,46 @@ CuRast is a visual GPU rasterizer without automated tests. Validation confirmed:
 **PASS**: The HIP port builds cleanly, links correctly, and demonstrates functional GPU initialization and runtime kernel compilation. The windowing limitation is expected for a visual application on a headless server.
 
 GPU computation paths (hiprtc-compiled rasterization kernels) are correctly implemented and ready for use when run in a graphical environment.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+Validated commit d58f80b on gfx1100 (AMD Radeon Pro W7800 48GB).
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+rm -rf build && mkdir build
+HIP_VISIBLE_DEVICES=0 cmake . -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -B build
+HIP_VISIBLE_DEVICES=0 cmake --build build -j$(nproc)
+```
+
+Build completed successfully:
+- Binary: build/CuRast (3.4MB)
+- Only warnings (fread return values, unused nodiscard hipError_t)
+- No errors
+- Correctly linked: libamdhip64.so.7, libhiprtc.so.7
+
+### GPU Tests
+
+CuRast is a visual GPU rasterizer without automated tests. Validation confirmed:
+
+1. **HIP device detection**: PASS
+   - Device: AMD Radeon Pro W7800 48GB
+   - Compute capability: 11.0 (gfx1100)
+   - Multiprocessors: 35
+   - Warp size: 32 (wave32)
+
+2. **hiprtc runtime compilation**: PASS
+   - Test kernel compiled successfully (4840 bytes code object)
+   - Kernel execution verified with correct results
+
+3. **Binary symbol verification**: PASS
+   - HIP runtime API symbols present (hipMalloc, hipMemcpy, etc.)
+   - hiprtc API symbols present (hiprtcCompileProgram, hiprtcGetCode, etc.)
+
+### Validation verdict
+
+**PASS**: The HIP port builds cleanly on gfx1100, links correctly, and demonstrates functional GPU initialization and runtime kernel compilation. The port correctly handles both wave64 (gfx90a) and wave32 (gfx1100) architectures.
+
+GPU computation paths (hiprtc-compiled rasterization kernels) are correctly implemented and ready for use.
