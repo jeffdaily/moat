@@ -91,3 +91,11 @@ The reference output is in `reference.txt` for comparison.
 
 ### Verdict
 **Request Changes** -- the code is functionally correct and follows the porting approach properly. The only issue is the MOAT jargon ("Strategy A") appearing in the commit message body and a code comment. These are upstream-visible and must be reworded before the port can proceed.
+
+## MOAT jargon fix (2026-06-05)
+
+Fixed both instances of "Strategy A" per reviewer feedback:
+1. `src/cuda_to_hip.h` line 4: Changed "Strategy A: keep CUDA spellings..." to "Keeps CUDA spellings in source and aliases them to HIP on AMD GPUs"
+2. Commit message: Changed "Uses Strategy A (compat-header model): a cuda_to_hip.h header..." to "A cuda_to_hip.h header aliases CUDA spellings to HIP..."
+
+Rebuilt and verified compilation still passes. Pushed 4297b8c to moat-port.

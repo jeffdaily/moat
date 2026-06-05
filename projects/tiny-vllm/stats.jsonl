@@ -2,3 +2,6 @@
 {"kind":"phase","ts":"2026-06-05T00:06:46Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build build"}
 {"kind": "tokens", "ts": "2026-06-05T00:11:31Z", "tokens": 104477, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T00:12:42Z", "tokens": 71454, "source": "reviewer"}
+{"kind": "tokens", "ts": "2026-06-05T05:17:39Z", "tokens": 71757, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T05:18:21Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -G Ninja"}
+{"kind":"phase","ts":"2026-06-05T05:18:33Z","phase":"compile","seconds":9.284,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/tiny-vllm/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -G Ninja && cmake --build build"}
