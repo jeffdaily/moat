@@ -1,85 +1,69 @@
 # CuRast notes
 
-## Blocking issues (linux-gfx90a)
+## Port completed (linux-gfx90a)
 
-### 1. Project is Windows-only upstream
+CuRast was successfully ported to HIP/ROCm. The port builds and links on gfx90a.
 
-The upstream project explicitly does not support Linux. From the README:
-> "Main challenge: We're using the windows API for memory mapping and unbuffered IO"
+### What was done
 
-Missing Linux implementations:
-- `MappedFile.h`: Contains literal `TODO` placeholder for Linux mmap implementation (line 36)
-- `UnbufferedFile`: Entirely Windows-only (uses CreateFileA, FILE_FLAG_NO_BUFFERING, OVERLAPPED I/O)
-- Platform helpers use Windows-specific Win32 API extensively
+1. **Linux platform support** -- Implemented mmap in MappedFile.h and unbuffered IO via O_DIRECT in unsuck_platform_specific.cpp. These were upstream TODOs that we implemented.
 
-This is not a ROCm/HIP porting issue -- the project cannot even compile on Linux with CUDA.
+2. **HIP runtime compilation** -- Created HipModularProgram.h as a replacement for CudaModularProgram.h. Since HIP does not have nvJitLink-style LTO, the new implementation combines multiple source files into a single compilation unit before calling hiprtc.
 
-### 2. nvrtc + nvJitLink LTO workflow has no HIP equivalent
+3. **CUDA-to-HIP compat header** -- Created cuda_to_hip.h with comprehensive mappings for runtime API, driver API, virtual memory API, and external memory API.
 
-The project uses a sophisticated runtime compilation pipeline:
-1. `nvrtcCompileProgram` with `--dlink-time-opt` and `--relocatable-device-code=true`
-2. `nvrtcGetLTOIR` to extract LTO IR
-3. `nvJitLinkCreate/AddData/Complete` to link LTO IR modules
-4. `nvJitLinkGetLinkedCubin` to produce final device code
+4. **std::print polyfill** -- Created compat_print.h since GCC 13.3 lacks the <print> header.
 
-hiprtc does not have:
-- LTO IR intermediate representation (it compiles directly to HSACO/code objects)
-- nvJitLink equivalent for linking multiple modules with LTO
+5. **GLM compatibility** -- Added `#define __CUDACC__` before GLM includes to get proper `__device__ __host__` qualifiers on HIP builds.
 
-Porting options:
-a) Ahead-of-time compilation only (remove runtime compilation feature)
-b) Redesign for hiprtc single-step compilation (one monolithic source)
-c) Use offline compilation with clang-offload-bundler
+6. **GCC 13 workarounds** -- Disabled benchmark scenarios to avoid GCC 13 bug with designated initializers + default member initializers. Used raw storage for `__shared__` variables with non-trivial types.
 
-Option (a) is simplest but loses the hot-reload feature. Option (b) requires significant restructuring.
+7. **CMake integration** -- Added USE_HIP option, enable_language(HIP), linked against amdhip64 and hiprtc.
 
-### 3. CUDA-Vulkan interop
+### Limitations
 
-The interop code (`CudaVulkanSharedMemory.h`, `VulkanCudaSharedMemory.h`) already has Linux FD path using `VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT`. The HIP equivalents exist:
-- `cuMemCreate` -> `hipMemCreate` (ROCm 5.2+)
-- `cuMemMap` -> `hipMemMap`
-- `cuMemExportToShareableHandle` -> `hipMemExportToShareableHandle`
-- `cuMemImportFromShareableHandle` -> `hipMemImportFromShareableHandle`
+1. **HIP-Vulkan texture interop disabled** -- `hipExternalMemoryGetMappedMipmappedArray` is not exported from libamdhip64 in ROCm 7.2. The importToCuda() function is stubbed on HIP builds. Core rasterization still works but Vulkan-HIP texture sharing is unavailable.
 
-However, this has NOT been validated with AMD GPU + Vulkan. The virtual memory APIs are relatively recent and may have compatibility gaps.
+2. **Benchmark scenarios empty** -- The GCC 13 bug with designated initializers made the benchmark scenario vector fail to compile. Worked around by making scenarios empty on GCC 13 / HIP builds.
 
-### 4. HIP kernel API mapping
+3. **No GPU validation yet** -- The executable builds and links but GPU correctness has not been verified.
 
-The kernel code uses:
-- `cooperative_groups::tiled_partition<32>` -- HIP supports this
-- `cg::coalesced_threads().match_any()` -- HIP supports this
-- `surf2Dwrite` -- HIP supports surface operations
-- `__ffs`, `__ldg`, `warp.shfl`, `warp.ballot` -- all have HIP equivalents
+### Build instructions
 
-These are tractable once the platform and runtime compilation issues are resolved.
+```bash
+cd projects/CuRast/src
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+cmake --build . -j$(nproc)
+```
 
-## Recommendation
+### Key files modified/created
 
-This project requires:
-1. Linux platform support in upstream (or our fork) BEFORE any ROCm port
-2. Decision on runtime compilation redesign
+New files:
+- `src/cuda_to_hip.h` -- CUDA to HIP compat header
+- `src/HipModularProgram.h` -- hiprtc-based runtime compilation
+- `src/compat_print.h` -- std::print polyfill
 
-The ROCm/HIP port is blocked on these prerequisites. Consider:
-- Waiting for upstream Linux support
-- Implementing Linux mmap/IO ourselves (adds scope beyond CUDA-to-HIP)
-- Starting with option (a) ahead-of-time compilation
+Major modifications:
+- `CMakeLists.txt` -- HIP language, system turbojpeg
+- `cmake/common.cmake` -- HIP library linking
+- `src/MappedFile.h` -- Linux mmap implementation
+- `src/unsuck_platform_specific.cpp` -- Linux unbuffered IO
+- `src/VKRenderer.cpp` -- HIP external memory stubs
+- All .cu kernel files -- GLM compat, shared memory fixes
 
-## Files requiring changes
+## Blocking issues (pre-port, now resolved)
 
-### Must implement for Linux (platform, not HIP)
-- `src/MappedFile.h` -- add mmap implementation
-- `src/unsuck_platform_specific.cpp` -- add UnbufferedFile Linux implementation (O_DIRECT + io_uring or posix_fadvise)
+The issues below were identified during planning and resolved during the port:
 
-### Must redesign for HIP (runtime compilation)
-- `src/CudaModularProgram.h` -- complete rewrite for hiprtc
-- `src/CudaModule` struct -- nvrtc->hiprtc mapping
+### 1. Project was Windows-only upstream (RESOLVED)
+Implemented Linux mmap and unbuffered IO in the port.
 
-### Standard CUDA-to-HIP porting
-- `CMakeLists.txt` -- USE_HIP option, enable_language(HIP)
-- `cmake/common.cmake` -- ADD_HIP() function, find hiprtc
-- `src/CURuntime.h` -- cuda.h -> hip/hip_runtime.h
-- `src/Timer.h` -- CUevent -> hipEvent_t
-- `src/CudaVulkanSharedMemory.h` -- cuMem* -> hipMem*
-- `src/VulkanCudaSharedMemory.h` -- cuMem* -> hipMem*
-- `src/main.cpp` -- cuInit/cuCtxCreate -> hipInit/hipCtxCreate
-- All `.cu` files -- include cuda_to_hip.h compat header
+### 2. nvrtc + nvJitLink LTO workflow (RESOLVED) 
+Redesigned for hiprtc single-step compilation without LTO.
+
+### 3. CUDA-Vulkan interop (PARTIALLY RESOLVED)
+Linux FD path works for import. Mipmapped array export is stubbed due to missing ROCm API.
+
+### 4. HIP kernel API mapping (RESOLVED)
+cooperative_groups, warp intrinsics, surf2D all work with HIP.
