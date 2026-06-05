@@ -12,3 +12,6 @@
 {"kind": "tokens", "ts": "2026-06-05T08:55:18Z", "tokens": 140613, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T08:58:32Z", "tokens": 71880, "source": "reviewer"}
 {"kind": "tokens", "ts": "2026-06-05T08:59:31Z", "tokens": 19148, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:03:28Z", "tokens": 42155, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T09:07:54Z","phase":"compile","seconds":228.525,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src && pip install -e . --no-build-isolation 2>&1"}
+{"kind":"phase","ts":"2026-06-05T09:08:57Z","phase":"test","seconds":2.646,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_basic.py"}
