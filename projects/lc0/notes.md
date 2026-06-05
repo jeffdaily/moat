@@ -577,3 +577,16 @@ Built both shas at gfx90a with identical meson config. Binary equivalence verifi
 - Exported symbols (nm -gD, T/W/D): identical
 
 Verdict: The compiled program is unchanged on linux-gfx90a. Carried forward validation to c757400 without GPU re-run.
+
+## Revalidation 2026-06-05 (linux-gfx1100) -- Binary equivalence carry-forward
+
+HEAD moved from 1a6c3e3 to c757400 (Windows -fPIC build fix). Delta: commit c757400 removes `-fPIC` from hipcc args when `host_machine.system() == 'windows'`. On Linux, the conditional evaluates to false, so `hipcc_fpic = ['-fPIC']` is set identically to the old hardcoded behavior.
+
+Built both shas at gfx1100 with identical meson config. Binary equivalence verified:
+- common_kernels.hip.o: sha256 a7e0adc15d68b87a6b84e346097c48b0324d0d3fadd1ac7eb687fa22500ea223 (identical)
+- fp16_kernels.hip.o: sha256 c9799ba05d8eab4b150a09261541bfb0e1da046477653e0ce8ae200c8b16dac8 (identical)
+- Device code object 1 (size 1129144): sha256 fe4790b1d3200e4d845e7664ececdaa98132247d353ff9a486c076c1728fdf3f (identical)
+- Device code object 2 (size 2100776): sha256 2b1117c908d8d94311c5630215328b9483eb176be59c6581011515719f3bec12 (identical)
+- Exported symbols (nm -gD, T/W/D): identical
+
+Verdict: The compiled program is unchanged on linux-gfx1100. Carried forward validation to c757400 without GPU re-run.
