@@ -1,0 +1,8 @@
+{
+  "full_name": "NVlabs/nvdiffrast",
+  "upstream_url": "https://github.com/NVlabs/nvdiffrast",
+  "default_branch": "main",
+  "fork_url": null,
+  "ext_type": "torch-extension",
+  "base_sha": "253ac4fcea7de5f396371124af597e6cc957bfae"
+}
