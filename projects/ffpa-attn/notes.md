@@ -160,3 +160,43 @@ This falls under the "gfx1100-specific numeric divergence" hard class described 
 ### Recommendation
 
 **Validation FAILED** on gfx1100. The port works on gfx90a but not on gfx1100 due to a Triton-AMD codegen issue for large headdim kernels on RDNA3. This should be escalated as a Triton-AMD bug, not a ffpa-attn port issue.
+
+## Porter analysis 2026-06-05 (gfx1100 blocked)
+
+### Additional investigation
+
+Re-tested on gfx1100 to characterize the failure more precisely.
+
+**Failure pattern** (headdim vs correctness):
+- D <= 256: ALL PASS
+- D = 288-512: ALL FAIL (84-99% element mismatch, max diff 0.4-5.3, some NaN)
+- D >= 544: ALL PASS
+
+This is NOT "large headdim fails" -- it is a specific range that fails. The pattern correlates with `NUM_V_GROUPS` (the number of head dimension chunks in the Split-D algorithm):
+
+| HEADDIM | BLOCK_V=64 | BLOCK_V=128 | BLOCK_V=256 | Status |
+|---------|------------|-------------|-------------|--------|
+| 256     | 4          | 2           | 1           | PASS   |
+| 288     | 5          | 3           | 2           | FAIL   |
+| 320     | 5          | 3           | 2           | FAIL   |
+| 512     | 8          | 4           | 2           | FAIL   |
+| 544     | 9          | 5           | 3           | PASS   |
+
+The failure appears when autotuning selects certain BLOCK_HEADDIM_V configs that produce NUM_V_GROUPS values of 3 or 4 on gfx1100. The same configs work on gfx90a.
+
+**Key observations**:
+1. Results are deterministic (not a race condition)
+2. The bug is in Triton-AMD AMDGPU codegen for wave32
+3. Simplified test kernels with similar patterns (tuple accumulator, static_range loop) work correctly in isolation
+4. The bug manifests only in the full ffpa-attn kernel with specific autotune configs
+
+### Why blocked (not delta-ported)
+
+This is a Triton-AMD compiler bug, not a port bug. The port itself is zero-diff -- it validates that Triton's existing AMD codegen works for the ffpa-attn kernels. When the codegen produces incorrect code, there is no port-level fix.
+
+Potential workarounds considered and rejected:
+1. **Force specific autotune configs**: Would require forking Triton's autotuner behavior
+2. **Cap headdim to 256**: Would defeat the project's purpose (large headdim support)
+3. **Use BLOCK_V=256 always**: May OOM on gfx1100 (lower VRAM than datacenter GPUs)
+
+The correct fix is upstream in Triton-AMD. Until then, gfx1100 is blocked.

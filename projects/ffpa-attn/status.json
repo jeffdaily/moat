@@ -7,7 +7,7 @@
   "priority": 4.62,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-05T05:55:39Z",
+  "updated_at": "2026-06-05T13:53:09Z",
   "head_sha": "935943a22ef567d970ecbcfb0c5932cdac077e6f",
   "platforms": {
     "linux-gfx90a": {
@@ -35,12 +35,12 @@
     },
     "linux-gfx1100": {
       "state": "validation-failed",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Triton-AMD 3.7.0 codegen bug: large headdim kernels (288-512) produce incorrect results on gfx1100 (RDNA3/wave32). Same kernels pass on gfx90a. headdim<=256 and >=544 work; 288-512 fails with 84-99% mismatch. Primary use case is large headdim, so blocked until Triton-AMD fixes this.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T05:55:39Z",
+      "updated_at": "2026-06-05T13:53:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
