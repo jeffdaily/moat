@@ -39,3 +39,32 @@ cd test && bash run_tests.sh ../build/SCAMP /tmp/results.txt ""
 - hipCUB/rocPRIM headers contain device intrinsics that fail in host C++ compilation; they must be included only in HIP-compiled translation units (guarded with `#if defined(__HIPCC__)`)
 - hip::hipcub must be linked PRIVATE to avoid propagating HIP compile options to downstream C++ targets
 - The shfl kernel variants would need significant redesign for wave64 (they use 32-bit shuffle masks and assume 32-lane warps); easier to skip them and rely on the sliding-window variants which work on both wave32 and wave64
+
+## Review 2026-06-05
+
+### Summary
+Strategy A port enabling AMD GPU support via HIP with cuda_to_hip.h compat header, wave64 warp reduction fix for SUM_THRESH profile, and CMake-based shfl variant skipping. The port is sound with two minor issues to address.
+
+### Findings
+
+1. **MOAT vocabulary in commit message and CMake comment** (must fix)
+   - Commit message uses "Strategy A approach" -- remove MOAT-internal term
+   - `src/core/gpu_kernel/CMakeLists.txt:93`: "follower platforms pass their own arch" -- reword to "other platforms pass their own arch via CMAKE_HIP_ARCHITECTURES"
+
+2. **Duplicated symbol mappings in host .cpp files** (acceptable, document)
+   - Several host .cpp files (`qt_helper.cpp`, `tile.cpp`, `common.cpp`, `main.cpp`, `scamp_interface.cpp`, `autotune_bench.cpp`, `device_props.cpp`, `kernel_config.cpp`) define their own CUDA->HIP macros rather than including cuda_to_hip.h
+   - This is necessary because cuda_to_hip.h includes hipFFT/hipCUB headers guarded by `__HIPCC__` which fail host compilation
+   - Current approach works but creates maintenance burden; consider documenting this pattern in cuda_to_hip.h
+
+### Verified Correct
+
+- Wave64 warp reduction: strides 32,16,8,4,2,1 with `__GFX9__` guard, 0x3f lane mask
+- Shfl variant skip via CMake `continue()` is valid given fundamental 32-lane assumptions
+- kWarpSize abstraction follows PORTING_GUIDE (`__GFX9__` device, upper bound for host)
+- Multi-arch compatible CMAKE_HIP_ARCHITECTURES
+- Library swaps: cuFFT->hipFFT, CUB->hipCUB
+- hip::hipcub linked PRIVATE (correct)
+- CUDA path preserved, USE_HIP defaults OFF
+
+### Recommendation
+changes-requested: fix MOAT vocabulary, then ready for validation.
