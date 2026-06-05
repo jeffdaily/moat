@@ -181,3 +181,45 @@ HIP_VISIBLE_DEVICES=3 ./build/bin/Release/boids_bruteforce --steps 10
 ```
 
 Verdict: PASS - Real GPU validation successful on gfx90a.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100)
+ROCm: 7.2.1
+Arch: gfx1100
+
+Build command:
+```bash
+cd projects/FLAMEGPU2/src
+
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DFLAMEGPU_GPU=HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/clang \
+  -DFLAMEGPU_BUILD_TESTS=ON
+
+cmake --build build --target flamegpu boids_bruteforce tests -j$(nproc)
+```
+
+Test results:
+```
+[==========] 1133 tests from 89 test suites ran.
+[  PASSED  ] 1069 tests.
+[  SKIPPED ] 64 tests (RTC-related, expected on AMD/HIP)
+```
+
+All 1069 non-RTC tests PASSED. The 64 skipped tests are all RTC (Runtime Compilation) tests which are not supported on AMD as documented in the README. This matches the gfx90a results exactly.
+
+Example validation:
+```bash
+./build/bin/Release/boids_bruteforce --steps 10 -v
+# Simulation configuration:
+#   Random Seed: 1780637988
+#   Steps: 10
+# Total Processing time: 0.058773 s
+# GPU: AMD Radeon Pro W7800 48GB
+```
+
+Verdict: PASS - Real GPU validation successful on gfx1100.
