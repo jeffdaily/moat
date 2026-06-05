@@ -7,3 +7,4 @@
 {"kind": "tokens", "ts": "2026-06-05T00:36:51Z", "tokens": 113412, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T00:39:22Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -j128"}
 {"kind":"phase","ts":"2026-06-05T00:39:39Z","phase":"compile","seconds":11.625,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/symforce/src/symforce/caspar/source/runtime/build -j128"}
+{"kind": "tokens", "ts": "2026-06-05T00:41:26Z", "tokens": 82324, "source": "porter"}
