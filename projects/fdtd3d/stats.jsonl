@@ -1,0 +1,18 @@
+{"kind": "tokens", "ts": "2026-06-05T07:48:35Z", "tokens": 93482, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T07:52:00Z","phase":"compile","seconds":0.035,"exit":2,"cmd":"make -j128 fdtd3d"}
+{"kind":"phase","ts":"2026-06-05T07:52:06Z","phase":"compile","seconds":0.152,"exit":0,"cmd":"make -j128"}
+{"kind":"phase","ts":"2026-06-05T07:52:10Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T07:52:19Z","phase":"compile","seconds":6.725,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T07:53:43Z","phase":"compile","seconds":11.309,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T07:55:31Z","phase":"compile","seconds":11.378,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T07:56:28Z","phase":"compile","seconds":11.279,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T07:57:16Z","phase":"compile","seconds":11.463,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T07:58:52Z","phase":"compile","seconds":11.479,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T08:06:49Z","phase":"compile","seconds":11.212,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T08:12:38Z","phase":"compile","seconds":11.335,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T08:25:44Z","phase":"compile","seconds":11.343,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T08:36:35Z","phase":"compile","seconds":311.168,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j128"}
+{"kind":"phase","ts":"2026-06-05T08:36:45Z","phase":"test","seconds":0.473,"exit":134,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid"}
+{"kind":"phase","ts":"2026-06-05T08:37:05Z","phase":"test","seconds":0.245,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid 0"}
+{"kind":"phase","ts":"2026-06-05T08:37:14Z","phase":"test","seconds":0.018,"exit":11,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size-x 20 --size-y 20 --size-z 20 --cuda-num-gpus 1 --cuda-gpus-id 0 --time-steps 100 --courant-num 1.0 --layout-type 2 --eps-sphere 4.0"}
+{"kind":"phase","ts":"2026-06-05T08:37:22Z","phase":"test","seconds":0.587,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}
