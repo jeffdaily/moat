@@ -43,3 +43,57 @@ cmake --build . -j$(nproc)
 ## Install as a dependency
 
 N/A - fdtd3d is an end-user application, not a library.
+
+## Review 2026-06-05
+
+### Summary
+
+This port adds HIP support for AMD GPUs using Strategy A (compat header + LANGUAGE HIP). It is a clean, minimal-footprint port of a pure CMake project with no warp-level primitives, no textures, and no external CUDA libraries. The port follows MOAT best practices.
+
+### Port Correctness
+
+No issues. The port correctly:
+- Uses a single `cuda_to_hip.h` compat header with CUDA->HIP symbol aliases
+- Marks `.cu` files as `LANGUAGE HIP` instead of renaming
+- Adds `template` keyword for dependent template member calls (required by clang, valid C++ that nvcc also accepts)
+- Handles HIP's stricter host/device code separation in PAssert.h via a three-way `#if __HIPCC__ / #elif __CUDACC__ / #else` pattern that preserves the original CUDA path
+- Sets `__CUDA_ARCH__` to 600 on HIP so native `atomicAdd(double*)` is used
+
+### Fault Classes
+
+No issues. This project has no fault class exposure:
+- No warp-level primitives (`__shfl*`, `__ballot`, etc.) -- no wave64/wave32 hazard
+- No hardcoded 32 for warp size (the `32` in unit-test-cuda-grid.cu is a grid dimension)
+- No textures or surfaces -- no rule-of-five or pitch alignment concerns
+- No external CUDA libraries -- no library swap concerns
+- No OOB neighbor reads -- the FDTD stencils are within grid bounds
+
+### Minimal Footprint
+
+No issues. Host C++ is untouched. Changes are confined to:
+- CMakeLists.txt files (CMake USE_HIP gating)
+- cuda_to_hip.h (new compat header)
+- PAssert.h (HIP-specific host/device handling)
+- InternalScheme.inc.h (template keyword -- valid C++, identical behavior on CUDA)
+- CudaInclude.h (one line to include compat header)
+
+### Build System
+
+No issues. Uses `enable_language(HIP)` gated by `USE_HIP` option (default OFF). `CMAKE_HIP_ARCHITECTURES` defaults to gfx90a when unset but accepts any arch via cache variable.
+
+### Commit Hygiene
+
+No issues:
+- Title `[ROCm] Add HIP support for AMD GPUs` is 35 chars with correct prefix
+- Body explains the port, mentions Claude, has a Test Plan section
+- No `Co-Authored-By: noreply` trailer
+- No MOAT jargon in upstream-visible text
+- No AMD-internal account references
+
+### Backward Compatibility
+
+No issues. The CUDA path is preserved via `elseif ("${CUDA_ENABLED}")` in CMake and `#elif defined(__CUDACC__)` in PAssert.h.
+
+### Recommendation
+
+**Approve** -- The port is correct, minimal, and ready for validation.

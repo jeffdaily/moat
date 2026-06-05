@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-05T08:37:05Z","phase":"test","seconds":0.245,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/UnitTests/unit-test-cuda-grid 0"}
 {"kind":"phase","ts":"2026-06-05T08:37:14Z","phase":"test","seconds":0.018,"exit":11,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size-x 20 --size-y 20 --size-z 20 --cuda-num-gpus 1 --cuda-gpus-id 0 --time-steps 100 --courant-num 1.0 --layout-type 2 --eps-sphere 4.0"}
 {"kind":"phase","ts":"2026-06-05T08:37:22Z","phase":"test","seconds":0.587,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/fdtd3d/src/build/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100"}
+{"kind": "tokens", "ts": "2026-06-05T08:39:09Z", "tokens": 146617, "source": "porter"}
