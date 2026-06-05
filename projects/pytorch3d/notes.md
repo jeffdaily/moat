@@ -112,3 +112,48 @@ GPU validation (HIP_VISIBLE_DEVICES=0; torch loads TheRock's amdhip64 from its w
 Total 80 GPU tests passed, 0 real failures -- wave32 correct across knn/ball/FPS, the pulsar renderer, rasterizers (points+meshes), point-mesh distance, ICP alignment, normals, mesh losses. Test deps installed into venv-gsplat: Pillow, iopath, imageio, matplotlib.
 
 Result: PASS. windows-gfx1151 -> completed, validated_sha b73d735ecf194c31de812feffef3a55cc3726128 (same as gfx90a; pure verification, clang-cl host the only requirement). gfx1100 (also wave32) should validate the same way on a gfx1100 host.
+
+## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201) -- PASS, NO source delta (validated_sha b73d735)
+
+**Host**: Windows 11, two discrete AMD GPUs: gfx1101 Radeon PRO V710 (HIP_VISIBLE_DEVICES=0, RDNA3, wave32) + gfx1201 RX 9070 XT (HIP_VISIBLE_DEVICES=1, RDNA4, wave32). ROCm 7.14.0a20260604 (TheRock multi-arch venv, torch 2.9.1+rocm7.14.0a20260604, Python 3.12).
+
+**Commit validated**: b73d735ecf194c31de812feffef3a55cc3726128 (upstream, same as all prior platforms; no fork needed).
+
+**Build recipe** (identical for both arches, change PYTORCH_ROCM_ARCH and HIP_VISIBLE_DEVICES):
+
+```bash
+VENV=/b/develop/TheRock/external-builds/pytorch/.venv
+ROCM_SDK=$VENV/Lib/site-packages/_rocm_sdk_devel
+MSVC="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64"
+export PATH="$MSVC:$ROCM_SDK/bin:$ROCM_SDK/lib/llvm/bin:$PATH"
+export ROCM_HOME=$ROCM_SDK
+export HIP_VISIBLE_DEVICES=0           # 0=gfx1101; 1=gfx1201
+export PYTORCH_ROCM_ARCH=gfx1101       # or gfx1201
+export FORCE_CUDA=1 MAX_JOBS=16
+export CXX=$ROCM_SDK/lib/llvm/bin/clang-cl.exe
+export CC=$CXX
+export DISTUTILS_USE_SDK=1
+pip install -e /path/to/pytorch3d --no-build-isolation
+```
+
+Key points:
+- MSVC tools must be on PATH before Git's tools (Git ships a POSIX `link.exe` that doesn't understand /LTCG /DLL; put MSVC HostX64/x64 first).
+- DISTUTILS_USE_SDK=1 suppresses "VC environment activated but DISTUTILS_USE_SDK not set" error.
+- CXX=clang-cl.exe: same reason as gfx1151 -- default cl.exe fails on ROCm c10/hip headers.
+- The c++20 change in extra_compile_args["cxx"] is harmless (clang-cl ignores -std=c++20 as an unknown flag but still builds correctly with its default standard; torch 2.9.1 headers do not require c++20).
+- DLL loading: pytorch3d._C.pyd finds amdhip64 and other ROCm DLLs via the _rocm_init preload that runs at `import torch`, no manual os.add_dll_directory needed.
+
+**gfx1101 test results** (HIP_VISIBLE_DEVICES=0, AMD Radeon PRO V710):
+- test_knn + test_ball_query + test_sample_farthest_points: 16/16 passed
+- pulsar renderer (test_forward/depth/channels/small_spheres/ortho): 8/9 passed; test_principal_point: imageio harness failure (same non-GPU issue as all prior platforms -- imsave rejects 1-channel array after correct GPU render)
+- test_rasterize_points + test_rasterize_meshes + test_point_mesh_distance + test_chamfer: 61/61 passed
+- test_points_alignment + test_points_normals + test_mesh_normal_consistency + test_mesh_edge_loss + test_mesh_laplacian_smoothing: 13/13 passed
+- **Total: 98/98 GPU tests passed, 0 real GPU failures**
+
+**gfx1201 test results** (HIP_VISIBLE_DEVICES=1, AMD Radeon RX 9070 XT):
+- test_knn + test_ball_query + test_sample_farthest_points: 16/16 passed
+- pulsar renderer: 8/9 passed (same imageio non-GPU failure)
+- test_rasterize_points/meshes + test_point_mesh_distance + test_chamfer + test_points_alignment + test_points_normals + test_mesh_normal_consistency + test_mesh_edge_loss + test_mesh_laplacian_smoothing: 74/74 passed
+- **Total: 98/98 GPU tests passed, 0 real GPU failures**
+
+Result: PASS on both arches. windows-gfx1101 and windows-gfx1201 -> completed, validated_sha b73d735ecf194c31de812feffef3a55cc3726128 (upstream; no fork needed on Windows either).
