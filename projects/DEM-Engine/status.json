@@ -8,11 +8,11 @@
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:12Z",
   "updated_at": "2026-06-05T06:57:33Z",
-  "head_sha": null,
+  "head_sha": "a0b1909049ff9415705f243e20c1232472b4e080",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "blocked",
       "blocked": true,
       "blocked_reason": "ROCm Jitify v1 API not supported: DEM-Engine uses jitify::JitCache/jitify::Program (v1), but ROCm jitify fork only ports jitify2 API to HIP. The v1 jitify.hpp still requires cuda.h (CUDA Driver API). Migrating to jitify2 API or AOT kernel compilation would be required.",
       "validated_sha": null,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
