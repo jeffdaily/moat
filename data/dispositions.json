@@ -27,6 +27,13 @@
     "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
+  "3dlg-hcvc/multi3drefer": {
+    "decided": "2026-06-05T01:25:53Z",
+    "disposition": "skip",
+    "full_name": "3dlg-hcvc/multi3drefer",
+    "note": "Research code for paper; PyTorch-based, no custom CUDA",
+    "reason": "not-a-target"
+  },
   "66ring/tiny-flash-attention": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
@@ -104,6 +111,13 @@
     "note": "tutorial/book/educational, not a library to port",
     "reason": "not-a-target"
   },
+  "arclab-hku/deio": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "arclab-hku/DEIO",
+    "note": "ICCV research paper code",
+    "reason": "not-a-target"
+  },
   "arthurinruc/cutlass-notes": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
@@ -111,11 +125,25 @@
     "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
+  "aryagxr/cuda": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "aryagxr/cuda",
+    "note": "Daily CUDA learning practice",
+    "reason": "not-a-target"
+  },
   "ashvardanian/less_slow.cpp": {
     "decided": "2026-05-30T00:31:01Z",
     "disposition": "skip",
     "full_name": "ashvardanian/less_slow.cpp",
     "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "ashvardanian/parallelreductionsbenchmark": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "ashvardanian/ParallelReductionsBenchmark",
+    "note": "Benchmark suite comparing reduction implementations",
     "reason": "not-a-target"
   },
   "avarok-cybersecurity/atlas": {
@@ -153,6 +181,13 @@
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
   },
+  "bchao1/textured_gaussians": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "bchao1/textured_gaussians",
+    "note": "CVPR paper; GS variant, gsplat covers foundation",
+    "reason": "not-a-target"
+  },
   "bertmaher/simplegemm": {
     "decided": "2026-06-05T01:22:13Z",
     "disposition": "skip",
@@ -167,6 +202,13 @@
     "note": "RWKV-7 inference optimized for 5090 (Blackwell); likely tensor-core PTX-specific",
     "reason": "cant-port"
   },
+  "bobmcdear/neural-network-cuda": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "BobMcDear/neural-network-cuda",
+    "note": "Educational neural network from scratch",
+    "reason": "not-a-target"
+  },
   "boltzmannentropy/vllm-5090": {
     "decided": "2026-06-05T01:24:38Z",
     "disposition": "skip",
@@ -179,6 +221,13 @@
     "disposition": "skip",
     "full_name": "brucefan1983/CUDA-Programming",
     "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
+  "bytedance/byteqc": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "bytedance/byteqc",
+    "note": "No description available; unclear status",
     "reason": "not-a-target"
   },
   "bytedance/flux": {
@@ -195,11 +244,32 @@
     "note": "RL agent that generates CUDA kernels, not a CUDA app to port",
     "reason": "not-a-target"
   },
+  "cair/tmu": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "cair/tmu",
+    "note": "Tsetlin Machine implementation; niche ML architecture",
+    "reason": "not-a-target"
+  },
   "calvinxky/basiccuda": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
     "full_name": "CalvinXKY/BasicCUDA",
     "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
+  "camenduru/simple-knn": {
+    "decided": "2026-06-05T01:25:52Z",
+    "disposition": "skip",
+    "full_name": "camenduru/simple-knn",
+    "note": "Simple K-NN CUDA; minimal library, already have diff-gaussian-rasterization for GS",
+    "reason": "not-a-target"
+  },
+  "caps-umu/fideslib": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "CAPS-UMU/FIDESlib",
+    "note": "CKKS FHE lib; niche, already have HEonGPU for FHE",
     "reason": "not-a-target"
   },
   "ceed/libceed": {
@@ -321,6 +391,13 @@
     "note": "no direct fork; AMD AITER has equivalent block-scale FP8 GEMM: github.com/ROCm/aiter",
     "reason": "ported-elsewhere"
   },
+  "desilo/liberate-fhe": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "Desilo/liberate-fhe",
+    "note": "FHE library; already have HEonGPU for homomorphic encryption",
+    "reason": "not-a-target"
+  },
   "diku-dk/futhark": {
     "decided": "2026-05-29T23:23:27Z",
     "disposition": "skip",
@@ -391,6 +468,20 @@
     "note": "Rust array manipulation; multi-backend already (OpenCL, CUDA, Vulkan)",
     "reason": "not-a-target"
   },
+  "emptysoal/cuda-image-preprocess": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "emptysoal/cuda-image-preprocess",
+    "note": "Image preprocessing; minimal utility",
+    "reason": "not-a-target"
+  },
+  "enp1s0/ozimmu": {
+    "decided": "2026-06-05T01:25:52Z",
+    "disposition": "skip",
+    "full_name": "enp1s0/ozIMMU",
+    "note": "Int8 tensor core GEMM; NVIDIA tensor core specific",
+    "reason": "cant-port"
+  },
   "enpeizhao/cvprojects": {
     "decided": "2026-05-29T23:57:04Z",
     "disposition": "skip",
@@ -412,12 +503,26 @@
     "note": "CSCS distributed linear algebra; has HIP backend (CSCS runs Frontier/LUMI)",
     "reason": "already-supported"
   },
+  "eunomia-bpf/basic-cuda-tutorial": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "eunomia-bpf/basic-cuda-tutorial",
+    "note": "Tutorial collection",
+    "reason": "not-a-target"
+  },
   "facebookincubator/aitemplate": {
     "decided": "2026-05-29T23:23:27Z",
     "disposition": "skip",
     "full_name": "facebookincubator/AITemplate",
     "note": "joint AMD project; had ROCm/CK backend",
     "reason": "already-supported"
+  },
+  "fankang2021/gpu-health-expert": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "FanKang2021/GPU-Health-eXpert",
+    "note": "GPU health monitoring tool, not compute library",
+    "reason": "not-a-target"
   },
   "ffmpeg/ffmpeg": {
     "decided": "2026-06-05T01:16:26Z",
@@ -445,6 +550,13 @@
     "disposition": "skip",
     "full_name": "ForceInjection/AI-fundamentals",
     "note": "tutorial/learning/collection repo",
+    "reason": "not-a-target"
+  },
+  "freelw/cpp-transformer": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "freelw/cpp-transformer",
+    "note": "Educational C++ transformer implementation",
     "reason": "not-a-target"
   },
   "fzj-jsc/tutorial-multi-gpu": {
@@ -517,6 +629,13 @@
     "note": "Neuromorphic SNN engine; immature/experimental project",
     "reason": "not-a-target"
   },
+  "hamzaelshafie/h100_gemm": {
+    "decided": "2026-06-05T01:25:52Z",
+    "disposition": "skip",
+    "full_name": "HamzaElshafie/h100_gemm",
+    "note": "H100 tensor core GEMM; NVIDIA Hopper-specific PTX",
+    "reason": "cant-port"
+  },
   "haujetzhao/qwen3-asr-gguf": {
     "decided": "2026-06-05T01:18:50Z",
     "disposition": "skip",
@@ -544,6 +663,13 @@
     "full_name": "heavyai/heavydb",
     "note": "GPU queries run via a runtime LLVM NVVM->NVPTX codegen pipeline (NativeCodegen.cpp lookupTarget(nvptx64)/triple nvptx64-nvidia-cuda/nvvm.annotations/libdevice) JIT-linked to cubin by the CUDA driver (NvidiaKernel.cpp cuLink*) and launched via the CUDA driver API. No static GPU kernel to translate and no isolated GPU unit test -> no correctness-first slice. A ROCm port needs a new LLVM-AMDGPU codegen backend + ROCm device-libs link + hipRTC/comgr runtime-compile + a port of ~70 CUDA-driver-coupled files and the warpcore CG hash table: upstream-engineering scale. The analogous Intel SPIR-V+Level-Zero backend (PRs 671/683/688-691/697) was attempted and closed unmerged; only an inert L0 memory-manager stub remains. Not a tractable mechanical MOAT port; not GPU-validatable in-pipeline. See projects/heavydb/plan.md.",
     "reason": "cant-port"
+  },
+  "hemlab/hipims-cuda": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "HEMLab/HiPIMS-CUDA",
+    "note": "Hydrodynamic modeling; niche research",
+    "reason": "not-a-target"
   },
   "henryndubuaku/cuda-tutorials": {
     "decided": "2026-05-30T00:45:17Z",
@@ -629,6 +755,20 @@
     "note": "CUTLASS-based quantized BLAS; CUTLASS doesn't port to ROCm per guide",
     "reason": "cant-port"
   },
+  "ivanlh20/multem": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "Ivanlh20/multem",
+    "note": "MULTEM electron microscopy sim; niche scientific",
+    "reason": "not-a-target"
+  },
+  "jalexine/gpucodes": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "jalexine/gpucodes",
+    "note": "Learning journey documentation, not a library",
+    "reason": "not-a-target"
+  },
   "jamjamjon/usls": {
     "decided": "2026-06-05T01:18:19Z",
     "disposition": "skip",
@@ -678,11 +818,32 @@
     "note": "Julia CUDA toolchain; AMDGPU.jl is the AMD-side equivalent",
     "reason": "not-a-target"
   },
+  "kangruix/waveblender": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "kangruix/WaveBlender",
+    "note": "SIGGRAPH Asia paper; niche sound-source animation",
+    "reason": "not-a-target"
+  },
+  "kbyrski/raysplatting": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "KByrski/RaySplatting",
+    "note": "GS research variant",
+    "reason": "not-a-target"
+  },
   "kerneltuner/kernel_tuner": {
     "decided": "2026-05-30T00:31:02Z",
     "disposition": "skip",
     "full_name": "KernelTuner/kernel_tuner",
     "note": "benchmark suite / build or tuning tool, not a port target",
+    "reason": "not-a-target"
+  },
+  "kienttran/abmgpu": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "KienTTran/ABMGPU",
+    "note": "Agent based model + OpenGL; niche research",
     "reason": "not-a-target"
   },
   "kuangjux/nvshmem-tutorial": {
@@ -712,6 +873,20 @@
     "full_name": "leimao/CUTLASS-Examples",
     "note": "CUTLASS/CuTe examples, not a library",
     "reason": "not-a-target"
+  },
+  "librapid/librapid": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "LibRapid/librapid",
+    "note": "Math library; multi-backend, CUDA optional",
+    "reason": "not-a-target"
+  },
+  "llnl/aluminum": {
+    "decided": "2026-06-05T01:25:53Z",
+    "disposition": "skip",
+    "full_name": "llnl/Aluminum",
+    "note": "LLNL communication library; has HIP backend (runs on LUMI/Frontier)",
+    "reason": "already-supported"
   },
   "llnl/blt": {
     "decided": "2026-05-30T00:31:02Z",
@@ -769,6 +944,20 @@
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
     "reason": "not-a-target"
   },
+  "lwang-astro/petar": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "lwang-astro/PeTar",
+    "note": "N-body code; niche astrophysics",
+    "reason": "not-a-target"
+  },
+  "lxrzlyr/gal-dawn": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "lxrzlyr/GAL-DAWN",
+    "note": "Graph algorithms library; niche HPC research",
+    "reason": "not-a-target"
+  },
   "lzyrapx/leetgpu": {
     "decided": "2026-06-05T01:19:14Z",
     "disposition": "skip",
@@ -811,6 +1000,20 @@
     "note": "Simple FFT tool, not a library",
     "reason": "not-a-target"
   },
+  "microsoft/repdl": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "microsoft/RepDL",
+    "note": "Reproducible DL library; infrastructure not compute",
+    "reason": "not-a-target"
+  },
+  "microsoft/tilefusion": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "microsoft/TileFusion",
+    "note": "Experimental C++ macro kernel template library; likely tensor-core specific",
+    "reason": "cant-port"
+  },
   "mirage-project/mirage": {
     "decided": "2026-05-31T01:40:26Z",
     "disposition": "skip",
@@ -851,6 +1054,13 @@
     "disposition": "skip",
     "full_name": "MuGdxy/muda",
     "note": "CUDA DSL/wrapper library; meta-programming layer, not compute kernels",
+    "reason": "not-a-target"
+  },
+  "multithreadcorner/hydra": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "MultithreadCorner/Hydra",
+    "note": "Header-only data analysis framework; niche",
     "reason": "not-a-target"
   },
   "mushroomfire/mdapy": {
@@ -937,6 +1147,27 @@
     "note": "Intel oneAPI, not CUDA",
     "reason": "not-a-target"
   },
+  "openbmb/infllmv2_cuda_impl": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "OpenBMB/infllmv2_cuda_impl",
+    "note": "No description; unclear project status",
+    "reason": "not-a-target"
+  },
+  "opendrivelab/lightwheelocc": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "OpenDriveLab/LightwheelOcc",
+    "note": "Synthetic dataset project, not compute library",
+    "reason": "not-a-target"
+  },
+  "openmm/nnpops": {
+    "decided": "2026-06-05T01:25:53Z",
+    "disposition": "skip",
+    "full_name": "openmm/NNPOps",
+    "note": "OpenMM neural network ops; OpenMM has HIP platform",
+    "reason": "already-supported"
+  },
   "openmm/openmm": {
     "decided": "2026-06-03T23:50:07Z",
     "disposition": "skip",
@@ -951,12 +1182,40 @@
     "note": "Unified Collective Communication has ROCm/HIP backend (ucc/src/components/ec/rocm/)",
     "reason": "already-supported"
   },
+  "orcuncandeniz/patchwork_cuda": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "OrcunCanDeniz/patchwork_cuda",
+    "note": "CUDA implementation of ground segmentation filter; niche",
+    "reason": "not-a-target"
+  },
   "ornl/hecbench": {
     "decided": "2026-05-30T00:31:01Z",
     "disposition": "skip",
     "full_name": "ORNL/HeCBench",
     "note": "benchmark suite / build or tuning tool, not a port target",
     "reason": "not-a-target"
+  },
+  "packtpublishing/gpu-programming-with-cpp-and-cuda": {
+    "decided": "2026-06-05T01:25:52Z",
+    "disposition": "skip",
+    "full_name": "PacktPublishing/GPU-Programming-with-CPP-and-CUDA",
+    "note": "Tutorial/book code examples",
+    "reason": "not-a-target"
+  },
+  "panxkun/eggfusion": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "panxkun/eggfusion",
+    "note": "SIGGRAPH Asia research code; niche 3D reconstruction paper",
+    "reason": "not-a-target"
+  },
+  "passionlab/openequivariance": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "PASSIONLab/OpenEquivariance",
+    "note": "GPU JIT kernel generator; likely architecture-specific optimizations",
+    "reason": "cant-port"
   },
   "patriciogonzalezvivo/lygia": {
     "decided": "2026-05-29T23:13:18Z",
@@ -971,6 +1230,13 @@
     "full_name": "PennyLaneAI/pennylane-lightning",
     "note": "Mature ROCm/HIP support via lightning.kokkos and lightning.amdgpu backends. Pre-built PyPI wheels for MI300 (gfx942) with ROCm 7.0+. Active CI/wheel pipelines maintained by PennyLaneAI/Xanadu. Docker target wheel-lightning-kokkos-rocm. Demonstrated at scale on Frontier/LUMI with MI250X GPUs.",
     "reason": "already-supported"
+  },
+  "phys-sim-book/solid-sim-tutorial-gpu": {
+    "decided": "2026-06-05T04:43:55Z",
+    "disposition": "skip",
+    "full_name": "phys-sim-book/solid-sim-tutorial-gpu",
+    "note": "Tutorial code for physics simulation book",
+    "reason": "not-a-target"
   },
   "pika-org/pika": {
     "decided": "2026-06-05T01:22:13Z",
@@ -1014,6 +1280,20 @@
     "note": "ROCm support upstream (per jeff)",
     "reason": "already-supported"
   },
+  "q-minh/physicsbasedanimationtoolkit": {
+    "decided": "2026-06-05T04:44:26Z",
+    "disposition": "skip",
+    "full_name": "Q-Minh/PhysicsBasedAnimationToolkit",
+    "note": "Physics animation toolkit; cross-platform C++ lib, minimal GPU",
+    "reason": "not-a-target"
+  },
+  "qdlmf/lio-sam-gpu-scantomapopt": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "qdLMF/LIO-SAM-GPU-ScanToMapOpt",
+    "note": "LIO-SAM CUDA reimplementation; research derivative",
+    "reason": "not-a-target"
+  },
   "qmcpack/qmcpack": {
     "decided": "2026-06-03T23:28:39Z",
     "disposition": "skip",
@@ -1035,11 +1315,32 @@
     "note": "Tutorial/book examples (Programming in Parallel with CUDA)",
     "reason": "not-a-target"
   },
+  "ricosjp/monolish": {
+    "decided": "2026-06-05T01:25:53Z",
+    "disposition": "skip",
+    "full_name": "ricosjp/monolish",
+    "note": "Linear equation solvers; has HIP/rocBLAS backend (Japanese HPC project)",
+    "reason": "already-supported"
+  },
+  "rllab-snu/rnr-map": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "rllab-snu/RNR-Map",
+    "note": "Research paper code; NeRF mapping",
+    "reason": "not-a-target"
+  },
   "rust-gpu/rust-cuda": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
     "full_name": "Rust-GPU/rust-cuda",
     "note": "Rust GPU codegen toolchain, not a CUDA app",
+    "reason": "not-a-target"
+  },
+  "sahibzada-allahyar/obsidian-memory-transformer": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "sahibzada-allahyar/Obsidian-Memory-Transformer",
+    "note": "Novel LLM architecture; experimental research",
     "reason": "not-a-target"
   },
   "sakanaai/sparser-faster-llms": {
@@ -1048,6 +1349,13 @@
     "full_name": "SakanaAI/sparser-faster-llms",
     "note": "TwELL CUDA kernels use NVIDIA Hopper PTX (WGMMA, TMA, thread clusters) with no AMD equivalent. Requires ground-up rewrite, not a port.",
     "reason": "cant-port"
+  },
+  "sandyresearch/chipmunk": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "sandyresearch/chipmunk",
+    "note": "Video generation optimization; likely PyTorch-based",
+    "reason": "not-a-target"
   },
   "sbip-sg/cuevm": {
     "decided": "2026-06-05T01:18:50Z",
@@ -1126,12 +1434,26 @@
     "note": "GPU reliability testing tool, not compute library",
     "reason": "not-a-target"
   },
+  "sjtu-visys/ground-fusion": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "SJTU-ViSYS/Ground-Fusion",
+    "note": "SLAM research paper code",
+    "reason": "not-a-target"
+  },
   "sonots/cumo": {
     "decided": "2026-06-05T01:21:32Z",
     "disposition": "skip",
     "full_name": "sonots/cumo",
     "note": "CUDA numerical library for Ruby - Numo/cumo ecosystem, different path",
     "reason": "not-a-target"
+  },
+  "sony/nnabla-ext-cuda": {
+    "decided": "2026-06-05T04:43:41Z",
+    "disposition": "skip",
+    "full_name": "sony/nnabla-ext-cuda",
+    "note": "Sony Neural Network Libraries; has multi-backend support including OpenCL",
+    "reason": "already-supported"
   },
   "spcl/dace": {
     "decided": "2026-05-30T00:04:57Z",
@@ -1181,6 +1503,20 @@
     "full_name": "szellmann/visionaray",
     "note": "experimental HIP tree (for testing), no CMake enablement; build-test before deciding",
     "reason": "verify"
+  },
+  "szymonozog/penny": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "SzymonOzog/Penny",
+    "note": "Hand-rolled GPU comms; experimental/niche",
+    "reason": "not-a-target"
+  },
+  "taccel-simulator/taccel": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "Taccel-Simulator/Taccel",
+    "note": "Tactile robotics simulator; niche research",
+    "reason": "not-a-target"
   },
   "tensorflow/recommenders-addons": {
     "decided": "2026-05-30T03:40:13Z",
@@ -1280,6 +1616,13 @@
     "note": "PTX assembly for Tensor Core MMA (mma.sync.m16n8k16, ldmatrix, cp.async) has no HIP equivalent. Requires AMD-native kernel rewrite with rocWMMA/CK/MFMA, not mechanical port.",
     "reason": "cant-port"
   },
+  "utiasasrl/vtr3": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "utiasASRL/vtr3",
+    "note": "Teach-and-Repeat navigation; SLAM research framework",
+    "reason": "not-a-target"
+  },
   "viskores/viskores": {
     "decided": "2026-06-05T01:22:13Z",
     "disposition": "skip",
@@ -1287,12 +1630,26 @@
     "note": "VTK-m derivative visualization lib; VTK-m has HIP backend",
     "reason": "already-supported"
   },
+  "vista-slam": {
+    "decided": "2026-06-05T04:43:41Z",
+    "disposition": "skip",
+    "full_name": "vista-slam",
+    "note": "zhangganlin/vista-slam - 3DV paper SLAM; research code",
+    "reason": "not-a-target"
+  },
   "vllm-project/vllm": {
     "decided": "2026-05-30T00:01:04Z",
     "disposition": "skip",
     "full_name": "vllm-project/vllm",
     "note": "ROCm supported upstream (canonical; forks/derivatives are ported-elsewhere)",
     "reason": "already-supported"
+  },
+  "whoiszzj/apd-mvs": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "whoiszzj/APD-MVS",
+    "note": "Research paper implementation",
+    "reason": "not-a-target"
   },
   "wilicc/gpu-burn": {
     "decided": "2026-05-30T00:04:57Z",
@@ -1313,6 +1670,13 @@
     "disposition": "skip",
     "full_name": "WolframRhodium/VapourSynth-BM3DCUDA",
     "note": "Video denoiser plugin; consumer app, not a library",
+    "reason": "not-a-target"
+  },
+  "xgbj/sparse-mask-attention": {
+    "decided": "2026-06-05T01:25:52Z",
+    "disposition": "skip",
+    "full_name": "xgbj/sparse-mask-attention",
+    "note": "Chinese sparse attention kernel; niche optimization, not a library",
     "reason": "not-a-target"
   },
   "xlite-dev/leetcuda": {
@@ -1343,11 +1707,39 @@
     "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
   },
+  "yuhangning815/cuda_kernel_practice": {
+    "decided": "2026-06-05T04:43:33Z",
+    "disposition": "skip",
+    "full_name": "yuhangning815/cuda_kernel_practice",
+    "note": "CUDA kernel practice code",
+    "reason": "not-a-target"
+  },
   "zaneham/barracuda": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
     "full_name": "Zaneham/BarraCUDA",
     "note": "DSL/compiler/infra; AMD is a backend or no CUDA kernels",
+    "reason": "not-a-target"
+  },
+  "zenustech/zpc": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "zenustech/zpc",
+    "note": "Zenus physics computing lib; niche internal framework",
+    "reason": "not-a-target"
+  },
+  "zhangganlin/glorie-slam": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "zhangganlin/GlORIE-SLAM",
+    "note": "SLAM research paper code",
+    "reason": "not-a-target"
+  },
+  "zhangganlin/vista-slam": {
+    "decided": "2026-06-05T04:43:54Z",
+    "disposition": "skip",
+    "full_name": "zhangganlin/vista-slam",
+    "note": "3DV research paper SLAM code",
     "reason": "not-a-target"
   },
   "zhongkaifu/seq2seqsharp": {
@@ -1371,11 +1763,25 @@
     "note": "DLSS (proprietary) + tiny-cuda-nn lock-in",
     "reason": "cant-port"
   },
+  "ziyi-zhang/ingp-rfl": {
+    "decided": "2026-06-05T04:44:12Z",
+    "disposition": "skip",
+    "full_name": "ziyi-zhang/INGP-RFL",
+    "note": "Radiance Field Loss paper code",
+    "reason": "not-a-target"
+  },
   "zjhellofss/kuiperllama": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
     "full_name": "zjhellofss/KuiperLLama",
     "note": "tutorial/educational/samples, not a library to port",
+    "reason": "not-a-target"
+  },
+  "zju3dv/lidar-rt": {
+    "decided": "2026-06-05T04:43:34Z",
+    "disposition": "skip",
+    "full_name": "zju3dv/LiDAR-RT",
+    "note": "CVPR LiDAR ray tracing paper",
     "reason": "not-a-target"
   }
 }
