@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "CUDA-ScanMatcher-ICP",
   "upstream_url": "https://github.com/botforge/CUDA-ScanMatcher-ICP",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/CUDA-ScanMatcher-ICP",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "unknown",
