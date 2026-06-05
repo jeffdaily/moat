@@ -12,3 +12,21 @@
 {"kind":"phase","ts":"2026-05-31T23:12:36Z","phase":"test","seconds":39.533,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1"}
 {"kind":"phase","ts":"2026-06-01T00:49:31Z","phase":"compile","seconds":89.263,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip -j 16"}
 {"kind":"phase","ts":"2026-06-01T00:50:14Z","phase":"test","seconds":29.920,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/src/build_hip --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-05T19:33:13Z","phase":"compile_gtsam","seconds":6.383,"exit":1,"cmd":"cmake --build B:\\develop\\moat\\agent_space\\gtsam_build -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:34:10Z","phase":"compile_gtsam","seconds":0.078,"exit":1,"cmd":"cmake --build B:\\develop\\moat\\agent_space\\gtsam_build -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:36:12Z","phase":"compile_gtsam","seconds":30.938,"exit":1,"cmd":"cmake --build B:\\develop\\moat\\agent_space\\gtsam_build2 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:42:25Z","phase":"compile","seconds":8.136,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:43:40Z","phase":"compile","seconds":24.240,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:47:30Z","phase":"compile","seconds":30.617,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:49:08Z","phase":"compile","seconds":30.438,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:52:28Z","phase":"compile","seconds":30.829,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:54:18Z","phase":"compile","seconds":30.800,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T19:56:04Z","phase":"compile","seconds":31.646,"exit":1,"cmd":"ninja -C B:\\develop\\moat\\projects\\gtsam_points\\src\\build_hip_gfx1101 -j 64"}
+{"kind":"phase","ts":"2026-06-05T20:03:43Z","phase":"compile","seconds":1.270,"exit":1,"cmd":"ninja -C B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T20:18:31Z","phase":"compile_gtsam","seconds":41.329,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/gtsam_build_static -j64"}
+{"kind":"phase","ts":"2026-06-05T20:19:53Z","phase":"compile","seconds":8.228,"exit":1,"cmd":"ninja -C B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T20:21:01Z","phase":"compile","seconds":32.665,"exit":0,"cmd":"ninja -C B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T20:23:47Z","phase":"test","seconds":49.736,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1 --timeout 120"}
+{"kind":"phase","ts":"2026-06-05T20:33:43Z","phase":"compile","seconds":0.069,"exit":1,"cmd":"ninja -j64 test_types"}
+{"kind":"phase","ts":"2026-06-05T20:58:29Z","phase":"test","seconds":22.952,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1 --timeout 120"}
+{"kind":"phase","ts":"2026-06-05T20:59:41Z","phase":"test","seconds":22.795,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1 --timeout 120"}

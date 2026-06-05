@@ -7,17 +7,17 @@
   "priority": 4.876,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "09346fdeaa9e179e45ba23c8264356ab59884e50",
+  "updated_at": "2026-06-05T21:04:58Z",
+  "head_sha": "3d706db0a455461494d06425fe3010531458eed9",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "09346fdeaa9e179e45ba23c8264356ab59884e50",
       "started_at": "2026-05-31T22:47:06Z",
       "completed_at": "2026-05-31T23:15:00Z",
-      "updated_at": "2026-05-31T23:15:00Z",
+      "updated_at": "2026-06-05T21:02:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "09346fdeaa9e179e45ba23c8264356ab59884e50",
       "started_at": "2026-06-01T00:45:00Z",
       "completed_at": "2026-06-01T00:51:00Z",
-      "updated_at": "2026-06-01T00:51:00Z",
+      "updated_at": "2026-06-05T21:02:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1101": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "3d706db0a455461494d06425fe3010531458eed9",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-05T21:04:58.798296Z",
+      "updated_at": "2026-06-05T21:04:58.798296Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1201": {
       "state": "port-ready",

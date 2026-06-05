@@ -215,3 +215,62 @@ CUDA Graph path (cuda_graph.cu / cuda_graph_exec.cu): compile-only at this valid
 No fork interaction. No CI change. No source change needed; same commit 09346fd validated unchanged on gfx1100 with only -DCMAKE_HIP_ARCHITECTURES=gfx1100 at configure time.
 
 State: linux-gfx1100 -> completed (validated_sha: 09346fdeaa9e179e45ba23c8264356ab59884e50).
+
+## Validation 2026-06-05 (windows-gfx1101, Windows 11)
+
+Device: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11 Pro for Workstations 10.0.26200, ROCm 7.14, HIP_VISIBLE_DEVICES=0. One-GPU-per-process rule applied throughout.
+
+GTSAM dep: pre-built static borglab/gtsam @ 4.3a0 in B:/develop/moat/agent_space/gtsam_install_static. Static libs (gtsam.lib, gtsam_unstable.lib) and headers present. Built previously with clang-cl + Ninja.
+
+Build: jeffdaily/gtsam_points moat-port branch at 3d706db0a455461494d06425fe3010531458eed9, configured into projects/gtsam_points/src/build_hip_gfx1101.
+
+Windows build requires all-clang toolchain (enable_language(HIP) refuses Clang-HIP + MSVC-host mix), static GTSAM, NOMINMAX define, and /FORCE:MULTIPLE to resolve duplicate gtsam symbol issues in test executables.
+
+Additional Windows source fixes committed at 3d706db (on top of the ported commit 09346fd):
+- point_cloud_cpu.cpp: use `itr->path().generic_string()` instead of `string()` for regex matching aux_attributes files -- `string()` returns backslash paths on Windows, breaking the forward-slash regex `/aux_([^_]+).bin`.
+- gaussian_voxelmap_cpu.cpp: open IO streams with `std::ios::binary` and use `"\n"` instead of `std::endl` -- Windows text mode treats 0x1A byte as EOF, corrupting binary voxel data; `std::endl` also causes CRLF writes that corrupt binary reads.
+- gaussian_voxelmap_gpu.cu: same binary mode fixes for GPU voxelmap save/load; added `cudaStreamSynchronize(0)` after D2H memcpy in save_compact and after H2D memcpy in load for correct stream ordering.
+- include/gtsam_points/types/point_cloud_cpu.hpp: added `#include <numeric>` (MSVC requires explicit include for std::iota).
+- src/gtsam_points/types/gaussian_voxelmap_cpu_funcs.cpp: added `#include <numeric>` (MSVC requires for std::accumulate).
+
+Commands:
+```powershell
+# Configure (run once; incremental build reused)
+$env:HIP_VISIBLE_DEVICES="0"
+cmake -S B:/develop/moat/projects/gtsam_points/src `
+  -B B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 `
+  -G Ninja `
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+  -DCMAKE_C_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+  -DCMAKE_CXX_COMPILER="C:/Program Files/LLVM/bin/clang-cl.exe" `
+  -DCMAKE_HIP_COMPILER="C:/Program Files/AMD/ROCm/7.14/bin/clang++.exe" `
+  -DCMAKE_HIP_ARCHITECTURES=gfx1101 `
+  -DBUILD_WITH_HIP=ON `
+  -DCMAKE_PREFIX_PATH="B:/develop/moat/agent_space/gtsam_install_static" `
+  -DBUILD_WITH_OPENMP=ON -DBUILD_WITH_TBB=OFF `
+  -DBUILD_TESTS=ON -DBUILD_DEMO=OFF -DBUILD_EXAMPLE=OFF -DBUILD_TOOLS=OFF `
+  -DCMAKE_EXE_LINKER_FLAGS="/FORCE:MULTIPLE" `
+  -DCMAKE_SHARED_LINKER_FLAGS="/FORCE:MULTIPLE" `
+  -DCMAKE_CXX_FLAGS="-DNOMINMAX"
+
+# Build
+utils/timeit.sh gtsam_points compile -- ninja -C B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 -j64
+
+# Test
+$env:HIP_VISIBLE_DEVICES="0"
+$env:PATH="C:/Program Files/AMD/ROCm/7.14/bin;$env:PATH"
+utils/timeit.sh gtsam_points test -- ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1
+```
+
+Results: 87/87 passed, 0 failed.
+
+GPU gate results:
+- test_matching_cost_factors VGICP_CUDA_NONE, VGICP_CUDA_OMP, VGICP_CUDA_TBB: all PASSED. IntegratedVGICPFactorGPU converged across FORWARD/BACKWARD/UNARY/MULTI_FRAME (rot < 0.015 rad, trans < 0.15 m all held).
+- test_voxelmap VoxelMapGPU, VoxelMapGPU_Intensity (atomicMax on hipMallocAsync fine-grained device memory -- correct on gfx1101), VoxelMapGPU_IO: all PASSED.
+- test_types TestPointCloudGPU, TestPointCloudCPU: both PASSED.
+
+Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_compact_mahalanobis, test_continuous_time, test_continuous_trajectory, test_global_registration, test_headers, test_kdtree, test_loam_factors, test_voxel_raycaster -- all PASSED, no regression.
+
+State: windows-gfx1101 -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).
+
+Note for linux-gfx90a and linux-gfx1100 (currently in revalidate): the new commit 3d706db adds only Windows-specific source fixes (WIN32-guarded or text-mode behavior that is a no-op on POSIX where text mode == binary mode). Those validators may run `utils/codeobj_diff.py` between 09346fd and 3d706db for their arch to confirm binary equivalence and carry forward without GPU re-run.
