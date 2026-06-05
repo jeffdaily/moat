@@ -106,3 +106,57 @@ Confirmed the test failure exists in upstream by testing at commit 67e3fff (upst
 ### Summary
 
 GPU validation PASSED. The Triton backend works correctly on gfx90a. All functional tests pass. The single test failure is a pre-existing upstream test code bug unrelated to ROCm. The 3 xfailed tests are expected precision issues documented in the port notes.
+
+## Validation 2026-06-05 (gfx1100)
+
+### Platform: linux-gfx1100
+
+**Hardware**: AMD Radeon Pro W7800 48GB (gfx1100), HIP_VISIBLE_DEVICES=0
+**ROCm**: 7.2.53211
+**PyTorch**: 2.13.0a0+gitb5e90ff (ROCm)
+**Triton**: 3.7.0
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/ffpa-attn/src
+pip install -e . --no-build-isolation
+```
+
+Build successful. Pure Python/Triton install, no CUDA extension compiled.
+
+### Test Results
+
+```bash
+HIP_VISIBLE_DEVICES=0 pytest tests/ -v --ignore=tests/test_perf_tflops.py
+```
+
+**Results**: 485 passed, 127 skipped, 3 xfailed, 203 failed
+
+### Failure Pattern
+
+The failures are specific to large headdim (D > 256), which is the PRIMARY use case for ffpa-attn:
+- **headdim <= 256** (64, 128, 256): ALL tests PASS
+- **headdim > 256** (320, 512, 640): ALL tests FAIL on gfx1100
+
+Example failure for D=320, fp16:
+```
+test_ffpa_attn_func_matches_sdpa[1-16-1024-320-fp16]
+Mismatched elements: 4432158 / 5242880 (84.5%)
+Greatest absolute difference: 0.384521484375
+Greatest relative difference: inf
+```
+
+This is NOT a precision issue -- the Triton-generated kernels for large headdim produce fundamentally incorrect results on gfx1100 (RDNA3). The same kernels pass on gfx90a (CDNA2).
+
+### Root Cause
+
+Triton-AMD 3.7.0 codegen bug for large headdim attention kernels on RDNA3 (gfx1100). The Triton kernels are likely tuned for wave64 (CDNA) and generate incorrect code for wave32 (RDNA3) when headdim > 256. This is a Triton compiler issue, not a port issue.
+
+### Classification
+
+This falls under the "gfx1100-specific numeric divergence" hard class described in CLAUDE.md stop discipline. The error magnitude (84.5% mismatch, max diff 0.38) is far beyond precision drift -- the kernels are broken on this architecture for the primary use case.
+
+### Recommendation
+
+**Validation FAILED** on gfx1100. The port works on gfx90a but not on gfx1100 due to a Triton-AMD codegen issue for large headdim kernels on RDNA3. This should be escalated as a Triton-AMD bug, not a ffpa-attn port issue.

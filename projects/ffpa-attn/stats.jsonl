@@ -15,3 +15,5 @@
 {"kind":"phase","ts":"2026-06-05T05:31:35Z","phase":"build","seconds":6.157,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-05T05:32:03Z","phase":"test","seconds":18.935,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pytest tests/ -v --tb=short --maxfail=10 2>&1"}
 {"kind":"phase","ts":"2026-06-05T05:33:07Z","phase":"test","seconds":59.370,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pytest tests/ -v --tb=short --maxfail=10 --ignore=tests/test_perf_tflops.py 2>&1"}
+{"kind":"session","ts":"2026-06-05T05:41:43Z","epoch":1780638103.902010670,"event":"start","platform":"linux-gfx1100"}
+{"kind":"session","ts":"2026-06-05T05:54:48Z","epoch":1780638888.003798608,"event":"end","platform":"linux-gfx1100"}
