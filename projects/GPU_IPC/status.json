@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "GPU_IPC",
   "upstream_url": "https://github.com/KemengHuang/GPU_IPC",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/GPU_IPC",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "unknown",
