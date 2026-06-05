@@ -49,3 +49,22 @@ Workaround attempts:
 - `cuda.h` include fails in some .cpp files (hip_runtime.h requires `__HIP_PLATFORM_AMD__`)
 - `fopen_s` is MSVC-only, Linux uses `fopen`
 - `std::chrono::system_clock` vs `steady_clock` type mismatch in Timer/StopWatch
+- CUDA Graph API needs full aliasing (cudaStreamBeginCapture, cudaGraph_t, etc.)
+- embree4 vs embree3 API differences (MeshCCD.cpp)
+- SymMat.h: union with vec3 members that have constructors (C++ standard violation)
+
+### Path forward
+1. Install GLM 1.0.x from source or newer package
+2. OR implement device-safe wrappers for all GLM vector math used in device code
+3. Complete CUDA Graph API aliasing in cuda_to_hip.h
+4. Fix Windows-specific code (fopen_s, chrono types)
+5. Handle embree3->embree4 migration or exclude MeshCCD
+
+### Local changes preserved (not committed)
+The working tree has partial port changes in:
+- CMakeLists.txt (new)
+- KittenEngine/cuda_to_hip.h (new)
+- Multiple .cu and .h files with HIP conditional includes
+- KittenGpuLBVH submodule with lbvh.cu/cuh changes
+
+These can be reviewed with `git diff` if resuming.
