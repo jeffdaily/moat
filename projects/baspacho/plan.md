@@ -1,145 +1,148 @@
-# Plan: baspacho
+# BaSpaCho Port Plan (linux-gfx90a)
 
 ## Project
 
 - **Name**: baspacho
 - **Upstream**: https://github.com/facebookresearch/baspacho
 - **Default branch**: main
-- **Description**: BaSpaCho (Batched Sparse Cholesky) is a direct solver for symmetric positive-definite sparse matrices. Implements supernodal Cholesky decomposition with GPU (CUDA) support for batched operations.
+- **Description**: Batched Sparse Cholesky -- a state-of-the-art direct solver for symmetric positive-definite sparse matrices with CUDA GPU support for Levenberg-Marquardt optimization (used by Theseus).
 
 ## Existing AMD support
 
 **None found.** Searched:
-- `grep -rniE 'amd|rocm|hip|gfx[0-9]'` on README/docs -- only mentions "AMD" as the "Approximate Minimum Degree" reordering algorithm from SuiteSparse, not AMD GPUs
-- WebSearch for "baspacho ROCm", "baspacho AMD GPU", "baspacho HIP", "baspacho MI300/gfx9" -- no results
-- GitHub forks via `gh api repos/facebookresearch/baspacho/forks` -- no forks under ROCm/AMD/GPUOpen orgs or with rocm/hip/amd in the name
-- No rocm/hip branches in upstream
-- No ROCm/HIP-related PRs/issues
+- Upstream docs: `grep -rniE 'amd|rocm|hip|gfx[0-9]'` returned only references to "Approximate Minimum Degree" (AMD), a sparse matrix reordering algorithm from SuiteSparse, not AMD GPUs.
+- Web search: "baspacho ROCm", "baspacho HIP AMD GPU", "baspacho MI300/gfx9" returned no relevant results.
+- GitHub forks: `gh api repos/facebookresearch/baspacho/forks` -- 8 forks, none with rocm/hip/amd branches.
+- Upstream PRs: No ROCm/HIP PRs. There are open PRs for OpenCL (#7) and Metal (#6) backends, but no HIP backend.
+- Upstream branches: No rocm/hip/amd branches.
 
-**Decision**: Proceed with a from-scratch port. The project is a pure CMake build with CUDA kernels and cuBLAS/cuSolver usage, suitable for Strategy A (minimal-footprint compat header).
+**Decision**: Proceed with a from-scratch HIP port. No existing AMD effort to build upon.
 
 ## Build classification
 
-**Pure CMake** (Strategy A).
+**Pure CMake** (Strategy A)
 
 Evidence:
-- `CMakeLists.txt` line 36-37: `set(BASPACHO_USE_CUBLAS ON CACHE BOOL ...)` and `enable_language(CUDA)`
-- `CMakeLists.txt` line 44: `find_package(CUDAToolkit REQUIRED)`
+- `CMakeLists.txt` line 11: `project(BaSpaCho CXX)` -- standalone CMake project
+- `CMakeLists.txt` line 41: `enable_language(CUDA)` -- native CMake CUDA support
+- `CMakeLists.txt` line 36-37: `BASPACHO_USE_CUBLAS` option controls CUDA enablement
 - No `find_package(Torch)`, no `torch.utils.cpp_extension`, no `CUDAExtension`, no setup.py
-- Build uses `enable_language(CUDA)`, links `CUDA::cudart`, `CUDA::cublas`, `CUDA::cusolver`
+- Uses FetchContent for dependencies (Eigen, dispenso, gtest, Sophus)
 
 ## Port strategy
 
-**Strategy A: pure CMake, minimal footprint**
+**Strategy A: pure CMake, compat-header model**
 
 Rationale:
-- Single CUDA source file: `baspacho/baspacho/MatOpsCuda.cu` (1473 lines)
-- Single CUDA header: `baspacho/baspacho/CudaAtomic.cuh` (76 lines)
-- Clean separation between CUDA and CPU code
-- Uses `enable_language(CUDA)` pattern, easily extended to `enable_language(HIP)`
-- No warp intrinsics (no `__shfl*`, `__ballot`, `__activemask`, `__syncwarp`)
-- No texture/surface usage
-- Standard cuBLAS/cuSolver calls with direct hipBLAS/hipSOLVER equivalents
+1. Standalone CMake project with native CUDA language support
+2. Small CUDA surface: 1 main `.cu` file (`MatOpsCuda.cu`), 1 helper `.cuh` file (`CudaAtomic.cuh`), 1 defs header (`CudaDefs.h`)
+3. No warp intrinsics (no `__shfl*`, `__ballot`, `__activemask`)
+4. Library swaps are 1:1: cuBLAS -> hipBLAS, cuSOLVER -> hipSOLVER
+5. Custom kernels use simple thread indexing (blockIdx/threadIdx) without warp-level operations
 
 Approach:
-1. Add `cuda_to_hip.h` compat header with CUDA->HIP symbol aliases
-2. Add `-DUSE_HIP=ON` CMake option that gates HIP builds
-3. Use `set_source_files_properties(... PROPERTIES LANGUAGE HIP)` for `.cu` files
-4. Link hipBLAS and hipSOLVER instead of cuBLAS/cuSolver
+1. Add `cuda_to_hip.h` compat header in `baspacho/baspacho/`
+2. Add `USE_HIP` CMake option with HIP language enablement
+3. Mark `.cu` files as `LANGUAGE HIP` when `USE_HIP=ON`
+4. Update `CudaDefs.h` to include HIP headers and hipBLAS/hipSOLVER when `USE_HIP` defined
+5. Update `Utils.h` to define `__BASPACHO_HOST_DEVICE__` for `__HIPCC__` as well as `__CUDACC__`
 
 ## CUDA surface inventory
 
-### CUDA source files
-| File | Lines | Description |
-|------|-------|-------------|
-| `baspacho/baspacho/MatOpsCuda.cu` | 1473 | Main CUDA implementation: kernels, cuBLAS/cuSolver calls |
-| `baspacho/baspacho/CudaAtomic.cuh` | 76 | atomicAdd wrappers for older architectures |
+### Source files
+| File | Type | Content |
+|------|------|---------|
+| `baspacho/baspacho/MatOpsCuda.cu` | CUDA source | Main GPU implementation (~1450 lines): kernels for factor, elimination, solve, assemble; cuBLAS/cuSOLVER calls |
+| `baspacho/baspacho/CudaAtomic.cuh` | Header | Device atomicAdd templates for matrix operations |
+| `baspacho/baspacho/CudaDefs.h` | Header | CUDA library includes, error checking macros, DevMirror utility class |
+| `cmake/detect_cuda.cu` | Build helper | CUDA arch detection at configure time (N/A for HIP build) |
 
-### CUDA API symbols (by category)
+### CUDA runtime APIs used
+| CUDA Symbol | HIP Equivalent | Used in |
+|-------------|----------------|---------|
+| `cudaMalloc` | `hipMalloc` | CudaDefs.h (DevMirror) |
+| `cudaFree` | `hipFree` | CudaDefs.h (DevMirror) |
+| `cudaMemcpy` | `hipMemcpy` | CudaDefs.h (DevMirror) |
+| `cudaMemcpyHostToDevice` | `hipMemcpyHostToDevice` | CudaDefs.h |
+| `cudaMemcpyDeviceToHost` | `hipMemcpyDeviceToHost` | CudaDefs.h |
+| `cudaStreamSynchronize` | `hipStreamSynchronize` | MatOpsCuda.cu |
+| `cudaError_t` | `hipError_t` | CudaDefs.h |
+| `cudaSuccess` | `hipSuccess` | CudaDefs.h |
+| `cudaGetErrorString` | `hipGetErrorString` | CudaDefs.h |
+| `cudaDeviceReset` | `hipDeviceReset` | CudaDefs.h |
 
-**Runtime API** (CudaDefs.h, MatOpsCuda.cu):
-- `cudaMalloc`, `cudaFree`, `cudaMemcpy`, `cudaMemcpyHostToDevice`, `cudaMemcpyDeviceToHost`
-- `cudaStreamSynchronize`, `cudaDeviceSynchronize`
-- `cudaDeviceReset`, `cudaGetErrorString`, `cudaError_t`, `cudaSuccess`
+### cuBLAS usage (all have 1:1 hipBLAS equivalents)
+- `cublasCreate` / `cublasDestroy` -> `hipblasCreate` / `hipblasDestroy`
+- `cublasDtrsm` / `cublasStrsm` -> `hipblasDtrsm` / `hipblasStrsm`
+- `cublasDgemm` / `cublasSgemm` -> `hipblasDgemm` / `hipblasSgemm`
+- `cublasDsymm` / `cublasSsymm` -> `hipblasDsymm` / `hipblasSsymm`
+- `cublasDtrsmBatched` / `cublasStrsmBatched` -> `hipblasDtrsmBatched` / `hipblasStrsmBatched`
+- `cublasDgemmBatched` / `cublasSgemmBatched` -> `hipblasDgemmBatched` / `hipblasSgemmBatched`
+- Status enums: `CUBLAS_STATUS_*` -> `HIPBLAS_STATUS_*`
+- Fill/side enums: `CUBLAS_FILL_MODE_*`, `CUBLAS_SIDE_*`, `CUBLAS_OP_*` -> `HIPBLAS_*`
 
-**cuBLAS** (MatOpsCuda.cu):
-- `cublasHandle_t`, `cublasCreate`, `cublasDestroy`, `cublasSetStream`
-- `cublasStatus_t`, `CUBLAS_STATUS_SUCCESS`, `CUBLAS_STATUS_*` enums
-- `cublasDgemm`, `cublasSgemm`, `cublasDgemmBatched`, `cublasSgemmBatched`
-- `cublasDtrsm`, `cublasStrsm`, `cublasDtrsmBatched`, `cublasStrsmBatched`
-- `cublasDsymm`, `cublasSsymm`
-- `CUBLAS_SIDE_LEFT`, `CUBLAS_FILL_MODE_UPPER`, `CUBLAS_OP_C`, `CUBLAS_OP_N`
+### cuSOLVER usage (all have 1:1 hipSOLVER equivalents)
+- `cusolverDnCreate` / `cusolverDnDestroy` -> `hipsolverDnCreate` / `hipsolverDnDestroy`
+- `cusolverDnDpotrf` / `cusolverDnSpotrf` -> `hipsolverDnDpotrf` / `hipsolverDnSpotrf`
+- `cusolverDnDpotrf_bufferSize` / `cusolverDnSpotrf_bufferSize` -> `hipsolverDnDpotrf_bufferSize` / `hipsolverDnSpotrf_bufferSize`
+- `cusolverDnDpotrfBatched` / `cusolverDnSpotrfBatched` -> `hipsolverDnDpotrfBatched` / `hipsolverDnSpotrfBatched`
 
-**cuSolver** (MatOpsCuda.cu):
-- `cusolverDnHandle_t`, `cusolverDnCreate`, `cusolverDnDestroy`, `cusolverDnSetStream`
-- `cusolverStatus_t`, `CUSOLVER_STATUS_SUCCESS`, `CUSOLVER_STATUS_*` enums
-- `cusolverDnDpotrf`, `cusolverDnSpotrf` (single-matrix Cholesky)
-- `cusolverDnDpotrfBatched`, `cusolverDnSpotrfBatched` (batched Cholesky)
-- `cusolverDnDpotrf_bufferSize`, `cusolverDnSpotrf_bufferSize`
+### cuSPARSE
+- Headers included but no actual cuSPARSE function calls found in the codebase. Only error enum definitions in `CublasError.cpp`. Can be removed from HIP build or mapped to hipSPARSE for forward compatibility.
 
-**cuSPARSE** (included but error string only):
-- `cusparseStatus_t` -- only for error enum in CublasError.cpp, not actually used
+### Kernel characteristics
+- Launch configurations use hardcoded `wgs = 32` workgroup sizes -- these are launch parameters, NOT warp-size-dependent
+- No warp intrinsics: no `__shfl*`, `__ballot`, `__activemask`, `__syncwarp`, `warpSize`
+- Thread indexing: simple `blockIdx.x * blockDim.x + threadIdx.x` pattern
+- atomicAdd: standard usage, no custom warp-level atomics
 
-**Device code** (MatOpsCuda.cu, CudaAtomic.cuh, MathUtils.h):
-- `__global__` kernels: `factor_lumps_kernel`, `factor_spans_kernel`, `sparse_elim_2loops_kernel`, `sparse_elim_straight_kernel`, `assemble_kernel`, `assembleVec_kernel`, `assembleVecT_kernel`, `sparseElim_diagSolveL`, `sparseElim_subDiagMult`, `sparseElim_diagSolveLt`, `sparseElim_subDiagMultT`
-- `__device__` functions: `do_sparse_elim`, `stridedMatSubDev`, `stridedTransAdd`, `stridedTransSet`, `locked_sub_product`, `locked_sub_AxB`, `locked_sub_ATxB`
-- `__host__ __device__`: `cholesky`, `solveUpperT`, `solveUpper`, `bisect`, `toOrderedPair` (via `__BASPACHO_HOST_DEVICE__` macro)
-- Kernel launches: 25+ uses of `<<<gridDim, blockDim>>>`
-
-**Atomic operations** (CudaAtomic.cuh):
-- `atomicAdd` for double/float accumulation in elimination
-- `atomicCAS` for legacy (<arch 60) double atomicAdd workaround
-
-### Library mapping
-
-| CUDA Library | HIP Library | Notes |
-|--------------|-------------|-------|
-| cuBLAS (`CUDA::cublas`) | hipBLAS | 1:1 API for GEMM, TRSM, SYMM |
-| cuSolver (`CUDA::cusolver`) | hipSOLVER | 1:1 API for potrf (Cholesky) |
-| cuSPARSE (header only) | hipSPARSE | Only error enum used, trivial |
+### Device macros
+- `__BASPACHO_HOST_DEVICE__` in `Utils.h` line 143-147: keyed on `__CUDACC__`, needs `__HIPCC__` addition
 
 ## Risk list
 
-1. **No warp-size risk**: No `__shfl*`, `__ballot`, `warpSize`, or hardcoded 32/64. The kernels are element-wise or per-lump/span indexed, not warp-collective. Safe for both wave64 (gfx90a) and wave32 (gfx1100/gfx1151).
-
-2. **hipSOLVER batched potrf**: `cusolverDnDpotrfBatched`/`cusolverDnSpotrfBatched` must map to `hipsolverDnDpotrfBatched`/`hipsolverDnSpotrfBatched`. Verify API compatibility; hipSOLVER should have these.
-
-3. **Atomic operations**: Uses `atomicAdd` for double/float. HIP supports `atomicAdd` for double natively on gfx90a (CDNA2). The project's `CUDA_DOUBLE_ATOMIC_ADD_WORKAROUND` for <arch60 is unnecessary on HIP but harmless.
-
-4. **Architecture detection**: The project detects CUDA arch via a compiled probe (`cmake/detect_cuda.cu`). For HIP builds, this needs to be bypassed or replaced. The manual arch specification path (`-DBASPACHO_CUDA_ARCHS="..."`) can be adapted for HIP.
-
-5. **Legacy cuda arch handling**: CMake code separates architectures <60 vs >=60 for the atomicAdd workaround. This CUDA-specific logic can be removed/simplified for HIP builds.
-
-6. **CUBLAS_FILL_MODE_UPPER enum**: Maps to `HIPBLAS_FILL_MODE_UPPER` in hipBLAS. Need to alias or the compat header handles it.
-
-7. **No textures/surfaces**: Confirmed absence avoids pitch alignment and layered-array issues.
-
-8. **No pinned/managed memory**: Only `cudaMalloc`/`cudaMemcpy`, no special memory types.
-
-9. **`__CUDACC__` macro**: Used in `Utils.h` (line 143) to define `__BASPACHO_HOST_DEVICE__`. HIP defines `__HIPCC__` instead. The compat header must define `__CUDACC__` when `__HIPCC__` is defined, or patch the macro.
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| `__CUDACC__` macro check misses HIP | Low | Add `\|\| defined(__HIPCC__)` to the check in Utils.h |
+| cuSOLVER batched Cholesky API differences | Low | hipSOLVER provides 1:1 batched potrf API |
+| CMake CUDA arch detection code | Low | Write HIP-specific arch detection or rely on `CMAKE_HIP_ARCHITECTURES` |
+| Wave64 vs Wave32 | None | No warp intrinsics used; kernels are warp-agnostic |
+| Texture/surface | None | Not used |
+| Hardcoded `32` values | None | These are workgroup sizes for launch config, not warp-dependent |
 
 ## File-by-file change list
 
 ### New files
-
-| File | Purpose |
-|------|---------|
-| `baspacho/baspacho/cuda_to_hip.h` | CUDA-to-HIP compat header with symbol aliases |
+1. `baspacho/baspacho/cuda_to_hip.h` -- compat header with CUDA->HIP symbol aliases
 
 ### Modified files
+1. `CMakeLists.txt`
+   - Add `BASPACHO_USE_HIP` option
+   - When `USE_HIP=ON`: `enable_language(HIP)`, set `CMAKE_HIP_ARCHITECTURES` with default gfx90a
+   - Link hipblas, hipsolver instead of CUDA libraries
+   - Set `.cu` files to `LANGUAGE HIP`
 
-| File | Changes |
-|------|---------|
-| `CMakeLists.txt` | Add `USE_HIP` option; conditional `enable_language(HIP)`; arch default logic; link hipBLAS/hipSOLVER |
-| `baspacho/baspacho/CMakeLists.txt` | Gate CUDA vs HIP language on `USE_HIP`; link hip libs; simplify arch handling for HIP |
-| `baspacho/baspacho/CudaDefs.h` | Include `cuda_to_hip.h`; alias error check macros |
-| `baspacho/baspacho/MatOpsCuda.cu` | Include compat header (no other source changes needed if compat header is comprehensive) |
-| `baspacho/baspacho/Utils.h` | Make `__BASPACHO_HOST_DEVICE__` work with `__HIPCC__` |
+2. `baspacho/baspacho/CMakeLists.txt`
+   - Add HIP build path parallel to CUBLAS path
+   - Link `hip::host`, `hip::device`, `hipblas`, `hipsolver`
+   - Set `HIP_ARCHITECTURES` on targets
 
-### Files unchanged
-- All test files (they use the library API, not CUDA directly)
-- All example files
-- All CPU-only source files
+3. `baspacho/baspacho/CudaDefs.h`
+   - Add `#if defined(USE_HIP)` branch to include HIP headers (hip_runtime, hipblas, hipsolver)
+   - Map error check macros to HIP equivalents
+
+4. `baspacho/baspacho/Utils.h`
+   - Update `__BASPACHO_HOST_DEVICE__` macro: `#if defined(__CUDACC__) || defined(__HIPCC__)`
+
+5. `baspacho/baspacho/MatOpsCuda.cu`
+   - Include `cuda_to_hip.h` at top
+   - Minimal changes: compat header handles symbol mapping
+
+6. `baspacho/baspacho/CublasError.cpp`
+   - Add HIP error enum mappings under `#if defined(USE_HIP)` guards
+
+7. `baspacho/tests/CMakeLists.txt`
+   - Enable CUDA tests when `USE_HIP=ON` (rename condition or add HIP equivalent)
 
 ## Build commands
 
@@ -147,10 +150,10 @@ Approach:
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DUSE_HIP=ON \
+  -DBASPACHO_USE_HIP=ON \
+  -DBASPACHO_USE_CUBLAS=OFF \
   -DCMAKE_HIP_ARCHITECTURES=gfx90a \
-  -DBASPACHO_USE_BLAS=ON \
-  -DBLA_VENDOR=OpenBLAS
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
 ```
 
 ### Build
@@ -158,23 +161,34 @@ cmake -S . -B build \
 cmake --build build -- -j$(nproc)
 ```
 
-### Configure (multi-arch for validation)
+### Follower platforms (gfx1100, gfx1101, gfx1201)
 ```bash
 cmake -S . -B build \
   -DCMAKE_BUILD_TYPE=Release \
-  -DUSE_HIP=ON \
-  -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100"
+  -DBASPACHO_USE_HIP=ON \
+  -DBASPACHO_USE_CUBLAS=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100  # or gfx1101, gfx1201
 ```
 
 ## Test plan
 
-### GPU tests (must pass on real GPU)
-All tests in `baspacho/tests/CMakeLists.txt` when `BASPACHO_USE_CUBLAS` (becomes `USE_HIP`):
-- `CudaFactorTest` -- single-matrix CUDA factorization
-- `CudaSolveTest` -- single-matrix CUDA solve
-- `BatchedCudaFactorTest` -- batched CUDA factorization
-- `BatchedCudaSolveTest` -- batched CUDA solve
-- `CudaPartialTest` -- partial CUDA operations
+### GPU tests (require real AMD GPU)
+The project has 5 explicit CUDA/GPU test executables:
+- `CudaFactorTest` -- GPU Cholesky factorization correctness
+- `CudaSolveTest` -- GPU triangular solve correctness
+- `BatchedCudaFactorTest` -- Batched GPU factorization
+- `BatchedCudaSolveTest` -- Batched GPU solve
+- `CudaPartialTest` -- Partial factorization on GPU
+
+Run GPU tests:
+```bash
+cd build && ctest -R Cuda --output-on-failure
+```
+
+Or run all tests:
+```bash
+cd build && ctest --output-on-failure
+```
 
 ### Non-GPU tests (must not regress)
 - `AccessorTest`
@@ -187,22 +201,23 @@ All tests in `baspacho/tests/CMakeLists.txt` when `BASPACHO_USE_CUBLAS` (becomes
 - `MathUtilsTest`
 - `PartialFactorSolveTest`
 
-### Run tests
+Run CPU-only tests:
 ```bash
-ctest --test-dir build --output-on-failure
+cd build && ctest -E Cuda --output-on-failure
 ```
 
-### Benchmarking (optional validation)
+### Benchmarks (optional, for performance validation)
 ```bash
 build/baspacho/benchmarking/bench -B 1_CHOLMOD  # if CHOLMOD available
 ```
 
 ## Open questions
 
-1. **hipSOLVER batched API parity**: Confirm `hipsolverDnDpotrfBatched`/`hipsolverDnSpotrfBatched` exist with identical signatures. ROCm docs suggest they do.
+1. **Naming**: The project uses `BASPACHO_USE_CUBLAS` as the GPU enable flag even though it uses cuBLAS AND cuSOLVER. Should we add a parallel `BASPACHO_USE_HIP` flag or a more generic `BASPACHO_USE_GPU`?
+   - Recommendation: Add `BASPACHO_USE_HIP` flag, keep `BASPACHO_USE_CUBLAS` for NVIDIA path unchanged.
 
-2. **BLAS vendor on ROCm**: The project supports OpenBLAS/MKL/ATLAS. On ROCm systems, rocBLAS is available but the host BLAS (for non-GPU operations) should still be OpenBLAS or another CPU BLAS. Verify this interaction.
+2. **cuSPARSE headers**: Included but unused. Remove from HIP build or map to hipSPARSE?
+   - Recommendation: Map to hipSPARSE for forward compatibility (library may use it in future).
 
-3. **Dispenso threading library**: Fetched automatically via FetchContent. Should work unchanged on ROCm. No known compatibility issues but not verified.
-
-4. **Arch autodetection**: The `cmake/detect_cuda.cu` probe won't work for HIP. Either always require `-DCMAKE_HIP_ARCHITECTURES` or add a HIP detection mechanism (rocminfo parsing or similar).
+3. **Legacy CUDA arch workaround**: The project has special handling for CUDA arch < 6.0 (atomicAdd double workaround). This is N/A for HIP (all supported AMD GPUs have native double atomics).
+   - Recommendation: Skip legacy handling in HIP path.
