@@ -15,3 +15,9 @@
 {"kind":"phase","ts":"2026-06-05T08:45:17Z","phase":"test","seconds":30.885,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 USE_HIP=1 python agent_space/brian2cuda_validation.py"}
 {"kind":"phase","ts":"2026-06-05T08:46:26Z","phase":"test","seconds":30.917,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 USE_HIP=1 python agent_space/brian2cuda_validation.py 2>&1 | grep -E '(===|PASS|FAIL|neurons|Synaptic|spikes|ALL TESTS)'"}
 {"kind":"session","ts":"2026-06-05T08:47:22Z","epoch":1780649242.660931722,"event":"end","platform":"linux-gfx90a"}
+{"kind":"session","ts":"2026-06-05T14:39:59Z","epoch":1780670399.126427688,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T14:40:20Z","phase":"gfx1100-build","seconds":7.729,"exit":0,"cmd":"bash -c cd projects/brian2cuda/src && pip install -e .[test]"}
+{"kind":"phase","ts":"2026-06-05T14:40:56Z","phase":"gfx1100-test","seconds":7.464,"exit":1,"cmd":"python3 projects/brian2cuda/test_gfx1100_validation.py"}
+{"kind":"phase","ts":"2026-06-05T14:41:28Z","phase":"gfx1100-test","seconds":7.411,"exit":1,"cmd":"python3 projects/brian2cuda/test_gfx1100_validation.py"}
+{"kind":"phase","ts":"2026-06-05T14:41:43Z","phase":"gfx1100-test","seconds":0.865,"exit":1,"cmd":"python3 projects/brian2cuda/test_gfx1100_validation.py"}
+{"kind":"session","ts":"2026-06-05T14:43:56Z","epoch":1780670636.360494010,"event":"end","platform":"linux-gfx1100"}
