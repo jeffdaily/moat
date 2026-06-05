@@ -34,3 +34,11 @@
 {"kind": "tokens", "ts": "2026-06-05T17:54:15Z", "tokens": 87475, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-05T16:41:15Z", "tokens": 77353, "source": "validator"}
 {"kind":"phase","ts":"2026-06-05T17:58:36Z","phase":"compile","seconds":28.660,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j64"}
+{"kind":"session","ts":"2026-06-05T18:10:10Z","epoch":1780683010.084904973,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T18:13:33Z","phase":"compile","seconds":187.226,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-06-05T18:21:09Z","phase":"compile","seconds":0.112,"exit":1,"cmd":"cmake --build . -j 16"}
+{"kind":"phase","ts":"2026-06-05T18:21:30Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build . -j 16"}
+{"kind":"phase","ts":"2026-06-05T18:28:34Z","phase":"compile","seconds":419.678,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-06-05T18:30:30Z","phase":"test","seconds":109.275,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-05T18:31:07Z","phase":"test","seconds":29.812,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
+{"kind":"session","ts":"2026-06-05T18:31:14Z","epoch":1780684274.772620972,"event":"end","platform":"linux-gfx1100"}

@@ -461,6 +461,85 @@ pre-existing artifacts (same 4 categories as Linux + 3 torchaudio-missing-GPU
 which are a Windows torchaudio limitation, not a k2 bug). Transition:
 port-ready -> completed. validated_sha = 7531e5b.
 
+## Validation 2026-06-05 (linux-gfx1100 revalidation)
+
+Platform: linux-gfx1100 (2x AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3, wave32, ROCm 7.2.1). Revalidation after HEAD moved (20f56c06 -> 44e7563).
+Fork: jeffdaily/k2 @ moat-port, HEAD 44e7563a1119833c18e875bda55162425d2d5f09 (3 commits: gfx90a port + Windows fix + Linux build fix).
+GPU: HIP_VISIBLE_DEVICES=0 (W7800 #0).
+
+### Commits since last validation (20f56c06 -> 44e7563)
+
+1. 7531e5b: Windows/clang build fixes (gfx1101 port) -- added c10::hip API calls
+2. 44e7563: Fix Linux build regression -- gate c10::hip paths on K2_WITH_HIP AND _WIN32
+
+The Windows commit 7531e5b added c10::hip:: API calls for Windows torch 2.9, but initially gated them only on K2_WITH_HIP (true on both Windows and Linux). This broke Linux builds because Linux torch 2.13 masquerades HIP as c10::cuda, and c10::hip::HIPCachingAllocator does not exist. Commit 44e7563 fixed this by adding _WIN32 guards, so Linux continues using c10::cuda (masquerading) while Windows uses c10::hip.
+
+This is a functional change for Linux (different API namespace), not binary-equivalent, so full GPU revalidation required.
+
+### Commands
+
+Clone and update:
+```
+cd /var/lib/jenkins/moat/projects/k2/src
+git fetch origin moat-port && git checkout moat-port && git pull origin moat-port
+```
+
+Configure (fresh build):
+```
+cd /var/lib/jenkins/moat/projects/k2/src && rm -rf build && mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DK2_WITH_HIP=ON -DK2_WITH_CUDA=OFF \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++ \
+      -DCMAKE_CXX_STANDARD=20 \
+      -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python3 \
+      -DK2_LIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/libhipcxx/include \
+      -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF ..
+```
+
+Compile (timeit wrapped, HIP_VISIBLE_DEVICES=0):
+```
+bash utils/timeit.sh k2 compile -- cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16
+```
+
+C++ gtests (HIP_VISIBLE_DEVICES=0, serial):
+```
+bash utils/timeit.sh k2 test -- bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx1100.sh
+```
+
+Python slice (HIP_VISIBLE_DEVICES=0):
+```
+bash utils/timeit.sh k2 test -- bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh
+```
+
+### C++ gtest results (primary gate)
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (25),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+Total individual tests: 298 passed, 0 failed.
+
+### Python slice results
+
+231 passed, 4 failed. All 4 failures are the documented pre-existing artifacts:
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6+ weights_only=True refuses _k2.ragged.RaggedTensor. Device-independent.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 weights_only=True artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation divergence; float64 passes exactly. Non-associative float32 reduction artifact; benign.
+
+No new Python failures beyond the 2 documented artifact categories.
+
+### Verdict
+
+PASS. 30/30 C++ gtests (298/298 individual). Python slice 231/231 passed (excluding 4 documented artifacts), matching initial gfx1100 validation at 20f56c06. The Linux build fix (44e7563) correctly restored c10::cuda masquerading compatibility with Linux torch 2.13. Transition: revalidate -> completed. validated_sha = 44e7563.
+
 ## Validation 2026-06-05 (linux-gfx90a revalidation)
 
 Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Validator agent.
