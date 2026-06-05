@@ -23,3 +23,7 @@
 {"kind":"phase","ts":"2026-06-05T01:04:48Z","phase":"test","seconds":35.529,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/projects/symforce/test_hip_validation.py"}
 {"kind":"phase","ts":"2026-06-05T01:06:53Z","phase":"test","seconds":35.896,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/projects/symforce/test_hip_validation.py"}
 {"kind":"phase","ts":"2026-06-05T01:06:57Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a"}
+{"kind":"phase","ts":"2026-06-05T01:54:04Z","phase":"compile","seconds":9.946,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce/src/symforce/caspar/source/runtime && rm -rf build && mkdir build && cd build && cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 && make -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T01:56:19Z","phase":"test","seconds":2.302,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce && HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py"}
+{"kind":"phase","ts":"2026-06-05T01:56:59Z","phase":"test","seconds":23.658,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce && HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py"}
+{"kind":"phase","ts":"2026-06-05T01:58:44Z","phase":"test","seconds":24.031,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce && HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py 2>&1 | tail -30"}

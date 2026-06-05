@@ -229,3 +229,52 @@ All porter fixes validated on real GPU:
 4. HIP target linking and pybind compilation work
 
 VALIDATION PASSED on gfx90a (AMD Instinct MI250X).
+
+## Validation linux-gfx1100 2026-06-05
+
+### Build
+
+Runtime library:
+```bash
+cd symforce/caspar/source/runtime
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+make -j$(nproc)
+```
+
+Result: libcaspar_runtime.a built successfully with gfx1100 device code:
+```
+llvm-objdump --offloading build/CMakeFiles/caspar_runtime.dir/shared_indices.cu.o
+# shows: hipv4-amdgcn-amd-amdhsa--gfx1100
+```
+
+### Test
+
+Generated kernel test via test_hip_validation.py:
+```bash
+HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py
+```
+
+Output:
+```
+PyTorch version: 2.13.0a0+gitb5e90ff
+CUDA available: True
+Device: AMD Radeon Pro W7800 48GB
+Generating kernel code...
+Compiling with HIP for gfx1100...
+Running GPU test...
+Verifying results...
+All checks passed!
+
+=== VALIDATION PASSED ===
+```
+
+The test validates:
+- Jinja templates correctly emit cuda_to_hip.h includes
+- Generated code compiles with HIP for gfx1100
+- Kernel execution on GPU (cooperative groups, shared memory atomics)
+- Correct numerical output (AddSharedSum and WriteIndexed memory patterns)
+
+All porter fixes from gfx90a validation (templates include cuda_to_hip.h, cudaSetDevice/cudaGetDevice/cudaPointerGetAttributes mappings, FlushSumBlock/FlushSumBlockAdd shared-memory atomics, HIP target linking) work correctly on gfx1100.
+
+VALIDATION PASSED on gfx1100 (AMD Radeon Pro W7800 48GB).
