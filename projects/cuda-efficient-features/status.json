@@ -13,8 +13,8 @@
   "platforms": {
     "linux-gfx90a": {
       "state": "ported",
-      "blocked": true,
-      "blocked_reason": "Kernel execution hangs (GPU 100% utilization). Build succeeds with HIP-native GpuMat replacement; tests hang. Need to debug which kernel is stuck.",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-05T08:23:04Z",
       "completed_at": null,
