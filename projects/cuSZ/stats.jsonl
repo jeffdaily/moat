@@ -5,3 +5,5 @@
 {"kind":"phase","ts":"2026-06-05T06:08:40Z","phase":"compile","seconds":43.909,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuSZ/src && rm -rf build-hip && mkdir build-hip && cd build-hip && cmake .. -DPSZ_BACKEND=HIP -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON && cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T06:09:40Z","phase":"test","seconds":0.139,"exit":0,"cmd":"ctest --output-on-failure -E histsp_hip"}
 {"kind":"phase","ts":"2026-06-05T06:09:44Z","phase":"test","seconds":1.015,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuSZ/src/build-hip && ctest --output-on-failure -E 'histsp_hip'"}
+{"kind":"phase","ts":"2026-06-05T14:52:43Z","phase":"compile","seconds":29.345,"exit":2,"cmd":"bash -c cd projects/cuSZ/src && rm -rf build-hip && mkdir build-hip && cd build-hip && cmake .. -DPSZ_BACKEND=HIP -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T14:55:52Z","phase":"test","seconds":0.984,"exit":0,"cmd":"bash -c cd projects/cuSZ/src/build-hip && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure"}

@@ -82,3 +82,51 @@ HIP_VISIBLE_DEVICES=0 ./hipsz -z -i test.f32 -t f32 -m abs -e 0.001 -l 100x100
 - Most .hip files need both c_cu2hip_0_translation.h (for type/function macros) and c_cu2hip_1_fix_primitives.h (for warp intrinsics)
 - The shuffle intrinsic macros need to be variadic to support both 3-arg and 4-arg forms
 - Double-precision atomicAdd on HIP uses unsafeAtomicAdd, not the CAS-loop emulation used on older CUDA
+
+## linux-gfx1100 validation
+
+### Validation (2026-06-05, linux-gfx1100)
+
+Validated on gfx1100 with ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+
+Build command:
+```bash
+cd /var/lib/jenkins/moat/projects/cuSZ/src
+rm -rf build-hip && mkdir build-hip && cd build-hip
+cmake .. -DPSZ_BACKEND=HIP -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+cmake --build . -j$(nproc)
+```
+
+Test results:
+```bash
+cd build-hip
+HIP_VISIBLE_DEVICES=0 ctest --output-on-failure
+```
+
+Result: 6/6 tests PASS (100%)
+- test_zigzag: PASS (CPU-only zigzag codec)
+- test_l1_compact: PASS (GPU sparse vector compaction)
+- test_lrz_seq: PASS (CPU-only Lorenzo predictor)
+- test_stat_identical: PASS (GPU statistical functions, CPU-GPU match verified)
+- test_stat_max_error: PASS (GPU error calculation, CPU-GPU match verified)
+- test_mem_unique: PASS (GPU memory management)
+
+CLI compression test:
+```bash
+# Create test data
+python3 -c "import numpy as np; data=np.sin(np.linspace(0,10,100).reshape(100,1))*np.cos(np.linspace(0,10,100)); data.astype(np.float32).tofile('test.f32')"
+# Compress
+HIP_VISIBLE_DEVICES=0 ./hipsz -z -i test.f32 -t f32 -m abs -e 0.001 -l 100x100
+# Produces test.f32.cusza (40KB -> 7.6KB compression)
+```
+
+### gfx1100 build fixes (26b1f91)
+
+Additional fixes required beyond the gfx90a port:
+1. hipMallocHost type strictness: Cast float**/double** to void** (example/src/demo_v2.hip.cc)
+2. Portable stream creation: Use create_stream()/destroy_stream() macros instead of cudaStreamCreate/Destroy (example/src/bin_phf.cc)
+3. Include c_cu2hip_0_translation.h in .cc files that use CUDA API directly (batch_run.cc, bin_fzgcodec.cc)
+4. Replace cudaStream_t with GPU_BACKEND_SPECIFIC_STREAM macro in .cc files (bin_hist.cc, bin_phf.cc, batch_run.cc, bin_fzgcodec.cc)
+5. Remove hardcoded <cuda_runtime.h> includes, rely on portable headers (bin_hist.cc, batch_run.cc, bin_fzgcodec.cc)
+
+Same test_histsp_hip exclusion as gfx90a (wrong include path, performance tuning only).
