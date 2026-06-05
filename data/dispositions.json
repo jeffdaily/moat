@@ -150,7 +150,7 @@
     "decided": "2026-05-29T23:23:27Z",
     "disposition": "skip",
     "full_name": "diku-dk/futhark",
-    "note": "has a HIP backend",
+    "note": "real/current HIP backend (research-confirmed; futhark hip command, MI100 in teaching infra)",
     "reason": "already-supported"
   },
   "dphnai/aphrodite-engine": {
@@ -330,10 +330,10 @@
   },
   "jittor/jittor": {
     "decided": "2026-05-30T00:04:57Z",
-    "disposition": "verify",
+    "disposition": "skip",
     "full_name": "Jittor/jittor",
-    "note": "extern/rocm HIP backend ~3.5yr stale (2022); refresh value",
-    "reason": "verify"
+    "note": "real/current HIP backend (research-confirmed; jittor-rocm PyPI package, active 2026 commits)",
+    "reason": "already-supported"
   },
   "juliagpu/cuda.jl": {
     "decided": "2026-05-29T23:13:18Z",
@@ -661,7 +661,7 @@
     "decided": "2026-05-29T23:23:26Z",
     "disposition": "skip",
     "full_name": "tracel-ai/cubecl",
-    "note": "ROCm/HIP backend exists",
+    "note": "real/current HIP backend (research-confirmed; cubecl-hip crate, ROCm 7.1.1 bindings)",
     "reason": "already-supported"
   },
   "uccl-project/uccl": {
