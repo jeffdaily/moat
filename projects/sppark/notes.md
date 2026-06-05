@@ -161,3 +161,54 @@ For CUDA, this works because mont_t.cuh is only included when `__CUDA_ARCH__` is
 4. **Split host and device templates**: Have separate host and device versions of msm_t class and related templates.
 
 None of these are trivial; the codebase assumes nvcc's compilation model.
+
+## MSM HIP Port Attempt: `__host__ __device__` with Host Stubs (2026-06-05)
+
+Attempted to resolve the hipcc dual-pass compilation issue by making mont_t operators `__host__ __device__` with host stubs for device intrinsics.
+
+### Approach
+
+1. Changed `#define inline __device__ __forceinline__` to `#define inline __host__ __device__ __forceinline__` in mont_t.hip (HIP only)
+
+2. For each function using device intrinsics (asm, `__builtin_amdgcn_*`, `threadIdx.x`, etc.), wrapped the body with:
+```cpp
+#if defined(__HIP_DEVICE_COMPILE__)
+    // Real implementation with device intrinsics
+#else
+    return ...; // Host stub - compiles but never executed
+#endif
+```
+
+3. Applied same pattern to fp2_t functions in bls12-381-fp2.hpp
+
+4. Updated is_inf() and uadd() in ec/xyzz_t.hpp and ec/affine_t.hpp to be `__host__ __device__`
+
+### Result
+
+Build SUCCEEDED but tests CRASHED with GPU memory access fault:
+```
+Memory access fault by GPU node-2 (Agent handle: 0x...) on address 0x...
+Reason: Unknown.
+```
+
+### Analysis
+
+The host stubs approach has a fundamental flaw: making functions `__host__ __device__` allows the WRONG version to be selected at runtime. The compiler may choose the host stub version for device code paths, leading to uninitialized memory access.
+
+The issue is subtle:
+- During compilation, both host and device versions exist
+- Template instantiation may select the wrong overload
+- At runtime, calling a host stub from device code crashes
+
+### Conclusion
+
+This approach is NOT viable. The problem requires a structural solution:
+1. Complete separation of host and device type systems (like CUDA with blst_t.hpp vs mont_t.cuh)
+2. OR architectural changes to how hipcc handles dual-pass compilation
+3. OR upstream fixes to sppark to support HIP's compilation model
+
+The NTT tests continue to work because NTT doesn't have the host-function-calling-device-operator pattern that MSM has.
+
+### State
+
+Reverted all changes to mont_t.hip and field headers. Source tree reset to clean NTT-working state. Project remains blocked for MSM on HIP.
