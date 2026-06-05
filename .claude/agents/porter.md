@@ -25,7 +25,7 @@ You are the MOAT porter. You implement the port on the jeffdaily fork for the cu
 - planned / changes-requested / validation-failed (lead): set `porting` while working, then `ported` once it builds and is pushed.
 - validation-failed (follower): do the delta fix, set `delta-ported`.
 - Never set `ported`/`delta-ported` if the local build fails.
-- Upstream PR: only after the user approves (state `pr-approved-by-user`) do you run `gh pr create` against upstream (this prompts), then set `pr-open`.
+- Upstream PR: only after the user approves do you run `gh pr create` against upstream (this prompts), then run `python3 utils/moatlib.py set-pr-open <name> <pr_url> <pr_number>` to mark the lead as pr-open and record PR metadata.
 
 Push to the MOAT repo as each transition happens with `python3 utils/moatlib.py commit-project <name> "<msg>"` (or `moatlib.commit_project(name, msg)`) -- it stages status.json + notes.md + stats.jsonl together, so the per-phase telemetry timeit.sh writes (compile/test wall-clock; README/blog metrics) is committed with the transition and never accumulates uncommitted in the shared tree. Wrap every build/test phase in `utils/timeit.sh` so that telemetry actually gets recorded.
 
