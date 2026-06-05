@@ -144,7 +144,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [rmcl](https://github.com/uos/rmcl) ([fork](https://github.com/jeffdaily/rmagine/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [rmm](https://github.com/rapidsai/rmm) ([fork](https://github.com/jeffdaily/rmm/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [RWKV-CUDA](https://github.com/BlinkDL/RWKV-CUDA) ([fork](https://github.com/jeffdaily/RWKV-CUDA/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
-| [RXMesh](https://github.com/owensgroup/RXMesh) ([fork](https://github.com/jeffdaily/RXMesh/tree/moat-port)) | ✅ | 🔄 | 🔄 | 🔄 | 🔄 | 🟢 [#73](https://github.com/owensgroup/RXMesh/pull/73) |
+| [RXMesh](https://github.com/owensgroup/RXMesh) ([fork](https://github.com/jeffdaily/RXMesh/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | 🟢 [#73](https://github.com/owensgroup/RXMesh/pull/73) |
 | [SCAMP](https://github.com/zpzim/SCAMP) ([fork](https://github.com/jeffdaily/SCAMP/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
 | [SpargeAttn](https://github.com/thu-ml/SpargeAttn) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [sparser-faster-llms](https://github.com/SakanaAI/sparser-faster-llms) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
