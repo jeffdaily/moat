@@ -2,61 +2,85 @@
 
 ## Project
 
-- Name: pyslam
-- Upstream: https://github.com/luigifreda/pyslam
-- Default branch: main
+- **Name:** pyslam
+- **Upstream:** https://github.com/luigifreda/pyslam
+- **Default branch:** main
+- **Description:** Python/C++ Visual SLAM pipeline supporting monocular, stereo, and RGBD cameras with deep learning features, depth prediction, and Gaussian splatting volumetric reconstruction.
 
 ## Existing AMD support
 
-**Decision: SKIP -- not portworthy, dependency composition problem**
+**Finding:** No existing AMD/ROCm/HIP support in upstream.
 
-pyslam is a Visual SLAM **framework** that orchestrates many third-party components. It has **no native CUDA code** -- all CUDA lives in bundled thirdparty submodules:
+- Upstream docs grep: No references to AMD/ROCm/HIP/gfx in README or docs.
+- No ROCm/HIP branches or PRs in upstream.
+- No AMD-named forks in the forks list.
+- **lietorch-ROCm fork (EmmanuelMess/lietorch-ROCm):** Exists but is a NON-AUTHORITATIVE community fork that uses `HSA_OVERRIDE_GFX_VERSION` crutch (a hazard the PORTING_GUIDE forbids). 1 star, updated Nov 2025. Not suitable as a base.
+- **diff-gaussian-rasterization:** AMD's official solution is ROCm/gsplat (https://github.com/ROCm/gsplat), a different library that replaces diff-gaussian-rasterization rather than porting it. gsplat is AMD's maintained 3DGS rasterization library.
 
-1. **lietorch** (princeton-vl/lietorch) -- Lie groups for PyTorch, CUDA kernels for SE3/SO3 operations
-2. **MonoGS** (muskie82/MonoGS) -- Gaussian Splatting SLAM, depends on:
-   - **diff-gaussian-rasterization** (graphdeco-inria) -- differentiable Gaussian rasterizer
-   - **simple-knn** (graphdeco-inria) -- CUDA k-NN for spatial queries
+**Decision:** BLOCKED - This project requires major architectural changes, not a straightforward HIP port.
 
-The pyslam core code is pure Python/C++ (no `.cu` files outside thirdparty/). GPU features (Gaussian splatting, lietorch-based operations) are optional and come from these bundled submodules.
+## Analysis
 
-### Existing AMD efforts assessed
+pyslam has a complex dependency structure with multiple third-party CUDA components:
 
-- **ROCm/gsplat**: AMD's official HIP port of gsplat (a Gaussian rasterization library). This is a DIFFERENT library than diff-gaussian-rasterization -- it is NOT a drop-in replacement. gsplat has a different API, different feature set (batch rasterization, N-D features, sparse gradients), and cannot simply substitute for diff-gaussian-rasterization without significant integration work.
+1. **lietorch** (thirdparty/lietorch) - Lie group operations for SLAM/robotics
+   - Build: `setup.py` with `torch.utils.cpp_extension.CUDAExtension`
+   - CUDA files: `lietorch_gpu.cu`, `altcorr_kernel.cu`, `corr_index_kernel.cu`, `se3_builder.cu`, `se3_inplace_builder.cu`, `se3_solver.cu`
+   - Surface: `__global__`, `__device__`, `__shared__`, `atomicAdd`
+   - No warp intrinsics or hardcoded warp sizes
 
-- **EmmanuelMess/lietorch-ROCm**: A community fork with 1 star, uses `HSA_OVERRIDE_GFX_VERSION=10.3.0` (a crutch the PORTING_GUIDE forbids), no releases, no validation. NON-authoritative; would require from-scratch redo.
+2. **monogs** (thirdparty/monogs) - MonoGS Gaussian Splatting for SLAM
+   - **diff-gaussian-rasterization** (submodule):
+     - Build: `setup.py` with `CUDAExtension`
+     - CUDA files: `forward.cu`, `backward.cu`, `rasterizer_impl.cu`, `rasterize_points.cu`
+     - Surface: `cooperative_groups`, `cg::this_thread_block()`, `cub::DeviceScan`, `cub::DeviceRadixSort`, `atomicAdd`
+   - **simple-knn** (submodule):
+     - Build: `setup.py` with `CUDAExtension`
+     - CUDA files: `simple_knn.cu`, `spatial.cu`
+     - Surface: `cooperative_groups`, `cub::DeviceReduce`, `cub::DeviceRadixSort`, `thrust::device_vector`, `thrust::sequence`
 
-- **graphdeco-inria/diff-gaussian-rasterization**: No AMD/ROCm support upstream. Known HIPIFY issues (ROCm/HIPIFY#1630: vector_types.h conflicts). AMD recommends using gsplat instead (but that is not API-compatible).
+3. **pangolin** (thirdparty/pangolin) - Visualization library
+   - CUDA file: `examples/VBODisplay/kernal.cu` (simple demo, optional)
 
-- **pytorch/lietorch**: No AMD support upstream.
+## Why this is blocked
 
-### Why not portworthy
+The project's CUDA dependencies fall into two categories:
 
-1. **Dependency composition problem**: pyslam would require porting THREE independent upstream projects (lietorch, diff-gaussian-rasterization, simple-knn), none of which are within pyslam's control. Each is a separate porting effort with its own risks.
+### 1. lietorch - Portability unclear, no existing AMD path
 
-2. **AMD already has the underlying capability via gsplat**: The core Gaussian splatting functionality exists in AMD's official gsplat library. The gap is MonoGS-to-gsplat integration, not CUDA-to-HIP translation.
+lietorch is specialized for differentiable Lie group operations in PyTorch. While the CUDA surface is relatively simple (no warp intrinsics, no cub/thrust), it would require:
+- A full Strategy B port (torch.utils.hipify auto-hipification)
+- Testing with DROID-SLAM workflows
+- No existing validated AMD path exists
 
-3. **Relationship to plvs**: The user asked about overlap with luigifreda/plvs (same author's C++ SLAM). plvs is a standalone C++ SLAM system with its own CUDA integration points. pyslam and plvs are SEPARATE projects by the same author -- pyslam is Python-first with PyTorch/neural features, plvs is C++-first with different volumetric integration. There is no shared CUDA code between them.
+The EmmanuelMess/lietorch-ROCm fork is not authoritative (uses `HSA_OVERRIDE_GFX_VERSION` workaround) and cannot be adopted as a base.
 
-4. **Scope mismatch**: MOAT targets leaf CUDA libraries with direct GPU code. pyslam is a framework composition layer. The right approach is:
-   - Port lietorch independently (Strategy B, pytorch extension)
-   - Either port diff-gaussian-rasterization independently OR adapt MonoGS to use ROCm/gsplat
-   - Port simple-knn independently
-   - THEN pyslam becomes usable on AMD without any changes to pyslam itself
+### 2. diff-gaussian-rasterization - AMD has a different solution
 
-5. **Optional GPU features**: pyslam's core SLAM functionality (feature tracking, bundle adjustment, loop closure) runs on CPU with optional PyTorch acceleration. Only Gaussian splatting integration (a single VolumetricIntegratorType) requires the CUDA submodules. The framework is already usable on AMD for non-Gaussian-splatting volumetric integrators.
+AMD's official Gaussian Splatting library is **gsplat** (https://github.com/ROCm/gsplat), not a HIP port of diff-gaussian-rasterization. The CUDA rasterizer uses:
+- `cooperative_groups` with `cg::this_thread_block()`, `g.sync()`, thread block reduction patterns
+- `cub::DeviceScan::InclusiveSum`, `cub::DeviceRadixSort::SortPairs` (maps to hipCUB but needs testing)
+- Multiple `atomicAdd` on float values
 
-### Recommendation
+Replacing diff-gaussian-rasterization with gsplat would require:
+- API changes throughout monogs
+- Different initialization, rendering, and gradient computation interfaces
+- Potentially different training convergence characteristics
 
-Do NOT port pyslam as a MOAT target. Instead:
+### 3. Integration complexity
 
-1. **If lietorch AMD support is needed**: Port princeton-vl/lietorch directly as a separate MOAT target (Strategy B pytorch extension). This would benefit RAFT-3D, DPVO, DROID-SLAM, and other lietorch consumers.
+pyslam uses these components in an integrated pipeline where:
+- lietorch is used for SE(3) operations in tracking
+- monogs/diff-gaussian-rasterization is used for volumetric reconstruction
+- Both must work together in the SLAM pipeline
 
-2. **If Gaussian splatting SLAM on AMD is needed**: Either:
-   - Port MonoGS to use ROCm/gsplat instead of diff-gaussian-rasterization (significant API adaptation)
-   - Or wait for community/AMD to provide a diff-gaussian-rasterization drop-in
+A partial port (only lietorch or only Gaussian splatting) would not provide a functional system.
 
-3. **For pyslam specifically**: No pyslam fork is needed. Once upstream deps have AMD support, pyslam works unchanged.
+## Recommendation
 
-## Disposition
+**Set as blocked** with reason: "Requires architectural changes -- AMD's gsplat replaces diff-gaussian-rasterization (different API), and lietorch has no validated AMD path. A functional port requires either: (1) adapting pyslam to use gsplat instead of diff-gaussian-rasterization, (2) validating a lietorch HIP port from scratch, and (3) integrating both in the SLAM pipeline. This is beyond a straightforward HIP translation."
 
-Skip with reason: not-a-target (framework composition, no native CUDA code; underlying deps are separate porting targets)
+Alternative approaches for future consideration:
+1. Port lietorch alone (Strategy B) if a lietorch-only workflow is useful
+2. Contact pyslam maintainer about gsplat integration interest
+3. Wait for AMD or community to provide a validated lietorch HIP port
