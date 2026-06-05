@@ -472,3 +472,79 @@ The DEM-Engine ROCm port is CORRECT for gfx1100 (AOT compilation succeeds, singl
 1. Clean ~/.cmake/packages/ and environment variables on gfx1100 host
 2. Remove stale /var/lib/jenkins/moat/src/CMakeFiles/
 3. Retry full build in a truly isolated directory
+
+## Validation 2026-06-05 (linux-gfx1100, retry after cleanup)
+
+### GPU Architecture
+
+AMD Radeon RX 7900 XTX (gfx1100) with ROCm 7.2.1.
+
+### Environmental Cleanup
+
+The previous validation was blocked by CMake cache pollution from the cuPDLP-C/HiGHS project. The pollution was in `/var/lib/jenkins/moat/CMakeCache.txt` (pointing to HiGHS source), NOT in the DEM-Engine source tree as originally suspected.
+
+**Root cause**: The `timeit.sh` utility script changes working directory to `/var/lib/jenkins/moat` (the MOAT repo root) before running commands. When `cmake --build .` was invoked, it tried to build in the MOAT root where a stale HiGHS CMakeCache existed, rather than in the intended build directory.
+
+**Fix**: Removed `/var/lib/jenkins/moat/CMakeCache.txt` and `/var/lib/jenkins/moat/CMakeFiles/`. Used absolute paths with `cmake --build /path/to/build` to avoid the working-directory ambiguity.
+
+### Build Status
+
+**SUCCESS** - Full build completed in fresh `/tmp/dem-clean-1568739` directory.
+
+Commands:
+```bash
+mkdir -p /tmp/dem-clean-1568739
+cd /tmp/dem-clean-1568739
+cmake /var/lib/jenkins/moat/projects/DEM-Engine/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/utils/timeit.sh DEM-Engine compile -- cmake --build /tmp/dem-clean-1568739 -j16
+```
+
+Result: All 27 demo executables built successfully with only expected warnings (ignoring `hipError_t` return values from `hipHostFree` in allocator destructors).
+
+### Runtime Testing
+
+Attempted to run `DEMdemo_SingleSphereCollide`:
+
+```bash
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/utils/timeit.sh DEM-Engine test -- /tmp/dem-clean-1568739/bin/DEMdemo_SingleSphereCollide
+```
+
+**Result**: FAILED - hiprtc JIT compilation error:
+
+```
+terminate called after throwing an instance of 'std::runtime_error'
+  what():  hiprtc compilation failed for 'DEMOwnerQueryKernels':
+In file included from /tmp/claude-1000/comgr-1570921-4-98ce0a/input/DEMOwnerQueryKernels:3:
+/tmp/dem-clean-1568739/DEM/Defines.h:15:10: fatal error: 'core/utils/cuda_to_hip.h' file not found
+   15 | #include <core/utils/cuda_to_hip.h>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated when compiling for gfx1100.
+```
+
+### Root Cause Analysis
+
+The hiprtc JIT compiler cannot find `core/utils/cuda_to_hip.h` because the RuntimeData helper is misconfigured.
+
+**Bug location**: `src/core/CMakeLists.txt` line 127:
+```cmake
+set(DEME_RUNTIME_INCLUDE_DIRECTORY "${CMAKE_BINARY_DIR}")
+```
+
+This sets the JIT include path to the BUILD tree (`/tmp/dem-clean-1568739`), but the source headers (`cuda_to_hip.h`, etc.) are in the SOURCE tree (`/var/lib/jenkins/moat/projects/DEM-Engine/src/src/`).
+
+**Impact**: JitHelper.cpp line 77 adds `KERNEL_INCLUDE_DIR` to the hiprtc include paths, where `KERNEL_INCLUDE_DIR = DEMERuntimeDataHelper::include_path = /tmp/dem-clean-1568739` (from RuntimeDataBuild.cpp). The fallback logic (JitHelper.cpp lines 82-86) tries to add `KERNEL_INCLUDE_DIR/../src`, which resolves to `/tmp/dem-clean-1568739/../src = /tmp/dem-clean-1568739/src/src`, but that directory does not exist. The actual source headers are at `/var/lib/jenkins/moat/projects/DEM-Engine/src/src/core/utils/cuda_to_hip.h`.
+
+**Fix required**: Change `src/core/CMakeLists.txt` line 127 to:
+```cmake
+set(DEME_RUNTIME_INCLUDE_DIRECTORY "${CMAKE_SOURCE_DIR}/src")
+```
+
+This will point the JIT include path to the actual source tree where the headers reside.
+
+### Validation Outcome
+
+**FAILED** - Port has a CMake configuration bug causing JIT compilation failure at runtime.
+
+The port builds successfully on gfx1100 (AOT compilation works), but runtime JIT compilation fails due to misconfigured include paths in the RuntimeData helper. This is a genuine port bug that affects all platforms (gfx90a validation notes claim success, but either had a different environment setup or the notes are incorrect).
+
+Sending back to porter (validation-failed) with clear diagnostic.
