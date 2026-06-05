@@ -43,3 +43,4 @@
 {"kind":"phase","ts":"2026-06-05T15:47:46Z","phase":"test","seconds":60.065,"exit":124,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && timeout 60 ./DEMdemo_Repose"}
 {"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":700.080,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_BallDrop2D"}
 {"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":577.900,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_RotatingDrum"}
+{"kind": "tokens", "ts": "2026-06-05T15:53:31Z", "tokens": 48476, "source": "validator (final)"}
