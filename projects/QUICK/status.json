@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-05T14:30:49Z",
+  "updated_at": "2026-06-05T14:31:30Z",
   "head_sha": "d369e07",
   "depends_on": [],
   "platforms": {
@@ -38,7 +38,7 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1bedbbb",
+      "validated_sha": "d369e07",
       "started_at": null,
       "completed_at": "2026-06-05T14:30:35Z",
       "updated_at": "2026-06-05T14:30:35Z",
