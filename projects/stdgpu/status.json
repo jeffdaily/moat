@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T23:23:31Z",
-  "updated_at": "2026-06-05T00:29:00Z",
-  "head_sha": "9a0fb1c4bc4a3c72706377be3a088a694382fa78",
+  "updated_at": "2026-06-05T14:08:13Z",
+  "head_sha": "718d20647f02d2df3a7dc31502c699e0aa0c1674",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "Wave64 concurrent container livelock: range insert/erase and simultaneous push/pop tests hang indefinitely. Build works; 500+ tests pass; ~20 tests hang. Requires algorithm-level fix to contention handling, not a simple port fix.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-04T23:45:57Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T00:29:00Z",
+      "updated_at": "2026-06-05T14:10:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
