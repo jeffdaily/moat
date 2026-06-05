@@ -481,3 +481,70 @@ inside `if(NOT WIN32)`. The Linux builds (gfx90a, gfx1100) compile NONE of the
 new .cpp stubs and follow the SAME cmake paths as before. Binary-equivalence check
 via `utils/codeobj_diff.py` between builds at e24593f and eebecaf is expected to
 yield `verdict=identical` for Linux arches -- use carry-forward if confirmed.
+
+## Revalidation 2026-06-05 (linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1)
+
+Arch: gfx90a (MI250X, wave64). GCD: HIP_VISIBLE_DEVICES=0.
+Fork validated at: 13e585d4775b69961221e21f8cddcb567d66b752 (moat-port).
+
+### HEAD movement: eebecaf -> 13e585d
+
+The original Windows commit (eebecaf) introduced a Linux build regression: the
+new src/hip_compat/c10/cuda/CUDACachingAllocator.h shim unconditionally aliased
+`namespace CUDACachingAllocator = c10::hip::HIPCachingAllocator`, but on Linux
+ROCm PyTorch, c10::cuda::CUDACachingAllocator already exists (the Linux torch is
+properly hipified), causing a redefinition error at build time. The shim is needed
+only on Windows (where TheRock PyTorch is not fully hipified).
+
+Fix: wrap the namespace alias in `#if defined(_WIN32)`, with `#include_next` on
+Linux to pull the real hipified header unchanged. Committed as an amend to the
+Windows commit and force-pushed to moat-port (13e585d).
+
+### Build
+
+From-scratch build at 13e585d (same CMake command as gfx90a validation 2026-05-31):
+
+```
+export HIP_VISIBLE_DEVICES=0 ROCM_PATH=/opt/rocm HIP_PLATFORM=amd
+export CMAKE_PREFIX_PATH="<torch-cmake>:<gtest-cmake>:/opt/conda/envs/py_3.12:/usr"
+cmake -S projects/LichtFeld-Studio/src -B build-new -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang \
+  -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release \
+  -DTorch_DIR=/opt/conda/envs/py_3.12/.../torch/share/cmake/Torch \
+  -DLFS_GLM_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/glm-1.0.1 \
+  -DLFS_ARGS_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/lfs_args
+cmake --build build-new --target lfs_compute_tests -j16
+```
+
+Result: 177/177 targets built, lfs_compute_tests linked. ZERO errors.
+
+### GPU test results
+
+```
+HIP_VISIBLE_DEVICES=0 ./build-new/cmake/hip_tests/lfs_compute_tests
+```
+
+Run 1: 914 tests from 48 suites ran (13.4 s). 911 passed, 3 failed.
+Run 2: 914 tests from 48 suites ran (12.9 s). 911 passed, 3 failed.
+BIT-IDENTICAL across both runs (determinism confirmed).
+
+### Failures (3 total, same documented non-bugs as previous gfx90a validation)
+
+1. ImageKernelsTest.FusedCannyUInt8MatchesNormalizedFloatInput -- DOCUMENTED
+   (gfx90a validation 2026-05-31 notes). 1-ULP cross-input FP boundary in Canny
+   NMS hysteresis; wave-agnostic stencil kernel. NOT a port defect.
+2. MCMCTest.RemoveGaussiansSoftDeletesRows -- DOCUMENTED. Reads raw uint8 quant
+   exp_avg as float; zero-point=128 means "0.0" is 0x80808080 (NaN as float).
+   Pure integer quantization design mismatch. Identical on any GPU.
+3. MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows -- DOCUMENTED.
+   Same class as #2: raw uint8 quant bytes read as float give NaN. NOT a HIP defect.
+
+All 3 failures are test/impl design mismatches in the upstream test source, not
+port regressions. The wave64-critical subset (tensor reductions, warp/block
+reductions, gsplat + fastgs rasterizers, cg::reduce shim, SSIM, MCMC, sort) ALL
+pass. Results IDENTICAL to e24593f validation (911/3 split).
+
+### Verdict: PASS (linux-gfx90a revalidation)
+validated_sha = 13e585d4775b69961221e21f8cddcb567d66b752
