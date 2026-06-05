@@ -1,0 +1,5 @@
+{"kind": "tokens", "ts": "2026-06-04T23:29:53Z", "tokens": 98786, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:27:02Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T00:27:05Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -j128"}
+{"kind":"phase","ts":"2026-06-05T00:27:11Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make VERBOSE=1 -j128"}
+{"kind":"phase","ts":"2026-06-05T00:29:12Z","phase":"compile","seconds":11.514,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/projects/symforce/src/symforce/caspar/source/runtime/build -j128"}
