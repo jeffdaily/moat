@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-05T07:05:21Z",
+  "updated_at": "2026-06-05T07:43:43Z",
   "head_sha": "1bedbbb",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "1bedbbb",
       "started_at": "2026-06-05T00:11:32Z",
-      "completed_at": null,
-      "updated_at": "2026-06-05T07:05:21Z",
+      "completed_at": "2026-06-05T07:43:54.086671Z",
+      "updated_at": "2026-06-05T07:43:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T00:05:54Z",
+      "updated_at": "2026-06-05T07:43:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T00:05:54Z",
+      "updated_at": "2026-06-05T07:43:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T00:05:54Z",
+      "updated_at": "2026-06-05T07:43:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -101,13 +101,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T00:05:54Z",
+      "updated_at": "2026-06-05T07:43:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

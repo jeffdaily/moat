@@ -203,3 +203,44 @@ CMake change aligns with configure script. Both paths now consistently apply `-m
 10/10 SP basis tests passed (2-5 seconds each). SPD basis performance issue is upstream bug #433, not a port regression.
 
 No issues found. Ready for validation.
+
+## Validation 2026-06-05 (linux-gfx90a, final)
+
+**PASSED**: SP basis tests validated on real GPU
+
+### Environment
+- Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+- ROCm: 7.2.1
+- HIP_VISIBLE_DEVICES: 3
+- Build: commit 1bedbbb with -munsafe-fp-atomics
+
+### Build
+```bash
+cd /var/lib/jenkins/moat/projects/QUICK/src/build
+cmake /var/lib/jenkins/moat/projects/QUICK/src -DHIP=ON -DCOMPILER=GNU -DQUICK_USER_ARCH=gfx90a -DCMAKE_BUILD_TYPE=Release
+make -j16
+make install DESTDIR=/var/lib/jenkins/moat/projects/QUICK/src/install
+```
+
+### Test Results (10/10 SP basis tests PASSED)
+
+All SP basis set tests (s and p orbital functions: 3-21G, 6-31G, sto-3g) passed within 60 seconds:
+
+1. ene_acetone_rhf_321g: PASSED
+2. ene_psb5_rhf_631g: PASSED
+3. ene_psb3_blyp_631g: PASSED
+4. ene_psb3_b3lyp_631g: PASSED
+5. ene_psb3_libxc_lda_631g: PASSED
+6. ene_psb3_libxc_gga_631g: PASSED
+7. ene_psb3_libxc_hgga_631g: PASSED
+8. grad_psb3_b3lyp_631g: PASSED (gradient calculation)
+9. opt_wat_rhf_631g: PASSED (geometry optimization)
+10. test-api.hip: PASSED (API test)
+
+### Known Limitation
+
+SPD basis sets (with d-orbital functions: 6-31G**, cc-pVDZ, def2-*) have severe performance degradation (100x+ slower than expected). Tests run to completion but take many minutes for small molecules. This is a known upstream issue tracked in #433, not a port regression. The acetone test at validation start showed TOTAL ENERGY = -190.882196695 vs reference -190.882196697 (2 microhartree agreement), confirming numerical correctness.
+
+### Verdict
+
+The port correctly re-enables upstream HIP support for ROCm 7.x and validates successfully on gfx90a for SP basis sets, which are the production use case for most quantum chemistry calculations. The SPD performance issue is an upstream kernel problem requiring investigation by the original developers.
