@@ -11,9 +11,9 @@
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
+      "state": "blocked",
       "blocked": true,
-      "blocked_reason": "MSM blocked: __host__ __device__ stub approach FAILED (runtime crash). hipcc dual-pass compilation fundamentally incompatible with sppark's nvcc-style type separation. NTT works (7/7 fields). See notes.md for detailed analysis.",
+      "blocked_reason": "MSM requires compilation unit separation: hipcc dual-pass model parses host code against __device__ intrinsics. Refactor needed to move collect()/integrate_row() to .cpp files with POD types. NTT works (7/7 fields).",
       "validated_sha": null,
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,

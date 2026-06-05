@@ -212,3 +212,65 @@ The NTT tests continue to work because NTT doesn't have the host-function-callin
 ### State
 
 Reverted all changes to mont_t.hip and field headers. Source tree reset to clean NTT-working state. Project remains blocked for MSM on HIP.
+
+## MSM HIP Port Analysis: Compilation Unit Separation Required (2026-06-05)
+
+### Problem Diagnosis
+
+The previous attempt to use `__host__ __device__` stubs failed because hipcc's template instantiation picks the wrong overload at runtime. A deeper analysis reveals that the core issue requires a structural solution, not just macro guards.
+
+hipcc's dual-pass compilation model:
+1. **Host pass**: All code is parsed, including template instantiations. Device intrinsics (`__shfl_up`, `__syncthreads`, `atomicAdd`) are defined as `__device__` functions but referenced from templates instantiated for host code.
+2. **Device pass**: `__HIP_DEVICE_COMPILE__` is defined, device intrinsics work.
+
+The problem: sort.cuh, pippenger.cuh, and batch_addition.cuh have `__device__` helper functions that call HIP intrinsics. These helpers are instantiated during the host pass because the msm_t class template includes them. Even with proper guards (`#ifdef __HIP_DEVICE_COMPILE__`), the HIP system headers provide inline `__device__` functions that hipcc parses in both passes.
+
+### Issues Found
+
+1. **HIP cooperative_groups header**: `<hip/hip_cooperative_groups.h>` has inline functions that call `__ockl_grid_sync()` etc., which are `__device__`-only. Including this header causes errors in the host pass.
+
+2. **__ballot_sync ambiguity**: ROCm 7+ has native `__ballot_sync` returning `uint64_t`, conflicting with the cuda2hip.hpp polyfill returning `uint32_t`.
+
+3. **sort.cuh device functions**: Functions like `sum_up()` and `pack()` use HIP intrinsics directly. Even when guarded, the HIP headers they depend on cause issues.
+
+4. **fp2 requires vt_inverse_mod_x**: The fp2 reciprocal uses `vt_inverse_mod_x()` which requires ~400 lines of complex Montgomery ladder code with shuffle operations. This is not in mont_t.hip.
+
+### Required Solution: Compilation Unit Separation
+
+The only viable solution is to separate host-only and device code into different compilation units:
+
+1. **Device code** (.cu/.hip files compiled by hipcc):
+   - mont_t, kernels, `__device__` helpers
+   - Compiled with full HIP intrinsic support
+
+2. **Host-only code** (.cpp files compiled by g++/clang):
+   - `msm_t::collect()`, `integrate_row()`, `sum_up()`
+   - Uses POD types (raw pointers, uint32_t*) for data exchange
+   - Does NOT include device headers
+
+3. **Interface**:
+   - Device code exports kernel launch wrappers
+   - Host code calls wrappers, never touches mont_t directly
+
+### Implementation Outline
+
+```
+msm/
+  pippenger.cuh          # Device-only: kernels, bucket_t ops
+  pippenger_host.cpp     # Host-only: collect(), integrate_row()
+  pippenger_interface.h  # POD struct for host/device boundary
+```
+
+The host functions (`collect`, `integrate_row`) would work with raw coordinate arrays instead of `bucket_t` objects. The type system divergence happens at compilation boundary, not runtime.
+
+### Effort Estimate
+
+- ~2-3 hours to refactor MSM to separate compilation units
+- ~1 hour to implement minimal fp2 support (without reciprocal) or stub it out
+- Testing and debugging
+
+### Recommendation
+
+The G1 MSM (primary use case) could be made to work with this refactor. G2 MSM (fp2) requires additional mont_t.hip work or should be disabled for HIP.
+
+NTT continues to work because it doesn't have the host-function-calling-device-operator pattern that MSM has.
