@@ -132,3 +132,29 @@ This affects:
 The standalone runtime library compiles because those .cu files already have the compat header included at the top. Generated libraries fail because the templates emit raw CUDA includes.
 
 **Back to porter for template fixes.**
+
+## Template fix 2026-06-05
+
+Fixed the Jinja templates to include `cuda_to_hip.h` instead of raw CUDA headers:
+
+- `caspar_mappings.cu.jinja`: replaced `#include <cooperative_groups.h>` with `#include "cuda_to_hip.h"`
+- `caspar_mappings.h.jinja`: replaced `#include <cuda_runtime.h>` with `#include "cuda_to_hip.h"`
+- `kernel.cu.jinja`: replaced all cooperative_groups and cuda_runtime includes with `#include "cuda_to_hip.h"`
+- `kernel.h.jinja`: replaced `#include <cuda_runtime.h>` with `#include "cuda_to_hip.h"`
+- `solver.h.jinja`: replaced `#include <cuda_runtime.h>` with `#include "cuda_to_hip.h"`
+
+Additional fixes:
+
+1. **coalesced_group reduction**: HIP's `coalesced_group` lacks `shfl_xor`, so `FlushSumBlock` and `FlushSumBlockAdd` in memops.cuh now use shared-memory atomics directly (each valid thread does atomicAdd_block) instead of butterfly reduction.
+
+2. **CMakeLists.txt.jinja**: Link `hip::host` and `hip::hipcub` as PRIVATE to avoid propagating HIP compile options to pure-CXX pybind consumers. Added `set_source_files_properties(${CPP_SOURCES} PROPERTIES LANGUAGE HIP)` for pybind files so HIP headers work.
+
+3. **cuda_to_hip.h**: Added missing mappings for `cudaSetDevice`, `cudaGetDevice`, `cudaPointerGetAttributes`.
+
+4. **library.py**: Added `use_hip` and `hip_arch` parameters to `CasparLibrary.compile()`.
+
+Test command:
+```bash
+HIP_VISIBLE_DEVICES=0 python3 test_symforce_hip.py
+# Output: SUCCESS! All tests passed.
+```

@@ -9,3 +9,13 @@
 {"kind":"phase","ts":"2026-06-05T00:39:39Z","phase":"compile","seconds":11.625,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/symforce/src/symforce/caspar/source/runtime/build -j128"}
 {"kind": "tokens", "ts": "2026-06-05T00:41:26Z", "tokens": 82324, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T00:44:09Z", "tokens": 75002, "source": "reviewer"}
+{"kind": "tokens", "ts": "2026-06-05T00:50:43Z", "tokens": 52762, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T00:52:54Z","phase":"compile","seconds":23.920,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T00:53:50Z","phase":"compile","seconds":24.080,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T00:55:51Z","phase":"compile","seconds":24.586,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T00:56:37Z","phase":"compile","seconds":24.273,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T00:58:43Z","phase":"compile","seconds":25.947,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T00:59:31Z","phase":"compile","seconds":31.245,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T01:00:20Z","phase":"compile","seconds":35.941,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T01:01:00Z","phase":"compile","seconds":35.860,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
+{"kind":"phase","ts":"2026-06-05T01:01:40Z","phase":"compile","seconds":35.357,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_symforce_hip.py"}
