@@ -42,3 +42,17 @@ The kernel is portable (no warp intrinsics, no CUDA libraries, only __syncthread
 Gotchas:
 - Cannot use -ffast-math with hipcc on the kernel file because PyTorch headers use std::isinf() which conflicts with -ffinite-math-only (part of -ffast-math)
 - The cuRoPE2D module expects input in (B, N, H, D) layout or (B, H, N, D) created from transpose of (B, N, H, D) to maintain correct strides
+
+## Review 2026-06-05
+
+Reviewed branch `moat-port` against upstream `main`.
+
+**Verdict**: Approve
+
+**Summary**: Clean Strategy B (PyTorch extension) port. The setup.py detects ROCm via `torch.version.hip` and uses HIP-compatible compile flags; the CUDA path is preserved unchanged. The only kernel change (`tokens.type()` -> `tokens.scalar_type()`) is a legitimate PyTorch modernization that applies to both platforms.
+
+The kernel uses only portable constructs (`__global__`, `__syncthreads__`, `extern __shared__`, standard math functions). No warp intrinsics, no CUDA libraries, no textures. PyTorch's automatic hipification handles the CUDA->HIP runtime symbol translation at build time.
+
+GPU vs CPU validation on gfx90a: max diff 2.26e-06 (within 1e-5 tolerance).
+
+No findings.
