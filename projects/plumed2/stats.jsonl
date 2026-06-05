@@ -12,3 +12,4 @@
 {"kind":"session","ts":"2026-06-05T15:49:32Z","epoch":1780674572.179222689,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-05T15:51:12Z", "tokens": 69797, "source": "validator (gfx1100)"}
 {"kind":"phase","ts":"2026-06-05T16:37:43Z","phase":"compile","seconds":0.072,"exit":2,"cmd":"make USE_HIP=1 HIP_ARCHITECTURES=gfx1100 -j64"}
+{"kind": "tokens", "ts": "2026-06-05T16:45:14Z", "tokens": 115313, "source": "porter (gfx1100 delta-port)"}

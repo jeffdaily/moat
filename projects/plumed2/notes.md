@@ -250,3 +250,26 @@ make USE_HIP=1 HIP_ARCHITECTURES=gfx1100 check
 Result: 32/32 regression tests pass.
 
 Commit: cb90687f8
+
+## Review 2026-06-05 (linux-gfx1100 delta fix)
+
+Reviewed commit cb90687f8 (delta fix for gfx1100 HIP runtime initialization crash).
+
+### Verified
+
+- Fix placement is correct: `ensureHipRuntimeInitialized()` is called before the first GPU allocation (`thrust::device_vector<calculateFloat> inputZeroMax = inputs;` at line 1536)
+- Member device_vectors (lines 905-912) are default-constructed without allocation and only resized later via `setUpPermanentGPUMemory()` which is also guarded by `mpiActive`
+- Helper function uses C++11 thread-safe static local initialization
+- Fix is arch-unified (applies to all HIP builds via `USE_HIP || __HIP_PLATFORM_AMD__` guard)
+- CUDA build is byte-identical (all changes inside preprocessor guards)
+- Commit message follows conventions: `[ROCm]` prefix, no noreply trailer, no MOAT jargon
+
+### Fault classes checked (no issues)
+
+- No warpSize/32 concerns (fix does not touch kernel code)
+- No rule-of-five concerns (no new resource handles)
+- No OOB, texture, or library swap concerns
+
+### Result
+
+Approved for validation. State: review-passed.
