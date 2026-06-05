@@ -56,6 +56,37 @@ reasonable defaults that work correctly.
 - Double and single precision modes work
 - Both ortho PBC and no-PBC configurations work
 
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a
+
+GPU: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0
+
+Build command:
+```bash
+export PATH="/var/lib/jenkins/moat/_deps/plumed2/install/bin:$PATH"
+export PLUMED_KERNEL="/var/lib/jenkins/moat/_deps/plumed2/install/lib/libplumedKernel.so"
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/plumed2/install/lib:$LD_LIBRARY_PATH"
+export USE_HIP=1
+export HIP_VISIBLE_DEVICES=0
+
+cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord
+./configure.sh
+make USE_HIP=1 HIP_ARCHITECTURES=gfx90a
+```
+
+Test command:
+```bash
+make USE_HIP=1 check
+```
+
+Results:
+- 32/32 regression tests PASS (0 errors)
+- Test suites: cudatest (double/float), cudatestPair, cudatestWB
+- Configurations tested: ortho PBC, no PBC, MPI variants
+- Plugin verified linked against libamdhip64.so.7
+- Code objects verified compiled for gfx90a architecture
+
 ## Review 2026-06-05
 
 ### Problems found
