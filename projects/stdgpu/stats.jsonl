@@ -11,3 +11,4 @@
 {"kind":"phase","ts":"2026-06-05T00:00:20Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./bin/teststdgpu"}
 {"kind":"phase","ts":"2026-06-05T00:00:32Z","phase":"test","seconds":4.738,"exit":141,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
 {"kind":"phase","ts":"2026-06-05T14:00:26Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build build -j128"}
+{"kind": "tokens", "ts": "2026-06-05T14:10:40Z", "tokens": 107499, "source": "porter (wave64 mutex fix)"}

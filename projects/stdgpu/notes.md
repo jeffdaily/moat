@@ -45,3 +45,35 @@ All 702 tests PASS, including previously hanging tests:
 
 stdgpu GitHub: https://github.com/stotko/stdgpu
 The HIP backend is marked "experimental" upstream. The upstream implementation assumes CUDA's Independent Thread Scheduling, which does not apply to AMD's SIMT model.
+
+## Review 2026-06-05
+
+Reviewed commit 718d206 (wave64/wave32 spinlock livelock fix).
+
+**Verdict: APPROVE**
+
+The wave_lock_serialize() pattern is correct per PORTING_GUIDE line 282:
+- Uses `__ballot(1)` to get the active lane mask (returns 64-bit on HIP)
+- Elects one lane at a time via `__ffsll()` and clears each lane's bit after its turn
+- Properly guarded with `#if defined(__HIP_DEVICE_COMPILE__) && defined(__HIP_PLATFORM_AMD__)`
+- CUDA path is a no-op (Independent Thread Scheduling handles it)
+
+All contention sites wrapped:
+- unordered_base: insert() and erase() retry loops (lines 978, 1027)
+- deque: push_back/push_front/pop_back/pop_front (4 sites)
+- vector: push_back/pop_back (2 sites)
+
+Namespace usage is correct:
+- wave_lock.h declares in `stdgpu::detail`
+- unordered_base_detail.cuh (inside detail ns) calls `wave_lock_serialize()`
+- deque_detail.cuh and vector_detail.cuh (inside stdgpu ns) call `detail::wave_lock_serialize()`
+
+No issues found:
+- No hardcoded 32 or 0xffffffff masks (uses 1ull << elected)
+- No MOAT jargon in comments
+- Commit title under 72 chars, [ROCm] prefix present
+- No noreply trailer
+- Author is jeffdaily account
+- All 702 tests pass per commit message
+
+Minor note (non-blocking): Copyright header says "Copyright 2024 Advanced Micro Devices" but commit date is 2026. Cosmetic only.
