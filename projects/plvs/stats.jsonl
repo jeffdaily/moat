@@ -1,0 +1,2 @@
+{"kind": "tokens", "ts": "2026-06-04T23:31:09Z", "tokens": 98971, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:18:57Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -j8"}
