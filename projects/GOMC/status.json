@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "GOMC",
   "upstream_url": "https://github.com/GOMC-WSU/GOMC",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/GOMC",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:24:38Z",
-  "updated_at": "2026-06-05T07:10:25Z",
-  "head_sha": null,
+  "updated_at": "2026-06-05T07:31:32Z",
+  "head_sha": "98b6073d9e541d3c0330b55d7ac5865f6023f434",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-05T07:31:32Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T07:10:25Z",
+      "updated_at": "2026-06-05T07:31:32Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

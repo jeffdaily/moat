@@ -1,0 +1,8 @@
+{"kind": "tokens", "ts": "2026-06-05T07:11:11Z", "tokens": 92302, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T07:15:19Z","phase":"compile","seconds":0.036,"exit":2,"cmd":"make -j128 GPU_NVT"}
+{"kind":"phase","ts":"2026-06-05T07:15:24Z","phase":"compile","seconds":0.035,"exit":2,"cmd":"make -j32 GPU_NVT"}
+{"kind":"phase","ts":"2026-06-05T07:15:40Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build . --target GPU_NVT -j32"}
+{"kind":"phase","ts":"2026-06-05T07:17:42Z","phase":"compile","seconds":0.128,"exit":1,"cmd":"cmake --build . --target GPU_NVT -j32"}
+{"kind":"phase","ts":"2026-06-05T07:24:27Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake --build . --target GPU_NVT -j32"}
+{"kind":"phase","ts":"2026-06-05T07:28:00Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build . --target GPU_GEMC GPU_GCMC GPU_NPT -j32"}
+{"kind":"phase","ts":"2026-06-05T07:28:50Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j32"}
