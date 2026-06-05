@@ -91,3 +91,30 @@ HIP_VISIBLE_DEVICES=2 ./build/tests/tests
 Total runtime: 26270 ms
 
 All tests pass on gfx90a. Wave64 shuffle divergence fixes confirmed working correctly on AMD hardware.
+
+### Platform: linux-gfx1100
+**GPU arch**: gfx1100 (AMD Radeon Pro W7800 48GB)
+**Validated commit**: 0611e58c81772564f732d0a87c80570e8ec98619
+
+### Build Commands
+```bash
+cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src
+git submodule update --init --recursive
+cmake -B build-gfx1100 -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_TESTS=ON
+cmake --build build-gfx1100 -j16
+```
+
+### Test Commands
+```bash
+HIP_VISIBLE_DEVICES=0 ./build-gfx1100/tests/tests
+```
+
+### Test Results
+**PASS**: 44/44 tests passed on real GPU
+
+- BAD descriptor tests: 22/22 PASS
+- HashSIFT descriptor tests: 22/22 PASS
+
+Total runtime: 15784 ms
+
+All tests pass on gfx1100 (wave32 RDNA3 arch). The port correctly handles both wave64 (gfx90a) and wave32 (gfx1100) architectures with the same code.
