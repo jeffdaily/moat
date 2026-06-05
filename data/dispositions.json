@@ -1077,6 +1077,13 @@
     "note": "MD analysis Python lib; uses CuPy which already has ROCm support",
     "reason": "not-a-target"
   },
+  "mwatelescope/mwa_hyperdrive": {
+    "decided": "2026-06-05T09:15:24Z",
+    "disposition": "skip",
+    "full_name": "MWATelescope/mwa_hyperdrive",
+    "note": "Mature upstream HIP support since v0.3.0 (2023-09-27); actively deployed on Pawsey Setonix MI250 (gfx90a); ROCm 6.x support in v0.4.0",
+    "reason": "already-supported"
+  },
   "nerficg-project/htgs": {
     "decided": "2026-06-05T01:23:49Z",
     "disposition": "skip",
