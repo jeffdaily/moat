@@ -7,17 +7,17 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-05T20:20:19Z",
+  "updated_at": "2026-06-05T20:34:20Z",
   "head_sha": "a48ee1f6",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b6a6d87c",
+      "validated_sha": "a48ee1f6",
       "started_at": "2026-05-30T09:21:09Z",
-      "completed_at": "2026-06-04T18:10:22Z",
-      "updated_at": "2026-06-05T20:17:32Z",
+      "completed_at": "2026-06-05T20:34:19Z",
+      "updated_at": "2026-06-05T20:34:20Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,13 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "e80e1a07663e197105ced9fff816e5a1f412043f",
-        "method": "binary-equiv",
-        "detail": "WIN32-guarded link opts + host-only managedMemory guard; .text IDENTICAL (1 byte = KD self-ptr 0x40 shift from .rodata VMA move, not ISA); .rodata IDENTICAL (9053 diffs all in bytes 16-18 KD self-ptr ",
-        "at": "2026-06-04T18:10:22Z"
-      }
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "revalidate",
@@ -139,5 +133,8 @@
   },
   "depends_on": [
     "STRUMPACK"
-  ]
+  ],
+  "pr_url": "https://github.com/owensgroup/RXMesh/pull/73",
+  "pr_number": 73,
+  "pr_opened_at": "2026-06-05T20:34:20Z"
 }
