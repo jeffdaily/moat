@@ -60,3 +60,26 @@ Tested on MI250X (gfx90a), ROCm 7.2:
 - Commit hygiene: Title prefixed [ROCm], mentions Claude, no noreply trailer
 
 No problems found.
+
+## Validation 2026-06-05
+
+**Platform**: linux-gfx90a (MI250X, ROCm 7.2, PyTorch 2.13.0a0+gitb5e90ff)
+
+**Build command**:
+```bash
+cd /var/lib/jenkins/moat/projects/CuMesh/src
+HIP_VISIBLE_DEVICES=1 GPU_ARCHS=gfx90a pip install . --no-build-isolation -v
+```
+
+**Test suite**: Example scripts in `examples/` directory
+
+**Results**: All tests PASS
+
+1. `simplify.py`: Mesh decimation 69451 -> 9830 faces PASS
+2. `fill_holes.py`: Hole filling 69451 -> 69594 faces PASS
+3. `remove_duplicate_faces.py`: Duplicate removal (no duplicates found) PASS
+4. `unify_orientations.py`: Orientation unification PASS
+5. `uv_unwrap.py`: Fast clustering (90 clusters) + xatlas UV unwrapping PASS
+6. `remesh.py`: Dual contouring + BVH projection -> 204916 faces PASS
+
+All GPU operations (mesh simplification, hole filling, remeshing, BVH construction/queries) executed successfully on gfx90a.
