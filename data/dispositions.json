@@ -1,4 +1,11 @@
 {
+  "0nandon/embodiedsplat": {
+    "decided": "2026-06-05T01:23:49Z",
+    "disposition": "skip",
+    "full_name": "0nandon/EmbodiedSplat",
+    "note": "CVPR 2026 research code; gsplat already ported covers GS foundation",
+    "reason": "not-a-target"
+  },
   "0xd0gf00d/documentsass": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
@@ -83,6 +90,13 @@
     "note": "Drone autonomy software stack; broad project, not a CUDA library to port",
     "reason": "not-a-target"
   },
+  "amypad/cuvec": {
+    "decided": "2026-06-05T01:23:49Z",
+    "disposition": "skip",
+    "full_name": "AMYPAD/CuVec",
+    "note": "Python/C++/CUDA memory wrapper; infrastructure not compute",
+    "reason": "not-a-target"
+  },
   "archaeasoftware/cudahandbook": {
     "decided": "2026-05-30T00:31:01Z",
     "disposition": "skip",
@@ -110,6 +124,13 @@
     "full_name": "Avarok-Cybersecurity/atlas",
     "note": "Pure Rust inference engine - no CUDA source code",
     "reason": "not-a-target"
+  },
+  "avarok-cybersecurity/dgx-vllm": {
+    "decided": "2026-06-05T01:23:31Z",
+    "disposition": "skip",
+    "full_name": "Avarok-Cybersecurity/dgx-vllm",
+    "note": "Optimized vLLM image; vLLM already has ROCm support",
+    "reason": "already-supported"
   },
   "babitmf/bmf": {
     "decided": "2026-06-05T01:22:04Z",
@@ -145,6 +166,13 @@
     "full_name": "BlinkDL/Albatross",
     "note": "RWKV-7 inference optimized for 5090 (Blackwell); likely tensor-core PTX-specific",
     "reason": "cant-port"
+  },
+  "boltzmannentropy/vllm-5090": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "BoltzmannEntropy/vLLM-5090",
+    "note": "vLLM Docker for 5090; vLLM already has ROCm support",
+    "reason": "already-supported"
   },
   "brucefan1983/cuda-programming": {
     "decided": "2026-05-29T23:57:04Z",
@@ -187,6 +215,13 @@
     "full_name": "celeritas-project/celeritas",
     "note": "DOE HPC Monte Carlo; has HIP backend (cmake/CeleritasUtils.cmake mentions HIP, exascale target)",
     "reason": "already-supported"
+  },
+  "chenhoy/droid-splat": {
+    "decided": "2026-06-05T01:23:49Z",
+    "disposition": "skip",
+    "full_name": "ChenHoy/DROID-Splat",
+    "note": "SLAM research code; depends on DROID-SLAM/gsplat which we handle separately",
+    "reason": "not-a-target"
   },
   "chenxingqiang/yirage": {
     "decided": "2026-06-05T01:18:50Z",
@@ -258,6 +293,13 @@
     "note": "Molecule viewer/editor; visualization app, not compute library",
     "reason": "not-a-target"
   },
+  "dd-duda/cute-learning": {
+    "decided": "2026-06-05T01:24:37Z",
+    "disposition": "skip",
+    "full_name": "DD-DuDa/Cute-Learning",
+    "note": "CUTLASS/CuTe tutorial examples, not a library",
+    "reason": "not-a-target"
+  },
   "deepmodeling/deepmd-kit": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
@@ -293,6 +335,20 @@
     "note": "vLLM fork; AMD officially supports vLLM, not forks",
     "reason": "ported-elsewhere"
   },
+  "dr-noob/peakperf": {
+    "decided": "2026-06-05T01:23:30Z",
+    "disposition": "skip",
+    "full_name": "Dr-Noob/peakperf",
+    "note": "CPU/GPU benchmark tool, not compute library",
+    "reason": "not-a-target"
+  },
+  "drkennetz/cuda_examples": {
+    "decided": "2026-06-05T01:23:30Z",
+    "disposition": "skip",
+    "full_name": "drkennetz/cuda_examples",
+    "note": "Tutorial/example code collection",
+    "reason": "not-a-target"
+  },
   "dtolm/vkfft": {
     "decided": "2026-05-30T00:04:57Z",
     "disposition": "skip",
@@ -327,6 +383,13 @@
     "full_name": "electronic-structure/SIRIUS",
     "note": "Electronic structure lib; has HIP backend (src/gpu/hip/)",
     "reason": "already-supported"
+  },
+  "elftausend/custos": {
+    "decided": "2026-06-05T01:23:30Z",
+    "disposition": "skip",
+    "full_name": "elftausend/custos",
+    "note": "Rust array manipulation; multi-backend already (OpenCL, CUDA, Vulkan)",
+    "reason": "not-a-target"
   },
   "enpeizhao/cvprojects": {
     "decided": "2026-05-29T23:57:04Z",
@@ -426,6 +489,13 @@
     "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
+  "gocnn/gocu": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "gocnn/gocu",
+    "note": "Go bindings for CUDA; AMD would need separate Go ROCm bindings",
+    "reason": "not-a-target"
+  },
   "godweiyang/grabgpu": {
     "decided": "2026-05-30T00:45:18Z",
     "disposition": "skip",
@@ -503,12 +573,26 @@
     "note": "CuTe DSL (NVIDIA CUTLASS), not mechanically portable; AMD FlyDSL is the equivalent DSL",
     "reason": "cant-port"
   },
+  "indras-mirror/llama.cpp-turboq-mtp": {
+    "decided": "2026-06-05T01:23:31Z",
+    "disposition": "skip",
+    "full_name": "Indras-Mirror/llama.cpp-turboq-mtp",
+    "note": "llama.cpp fork; upstream llama.cpp has ROCm support",
+    "reason": "already-supported"
+  },
   "infatoshi/cuda-course": {
     "decided": "2026-05-29T23:13:18Z",
     "disposition": "skip",
     "full_name": "Infatoshi/cuda-course",
     "note": "tutorial/learning repo",
     "reason": "not-a-target"
+  },
+  "infatoshi/megaqwen": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "Infatoshi/MegaQwen",
+    "note": "Megakernel optimized for RTX 3090; likely NVIDIA-specific tensor core PTX",
+    "reason": "cant-port"
   },
   "infatoshi/mnist-cuda": {
     "decided": "2026-05-30T00:45:17Z",
@@ -537,6 +621,13 @@
     "full_name": "invergent-ai/surogate",
     "note": "Training framework wrapper; no custom CUDA kernels visible",
     "reason": "not-a-target"
+  },
+  "ist-daslab/qutlass": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "IST-DASLab/qutlass",
+    "note": "CUTLASS-based quantized BLAS; CUTLASS doesn't port to ROCm per guide",
+    "reason": "cant-port"
   },
   "jamjamjon/usls": {
     "decided": "2026-06-05T01:18:19Z",
@@ -615,6 +706,13 @@
     "note": "real/current HIP backend (research-confirmed; runs on AMD exascale)",
     "reason": "already-supported"
   },
+  "leimao/cutlass-examples": {
+    "decided": "2026-06-05T01:24:37Z",
+    "disposition": "skip",
+    "full_name": "leimao/CUTLASS-Examples",
+    "note": "CUTLASS/CuTe examples, not a library",
+    "reason": "not-a-target"
+  },
   "llnl/blt": {
     "decided": "2026-05-30T00:31:02Z",
     "disposition": "skip",
@@ -635,6 +733,13 @@
     "full_name": "lmk123568/PyVideoProc",
     "note": "NVIDIA video codec (NVDEC/DeepStream) locked; AMD needs VA-API/AMF rewrite",
     "reason": "cant-port"
+  },
+  "lucasdelimanogueira/pynorch": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "lucasdelimanogueira/PyNorch",
+    "note": "Educational PyTorch recreation, not a library to port",
+    "reason": "not-a-target"
   },
   "luce-org/lucebox-hub": {
     "decided": "2026-05-30T00:04:56Z",
@@ -699,6 +804,13 @@
     "note": "zkSync cryptographic library; likely NVIDIA-specific optimizations for zkp",
     "reason": "cant-port"
   },
+  "mebrown47/cuda_spectrum": {
+    "decided": "2026-06-05T01:23:30Z",
+    "disposition": "skip",
+    "full_name": "mebrown47/CUDA_spectrum",
+    "note": "Simple FFT tool, not a library",
+    "reason": "not-a-target"
+  },
   "mirage-project/mirage": {
     "decided": "2026-05-31T01:40:26Z",
     "disposition": "skip",
@@ -720,6 +832,13 @@
     "note": "TypeScript/Rust ML framework - no CUDA source, GPU via external backends",
     "reason": "not-a-target"
   },
+  "modelscope/dash-infer": {
+    "decided": "2026-06-05T01:24:38Z",
+    "disposition": "skip",
+    "full_name": "modelscope/dash-infer",
+    "note": "Alibaba LLM inference; likely has AMD support or uses standard backends",
+    "reason": "already-supported"
+  },
   "mrshaw01/software-engineer": {
     "decided": "2026-05-30T00:45:17Z",
     "disposition": "skip",
@@ -740,6 +859,13 @@
     "full_name": "mushroomfire/mdapy",
     "note": "MD analysis Python lib; uses CuPy which already has ROCm support",
     "reason": "not-a-target"
+  },
+  "nerficg-project/htgs": {
+    "decided": "2026-06-05T01:23:49Z",
+    "disposition": "skip",
+    "full_name": "nerficg-project/HTGS",
+    "note": "Same org as faster-gaussian-splatting; GS framework already being planned",
+    "reason": "duplicate"
   },
   "ninazero/tron": {
     "decided": "2026-05-30T00:45:18Z",
@@ -839,6 +965,13 @@
     "note": "multi-language shader library, not a CUDA app",
     "reason": "not-a-target"
   },
+  "pennylaneai/pennylane-lightning": {
+    "decided": "2026-06-05T01:24:20Z",
+    "disposition": "skip",
+    "full_name": "PennyLaneAI/pennylane-lightning",
+    "note": "Mature ROCm/HIP support via lightning.kokkos and lightning.amdgpu backends. Pre-built PyPI wheels for MI300 (gfx942) with ROCm 7.0+. Active CI/wheel pipelines maintained by PennyLaneAI/Xanadu. Docker target wheel-lightning-kokkos-rocm. Demonstrated at scale on Frontier/LUMI with MI250X GPUs.",
+    "reason": "already-supported"
+  },
   "pika-org/pika": {
     "decided": "2026-06-05T01:22:13Z",
     "disposition": "skip",
@@ -852,6 +985,13 @@
     "full_name": "pranjalssh/fast.cu",
     "note": "tutorial/educational/samples, not a library to port",
     "reason": "not-a-target"
+  },
+  "proteneer/timemachine": {
+    "decided": "2026-06-05T01:23:31Z",
+    "disposition": "skip",
+    "full_name": "proteneer/timemachine",
+    "note": "MD simulation; has JAX/XLA backend which supports ROCm",
+    "reason": "already-supported"
   },
   "psmarter/cuda-practice": {
     "decided": "2026-06-05T01:18:50Z",
@@ -977,6 +1117,13 @@
     "disposition": "skip",
     "full_name": "siboehm/SGEMM_CUDA",
     "note": "tutorial/book/educational, not a library to port",
+    "reason": "not-a-target"
+  },
+  "sith-lab/gpuhammer": {
+    "decided": "2026-06-05T01:23:49Z",
+    "disposition": "skip",
+    "full_name": "sith-lab/gpuhammer",
+    "note": "GPU reliability testing tool, not compute library",
     "reason": "not-a-target"
   },
   "sonots/cumo": {
