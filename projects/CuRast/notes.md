@@ -91,3 +91,7 @@ The port is well-structured:
 **Note**: HipModularProgram lacks a destructor (does not free hipModule_t, events, or module pointers), but this is parity with the original CudaModularProgram which also lacks cleanup -- not a regression from the port.
 
 **Recommendation**: changes-requested due to MOAT jargon in commit message. The code itself is review-passed.
+
+## Commit message fix 2026-06-05
+
+Amended commit to remove MOAT jargon "Strategy A (compat header)" and replaced with plain technical description: "uses a compatibility header to alias CUDA spellings to HIP". Force-pushed to moat-port branch. New sha: d58f80b.
