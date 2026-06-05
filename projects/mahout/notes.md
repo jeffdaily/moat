@@ -569,3 +569,68 @@ python3 utils/codeobj_diff.py \
   projects/mahout/src/qdp/target/debug/build/qdp-kernels-e8e72e39df1ee785/out/libkernels.a
 # verdict=identical
 ```
+
+## Validation 2026-06-05 (windows-gfx1101, AMD Radeon PRO V710, TheRock ROCm 7.14) -- PASS
+
+Platform: windows-gfx1101, GPU: AMD Radeon PRO V710 (gfx1101, RDNA3 wave32, warpSize=32),
+HIP_VISIBLE_DEVICES=0, Windows 11 (26200), TheRock ROCm 7.14.0a20260604,
+torch 2.9.1+rocm7.14.0a20260604, Rust 1.96.0 (msvc target), maturin 1.13.3.
+Fork: jeffdaily/mahout @ moat-port HEAD addf01141f64bf09476ce32274ee61481b57e325.
+
+Build commands:
+```
+ROOT=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+MSVC_DIR=/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64
+export CARGO_HOME=/b/develop/moat/agent_space/cargo RUSTUP_HOME=/b/develop/moat/agent_space/rustup
+export PATH="$CARGO_HOME/bin:$MSVC_DIR:$ROOT/bin:$ROOT/lib/llvm/bin:$PATH"
+export HIP_DEVICE_LIB_PATH="$ROOT/lib/llvm/amdgcn/bitcode"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1101 QDP_HIPCC="$ROOT/bin/hipcc.exe"
+export ROCM_PATH="$ROOT" HIP_VISIBLE_DEVICES=0
+
+# Kernels + core (dev profile, no LTO)
+cargo build --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip
+
+# Deploy TheRock runtime DLLs next to test binaries (loader prefers exe dir over System32)
+cp $ROOT/bin/{amdhip64_7.dll,amd_comgr.dll,rocm_kpack.dll,hiprtc0714.dll,hiprtc-builtins0714.dll} \
+   projects/mahout/src/qdp/target/debug/deps/
+
+# Python extension wheel (dev profile -- release LTO breaks cdylib on HIP)
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv
+maturin build --features hip --profile dev \
+  --manifest-path projects/mahout/src/qdp/qdp-python/Cargo.toml \
+  --out /b/develop/moat/agent_space/mahout_wheels_gfx1101 \
+  --interpreter $VENV/Scripts/python.exe
+pip install --no-deps --force-reinstall mahout_wheels_gfx1101/qumat_qdp-0.2.0-cp312-cp312-win_amd64.whl
+
+# Deploy DLLs to _qdp package dir for Python import
+cp $ROOT/bin/{amdhip64_7.dll,amd_comgr.dll,rocm_kpack.dll,hiprtc0714.dll,hiprtc-builtins0714.dll} \
+   $VENV/Lib/site-packages/_qdp/
+```
+Both build steps exit 0. Kernels compile for gfx1101 (1 harmless unused-parameter warning in iqp.cu).
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1):
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- qdp-core lib: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 64/64, gpu_validation 8/8.
+- Non-GPU suites: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- 0 failures total. Matches gfx90a/gfx1100/gfx1151 baseline exactly.
+
+Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+- 282 passed, 31 skipped, 0 failed. Matches gfx1151 baseline exactly.
+- Skips: 20 Triton AMD backend (triton not installed), 2 multi-GPU, 1 tensorflow-absent,
+  1 loader path-timing, 5 torch_ref sm_-arch check (CUDA-only reference path),
+  2 AmdQdpEngine-not-built, 1 NVIDIA-ref-absent -- all pre-existing/legit.
+
+Windows-specific notes (same as gfx1151):
+- TheRock amdhip64_7.dll deployed next to test exes; System32's Adrenalin DLL is broken.
+- ROCm bin on PATH before pytest so _qdp.pyd can load amdhip64_7.dll at import.
+- -j6 cap does NOT apply to this machine (beefy workstation, 64 cores, used default parallelism).
+
+Wave32 verdict: gfx1101 RDNA3 wave32 -- all L2-norm/amplitude tests pass, identical to
+gfx1100/gfx1151. warp_id = threadIdx.x / warpSize == >>5 on wave32.
+
+Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
