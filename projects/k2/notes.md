@@ -531,3 +531,15 @@ No new Python failures beyond the 2 documented artifact categories.
 ### Verdict
 
 PASS. 30/30 C++ gtests. Python slice 231/231 passed (excluding 4 documented artifacts), matching gfx1100 previous validation. The Linux build fix (44e7563) correctly restored compatibility with Linux torch 2.13 masquerading. Transition: revalidate -> completed. validated_sha = 44e7563.
+
+## Revalidate 2026-06-05 (windows-gfx1101 carry-forward)
+
+Delta: 7531e5b -> 44e7563. Single commit "[ROCm] Fix Linux build: use platform-specific torch c10 API paths", touching only k2/csrc/pytorch_context.cu (+13/-6).
+
+The change narrows four `#if defined(K2_WITH_HIP)` guards to `#if defined(K2_WITH_HIP) && defined(_WIN32)`. On Windows, `_WIN32` is always defined, so the preprocessed source on this platform is identical to the 7531e5b build.
+
+Binary-equivalence check (incremental build at 44e7563 on gfx1101):
+- Exported symbols (llvm-objdump -p, DLL export table): 5515 symbols, zero diff between old and new k2context.dll.
+- Device code objects (.hip_fat section, 33MB): byte-for-byte identical.
+
+Verdict: binary-equiv carry-forward. Transition: revalidate -> completed. validated_sha = 44e7563a. No GPU re-run needed.

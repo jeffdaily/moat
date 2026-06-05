@@ -7,7 +7,7 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-05T17:53:32Z",
+  "updated_at": "2026-06-05T18:00:41Z",
   "head_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
   "platforms": {
     "linux-gfx90a": {
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1101": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "7531e5b6a67dcfdcb4f58dfcffcfeccd2035276c",
+      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
       "started_at": null,
-      "completed_at": "2026-06-05T16:39:46Z",
-      "updated_at": "2026-06-05T17:53:32Z",
+      "completed_at": "2026-06-05T18:00:41Z",
+      "updated_at": "2026-06-05T18:00:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,7 +77,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "44e7563a1119833c18e875bda55162425d2d5f09",
+        "method": "binary-equiv",
+        "detail": "pytorch_context.cu change guards c10::hip paths with _WIN32; on Windows _WIN32 is always defined, so the preprocessed source and device ISA are byte-for-byte identical to the validated build at 7531e5",
+        "at": "2026-06-05T18:00:41Z"
+      }
     },
     "windows-gfx1201": {
       "state": "port-ready",
