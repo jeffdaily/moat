@@ -15,3 +15,7 @@
 {"kind": "tokens", "ts": "2026-06-05T01:12:05Z", "tokens": 54582, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-05T01:13:47Z", "tokens": 49275, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T01:14:23Z","phase":"test","seconds":11.838,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
+{"kind":"phase","ts":"2026-06-05T01:32:25Z","phase":"linux-gfx1100","seconds":0.003,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T01:33:34Z","phase":"compile","seconds":60.020,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T01:40:16Z","phase":"test","seconds":0.006,"exit":126,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && ./test/unit 2>&1"}
+{"kind":"phase","ts":"2026-06-05T01:45:58Z","phase":"test","seconds":7.975,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && ./bin/unit 2>&1"}

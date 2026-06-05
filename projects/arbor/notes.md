@@ -195,3 +195,50 @@ The fixes to HIP warp primitives are validated on real gfx90a hardware:
 
 ### Conclusion
 All 1182 unit tests pass on gfx90a, including GPU-specific tests exercising warp primitives, reductions, and event handling. The port correctly handles wave64 CDNA architecture.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+**Platform**: linux-gfx1100 (RDNA3, wave32)
+**GPU**: AMD Radeon Pro W7800 48GB (gfx1100)
+**Result**: FAILED
+
+### Build
+Build completed successfully for gfx1100.
+```bash
+cmake .. -DARB_GPU=hip -DARB_HIP_ARCHITECTURES="gfx1100" -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+
+### Test Results
+**Total**: 1182 tests from 182 test suites
+**Passed**: 1178 tests
+**Failed**: 4 tests
+
+**Failed tests** (all in reduce_by_key suite):
+- reduce_by_key.no_repetitions
+- reduce_by_key.single_repeated_index
+- reduce_by_key.scatter
+- reduce_by_key.scatter_twice
+
+### Error Analysis
+Tests produce corrupted floating-point values:
+- Expected: 1.0, Got: 805306368 (0x30000000)
+- Expected: 1.0, Got: 134217728 (0x08000000)
+- Pattern suggests warp intrinsics issue specific to wave32 (gfx1100) vs wave64 (gfx90a)
+
+### Investigation
+- Wave-size abstraction `threads_per_warp()` correctly returns 32 for gfx1100
+- Standalone shuffle tests (`shfl`, `shfl_down` for doubles) work correctly
+- HIP `warpSize` builtin correctly returns 32 at runtime
+- Non-reduce GPU tests pass (gpu_initialisation, event_stream_gpu, spikes_gpu, cable_cell_group.gpu_test)
+
+### Root Cause
+The `reduce_by_key` warp-level collective reduction fails specifically on wave32. Likely causes:
+1. Lane mask interaction with reduction algorithm differs on wave32 vs wave64
+2. Width/stride calculation in tree reduction may assume wave64
+3. The `ballot` function (hip_api.hpp:147-149) ignores its mask parameter, potentially causing incorrect lane participation on wave32
+
+The port fixed the wave-size abstraction and 64-bit lane masks for CDNA/wave64, but the reduction algorithm still has wave-size-dependent logic that breaks on RDNA/wave32.
+
+### Recommendation
+Return to porter for wave32-specific fixes to the `reduce_by_key` algorithm.
