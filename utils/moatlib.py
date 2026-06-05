@@ -592,12 +592,25 @@ def pr_ready(name):
     revalidate, porting, planned, ported, review-passed, changes-requested,
     delta-ported, validation-failed, unclaimed, blocked-needs-gfx90a) means work
     is pending and BLOCKS the PR -- do not open it.
+
+    Returns False if a PR already exists (any platform in pr-open state, or
+    lead platform has last_agent=upstream-landed).
+
     Returns (ready, blocking, nonviable): ready bool; blocking list of
     (platform, state); nonviable list of platforms."""
     obj = load_status(name)
+
+    # Check if PR already exists
+    lead = obj["platforms"][LEAD]
+    if lead.get("last_agent") == "upstream-landed":
+        return (False, [("PR already merged upstream", None)], [])
+
     blocking, nonviable = [], []
     for plat in PLATFORMS:
         blk = obj["platforms"][plat]
+        if blk.get("state") == "pr-open":
+            blocking.append((plat, "pr-open (PR already opened)"))
+            continue
         if blk.get("state") == "completed":
             continue
         if blk.get("blocked"):
