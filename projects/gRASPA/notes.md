@@ -171,3 +171,33 @@ ROCm: 7.2.1, HIP: 7.2.53211
    - Now completes cleanly after OOB fix
 
 **Verdict**: VALIDATED -- All three benchmark simulations pass. The OOB memory access fix in TotalVDWRealCoulomb kernel resolved the crashes in larger molecule count simulations. The port correctly implements HIP support with Strategy A (cuda_to_hip.h header, .cu files marked LANGUAGE HIP).
+
+## Validation 2026-06-05 (linux-gfx1100, RDNA3 gfx1100, HIP_VISIBLE_DEVICES=2)
+
+**Build**: Clean build from scratch at commit ddf08ad4208fc4a426bbf0897d6f7186878bc48e
+```bash
+cd /var/lib/jenkins/moat/projects/gRASPA/src
+rm -rf build && mkdir build && cd build
+HIP_VISIBLE_DEVICES=2 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+HIP_VISIBLE_DEVICES=2 cmake --build . -j$(nproc)
+```
+Executable: `build/src_clean/graspa` (2.1MB)
+
+**Test Results** (all with HIP_VISIBLE_DEVICES=2):
+
+1. CO2-MFI GCMC benchmark (Examples/CO2-MFI):
+   - PASS: Completed successfully
+   - 18 CO2 molecules adsorbed (C_co2 pseudoatoms: 18)
+   - Zero energy drift (all components 0.00000)
+
+2. Methane-TMMC (Examples/Methane-TMMC):
+   - PASS: Completed successfully
+   - 58 methane molecules (CH4_sp3 pseudoatoms: 58)
+   - Zero energy drift (all components 0.00000)
+
+3. Tail-Correction (Examples/Tail-Correction):
+   - PASS: Completed successfully
+   - 1327 Argon molecules (Ar[20] pseudoatoms: 1327)
+   - Zero energy drift (all components 0.00000)
+
+**Verdict**: VALIDATED -- All three benchmark simulations pass on gfx1100 with identical results to gfx90a. Port works correctly across AMD architectures.

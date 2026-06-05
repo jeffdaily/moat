@@ -21,3 +21,4 @@
 {"kind":"phase","ts":"2026-06-05T10:06:29Z","phase":"test","seconds":285.253,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/CO2-MFI && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
 {"kind":"phase","ts":"2026-06-05T10:09:34Z","phase":"test","seconds":166.260,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Methane-TMMC && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
 {"kind":"phase","ts":"2026-06-05T10:10:34Z","phase":"test","seconds":53.813,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Tail-Correction && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
+{"kind":"session","ts":"2026-06-05T15:38:06Z","epoch":1780673886.182005670,"event":"end","platform":"linux-gfx1100"}
