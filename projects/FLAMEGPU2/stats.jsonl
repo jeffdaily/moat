@@ -1,0 +1,2 @@
+{"kind": "tokens", "ts": "2026-06-05T01:20:55Z", "tokens": 82876, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T05:08:07Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build . --target flamegpu boids_bruteforce tests -j128"}
