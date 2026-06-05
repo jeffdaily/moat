@@ -75,3 +75,4 @@
 {"kind":"phase","ts":"2026-06-05T17:58:39Z","phase":"test","seconds":60.093,"exit":124,"cmd":"timeout 60 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_BallDrop2D"}
 {"kind":"phase","ts":"2026-06-05T17:59:12Z","phase":"test","seconds":30.107,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_RotatingDrum"}
 {"kind":"phase","ts":"2026-06-05T17:59:48Z","phase":"test","seconds":30.071,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_Repose"}
+{"kind": "tokens", "ts": "2026-06-05T18:01:12Z", "tokens": 49559, "source": "validator"}
