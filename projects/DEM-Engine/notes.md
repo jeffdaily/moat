@@ -100,3 +100,42 @@ Required fixes:
 1. Implement hiprtc name expression API for templated kernels
 2. Fix the return-by-value vs return-by-reference mismatch in buildProgram/ProgramCache
 3. Make DEME_CUDA_WARP_SIZE platform-aware (64 for CDNA, 32 for RDNA/CUDA)
+
+## Fixes Applied 2026-06-05
+
+All three review issues addressed:
+
+### 1. hiprtc templated kernel name mangling (JitKernel_hip.cpp)
+
+Redesigned the HIP backend to use lazy compilation:
+- `ProgramCache::program()` now stores source and options but defers actual compilation
+- When `kernel("name").instantiate("type")` is called, the name expression is registered
+- Compilation happens on first use, after all name expressions are collected
+- `hiprtcAddNameExpression()` is called for each kernel+instantiation before `hiprtcCompileProgram()`
+- `hiprtcGetLoweredName()` retrieves the mangled symbol name after compilation
+- The lowered name is then used with `hipModuleGetFunction()` to get the kernel handle
+
+This enables templated kernels like `modifyComponents<deme::DEMDataKT>` to work correctly.
+
+### 2. ProgramCache return-by-reference bug (JitHelper.cpp:155)
+
+Changed `ProgramCache::program()` to return `Program` by value instead of `Program&`:
+- Removed caching at the `ProgramCache` level (was broken anyway due to move-from-reference)
+- Application-level caching via `shared_ptr<Program>` members provides the real caching
+- Removed the `std::move()` from `buildProgram()` return statement
+
+### 3. Hardcoded warp size 32 (src/DEM/Defines.h:32)
+
+Made `DEME_CUDA_WARP_SIZE` platform-aware:
+```cpp
+#if defined(__HIP_PLATFORM_AMD__) && !defined(__AMDGCN_WAVEFRONT_SIZE__)
+    #define DEME_WARP_SIZE 64  // Host code default for AMD
+#elif defined(__AMDGCN_WAVEFRONT_SIZE__)
+    #define DEME_WARP_SIZE __AMDGCN_WAVEFRONT_SIZE__  // Device code
+#else
+    #define DEME_WARP_SIZE 32  // CUDA
+#endif
+#define DEME_CUDA_WARP_SIZE DEME_WARP_SIZE
+```
+
+Build verified: all 27 demo executables compile successfully on gfx90a.
