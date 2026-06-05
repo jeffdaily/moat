@@ -1157,22 +1157,77 @@ test_triangle_cuda, test_type_traits_cuda, test_unique_cuda, test_where_cuda,
 test_write_cuda, test_variance_cuda, test_var_moments_cuda, test_sum_cuda,
 test_tile_cuda (approx 16 tests not reached).
 
-ROOT CAUSE SUMMARY:
-Primary: ROCBLAS_TENSILE_LIBPATH was not set in the test environment.
-On Windows, rocblas.dll from _rocm_sdk_devel/bin does NOT contain its Tensile GEMM
-kernel libraries. They live in _rocm_sdk_libraries/bin/rocblas/library/. Without this
-path set, rocBLAS (and rocSOLVER which calls rocBLAS for GETRF panel GEMMs) produces
-wrong numerical results. NOTE: ROCM_KPACK_PATH for the kpack system does NOT replace
-ROCBLAS_TENSILE_LIBPATH -- both must be set together on this TheRock distribution.
+MAIN RUN FINAL RESULT (corrected from "incomplete"):
+After the 4 diagnostic-run orphan processes timed out (each at 900s), the threading
+test (115) finally ran: partial pass (SimultaneousRead, MemoryManagementScope,
+MemoryManagement_JIT_Node, FFT_R2C all passed) but it hit CTest's 900s timeout
+during FFT_C2C because the two threading processes (main run + orphan from prior
+session) competed on the GPU. The Timeout is NOT a failure of the HIP port; it is
+an environmental artifact.
 
-Secondary: sparse_arith SparseSparseArith crash (may resolve once ROCBLAS_TENSILE_LIBPATH
-is set, or may be a separate Windows/hipSPARSE csrgeam2 issue).
+Final CTest result: 96% passed, 5 tests failed out of 131:
+- test_confidence_connected_cuda (19): expected (FreeImage off)
+- test_inverse_dense_cuda (57): numeric error (ROCBLAS_TENSILE_LIBPATH missing)
+- test_lu_dense_cuda (63): numeric error (ROCBLAS_TENSILE_LIBPATH missing)
+- test_sparse_arith_cuda (110): SparseSparseArith ACCESS VIOLATION crash
+- test_threading_cuda (115): Timeout (orphan process competition artifact)
+
+ROOT CAUSE SUMMARY:
+1. ROCBLAS_TENSILE_LIBPATH not set (primary, fixable):
+   On Windows, rocblas.dll from _rocm_sdk_devel/bin does NOT contain Tensile GEMM
+   kernel libraries for GETRF (LU factorization) panel GEMMs. They live in
+   _rocm_sdk_libraries/bin/rocblas/library/. Without this path set, rocSOLVER's
+   GETRF uses fallback/wrong kernels -> catastrophic numeric error in lu_dense and
+   inverse_dense. cholesky_dense (POTRF), qr_dense (GEQRF), svd_dense (GESVD) all
+   PASS with kpack-only -- those ops' rocBLAS calls ARE in the kpack. GETRF panel
+   GEMM variants are NOT in blas_lib_gfx1101.kpack.
+
+   CRITICAL FINDING: Setting ROCM_KPACK_PATH + ROCBLAS_TENSILE_LIBPATH TOGETHER
+   causes a deadlock (rocBLAS initialization hangs ~900s). They conflict.
+   
+   The correct approach for next run: investigate whether:
+   (a) ROCM_KPACK_DISABLE=1 + ROCBLAS_TENSILE_LIBPATH avoids the cascade error
+       (kpack error 13 -> stale HIP error -> POST_LAUNCH_CHECK cascade)
+   (b) ROCM_KPACK_PATH alone (current env) but with additional Tensile path somehow
+   
+   The cascade error: when ROCM_KPACK_DISABLE=1, no kpack error is generated,
+   so POST_LAUNCH_CHECK sees no stale error, and Tensile GEMM path should work.
+   This is the most promising next hypothesis.
+
+2. sparse_arith SparseSparseArith crash (SEH 0xc0000005 = ACCESS VIOLATION):
+   All 40 SparseSparseArith tests crash immediately (~1ms). SPARSE_ARITH (dense-sparse,
+   SpMV/SpMM path, 80 tests) ALL PASS. The crash is in the csrgeam2 path (sparse+sparse
+   addition/subtraction). Likely a Windows-specific hipSPARSE csrgeam2 issue -- either
+   a null descriptor, a DLL issue, or a kpack/initialization problem. May resolve with
+   different kpack/tensile setup.
+
+3. test_threading_cuda Timeout (artifact, NOT a failure):
+   The threading test was actively running subtests (SimultaneousRead, MemoryMgmt,
+   FFT_R2C all PASS) but hit the 900s CTest timeout because two threading processes
+   competed on the GPU (orphan from prior session + current run). In a clean run
+   with no competing processes, threading should pass.
 
 REQUIRED FOR NEXT RUN:
-Add ROCBLAS_TENSILE_LIBPATH to the test environment:
-```bash
-export ROCBLAS_TENSILE_LIBPATH="${ROCM_LIBS}/bin/rocblas/library"
-```
-Do NOT unset ROCBLAS_TENSILE_LIBPATH. Keep ROCM_KPACK_PATH as well.
+1. Machine must be clean (no orphan test processes). Reboot or wait for all to terminate.
+2. Test ONLY ONE process at a time (no parallel diagnostic runs).
+3. Environment to test (in priority order):
+   Option A (recommended first try):
+   ```bash
+   export ROCM_KPACK_DISABLE=1
+   export ROCBLAS_TENSILE_LIBPATH="${ROCM_LIBS}/bin/rocblas/library"
+   # No ROCM_KPACK_PATH (disabled entirely)
+   ```
+   Expected: cholesky/lu/inverse/solve all use Tensile kernels. No kpack cascade errors
+   (kpack is disabled, so no error 13 generated). Verify vs the main run's cholesky pass.
+   
+   Option B (fallback if Option A causes cascade):
+   ```bash
+   export ROCM_KPACK_PATH="${ROCM_LIBS}/.kpack/blas_lib_gfx1101.kpack"
+   # No ROCBLAS_TENSILE_LIBPATH
+   ```
+   Accepts lu/inverse failures (23+8 test cases), may need tolerance changes.
+   
+   Option C: ROCM_KPACK_PATH alone (current env) is already known: lu/inverse fail.
+   DO NOT set both kpack+tensile (deadlock).
 
 State transition: port-ready -> validation-failed (back to retry with fixed environment).

@@ -8,3 +8,4 @@
 {"kind":"phase","ts":"2026-05-30T23:12:56Z","phase":"compile","seconds":144.629,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gsplat/src && pip install -e . --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-05-30T23:14:01Z","phase":"test","seconds":40.147,"exit":0,"cmd":"bash -c cd /tmp && HIP_VISIBLE_DEVICES=2 python3 -m pytest /var/lib/jenkins/moat/projects/gsplat/src/tests/test_basic.py \\\n    -k \"(test_quat_scale_to_covar_preci or test_proj or test_projection or test_fully_fused_projection_packed or test_isect or test_sh) and not lidar\" \\\n    -v 2>&1"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 41665, "source": "session-2026-06-02/03 backfill: gfx90a re-validation"}
+{"kind": "tokens", "ts": "2026-06-05T05:08:15Z", "tokens": 91418, "source": "validator"}

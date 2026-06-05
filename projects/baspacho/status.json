@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-05T14:38:18Z",
+  "updated_at": "2026-06-05T11:00:45Z",
   "head_sha": "69ab9137ab8c3663409598b7d521384e07c14c87",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "reviewer"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "69ab9137ab8c3663409598b7d521384e07c14c87",
+      "validated_sha": null,
       "started_at": null,
-      "completed_at": "2026-06-05T14:38:18Z",
-      "updated_at": "2026-06-05T14:38:18Z",
+      "completed_at": null,
+      "updated_at": "2026-06-05T11:00:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,8 +54,7 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      },
-      "last_agent": "validator"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -64,7 +63,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T13:20:31Z",
+      "updated_at": "2026-06-05T11:00:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -86,7 +85,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T13:20:31Z",
+      "updated_at": "2026-06-05T11:00:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -108,7 +107,7 @@
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T13:20:31Z",
+      "updated_at": "2026-06-05T11:00:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

@@ -27,3 +27,4 @@
 {"kind":"phase","ts":"2026-06-03T06:31:13Z","phase":"test","seconds":126.904,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/catboost/src/build_hip/cm/catboost/cuda/gpu_data/ut/catboost-cuda-gpu_data-ut --show-fails"}
 {"kind":"phase","ts":"2026-06-03T07:04:34Z","phase":"test","seconds":1669.430,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/catboost/src/build_hip/cm/catboost/cuda/methods/ut/catboost-cuda-methods-ut --show-fails"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 104340, "source": "session-2026-06-02/03 backfill: gfx90a revalidation"}
+{"kind": "tokens", "ts": "2026-06-05T06:22:16Z", "tokens": 50049, "source": "validator"}
