@@ -7,8 +7,8 @@
   "priority": 4.496,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-05T22:07:00Z",
-  "head_sha": "eb6c728",
+  "updated_at": "2026-06-05T22:07:39Z",
+  "head_sha": "8b0aec3",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2499fb6",
+      "validated_sha": "8b0aec3",
       "started_at": "2026-06-02T06:00:00Z",
-      "completed_at": "2026-06-04T09:01:17Z",
-      "updated_at": "2026-06-05T21:28:37Z",
+      "completed_at": "2026-06-05T22:07:39Z",
+      "updated_at": "2026-06-05T22:07:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,10 +56,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "64c792d3da5eaa048b3cf5aac6f6632cbc5c22f2",
+        "to": "8b0aec3",
         "method": "binary-equiv",
-        "detail": "WIN32-only CMake symbol-export setting; no device code change on Linux; libgpu_ans.so + libgpu_float_compress.so device ISA identical, all host-only libs symbol-identical",
-        "at": "2026-06-04T09:01:17Z"
+        "detail": "Comment/guard update in GpuANSUtils.cuh: kMaxWarpSize unchanged on Linux HIP (USE_HIP always defined -> still 64); device code objects + exports identical for libgpu_ans.so and libgpu_float_compress.s",
+        "at": "2026-06-05T22:07:39Z"
       }
     },
     "windows-gfx1101": {
