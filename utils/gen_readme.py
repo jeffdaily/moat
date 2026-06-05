@@ -56,21 +56,29 @@ def load_projects():
         except json.JSONDecodeError:
             sys.stderr.write(f"gen_readme: skipping unparseable {sp}\n")
             continue
-        # Delivery tracking lives in upstream.json. pr_state (open/merged/closed)
+        # Delivery tracking: PR fields can be in status.json (new workflow) or
+        # upstream.json (legacy). status.json takes precedence. pr_state (open/merged/closed)
         # drives the PR glyph; `outcome` records the terminal disposition for
         # projects whose success is NOT an upstream PR (e.g. we GPU-validated an
         # existing ROCm backend across archs). See outcome_cell() for the vocab.
-        up = d / "upstream.json"
-        if up.exists():
-            try:
-                u = json.loads(up.read_text(encoding="utf-8"))
-                rec["pr_url"] = u.get("pr_url")
-                rec["pr_number"] = u.get("pr_number")
-                rec["pr_state"] = u.get("pr_state")
-                rec["outcome"] = u.get("outcome")
-                rec["outcome_note"] = u.get("outcome_note")
-            except json.JSONDecodeError:
-                pass
+
+        # Check status.json first (new PR tracking)
+        if "pr_url" in rec:
+            # PR fields already in rec from status.json
+            pass
+        else:
+            # Fall back to upstream.json (legacy)
+            up = d / "upstream.json"
+            if up.exists():
+                try:
+                    u = json.loads(up.read_text(encoding="utf-8"))
+                    rec["pr_url"] = u.get("pr_url")
+                    rec["pr_number"] = u.get("pr_number")
+                    rec["pr_state"] = u.get("pr_state")
+                    rec["outcome"] = u.get("outcome")
+                    rec["outcome_note"] = u.get("outcome_note")
+                except json.JSONDecodeError:
+                    pass
         out.append(rec)
     return out
 
