@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "codegen",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-05T08:33:25Z",
-  "head_sha": "0331f1f52390df6a86d57b31872e6a304289ef6a",
+  "updated_at": "2026-06-05T08:38:34Z",
+  "head_sha": "5b961a6",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "changes-requested",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-05T08:30:52Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T08:33:25Z",
+      "updated_at": "2026-06-05T08:38:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

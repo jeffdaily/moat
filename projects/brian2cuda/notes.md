@@ -90,3 +90,11 @@ The rest of the port is sound:
 ### Recommendation
 
 **Request Changes** -- the spin-lock deadlock is a blocking correctness bug that will hang synaptic simulations on wave64 GPUs.
+
+## Fix 2026-06-05 (porter)
+
+Implemented wave-serialized spin-lock in spikequeue.h for AMD GPUs. The fix uses `__ballot(1)` to identify active lanes and serializes lock acquisition so only one lane at a time contends, preventing the SIMT deadlock described above.
+
+The fix is guarded by `#if defined(__HIP_PLATFORM_AMD__) || defined(__HIPCC__)` so the CUDA path remains unchanged.
+
+Verified: compiled and ran a synapse test on gfx90a (HIP_VISIBLE_DEVICES=1) with 100 neurons, 1032 synapses, and 1ms delay -- exercises push_bundles spike queue code path.
