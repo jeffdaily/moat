@@ -1,0 +1,7 @@
+{"kind": "tokens", "ts": "2026-06-04T23:30:26Z", "tokens": 130374, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:20:07Z","phase":"compile","seconds":0.131,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T00:20:20Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T00:31:27Z","phase":"compile","seconds":0.003,"exit":127,"cmd":"../build/SCAMP --help"}
+{"kind":"phase","ts":"2026-06-05T00:31:36Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash run_tests.sh ../build/SCAMP scamp_test_results.txt "}
+{"kind":"phase","ts":"2026-06-05T00:31:42Z","phase":"test","seconds":0.395,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/SCAMP/src/test/run_tests.sh /var/lib/jenkins/moat/projects/SCAMP/src/build/SCAMP /tmp/scamp_test_results.txt "}
+{"kind":"phase","ts":"2026-06-05T00:31:46Z","phase":"test","seconds":0.006,"exit":127,"cmd":"bash ./run_tests.sh ../build/SCAMP /tmp/scamp_test_results.txt "}
