@@ -64,6 +64,42 @@ GPU kernels tested:
 
 All simulations completed successfully with expected Monte Carlo acceptance rates.
 
+## Validation (2026-06-05, linux-gfx1100)
+
+Platform: linux-gfx1100
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3)
+ROCm: 7.2.4
+Build: Strategy A (compat header + LANGUAGE HIP)
+
+All 4 GPU executables built and validated successfully on gfx1100:
+
+1. GPU_NVT: PASS
+   - Test: NVT/neon_T_34_00_K (1M steps)
+   - Runtime: 4.48s
+   - Acceptance: 68.9% displacement moves
+   
+2. GPU_NPT: PASS
+   - Test: NPT/water_580_00_K (10k steps, SPCE water)
+   - Runtime: 4.22s
+   - Acceptance: 100% displacement, 53.9% rotation, 55.6% volume moves
+   - Ewald summation active
+   
+3. GPU_GCMC: PASS
+   - Test: GCMC/argon (1M steps, 2-box grand canonical)
+   - Runtime: 30.8s
+   - Acceptance: 52.0% displacement, 50.8% mol-transfer
+   
+4. GPU_GEMC: PASS
+   - Test: NVT_GEMC/pure_fluid/argon_T_115_00_K (1M steps)
+   - Runtime: 46.1s
+   - Acceptance: 51.7%/61.2% displacement, 4.8%/4.4% mol-transfer, 54.2% volume-transfer
+
+All Monte Carlo moves functioning correctly on RDNA3:
+- Displacement, rotation, regrowth, volume transfer, molecule transfer
+- Ewald reciprocal-space electrostatics
+- VDW and Coulomb energy/force calculations
+- hipCUB device reductions
+
 ## Porting notes
 
 ### Random123 library
