@@ -22,3 +22,4 @@
 {"kind":"phase","ts":"2026-06-05T14:23:13Z","phase":"test","seconds":93.732,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
 {"kind":"phase","ts":"2026-06-05T14:25:06Z","phase":"test","seconds":97.959,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
 {"kind":"session","ts":"2026-06-05T14:25:43Z","epoch":1780669543.575014897,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T14:26:57Z", "tokens": 39310, "source": "validator"}
