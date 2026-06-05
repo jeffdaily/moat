@@ -1624,10 +1624,10 @@
     "reason": "verify"
   },
   "usyd-fsalab/fp6_llm": {
-    "decided": "2026-06-04T22:15:55Z",
+    "decided": "2026-06-05T08:51:16Z",
     "disposition": "skip",
     "full_name": "usyd-fsalab/fp6_llm",
-    "note": "PTX assembly for Tensor Core MMA (mma.sync.m16n8k16, ldmatrix, cp.async) has no HIP equivalent. Requires AMD-native kernel rewrite with rocWMMA/CK/MFMA, not mechanical port.",
+    "note": "PTX Tensor Core kernel (mma.sync, ldmatrix) - requires AMD MFMA rewrite, not mechanical HIP translation",
     "reason": "cant-port"
   },
   "utiasasrl/vtr3": {
