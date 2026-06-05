@@ -1,5 +1,89 @@
 # CTranslate2 notes
 
+## Validation 2026-06-05 (windows-gfx1101, Radeon PRO V710, TheRock ROCm 7.14.0a) -- PASS
+
+Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)
+GPU: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11 (HIP_VISIBLE_DEVICES=0)
+Compiler: clang-cl 23.0.0 (TheRock ROCm 7.14.0a20260605), cmake 4.3.1, all-clang-cl CMake-HIP
+
+### Build notes (windows-gfx1101)
+
+ROCm SDK root: `_rocm_sdk_devel` (same venv as gfx1201, multi-arch build with gfx1101+gfx1201 device extras).
+OpenBLAS: same as gfx1151 -- `_rocm_sdk_devel/lib/host-math/` (lib: `rocm-openblas.lib`, headers: `include/openblas/cblas.h`).
+
+CMake HIP compiler detection required adding `--rocm-device-lib-path` to `CMAKE_HIP_FLAGS` via a CMake init-cache file. Without it, clang-cl can't compile the HIP identification source (`CMakeHIPCompilerId.hip`) because the ROCm device libs are not auto-discovered from `ROCM_PATH` alone. The device libs are at `_rocm_sdk_devel/lib/llvm/amdgcn/bitcode/`.
+
+### Build command (windows-gfx1101)
+
+```
+ROCM_ROOT=<TheRock venv>/_rocm_sdk_devel
+DEVLIB=$ROCM_ROOT/lib/llvm/amdgcn/bitcode
+
+# Init-cache file /tmp/ct2_gfx1101_init.cmake:
+#   set(CMAKE_CXX_FLAGS "/EHsc /wd4267 -Wno-deprecated-literal-operator -Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+#   set(CMAKE_C_FLAGS "-Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+#   set(CMAKE_HIP_FLAGS "--rocm-device-lib-path=<DEVLIB> -Wno-deprecated-literal-operator -Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+
+cmake -S projects/CTranslate2/src -B projects/CTranslate2/build \
+  -G Ninja \
+  -C /tmp/ct2_gfx1101_init.cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_STANDARD=17 \
+  -DWITH_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DWITH_MKL=OFF -DWITH_OPENBLAS=ON \
+  "-DOPENBLAS_INCLUDE_DIR=$ROCM_ROOT/lib/host-math/include/openblas" \
+  "-DOPENBLAS_LIBRARY=$ROCM_ROOT/lib/host-math/lib/rocm-openblas.lib" \
+  -DOPENMP_RUNTIME=NONE \
+  -DBUILD_TESTS=ON -DBUILD_CLI=OFF \
+  "-DCMAKE_PREFIX_PATH=$ROCM_ROOT" \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build projects/CTranslate2/build -j64
+```
+
+Build time: ~90s. Warnings only (unused-variable, -Wnodiscard on benchmark_ops, dllimport in spdlog). No errors.
+
+Windows-specific build notes (gfx1101 vs gfx1151 differences):
+- cmake 4.3.1 works (gfx1151 had 4.3.2, not required).
+- CMAKE_HIP_FLAGS must include `--rocm-device-lib-path=<bitcode_dir>`: without this, clang-cl 23.0.0 fails the HIP compiler ID test with "cannot find ROCm device library". The device libs are at `_rocm_sdk_devel/lib/llvm/amdgcn/bitcode/`.
+- Flags with spaces (like `/EHsc ...`) must be passed via CMake init-cache file (-C flag), NOT as `-DCMAKE_CXX_FLAGS="..."` on the shell command line. Passing them directly on the shell command line causes cmake to treat `/EHsc` as a Windows path prefix (resolving to `C:/Program Files/Git/EHsc`).
+- OPENMP_RUNTIME=NONE same as gfx1151 (avoid /openmp compile flag which has no linker support).
+- OMP_NUM_THREADS=1 required at test time: on a 64-core machine, the BS::thread_pool CPU inference executor deadlocks with OpenMP's default thread count. Set OMP_NUM_THREADS=1 (in addition to OPENBLAS_NUM_THREADS=1) to prevent this.
+- ROCBLAS_TENSILE_LIBPATH=<sdk_libraries>/bin/rocblas/library for hipBLAS GPU kernels.
+- DLL runtime: copy to tests/ dir same as gfx1151: amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm-openblas.dll, hipblas.dll, hiprand.dll, rocblas.dll, rocrand.dll, rocsolver.dll, libhipblaslt.dll, gtest.dll, gtest_main.dll, ctranslate2.dll.
+
+Code-object arch evidence:
+```python
+data = open('ctranslate2.dll', 'rb').read()
+# Found gfx1101 at offset: 3374178
+# Found hip elf target (hipv4-amdgcn-amd-amdhsa--gfx1101): 6452334
+```
+
+### GPU test run 1 (CUDA/* filter):
+```
+cd tests/ && HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  ROCBLAS_TENSILE_LIBPATH=.../rocblas/library \
+  ./ctranslate2_test.exe <data_dir> --gtest_filter='CUDA/*'
+```
+Result: **164 PASSED, 3 SKIPPED** (Conv1DGroupNoBiasQuantized x3 dtypes). MATCHES bar.
+
+### GPU test run 2 (CUDA/* filter -- determinism check):
+Same command. Result: **164 PASSED, 3 SKIPPED**. IDENTICAL to run 1 -- BIT-DETERMINISTIC.
+
+wave32 verdict: gfx1101 is RDNA3 wave32. C10_WARP_SIZE=32 matches hardware exactly. No wave-size source change needed.
+
+### Full suite (CPU+GPU, exclude Conv1DGroupNoBiasQuantized):
+```
+cd tests/ && HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  ROCBLAS_TENSILE_LIBPATH=.../rocblas/library \
+  ./ctranslate2_test.exe <data_dir> "--gtest_filter=-*Conv1DGroupNoBiasQuantized*"
+```
+Result: **350 PASSED, 1 SKIPPED** (CPU/OpDeviceFPTest.Conv1DDilation -- intentional). MATCHES bar. No non-GPU regressions.
+
+State transition: port-ready -> completed. validated_sha = dfa0d30dd18c4e65863e091f4ac99d7b936a02f1. No source change.
+
 ## Validation 2026-06-03 (windows-gfx1151, Radeon 8060S, TheRock ROCm 7.14.0a) -- PASS
 
 Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)
