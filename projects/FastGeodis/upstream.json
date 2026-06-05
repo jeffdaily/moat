@@ -1,8 +1,8 @@
 {
   "full_name": "masadcv/FastGeodis",
   "upstream_url": "https://github.com/masadcv/FastGeodis",
-  "default_branch": "main",
-  "fork_url": null,
+  "default_branch": "master",
+  "fork_url": "https://github.com/jeffdaily/FastGeodis",
   "ext_type": "torch-extension",
   "base_sha": null
 }
