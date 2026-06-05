@@ -318,3 +318,33 @@ All reduce_by_key tests pass (the tests specifically exercise the wave32 fix log
 
 ### Conclusion
 The wave32 fix is backward-compatible with wave64 gfx90a. All 1182 tests pass, including the critical reduce_by_key tests that exercise warp-level reductions. The port correctly handles both CDNA (wave64) and RDNA (wave32) architectures.
+
+## Review 2026-06-05 (linux-gfx1100 delta-port)
+
+### Summary
+Delta-port fixes two wave32-specific bugs in reduce_by_key warp-level reduction that caused 4 test failures on gfx1100.
+
+### Verification
+
+**Fix 1: num_lanes calculation (reduce_by_key.hpp:41)**
+Changed from `threads_per_warp() - __clzll(key_mask)` to `64 - __clzll(key_mask)`. Correct because `__clzll` counts leading zeros in a 64-bit value. On wave32 with mask `0xFFFFFFFF`, `__clzll` returns 32, so `64 - 32 = 32` is the correct lane count. The old formula gave `32 - 32 = 0` on wave32, which broke all reductions.
+
+**Fix 2: shfl_up/shfl_down (hip_api.hpp:161-173)**
+Switched to HIP's native `__shfl_up`/`__shfl_down` intrinsics. HIP provides double-precision overloads. The native intrinsics correctly return the current lane's value when the source lane is out of bounds, whereas the manual arithmetic wrapped around on wave32.
+
+### Fault class checks
+- Wave-size: `threads_per_warp()` correctly uses `__GFX9__` for CDNA (64) vs default (32) for RDNA
+- Lane masks: 64-bit on HIP, 32-bit on CUDA
+- The `64` in `64 - __clzll` is the BIT WIDTH of `lane_mask_type`, not a wave size assumption
+
+### Backward compatibility
+CUDA code path unchanged. gfx90a revalidation passed (all 1182 tests).
+
+### Commit hygiene
+- [ROCm] prefix, 58 chars title
+- jeffdaily account, no AMD-internal references
+- No noreply trailer
+- Claude disclosure present
+
+### Recommendation
+**Approve** -- ready for GPU validation on gfx1100.

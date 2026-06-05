@@ -25,3 +25,4 @@
 {"kind": "tokens", "ts": "2026-06-05T01:16:16Z", "tokens": 32618, "source": "validator"}
 {"kind":"phase","ts":"2026-06-05T04:50:27Z","phase":"compile","seconds":0.649,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && /opt/conda/envs/py_3.12/lib/python3.12/site-packages/cmake/data/bin/cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T04:50:43Z","phase":"test","seconds":12.904,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && HIP_VISIBLE_DEVICES=0 ./bin/unit"}
+{"kind": "tokens", "ts": "2026-06-05T02:12:45Z", "tokens": 96180, "source": "porter (gfx1100 delta-port)"}
