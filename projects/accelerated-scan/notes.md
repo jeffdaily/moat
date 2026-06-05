@@ -107,3 +107,44 @@ All Triton-based scan operations (scalar and complex) execute correctly on gfx90
 - Data types: float32, bfloat16, float16 all work correctly
 
 The Triton `tl.associative_scan` implementation is wave-size agnostic and handles wave64 correctly.
+
+## Validation 2026-06-05 (gfx1100)
+
+Validated commit 94e47c4 on gfx1100 (AMD Radeon Pro W7800 48GB) with ROCm/HIP.
+
+### GPU Architecture
+
+- Device: AMD Radeon Pro W7800 48GB
+- Architecture: gfx1100
+- Wave size: 32
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/accelerated-scan/src
+pip install -e .
+```
+
+Build succeeded. The package uses PyTorch's JIT compilation via Triton backend on ROCm.
+
+### Test Results
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+pytest tests/test_eq.py -v              # 399/400 passed
+pytest tests/tests_eq_complex.py -v      # 240/240 passed
+```
+
+**Total: 639/640 tests passed**
+
+The single failure is `test_eq_ref_reverse[65536-1]` with a marginal tolerance issue (23.3us vs 20us allowed absolute error) in the reference implementation's reverse scan, not a port problem. This is the same pre-existing test instability observed on gfx90a.
+
+### GPU Correctness
+
+All Triton-based scan operations (scalar and complex) execute correctly on gfx1100:
+- Forward scan: All sequence lengths (32 to 131072, power-of-2 and irregular) pass
+- Backward scan: All gradient tests pass
+- Complex scan: All 240 complex-valued scan tests pass
+- Data types: float32, bfloat16, float16 all work correctly
+
+The Triton `tl.associative_scan` implementation is wave-size agnostic and handles wave32 (RDNA3) correctly.
