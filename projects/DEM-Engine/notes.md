@@ -1,50 +1,61 @@
 # DEM-Engine notes
 
-## Port attempt 2026-06-05
+## Port status
+
+Build succeeded with JitKernel abstraction for HIP runtime compilation.
 
 ### Summary
 
-DEM-Engine uses NVIDIA's Jitify library for runtime kernel compilation (NVRTC). The project compiles 43 kernel files at runtime using Jitify, making this the defining architectural feature.
+DEM-Engine uses NVIDIA's Jitify library for runtime kernel compilation (NVRTC). The project compiles 43 kernel files at runtime using Jitify. ROCm's Jitify fork only supports the incompatible v2 API, so a unified abstraction layer was implemented.
 
-### ROCm Jitify compatibility issue
+### JitKernel Abstraction
 
-ROCm provides a Jitify fork at https://github.com/ROCm/jitify that is marked as "early-access technology preview". Investigation revealed:
+**New files:**
+- `src/core/utils/JitKernel.h` - Unified API header
+- `src/core/utils/JitKernel.inl` - Template inline implementations  
+- `src/core/utils/JitKernel_cuda.cpp` - CUDA backend wrapping jitify v1
+- `src/core/utils/JitKernel_hip.cpp` - HIP backend using hiprtc directly
 
-1. The ROCm fork's `jitify.hpp` (v1 API used by DEM-Engine) is unchanged from NVIDIA's version and still requires `cuda.h` (CUDA Driver API header)
-2. HIP support is only in `jitify2.hpp` which has a different API incompatible with v1
-3. ROCm does not provide a `cuda.h` shim header
-4. Windows is explicitly unsupported by ROCm jitify
+**Key classes:**
+- `deme::jit::ProgramCache` - replaces `jitify::JitCache`
+- `deme::jit::Program` - replaces `jitify::Program`
+- `deme::jit::Kernel` - kernel handle with `instantiate()` method
+- `deme::jit::KernelLauncher` - fluent launch builder with `configure()` and `launch()`
 
-### Options considered
+**API compatibility:**
+The abstraction preserves the existing call pattern:
+```cpp
+program->kernel("name").instantiate().configure(...).launch(args...)
+```
 
-1. **Migrate to jitify2 API**: Would require rewriting JitHelper.cpp and all kernel launch sites. The jitify2 API is different -- uses `jitify::Program` -> `jitify::ProgramCache` pattern with different configure/launch syntax.
+### Additional HIP fixes
 
-2. **AOT kernel compilation**: Could pre-compile kernels at build time instead of runtime. However, DEM-Engine's architecture relies on runtime compilation for user-customizable force models and particle definitions (see src/kernel/DEMUserScripts/*.cu). AOT would break this key feature.
+1. **CUDAMathHelpers.cuh** - Added `#ifndef __HIP_PLATFORM_AMD__` guards around vector operators that conflict with HIP's built-in `HIP_vector_type` operators
 
-3. **cuda.h shim for Driver API**: Would need to alias ~50+ driver API symbols (cuModule*, cuFunction*, cuLaunch*, etc.). This is complex and may hit other missing functionality.
+2. **DEMCubWrappers.cu** - Added `CUB_RUNTIME_FUNCTION` macro definition for HIP (not provided by hipCUB)
 
-### Files modified
+3. **dT.h** - Added missing `#include <unordered_set>`
 
-- CMakeLists.txt: Added USE_HIP option, FetchContent for ROCm jitify
-- src/core/CMakeLists.txt: Changed to use JitifyPath variable
-- src/algorithms/CMakeLists.txt: Added HIP language support, hipcub linking
-- src/DEM/CMakeLists.txt: Removed CUB dependency (only algorithms needs it)
-- src/core/utils/cuda_to_hip.h: New compat header (partial)
-- src/core/utils/GpuError.h, GpuManager.h, CudaAllocator.hpp, ManagedMemory.hpp: Use compat header
-- src/DEM/Defines.h, src/kernel/CUDAMathHelpers.cuh: Use compat header
-- src/algorithms/*.cu: Added HIP/hipcub includes
+4. **CMakeLists.txt** - Added `__HIP_PLATFORM_AMD__` compile definition for CXX files including HIP headers
+
+### Build commands
+
+```bash
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
 
 ### Build status
 
-Configuration succeeds but build fails on:
-1. CXX targets need `__HIP_PLATFORM_AMD__` defined when including hip_runtime.h
-2. jitify.hpp requires `cuda.h` which is not available on ROCm
+- Configuration: SUCCESS
+- Compilation: SUCCESS (with warnings)
+- Linking: SUCCESS
+- All 26 demo executables built
 
-### Recommendation
+### Validation
 
-DEM-Engine port is blocked on ROCm Jitify maturity. The jitify v1 API is not supported for HIP. Options:
-- Wait for ROCm to port jitify v1 API to HIP
-- Upstream port request: ask DEM-Engine maintainers to migrate to jitify2 API
-- Consider AOT compilation mode for HIP (breaks customizable force models)
-
-This is a genuine architectural mismatch, not a mechanical porting issue.
+Validation requires running demos on GPU. Suggested validation demos:
+- `DEMdemo_SingleSphereCollide` - Basic contact detection
+- `DEMdemo_BallDrop` - Gravity and collision
+- `DEMdemo_ContactChain` - Force propagation
