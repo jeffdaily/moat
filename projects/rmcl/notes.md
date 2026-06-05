@@ -656,6 +656,78 @@ Stage 2 HIPRT component was not built or tested on this platform (HIPRT SDK unav
 
 Stage 1 (rmagine_cuda HIP compute backend) -- NO REGRESSION. 7/7 cuda_ tests + 12/12 core_ tests PASS on gfx1100@db7f064, matching prior validation at 3d098d5. The addition of the rmagine_hiprt component (Stage 2) does not affect Stage 1 functionality when HIPRT is absent (correctly skipped by CMake). Wave32 reduction correctness confirmed (full __syncthreads tree, no warp tail).
 
+## Validation 2026-06-05 (linux-gfx1100 REVALIDATE at 4223818, HIP_VISIBLE_DEVICES=0) -- PASS
+
+Revalidation after HEAD moved from db7f064 (Stage 2 Pinhole HIPRT) to 4223818 (Stage 2 all simulators).
+Fork: jeffdaily/rmagine moat-port HEAD 4223818. GPU: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+
+### Delta classification
+
+Changes db7f064 -> 4223818 add SphericalSimulatorHiprt, O1DnSimulatorHiprt, OnDnSimulatorHiprt (1624 insertions across 8 files in rmagine_hiprt). Stage 1 (rmagine_cuda compute backend) source is unchanged.
+
+### HIPRT availability
+
+HIPRT SDK not present on this gfx1100 host (/var/lib/jenkins/moat/third_party/HIPRT does not exist). CMake correctly skipped rmagine_hiprt component with warning message. Stage 1 components (rmagine-core + rmagine-cuda) built successfully without HIPRT.
+
+### Build
+
+```
+cmake -S /var/lib/jenkins/moat/projects/rmcl/rmagine_src \
+      -B /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 \
+      -G Ninja -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
+      -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON \
+      -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON \
+      -DRMAGINE_BUILD_TOOLS=OFF
+cmake --build /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 -j
+```
+
+74/74 targets built cleanly (HIP compiler: clang++ 22.0.0 / ROCm 7.2.1). Only pre-existing nodiscard warnings on hipMemset macro expansions. rmagine_hiprt was skipped (HIPRT SDK not found, expected).
+
+### Code-object arch evidence
+
+```
+roc-obj-ls lib/librmagine-cuda.so.2.4.2
+```
+
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1100` (833688 bytes). No gfx90a code object present.
+
+### Test results (Stage 1 rmagine_cuda -- the validated scope)
+
+```
+export HIP_VISIBLE_DEVICES=0
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 --output-on-failure -R '^cuda_'
+# 7/7 PASS (1.98 s)
+ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 --output-on-failure -R '^core_'
+# 12/12 PASS (2.64 s)
+```
+
+Tests passing (identical set to prior gfx1100 validation at db7f064):
+- cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd, cuda_math_statistics, cuda_math_reduction, cuda_math_reduction_correctness
+- core_math, core_memory, core_memory_slicing, core_quaternion, core_math_svd, core_math_statistics, core_math_cov_transform, core_math_gaussians, core_math_matrix_slicing, core_math_reduction, core_math_cholesky, core_math_lie
+
+### GPU dispatch confirmed (AMD_LOG_LEVEL=3)
+
+```
+AMD_LOG_LEVEL=3 ./bin/rmagine_tests_cuda_math_reduction_correctness
+```
+
+ShaderName lines confirm dispatch on `amdgcn-amd-amdhsa--gfx1100` of:
+- `void rmagine::cuda::sum_kernel<1024u, rmagine::Vector3_<float>>(...)`
+- `void rmagine::cuda::cov_kernel<1024u>(...)`
+
+Test exits with: `PASS: rm::sum/mean/cov match CPU reference and are deterministic`
+
+### Stage 2 HIPRT verdict
+
+Stage 2 HIPRT component (all four simulators: Pinhole, Spherical, O1Dn, OnDn) was not built or tested on this platform (HIPRT SDK unavailable). CMake correctly skipped the component. Stage 1 remains the validated deliverable on all platforms.
+
+### Revalidation verdict
+
+Stage 1 (rmagine_cuda HIP compute backend) -- NO REGRESSION. 7/7 cuda_ tests + 12/12 core_ tests PASS on gfx1100@4223818, matching prior validations at db7f064 and 3d098d5. The addition of three more HIPRT simulators (Stage 2) does not affect Stage 1 functionality when HIPRT is absent (correctly skipped by CMake). Wave32 reduction correctness confirmed (full __syncthreads tree, no warp tail).
+
 ## Review 2026-06-05 (reviewer, linux-gfx90a, Stage 2 HIPRT) -- REVIEW PASSED
 
 Re-review of moat-port HEAD db7f064 (fix commit for Transform3f struct layout).
