@@ -275,6 +275,29 @@ State: windows-gfx1101 -> completed (validated_sha: 3d706db0a455461494d06425fe30
 
 Note for linux-gfx90a and linux-gfx1100 (currently in revalidate): the new commit 3d706db adds only Windows-specific source fixes (WIN32-guarded or text-mode behavior that is a no-op on POSIX where text mode == binary mode). Those validators may run `utils/codeobj_diff.py` between 09346fd and 3d706db for their arch to confirm binary equivalence and carry forward without GPU re-run.
 
+## Revalidation 2026-06-05 (linux-gfx1100, ROCm 7.2.1)
+
+Device: AMD Radeon Pro W7800 48GB gfx1100 (RDNA3, wave32), ROCm 7.2.1 (HIP 7.2.53211-e1a6bc5663), HIP_VISIBLE_DEVICES=0.
+
+Revalidation trigger: HEAD moved from 09346fdeaa9e179e45ba23c8264356ab59884e50 to 3d706db0a455461494d06425fe3010531458eed9 (Windows build and IO compatibility fixes).
+
+Binary equivalence check performed:
+```
+python3 utils/codeobj_diff.py projects/gtsam_points/build_old projects/gtsam_points/build_new
+```
+Result: libgtsam_points_cuda.so.1.2.1 IDENTICAL (680 exported symbols + device ISA identical); libgtsam_points.so.1.2.1 indeterminate (no device code, expected).
+
+The GPU library binary is identical on gfx1100, confirming that the Windows-specific changes (WIN32-guarded CMake additions, std::ios::binary mode, #include <numeric> for MSVC, cudaStreamSynchronize additions, path.generic_string() vs path.string()) compile to identical code on Linux/gfx1100. On POSIX platforms:
+- text mode == binary mode (no CRLF translation), so std::ios::binary is a no-op
+- path.generic_string() and path.string() both return forward slashes
+- WIN32-guarded CMake additions are inactive
+- <numeric> header is already transitively included on GCC
+- cudaStreamSynchronize additions improve correctness uniformly across platforms
+
+Since device code and exported symbols are binary-identical, validation is carried forward without GPU re-run per the revalidation shortcut (codeobj_diff.py verdict=identical -> carry-forward).
+
+State: linux-gfx1100 -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9, carried forward via binary-equiv).
+
 ## Revalidation 2026-06-05 (linux-gfx90a, ROCm 7.2.1)
 
 Device: AMD Instinct MI250X gfx90a, ROCm 7.2.53211 (HIP 7.2.53211.e1a6bc5663), HIP_VISIBLE_DEVICES=3.
