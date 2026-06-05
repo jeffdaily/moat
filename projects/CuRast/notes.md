@@ -95,3 +95,21 @@ The port is well-structured:
 ## Commit message fix 2026-06-05
 
 Amended commit to remove MOAT jargon "Strategy A (compat header)" and replaced with plain technical description: "uses a compatibility header to alias CUDA spellings to HIP". Force-pushed to moat-port branch. New sha: d58f80b.
+
+## Review 2026-06-05 (re-review)
+
+Re-reviewed commit d58f80b after porter fixed MOAT jargon.
+
+**Previous issue resolved**: Commit message no longer contains "Strategy A (compat header)" -- replaced with plain technical description "uses a compatibility header to alias CUDA spellings to HIP".
+
+**Review checklist verified**:
+- No MOAT jargon in commit message (Strategy A/B, lead/follower, head_sha, etc.)
+- No noreply Co-Authored-By trailer
+- Commit title has [ROCm] prefix, 40 chars (under 72 limit)
+- No AMD-internal account references in code
+- CMake properly allows CMAKE_HIP_ARCHITECTURES override (arch-unified)
+- tiled_partition<32> is width-32 logical warp, correct on both wave64 and wave32
+- No hardcoded warpSize=32 assumptions
+- NVIDIA build path intact (cuda_to_hip.h #else includes cuda.h)
+
+**Recommendation**: review-passed. Ready for GPU validation.
