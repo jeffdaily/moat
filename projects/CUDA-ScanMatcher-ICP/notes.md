@@ -98,3 +98,29 @@ Fault classes verified:
 LANGUAGE HIP on all sources (including host .cpp) justified by gotcha #5.
 
 Ready for GPU validation.
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a
+
+**Build**: gfx90a
+```bash
+cd src
+rm -rf build && mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel
+```
+
+Build succeeded with warnings (nodiscard return values ignored, not critical).
+llvm-objdump confirms gfx90a code objects embedded.
+
+**Test**: HIP_VISIBLE_DEVICES=2 (MI250X gfx90a)
+```bash
+HIP_VISIBLE_DEVICES=2 ./bin/cis565_ScanMatching
+```
+
+**Results**: PASS
+- 10 ICP iterations completed successfully
+- NN timing: 14320us (first), ~447-546us (warmup), then stable ~481-484us per iteration
+- No crashes, no errors, no NaN values
+- GPU computation works correctly on gfx90a
