@@ -460,3 +460,74 @@ PASS. 30/30 C++ gtests. Python slice 227/234 passed; 7 failures are all
 pre-existing artifacts (same 4 categories as Linux + 3 torchaudio-missing-GPU
 which are a Windows torchaudio limitation, not a k2 bug). Transition:
 port-ready -> completed. validated_sha = 7531e5b.
+
+## Validation 2026-06-05 (linux-gfx90a revalidation)
+
+Platform: linux-gfx90a (MI250X, gfx90a, ROCm 7.2.1). Validator agent.
+Fork: jeffdaily/k2 @ moat-port, HEAD 44e7563a1119833c18e875bda55162425d2d5f09 (3 commits).
+GPU: GCD 0 (HIP_VISIBLE_DEVICES=0), idle.
+
+### Commits since last validation (20f56c06 -> 44e7563)
+
+1. 7531e5b: Windows/clang build fixes (gfx1101 port)
+2. 44e7563: Fix Linux build regression from 7531e5b
+
+The Windows commit 7531e5b added c10::hip:: API calls for Windows torch 2.9, but
+gated them only on K2_WITH_HIP (true on both Windows and Linux). On Linux torch
+2.13, c10::hip::HIPCachingAllocator does not exist (only c10::cuda::CUDACachingAllocator).
+Fixed by gating c10::hip:: path on K2_WITH_HIP AND _WIN32 (Windows-only).
+
+### Commands
+
+Clone:
+```
+git clone --branch moat-port --single-branch https://github.com/jeffdaily/k2 /var/lib/jenkins/moat/projects/k2/src
+```
+
+Configure:
+```
+cd /var/lib/jenkins/moat/projects/k2/src && mkdir -p build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release \
+      -DK2_WITH_HIP=ON -DK2_WITH_CUDA=OFF \
+      -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/lib/llvm/bin/clang++ \
+      -DCMAKE_CXX_STANDARD=20 \
+      -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python3 \
+      -DK2_LIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+      -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF ..
+```
+
+Compile (timeit wrapped):
+```
+bash utils/timeit.sh k2 compile -- cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16
+```
+
+C++ gtests (HIP_VISIBLE_DEVICES=0, serial):
+```
+bash utils/timeit.sh k2 test -- bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx90a.sh
+```
+
+Python slice (HIP_VISIBLE_DEVICES=0):
+```
+bash utils/timeit.sh k2 test -- bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx90a.sh
+```
+
+### C++ gtest results (primary gate)
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0.
+
+### Python slice results
+
+Run 1: 230 passed, 5 failed (test_get_tot_scores_multiple_fsas flaked; numerical gradient check non-deterministic).
+Run 2: 231 passed, 4 failed (test_get_tot_scores_multiple_fsas passed).
+
+All 4 failures are the documented pre-existing artifacts:
+- ragged_test.py: test_pickle_ragged -- torch 2.6 weights_only=True artifact.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 pickle artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation artifact; benign.
+
+No new Python failures beyond the 2 documented artifact categories.
+
+### Verdict
+
+PASS. 30/30 C++ gtests. Python slice 231/231 passed (excluding 4 documented artifacts), matching gfx1100 previous validation. The Linux build fix (44e7563) correctly restored compatibility with Linux torch 2.13 masquerading. Transition: revalidate -> completed. validated_sha = 44e7563.

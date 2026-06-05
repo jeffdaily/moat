@@ -26,3 +26,8 @@
 {"kind":"phase","ts":"2026-06-05T16:33:46Z","phase":"compile","seconds":1.238,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j8"}
 {"kind":"phase","ts":"2026-06-05T16:34:12Z","phase":"test","seconds":19.222,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1101.py"}
 {"kind":"phase","ts":"2026-06-05T16:34:42Z","phase":"test","seconds":22.619,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1101_v2.py"}
+{"kind":"session","ts":"2026-06-05T17:35:21Z","epoch":1780680921.873792612,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T17:45:17Z","phase":"compile","seconds":568.083,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-06-05T17:46:58Z","phase":"test","seconds":86.193,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx90a.sh"}
+{"kind":"phase","ts":"2026-06-05T17:49:02Z","phase":"test","seconds":104.034,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx90a.sh"}
+{"kind":"session","ts":"2026-06-05T17:51:43Z","epoch":1780681903.811888341,"event":"end","platform":"linux-gfx90a"}
