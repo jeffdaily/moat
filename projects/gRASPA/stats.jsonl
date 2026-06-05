@@ -1,3 +1,4 @@
 {"kind": "tokens", "ts": "2026-06-05T08:58:17Z", "tokens": 106901, "source": "planner"}
 {"kind":"phase","ts":"2026-06-05T09:00:23Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:11:21Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind": "tokens", "ts": "2026-06-05T09:20:34Z", "tokens": 156600, "source": "porter"}

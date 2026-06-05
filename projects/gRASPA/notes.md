@@ -30,3 +30,31 @@ HIP's `HIP_vector_type` (double3/int3/etc.) has built-in operators that differ f
 ### Shared memory
 - HIP disallows `__shared__ bool var = false;` -- use thread-0 initialization
 - Dynamic shared memory requires `extern __shared__` (same as CUDA but was missing in one kernel)
+
+## Review 2026-06-05
+
+**Verdict: APPROVE**
+
+Port implements Strategy A correctly:
+- Single `cuda_to_hip.h` compat header with necessary symbol mappings
+- `.cu` files marked `LANGUAGE HIP` via CMake, not renamed
+- HIP vector operator ambiguity correctly resolved via `#if !defined(__HIP_PLATFORM_AMD__)` guards in maths.cuh and VDW_Coulomb.cuh
+- Shared memory initialization fixed correctly (thread-0 init + `__syncthreads()` in VDW_Coulomb.cu:1055-1057)
+- Dynamic shared memory `extern` keyword added where missing (Ewald_Energy_Functions.h:1046)
+
+No fault class concerns:
+- No warp primitives -- all reductions use `__syncthreads()` tree reduction (wave-size agnostic)
+- No textures/surfaces
+- No rule-of-five concerns
+- `cudaMallocManaged` usage is minimal and HIP supports it
+
+Build system correct:
+- `enable_language(HIP)` + `USE_HIP` option (default OFF)
+- `CMAKE_HIP_ARCHITECTURES` parameterized (not hardcoded)
+- `find_package(hip)` + `hip::host` linkage
+
+Commit hygiene clean:
+- Title follows `[ROCm]` prefix, 36 chars
+- Body mentions Claude, no noreply trailer, no MOAT jargon
+
+Ready for gfx90a validation.
