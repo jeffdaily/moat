@@ -12,3 +12,13 @@
 {"kind":"phase","ts":"2026-06-05T00:00:32Z","phase":"test","seconds":4.738,"exit":141,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
 {"kind":"phase","ts":"2026-06-05T14:00:26Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build build -j128"}
 {"kind": "tokens", "ts": "2026-06-05T14:10:40Z", "tokens": 107499, "source": "porter (wave64 mutex fix)"}
+{"kind": "tokens", "ts": "2026-06-05T14:14:00Z", "tokens": 71195, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T14:14:27Z","epoch":1780668867.785025260,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T14:14:46Z","phase":"linux-gfx90a","seconds":0.004,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/stdgpu/src && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP -DCMAKE_HIP_ARCHITECTURES=gfx90a -DSTDGPU_BUILD_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-05T14:14:59Z","phase":"compile","seconds":8.758,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/stdgpu/src && cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP -DCMAKE_HIP_ARCHITECTURES=gfx90a -DSTDGPU_BUILD_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-05T14:19:48Z","phase":"compile","seconds":285.029,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/stdgpu/src && cmake --build build -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T14:21:33Z","phase":"test","seconds":94.111,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/stdgpu/src/build && ctest --output-on-failure --timeout 120"}
+{"kind":"phase","ts":"2026-06-05T14:21:37Z","phase":"test","seconds":0.160,"exit":141,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu --gtest_list_tests"}
+{"kind":"phase","ts":"2026-06-05T14:23:13Z","phase":"test","seconds":93.732,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
+{"kind":"phase","ts":"2026-06-05T14:25:06Z","phase":"test","seconds":97.959,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
+{"kind":"session","ts":"2026-06-05T14:25:43Z","epoch":1780669543.575014897,"event":"end","platform":"linux-gfx90a"}

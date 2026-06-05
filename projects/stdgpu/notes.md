@@ -77,3 +77,48 @@ No issues found:
 - All 702 tests pass per commit message
 
 Minor note (non-blocking): Copyright header says "Copyright 2024 Advanced Micro Devices" but commit date is 2026. Cosmetic only.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+**Platform:** AMD Instinct MI250X (gfx90a), ROCm 7.2.1, wave64
+
+**Build command:**
+```bash
+cmake -B build -S . \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DSTDGPU_BUILD_TESTS=ON
+
+cmake --build build -j$(nproc)
+```
+
+**Build result:** SUCCESS (benchmark target failed due to CXX file receiving HIP flags, but all tests and examples built successfully)
+
+**Test command:**
+```bash
+build/bin/teststdgpu
+```
+
+**Test results:** PASS
+- All 702 tests passed in both runs (93.5s and 97.7s)
+- Zero memory leaks (364762/364762 device, 360829/360829 host)
+
+**Critical tests verified (previously hanging on wave64):**
+- `stdgpu_unordered_map.insert_range_unique_parallel` - PASS (14ms)
+- `stdgpu_unordered_map.insert_range_unique_parallel_custom_execution_policy` - PASS (14ms)
+- `stdgpu_unordered_map.erase_range_unique_parallel` - PASS (15ms)
+- `stdgpu_unordered_map.erase_range_unique_parallel_custom_execution_policy` - PASS (15ms)
+- `stdgpu_unordered_set.insert_range_unique_parallel` - PASS (14ms)
+- `stdgpu_unordered_set.insert_range_unique_parallel_custom_execution_policy` - PASS (14ms)
+- `stdgpu_unordered_set.erase_range_unique_parallel` - PASS (15ms)
+- `stdgpu_unordered_set.erase_range_unique_parallel_custom_execution_policy` - PASS (15ms)
+- `stdgpu_deque.simultaneous_push_back_and_pop_back` - PASS (7ms)
+- `stdgpu_deque.simultaneous_push_front_and_pop_front` - PASS (7ms)
+- `stdgpu_deque.simultaneous_push_front_and_pop_back` - PASS (7ms)
+- `stdgpu_deque.simultaneous_push_back_and_pop_front` - PASS (7ms)
+- `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS (3ms)
+
+**Determinism:** Confirmed (ran test suite twice, all 702 tests passed both times)
+
+**Verdict:** VALIDATED at 718d206
