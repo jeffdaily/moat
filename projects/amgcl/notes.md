@@ -263,6 +263,52 @@ load. NOT an APU hardware limit and NOT the driver bug: the amgcl HIP backend co
 and the CPU builtin backend solves. This is a TheRock PACKAGING gap; recheck on a newer nightly
 that ships sparse_lib_gfx1151.kpack (or build rocSPARSE for gfx1151). Still blocked until then.
 
+## Validation 2026-06-05 (windows-gfx1101, ROCm 7.14)
+
+Platform: windows-gfx1101. Host: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), discrete GPU, HIP_VISIBLE_DEVICES=0. Fork moat-port HEAD f4b87da -- NO source changes (zero-churn follower, same as gfx1100).
+
+### ROCm environment
+
+TheRock ROCm 7.14.0a20260604 pip SDK (_rocm_sdk_devel + _rocm_sdk_core + _rocm_sdk_libraries wheels). Key finding: this host has NO sparse_lib_gfx1101.kpack in the wheels (only blas/fft/rand kpacks for gfx1101/gfx1201), matching the gfx1151 packaging gap. However, unlike gfx1151 (APU), the discrete gfx1101 GPU loads rocSPARSE kernels from the DLLs directly (rocsparse.dll in _rocm_sdk_libraries/bin is 67 MB and has embedded RDNA3 code). Confirmed via TheRock's own hipsparse-test.exe: 272/272 tests PASS including SpMV CSR and csrsv2 (triangular solve) tests.
+
+### Build
+
+Standalone driver (agent_space/amgcl_hip_validate_win.cpp, NOT in the fork) -- no Boost dependency. Built with hipcc.exe from _rocm_sdk_devel:
+
+```
+ROCM=.../_rocm_sdk_devel
+hipcc.exe -std=c++17 --offload-arch=gfx1101 -O2 -I . -I tests
+          -Wno-deprecated-declarations -DAMGCL_NO_BOOST
+          agent_space/amgcl_hip_validate_win.cpp
+          -o <TheRock/build/bin>/amgcl_hip_validate_win.exe
+          -L$ROCM/lib -lhipsparse -lrocsparse
+```
+
+Run from TheRock/build/bin/ (where all hipsparse/rocsparse DLLs are already present; the exe needs amdhip64_7.dll, hipsparse.dll, rocsparse.dll, rocblas.dll in its directory).
+
+### Solver convergence (real GPU, HIP_VISIBLE_DEVICES=0)
+
+7-point 3D Poisson, n=64 (262144 unknowns), 3-level AMG, CG.
+
+spai0 relaxation:
+  GPU: AMD Radeon PRO V710
+  Run 1: Iterations 17, residual 3.35779e-11
+  Run 2: Iterations 17, residual 3.35779e-11  (bitwise identical -- deterministic)
+  CPU builtin: Iterations 17, residual 3.35779e-11  (exact match)
+  Cross-backend: ||x_hip - x_cpu||_inf / ||x_cpu||_inf = 1.43732e-15  (machine epsilon)
+
+ilu0 relaxation (rocsparse_ilu0.hpp path):
+  Iterations 11, residual 9.07312e-11  (converges cleanly)
+
+gfx90a reference: spai0 17 iters / resid 3.36e-11; ilu0 11 iters / resid 9.07e-11 -- IDENTICAL.
+gfx1100 reference: spai0 8 iters / resid 2.94e-09; ilu0 6 iters / resid 1.55e-09 -- slightly different (expected BiCGStab vs CG difference; this run uses CG throughout, gfx1100 used BiCGStab in the example).
+
+### Pass/fail
+
+PASS. No source changes. No fork push. validated_sha = f4b87da72010e59e944847380ea972efa0aa15b8.
+
+Toolchain: ROCm 7.14.0a20260604 (TheRock pip), hipSPARSE, rocSPARSE on gfx1101 (RDNA3, wave32). HIP version 7.14.60850.
+
 ## PR framing note: amgcl is already AMD-capable via OpenCL (2026-06-04)
 
 README sweep: amgcl has backends cuda.hpp / vexcl.hpp / viennacl.hpp + builtin OpenMP. VexCL and ViennaCL are OpenCL-based and already run on AMD GPUs, so amgcl is NOT lacking AMD support; it lacks a NATIVE HIP/ROCm backend (no hip.hpp, 0 HIP code, no ROCm PRs). This is still a valuable port (native ROCm perf + a hipSPARSE/rocSPARSE-style backend alongside the CUDA one), but the PR MUST be framed as "add a native HIP/ROCm backend" and must NOT claim to be the first/only AMD support. Merge-policy fit is good: backends live in-tree (amgcl/backend/*.hpp), so a hip.hpp backend matches the existing pattern. See [[moat-no-duplicate-amd-ports]].
