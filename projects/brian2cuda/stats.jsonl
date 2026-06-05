@@ -7,3 +7,11 @@
 {"kind": "tokens", "ts": "2026-06-05T08:33:45Z", "tokens": 87511, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T08:37:48Z","phase":"compile","seconds":11.521,"exit":0,"cmd":"bash -c \nexport HIP_VISIBLE_DEVICES=1\nexport USE_HIP=1\ncd /var/lib/jenkins/moat/projects/brian2cuda/src\n\n# Run a simple test that generates and compiles HIP code with synapses\npython -c \"\nfrom brian2 import *\nimport brian2cuda\nset_device(\\\"cuda_standalone\\\", build_on_run=False)\n\n# Create a network with synapses to test spike queue code\neqs = \\\"dv/dt = -v/(10*ms) : 1\\\"\nG = NeuronGroup(100, eqs, threshold=\\\"v>0.5\\\", reset=\\\"v=0\\\", method=\\\"linear\\\")\nG.v = \\\"rand()\\\"\nS = Synapses(G, G, on_pre=\\\"v_post += 0.1\\\", delay=1*ms)\nS.connect(p=0.1)\nrun(1*ms)\ndevice.build(directory=\\\"/tmp/brian2cuda_wave64_test\\\", compile=True, run=True, clean=True)\n\"\n"}
 {"kind": "tokens", "ts": "2026-06-05T08:38:55Z", "tokens": 72453, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T08:42:43Z", "tokens": 94813, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T08:43:14Z","epoch":1780648994.045721792,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T08:43:26Z","phase":"linux-gfx90a","seconds":0.003,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/brian2cuda/src && pip install -e .[test] --quiet"}
+{"kind":"phase","ts":"2026-06-05T08:43:42Z","phase":"compile","seconds":4.459,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/brian2cuda/src && pip install -e .[test] --quiet"}
+{"kind":"phase","ts":"2026-06-05T08:43:58Z","phase":"test","seconds":1.850,"exit":3,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/brian2cuda/src && HIP_VISIBLE_DEVICES=1 USE_HIP=1 pytest brian2cuda/tests -v 2>&1"}
+{"kind":"phase","ts":"2026-06-05T08:45:17Z","phase":"test","seconds":30.885,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 USE_HIP=1 python agent_space/brian2cuda_validation.py"}
+{"kind":"phase","ts":"2026-06-05T08:46:26Z","phase":"test","seconds":30.917,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 USE_HIP=1 python agent_space/brian2cuda_validation.py 2>&1 | grep -E '(===|PASS|FAIL|neurons|Synaptic|spikes|ALL TESTS)'"}
+{"kind":"session","ts":"2026-06-05T08:47:22Z","epoch":1780649242.660931722,"event":"end","platform":"linux-gfx90a"}
