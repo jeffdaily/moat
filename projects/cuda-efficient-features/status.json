@@ -7,14 +7,14 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-05T08:37:02Z",
-  "head_sha": "1b07b9d8e429d227ba63f489e846d423970b532f",
+  "updated_at": "2026-06-05T08:53:32Z",
+  "head_sha": "406348b",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "OpenCV CUDA dependency: The project relies heavily on OpenCV GpuMat/Stream/HostMem GPU memory management which requires CUDA backend. OpenCV lacks native HIP support. Options: (1) Replace all OpenCV CUDA operations with raw HIP (large effort - ~500 LOC), (2) Build OpenCV with HIP - requires non-upstream patches, (3) Use AMD rocCV (preview) or RPP - different APIs.",
+      "blocked_reason": "Kernel execution hangs (GPU 100% utilization). Build succeeds with HIP-native GpuMat replacement; tests hang. Need to debug which kernel is stuck.",
       "validated_sha": null,
       "started_at": "2026-06-05T08:23:04Z",
       "completed_at": null,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
