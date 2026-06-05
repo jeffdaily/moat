@@ -12,3 +12,4 @@
 {"kind":"phase","ts":"2026-06-05T00:57:02Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T00:57:11Z","phase":"compile","seconds":0.126,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T01:10:47Z","phase":"test","seconds":13.640,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
+{"kind": "tokens", "ts": "2026-06-05T01:12:05Z", "tokens": 54582, "source": "porter"}

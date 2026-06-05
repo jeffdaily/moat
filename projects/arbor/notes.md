@@ -108,3 +108,31 @@ Note: The hand-written test file (test_reduce_by_key.cu) was correctly updated t
 ### Post-fix verification (gfx90a)
 
 All 1182 unit tests pass after the fix. Generated mechanism code now uses the correct 64-bit lane mask type.
+
+## Review 2026-06-05 (post-fix)
+
+### Summary
+The gpuprinter.cpp fix is correct. The port fixes HIP warp primitives (lane masks, wave-size abstraction, double shuffle) for CDNA/RDNA architectures. All 1182 unit tests pass on gfx90a.
+
+### Verification
+
+**gpuprinter.cpp fix (line 394)**:
+- Changed `unsigned lane_mask_` to `arb::gpu::lane_mask_type lane_mask_` -- correct, matches the typedef in hip_api.hpp (64-bit) and cuda_api.hpp (32-bit)
+- Changed `0xffffffff` to `arb::gpu::lane_mask_type(-1)` -- correct, produces full-mask for any lane_mask_type width
+
+The generated code now matches the hand-written test code pattern in test_reduce_by_key.cu (lines 17, 117).
+
+**Fault class checks**:
+- Wave-size: `threads_per_warp()` correctly uses `__GFX9__` for CDNA (64) vs default (32) for RDNA
+- Lane masks: 64-bit `unsigned long long` on HIP, 32-bit `unsigned` on CUDA
+- No hardcoded 32/64 in GPU code paths (remaining 0xffffffff in codebase are in _deps/ or SIMD/CPU code)
+- `__clzll`/`__ffsll` for 64-bit bit ops on HIP, `__clz`/`__ffs` on CUDA
+
+**Build system**: Correct Strategy A (existing native HIP backend, not a from-scratch port). CMake arch default updated to gfx90a; cache variable preserved so followers can override.
+
+**Backward compatibility**: CUDA code path unchanged except for additive `lane_mask_type` typedef.
+
+**Commit hygiene**: [ROCm] prefix, under 72 chars, Claude disclosure, no noreply trailer, jeffdaily account.
+
+### Recommendation
+**Approve** -- ready for GPU validation.
