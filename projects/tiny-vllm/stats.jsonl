@@ -1,0 +1,2 @@
+{"kind": "tokens", "ts": "2026-06-04T23:29:30Z", "tokens": 72983, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:06:46Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build build"}
