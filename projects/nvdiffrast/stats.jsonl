@@ -3,3 +3,11 @@
 {"kind":"phase","ts":"2026-06-05T00:35:39Z","phase":"compile","seconds":27.513,"exit":1,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
 {"kind":"phase","ts":"2026-06-05T00:43:04Z","phase":"compile","seconds":0.025,"exit":2,"cmd":"python setup.py build_ext --inplace"}
 {"kind": "tokens", "ts": "2026-06-05T15:38:59Z", "tokens": 35686, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-05T16:02:12Z","phase":"compile","seconds":0.285,"exit":1,"cmd":"pip install --no-build-isolation -v -e ."}
+{"kind":"phase","ts":"2026-06-05T16:02:37Z","phase":"compile","seconds":21.175,"exit":1,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind":"phase","ts":"2026-06-05T16:12:38Z","phase":"compile","seconds":0.307,"exit":1,"cmd":"pip install --no-build-isolation -v -e ."}
+{"kind":"phase","ts":"2026-06-05T16:13:04Z","phase":"compile","seconds":21.417,"exit":1,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind":"phase","ts":"2026-06-05T16:16:20Z","phase":"compile","seconds":96.342,"exit":1,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind":"phase","ts":"2026-06-05T16:25:43Z","phase":"compile","seconds":97.901,"exit":0,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind":"phase","ts":"2026-06-05T16:33:50Z","phase":"test","seconds":0.035,"exit":2,"cmd":"python3 test_hip.py"}
+{"kind":"phase","ts":"2026-06-05T16:33:55Z","phase":"test","seconds":2.113,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/projects/nvdiffrast/src/test_hip.py"}

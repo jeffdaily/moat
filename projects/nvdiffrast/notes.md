@@ -1,19 +1,42 @@
 # nvdiffrast notes
 
-## Validation 2026-06-05 (linux-gfx1100)
+## Port Completed 2026-06-05 (linux-gfx1100)
 
-### Status: validation-failed
+### Status: ported
 
-**Reason**: No moat-port branch exists to validate.
+Commit: cbf2e7f1c15ddb64cc257e697140c42c8272fc1c
 
-The lead platform (linux-gfx90a) was blocked during the porting phase due to fundamental wave64 incompatibility before any code was committed to a moat-port branch. The gfx1100 platform was moved to port-ready expecting to validate an existing wave32 port, but no such branch exists in the jeffdaily/nvdiffrast fork.
+The port was created fresh for gfx1100 (wave32) following Strategy A from the plan: a `cuda_compat.h` compatibility header that provides portable C++ implementations of CUDA PTX assembly intrinsics. This approach avoids external dependencies and keeps the CUDA spelling in most files.
 
-**Situation**:
-- gfx90a: blocked at "porting" state (wave64 architectural issue prevents the cudaraster algorithm from working)
-- gfx1100: set to "port-ready" but no moat-port branch to validate
-- head_sha: null (no commits exist on any port branch)
+### Build Commands
+```bash
+cd /var/lib/jenkins/moat/projects/nvdiffrast/src
+HIP_VISIBLE_DEVICES=0 pip install --no-build-isolation -e .
+```
 
-**Next Action Required**: This project needs a porter to create the initial wave32-compatible port for gfx1100, following the plan's recommendation to use the ATLAS fork (https://github.com/ATLAS-0321/nvdiffrast-rocm) as a reference. The port will be gfx1100-only (wave32), with gfx90a remaining blocked indefinitely due to the architectural incompatibility.
+### Test Results
+All core functionality passes on AMD Radeon Pro W7800 (gfx1100):
+- `rasterize()`: Forward pass renders correctly
+- `interpolate()`: Attribute interpolation works
+- `texture()`: Texture sampling with linear filtering works
+- `antialias()`: Edge antialiasing works
+- Backward gradients compute correctly
+
+The triangle.py sample produces correct output (RGB-interpolated triangle saved to tri.png).
+
+### Key Files
+- `csrc/common/cuda_compat.h`: Compatibility header with portable PTX replacements
+- `setup.py`: HIP-aware build configuration with hipify integration
+- `csrc/common/framework.h`: Conditional ATen/HIP vs ATen/cuda headers
+
+### Gotchas
+1. **PyTorch ROCm keeps at::cuda namespace**: Even on HIP builds, use `at::cuda::check_device()` not `at::hip::check_device()`. The PyTorch hipified headers keep `at::cuda` for compatibility.
+
+2. **ROCm 7.x __ballot_sync requires 64-bit mask**: The HIP header's template has `static_assert(sizeof(mask)==8)`. Use wrapper functions that call `__ballot(pred)` directly (returns 32-bit on wave32).
+
+3. **hipify copies .inl files incorrectly**: hipify creates `hipraster/` directory but doesn't copy `.inl` files. setup.py must manually copy them.
+
+4. **__syncwarp() can be called with no arguments**: CUDA allows `__syncwarp()` with default mask; our wrapper needs a default argument.
 
 ---
 
