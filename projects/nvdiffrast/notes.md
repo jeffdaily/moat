@@ -1,5 +1,22 @@
 # nvdiffrast notes
 
+## Validation 2026-06-05 (linux-gfx1100)
+
+### Status: validation-failed
+
+**Reason**: No moat-port branch exists to validate.
+
+The lead platform (linux-gfx90a) was blocked during the porting phase due to fundamental wave64 incompatibility before any code was committed to a moat-port branch. The gfx1100 platform was moved to port-ready expecting to validate an existing wave32 port, but no such branch exists in the jeffdaily/nvdiffrast fork.
+
+**Situation**:
+- gfx90a: blocked at "porting" state (wave64 architectural issue prevents the cudaraster algorithm from working)
+- gfx1100: set to "port-ready" but no moat-port branch to validate
+- head_sha: null (no commits exist on any port branch)
+
+**Next Action Required**: This project needs a porter to create the initial wave32-compatible port for gfx1100, following the plan's recommendation to use the ATLAS fork (https://github.com/ATLAS-0321/nvdiffrast-rocm) as a reference. The port will be gfx1100-only (wave32), with gfx90a remaining blocked indefinitely due to the architectural incompatibility.
+
+---
+
 ## 2026-06-05: Wave64 Porting Attempt (gfx90a)
 
 ### Approach Taken
