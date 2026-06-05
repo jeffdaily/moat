@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-05T16:57:30Z","phase":"compile","seconds":9.065,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/rmcl/src/build_hiprt -j 128"}
 {"kind":"phase","ts":"2026-06-05T17:00:17Z","phase":"compile","seconds":1.946,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/rmcl/src/build_hiprt -j 128"}
 {"kind": "tokens", "ts": "2026-06-05T17:06:45Z", "tokens": 162758, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T17:57:02Z", "tokens": 106002, "source": "reviewer"}

@@ -8,7 +8,7 @@
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:40:15Z",
   "updated_at": "2026-06-05T17:05:44Z",
-  "head_sha": "4d2cd26",
+  "head_sha": "db7f064",
   "platforms": {
     "linux-gfx90a": {
       "state": "ported",
