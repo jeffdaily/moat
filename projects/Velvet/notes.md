@@ -68,3 +68,11 @@ The macro suppresses dynamic initialization for `__device__ __constant__` variab
 **Request Changes**
 
 The __CUDACC__ guard on CUDA_CALL means kernel launches are silent no-ops. This must be fixed before validation.
+
+## Review Fix 2026-06-05
+
+Fixed both issues:
+
+1. **CUDA_CALL macros**: Changed `#ifdef __CUDACC__` to `#if defined(__CUDACC__) || defined(__HIPCC__)` so kernel launches work on HIP.
+
+2. **.gitignore**: Restored upstream Windows ignores (*.user, x64/, x86/, .vs/) and added `build/` at end.
