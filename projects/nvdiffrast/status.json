@@ -11,75 +11,8 @@
   "head_sha": "cbf2e7f1c15ddb64cc257e697140c42c8272fc1c",
   "depends_on": [],
   "platforms": {
-    "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "Wave64 requires rewriting LDS-based warp scans to shuffle-based; the cudaraster algorithm uses divergent __syncwarp which waits for all 64 lanes on CDNA, causing hangs. Substantial algorithmic change needed.",
-      "validated_sha": null,
-      "started_at": "2026-06-05T00:30:24Z",
-      "completed_at": null,
-      "updated_at": "2026-06-05T14:09:46Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "planner"
-    },
-    "linux-gfx1100": {
-      "state": "ported",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": "2026-06-05T14:10:19Z",
-      "completed_at": null,
-      "updated_at": "2026-06-05T16:34:58Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1101": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T23:59:20Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "blocked-needs-gfx90a",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
@@ -101,13 +34,80 @@
       }
     },
     "windows-gfx1151": {
-      "state": "port-ready",
+      "state": "blocked-needs-gfx90a",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
       "updated_at": "2026-06-04T23:59:20Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "linux-gfx90a": {
+      "state": "porting",
+      "blocked": true,
+      "blocked_reason": "cudaraster fundamentally wave32: 32-bit lane masks, threadIdx.x+threadIdx.y*32 indexing, ~147 warp primitives with 32-bit assumptions. Shuffle-based scans implemented but deeper algorithmic rewrite needed. Focus on gfx1100+ (wave32).",
+      "validated_sha": null,
+      "started_at": "2026-06-05T00:30:24Z",
+      "completed_at": null,
+      "updated_at": "2026-06-05T14:09:46Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "planner"
+    },
+    "windows-gfx1101": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-04T23:59:20Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "linux-gfx1100": {
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": "2026-06-05T14:10:19Z",
+      "completed_at": null,
+      "updated_at": "2026-06-05T16:34:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

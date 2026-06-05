@@ -37,6 +37,47 @@ The triangle.py sample produces correct output (RGB-interpolated triangle saved 
 3. **hipify copies .inl files incorrectly**: hipify creates `hipraster/` directory but doesn't copy `.inl` files. setup.py must manually copy them.
 
 4. **__syncwarp() can be called with no arguments**: CUDA allows `__syncwarp()` with default mask; our wrapper needs a default argument.
+**Next Action Required**: This project needs a porter to create the initial wave32-compatible port for gfx1100, following the plan's recommendation to use the ATLAS fork (https://github.com/ATLAS-0321/nvdiffrast-rocm) as a reference. The port will be gfx1100-only (wave32), with gfx90a remaining blocked indefinitely due to the architectural incompatibility.
+## 2026-06-05: Wave64 Shuffle-Based Warp Scan Implementation
+
+### Changes Made
+Created `WarpScan.hpp` with shuffle-based primitives to replace LDS-based warp scans:
+- `warpInclusiveScan<T>(val)` -- inclusive prefix sum using `__shfl_up` with width=32
+- `warpReduceSum<T>(val)` -- sum reduction using `__shfl_xor`
+- `warpReduceMin<T>(val)` -- min reduction
+- `warpReduceMax<T>(val)` -- max reduction
+- `warpBroadcast<T>(val, lane)` -- broadcast from specific lane
+- `scan32_total_shuffle(result)` -- get scan total from lane 31
+
+### Files Modified
+
+**BinRaster.inl**:
+- Replaced LDS-based prefix scan (lines 100-117) with `warpInclusiveScan`
+- Replaced divergent `__syncwarp` leader-broadcast pattern (lines 278-289) with `__shfl` broadcast
+
+**CoarseRaster.inl**:
+- Replaced stream min-selection scan (lines 213-248) with `warpReduceMin`
+- Replaced first scan-8 pattern (lines 517-547) with `warpInclusiveScan`
+- Replaced second scan-8 pattern (lines 881-910) with `warpInclusiveScan`
+- Removed divergent `__syncwarp(actMask)` at line 512
+
+**FineRaster.inl**:
+- Replaced `updateTileZMax` LDS max-reduction with `warpReduceMax`
+- Replaced `scan32_value` with shuffle-based scan (no `__syncwarp`)
+- Added `scan32_total_shuffle` for barrier-free total retrieval
+
+### Test Result
+Build succeeds but runtime still crashes in binRasterKernel with "Memory access fault". The shuffle-based scans alone do not fix wave64 compatibility.
+
+### Root Cause
+The cudaraster algorithm has deeper wave64 incompatibilities beyond warp scans:
+1. Lane masks (`getLaneMaskLt`, etc.) are 32-bit but wave64 returns 64-bit masks
+2. Thread indexing (`threadIdx.x + threadIdx.y * 32`) assumes 32-thread warps
+3. Shared memory arrays sized for 32-lane warps
+4. ~147 uses of warp primitives with 32-bit mask assumptions
+5. Divergent control flow between logical warps in same physical wave64
+
+The existing port works on gfx1100 (wave32/RDNA3) but requires fundamental rewrite for gfx90a (wave64/CDNA).
 
 ---
 

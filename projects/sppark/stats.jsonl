@@ -4,3 +4,4 @@
 {"kind": "tokens", "ts": "2026-06-05T14:16:33Z", "tokens": 174565, "source": "porter (MSM attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T14:39:31Z", "tokens": 186859, "source": "porter (host/device guards attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T14:57:17Z", "tokens": 168786, "source": "porter (host/device stubs attempt)"}
+{"kind": "tokens", "ts": "2026-06-05T15:25:49Z", "tokens": 154528, "source": "porter (host/device analysis)"}

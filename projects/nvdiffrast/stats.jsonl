@@ -11,3 +11,5 @@
 {"kind":"phase","ts":"2026-06-05T16:25:43Z","phase":"compile","seconds":97.901,"exit":0,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
 {"kind":"phase","ts":"2026-06-05T16:33:50Z","phase":"test","seconds":0.035,"exit":2,"cmd":"python3 test_hip.py"}
 {"kind":"phase","ts":"2026-06-05T16:33:55Z","phase":"test","seconds":2.113,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/projects/nvdiffrast/src/test_hip.py"}
+{"kind": "tokens", "ts": "2026-06-05T14:10:59Z", "tokens": 144261, "source": "porter (wave64 attempt)"}
+{"kind": "tokens", "ts": "2026-06-05T14:33:47Z", "tokens": 138710, "source": "porter (shuffle scans attempt)"}

@@ -8,10 +8,10 @@
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:40:15Z",
   "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "3d098d58eb599f1389b926ca1a02522e0c00c0c4",
+  "head_sha": "9088c8e",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "3d098d58eb599f1389b926ca1a02522e0c00c0c4",
