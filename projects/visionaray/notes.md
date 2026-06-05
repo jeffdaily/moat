@@ -43,3 +43,52 @@ HIP_VISIBLE_DEVICES=2 ./build/test/hip_test
 - Added missing hip/managed_allocator.h and hip/managed_vector.h
 - No warp intrinsics in the codebase -- no wave64/wave32 risk
 - The unit tests use undefined visionaray_* CMake macros -- skipped for now
+
+## Review 2026-06-05
+
+**Port Review: visionaray (moat-port vs upstream/master)**
+
+### Summary
+The port extends visionaray's experimental HIP support by adding CMake HIP build option, HIP scheduler (hip_sched.h/inl), HIP LBVH builder with hipCUB, and missing managed memory headers. Strategy is correct (Strategy A variant -- extending existing HIP support). No blocking issues found; approved for validation.
+
+### Port Correctness
+No issues. The port correctly mirrors the CUDA implementations:
+- hip_sched.h/inl parallels cuda_sched.h/inl with HIP API calls
+- LBVH builder HIP section mirrors the CUDA section with hipCUB
+- managed_allocator/managed_vector match CUDA versions
+
+### Fault Classes
+No issues. Verified:
+- No warp intrinsics (`__shfl`, `__ballot`, `__activemask`) in the port -- no wave64/wave32 risk
+- hipCUB DeviceMergeSort::StableSortKeys is a 1:1 API mapping from CUB
+- No hardcoded warp size of 32
+- No layered arrays or linear-filter float textures in the new code
+- The lbvh_builder lacks rule-of-five (no move constructor/assignment), but this matches upstream CUDA version (pre-existing upstream defect, not introduced by port)
+
+### Build System
+No issues:
+- enable_language(HIP) correctly used
+- HIP libraries found via find_package (hip, rocthrust, hipcub)
+- CMAKE_HIP_ARCHITECTURES defaults to gfx90a only when unset (correct pattern)
+- ROCm deps gated behind VSNRAY_ENABLE_HIP
+
+### Minimal Footprint
+No issues:
+- CUDA headers (`include/visionaray/cuda/`) unchanged
+- Changes are additive and HIP-guarded (`#ifdef __HIPCC__`, `if(VSNRAY_ENABLE_HIP)`)
+- macros.h change is a correct generalization (adds HIP device compile check)
+
+### Backward Compatibility
+No issues. The CUDA and CPU paths are unchanged.
+
+### Commit Hygiene
+No issues:
+- Title: `[ROCm] Add HIP/ROCm support for AMD GPUs` (41 chars, under 72)
+- Body mentions Claude, has Test Plan section
+- No noreply trailer, no AMD-internal account references
+
+### Testing
+Note for validator: The hip_test exercises hip::device_vector and a basic kernel launch. The new hip_sched, LBVH builder, and managed_allocator are NOT directly exercised by the test. The validator should confirm the build succeeds and hip_test passes; more comprehensive tests would require porting the upstream unit test infrastructure (which uses custom visionaray_* CMake macros).
+
+### Recommendation
+**Approve** -- proceed to validation.
