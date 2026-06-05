@@ -48,3 +48,23 @@ The macro suppresses dynamic initialization for `__device__ __constant__` variab
 ## Known Warnings
 
 - hipDeviceSynchronize nodiscard warnings in VtBuffer.hpp -- return value not checked (original CUDA code behavior)
+
+## Review 2026-06-05
+
+### Port Correctness
+
+**CRITICAL: CUDA_CALL macros are no-ops on HIP** -- `Velvet/Common.cuh:34` gates the CUDA_CALL/CUDA_CALL_S/CUDA_CALL_V macros on `#ifdef __CUDACC__`. hipcc defines `__HIPCC__` but NOT `__CUDACC__`, so on HIP the macros resolve to empty bodies (lines 47-50) and all kernel launches silently do nothing. The binary compiles but simulation kernels never execute. Fix: change line 34 to `#if defined(__CUDACC__) || defined(__HIPCC__)`.
+
+### Minimal Footprint
+
+**.gitignore rewrite breaks upstream CUDA** -- The port replaced the entire .gitignore content (VS user files, x64/, x86/, .vs/) with just `build/`. The upstream Windows build would no longer ignore its build artifacts. Add `build/` without deleting the existing Windows ignores.
+
+### Backward Compatibility
+
+**VtCallback template parameter renamed** -- `Velvet/Common.hpp:88-91` changes `TArgs` to `Args`. This is a breaking API change for any downstream code that explicitly named the template parameter. Keep the original name `TArgs` or ensure this is intentional.
+
+### Recommendation
+
+**Request Changes**
+
+The __CUDACC__ guard on CUDA_CALL means kernel launches are silent no-ops. This must be fixed before validation.
