@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-05T19:08:29Z",
+  "updated_at": "2026-06-05T19:32:44Z",
   "head_sha": "b623ccc",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4a860c8fe1b57b0ebfbbf7a87b65f4528fc6dc41",
+      "validated_sha": "b623ccc",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": "2026-05-30T07:14:04Z",
-      "updated_at": "2026-06-05T19:08:19Z",
+      "completed_at": "2026-06-05T19:32:44Z",
+      "updated_at": "2026-06-05T19:32:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "b623ccc",
+        "method": "binary-equiv",
+        "detail": "GPU code object, .text section, and exported symbols byte-for-byte identical; change guards processthreadsapi.h with !__HIP_DEVICE_COMPILE__ on Windows only, inert on Linux",
+        "at": "2026-06-05T19:32:44Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

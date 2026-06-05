@@ -283,3 +283,27 @@ and is also correct.
 
 PASS: gfx1101 (RDNA3, wave32) docking results are numerically correct.
 head_sha = b623ccc.
+
+## Revalidation 2026-06-05 (linux-gfx90a, binary-equivalence carry-forward)
+
+Platform: 4x AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP 7.2.
+
+### Delta analysis: 4a860c8 -> b623ccc
+
+Single commit (b623ccc): "[ROCm] Guard processthreadsapi.h from HIP device compilation on Windows"
+
+Change: `host/inc/miscellaneous.h` adds `!__HIP_DEVICE_COMPILE__` guard to the `_WIN32` branch that includes `processthreadsapi.h`, plus a stub `processid()` for the device-compile path on Windows.
+
+Impact on Linux/gfx90a: NONE. On Linux, `_WIN32` is not defined, so the modified `#if defined(_WIN32) && !defined(__HIP_DEVICE_COMPILE__)` condition remains false (same as before), and the `#elif !defined(_WIN32)` Linux branch is taken (unchanged). The new `#else` stub is never compiled on Linux. Preprocessor output confirmed identical except for line numbers.
+
+### Binary-equivalence verification
+
+Built at both commits (4a860c8 and b623ccc) with `make DEVICE=HIP NUMWI=64 HIP_ARCH=gfx90a`:
+
+- GPU code object (gfx90a, 79424 bytes at offset 331776): SHA256 `eae182d2f4bac7f82be07f65a60a3e4015128c830dfee33f9acba2c47aee1f33` (IDENTICAL)
+- Host .text section: SHA256 `9382fc7797554108d5fd30704488f2d34327d51f076a168eebef28bff493b4dd` (IDENTICAL)
+- Exported symbols: IDENTICAL (nm -D diff empty)
+
+Only differences: embedded VERSION string and debug line-number metadata (expected, non-functional).
+
+VERDICT: Binary-equivalent on linux-gfx90a. Validation carried forward to b623ccc without GPU re-run.
