@@ -141,3 +141,46 @@ All tests passed on real GPU hardware.
 
 ### Summary
 Port validated successfully on gfx90a. Both GPU tests pass with correct numerical output.
+
+## Validation 2026-06-05 (gfx1100)
+
+### Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB)
+
+Built from scratch at commit baae8b3c91db20e5a45c332500c8da2200941fe0.
+
+### Build
+```bash
+HIP_VISIBLE_DEVICES=0 cmake /var/lib/jenkins/moat/projects/fdtd3d/src \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DSOLVER_DIM_MODES=DIM3 \
+  -DVALUE_TYPE=d \
+  -DCOMPLEX_FIELD_VALUES=ON \
+  -DPRINT_MESSAGE=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -B/var/lib/jenkins/moat/projects/fdtd3d/src/build
+cmake --build /var/lib/jenkins/moat/projects/fdtd3d/src/build -j$(nproc)
+```
+Build completed successfully.
+
+### Test Results
+All tests passed on real GPU hardware.
+
+1. **GPU unit test**: `unit-test-cuda-grid 0`
+   - Status: PASS
+   - Grid operations on device verified
+
+2. **3D electromagnetic simulation**: 
+   ```
+   ./Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100
+   ```
+   - Status: PASS
+   - Duration: 0.216s simulation runtime
+   - Completed all 100 time steps
+   - Grid size: 20x20x20
+   - Device: AMD Radeon Pro W7800 48GB (gfx1100)
+   - No numerical errors
+
+### Summary
+Port validated successfully on gfx1100. Both GPU tests pass with correct numerical output.
