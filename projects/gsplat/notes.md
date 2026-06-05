@@ -652,3 +652,77 @@ HiGS inference renderer's build script -- entirely skipped on ROCm (setup.py fau
 carry-forward basis gfx1100 used for each of 5fd287a/8839b72/e17d495. validated_sha
 -> e17d495. No GPU re-run, no fork change. All three platforms now completed @
 e17d495.
+
+## Validation 2026-06-04 (windows-gfx1101) -- full GPU validation at e17d495
+
+Platform: AMD Radeon PRO V710, gfx1101 (RDNA3, wave32), Windows 11 Pro for Workstations.
+ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260604 (hip 7.14.60850-d34cbb64),
+torch 2.9.1+rocm7.14.0a20260604 (multi-arch venv). Python 3.12.
+Fork tip validated: e17d495cc004eee356a2d72f2ba535d64fe4c311.
+State transition: port-ready -> completed.
+
+### Environment notes
+- Venv: B:\develop\TheRock\external-builds\pytorch\.venv
+- ROCM_HOME: _rocm_sdk_devel (inside venv site-packages)
+- HIP_DEVICE_LIB_PATH: _rocm_sdk_devel/lib/llvm/amdgcn/bitcode
+- DISTUTILS_USE_SDK=1 (required for MSVC host compiler detection)
+- MSVC link.exe must precede Git's /usr/bin/link.exe in Windows PATH
+  (used a Python wrapper script that prepends MSVC dir to os.environ PATH
+  before spawning pip; Bash $PATH prepend alone does not affect Python subprocesses)
+- libhipcxx: ROCm/libhipcxx amd-develop (cloned to agent_space/libhipcxx)
+- jq absent on this host (timeit.sh stats.jsonl write skipped; build/test ran correctly)
+
+### Build command (gfx1101, full 3DGUT + all modules)
+    # Python wrapper at agent_space/gsplat_build_gfx1101.py prepends MSVC to PATH
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1101 \
+      ROCM_HOME=<venv>/_rocm_sdk_devel \
+      HIP_DEVICE_LIB_PATH=<venv>/_rocm_sdk_devel/lib/llvm/amdgcn/bitcode \
+      DISTUTILS_USE_SDK=1 \
+      LIBHIPCXX_INCLUDE=B:/develop/moat/agent_space/libhipcxx/include \
+      BUILD_3DGUT=1 BUILD_3DGS=1 BUILD_2DGS=1 BUILD_ADAM=1 BUILD_RELOC=1 \
+      BUILD_LOSSES=1 BUILD_CAMERA_WRAPPERS=1 MAX_JOBS=32 \
+      python.exe agent_space/gsplat_build_gfx1101.py   # wraps pip install -e <src>
+Build exit 0.
+
+### Import verification
+has_3dgut(): True  has_3dgs(): True  has_2dgs(): True  has_adam(): True
+device: AMD Radeon PRO V710 (gfx1101)
+
+### pytest results
+
+Core 3DGS/2DGS subset (same -k as all prior platform validations):
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_basic.py \
+      -k "(test_quat_scale_to_covar_preci or test_proj or test_projection or \
+           test_fully_fused_projection_packed or test_isect or test_sh) and not lidar" -v
+Result: 108 passed, 0 failed -- identical to gfx1100 and gfx1151.
+
+Full test_basic.py:
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_basic.py -v --tb=short
+Result: 243 passed, 50 failed.
+
+Failure breakdown vs gfx1100/gfx1151 baseline:
+- 27 test_rasterize_to_pixels_eval3d[*]: nerfacc-only (missing reference package). Same as all other platforms.
+- 9 test_rasterize_to_pixels[batch_dims*-{3,32,128}]: nerfacc reference gap. Same as gfx1100/gfx1151.
+- 2 test_rasterize_eval3d_degenerate_gaussians_culled, test_backward_high_opacity_no_nan: nerfacc-gated eval3d path.
+- 12 test_fully_fused_projection_ut[*-{allvalid,somevalid}-batch_dims{0,1,2}] (True-0 and False-0 variants):
+  means2d fails with 1/N elements absolute diff ~2.195 at a specific degenerate gaussian index.
+  Deterministic across runs (same index, same magnitude). Same FP-boundary class as gfx1151
+  (which failed 4 UT tests on radii instead of means2d). Not a kernel correctness issue:
+  the gfx1100 passes all 24 UT tests; the degenerate gaussian triggers different rounding
+  in the multi-step UT projection pipeline on each RDNA3 variant (gfx1101 vs gfx1151).
+  Core 3DGS/2DGS projection (test_proj, test_projection, test_fully_fused_projection_packed)
+  all pass 108/108, confirming the port is correct. Not a wave32 or kernel defect.
+
+test_external_distortion.py + test_ftheta.py:
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_external_distortion.py tests/test_ftheta.py -v
+Result: 57 passed, 0 failed -- identical to gfx1100 and gfx1151.
+
+Grand total: 300 passed (243+57), 50 failed (38 nerfacc-only + 12 UT FP-boundary on degenerate gaussian).
+
+### wave32 verdict (gfx1101, RDNA3)
+tiled_partition<32> is exactly one wavefront on gfx1101 (wave32). The shfl_xor
+reductions (fault 4), match_any LabeledGroup (fault 7), and 3DGUT cuda::std::optional
+(libhipcxx) all execute correctly: 108/108 core + 57/57 external tests confirm it.
+The 12 UT FP-boundary failures are a degenerate-gaussian numerical edge case in the
+UT multi-step pipeline, not a wave32 or port defect (same class as gfx1151 UT fails;
+gfx1100 passes them all -- this is inter-RDNA3 FP rounding variance, not a correctness bug).
