@@ -41,3 +41,6 @@ The code uses `tiled_partition<32>` which creates 32-lane tiles. On wave64 (gfx9
 ### Gotchas
 
 - HIP's `group_dim()` is not const; had to use `blockIdx.x * blockDim.x` directly for HIP
+- `atomicAdd_block` is undefined for HIP; aliased to `atomicAdd` (HIP shared-memory atomics are block-scoped by definition)
+- `-ffast-math` causes NaN backward passes on HIP (clang's -fassociative-math reassociates online-softmax/layernorm reductions); use `-ffp-contract=fast -fno-math-errno` instead
+- `cg::labeled_partition` butterfly reduction doesn't work for non-contiguous label groups (lanes at arbitrary positions share a label, but XOR only pairs specific distances); use per-lane atomicAdd fallback instead (shared-memory atomics are fast)
