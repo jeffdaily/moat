@@ -1,0 +1,4 @@
+{"kind": "tokens", "ts": "2026-06-05T00:04:10Z", "tokens": 96016, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T00:35:07Z","phase":"compile","seconds":0.331,"exit":1,"cmd":"pip install --no-build-isolation -v -e ."}
+{"kind":"phase","ts":"2026-06-05T00:35:39Z","phase":"compile","seconds":27.513,"exit":1,"cmd":"pip install --no-build-isolation -v -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind":"phase","ts":"2026-06-05T00:43:04Z","phase":"compile","seconds":0.025,"exit":2,"cmd":"python setup.py build_ext --inplace"}
