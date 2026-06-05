@@ -52,3 +52,44 @@ The submodules link `hip::host` (not `hip::device`) to avoid propagating HIP com
 11. **Test compilation**: Test .cpp files are compiled as HIP sources (`set_source_files_properties(... LANGUAGE HIP)`) because they transitively include rocThrust headers via heongpu.hpp. rocThrust requires HIP compilation context.
 
 12. **RMM HIP stub error checking**: Added `hipError_t` return value checking to all allocation functions in the RMM stub. Throws `std::runtime_error` on allocation failure. Deallocation ignores errors (cannot throw in destructors).
+
+## Review 2026-06-05
+
+### Test Results
+- Pass: bfv_encoding, ckks_encoding (2/20)
+- Fail: All other tests (18/20) -- encryption, decryption, addition, multiplication, relinearization, rotation, TFHE
+
+### Root Cause Analysis
+
+The porter suspected warp size handling. However:
+
+1. **GPU-NTT `<< 5` patterns are NOT warp-size bugs**: The `<< 5` shifts in `thirdparty/GPU-NTT/src/lib/ntt_4step/ntt_4step.cu` are algorithmic indexing into 32-element shared memory rows (`__shared__ T sharedmemorys[32][32+1]`), not warp-lane operations. The NTT algorithm inherently uses 32-element blocks regardless of hardware warp width.
+
+2. **Warp-level fixes look correct**: The `warp_reduce` function in `src/include/heongpu/util/util.cuh:312` correctly uses runtime `warpSize`. The warp index calculations in encryption/decryption/keygeneration kernels (`wid = idx / warpSize`) are also correct.
+
+3. **Encoding passes because it only uses NTT/INTT**: The encoding tests call `GPU_NTT` and `GPU_INTT` which work correctly. All failing tests additionally involve:
+   - Random number generation (AES-based, not curand/hiprand)
+   - Key generation
+   - Modular arithmetic with biginteger operations
+
+### Potential Issues Requiring Investigation
+
+1. **bigintegerarith.cuh carry/borrow logic** (`src/include/heongpu/util/bigintegerarith.cuh:77-169`): The HIP path uses manual overflow detection. Example at line 85:
+   ```cpp
+   carry = (sum < a || (carry && sum == a)) ? 1 : 0;
+   ```
+   This logic appears correct on paper but should be verified against the PTX version for edge cases.
+
+2. **AES RNG differences**: HEonGPU uses `rngongpu::RNG<rngongpu::Mode::AES>` for random number generation, not curand/hiprand. The AES implementation should produce identical results on CUDA and HIP, but this needs verification.
+
+3. **Missing hypothesis**: The fact that ALL cryptographic operations fail (encryption, addition, multiplication, relinearization, rotation across BFV, CKKS, and TFHE schemes) while encoding works suggests a common code path issue, likely in either:
+   - Random polynomial generation
+   - NTT-domain modular multiplication
+   - Key generation
+
+### Verdict
+
+**changes-requested**: The port builds and encoding works, but cryptographic operations produce incorrect results. This requires debugging before validation. The warp-size hypothesis is unlikely; the issue is more subtle and requires:
+1. Unit testing the biginteger arithmetic against known values
+2. Comparing RNG output between CUDA and HIP builds
+3. Step-by-step comparison of a simple encrypt/decrypt operation
