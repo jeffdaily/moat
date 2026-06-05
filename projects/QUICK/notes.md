@@ -167,3 +167,39 @@ The -munsafe-fp-atomics fix addressed SP basis performance. The SPD issue is a s
 
 ### Recommendation
 The port is functional for SP basis sets (3-21G, 6-31G, sto-3g). Production use with SPD+ basis sets requires upstream investigation of the d-function kernel performance.
+
+## Review 2026-06-05 (post-fix)
+
+**Verdict: APPROVED**
+
+Reviewed moat-port branch (1bedbbb) vs master after the `-munsafe-fp-atomics` fix.
+
+### Summary
+
+Minimal validate-and-improve port re-enabling existing authoritative HIP support. The fix correctly adds the missing `-munsafe-fp-atomics` flag to CMake for gfx90a/gfx942 (matching the configure script's existing behavior at line 1164) to enable hardware floating-point atomics. Without this flag, atomicAdd uses slow CAS-loop emulation causing 100x+ performance regression on SP basis sets. 4 files changed, +15/-9 lines.
+
+### Fault Class Verification
+
+- **Warp size**: No warp primitives in HIP sources. Code is warp-agnostic.
+- **Atomics**: `-munsafe-fp-atomics` correctly added for gfx90a and gfx942 in CMake, matching configure script line 1164.
+- **Rule-of-five**: No texture/resource handles added or modified.
+- **OOB neighbor reads**: Not applicable.
+- **256B texture pitch**: Not applicable.
+- **Library swaps**: None required; upstream already uses rocBLAS/rocSOLVER.
+
+### Build System
+
+CMake change aligns with configure script. Both paths now consistently apply `-munsafe-fp-atomics` for gfx90a.
+
+### Commit Hygiene
+
+- Title: `[ROCm] Re-enable HIP support for ROCm 7.x` (41 chars, proper prefix)
+- Body: explains changes, credits Claude, includes Test Plan
+- No noreply trailer, no MOAT jargon
+- Author: jeffdaily (correct)
+
+### Test Coverage
+
+10/10 SP basis tests passed (2-5 seconds each). SPD basis performance issue is upstream bug #433, not a port regression.
+
+No issues found. Ready for validation.

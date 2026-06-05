@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-05T05:35:49Z","phase":"test","seconds":0.005,"exit":127,"cmd":"bash runtest --hip"}
 {"kind":"phase","ts":"2026-06-05T05:35:53Z","phase":"test","seconds":0.041,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/runtest --hip"}
 {"kind":"phase","ts":"2026-06-05T06:33:16Z","phase":"compile","seconds":0.162,"exit":0,"cmd":"make -j16"}
+{"kind": "tokens", "ts": "2026-06-05T07:03:32Z", "tokens": 158590, "source": "porter"}
