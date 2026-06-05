@@ -1,0 +1,50 @@
+# Velvet - HIP Port Notes
+
+## Build
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+cd projects/Velvet/src
+cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+./build/bin/Velvet
+```
+
+## Port Gotchas
+
+### GLM 1.0.1 Required
+System GLM 0.9.9.8 lacks `GLM_COMPILER_HIP` detection, so `__device__ __host__` qualifiers are missing and device code fails. GLM 1.0.1 adds HIP support. Bundled in `glm_local/`.
+
+### rocThrust THRUST_DEVICE_SYSTEM
+rocThrust checks `__CUDACC__` before `__HIP__`. To avoid the CUDA backend, define `THRUST_DEVICE_SYSTEM=5` (HIP) before including Thrust. This is done in `cuda_to_hip.h`.
+
+### .cpp to .cu Rename
+CMake HIP targets apply `HIP_ARCHITECTURES` to all sources. Mixed CXX/HIP targets cause the C++ files to receive HIP architecture flags which errors. All .cpp files are renamed to .cu so the HIP compiler handles everything.
+
+### Windows Path Separators
+The original code uses `#include <glm\ext\...>` which fails on Linux (case-sensitive, wrong separator). Fixed to forward slashes.
+
+### Case-Sensitive Includes
+`SpatialhashGPU.cuh` vs `SpatialHashGPU.cuh` -- Windows ignores case, Linux does not.
+
+### fmt 10+ const format()
+Modern fmt requires `format()` method to be const in custom formatters.
+
+### GLAD2 API Change
+GLAD2 uses `gladLoadGL((GLADloadfunc)...)` not the older `gladLoadGLLoader((GLADloadproc)...)`.
+
+### hipGraphicsResource Typedef
+HIP uses `typedef struct ihipGraphicsResource* hipGraphicsResource_t;` whereas CUDA uses `struct cudaGraphicsResource`. Cannot use `struct` prefix with HIP.
+
+### HOST_INIT Macro
+The macro suppresses dynamic initialization for `__device__ __constant__` variables. Must check `__HIPCC__` in addition to `__CUDACC__` or `__CUDA_ARCH__`.
+
+## Dependencies (bundled)
+
+- GLM 1.0.1 (header-only, in `glm_local/`)
+- GLAD (generated, in `glad/`)
+- ImGui (GUI toolkit, in `imgui/`)
+
+## Known Warnings
+
+- hipDeviceSynchronize nodiscard warnings in VtBuffer.hpp -- return value not checked (original CUDA code behavior)

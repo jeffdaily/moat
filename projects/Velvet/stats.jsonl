@@ -1,0 +1,1 @@
+{"kind":"phase","ts":"2026-06-05T05:19:34Z","phase":"compile","seconds":22.259,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Velvet/src/build -j128"}
