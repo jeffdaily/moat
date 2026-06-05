@@ -103,3 +103,62 @@ Full jargon search across all source files: PASS (no Strategy A/B, lead, followe
 Commit messages: PASS (both db25223 and b114e2d use plain language, no noreply trailer).
 
 Ready for validation.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+Platform: MI250X gfx90a (HIP_VISIBLE_DEVICES=0)
+Commit: b114e2dcec9f9d35165b2f9355b13016c648fbc0
+
+Build command:
+```bash
+cd projects/cuPDLPx/src
+cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=OFF -DCUPDLPX_BUILD_PYTHON=OFF \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+```
+
+Build result: SUCCESS (warnings only, no errors)
+
+Test cases:
+1. MIPLIB instance 2club200v15p5scn.mps.gz (17013 rows, 200 cols):
+   - Status: OPTIMAL
+   - Iterations: 3000
+   - Primal objective: -121.2216698
+   - Dual objective: -121.2221271
+   - Objective gap: 1.879e-06
+   - Primal infeas: 4.889e-06 (< 1e-4 threshold)
+   - Dual infeas: 2.399e-05 (< 1e-4 threshold)
+
+2. MIPLIB instance datt256.mps.gz (9873 rows, 196503 cols after presolve):
+   - Status: OPTIMAL
+   - Iterations: 400
+   - Primal objective: 256.0024269
+   - Dual objective: 256.0067475
+   - Objective gap: 8.422e-06
+   - Primal infeas: 4.338e-05 (< 1e-4 threshold)
+   - Dual infeas: 3.397e-05 (< 1e-4 threshold)
+
+3. MIPLIB instance 30n20b8.mps.gz (larger problem):
+   - Status: OPTIMAL
+   - Iterations: 60400
+   - Primal objective: 1.565716771
+   - Dual objective: 1.565960731
+   - Objective gap: 5.905e-05
+   - Primal infeas: 6.280e-07 (< 1e-4 threshold)
+   - Dual infeas: 5.946e-05 (< 1e-4 threshold)
+
+4. Infeasible problem (synthetic test):
+   - Status: PRIMAL_INFEASIBLE (detected by PSLP presolver)
+   - Correctly handles infeasibility detection
+
+GPU validation:
+- All tests run with HIP_VISIBLE_DEVICES=0 on MI250X gfx90a
+- CUDA Graph API -> HIP Graph API: PASS (no graph-related errors)
+- cuBLAS -> hipBLAS: PASS (all BLAS operations correct)
+- cuSPARSE -> hipSPARSE: PASS (SpMV operations correct)
+- CUB -> hipCUB: PASS (device reductions correct)
+- No HIP errors (verified with ROCM_LOG_LEVEL=4)
+- Presolve (CPU) functionality: PASS (no regression)
+
+Result: PASS - All LP instances converge to OPTIMAL with correct residuals within tolerance (1e-4). GPU kernels execute correctly. No regressions in non-GPU functionality.
