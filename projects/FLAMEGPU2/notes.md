@@ -143,3 +143,41 @@ Both fixes are complete and correct.
 ### Recommendation
 
 **Approve** -- the fixes are complete. The port is ready for GPU validation on gfx90a.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+GPU: AMD Instinct MI250X (gfx90a) at HIP_VISIBLE_DEVICES=3
+ROCm: 7.2.1
+Arch: gfx90a
+
+Build command:
+```bash
+cd projects/FLAMEGPU2/src
+
+cmake -S . -B build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DFLAMEGPU_GPU=HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/clang \
+  -DFLAMEGPU_BUILD_TESTS=ON
+
+cmake --build build --target flamegpu boids_bruteforce tests -j$(nproc)
+```
+
+Test results:
+```
+[==========] 1133 tests from 89 test suites ran.
+[  PASSED  ] 1069 tests.
+[  SKIPPED ] 64 tests (RTC-related, expected on AMD/HIP)
+```
+
+All 1069 non-RTC tests PASSED. The 64 skipped tests are all RTC (Runtime Compilation) tests which are not supported on AMD as documented in the README. This matches the expected behavior.
+
+Example validation:
+```bash
+HIP_VISIBLE_DEVICES=3 ./build/bin/Release/boids_bruteforce --steps 10
+# Runs successfully without errors
+```
+
+Verdict: PASS - Real GPU validation successful on gfx90a.

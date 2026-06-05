@@ -4,3 +4,11 @@
 {"kind": "tokens", "ts": "2026-06-05T05:19:37Z", "tokens": 97850, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T05:23:46Z","phase":"compile","seconds":220.154,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/FLAMEGPU2/src/build --target flamegpu boids_bruteforce tests -j128"}
 {"kind": "tokens", "ts": "2026-06-05T05:24:42Z", "tokens": 27607, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T05:26:52Z", "tokens": 60633, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T05:27:18Z","epoch":1780637238.422304555,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T05:27:29Z","phase":"linux-gfx90a","seconds":0.003,"exit":127,"cmd":"compile -- cmake -S /var/lib/jenkins/moat/projects/FLAMEGPU2/src -B /var/lib/jenkins/moat/projects/FLAMEGPU2/src/build -DCMAKE_BUILD_TYPE=Release -DFLAMEGPU_GPU=HIP -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/clang++ -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/clang -DFLAMEGPU_BUILD_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-05T05:28:00Z","phase":"compile","seconds":23.891,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/FLAMEGPU2/src -B /var/lib/jenkins/moat/projects/FLAMEGPU2/src/build -DCMAKE_BUILD_TYPE=Release -DFLAMEGPU_GPU=HIP -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_CXX_COMPILER=/opt/rocm/lib/llvm/bin/clang++ -DCMAKE_C_COMPILER=/opt/rocm/lib/llvm/bin/clang -DFLAMEGPU_BUILD_TESTS=ON"}
+{"kind":"phase","ts":"2026-06-05T05:31:50Z","phase":"compile","seconds":224.294,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/FLAMEGPU2/src/build --target flamegpu boids_bruteforce tests -j128"}
+{"kind":"phase","ts":"2026-06-05T05:31:55Z","phase":"test","seconds":0.003,"exit":127,"cmd":"bin/Release/tests --gtest_output=xml:test-results.xml"}
+{"kind":"phase","ts":"2026-06-05T05:32:37Z","phase":"test","seconds":36.316,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/FLAMEGPU2/src/build/bin/Release/tests --gtest_output=xml:/var/lib/jenkins/moat/projects/FLAMEGPU2/src/build/test-results.xml"}
+{"kind":"session","ts":"2026-06-05T05:33:08Z","epoch":1780637588.286534020,"event":"end","platform":"linux-gfx90a"}
