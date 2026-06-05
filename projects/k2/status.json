@@ -8,13 +8,13 @@
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
   "updated_at": "2026-06-05T17:52:44Z",
-  "head_sha": "7531e5b6a67dcfdcb4f58dfcffcfeccd2035276c",
+  "head_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "7531e5b6a67dcfdcb4f58dfcffcfeccd2035276c",
+      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
       "started_at": "2026-05-31T02:39:49Z",
       "completed_at": "2026-06-05T17:52:44Z",
       "updated_at": "2026-06-05T17:52:44Z",
