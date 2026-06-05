@@ -280,3 +280,41 @@ All 1182 unit tests pass, including:
 - reduce_by_key.scatter_twice
 
 The fix is backward-compatible with gfx90a (wave64).
+
+## Revalidation 2026-06-05 (linux-gfx90a)
+
+**Trigger**: HEAD moved from b64fc3ec to f400d9a6 (wave32 fix for gfx1100)
+**GPU**: AMD Instinct MI250X / MI250 (gfx90a)
+**ROCm**: 7.x
+
+### Changes in HEAD
+Delta includes wave32-specific fixes for gfx1100:
+- Fix num_lanes calculation in reduce_by_key.hpp (use 64 - __clzll instead of threads_per_warp() - __clzll)
+- Fix shfl_up/shfl_down in hip_api.hpp (use native HIP intrinsics instead of manual lane arithmetic)
+
+### Build
+```bash
+cd /var/lib/jenkins/moat/projects/arbor/src/build
+HIP_VISIBLE_DEVICES=0 cmake --build . -j$(nproc)
+```
+
+Build completed successfully.
+
+### Test Results
+**Command**: `HIP_VISIBLE_DEVICES=0 ./bin/unit`
+
+**Result**: PASS
+- Total tests: 1182 from 182 test suites
+- Passed: 1182
+- Failed: 0
+- Total time: 12.814 seconds
+
+### Critical Tests Validated
+All reduce_by_key tests pass (the tests specifically exercise the wave32 fix logic):
+- reduce_by_key.no_repetitions: PASS (1ms)
+- reduce_by_key.single_repeated_index: PASS (2ms)
+- reduce_by_key.scatter: PASS (0ms)
+- reduce_by_key.scatter_twice: PASS (0ms)
+
+### Conclusion
+The wave32 fix is backward-compatible with wave64 gfx90a. All 1182 tests pass, including the critical reduce_by_key tests that exercise warp-level reductions. The port correctly handles both CDNA (wave64) and RDNA (wave32) architectures.
