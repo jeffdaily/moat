@@ -62,7 +62,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [DDN-SLAM](https://github.com/DrLi-Ming/DDN-SLAM) ([fork](https://github.com/jeffdaily/DDN-SLAM/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [DEM-Engine](https://github.com/projectchrono/DEM-Engine) ([fork](https://github.com/jeffdaily/DEM-Engine/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
 | [dgSPARSE-Lib](https://github.com/dgSPARSE/dgSPARSE-Lib) ([fork](https://github.com/jeffdaily/dgSPARSE-Lib/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
-| [dietgpu](https://github.com/facebookresearch/dietgpu) ([fork](https://github.com/jeffdaily/dietgpu/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| [dietgpu](https://github.com/facebookresearch/dietgpu) ([fork](https://github.com/jeffdaily/dietgpu/tree/moat-port)) | ✅ | 🔄 | 🔄 | 🔄 | 🔄 | — |
 | [DiffPhysDrone](https://github.com/HenryHuYu/DiffPhysDrone) ([fork](https://github.com/jeffdaily/DiffPhysDrone/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
 | [DynOSAM](https://github.com/ACFR-RPG/DynOSAM) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [egg.c](https://github.com/d0rc/egg.c) ([fork](https://github.com/jeffdaily/egg.c/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
@@ -90,14 +90,14 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · �
 | [gdtk](https://github.com/gdtk-uq/gdtk) ([fork](https://github.com/jeffdaily/gdtk/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
 | [GOMC](https://github.com/GOMC-WSU/GOMC) ([fork](https://github.com/jeffdaily/GOMC/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
 | [GooFit](https://github.com/GooFit/GooFit) ([fork](https://github.com/jeffdaily/GooFit/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
-| [gpu4pyscf](https://github.com/pyscf/gpu4pyscf) ([fork](https://github.com/jeffdaily/gpu4pyscf/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
+| [gpu4pyscf](https://github.com/pyscf/gpu4pyscf) ([fork](https://github.com/jeffdaily/gpu4pyscf/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | — | — |
 | [GPU_IPC](https://github.com/KemengHuang/GPU_IPC) ([fork](https://github.com/jeffdaily/GPU_IPC/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [Gpufit](https://github.com/gpufit/Gpufit) ([fork](https://github.com/jeffdaily/Gpufit/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
 | [GPUMD](https://github.com/brucefan1983/GPUMD) ([fork](https://github.com/jeffdaily/GPUMD/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟢 [#1538](https://github.com/brucefan1983/GPUMD/pull/1538) |
 | [gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) ([fork](https://github.com/jeffdaily/gpuRIR/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | ✅ | — |
 | [gRASPA](https://github.com/snurr-group/gRASPA) ([fork](https://github.com/jeffdaily/gRASPA/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🟡 | — |
 | [gsplat](https://github.com/nerfstudio-project/gsplat) ([fork](https://github.com/jeffdaily/gsplat/tree/moat-port)) | ✅ | ✅ | ✅ | 🟡 | ✅ | 🟢 [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
-| [gtsam_points](https://github.com/koide3/gtsam_points) ([fork](https://github.com/jeffdaily/gtsam_points/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | — | — |
+| [gtsam_points](https://github.com/koide3/gtsam_points) ([fork](https://github.com/jeffdaily/gtsam_points/tree/moat-port)) | ✅ | 🔄 | ✅ | 🟡 | — | — |
 | [heavydb](https://github.com/heavyai/heavydb) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [HEonGPU](https://github.com/Alisah-Ozcan/HEonGPU) ([fork](https://github.com/jeffdaily/HEonGPU/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [icicle](https://github.com/ingonyama-zk/icicle) ([fork](https://github.com/jeffdaily/icicle/tree/moat-port)) | ✅ | ✅ | 🟡 | 🟡 | 🚫 | — |
