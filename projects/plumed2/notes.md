@@ -273,3 +273,34 @@ Reviewed commit cb90687f8 (delta fix for gfx1100 HIP runtime initialization cras
 ### Result
 
 Approved for validation. State: review-passed.
+## Revalidation 2026-06-05 (linux-gfx90a)
+
+The linux-gfx90a platform was revalidated after commit cb90687f8 which added explicit HIP runtime initialization for gfx1100. This was a functional change (adding `ensureHipRuntimeInitialized()` call before first `thrust::device_vector` construction).
+
+GPU: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0
+
+Build command:
+```bash
+export PATH="/var/lib/jenkins/moat/_deps/plumed2/install/bin:$PATH"
+export PLUMED_KERNEL="/var/lib/jenkins/moat/_deps/plumed2/install/lib/libplumedKernel.so"
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/plumed2/install/lib:$LD_LIBRARY_PATH"
+export USE_HIP=1
+export HIP_VISIBLE_DEVICES=0
+
+cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord
+make clean
+make USE_HIP=1 HIP_ARCHITECTURES=gfx90a -j$(nproc)
+```
+
+Test command:
+```bash
+make USE_HIP=1 check
+```
+
+Result: PASS
+- 32/32 regression tests pass (0 errors)
+- Test suites: cudatest (double/float), cudatestPair, cudatestWB
+- Configurations tested: ortho PBC, no PBC, MPI variants
+- The gfx1100 runtime initialization fix does not affect gfx90a behavior
+
+Validated commit: cb90687f8706326ed2ce02f4a98c18bd05bdc582
