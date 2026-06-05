@@ -371,3 +371,44 @@ tolerance -- no garbage in gamma/beta gradients.
 
 Final state: linux-gfx90a -> completed, validated_sha = 68718f03829384b530ba97c32b18e5937629ec09.
 Followers unblocked: linux-gfx1100 -> port-ready, windows-gfx1151 -> port-ready.
+
+## Validation 2026-06-05 (windows-gfx1101, gfx1101 Radeon PRO V710, RDNA3, ROCm 7.14)
+
+State: port-ready -> blocked (non-viable). Assessment: Windows build is not viable for
+oneflow. Blockers identified (no GPU test run attempted; build is infeasible before tests):
+
+1. RCCL is hard-required: cmake/cuda.cmake has `find_package(rccl REQUIRED)` and
+   lists `roc::rccl` in VENDOR_CUDA_LIBRARIES. RCCL is a Linux-only collective
+   communications library (uses Linux IPC, shared memory, sockets). There is no
+   Windows RCCL package. Additionally, `<nccl.h>` is included by:
+   - oneflow/core/device/cuda_util.h (the main GPU utility header, included everywhere)
+   - oneflow/core/common/env_var/eager.h
+   - oneflow/core/ep/cuda/cuda_device_manager_factory.cpp
+   - oneflow/core/job/collective_boxing/nccl_executor_backend.cu
+   - oneflow/core/job/resource_desc.cpp
+   Making RCCL optional requires patching all these plus providing stub headers and
+   guards, which is a multi-file refactor beyond the MOAT port scope.
+
+2. POSIX platform code: oneflow/core/platform/lib/ibv_wrapper.cpp uses dlopen on
+   libibverbs.so (Linux InfiniBand verbs), and pthread_fork.cpp uses pthread_atfork
+   (POSIX-only). Several core files include unistd.h. While cmake/oneflow.cmake has
+   platform excludes for "windows" vs "linux" subdirs, these files are not in a
+   platform subdir and would compile (and fail) on Windows.
+
+3. platform.cmake assumes MSVC: cmake/platform.cmake defines MSVC-only flags
+   (/MP, /bigobj, /EHsc, /GF, /FC) incompatible with the all-clang toolchain
+   required for HIP on Windows. The two toolchains are mutually exclusive here.
+
+4. Third-party builds: 32 libraries (grpc, protobuf, openssl, opencv, oneDNN, glog,
+   etc.) build from source via ExternalProject_Add with Linux-centric build recipes
+   (Makefile-based or cmake with Linux assumptions). Cross-building all of these
+   under Windows/clang is a separate substantial effort.
+
+5. No upstream Windows support: oneflow has never shipped on Windows. The cmake
+   build system has a placeholder `error("Expanding macro in WIN32 is not supported
+   yet")` (cmake/oneflow.cmake:54) and no upstream Windows CI path.
+
+Conclusion: windows-gfx1101 and windows-gfx1201 blocked (non-viable). The GPU port
+is complete and validated on linux-gfx90a (MI250X, 73 passed) and linux-gfx1100
+(Radeon Pro W7800, 73 passed). The Windows platform requires a full Windows port of
+oneflow itself, which is outside the scope of this ROCm/HIP kernel port.

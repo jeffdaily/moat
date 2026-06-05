@@ -7,7 +7,7 @@
   "priority": 6.236,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-04T19:41:52Z",
+  "updated_at": "2026-06-05T12:09:10Z",
   "head_sha": "68718f03829384b530ba97c32b18e5937629ec09",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Windows not viable: RCCL Linux-only (find_package rccl REQUIRED, nccl.h in cuda_util.h/core files); POSIX ibv/pthread_fork syscalls; platform.cmake MSVC flags clash with all-clang; 32 third-party deps Linux-centric ExternalProject; oneflow never shipped on Windows upstream. GPU port complete on linux-gfx90a+gfx1100.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T12:08:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -80,12 +80,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Windows not viable (same as gfx1101): RCCL Linux-only; POSIX ibv/pthread_fork syscalls; platform.cmake MSVC flags clash with all-clang; 32 third-party deps Linux-centric. GPU port complete on linux-gfx90a+gfx1100.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T12:09:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
