@@ -2,3 +2,13 @@
 {"kind":"phase","ts":"2026-06-05T04:53:46Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T04:57:32Z","phase":"compile","seconds":0.153,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind": "tokens", "ts": "2026-06-05T05:02:34Z", "tokens": 169391, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T05:06:01Z", "tokens": 74200, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T05:06:37Z","epoch":1780635997.395014377,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T05:06:57Z","phase":"compile","seconds":3.087,"exit":0,"cmd":"bash -c cd projects/bellhopcuda/src/build-hip && cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T05:07:18Z","phase":"compile","seconds":18.154,"exit":0,"cmd":"bash -c cd projects/bellhopcuda/src/build-hip && cmake --build . -j128"}
+{"kind":"phase","ts":"2026-06-05T05:07:54Z","phase":"test","seconds":0.071,"exit":0,"cmd":"bash -c cd projects/bellhopcuda/src && ./bin/bellhopcxx -2 --mem=18G test/cxx_ref/MunkB_ray"}
+{"kind":"phase","ts":"2026-06-05T05:07:57Z","phase":"test","seconds":0.537,"exit":0,"cmd":"bash -c cd projects/bellhopcuda/src && ./bin/bellhopcuda -2 --mem=18G test/hip/MunkB_ray"}
+{"kind":"phase","ts":"2026-06-05T05:08:22Z","phase":"test","seconds":0.592,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/run_hip_tests.sh"}
+{"kind":"phase","ts":"2026-06-05T05:12:28Z","phase":"test","seconds":0.408,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/validate_hip.sh"}
+{"kind":"phase","ts":"2026-06-05T05:13:02Z","phase":"test","seconds":9.272,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/validate_hip_v2.sh"}
+{"kind":"session","ts":"2026-06-05T05:14:06Z","epoch":1780636446.243281455,"event":"end","platform":"linux-gfx90a"}

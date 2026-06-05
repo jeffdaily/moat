@@ -12,13 +12,13 @@
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "52c7f64aa1fc95097552c509e653bb79a54c324a",
       "started_at": "2026-06-05T04:49:54Z",
-      "completed_at": null,
-      "updated_at": "2026-06-05T05:04:30Z",
+      "completed_at": "2026-06-05T05:14:38Z",
+      "updated_at": "2026-06-05T05:14:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

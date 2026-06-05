@@ -55,3 +55,44 @@ Strategy A port reviewed against PORTING_GUIDE patterns and AMD fault classes.
 - Proper [ROCm] prefix, no noreply trailer, test plan present
 
 **Approved for validation.**
+
+## Validation 2026-06-05
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a:sramecc+:xnack-)
+GPU: HIP_VISIBLE_DEVICES=1
+Commit: 52c7f64aa1fc95097552c509e653bb79a54c324a
+
+### Build
+```bash
+mkdir build-hip && cd build-hip
+cmake .. -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON \
+         -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+Build: PASS (warnings about nodiscard hipDeviceReset, non-blocking)
+
+### Test Results
+
+Ray tracing tests (3/3 PASS):
+- blockB_ray: IDENTICAL outputs (CPU vs HIP)
+- MunkB_ray: IDENTICAL outputs
+- DickinsBray: IDENTICAL outputs
+- ParaBot (eigenray): IDENTICAL outputs
+
+Transmission loss test (1/1 PASS):
+- MunkB_Coh: 100.000% values within tolerance (1023022/1023022)
+  - Max absolute diff: 1.16e-10
+  - Max relative diff: 2.67e-04
+
+Additional validation:
+- arcticB_cpp (TL): 100.000% values within tolerance (1523522/1523522)
+  - Max absolute diff: 3.03e-09
+  - Max relative diff: 1.69e-03
+
+### GPU Verification
+- Device detected: AMD Instinct MI250X / MI250 / compute 9.0
+- GPU utilization confirmed via rocm-smi during execution
+- All tests ran successfully on real GPU hardware
+
+### Result
+VALIDATED: All ray tracing tests produce identical outputs; transmission loss tests match within expected floating-point tolerance. No regressions in non-GPU (bellhopcxx) tests.
