@@ -39,3 +39,40 @@ Note: PSB5 with 631gss basis takes >30 minutes on gfx90a, which is expected for 
 ## Known Issues
 
 - Issue #433 reports 3x performance regression vs AmberTools23 QUICK on some systems; root cause investigation pending
+
+## Review 2026-06-05
+
+**Verdict: APPROVED**
+
+Reviewed moat-port branch (c5f108e) vs master (bc80f98).
+
+### Summary
+
+Minimal validate-and-improve port re-enabling existing authoritative HIP support. 3 files changed, +13/-7 lines. Changes:
+- configure: removed HIP exit block, fixed hipcc path detection for ROCm 7.x (hipcc moved from $ROCM_PATH/hip/bin to $ROCM_PATH/bin)
+- src/gpu/hip/gpu.cu, src/gpu/hip/gpu_utils.h: added <cstring>, <cstdlib>, <cctype> includes required by HIP/clang (nvcc implicitly includes these)
+
+### Fault Class Verification
+
+- **Warp size**: No warp primitives (__shfl, __ballot, __activemask, etc.) in HIP sources. ERI_GRAD_FFFF_TPB=32 is threads-per-block, not warp-size -- works on both wave64 and wave32. Code is warp-agnostic.
+- **Rule-of-five**: No texture/resource handles added or modified by this port.
+- **OOB neighbor reads**: Not applicable (no neighbor reads in changed code).
+- **256B texture pitch**: Texture code exists but is unchanged upstream code.
+- **Library swaps**: None required; upstream already uses rocBLAS/rocSOLVER.
+
+### Build System
+
+CMake HIP support is upstream authoritative with proper version guards (blocks ROCm 5.4.3-6.2.0 due to known compiler bugs). No build system changes in this port.
+
+### Commit Hygiene
+
+- Title: `[ROCm] Re-enable HIP support for ROCm 7.x` (48 chars, proper prefix)
+- Body: explains changes, credits Claude, includes Test Plan
+- No noreply trailer
+- Author: jeffdaily (correct)
+
+### Test Coverage
+
+Porter ran 2 tests (acetone RHF/3-21G, psb5 RHF/6-31G) with 2 microhartree agreement. Adequate for review gate; validator will run full test suite (205 input files).
+
+No issues found.

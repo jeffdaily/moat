@@ -10,3 +10,4 @@
 {"kind":"phase","ts":"2026-06-05T00:19:39Z","phase":"test","seconds":0.130,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene"}
 {"kind":"phase","ts":"2026-06-05T00:48:33Z","phase":"test","seconds":1726.025,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene"}
 {"kind":"phase","ts":"2026-06-05T00:49:49Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./runtest --hip --ene --nolog"}
+{"kind": "tokens", "ts": "2026-06-05T00:51:44Z", "tokens": 145026, "source": "porter"}
