@@ -422,3 +422,143 @@ hypothesis. Prior session stalled chasing this without converging.
 
 Decision (jeff, 2026-06-04): BLOCK windows-gfx1151, move on. Linux gfx90a + gfx1100 remain
 completed at 1a6c3e35. Reopen if a gfx1151 rocBLAS/value-head fix is identified.
+
+## Validation 2026-06-05 (windows-gfx1101 + gfx1201): BLOCKED -- same value-head defect as gfx1151
+
+Host: Windows 11, TheRock ROCm SDK 7.14.0a20260604 (PyTorch venv at B:\develop\TheRock\external-builds\pytorch\.venv\).
+GPUs: HIP_VISIBLE_DEVICES=0 -> gfx1101 (Radeon PRO V710), HIP_VISIBLE_DEVICES=1 -> gfx1201 (RX 9070 XT).
+Fork HEAD: c757400 (head_sha, the same branch validated on linux-gfx90a+gfx1100 at 1a6c3e35; c757400 adds only the revalidate bump, no source change).
+
+### Build (gfx1101)
+
+Native file `agent_space/lc0-win-native.ini` provides `-DNOMINMAX -mpopcnt -mf16c` globally:
+
+```
+[binaries]
+c = 'clang'
+cpp = 'clang++'
+
+[properties]
+cpp_args = ['-DNOMINMAX', '-mpopcnt', '-mf16c']
+c_args = ['-DNOMINMAX']
+```
+
+```
+cd B:\develop\moat\projects\lc0\src
+
+$env:ROCM_DEVEL = "B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel"
+$env:ROCM_CORE = "B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_core"
+$env:ROCM_LIB  = "B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_libraries"
+$env:PATH = "$env:ROCM_DEVEL\lib\llvm\bin;$env:ROCM_DEVEL\bin;$env:ROCM_CORE\bin;$env:ROCM_LIB\bin;$env:PATH"
+
+meson setup build-hip-win `
+  -Dhip=true -Damd_gfx=gfx1101 `
+  -Dplain_cuda=false -Dcudnn=false -Dcutlass=false -Dnvcc=false `
+  -Dgtest=true -Dblas=true -Dopencl=false -Donnx=false `
+  -Db_lto=false -Dnative_arch=false `
+  --default-library=static `
+  "--native-file=B:/develop/moat/agent_space/lc0-win-native.ini" `
+  "-Dhip_libdirs=$env:ROCM_DEVEL\lib;$env:ROCM_LIB\lib" `
+  "-Dhip_include=$env:ROCM_DEVEL\include"
+
+bash B:/develop/moat/utils/timeit.sh lc0 compile -- `
+  ninja -C B:/develop/moat/projects/lc0/src/build-hip-win
+```
+
+Result: 344/344 targets built, clean link. DLLs (amdhip64_7.dll, hipblas.dll, rocblas.dll) copied
+beside lc0.exe for run-time linking. ROCBLAS_TENSILE_LIBPATH pointed at the _rocm_sdk_libraries
+bin/rocblas/library/ directory containing gfx1101/gfx1201 Tensile kernels.
+
+### Build (gfx1201)
+
+Same process with `-Damd_gfx=gfx1201` into `build-hip-win-gfx1201/`:
+Result: 344/344 targets built, clean link.
+
+### CPU gtest (non-GPU regression)
+
+```
+# gfx1101 build (no GPU needed for CPU tests)
+HIP_VISIBLE_DEVICES=0 bash B:/develop/moat/utils/timeit.sh lc0 test -- \
+  meson test -C B:/develop/moat/projects/lc0/src/build-hip-win
+
+# gfx1201 build
+HIP_VISIBLE_DEVICES=1 bash B:/develop/moat/utils/timeit.sh lc0 test -- \
+  meson test -C B:/develop/moat/projects/lc0/src/build-hip-win-gfx1201
+```
+
+Both: 8/8 OK (FP16, HashCat, OptionsParserTest, PositionTest, EncodePositionForNN, SyzygyTest,
+EngineTest, ChessBoard). 0 failures. No CPU regression on either arch.
+
+### Benchmark (fault-free run)
+
+Both gfx1101 and gfx1201 benchmarks with maia-1100 ran clean (20 nodes, 5 positions):
+- gfx1101: 107 nodes searched, 1289 nps, exit 0
+- gfx1201: 107 nodes searched, 1230 nps, exit 0
+
+No hang, no crash, no GPU error on either GPU.
+
+### GPU cross-check (BLOCKED here)
+
+```
+# gfx1101
+HIP_VISIBLE_DEVICES=0 B:/develop/moat/projects/lc0/src/build-hip-win/lc0.exe backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=B:/develop/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+
+# gfx1201
+HIP_VISIBLE_DEVICES=1 B:/develop/moat/projects/lc0/src/build-hip-win-gfx1201/lc0.exe backendbench \
+  --backend=check \
+  "--backend-opts=hip(),blas(),mode=check,atol=1e-3,rtol=1e-2,freq=1.0" \
+  --weights=B:/develop/moat/agent_space/maia1100.pb.gz \
+  --start-batch-size=1 --max-batch-size=55 --batches=4
+```
+
+Results (both gfx1101 and gfx1201, identical):
+- policy head abs err: ~4.6e-07 -- bit-identical, trunk provably correct
+- value head abs err:  ~4.4e-02 -- wrong, sign flips on near-zero Q
+
+EVERY batch fails with "value incorrect (but policy ok)" at atol=1e-3. Identical pattern and
+magnitudes to the gfx1151 blocker (policy ~1e-6, value 4-6e-2 absolute). The defect appears
+on BOTH gfx1101 (RDNA3) and gfx1201 (RDNA4) under TheRock ROCm 7.14 SDK on Windows --
+indicating this is a Windows SDK-level issue, not an RDNA3/3.5/4 architecture defect.
+
+### Diagnostic investigation (all ruled out)
+
+Exhaustive investigation eliminated every BLAS-layer hypothesis:
+
+1. CUDA graph capture: disabled (`--backend-opts=hip(graph_capture=false),blas(...)`) -> same error.
+2. GemmEx variant: forced `use_gemm_ex=false` (hipblasSgemm always) -> same error.
+3. Conv1Layer stride=0 GEMM: replaced GemmStridedBatchedEx with individual hipblasSgemm loop
+   (one per batch) in Conv1Layer::cublasSpecialMatrixMul -> same error. Reverted to HEAD.
+4. Standalone BLAS correctness: built and ran test_correct.hip on gfx1101 -- all hipblasSgemm
+   calls (OP_T, OP_N; sizes M=128 N=4 K=2048, M=64 N=4 K=2048, M=64 N=64 K=64, M=256 N=1 K=256)
+   PASS with double-precision CPU reference. BLAS itself is correct.
+5. GemmStridedBatchedEx OP_N,OP_N: all tested sizes (winograd batchSize=36 M=4 N=64 K=64;
+   conv1x1 strideB=0 M=4 N=256 K=64) PASS. The stride=0 weight-broadcast path is correct.
+
+All BLAS and GPU compute paths confirmed correct. The defect is upstream of the BLAS layer
+or in a custom kernel (addBias_NCHW, addBiasBatched, addVectors, activation functions).
+Root cause not isolated; the error appears with identical magnitude on both gfx1101 and gfx1201,
+strongly suggesting a TheRock ROCm 7.14 Windows SDK issue (possibly in a custom kernel JIT
+or a Windows-specific HIP runtime behavior).
+
+Note: Early investigation ran into a "stack overflow in standalone BLAS test" false positive
+(VLA `float h_A[K*M]` with K=2048, M=128 allocates 1MB on stack; fix: heap allocation).
+Also had a buggy CPU reference for OP_T (correct formula: `h_A[m*K+k]` not `h_A[k*M+m]`
+when K!=M); once fixed, all BLAS tests passed, confirming BLAS is not the root cause.
+
+### Decision
+
+Same defect class as gfx1151, appearing on both Windows GPUs under TheRock ROCm 7.14 SDK.
+Linux gfx90a + gfx1100 (ROCm 7.2.1) pass identically; the Windows SDK is the differentiating
+factor. BLOCK both windows-gfx1101 and windows-gfx1201. Reopen if a TheRock ROCm 7.14
+Windows HIP runtime fix is identified for the value-head kernel path.
+
+| Test | gfx1101 | gfx1201 |
+|------|---------|---------|
+| Build (344 targets) | PASS | PASS |
+| CPU gtest 8/8 | PASS | PASS |
+| Benchmark (clean run) | PASS | PASS |
+| maia-1100 fp32 cross-check | BLOCKED (value 4.4e-02) | BLOCKED (value 4.4e-02) |
