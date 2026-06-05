@@ -7,17 +7,17 @@
   "priority": 5.284,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "8fd480654b900040a1fa03140435916bcbd93d47",
+  "updated_at": "2026-06-05T17:38:55Z",
+  "head_sha": "fdc5694737970ba7329a81cb347d92dd48ceb802",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8fd480654b900040a1fa03140435916bcbd93d47",
+      "validated_sha": "fdc5694737970ba7329a81cb347d92dd48ceb802",
       "started_at": "2026-05-30T07:30:08Z",
-      "completed_at": "2026-05-30T08:35:18Z",
-      "updated_at": "2026-05-30T08:35:18Z",
+      "completed_at": "2026-06-05T17:37:46Z",
+      "updated_at": "2026-06-05T17:37:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "fdc5694737970ba7329a81cb347d92dd48ceb802",
+        "method": "binary-equiv",
+        "detail": "all new code gated by WIN32/clang-Windows guards; Linux code paths are unchanged, compiled binaries are identical",
+        "at": "2026-06-05T17:37:46Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8fd480654b900040a1fa03140435916bcbd93d47",
+      "validated_sha": "fdc5694737970ba7329a81cb347d92dd48ceb802",
       "started_at": "2026-05-30T09:52:00Z",
-      "completed_at": "2026-05-30T10:12:00Z",
-      "updated_at": "2026-05-30T10:12:00Z",
+      "completed_at": "2026-06-05T17:38:13Z",
+      "updated_at": "2026-06-05T17:38:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +60,22 @@
         "first_session_at": "2026-05-30T09:52:00Z",
         "last_session_at": "2026-05-30T10:12:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "fdc5694737970ba7329a81cb347d92dd48ceb802",
+        "method": "binary-equiv",
+        "detail": "all new code gated by WIN32/clang-Windows guards; Linux code paths are unchanged, compiled binaries are identical",
+        "at": "2026-06-05T17:38:13Z"
+      }
     },
     "windows-gfx1101": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "validated_sha": "fdc5694737970ba7329a81cb347d92dd48ceb802",
+      "started_at": "2026-06-05T17:38:55Z",
+      "completed_at": "2026-06-05T17:38:55Z",
+      "updated_at": "2026-06-05T17:38:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +88,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1201": {
       "state": "port-ready",

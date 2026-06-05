@@ -238,6 +238,79 @@ Port lives in projects/cupoch/src (gitignored; parent delivers the fork). Build 
 in agent_space (out of git). Committed to MOAT: status.json, plan.md, notes.md, and
 the PORTING_GUIDE changelog lines.
 
+## Validation 2026-06-05 (windows-gfx1101, ROCm 7.14.0a20260604)
+
+Platform: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11 Pro,
+TheRock ROCm 7.14.0a20260604, all-clang toolchain (clang.exe/clang++.exe from
+_rocm_sdk_devel/lib/llvm/bin). HIP_VISIBLE_DEVICES=0.
+Fork sha: fdc5694737970ba7329a81cb347d92dd48ceb802 (moat-port, new Windows build-fix commit on top of 8fd4806).
+
+### Windows build fixes (new commit fdc5694)
+
+Six Windows-specific issues found and fixed (all guards are WIN32-scoped; Linux paths unchanged):
+
+1. stdgpu -fPIC: cupoch_core_3rdparty.cmake applied -fPIC to stdgpu HIP TUs;
+   clang rejects it on x86_64-pc-windows-msvc. Guarded with NOT WIN32.
+
+2. C++17 not enforced: the WIN32 path sets /std:c++17 only in the MSVC block;
+   with clang it was unset -> rocPRIM saw gnu++14 and errored. Added
+   `set(CMAKE_CXX_STANDARD 17)` / `CMAKE_HIP_STANDARD 17` when WIN32 AND clang.
+
+3. Windows min/max macros: NOMINMAX was MSVC-only. Eigen's .min()/.max() member
+   calls expanded as macros under clang. Added -DNOMINMAX unconditionally.
+
+4. M_PI / M_PI_2: laserscanbuffer.h uses M_PI which needs -D_USE_MATH_DEFINES
+   on Windows. Added unconditionally.
+
+5. device_vector.h: the _WIN32 guard excluded cuda_to_hip.h (which defines
+   cudaStream_t -> hipStream_t); exec_policy(cudaStream_t) failed. Moved include
+   before the _WIN32 ifdef; adjusted float4_t guard to _WIN32 && USE_HIP.
+
+6. helper.h: thrust/type_traits/integer_sequence.h was excluded on _WIN32 to
+   avoid MSVC issues; with clang it must be included to prevent ambiguous
+   make_index_sequence. Now included when USE_HIP is set.
+
+### Build
+
+    cmake <src> -G Ninja -DUSE_HIP=ON -DCUPOCH_CORE_ONLY=ON -DUSE_RMM=OFF \
+        -DBUILD_UNIT_TESTS=OFF -DBUILD_PYTHON_MODULE=OFF -DBUILD_PYBIND11=OFF \
+        -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+        -DCMAKE_C_COMPILER=<rocm>/lib/llvm/bin/clang.exe \
+        -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+        -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+        -DCMAKE_PREFIX_PATH=<rocm> -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    cmake --build . --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j32
+
+Result: 0 errors, 7 libs: cupoch_{utility,camera,knn,geometry}.lib + flann_cuda_s.lib + stdgpu.lib + jsoncpp.lib.
+All HIP TUs compiled with --offload-arch=gfx1101 (verified in build.ninja).
+DLLs (amdhip64_7.dll etc.) copied from _rocm_sdk_devel/bin into harness exe dir to beat System32 loader order.
+
+### GPU dispatch confirmation
+
+AMD_LOG_LEVEL=3 on harness: 849 hipLaunchKernel calls all return hipSuccess. Real device execution confirmed.
+
+### Validation harness
+
+agent_space/cupoch-win/validate/validate.cpp (gitignored): 20000-point wavy-plane cloud, fixed seed 42,
+voxel_size=0.05, KNN=30. Same approach as gfx1100 harness; voxel_min_bound padded by -voxel/2 per cupoch convention.
+
+### VoxelDownSample (rocThrust transform -> sort_by_key -> reduce_by_key)
+
+2564 occupied-voxel centroids.
+- GPU vs CPU (voxel_min_bound = GetMinBound() - voxel/2 convention): max centroid error = 1.33e-07 (float eps). PASS.
+- Bitwise-identical output across 3 runs (deterministic). PASS.
+
+### EstimateNormals (flann CUDA kdtree KNN + covariance smallest-eigenvector)
+
+- No NaN in 20000 normals. PASS.
+- Per-point normals vs CPU brute-force KNN + 3x3 covariance (500-point sample): worst |dot(n_gpu, n_cpu)| = 1.000000, 0 points below 0.99. PASS.
+- Deterministic across 3 runs. PASS.
+
+### Result: 6 / 6 PASS. windows-gfx1101 -> completed.
+
+linux-gfx90a and linux-gfx1100 carried forward (binary-equiv): all new code is WIN32-scoped; Linux code paths unchanged.
+
 ## Windows gfx1151 attempt 2026-05-30 -- BLOCKED (stdgpu Windows build port + APU thrust risk)
 
 Platform: AMD Radeon 8060S (gfx1151 integrated APU), Windows 11, TheRock ROCm
