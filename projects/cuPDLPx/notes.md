@@ -81,3 +81,13 @@ Porter must amend commit message to remove "Strategy A (compat header)" and desc
 ### Resolution (2026-06-05)
 
 Amended commit message: replaced "Strategy A (compat header)" with "a compatibility header approach". Pushed db252232c95948f61825cf568c8a673c4e87850d to fork.
+
+## Review 2026-06-05 (re-review)
+
+Previous review requested removal of "Strategy A" jargon from commit message. Porter amended commit message correctly.
+
+However, **residual jargon found in code**:
+
+- `internal/cuda_to_hip.h:7`: Comment says "Strategy A port: keep all source files in CUDA spelling; this header handles the translation to HIP." This is upstream-visible code and must not contain MOAT vocabulary.
+
+Porter must amend the file comment to remove "Strategy A port" and describe the approach in plain language (e.g., "Compatibility header port: sources remain in CUDA spelling; this header handles the translation to HIP.").
