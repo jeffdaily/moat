@@ -11,3 +11,5 @@
 {"kind":"phase","ts":"2026-06-05T09:24:08Z","phase":"compile","seconds":10.977,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/build && cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T09:24:32Z","phase":"test","seconds":0.278,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa simulation.input"}
 {"kind":"session","ts":"2026-06-05T09:38:40Z","epoch":1780652320.003087968,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-05T09:39:46Z", "tokens": 45294, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T09:41:51Z","phase":"compile","seconds":6.666,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/gRASPA/src/build -j128"}

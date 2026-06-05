@@ -94,3 +94,29 @@ The core Monte Carlo simulation works correctly. CO2-MFI completes all phases in
 **Verdict**: VALIDATION FAILED
 
 Bug in final energy check code for simulations with larger molecule counts. The primary CO2-MFI benchmark passes, but the broader test suite fails. Needs porter investigation of the final energy calculation routine.
+
+## Fix 2026-06-05 (OOB memory access in TotalVDWRealCoulomb)
+
+**Root cause**: Out-of-bounds memory access in `TotalVDWRealCoulomb` kernel (VDW_Coulomb.cu:1544-1546). The code accessed `System[compA].MolID[AtomA]` BEFORE checking if AtomA was within bounds. When thread counts exceed valid interactions (larger simulations with more molecules spawn more threads than valid atom pairs), the bounds check came too late and the OOB access triggered a memory fault on HIP/AMD.
+
+**Fix**: Move the bounds check to before the MolID array access:
+```cpp
+// Before (OOB access happens before check):
+MolA = System[compA].MolID[AtomA];
+MolB = System[compB].MolID[AtomB];
+if(AtomA >= System[compA].size || AtomB >= System[compB].size) continue;
+
+// After (check first, then access):
+if(AtomA >= System[compA].size || AtomB >= System[compB].size) continue;
+MolA = System[compA].MolID[AtomA];
+MolB = System[compB].MolID[AtomB];
+```
+
+This is a pre-existing bug in upstream code that happens to not crash on CUDA (likely due to different memory access fault handling) but manifests on HIP/AMD.
+
+**Validation after fix**:
+- CO2-MFI (26 molecules): PASS, zero energy drift
+- Methane-TMMC (58 molecules): PASS, completes without fault
+- Tail-Correction (1327 molecules): PASS, completes without fault
+
+Commit ddf08ad pushed to jeffdaily/gRASPA moat-port branch.
