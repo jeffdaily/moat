@@ -221,3 +221,32 @@ Possible causes:
 3. Host-specific ROCm configuration issue (though simple HIP/rocThrust programs work)
 
 This is validation-failed, not blocked -- the port architecture is sound (gfx90a proof), but gfx1100 encounters a runtime-layer crash that needs porter investigation.
+
+## Delta fix 2026-06-05 (linux-gfx1100)
+
+### Root cause
+
+The crash occurred because the HIP runtime was not fully initialized when thrust::device_vector was first constructed in a dlopen'd plugin context. On RDNA3 (gfx1100) specifically, the runtime initialization that happens implicitly on CDNA (gfx90a) does not occur in a dynamically loaded shared library until explicitly triggered.
+
+### Fix
+
+Added explicit HIP runtime initialization before the first GPU memory allocation:
+
+1. In `cuda_to_hip.h`: added `ensureHipRuntimeInitialized()` helper function that calls `hipGetDevice()`/`hipSetDevice()` to trigger runtime initialization
+2. In `Coordination.cu`: call `ensureHipRuntimeInitialized()` before the first `thrust::device_vector` construction in the CudaCoordination constructor
+
+The fix is HIP-only (guarded by `#if defined(USE_HIP)`) and does not affect CUDA builds.
+
+### Validation
+
+Built and tested on gfx1100 (AMD Radeon Pro W7800 48GB):
+
+```bash
+cd plugins/cudaCoord
+make clean
+make USE_HIP=1 HIP_ARCHITECTURES=gfx1100 check
+```
+
+Result: 32/32 regression tests pass.
+
+Commit: cb90687f8
