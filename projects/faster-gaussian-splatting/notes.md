@@ -76,3 +76,26 @@ Validated configurations:
 All rasterization tests produce valid output (no NaN/Inf, clamped to [0,1], correct shapes).
 
 GPU execution confirmed on real hardware. Port is validated at commit 98be02d4095ff01ac22cbf884ade6c9d950644a0.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+Platform: AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2, PyTorch 2.13.0a0+gitb5e90ff
+
+Build command:
+```bash
+source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12
+cd /var/lib/jenkins/moat/projects/faster-gaussian-splatting/src/FasterGSCudaBackend
+pip install -e . --no-build-isolation
+```
+
+Test results: 14/14 PASS
+
+Validated configurations:
+- Gaussian counts: 10, 100, 500, 1000, 5000, 10000
+- Resolutions: 128x128, 256x256, 512x512, 800x600
+- SH bases: 1, 4, 8, 16
+- Determinism: bit-exact results across runs with same seed
+
+All rasterization tests produce valid output (no NaN/Inf, clamped to [0,1], correct shapes).
+
+GPU execution confirmed on real hardware (gfx1100). Port is validated at commit 98be02d4095ff01ac22cbf884ade6c9d950644a0.
