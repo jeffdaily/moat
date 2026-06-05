@@ -145,7 +145,9 @@ output-precision determinism on gfx90a. Validated.
 ## Outstanding / follower notes
 
 - gfx1100: VALIDATED 2026-05-30 (see section below).
-- gfx1151: expected to pass with only a `-DCMAKE_HIP_ARCHITECTURES` change; validate on that hardware.
+- gfx1101: VALIDATED 2026-06-05 (see section below).
+- gfx1151: host retired; validation superseded by gfx1101/gfx1201.
+- gfx1201: pending validation.
 - The `data` submodule gitlink is missing from the dev HEAD tree (`.gitmodules`
   references it but `git ls-tree HEAD data` is empty); clone the DATA repo
   directly as above. Not a port issue.
@@ -235,3 +237,104 @@ No regression in non-GPU tests.
 ### Verdict
 
 PASS. gfx1100 (wave32, RDNA3) produces identical reconstruction results to gfx90a and CPU reference. No source changes were needed; the port is wave-size-agnostic. No fork interaction performed.
+
+## Validation 2026-06-05 (windows-gfx1101, ROCm 7.14)
+
+Platform: windows-gfx1101. GPU: Radeon PRO V710 (gfx1101, RDNA3, wave32). ROCm 7.14.0a20260604 (clang++ 23.0.0). SHA validated: 633065b857387209d619468a0f765ca7460c1ccd (commit on top of 3a506a2 adding the WIN32 OpenCV compat path).
+
+### Windows-specific adaptations
+
+1. OpenCV include path: upstream sources use `<opencv4/opencv2/...>` (Linux /usr/include/opencv4 layout). The Windows prebuilt OpenCV puts headers at `build/include/opencv2/` without the `opencv4/` prefix. Fixed by creating a compat directory with a junction `opencv4/ -> build/include/` and adding `-DOPENCV4_COMPAT_DIR=<compat>` to cmake (a new WIN32 conditional in CMakeLists.txt committed as 633065b).
+
+2. cxxabi.h: `cmdline.h` (third-party header in the project) includes `<cxxabi.h>` for `abi::__cxa_demangle`. Not available in MSVC ABI (which clang++ targets on Windows). Provided a Windows stub `cxxabi.h` in the compat directory -- demangle returns the raw mangled name, acceptable for command-line error messages.
+
+3. gtest: the test CMakeLists expects `libgtest.a` (Unix static lib naming); Windows links `gtest.lib`. Built without `-DGTEST=ON` on this host. CPU tests are already validated on Linux; skipping them here does not affect GPU correctness validation.
+
+4. DLL loader order: copied TheRock DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc*.dll) into the exe directory so they win over System32's Adrenalin amdhip64 (exe-dir beats System32 in the Windows DLL search order).
+
+5. OpenCV DLL (opencv_world4110.dll) copied to exe directory.
+
+### Build commands
+
+```bash
+SRC="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src"
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+GLM_DIR="B:/develop/moat/agent_space/glm/glm"       # GLM 0.9.9.8 headers extracted here
+OPENCV_DIR="B:/develop/opencv-install/extracted/opencv/build"
+OPENCV4_COMPAT="B:/develop/moat/agent_space/opencv4_compat"  # opencv4/ junction + cxxabi.h stub
+MSVC_VER="14.44.35207"
+WINSDK_VER="10.0.26100.0"
+MSVC_ROOT="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/$MSVC_VER"
+WINSDK_ROOT="C:/Program Files (x86)/Windows Kits/10"
+
+export LIB="$MSVC_ROOT/lib/x64;$WINSDK_ROOT/Lib/$WINSDK_VER/ucrt/x64;$WINSDK_ROOT/Lib/$WINSDK_VER/um/x64"
+export INCLUDE="$MSVC_ROOT/include;$WINSDK_ROOT/Include/$WINSDK_VER/ucrt;$WINSDK_ROOT/Include/$WINSDK_VER/um;$WINSDK_ROOT/Include/$WINSDK_VER/shared"
+export HIP_DEVICE_LIB_PATH="$ROCM/lib/llvm/amdgcn/bitcode"
+export HIP_VISIBLE_DEVICES=0
+
+# data: clone directly (submodule not in dev HEAD tree)
+# git clone --depth 1 https://github.com/theICTlab/3DUNDERWORLD-SLS-DATA.git data
+
+cmake -S "$SRC" -B "$SRC/build_gfx1101" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM" \
+  -DGLM_INCLUDE_DIR="$GLM_DIR" \
+  -DOpenCV_DIR="$OPENCV_DIR" \
+  -DOpenCV_ARCH=x64 -DOpenCV_RUNTIME=vc16 \
+  -DOPENCV4_COMPAT_DIR="$OPENCV4_COMPAT" \
+  -DGTEST=OFF
+
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU compile -- cmake --build "$SRC/build_gfx1101" -j64
+
+# Copy runtime DLLs to exe dir
+ROCM_CORE="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core"
+for dll in amdhip64_7.dll amd_comgr.dll rocm_kpack.dll hiprtc-builtins0714.dll hiprtc0714.dll; do
+    cp "$ROCM_CORE/bin/$dll" "$SRC/build_gfx1101/bin/"
+done
+cp B:/develop/opencv-install/extracted/opencv/build/x64/vc16/bin/opencv_world4110.dll "$SRC/build_gfx1101/bin/"
+```
+
+Build result: success, warnings only (fopen deprecated in DynamicBitset.cpp/Log.cpp -- pre-existing; nodiscard on cudaEvent aliases -- same as Linux). Binary embeds `hipv4-amdgcn-amd-amdhsa--gfx1101` code objects (confirmed via `strings SLS_GPU.exe | grep gfx1101`).
+
+### GPU reconstruction result
+
+```bash
+DATA="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src/data/alexander"
+BIN="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src/build_gfx1101/bin"
+export HIP_VISIBLE_DEVICES=0
+
+# Run 1
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU test -- \
+  "$BIN/SLS_GPU.exe" \
+    --leftcam="$DATA/leftCam/dataset1" --rightcam="$DATA/rightCam/dataset1" \
+    --leftconfig="$DATA/leftCam/calib/output/calib.xml" \
+    --rightconfig="$DATA/rightCam/calib/output/calib.xml" \
+    --output="C:/Temp/output_gpu_run1.ply" --format=jpg --width=1024 --height=768
+# Run 2 (determinism): same with --output=...run2.ply
+# CPU reference: SLS.exe with same args
+```
+
+Point counts: GPU run1 = GPU run2 = CPU = 146064 (matches gfx90a and gfx1100 reference exactly).
+
+Coordinate stats (GPU run1):
+- x: min=-119.898, max=135.822, mean=45.003
+- y: min=-117.639, max=208.327, mean=16.143
+- z: min=-116.617, max=134.884, mean=-55.124
+- No NaN/Inf detected. Matches gfx90a/gfx1100 stats exactly.
+
+GPU vs CPU nearest-neighbor correspondence (set-based NN, compare.py):
+- CPU->GPU: mean=3.69e-5, p99.9=1.0e-3, max=2.52e-3; 100% coverage @tol=0.5 and @tol=10.
+- GPU->CPU: same (symmetric).
+
+Determinism (run1 vs run2):
+- count match: True (146064 each)
+- run1->run2: mean=5.23e-6, max=1.0e-3; 100% coverage @tol=0.5 and @tol=10.
+- Residual max (1.0e-3) is ASCII PLY 6-sig-fig print-precision ceiling; identical to gfx90a/gfx1100 behavior.
+
+### Verdict
+
+PASS. gfx1101 (wave32, RDNA3) produces numerically identical reconstruction results to gfx90a, gfx1100, and the CPU reference. The only changes from the Linux build are the Windows-specific include-path workarounds (compat dir for opencv4/ layout and cxxabi.h stub) and the DLL copy step. GPU kernels are unchanged.
