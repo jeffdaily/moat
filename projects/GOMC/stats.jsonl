@@ -6,3 +6,4 @@
 {"kind":"phase","ts":"2026-06-05T07:24:27Z","phase":"compile","seconds":0.138,"exit":1,"cmd":"cmake --build . --target GPU_NVT -j32"}
 {"kind":"phase","ts":"2026-06-05T07:28:00Z","phase":"compile","seconds":0.139,"exit":1,"cmd":"cmake --build . --target GPU_GEMC GPU_GCMC GPU_NPT -j32"}
 {"kind":"phase","ts":"2026-06-05T07:28:50Z","phase":"compile","seconds":0.137,"exit":1,"cmd":"cmake --build . -j32"}
+{"kind":"session","ts":"2026-06-05T07:43:35Z","epoch":1780645415.503901505,"event":"end","platform":"linux-gfx90a"}
