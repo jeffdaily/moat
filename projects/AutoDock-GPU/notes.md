@@ -194,3 +194,92 @@ path) and is also correct.
 
 PASS: wave32 warp reductions (WARPMINIMUM2, REDUCEINTEGERSUM, REDUCEFLOATSUM)
 are numerically correct on gfx1100. Fork is untouched; head_sha = 4a860c8.
+
+## Validation 2026-06-05 (windows-gfx1101, ROCm 7.14)
+
+Platform: Radeon PRO V710 (gfx1101, RDNA3, wave32), ROCm 7.14 (TheRock PyTorch
+venv), Windows 11 Pro for Workstations 10.0.26200. HIP_VISIBLE_DEVICES=0.
+
+### Windows-specific source fix required
+
+The HIP device compiler on Windows defines both `_WIN32` and
+`__HIP_DEVICE_COMPILE__` simultaneously, but the Windows SDK headers pulled in
+by `miscellaneous.h` (`processthreadsapi.h -> winnt.h`) require that the x86
+architecture macro (`_AMD64_`) be set up by the MSVC host toolchain. The HIP
+device pass targets an AMD GPU, so this macro is absent in that pass, causing
+`winnt.h` to emit `#error "No Target Architecture"`. Fix: guard the
+`processthreadsapi.h` include with `!__HIP_DEVICE_COMPILE__` and add a stub
+`processid()` for the device-compile path (LocalRNG references it in
+header-inlined code that the device TU sees). Committed as b623ccc on top of
+the port; this is a Windows HIP device-pass issue, fully inert on Linux (the
+`_WIN32` branch never compiles on Linux hosts).
+
+### Build commands (Windows, no Make -- direct compiler invocation)
+
+```
+SITE=/path/to/venv/Lib/site-packages
+HIPCC=$SITE/_rocm_sdk_core/bin/hipcc.exe
+CXX=$SITE/_rocm_sdk_devel/lib/llvm/bin/clang++.exe
+ROCM_INC=$SITE/_rocm_sdk_devel/include
+ROCM_LIB=$SITE/_rocm_sdk_devel/lib
+SRC=projects/AutoDock-GPU/src
+IFLAGS="-I$SRC/common -I$SRC/host/inc -I$SRC/cuda -I$ROCM_INC"
+HOST_DEFS="-DUSE_HIP -D__HIP_PLATFORM_AMD__ -D_AMD64_ -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS -DVERSION=b623ccc"
+
+# Kernel TU (64wi)
+$HIPCC -DN64WI --offload-arch=gfx1101 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP -DVERSION=b623ccc $IFLAGS \
+  -c $SRC/cuda/kernels.cu -o $SRC/kernels_64wi.obj
+
+# Host .cpp files
+for cpp in $SRC/host/src/*.cpp; do
+    $CXX -std=c++17 $IFLAGS $HOST_DEFS -O3 -DN64WI -DGPU_DEVICE \
+        -c $cpp -o $SRC/$(basename $cpp .cpp).obj
+done
+
+# Link
+$CXX $SRC/*.obj $SRC/kernels_64wi.obj -L$ROCM_LIB -lamdhip64 \
+  -o $SRC/bin/autodock_gpu_64wi.exe
+
+# Repeat with -DN128WI for 128wi variant
+```
+
+Key Windows differences vs Linux:
+- No Makefile.Hip; drive compiler directly (hipcc.exe / clang++.exe)
+- No -fPIE (clang rejects for Windows/MSVC target)
+- Add -D_AMD64_ so Windows SDK headers resolve architecture macros
+- Add -DNOMINMAX to prevent min/max macro pollution from windows.h
+- amdhip64 loaded from C:\Windows\System32 (driver ABI, works correctly)
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+```
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi.exe \
+  -ffile input/1stp/derived/1stp_protein.maps.fld \
+  -lfile input/1stp/derived/1stp_ligand.pdbqt -nrun 10 -seed 42 -resnam <out>
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi.exe ... -seed 7 ...
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_128wi.exe ... -seed 42 ...
+```
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.39 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+
+Reference (wave64, gfx90a lead):
+
+| build / seed     | best binding energy | best-pose reference RMSD |
+|------------------|---------------------|--------------------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.48 A                   |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.37 A                   |
+| 128wi / seed 42  | -8.33 kcal/mol      | 0.39 A                   |
+
+All three cases: all 10 runs converge to a single cluster; best energies match
+the gfx90a lead within 0.05 kcal/mol; best-pose reference RMSD sub-0.6 A in
+all cases. No NaN, no HIP fault, clean exit. The 128wi case exercises the
+cross-warp final reduction in kernel4 on wave32 (4 warps/block, WARP_SIZE=32)
+and is also correct.
+
+PASS: gfx1101 (RDNA3, wave32) docking results are numerically correct.
+head_sha = b623ccc.
