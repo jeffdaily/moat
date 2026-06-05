@@ -46,3 +46,34 @@ HIP_VISIBLE_DEVICES=0 ./build/cupdlpx 2club200v15p5scn.mps.gz . -v
   so the standard cusparseSpMV path is used (this is already the default path in upstream
   cuPDLPx unless you have CUDA 13.1+)
 - cublasDnrm2_v2_64 maps to hipblasDnrm2 (32-bit size_t); LP problem sizes fit comfortably
+
+## Review 2026-06-05
+
+### ROCm Fault Classes
+
+- Warp size: PASS. No warp intrinsics (`__shfl*`, `__ballot`, `__activemask`) or hardcoded 32 found. All kernels use simple linear thread indexing (`blockIdx.x * blockDim.x + threadIdx.x`).
+- Rule-of-five on handles: PASS. cusparse/cublas handle creation/destruction properly paired; no texture/surface handles.
+- OOB reads: N/A. No stencil/neighbor kernels; linear array indexing is bounds-checked by problem dimensions.
+- Texture pitch: N/A. No texture/surface usage.
+- Library swaps: PASS. cuBLAS -> hipBLAS, cuSPARSE -> hipSPARSE, CUB -> hipCUB all mapped correctly. `hipsparseSpMV_preprocess` exists in ROCm 7.x (verified in /opt/rocm/include/hipsparse).
+
+### Strategy A Correctness
+
+- PASS. `cuda_to_hip.h` compat header with `#if defined(USE_HIP)` guards. LANGUAGE HIP set on .cu files.
+- Include order correct: utils.h includes cuda_to_hip.h first, then cusparse_compat.h. CUDA headers guarded with `#if !defined(USE_HIP)`.
+
+### Build System
+
+- PASS. CMake uses `CMAKE_HIP_ARCHITECTURES` with default-only-when-unset pattern (lines 45-47). Followers can override with `-DCMAKE_HIP_ARCHITECTURES=gfx1100`.
+- PASS. Proper find_package for hip, hipblas, hipsparse, hipcub, rocprim.
+
+### Commit Hygiene
+
+- Title: PASS. `[ROCm] Add HIP/ROCm support for AMD GPUs` (40 chars, under 72).
+- Co-Authored-By trailer: PASS. None present.
+- Author email: PASS. jeff.daily@amd.com (not AMD-internal noreply).
+- **PROBLEM**: Body contains MOAT jargon "Strategy A (compat header)". Upstream-visible text must not use MOAT vocabulary.
+
+### Action Required
+
+Porter must amend commit message to remove "Strategy A (compat header)" and describe the approach in plain language (e.g., "The port keeps sources in CUDA spelling; a compatibility header maps CUDA symbols to HIP at compile time.").
