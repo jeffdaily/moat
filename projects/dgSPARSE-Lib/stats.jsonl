@@ -1,0 +1,11 @@
+{"kind": "tokens", "ts": "2026-06-05T08:29:25Z", "tokens": 107649, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T08:32:35Z","phase":"compile","seconds":0.328,"exit":1,"cmd":"pip install -e ."}
+{"kind":"phase","ts":"2026-06-05T08:32:39Z","phase":"compile","seconds":1.501,"exit":1,"cmd":"pip install -e /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src"}
+{"kind":"phase","ts":"2026-06-05T08:34:22Z","phase":"compile","seconds":98.660,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T08:35:13Z","phase":"compile","seconds":22.909,"exit":1,"cmd":"pip install -e /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T08:42:26Z","phase":"compile","seconds":0.038,"exit":2,"cmd":"python3 setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-05T08:42:32Z","phase":"compile","seconds":2.791,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src/setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-05T08:49:54Z","phase":"test","seconds":0.414,"exit":4,"cmd":"pytest test/test_spmm.py -v"}
+{"kind":"phase","ts":"2026-06-05T08:50:01Z","phase":"test","seconds":2.946,"exit":2,"cmd":"pytest /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src/test/test_spmm.py -v"}
+{"kind":"phase","ts":"2026-06-05T08:50:15Z","phase":"test","seconds":5.111,"exit":2,"cmd":"pytest /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src/test/test_spmm.py -v"}
+{"kind":"phase","ts":"2026-06-05T08:50:30Z","phase":"test","seconds":6.380,"exit":2,"cmd":"pytest /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src/test/test_spmm.py -v"}

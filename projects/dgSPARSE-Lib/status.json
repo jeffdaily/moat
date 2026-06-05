@@ -2,17 +2,17 @@
   "schema_version": 1,
   "name": "dgSPARSE-Lib",
   "upstream_url": "https://github.com/dgSPARSE/dgSPARSE-Lib",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/dgSPARSE-Lib",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:25:53Z",
   "updated_at": "2026-06-05T08:28:51Z",
-  "head_sha": null,
+  "head_sha": "b190a83a3c8270aacca8df142894437e2c52e24c",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
