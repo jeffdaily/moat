@@ -273,6 +273,40 @@ Reviewed commit cb90687f8 (delta fix for gfx1100 HIP runtime initialization cras
 ### Result
 
 Approved for validation. State: review-passed.
+
+## Validation 2026-06-05 (linux-gfx1100, second attempt)
+
+### Platform: linux-gfx1100
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100), HIP_VISIBLE_DEVICES=2
+
+Build command:
+```bash
+export PATH="/var/lib/jenkins/moat/_deps/plumed2/install/bin:$PATH"
+export PLUMED_KERNEL="/var/lib/jenkins/moat/_deps/plumed2/install/lib/libplumedKernel.so"
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/plumed2/install/lib:$LD_LIBRARY_PATH"
+export USE_HIP=1
+export HIP_VISIBLE_DEVICES=2
+
+cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord
+./configure.sh
+make USE_HIP=1 HIP_ARCHITECTURES=gfx1100
+```
+
+Test command:
+```bash
+make USE_HIP=1 HIP_ARCHITECTURES=gfx1100 check
+```
+
+Results:
+- 32/32 regression tests PASS (0 errors)
+- Test suites: cudatest (double/float), cudatestPair, cudatestWB
+- Configurations tested: ortho PBC, no PBC, MPI variants, multiple thread counts (512/256/128/64)
+- Plugin verified compiled for gfx1100 architecture (verified with roc-obj-ls)
+- Commit cb90687f8 (delta fix for HIP runtime initialization) works correctly on gfx1100
+
+Note: Build requires passing `HIP_ARCHITECTURES=gfx1100` as a make argument (not just environment variable) to ensure correct architecture is compiled.
+
 ## Revalidation 2026-06-05 (linux-gfx90a)
 
 The linux-gfx90a platform was revalidated after commit cb90687f8 which added explicit HIP runtime initialization for gfx1100. This was a functional change (adding `ensureHipRuntimeInitialized()` call before first `thrust::device_vector` construction).
