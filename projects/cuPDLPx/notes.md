@@ -162,3 +162,47 @@ GPU validation:
 - Presolve (CPU) functionality: PASS (no regression)
 
 Result: PASS - All LP instances converge to OPTIMAL with correct residuals within tolerance (1e-4). GPU kernels execute correctly. No regressions in non-GPU functionality.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+Platform: gfx1100 RDNA3
+Commit: b114e2dcec9f9d35165b2f9355b13016c648fbc0
+
+Build command:
+```bash
+cd projects/cuPDLPx/src
+cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=OFF -DCUPDLPX_BUILD_PYTHON=OFF \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j32
+```
+
+Build result: SUCCESS (warnings only, same as gfx90a)
+
+Test cases:
+1. MIPLIB instance 2club200v15p5scn.mps.gz:
+   - Status: OPTIMAL
+   - Primal objective: -121.2216698
+   - Dual objective: -121.2221271
+   - Objective gap: 1.879e-06
+   - Primal infeas: 4.889e-06 (< 1e-4 threshold)
+   - Dual infeas: 2.399e-05 (< 1e-4 threshold)
+
+2. MIPLIB instance datt256.mps.gz:
+   - Status: OPTIMAL
+   - Primal objective: 256.0024269
+   - Dual objective: 256.0067475
+   - Objective gap: 8.422e-06
+   - Primal infeas: 4.338e-05 (< 1e-4 threshold)
+   - Dual infeas: 3.397e-05 (< 1e-4 threshold)
+
+GPU validation:
+- All tests run with HIP_VISIBLE_DEVICES=0 on RDNA3 gfx1100
+- CUDA Graph API -> HIP Graph API: PASS
+- cuBLAS -> hipBLAS: PASS
+- cuSPARSE -> hipSPARSE: PASS
+- CUB -> hipCUB: PASS
+- No HIP errors (verified with ROCM_LOG_LEVEL=4)
+- Numerical results match gfx90a exactly
+
+Result: PASS - All LP instances converge to OPTIMAL with identical numerical results to gfx90a validation. GPU kernels execute correctly on RDNA3.

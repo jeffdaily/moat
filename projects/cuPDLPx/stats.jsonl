@@ -14,3 +14,8 @@
 {"kind":"phase","ts":"2026-06-05T08:02:32Z","phase":"test","seconds":1.375,"exit":0,"cmd":"bash -c cd projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 timeout 120 ./build/cupdlpx datt256.mps.gz test_output2 -v 2>&1 | tail -30"}
 {"kind":"phase","ts":"2026-06-05T08:02:47Z","phase":"test","seconds":1.416,"exit":0,"cmd":"bash -c cd projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 timeout 120 ./build/cupdlpx 30n20b8.mps.gz test_output3 -v 2>&1 | tail -25"}
 {"kind":"session","ts":"2026-06-05T08:03:05Z","epoch":1780646585.759376380,"event":"end","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T14:48:39Z","phase":"compile","seconds":0.121,"exit":1,"cmd":"cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=OFF -DCUPDLPX_BUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T14:48:46Z","phase":"compile","seconds":3.555,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=OFF -DCUPDLPX_BUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T14:48:55Z","phase":"compile","seconds":6.837,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && cmake --build build -j32"}
+{"kind":"phase","ts":"2026-06-05T14:49:08Z","phase":"test","seconds":0.575,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 ROCM_LOG_LEVEL=4 ./build/cupdlpx 2club200v15p5scn.mps.gz . -v"}
+{"kind":"phase","ts":"2026-06-05T14:49:20Z","phase":"test","seconds":1.120,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/cuPDLPx/src && HIP_VISIBLE_DEVICES=0 ./build/cupdlpx datt256.mps.gz . -v"}
