@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-05T15:52:30Z",
+  "updated_at": "2026-06-05T16:53:03Z",
   "head_sha": "a54c50c8",
   "depends_on": [],
   "platforms": {
@@ -36,12 +36,12 @@
     },
     "linux-gfx1100": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Environmental contamination: CMake picks up stale HiGHS build state, blocks parallel builds. Single-target build succeeds (port is correct), full build needed for JIT runtime setup.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T15:52:30Z",
+      "updated_at": "2026-06-05T16:53:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

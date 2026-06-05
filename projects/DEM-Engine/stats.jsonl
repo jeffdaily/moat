@@ -44,3 +44,14 @@
 {"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":700.080,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_BallDrop2D"}
 {"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":577.900,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_RotatingDrum"}
 {"kind": "tokens", "ts": "2026-06-05T15:53:31Z", "tokens": 48476, "source": "validator (final)"}
+{"kind":"session","ts":"2026-06-05T16:45:53Z","epoch":1780677953.660588417,"event":"start","platform":"validator"}
+{"kind":"phase","ts":"2026-06-05T16:45:58Z","phase":"compile","seconds":0.121,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T16:46:01Z","phase":"compile","seconds":0.122,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/DEM-Engine/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T16:46:05Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/DEM-Engine/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T16:46:29Z","phase":"compile","seconds":0.190,"exit":2,"cmd":"cmake --build . -j64"}
+{"kind":"phase","ts":"2026-06-05T16:47:05Z","phase":"compile","seconds":0.182,"exit":2,"cmd":"cmake --build . -j64"}
+{"kind":"phase","ts":"2026-06-05T16:47:28Z","phase":"compile","seconds":0.187,"exit":2,"cmd":"cmake --build . -j64"}
+{"kind":"phase","ts":"2026-06-05T16:51:05Z","phase":"test","seconds":0.002,"exit":127,"cmd":"./DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T16:51:09Z","phase":"test","seconds":0.422,"exit":134,"cmd":"/tmp/DEM-Engine-build-gfx1100/bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T16:52:08Z","phase":"compile","seconds":0.177,"exit":2,"cmd":"cmake --build . -j16"}
+{"kind":"session","ts":"2026-06-05T16:52:21Z","epoch":1780678341.050526549,"event":"end","platform":"validator"}
