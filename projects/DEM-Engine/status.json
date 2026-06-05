@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-05T18:00:38Z",
+  "updated_at": "2026-06-05T18:37:58Z",
   "head_sha": "462c9b9e",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "ported",
+      "state": "review-passed",
       "blocked": false,
       "blocked_reason": "CMake misconfiguration: DEME_RUNTIME_INCLUDE_DIRECTORY points to build tree instead of source tree, causing hiprtc JIT compilation to fail with 'core/utils/cuda_to_hip.h' not found. Fix: src/core/CMakeLists.txt line 127 should use CMAKE_SOURCE_DIR/src",
       "validated_sha": null,
       "started_at": "2026-06-05T17:25:47Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T17:28:32Z",
+      "updated_at": "2026-06-05T18:37:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +55,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "reviewer"
     },
     "windows-gfx1101": {
       "state": "port-ready",

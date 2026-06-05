@@ -659,3 +659,34 @@ The CMake include path fix works correctly on gfx90a. All tests confirm:
 - No NaN/inf values or GPU errors
 
 The fix that resolved gfx1100's runtime issue does not negatively impact gfx90a.
+
+## Review 2026-06-05 (linux-gfx1100 Delta Port)
+
+### Summary
+
+Single-line CMake fix changing `DEME_RUNTIME_INCLUDE_DIRECTORY` from `CMAKE_BINARY_DIR` to `CMAKE_SOURCE_DIR/src` so hiprtc JIT compilation can find headers at runtime.
+
+### Verified
+
+1. **Fix correctness (src/core/CMakeLists.txt:127)**: The JIT compiler needs source headers (`cuda_to_hip.h`, `Defines.h`, etc.) which live in the source tree, not the build tree. The fix correctly points to `CMAKE_SOURCE_DIR/src` matching the actual header layout.
+
+2. **Install path unchanged (line 135)**: The install-tree configuration already correctly points to `CMAKE_INSTALL_INCLUDEDIR`, so no change needed there.
+
+3. **Arch-unified**: The fix affects all platforms equally -- no per-arch hacks in shared code.
+
+4. **Validated on both archs**: gfx1100 passed 100-frame physics demo; gfx90a revalidated at 462c9b9e with 4 demos passing.
+
+### ROCm Fault Classes
+
+N/A -- CMake configuration change with no runtime code impact.
+
+### Commit Hygiene
+
+- Title: `[ROCm] Fix JIT runtime include path for build-tree execution` (56 chars)
+- No noreply trailer
+- Claude attribution present
+- jeffdaily account (not AMD-internal)
+
+### Recommendation
+
+**Approve** -- ready for GPU validation.
