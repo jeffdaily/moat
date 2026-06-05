@@ -244,3 +244,55 @@ SPD basis sets (with d-orbital functions: 6-31G**, cc-pVDZ, def2-*) have severe 
 ### Verdict
 
 The port correctly re-enables upstream HIP support for ROCm 7.x and validates successfully on gfx90a for SP basis sets, which are the production use case for most quantum chemistry calculations. The SPD performance issue is an upstream kernel problem requiring investigation by the original developers.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+**PASSED**: All tests validated on real GPU
+
+### Environment
+- Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100, RDNA3)
+- ROCm: 7.2.x
+- HIP_VISIBLE_DEVICES: 0
+- Build: commit d369e07 (added gfx1100 architecture support)
+
+### Build
+
+gfx1100 support added to QUICKCudaConfig.cmake. RDNA3 uses wave32 (vs wave64 on CDNA) and does not have hardware FP atomics, so it is configured with -DUSE_LEGACY_ATOMICS (same as gfx908), not -munsafe-fp-atomics like gfx90a/gfx942.
+
+```bash
+cd /var/lib/jenkins/moat/projects/QUICK/src/build
+cmake .. -DHIP=ON -DCOMPILER=GNU -DQUICK_USER_ARCH=gfx1100 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_SHARED_LINKER_FLAGS="-L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/x86_64-linux-gnu"
+make -j32
+make install DESTDIR=/var/lib/jenkins/moat/projects/QUICK/src/install
+```
+
+Note: CMAKE_SHARED_LINKER_FLAGS needed to help hipcc's linker find libgfortran when linking the mixed Fortran/HIP shared library.
+
+### Test Results (38/38 PASSED)
+
+All energy, gradient, optimization, and API tests passed:
+
+1. Energy tests: 14/14 PASSED (includes SP and SPD basis sets)
+2. Gradient tests: 11/11 PASSED (includes cc-pVDZ, def2-svp)
+3. Optimization tests: 12/12 PASSED
+4. API test: 1/1 PASSED
+
+### Performance Note
+
+Unlike gfx90a which exhibited 100x+ performance degradation on SPD basis sets (d-orbital functions), gfx1100 shows NO such issue. All SPD tests (cc-pVDZ, def2-svp, 6-31G**) completed in normal time. This suggests the SPD performance issue on gfx90a is CDNA-specific, not a general HIP port problem.
+
+### Commands Run
+
+```bash
+cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local
+export QUICK_HOME=$PWD
+export QUICK_BASIS=$QUICK_HOME/basis
+export LD_LIBRARY_PATH=$QUICK_HOME/lib:/opt/rocm/lib
+HIP_VISIBLE_DEVICES=0 ./runtest --hip --ene --grad
+HIP_VISIBLE_DEVICES=0 ./runtest --hip --opt --api
+```
+
+### Verdict
+
+gfx1100 (RDNA3) port validated successfully with full test coverage. All 38 tests passed including SPD basis sets that had performance issues on gfx90a.
