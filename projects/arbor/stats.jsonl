@@ -13,3 +13,5 @@
 {"kind":"phase","ts":"2026-06-05T00:57:11Z","phase":"compile","seconds":0.126,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T01:10:47Z","phase":"test","seconds":13.640,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
 {"kind": "tokens", "ts": "2026-06-05T01:12:05Z", "tokens": 54582, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T01:13:47Z", "tokens": 49275, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T01:14:23Z","phase":"test","seconds":11.838,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}

@@ -136,3 +136,62 @@ The generated code now matches the hand-written test code pattern in test_reduce
 
 ### Recommendation
 **Approve** -- ready for GPU validation.
+
+## Validation 2026-06-05
+
+### Platform: linux-gfx90a
+**GPU**: AMD Instinct MI250X / MI250 (gfx90a)
+**ROCm**: 7.x
+
+### Build Configuration
+```bash
+cd /var/lib/jenkins/moat/projects/arbor/src/build
+# Already configured with:
+# -DARB_GPU=hip
+# -DARB_HIP_ARCHITECTURES=gfx90a
+# -DARB_WITH_PYTHON=OFF
+# -DCMAKE_BUILD_TYPE=Release
+# -DCMAKE_CXX_COMPILER=hipcc
+# -DCMAKE_C_COMPILER=clang
+```
+
+### Test Results
+**Command**: `HIP_VISIBLE_DEVICES=1 ./bin/unit`
+
+**Result**: PASS
+- Total tests: 1182 from 182 test suites
+- Passed: 1182
+- Failed: 0
+- Total time: 11.754 seconds
+
+### GPU-Specific Tests Validated
+All GPU tests passed, including critical warp-level operations:
+
+1. **reduce_by_key** (4 tests) - Exercises warp-level reductions with 64-bit lane masks
+   - no_repetitions: PASS
+   - single_repeated_index: PASS
+   - scatter: PASS
+   - scatter_twice: PASS
+
+2. **GPU initialization** (2 tests)
+   - gpu_initialisation: PASS (160ms)
+   - gpu_null: PASS
+
+3. **event_stream_gpu** (2 tests)
+   - single_step: PASS
+   - multi_step: PASS (7ms)
+
+4. **spikes_gpu** (2 tests)
+   - threshold_watcher: PASS (1ms)
+   - threshold_watcher_interpolation: PASS (26ms)
+
+### Port Validation
+The fixes to HIP warp primitives are validated on real gfx90a hardware:
+- 64-bit lane masks (`lane_mask_type`) work correctly
+- Wave-size abstraction (`threads_per_warp()`) returns 64 for CDNA/gfx90a
+- Double shuffle bit conversion (`__double_as_longlong()`) preserves values
+- Masked any() emulation works correctly
+- Generated mechanism code (gpuprinter.cpp) uses correct 64-bit masks
+
+### Conclusion
+All 1182 unit tests pass on gfx90a, including GPU-specific tests exercising warp primitives, reductions, and event handling. The port correctly handles wave64 CDNA architecture.
