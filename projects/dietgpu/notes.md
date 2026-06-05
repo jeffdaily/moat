@@ -718,6 +718,73 @@ The two GPU device code libs are device-ISA-identical across the two builds. No 
 Carried forward with: `moatlib.py carry-forward dietgpu linux-gfx90a 64c792d binary-equiv`
 Transitioning linux-gfx90a to completed (validated_sha=64c792d).
 
+## Revalidation 2026-06-05 (linux-gfx90a) -- squash regression fix
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/dietgpu @ moat-port, SHA 8b0aec3.
+State: revalidate (squashed commit 03005c7 introduced build regression) -> completed.
+
+### Regression analysis
+
+The squashed commit 03005c7 introduced a CMake regression: dietgpu/utils/CMakeLists.txt
+referenced `hip::host` without calling `find_package(hip)`, breaking the configure step
+with "Target dietgpu_utils links to: hip::host but the target was not found."
+
+The original working commits (b6e0d3f, 64c792d) did NOT use `hip::host`. They:
+1. Marked DeviceUtils.cpp and StackDeviceMemory.cpp as LANGUAGE HIP (these files call
+   the HIP runtime API via the compat header)
+2. Linked against ${CUDA_LIBRARIES} for both CUDA and HIP builds (HIP provides
+   compatible symbols)
+
+Fix: restored the working CMakeLists.txt pattern (set_source_files_properties LANGUAGE
+HIP, single target_link_libraries using ${CUDA_LIBRARIES}). Committed as 8b0aec3 on top
+of 03005c7.
+
+### Build
+
+```
+cd /var/lib/jenkins/moat/projects/dietgpu/src
+git submodule update --init --recursive
+cmake -S . -B build-hip -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo
+cmake --build build-hip --target ans_test ans_statistics_test \
+  batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j 16
+```
+
+Build: PASS, 34/34 targets, 0 errors, 1 pre-existing upstream warning (FloatTest.cu:306
+braced-scalar-init).
+
+### Fat binary verification
+
+`llvm-objdump --offloading` on libgpu_ans.so shows both gfx1100 and gfx90a bundles:
+- hipv4-amdgcn-amd-amdhsa--gfx1100 (3 segments)
+- hipv4-amdgcn-amd-amdhsa--gfx90a (3 segments)
+
+Multi-arch fat binary confirmed.
+
+### GPU tests
+
+```
+export HIP_VISIBLE_DEVICES=0
+cd build-hip
+./bin/ans_test
+./bin/ans_statistics_test
+./bin/batch_prefix_sum_test
+./bin/float_test
+```
+
+Results:
+- ans_test: 4/4 PASSED (ZeroSized, BatchPointer, BatchPointerLarge, BatchStride)
+- ans_statistics_test: 4/4 PASSED (Histogram, Normalization_NonZero, Normalization_EqualWeight, Normalization)
+- batch_prefix_sum_test: 2/2 PASSED (OneLevel, TwoLevel)
+- float_test: 3/3 PASSED (Batch, LargeBatch, BatchSize1; fp16/bf16/fp32)
+
+Total: 13/13 PASS. All tests deterministic, zero HSA faults.
+
+Transitioning linux-gfx90a to completed (validated_sha=8b0aec3).
+
 ## Validation 2026-06-04 (windows-gfx1101 + windows-gfx1201, one FAT binary) -- follower, NO source change
 
 validated_sha: 64c792d (zero-churn followers; the CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS Windows
