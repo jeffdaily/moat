@@ -1,3 +1,4 @@
 {"kind": "tokens", "ts": "2026-06-05T06:47:10Z", "tokens": 92390, "source": "planner"}
 {"kind":"phase","ts":"2026-06-05T06:53:22Z","phase":"compile","seconds":0.157,"exit":0,"cmd":"make -j8"}
 {"kind":"phase","ts":"2026-06-05T14:25:38Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind": "tokens", "ts": "2026-06-05T14:38:24Z", "tokens": 172182, "source": "porter (JitKernel abstraction)"}
