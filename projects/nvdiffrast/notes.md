@@ -1,6 +1,56 @@
 # nvdiffrast notes
 
-## 2026-06-05: gfx90a (wave64) blocking issue
+## 2026-06-05: Wave64 Porting Attempt (gfx90a)
+
+### Approach Taken
+Attempted to use cooperative groups `tiled_partition<32>` to create 32-lane logical warps that work on both wave32 (gfx1100) and wave64 (gfx90a). Changes made:
+- Created `WarpConfig.hpp` with per-arch warp size constants and logical warp operations
+- Redirected `__ballot_sync`, `__any_sync`, `__all_sync` to cooperative groups tile operations
+- Updated lane mask functions to use 32-lane tile semantics
+
+### Test Results
+Basic cooperative groups operations work correctly:
+- `tile.ballot(pred)` returns correct 32-bit mask per tile
+- `tile.thread_rank()` equals `threadIdx.x` (correct tile partitioning)
+- Shuffle-based prefix sum works correctly within 32-lane tiles
+
+However, the rasterizer crashes in `binRasterKernel` with:
+```
+HSA_STATUS_ERROR_EXCEPTION: An HSAIL operation resulted in a hardware exception
+```
+
+### Root Cause Analysis
+The cudaraster algorithm uses LDS-based warp-scan patterns that assume all threads WITHIN a divergent code block can sync via `__syncwarp`. On wave64:
+
+1. A 64-lane wavefront contains TWO 32-thread logical warps (e.g., `threadIdx.y=0` and `threadIdx.y=1`)
+2. Code patterns like:
+   ```cpp
+   if (threadIdx.y == 0 && someCondition) {
+       // Warp scan with __syncwarp
+       val += ptr[-1]; __syncwarp(mask);
+       *ptr = val;     __syncwarp(mask);
+   }
+   ```
+   ...cause the `__syncwarp` (mapped to `__builtin_amdgcn_wave_barrier`) to wait for ALL 64 lanes
+3. Threads with `threadIdx.y == 1` never reach the barrier (they skip the `if` block)
+4. Result: deadlock or undefined behavior
+
+The fundamental issue is that `__syncwarp` on wave64 syncs the ENTIRE 64-lane wavefront, not just the active threads. CUDA's `__syncwarp(mask)` can sync a subset, but HIP has no equivalent on wave64.
+
+### Required Fix (Not Implemented - Too Substantial)
+To fix wave64 support, the rasterizer would need:
+1. Replace ALL LDS-based warp scans with shuffle-based scans (tested: shuffle-based prefix sum works correctly)
+2. Remove `__syncwarp` from divergent code paths or restructure them to be convergent
+3. Use `tile.sync()` only at points where all 32 threads in the tile are guaranteed to reach
+
+This is a significant algorithmic rewrite of the warp-scan patterns across 6+ files (~150 occurrences of warp primitives).
+
+### Recommendation
+Mark gfx90a as blocked. Proceed with gfx1100 (wave32) validation where the existing wave32-compatible port should work. The cooperative groups infrastructure added here will help if wave64 support is revisited.
+
+---
+
+## 2026-06-05: gfx90a (wave64) blocking issue (original analysis)
 
 ### Build Status
 The nvdiffrast HIP port compiles successfully on gfx90a using the ATLAS fork's hipraster module:
