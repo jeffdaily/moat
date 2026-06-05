@@ -5,3 +5,4 @@
 {"kind":"phase","ts":"2026-06-04T23:50:47Z","phase":"compile","seconds":83.852,"exit":1,"cmd":"pip install /var/lib/jenkins/moat/projects/CuMesh/src --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-06-04T23:55:28Z","phase":"compile","seconds":179.263,"exit":0,"cmd":"pip install /var/lib/jenkins/moat/projects/CuMesh/src --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-06-04T23:55:52Z","phase":"test","seconds":0.025,"exit":2,"cmd":"python3 simplify.py"}
+{"kind": "tokens", "ts": "2026-06-04T23:58:59Z", "tokens": 146637, "source": "porter"}

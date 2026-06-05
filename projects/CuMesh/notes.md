@@ -43,3 +43,20 @@ Tested on MI250X (gfx90a), ROCm 7.2:
 - rocprim::tuple has an explicit constructor; use `rocprim::tie()` instead of braced init `{a, b, c}`
 - PyTorch 2.13+ headers require C++20 for the `requires` keyword
 - Build generates _hip.h/_hip.cpp files via torch hipify; these are gitignored build artifacts
+
+## Review 2026-06-05
+
+**Reviewer**: MOAT reviewer agent
+
+**Verdict**: Approve (review-passed)
+
+**Checklist**:
+- Port strategy: Correct (Strategy B for PyTorch extension, torch hipifies at build time)
+- Fault classes: None apply (no warp intrinsics, no textures, no resource handles)
+- Minimal footprint: 4 files changed, all changes are HIP-guarded or additive
+- Build system: Correct (`IS_HIP` gating, `GPU_ARCHS` for arch selection)
+- Testing: All example scripts validated on gfx90a
+- Backward compatibility: CUDA path preserved, `__host__` qualifiers valid for CUDA
+- Commit hygiene: Title prefixed [ROCm], mentions Claude, no noreply trailer
+
+No problems found.
