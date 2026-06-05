@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "FastGeodis",
   "upstream_url": "https://github.com/masadcv/FastGeodis",
-  "fork_url": null,
-  "fork_default_branch": "main",
+  "fork_url": "https://github.com/jeffdaily/FastGeodis",
+  "fork_default_branch": "master",
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:24:38Z",
-  "updated_at": "2026-06-05T07:02:42Z",
-  "head_sha": null,
+  "updated_at": "2026-06-05T07:09:45Z",
+  "head_sha": "bef0d9317d896706c5d36fbf5ec24ddf6909c876",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-05T07:02:42Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T07:02:42Z",
+      "updated_at": "2026-06-05T07:10:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
