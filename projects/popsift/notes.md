@@ -1346,3 +1346,65 @@ identical at 5cbf3b2 vs 6bb671d4 (`utils/codeobj_diff.py`, both built -DUSE_HIP=
 default for `mixed`); carried forward gfx90a as binary-equiv and gfx1100/gfx1151 as
 source-class (comment-only compiled TUs + non-build file removal -> identical compiled
 source set). All three completed @ 6bb671d4, pr-ready=True, no GPU re-run.
+
+## Validation 2026-06-05 (windows-gfx1101): PASS
+
+Platform: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11, TheRock ROCm 7.14.0a20260604.
+Fork: jeffdaily/popsift @ moat-port, HEAD 5ee4973c. HIP_VISIBLE_DEVICES=0.
+
+### Build
+
+Library only (no Boost on this host; examples off). Ninja + all-clang toolchain from _rocm_sdk_devel:
+
+```
+cmake -S projects/popsift/src -B projects/popsift/src/build-win-gfx1101 -G Ninja \
+  -DUSE_HIP=ON -DPopSift_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON \
+  -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1101 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=<rocm> -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_LINKER_TYPE=LLDFIX -DCMAKE_HIP_USING_LINKER_LLDFIX=-fuse-ld=lld \
+  -DCMAKE_CXX_USING_LINKER_LLDFIX=-fuse-ld=lld
+cmake --build build-win-gfx1101 -j64
+```
+
+100% built, popsift.dll linked in 30/30 steps. Only the pre-existing benign
+-Wunused-value (debug_macros nodiscard) and -Wdeprecated-declarations
+(rocThrust::identity) warnings. `strings popsift.dll | grep gfx` ->
+`hipv4-amdgcn-amd-amdhsa--gfx1101` (single arch confirmed).
+
+### Validation harness
+
+Built a custom popsift_validate_gfx1101.exe (agent_space/) that links popsift.dll
+via its public C++ API (no Boost required), reads P5 PGMs directly, and runs
+VLFeat/loop/RootSift/downsampling=-1 -- the same parameters as the Oxford test
+script. TheRock runtime DLLs (amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll, rocm_kpack.dll) placed in the exe dir to override
+System32 Adrenalin DLLs.
+
+```
+bash utils/timeit.sh popsift test -- \
+  popsift_validate_gfx1101.exe oxford/img{1..6}.pgm
+```
+
+### Cross-arch Oxford boat gate -- EXACT MATCH
+
+Oxford boat dataset (6 images, 850x680 PGM, VLFeat/loop/RootSift, downsampling=-1):
+
+| Image | gfx1101 feat/desc | gfx90a ref | Match |
+|-------|-------------------|------------|-------|
+| img1  | 8351 / 9874       | 8351/9874  | EXACT |
+| img2  | 7946 / 9452       | 7946/9452  | EXACT |
+| img3  | 6158 / 7280       | 6158/7280  | EXACT |
+| img4  | 4802 / 5799       | 4802/5799  | EXACT |
+| img5  | 4618 / 5476       | 4618/5476  | EXACT |
+| img6  | 3855 / 4618       | 3855/4618  | EXACT |
+
+All 6 feature counts match gfx90a exactly. 0 NaN, 0 Inf in all descriptors.
+Determinism confirmed: img1 run 4/4 identical (8351/9874 every run).
+
+warpSize-generic extrema_count (s_extrema.cu) correct on wave32 (gfx1101).
+The wave64 ballot_group/any_group helpers with group=0 degenerate correctly to
+the full wave32 wavefront. No wave32-specific regression.
+
+State: port-ready -> completed; validated_sha = 5ee4973c.
