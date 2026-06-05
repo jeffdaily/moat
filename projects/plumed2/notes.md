@@ -158,3 +158,66 @@ The previous review requested removal of "Strategy A pattern" MOAT jargon from t
 ### Result
 
 Approved for validation. State: review-passed.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+### Platform: linux-gfx1100
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100), host has 4x gfx1100 GPUs
+
+Build command:
+```bash
+export PATH="/var/lib/jenkins/moat/_deps/plumed2/install/bin:$PATH"
+export PLUMED_KERNEL="/var/lib/jenkins/moat/_deps/plumed2/install/lib/libplumedKernel.so"
+export LD_LIBRARY_PATH="/var/lib/jenkins/moat/_deps/plumed2/install/lib:$LD_LIBRARY_PATH"
+export USE_HIP=1
+export HIP_VISIBLE_DEVICES=2
+
+cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord
+./configure.sh
+make USE_HIP=1 HIP_ARCHITECTURES=gfx1100
+```
+
+Build result: SUCCESS
+- Plugin compiled for gfx1100 (verified with roc-obj-ls)
+- Linked against libamdhip64.so.7
+
+Test attempt:
+```bash
+make USE_HIP=1 check
+```
+
+Result: FAILURE - all 32 tests segfault
+
+### Error details
+
+All tests crash with segmentation fault (exit code 139) during plugin initialization, before any GPU kernel execution. The crash occurs in `libamdhip64.so.7` during `thrust::device_vector<double>` construction in the `CudaCoordination` constructor.
+
+Stack trace:
+```
+[1] /opt/rocm/lib/libamdhip64.so.7(+0x2b09df)
+[2] /opt/rocm/lib/libamdhip64.so.7(+0x2b1234)
+[3] /opt/rocm/lib/libamdhip64.so.7(+0x306ed5)
+[4] /opt/rocm/lib/libamdhip64.so.7(+0x2b1d9e)
+[5] /opt/rocm/lib/libamdhip64.so.7(+0x2c9c4e)
+[6] CudaCoordination.so(_ZZN6thrust...parallel_for...uninitialized_fill...)
+[7] CudaCoordination.so(_ZN6thrust...vector_baseIdNS0_16device_allocatorIdEEEC2Em)
+[8] CudaCoordination.so(_ZN4PLMD6colvar16CudaCoordinationIdEC1E...)
+```
+
+The crash is inside the HIP runtime during the first GPU memory allocation (thrust device_vector resize in `setUpPermanentGPUMemory()`).
+
+Tested all 4 gfx1100 GPUs (HIP_VISIBLE_DEVICES=0,1,2,3): all crash identically.
+
+Simple rocThrust test program works correctly on the same GPUs, suggesting this is specific to the dynamically-loaded plugin context or the plumed initialization sequence.
+
+### Diagnosis
+
+This is a gfx1100-specific failure. The same commit (2ba581c3b) passed all 32 tests on linux-gfx90a but crashes on linux-gfx1100 during HIP runtime initialization. The failure is not in the ported code itself but in the HIP runtime layer during device_vector allocation in a dynamically loaded shared library.
+
+Possible causes:
+1. gfx1100-specific ROCm 7.2.1 runtime bug with late GPU initialization in dynamically loaded plugins
+2. Incompatibility between the plumed libplumedKernel.so and the HIP-enabled plugin loading sequence
+3. Host-specific ROCm configuration issue (though simple HIP/rocThrust programs work)
+
+This is validation-failed, not blocked -- the port architecture is sound (gfx90a proof), but gfx1100 encounters a runtime-layer crash that needs porter investigation.
