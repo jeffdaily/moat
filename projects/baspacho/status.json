@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "baspacho",
   "upstream_url": "https://github.com/facebookresearch/baspacho",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/baspacho",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-05T08:08:07Z",
-  "head_sha": null,
+  "updated_at": "2026-06-05T08:17:30Z",
+  "head_sha": "69ab9137ab8c3663409598b7d521384e07c14c87",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-05T08:17:27Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T08:08:07Z",
+      "updated_at": "2026-06-05T08:17:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
