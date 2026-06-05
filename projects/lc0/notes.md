@@ -562,3 +562,18 @@ Windows HIP runtime fix is identified for the value-head kernel path.
 | CPU gtest 8/8 | PASS | PASS |
 | Benchmark (clean run) | PASS | PASS |
 | maia-1100 fp32 cross-check | BLOCKED (value 4.4e-02) | BLOCKED (value 4.4e-02) |
+
+## Revalidation 2026-06-05 (linux-gfx90a) -- Binary equivalence carry-forward
+
+HEAD moved from 1a6c3e3 to c757400 (Windows -fPIC build fix). Delta:
+- Commit c757400 removes `-fPIC` from hipcc args when `host_machine.system() == 'windows'`
+- On Linux, `host_machine.system() != 'windows'` -> `hipcc_fpic = ['-fPIC']` -> identical behavior
+
+Built both shas at gfx90a with identical meson config. Binary equivalence verified:
+- common_kernels.hip.o: sha256 40887b575a2323c151e1e2c680b2416946002a0616f5bb2fde4403d33ad8a44a (identical)
+- fp16_kernels.hip.o: sha256 b212c5c5c87a89455362fe9bab8e0c4179b0fbb930dcda802f7637fe7b5edda1 (identical)
+- Device code object 1: size 1131680, sha256 03940302b4531b4ba23fe412a8c2c64ae2b25ab6e3993061f4c366df1d83a603 (identical)
+- Device code object 2: size 1999968, sha256 4ad5f3d57fcd6f8f05ca8f6bfd706c36743f4bfc32fc596656da43beee5c54a9 (identical)
+- Exported symbols (nm -gD, T/W/D): identical
+
+Verdict: The compiled program is unchanged on linux-gfx90a. Carried forward validation to c757400 without GPU re-run.

@@ -7,17 +7,17 @@
   "priority": 6.245,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-05T12:02:56Z",
+  "updated_at": "2026-06-05T12:38:05Z",
   "head_sha": "c757400",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1a6c3e3597b96153e733de94eda576cc2fc6ae88",
+      "validated_sha": "c7574009edf3f73cb5679a4855b0d9aada90e617",
       "started_at": "2026-05-31T01:38:05Z",
-      "completed_at": "2026-05-31T03:35:39Z",
-      "updated_at": "2026-06-05T11:17:40Z",
+      "completed_at": "2026-06-05T12:38:05Z",
+      "updated_at": "2026-06-05T12:38:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "c7574009edf3f73cb5679a4855b0d9aada90e617",
+        "method": "binary-equiv",
+        "detail": "Device code objects and exported symbols identical (Windows-only -fPIC fix does not affect Linux builds)",
+        "at": "2026-06-05T12:38:05Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
