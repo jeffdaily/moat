@@ -193,3 +193,21 @@ HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1
 ### Status
 
 Port is complete at 08b5d2e6. Awaiting validation.
+
+## Review 2026-06-05 (re-review post-cudaDeviceReset fix)
+
+### Summary
+Re-reviewed moat-port branch (08b5d2e6) against upstream main. The porter fixed the hipFFT error 12 failures by wrapping cudaDeviceReset() calls in #ifndef USE_HIP guards in all three cleanup functions.
+
+### Verification completed
+
+1. **cudaDeviceReset fix**: All three locations (PRISM02_calcSMatrix.cu:791, PRISM03_calcOutput.cu:705, Multislice_calcOutput.cu:607) correctly guarded with #ifndef USE_HIP and explanatory comments
+2. **Wave64 reduction**: warpReduce_cx templates use explicit __syncthreads() under USE_HIP -- arch-unified (correct on wave64, harmless on wave32)
+3. **No hardcoded warpSize**: No warp intrinsics (__shfl, __ballot, etc.) used; the literal 32 in reductions is a template parameter, not a warp-size assumption
+4. **cuFFT -> hipFFT**: Correctly mapped including CUFFT_INVERSE -> HIPFFT_BACKWARD
+5. **Minimal footprint**: Changes confined to new files (cuda_to_hip.h, HIPShim.cmake) and USE_HIP guards; CUDA path preserved
+6. **Build system**: USE_HIP option, enable_language(HIP), CMAKE_HIP_ARCHITECTURES defaults gfx90a when unset
+7. **Commit hygiene**: [ROCm] prefix, explains changes, Test Plan section, Claude mentioned, no noreply trailer, jeffdaily account
+
+### Outcome
+**review-passed** -- proceed to validation. The cudaDeviceReset fix addresses the hipFFT error 12 failures from the prior validation attempt. The 2 remaining failures (potentialTests/PRISM01_integration) are CPU-only reference value issues unrelated to HIP.

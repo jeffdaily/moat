@@ -19,3 +19,4 @@
 {"kind": "tokens", "ts": "2026-06-05T09:53:29Z", "tokens": 57326, "source": "validator"}
 {"kind":"phase","ts":"2026-06-05T09:58:29Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:58:41Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake --build . -j128"}
+{"kind": "tokens", "ts": "2026-06-05T10:07:06Z", "tokens": 91299, "source": "porter"}
