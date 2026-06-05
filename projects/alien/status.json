@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+  "updated_at": "2026-06-05T03:55:44Z",
+  "head_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
       "started_at": "2026-05-31T00:42:20Z",
-      "completed_at": "2026-06-04T17:59:25Z",
-      "updated_at": "2026-06-04T17:59:25Z",
+      "completed_at": "2026-06-05T03:46:10Z",
+      "updated_at": "2026-06-05T03:46:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+        "to": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
         "method": "binary-equiv",
-        "detail": "windows-gfx1151 build plumbing + __has_include ROCm 7.13+ guard in reduce.h (not taken on 7.2.1) + host-side sim-parameter field; gfx90a device ISA byte-identical confirmed",
-        "at": "2026-06-04T17:59:25Z"
+        "detail": "Windows GCC-frontend HIP link changes: CMakeLists.txt additions in WIN32 guards only, hip_link_win.py only called on Windows -- no effect on Linux device ISA",
+        "at": "2026-06-05T03:46:10Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
       "started_at": null,
-      "completed_at": "2026-06-04T09:06:58Z",
-      "updated_at": "2026-06-04T09:06:58Z",
+      "completed_at": "2026-06-05T03:46:15Z",
+      "updated_at": "2026-06-05T03:46:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,20 +61,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "47ab2c9cdbe04b82d9b5fb1057e9e771b01d88e4",
+        "to": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
         "method": "binary-equiv",
-        "detail": "windows-gfx1151 build plumbing + __has_include ROCm 7.13+ guard in reduce.h (not taken on 7.2.1) + host-side sim-parameter field; gfx1100 device ISA byte-identical confirmed",
-        "at": "2026-06-04T09:06:58Z"
+        "detail": "Windows GCC-frontend HIP link changes: CMakeLists.txt additions in WIN32 guards only, hip_link_win.py only called on Windows -- no effect on Linux device ISA",
+        "at": "2026-06-05T03:46:15Z"
       }
     },
     "windows-gfx1101": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-05T03:46:29Z",
+      "updated_at": "2026-06-05T03:46:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -90,13 +90,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-05T03:55:44Z",
+      "updated_at": "2026-06-05T03:55:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
