@@ -286,6 +286,13 @@
     "note": "DOE HPC Monte Carlo; has HIP backend (cmake/CeleritasUtils.cmake mentions HIP, exascale target)",
     "reason": "already-supported"
   },
+  "cfd-go/tclb": {
+    "decided": "2026-06-05T07:24:53Z",
+    "disposition": "skip",
+    "full_name": "CFD-GO/TCLB",
+    "note": "TCLB has mature HIP/ROCm support upstream since 2021 (PR #376). Features: --enable-hip configure option, full CUDA-to-HIP cross.h abstraction, HIP CI workflow passing (ROCm 6.4.4), configurable WARPSIZE via --with-warp-size. Build with: ./configure --enable-hip --with-warp-size=64 for gfx90a.",
+    "reason": "already-supported"
+  },
   "chenhoy/droid-splat": {
     "decided": "2026-06-05T01:23:49Z",
     "disposition": "skip",
