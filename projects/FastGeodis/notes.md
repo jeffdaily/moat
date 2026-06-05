@@ -71,3 +71,28 @@ Result: PASS
 - All test classes cover: shape validation, euclidean distance output correctness, zero input, ones mask, ill-formed input handling
 
 The port is validated. PyTorch's auto-hipify successfully translated all CUDA kernels (cudaMemcpyToSymbol to constant memory, __syncthreads() barriers). No numeric divergence observed on gfx90a.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm 7.2.53211)
+Validated at: bef0d9317d896706c5d36fbf5ec24ddf6909c876
+
+Build:
+```bash
+cd projects/FastGeodis/src
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e . --no-build-isolation
+```
+
+Test:
+```bash
+cd projects/FastGeodis/src
+HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v
+```
+
+Result: PASS
+- 300/300 tests passed (matching gfx90a)
+- GPU tests (TestFastGeodis, TestFastGeodisSigned, TestGSF with cuda device) all passed
+- CPU tests (TestToivanen, TestPixelQueue, TestFastMarch) all passed - no regression
+- All test classes cover: shape validation, euclidean distance output correctness, zero input, ones mask, ill-formed input handling
+
+The port is validated on gfx1100 (RDNA3). PyTorch's auto-hipify successfully handles the RDNA3 wavefront size (32 lanes) -- the kernels use __syncthreads() only (no warp intrinsics), so they are wavefront-size agnostic. No numeric divergence observed.
