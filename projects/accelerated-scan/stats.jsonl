@@ -6,3 +6,4 @@
 {"kind":"phase","ts":"2026-06-05T07:47:33Z","phase":"compile","seconds":75.093,"exit":0,"cmd":"python3 -c \nimport torch\nprint('Compiling warp (C++) backend...')\nfrom accelerated_scan.warp import scan as scan_warp\nprint('Warp module compiled successfully!')\n"}
 {"kind":"phase","ts":"2026-06-05T07:53:21Z","phase":"test","seconds":0.406,"exit":4,"cmd":"pytest tests/test_eq.py -v"}
 {"kind":"phase","ts":"2026-06-05T07:53:41Z","phase":"test","seconds":14.376,"exit":1,"cmd":"pytest /var/lib/jenkins/moat/projects/accelerated-scan/src/tests/test_eq.py -v"}
+{"kind": "tokens", "ts": "2026-06-05T07:55:45Z", "tokens": 113038, "source": "porter"}

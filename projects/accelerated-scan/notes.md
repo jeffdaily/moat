@@ -38,3 +38,31 @@ The single failing test (`test_eq_ref_reverse[65536-1]`) is a marginal tolerance
 - The C++ warp kernel cannot be made wave64-compatible without a significant rewrite
 - The Triton backend is fully functional and recommended for ROCm
 - Tests require torch with ROCm support and Triton with ROCm backend
+
+## Review 2026-06-05
+
+Reviewed commit 94e47c4 (`[ROCm] Add AMD GPU support via Triton backend`) against origin/main.
+
+### Summary
+
+The port redirects `warp.py` to use the Triton `scalar.py` backend on ROCm instead of the C++ warp kernel. This is acceptable: the C++ kernel has deep wave64 incompatibilities (kNThreadsPerWarp=32 hardcode, implicit warpSize loop bounds, crash-inducing block geometry), and Triton's `tl.associative_scan` is wave-size agnostic. The partial fixes in warp.cuh (64-bit masks, explicit width=32 shuffles, kNThreadsPerWarp loop bounds) are present but the kernel still crashes on gfx90a, so the Triton fallback is the right call.
+
+### Issues
+
+**1. scan_forward(reverse=True) silently ignored on ROCm** (warp.py:13-14)
+
+The ROCm branch defines `scan_forward(gates, tokens, reverse=False)` but calls `_scan_impl(gates, tokens)` without passing `reverse`. On CUDA the C++ kernel supports reverse scans; on ROCm the parameter is silently dropped.
+
+Impact: Low. No test or autograd path uses `scan_forward(reverse=True)` -- the `Scan` class always calls it with the default. The only `reverse=True` test (`test_eq_ref_reverse`) uses `scan_ref`, not `scan_warp`. But the silent drop is a latent behavior difference that should be documented or fixed (raise NotImplementedError for reverse=True on ROCm, or implement it in Triton).
+
+**2. warpscan_forward/warpscan_backward not exported on ROCm** (warp.py)
+
+On CUDA, `from accelerated_scan.warp import warpscan_forward` works; on ROCm it fails with ImportError because these symbols are defined only in the `else` branch. The benchmark script (`tests/bench.py:73-77`) imports these directly and will fail on ROCm with provider=warp.
+
+Impact: Low. This is a low-level C++ API, not the public `scan()` API. But it is a breaking API change for anyone using the direct C++ bindings.
+
+### Verdict
+
+**review-passed**
+
+The Triton fallback is the correct strategy for this project given the wave64 kernel incompatibility. The issues above are minor documentation/cleanup items suitable for PR prep, not blockers.
