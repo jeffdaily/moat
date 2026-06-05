@@ -219,3 +219,43 @@ strMap["_nActiveLoadingThreads_"] = std::to_string(nActiveLoadingThreads);
 This ensures `_nActiveLoadingThreads_` is substituted with the correct device-specific warp size at JIT compile time, rather than a compile-time constant that may be wrong for the runtime device.
 
 Build verified: all demos compile successfully.
+
+## Review 2026-06-05 (Final)
+
+### Summary
+
+Final review of DEM-Engine after porter addressed the two issues from the second review. Both fixes are correct.
+
+### Verified Fixes
+
+1. **CUDA ProgramCache::clear() (JitKernel_cuda.cpp:142-144)**: Now a no-op with a comment explaining jitify::JitCache does not expose a clear method. Matches HIP backend behavior.
+
+2. **Multi-arch warp size (Defines.h:36-50 + APIPrivate.cpp:2124-2137)**:
+   - Device code uses `__GFX*__` guards per PORTING_GUIDE: `__GFX8__||__GFX9__` -> 64 (CDNA wave64), `__GFX10__||__GFX11__||__GFX12__` -> 32 (RDNA wave32).
+   - Host code defaults to 32 (safe minimum).
+   - JIT kernel substitution queries `prop.warpSize` at runtime, ensuring correct value for the actual device.
+
+### ROCm Fault Classes Verified
+
+- No hardcoded 32 warpSize assumptions remaining
+- No warp intrinsics (`__shfl*`, `__ballot`, `__activemask`) in codebase
+- No texture/surface usage (rule-of-five N/A)
+- No OOB neighbor reads to clamp (no stencil patterns)
+- Strategy A (pure CMake) correctly applied
+- Library swap: CUB -> hipCUB via cuda_to_hip.h
+
+### Commit Hygiene
+
+- Title: `[ROCm] Add JitKernel abstraction for HIP runtime compilation` (61 chars, under 72)
+- No `Co-Authored-By: noreply` trailer
+- Claude attribution present in body
+- Commits on jeffdaily GitHub account (not AMD-internal)
+
+### Build Status
+
+- All 27 demo executables compiled successfully on gfx90a
+- No GPU validation yet (expected -- validator stage next)
+
+### Recommendation
+
+**Approve** -- ready for GPU validation.
