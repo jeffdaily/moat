@@ -76,3 +76,63 @@ CMake HIP support is upstream authoritative with proper version guards (blocks R
 Porter ran 2 tests (acetone RHF/3-21G, psb5 RHF/6-31G) with 2 microhartree agreement. Adequate for review gate; validator will run full test suite (205 input files).
 
 No issues found.
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+**FAILED**: Runtime crashes and performance issues on gfx90a
+
+### Environment
+- Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+- ROCm: 7.2.x
+- HIP_VISIBLE_DEVICES: 2
+- Build: commit c5f108e
+
+### Test Results
+
+Attempted full test suite validation (`runtest --hip`). The short GPU test suite (`testlist_short_gpu.txt`) contains 40 tests across energy, gradient, optimization, API, ESP, and checkpoint categories.
+
+**Critical Issues:**
+1. **Test crashes**: Multiple tests abort with core dumps. Example from automated test run:
+   ```
+   runtest: line 447: Aborted (core dumped) "$qbindir/$qexe" "$1.in" > "$1.tmp" 2>&1
+   Error: quick.hip execution failed.
+   ```
+
+2. **Severe performance degradation**: Tests that should complete in seconds take many minutes or hang indefinitely. Small molecule tests (BeH2 with 3 atoms, 3-21G basis) consumed 4+ minutes of CPU time without completing.
+
+3. **Incomplete test runs**: The automated test harness (`runtest`) successfully launches tests but they either crash early (PSB5 631g completed, PSB5 631gss aborted) or hang without producing complete output files.
+
+**Pass/Fail Count:**
+- Cannot provide reliable count due to systematic failures
+- Test 1 (ene_psb5_rhf_631g) appeared to pass in some runs
+- Test 2 (ene_psb5_rhf_631gss) consistently crashed
+
+### Root Cause Investigation Needed
+
+The port builds cleanly and the porter reported successful manual runs of acetone and PSB5 tests with correct energies. However, systematic validation reveals:
+- Runtime instability (crashes/aborts)
+- Massive performance regression (small tests take minutes instead of seconds)
+- Inconsistent behavior between manual single-test runs and automated suite execution
+
+This suggests a runtime environment issue (library mismatch, GPU initialization problem) or a deeper GPU kernel fault that only manifests under certain conditions.
+
+### Commands Run
+
+Build (already completed by porter):
+```bash
+cd /var/lib/jenkins/moat/projects/QUICK/src/build
+cmake .. -DHIP=ON -DCOMPILER=GNU -DQUICK_USER_ARCH=gfx90a -DCMAKE_BUILD_TYPE=Release
+make -j16
+make install DESTDIR=/var/lib/jenkins/moat/projects/QUICK/src/install
+```
+
+Test attempts:
+```bash
+cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local
+export QUICK_HOME=$PWD
+export QUICK_BASIS=$QUICK_HOME/basis
+export LD_LIBRARY_PATH=$QUICK_HOME/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+HIP_VISIBLE_DEVICES=2 bash runtest --hip
+```
+
+Manual test attempts (BeH2, acetone) also exhibited hangs/slowness.

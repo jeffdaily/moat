@@ -11,3 +11,15 @@
 {"kind":"phase","ts":"2026-06-05T00:48:33Z","phase":"test","seconds":1726.025,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene"}
 {"kind":"phase","ts":"2026-06-05T00:49:49Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./runtest --hip --ene --nolog"}
 {"kind": "tokens", "ts": "2026-06-05T00:51:44Z", "tokens": 145026, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T00:53:59Z", "tokens": 46169, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-05T00:54:34Z","phase":"validation-ene","seconds":0.003,"exit":127,"cmd":"env HIP_VISIBLE_DEVICES=2 ./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:54:38Z","phase":"validation-ene","seconds":0.005,"exit":127,"cmd":"bash -c HIP_VISIBLE_DEVICES=2 ./runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:54:43Z","phase":"validation-ene","seconds":0.005,"exit":127,"cmd":"bash runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:54:49Z","phase":"validation-ene","seconds":0.036,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/runtest --hip --ene"}
+{"kind":"phase","ts":"2026-06-05T00:57:25Z","phase":"test","seconds":451.616,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene --nolog"}
+{"kind":"phase","ts":"2026-06-05T00:57:54Z","phase":"test","seconds":26.083,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/QUICK/src/install/usr/local && ./runtest --hip --ene --nolog"}
+{"kind":"phase","ts":"2026-06-05T01:01:37Z","phase":"test-acetone","seconds":0.177,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/bin/quick.hip ene_acetone_rhf_321g.in"}
+{"kind":"phase","ts":"2026-06-05T01:02:04Z","phase":"full-validation","seconds":0.005,"exit":127,"cmd":"bash -c ./runtest --hip"}
+{"kind":"phase","ts":"2026-06-05T01:02:26Z","phase":"full-validation","seconds":0.043,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/runtest --hip"}
+{"kind":"phase","ts":"2026-06-05T01:03:21Z","phase":"full-validation","seconds":0.005,"exit":127,"cmd":"bash runtest --hip"}
+{"kind":"phase","ts":"2026-06-05T01:11:48Z","phase":"full-validation","seconds":0.043,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/QUICK/src/install/usr/local/runtest --hip"}
