@@ -20,3 +20,12 @@
 {"kind":"phase","ts":"2026-06-05T09:58:29Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:58:41Z","phase":"compile","seconds":0.142,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind": "tokens", "ts": "2026-06-05T10:07:06Z", "tokens": 91299, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T10:09:05Z", "tokens": 99420, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T10:09:26Z","epoch":1780654166.073133453,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T10:09:57Z","phase":"linux-gfx90a","seconds":0.003,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && HIP_VISIBLE_DEVICES=2 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T10:10:13Z","phase":"compile","seconds":10.879,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && HIP_VISIBLE_DEVICES=2 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T10:10:23Z","phase":"test","seconds":0.249,"exit":201,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && HIP_VISIBLE_DEVICES=2 ./build/prismatic-tests"}
+{"kind":"phase","ts":"2026-06-05T10:12:46Z","phase":"test","seconds":133.678,"exit":201,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && HIP_VISIBLE_DEVICES=2 ./prismatic-tests"}
+{"kind":"phase","ts":"2026-06-05T10:12:55Z","phase":"test","seconds":0.877,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_ms.h5 -a m -g 1"}
+{"kind":"phase","ts":"2026-06-05T10:13:03Z","phase":"test","seconds":0.803,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1"}
+{"kind":"session","ts":"2026-06-05T10:13:11Z","epoch":1780654391.051782486,"event":"end","platform":"linux-gfx90a"}
