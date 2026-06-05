@@ -41,3 +41,25 @@ HIP_VISIBLE_DEVICES=3 ./build/bin/ohmtesthip     # 58/58 tests PASS
 3. The `__local` macro in HIP conflicts with our definition; this causes harmless warnings.
 
 4. HIP sources are identified by `.hip` extension and compiled with `LANGUAGE HIP`.
+
+## Review 2026-06-05
+
+**Reviewer**: MOAT reviewer agent
+
+**Verdict**: APPROVE
+
+The port correctly adds a HIP backend that mirrors the existing CUDA backend architecture. Key observations:
+
+1. **Strategy**: Appropriate adaptation of Strategy A -- instead of a single cuda_to_hip.h compat header, this project uses its existing OpenCL-style abstraction layer with a parallel `gputil/hip/` directory containing `hutil_importcl.h` (analogous to `cutil_importcl.h` for CUDA).
+
+2. **Fault classes**: No warp intrinsics, no hardcoded warp size, no textures/surfaces. Atomics correctly mapped. The float CAS (`gputilAtomicCasF32`) uses `__float_as_int`/`__int_as_float` which are available in HIP.
+
+3. **hutil_math.h**: Correctly disables vector operators (`#if 0` block) that would conflict with HIP's built-in operators, while keeping math functions (dot, length, normalize, clamp).
+
+4. **CMake**: OhmHip.cmake properly uses `check_language(HIP)`, defaults `CMAKE_HIP_ARCHITECTURES` only when unset (allowing follower platforms to override), and gates all HIP dependencies.
+
+5. **Upstream fixes**: The two `#include <utility>` additions are legitimate portability fixes.
+
+6. **Commit hygiene**: Title 43 chars, properly prefixed `[ROCm]`, mentions Claude, no noreply trailer, no MOAT jargon.
+
+No issues found. Ready for validation.
