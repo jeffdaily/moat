@@ -549,3 +549,65 @@ FORK CLEAN: no changes to the fork (09612d3c18f8). No CI yaml.
 
 Result: PASS (gfx1100 wave32).
 validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
+
+## Validation 2026-06-04 (validator, windows-gfx1101)
+
+Platform: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32, compute capability 11.0), Windows 11 Pro for Workstations, TheRock ROCm 7.14 pip wheels, all-clang-cl build. HIP_VISIBLE_DEVICES=0 (one-GPU-per-process rule; gfx1101 at device 0).
+
+Build: all-clang-cl (clang-cl.exe for C/CXX/HIP; lld-link.exe linker). CMake configured with CMAKE_HIP_ARCHITECTURES=gfx1101. Full target build: 4206/4206 targets SUCCESS, no errors. Local-only (NOT committed): R/JVM/Python/Spark binding prunes and conan tool copies.
+
+Runtime: TheRock DLLs (amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm_kpack.dll) deployed beside each test exe. GPU confirmed at runtime: "AMD Radeon PRO V710 (compute capability 11.0)".
+
+### Test 1 -- cuda_util-ut (two back-to-back runs for determinism):
+
+```
+$env:HIP_VISIBLE_DEVICES=0
+B:\develop\moat\projects\catboost\src\build_hip\cm\catboost\cuda\cuda_util\ut\catboost-cuda-cuda_util-ut.exe --show-fails
+```
+
+Run 1: [DONE] ok: 48 (exit 0)
+Run 2: [DONE] ok: 48 (exit 0)
+Pass sets: IDENTICAL -- deterministic on wave32 (gfx1101).
+
+### Test 2 -- gpu_data-ut (bin-builder overflow fix):
+
+```
+$env:HIP_VISIBLE_DEVICES=0
+B:\develop\moat\projects\catboost\src\build_hip\cm\catboost\cuda\gpu_data\ut\catboost-cuda-gpu_data-ut.exe --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4 + TestCompressedSplitFloat + TreeBuilderTest32 PASS -- bin-builder overflow fix confirmed), TGridBuilderPerftest 1/1. Exit 0.
+
+### Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+```
+$env:HIP_VISIBLE_DEVICES=0
+B:\develop\moat\projects\catboost\src\build_hip\cm\catboost\cuda\methods\ut\catboost-cuda-methods-ut.exe --show-fails
+```
+
+[DONE] ok: 29, err: 1 (exit 0)
+- TExactLeavesEstimationTest: 15/15 PASS
+- TPairwiseHistogramTest: 4/4 PASS
+- TPointwiseHistogramTest: 4/4 PASS
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (WithoutOneHot1/2/17 + WithOneHot3/13 + FatSplitPropsTest -- both histogram grid div-by-zero fix and scan-alignment fix confirmed on gfx1101)
+- TAddingLangevinNoiseTest: 0/1 FAIL -- pre-existing upstream test-design issue, proven NOT a ROCm defect (GPU NextNormal bit-identical to host over same seeds; GPU std 0.6571826685 vs CPU-expected 0.4308123035, tolerance 0.1; Box-Muller vs StdNormalDistribution test-design fragility; identical on all platforms including NVIDIA); not a blocker.
+
+Matches gfx90a@09612d3c and gfx1100@09612d3c: same 29/30 effective pass (only Langevin fails on all platforms). Deterministic pass set.
+
+### Wave32 verdict (gfx1101 = RDNA3, same ISA family as gfx1100)
+
+- FastInBlockReduce/BlockReduceN/SharedReduce4/8: full __syncthreads tree, wave-agnostic. CORRECT on wave32.
+- CB_FULL_WARP_MASK 64-bit: benign on wave32. CORRECT.
+- 32-lane histogram layout: native on wave32. CORRECT. CONFIRMED by TPairwiseHistogramTest 4/4 + TPointwiseHistogramTest 4/4 + TPointwiseMultiStatHistogramTest 6/6.
+- split_points.cu scan-alignment fix: wave-agnostic. CONFIRMED by TPointwiseMultiStatHistogramTest 6/6 (all configs pass, including FatSplitPropsTest 2M-doc radix-sort path).
+- TTileReducer<64>: dead code, never instantiated. SAFE.
+- TBinSplitLoader extract/compare: wave-agnostic arithmetic. CONFIRMED by BinBuilderTest 3/3.
+- No HSA fault, no NaN, no hang observed.
+
+DETERMINISM: two back-to-back cuda_util-ut runs bit-identical (identical sorted [good] line sets). No residual wave32 race.
+FORK CLEAN: no changes to the fork (09612d3c18f8). No CI yaml.
+
+Result: PASS (gfx1101 wave32).
+GPU: AMD Radeon PRO V710 (gfx1101, compute capability 11.0, HIP_VISIBLE_DEVICES=0).
+Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
+validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
