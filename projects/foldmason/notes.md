@@ -34,3 +34,18 @@ GPU search (`--gpu 1`) produces deterministic results that are a strict superset
 ## Regression tests
 
 Bundled regression tests (run_easymsa, run_structuremsa, run_msa2lddt) show minor differences in MSA gap placements vs reference -- this is expected for MSA algorithms with multiple valid alignments and is not a GPU/HIP issue
+
+## Review 2026-06-05
+
+**Verdict: Approve**
+
+Reviewed the port applying validated foldseek HIP port (jeffdaily/foldseek@e7471b41) to foldmason's vendored lib/foldseek/ subtree. All checks pass:
+
+- Strategy A correctly applied: cuda_to_hip.h compat header, .cu files marked LANGUAGE HIP, hip_compat/ shims for cooperative_groups::reduce
+- Fault classes addressed: warpSize/2 reductions, 64-bit WARP_FULL_MASK, DPX path forced off on AMD, __hmax2/__hmin2 emulation
+- Minimal footprint: NVIDIA build unchanged, all changes guarded behind USE_HIP
+- CMake wiring correct: USE_HIP threaded through hierarchy, enable_language(HIP), shared lib with -fgpu-rdc --hip-link
+- Commit hygiene: [ROCm] prefix, 64 chars, Test Plan section, Claude attribution, no noreply trailer
+- GPU validation documented: 874 alignments (GPU) vs 837 (CPU), all CPU hits present, deterministic
+
+The reuse of validated foldseek port for identical vendored libmarv is a sound strategy. Ready for hardware validation.
