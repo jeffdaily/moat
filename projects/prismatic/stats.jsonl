@@ -3,3 +3,16 @@
 {"kind":"phase","ts":"2026-06-05T09:38:45Z","phase":"compile","seconds":0.141,"exit":1,"cmd":"cmake --build . -j128"}
 {"kind":"phase","ts":"2026-06-05T09:41:43Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./prismatic-tests --log_level=all"}
 {"kind": "tokens", "ts": "2026-06-05T09:44:24Z", "tokens": 155453, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:47:31Z", "tokens": 72606, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T09:47:50Z","epoch":1780652870.801769426,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T09:48:14Z","phase":"linux-gfx90a","seconds":0.004,"exit":127,"cmd":"compile -- bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T09:48:21Z","phase":"compile","seconds":0.140,"exit":1,"cmd":"cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T09:48:29Z","phase":"compile","seconds":3.773,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && cmake /var/lib/jenkins/moat/projects/prismatic/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-05T09:48:40Z","phase":"compile","seconds":7.068,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && cmake --build . -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T09:48:49Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./prismatic-tests --log_level=all"}
+{"kind":"phase","ts":"2026-06-05T09:48:52Z","phase":"test","seconds":0.251,"exit":201,"cmd":"/var/lib/jenkins/moat/projects/prismatic/src/build/prismatic-tests --log_level=all"}
+{"kind":"phase","ts":"2026-06-05T09:49:04Z","phase":"test","seconds":0.254,"exit":201,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && ./build/prismatic-tests --log_level=test_suite"}
+{"kind":"phase","ts":"2026-06-05T09:49:15Z","phase":"test","seconds":3.477,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src/build && ./prismatic-tests --log_level=test_suite 2>&1 | tail -100"}
+{"kind":"phase","ts":"2026-06-05T09:49:40Z","phase":"test","seconds":0.845,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && ./build/prismatic -i SI100.XYZ -o test_ms.h5 -a m -g 1"}
+{"kind":"phase","ts":"2026-06-05T09:49:46Z","phase":"test","seconds":0.803,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/prismatic/src && ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1"}
+{"kind":"session","ts":"2026-06-05T09:52:04Z","epoch":1780653124.865063485,"event":"end","platform":"linux-gfx90a"}

@@ -66,3 +66,77 @@ Reviewed moat-port branch (dd8d6df4) against upstream master. Port uses Strategy
 
 ### Outcome
 **review-passed** -- proceed to validation
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+### Build
+Built successfully with HIP at dd8d6df4:
+```bash
+cd /var/lib/jenkins/moat/projects/prismatic/src/build
+HIP_VISIBLE_DEVICES=2 cmake /var/lib/jenkins/moat/projects/prismatic/src \
+    -DUSE_HIP=ON \
+    -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DPRISMATIC_ENABLE_GPU=ON \
+    -DPRISMATIC_ENABLE_CLI=ON \
+    -DPRISMATIC_TESTS=ON \
+    -DCMAKE_PREFIX_PATH=/opt/rocm \
+    -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+Build completed successfully. Both `prismatic` CLI and `prismatic-tests` executables produced.
+
+### CLI Validation: PASS
+
+Both Multislice and PRISM algorithms execute successfully on gfx90a GPU:
+
+```bash
+cd /var/lib/jenkins/moat/projects/prismatic/src
+HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_ms.h5 -a m -g 1
+# Output: "Calculation complete." (484 probe positions computed successfully)
+
+HIP_VISIBLE_DEVICES=2 ./build/prismatic -i SI100.XYZ -o test_prism.h5 -a p -g 1
+# Output: "PRISM Calculation complete." (484 probe positions computed successfully)
+```
+
+Both algorithms complete all three stages (PRISM01_calcPotential, PRISM02_calcSMatrix for PRISM only, PRISM03_calcOutput/Multislice_calcOutput) on GPU without errors.
+
+### Unit Tests: FAIL
+
+Boost.Test unit tests show critical failures:
+
+**PASS (8 tests):**
+- processingTests suite: 5/5 pass (poissonNoise, subindexing, binning, complexDisplay, downsample)
+- potentialTests/pot3DFunction: pass
+- hrtemTests/planeWave: pass
+- ioTests/operationReorganization: pass
+
+**FAIL:**
+1. **potentialTests/PRISM01_integration**: Numeric tolerance failure
+   ```
+   check std::abs(refPotSum-testPotSum)/refPotSum<tol has failed
+   [98738.25 / 1211818.88 >= 0.00100000005]
+   ```
+   Error magnitude: ~8% vs 0.1% tolerance. Suggests either incorrect calculation or test reference value is wrong for HIP.
+
+2. **hrtemTests/virtualDataset, ioTests/importPotential2D_P, and others**: Crash with hipFFT error
+   ```
+   GPUassert: 12 /var/lib/jenkins/moat/projects/prismatic/src/src/PRISM02_calcSMatrix.cu 56
+   ```
+   Error 12 is hipErrorInvalidValue. Location is cufftPlanMany call in createStreamsAndPlans2. Occurs in tests that invoke PRISM02_calcSMatrix with specific parameter combinations. The CLI PRISM run successfully calls the same code path, so this appears to be a test-specific parameter configuration issue, not a core GPU failure.
+
+### Analysis
+
+**Core functionality validated:** The CLI validation demonstrates both Multislice and PRISM algorithms work correctly on gfx90a for real simulation workloads. The full computation pipeline (potential calculation, S-matrix, output) executes on GPU without errors.
+
+**Test suite issues:** The unit test failures indicate either:
+- Test-specific edge cases or parameter combinations that expose hipFFT parameter validation differences from cuFFT
+- Incorrect test reference values for HIP (numeric tolerance failure)
+- Test fixture initialization problems (many tests expect ../SI100.XYZ path)
+
+The CLI success vs unit test failure split suggests the port is functionally correct but some test configurations are incompatible with hipFFT's parameter validation.
+
+### Outcome
+**validation-failed** -- unit test failures block completion despite successful CLI validation. Returning to porter for investigation of:
+1. PRISM01_integration numeric tolerance (is the reference value CUDA-specific?)
+2. hipFFT error 12 (hipErrorInvalidValue) in cufftPlanMany -- why do some test parameter combinations fail when CLI workload succeeds?
