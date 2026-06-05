@@ -12,3 +12,12 @@
 {"kind":"phase","ts":"2026-06-05T00:02:51Z","phase":"compile","seconds":8.988,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuMesh/src && pip install . --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-06-05T00:03:04Z","phase":"test","seconds":0.024,"exit":2,"cmd":"python3 simplify.py"}
 {"kind":"phase","ts":"2026-06-05T00:03:10Z","phase":"test","seconds":3.593,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuMesh/src/examples && python3 simplify.py"}
+{"kind":"session","ts":"2026-06-05T01:16:10Z","epoch":1780622170.228450143,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T01:16:21Z","phase":"linux-gfx1100","seconds":0.003,"exit":127,"cmd":"compile -- bash -c GPU_ARCHS=gfx1100 pip install . --no-build-isolation -v 2>&1 | tee build.log"}
+{"kind":"phase","ts":"2026-06-05T01:16:28Z","phase":"compile","seconds":0.391,"exit":0,"cmd":"bash -c GPU_ARCHS=gfx1100 pip install . --no-build-isolation -v 2>&1 | tee build.log"}
+{"kind":"phase","ts":"2026-06-05T01:16:48Z","phase":"compile","seconds":0.003,"exit":127,"cmd":"GPU_ARCHS=gfx1100 pip install . --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-05T01:16:53Z","phase":"compile","seconds":0.282,"exit":1,"cmd":"bash -c GPU_ARCHS=gfx1100 pip install . --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-05T01:19:06Z","phase":"compile","seconds":130.410,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuMesh/src && GPU_ARCHS=gfx1100 pip install . --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-05T01:19:22Z","phase":"test","seconds":1.794,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuMesh/src/examples && python3 simplify.py 2>&1"}
+{"kind":"phase","ts":"2026-06-05T01:19:55Z","phase":"test","seconds":23.871,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/CuMesh/src/examples\necho '=== simplify.py ==='\npython3 simplify.py\necho '=== fill_holes.py ==='\npython3 fill_holes.py\necho '=== remove_duplicate_faces.py ==='\npython3 remove_duplicate_faces.py\necho '=== unify_orientations.py ==='\npython3 unify_orientations.py\necho '=== uv_unwrap.py ==='\npython3 uv_unwrap.py\necho '=== remesh.py ==='\npython3 remesh.py\necho '=== All tests completed ==='\n"}
+{"kind":"session","ts":"2026-06-05T01:20:00Z","epoch":1780622400.586571207,"event":"end","platform":"linux-gfx1100"}
