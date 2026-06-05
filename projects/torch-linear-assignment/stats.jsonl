@@ -3,3 +3,8 @@
 {"kind":"phase","ts":"2026-06-05T09:52:25Z","phase":"compile","seconds":113.814,"exit":0,"cmd":"pip install --no-build-isolation -e /var/lib/jenkins/moat/projects/torch-linear-assignment/src"}
 {"kind":"phase","ts":"2026-06-05T09:52:39Z","phase":"test","seconds":3.420,"exit":1,"cmd":"pytest /var/lib/jenkins/moat/projects/torch-linear-assignment/src/tests/ -v"}
 {"kind": "tokens", "ts": "2026-06-05T09:54:31Z", "tokens": 44699, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-05T09:57:01Z", "tokens": 54323, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-05T09:57:21Z","epoch":1780653441.343615289,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-05T09:57:27Z","phase":"linux-gfx90a","seconds":0.004,"exit":127,"cmd":"build -- pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-05T09:57:32Z","phase":"compile","seconds":0.347,"exit":1,"cmd":"pip install --no-build-isolation -e ."}
+{"kind":"session","ts":"2026-06-05T10:00:19Z","epoch":1780653619.915448622,"event":"end","platform":"linux-gfx90a"}
