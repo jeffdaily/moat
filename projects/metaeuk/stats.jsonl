@@ -2,3 +2,4 @@
 {"kind":"phase","ts":"2026-06-05T09:24:05Z","phase":"compile","seconds":7.176,"exit":2,"cmd":"cmake --build projects/metaeuk/build -j16"}
 {"kind":"phase","ts":"2026-06-05T09:25:39Z","phase":"compile","seconds":8.205,"exit":2,"cmd":"cmake --build projects/metaeuk/build -j16"}
 {"kind":"phase","ts":"2026-06-05T09:51:41Z","phase":"compile","seconds":458.213,"exit":0,"cmd":"cmake --build projects/metaeuk/build -j16"}
+{"kind": "tokens", "ts": "2026-06-05T09:53:04Z", "tokens": 171217, "source": "porter"}
