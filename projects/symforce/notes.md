@@ -13,6 +13,16 @@ make -j$(nproc)
 
 For generated Caspar libraries (via the Python codegen pipeline), pass `-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a` to cmake.
 
+## Validation
+
+The runtime library (libcaspar_runtime.a) compiles successfully for gfx90a. Object files contain HIP device code:
+```
+llvm-objdump --offloading build/CMakeFiles/caspar_runtime.dir/shared_indices.cu.o
+# shows: hipv4-amdgcn-amd-amdhsa--gfx90a
+```
+
+Full integration testing requires symforce to be installed, which needs modifications to symforce's main CMakeLists.txt to support HIP. The caspar examples (kernel_example, bal, multiple_factors) test GPU execution with PyTorch but cannot run until the main symforce package supports USE_HIP.
+
 ## Port details
 
 ### HIP cooperative groups gaps
