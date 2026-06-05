@@ -116,3 +116,53 @@ GPU flag confirmed active in logs: "Use GPU 1" shown in predictexons workflow.
 
 GPU arch: gfx90a (MI250X)
 Validation: PASSED
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+### Build
+Built for gfx1100 using HIP_VISIBLE_DEVICES=3:
+```bash
+HIP_VISIBLE_DEVICES=3 cmake -S /var/lib/jenkins/moat/projects/metaeuk/src \
+  -B /var/lib/jenkins/moat/projects/metaeuk/build-gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DENABLE_CUDA=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+HIP_VISIBLE_DEVICES=3 cmake --build /var/lib/jenkins/moat/projects/metaeuk/build-gfx1100 -j16
+```
+Build completed successfully. Binary: 15M metaeuk executable linked against libmarv.so (52M) and libamdhip64.so.7.
+
+### GPU Code Verification
+- libmarv.so contains .hip_fatbin section (47.5 MB) with gfx1100 device code
+- Contains hipLaunchKernel and GPU kernel symbols
+- Verified gfx1100 arch in fatbin with objdump
+
+### Test Results
+
+**CPU Baseline (--gpu defaults to 0):**
+Ran complete test suite from tests/run.sh:
+- minus_strand, multi_exon, two_contigs, target_overlap, cluster_rep, target_cov
+- test_no_overlap.sh, test_agg_tax.sh, test_start_scan.sh
+- Result: ALL OKAY
+
+**GPU Mode (--gpu 1):**
+Ran 6 core test suites with --gpu 1 flag in predictexons command:
+- minus_strand_results_gpu
+- multi_exon_results_gpu
+- two_contigs_results_gpu
+- target_overlap_results_gpu
+- cluster_rep_results_gpu
+- target_cov_results_gpu
+- Result: ALL OKAY (all tests passed, results match expected output)
+
+GPU flag confirmed active in logs: "Use GPU 1" shown in predictexons workflow.
+
+### Pass/Fail Summary
+- Build: PASS
+- GPU code present: PASS (gfx1100 kernels in .hip_fatbin)
+- CPU baseline tests: PASS (9/9 test scripts)
+- GPU functional tests: PASS (6/6 core test suites, --gpu 1)
+- CPU vs GPU consistency: PASS (identical results)
+
+GPU arch: gfx1100
+Validation: PASSED
