@@ -9,3 +9,4 @@
 {"kind":"phase","ts":"2026-06-05T05:21:51Z","phase":"test","seconds":59.038,"exit":1,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_ffpa_bwd.py -v --tb=short"}
 {"kind":"phase","ts":"2026-06-05T05:23:12Z","phase":"test","seconds":49.614,"exit":0,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_ffpa_bwd.py -v --tb=short"}
 {"kind":"phase","ts":"2026-06-05T05:26:12Z","phase":"test","seconds":58.300,"exit":0,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/ffpa-attn/src/tests/ -v --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_triton_autotune_mode.py --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_persistent_autotune_config.py --ignore=/var/lib/jenkins/moat/projects/ffpa-attn/src/tests/test_perf_tflops.py --tb=short"}
+{"kind": "tokens", "ts": "2026-06-05T05:27:43Z", "tokens": 128965, "source": "porter"}
