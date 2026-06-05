@@ -7,7 +7,7 @@
   "priority": 5.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:39:43Z",
-  "updated_at": "2026-06-04T19:41:52Z",
+  "updated_at": "2026-06-05T18:55:46Z",
   "head_sha": "ab5396f0f71e2c16955b6676399a68b21a601159",
   "depends_on": [],
   "platforms": {
@@ -58,13 +58,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1101": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "validation-failed",
+      "blocked": true,
+      "blocked_reason": "STRUMPACK requires Fortran source files (src/dense/lapack/*.f compiled into libstrumpack). On this Windows host, no MSVC-ABI Fortran compiler exists: MinGW gfortran (Strawberry) is MinGW-ABI and CMake refuses to mix it with MSVC-ABI Clang/HIP; TheRock's flang.exe is the internal LLVM Fortran frontend binary (not a user-facing driver) and cannot compile .f90 files; no Intel ifort/ifx installed. All-MinGW toolchain (gcc+gfortran) is blocked by CMake's 'Windows-Clang-HIP.cmake: mixes Clang and MSVC or GNU'. All-MSVC + gfortran Fortran is blocked by CMake passing MSVC linker flags to gfortran's ld. Unblocked by: install Intel oneAPI Fortran Compiler (ifort/ifx) or install a working LLVM flang driver (flang-new) for Windows MSVC-ABI.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-05T18:55:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

@@ -321,3 +321,51 @@ Additional shipped examples:
 All results match gfx90a (MI250X, wave64) closely. The rocSOLVER/rocSPARSE calls are
 arch-agnostic; the multifrontal LU + triangular solve correct on gfx1100 (RDNA3, wave32)
 confirms the port's wave64-to-wave32 portability.
+
+## Validation 2026-06-05 (gfx1101, Windows 11 -- BLOCKED)
+
+Platform: Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11 Pro, TheRock ROCm 7.14.0a20260604.
+Fork: jeffdaily/STRUMPACK moat-port, commit `ab5396f0f71e2c16955b6676399a68b21a601159`.
+
+### Build attempt
+
+Tried three compiler toolchain combinations:
+
+1. **All-clang (TheRock clang++/clang + flang for Fortran)**: TheRock's `flang.exe` is the
+   internal LLVM Fortran frontend binary (`flang -fc1` layer), not a user-facing driver. It
+   rejects all driver-level flags (`-triple`, `-emit-obj`, etc.) with "unknown argument" errors
+   and cannot compile `.f90` files directly. CMake also fails to detect it as a valid Fortran
+   compiler (`CMAKE_Fortran_PREPROCESS_SOURCE` not set, Fortran ID = unknown).
+
+2. **MinGW all-GNU (Strawberry gcc/g++/gfortran) + TheRock clang++ for HIP**: CMake's
+   `Windows-Clang-HIP.cmake:187` error: "The current configuration mixes Clang and MSVC or
+   some other CL compatible compiler tool. Use either Clang or MSVC for all of C, C++, and/or
+   HIP." MinGW GNU ABI + MSVC-ABI Clang-HIP is refused.
+
+3. **MSVC cl.exe for C/CXX + TheRock clang++ for HIP + gfortran for Fortran**: CMake passes
+   MSVC linker flags (`/machine:x64`) to the gfortran link step, causing MinGW's ld to fail
+   with "cannot find /machine:x64". MSVC + MinGW-ABI gfortran cannot share a linker.
+
+### Root cause
+
+STRUMPACK compiles 8 Fortran `.f` source files (`src/dense/lapack/[sdcz]geqp3tol.f`,
+`[sdcz]lapmr.f`) into `libstrumpack.a` (custom QR pivot routines). No working MSVC-ABI
+Fortran compiler exists on this host:
+- **MinGW gfortran**: MinGW ABI, incompatible with Clang-HIP (MSVC ABI target).
+- **TheRock flang.exe**: Internal frontend binary, not a functional driver.
+- **Intel ifort/ifx**: Not installed.
+
+### How to unblock
+
+Install **Intel oneAPI Base Toolkit** + **HPC Toolkit** (provides ifort/ifx, MSVC-ABI
+compatible) on this Windows host, or install a working LLVM flang driver
+(`flang-new.exe` targeting MSVC ABI). With either compiler:
+- Use `CMAKE_Fortran_COMPILER=ifx` (Intel) or `CMAKE_Fortran_COMPILER=flang-new` (LLVM).
+- The rest of the build (clang++ for C/CXX/HIP, METIS from RXMesh deps, rocm-openblas from
+  TheRock `_rocm_sdk_devel/lib/host-math/lib/rocm-openblas.lib`) is ready to go.
+- METIS: `B:/develop/moat/projects/RXMesh/build/_deps/metis-build/metis.lib` + GKlib.lib.
+- OpenBLAS: `_rocm_sdk_devel/lib/host-math/lib/rocm-openblas.lib` (DLL at
+  `_rocm_sdk_devel/bin/rocm-openblas.dll`).
+- ROCBLAS_TENSILE_LIBPATH=`_rocm_sdk_libraries/bin/rocblas/library` at runtime.
+- All ROCm cmake packages in `_rocm_sdk_devel/lib/cmake/` (hip, hipblas, hipsparse,
+  rocsolver, rocblas, rocprim, rocthrust).
