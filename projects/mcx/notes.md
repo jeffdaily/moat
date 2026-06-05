@@ -140,6 +140,53 @@ Test time: ~3 minutes (full test suite)
 Passing core tests: 29/40
 Blocking failures: 11/40 (all reflection-related)
 
+## Porter Investigation 2026-06-05
+
+### Deep Dive into Reflection Bug
+
+Investigated the cube60b benchmark failure (18% absorption vs expected 27%). The 9% absorption gap suggests reflection is barely helping despite being enabled.
+
+### Findings
+
+1. **Reflection IS happening**: Added atomic counters confirming:
+   - TIR (Total Internal Reflection): ~390K events per 1M photons
+   - Partial reflection (rand <= Rtotal): ~40K events per 1M photons
+   - Total reflections: ~430K per 1M photons
+   
+2. **Fresnel coefficients are correct**: Debug output shows Rtotal ~2.5% at near-normal incidence (n1=1.37 to n2=1.0), matching theoretical ((1.37-1)/(1.37+1))^2 = 2.44%.
+
+3. **TIR threshold is correct**: Critical angle is ~47 degrees from normal. Photons at steeper angles (cphi < 0.73) correctly trigger TIR.
+
+4. **Forced reflection produces 99.6% absorption**: When transmission path is disabled (`if (false && ...)`), absorption jumps to 99.6%, confirming reflection mechanics work.
+
+5. **No early exits or Russian Roulette**: Counter showed 0 early exits, 0 Russian Roulette exits. Photons escape mainly through the transmission decision after Fresnel check.
+
+### Hypothesis
+
+The reflected photons are not propagating correctly after reflection. Possible causes:
+- Position adjustment after reflection (`mcx_nextafterf`) may place photon incorrectly
+- `idx1dold` restoration may not fully revert state
+- Some subtle HIP/CUDA difference in how the next iteration processes the reflected photon
+
+### What works
+
+- Core photon transport (cube60 ~17% matches expected)
+- Fresnel coefficient calculation
+- TIR detection
+- Reflection velocity flip
+- Transmission path and escape
+
+### What fails
+
+- Reflected photons don't contribute to absorption as expected
+- Expected ~10% more absorption from reflection; getting ~0.6%
+
+### Next steps
+
+1. Compare assembly output between CUDA and HIP builds for the reflection code path
+2. Add verbose logging of a single reflected photon's full trajectory
+3. Check if `__float2int_rn` or `mcx_nextafterf` behave differently on AMD GPUs
+
 ## Review 2026-06-05
 
 ### Summary

@@ -10,3 +10,5 @@
 {"kind": "tokens", "ts": "2026-06-05T00:10:43Z", "tokens": 62668, "source": "reviewer"}
 {"kind":"phase","ts":"2026-06-05T00:12:17Z","phase":"compile","seconds":70.837,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mcx/src && rm -rf build && mkdir build && cd build && cmake ../src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release && cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T00:15:23Z","phase":"test","seconds":164.117,"exit":11,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mcx/src/test && HIP_VISIBLE_DEVICES=0 ./testmcx.sh 2>&1"}
+{"kind": "tokens", "ts": "2026-06-05T00:23:24Z", "tokens": 60626, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T00:24:20Z","phase":"compile","seconds":0.136,"exit":1,"cmd":"cmake --build . -j128"}

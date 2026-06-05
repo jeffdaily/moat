@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-04T23:23:31Z",
-  "updated_at": "2026-06-05T00:22:47Z",
+  "updated_at": "2026-06-05T00:58:09Z",
   "head_sha": "0a54e6db3a36ae1ab135db9a0097f73121bc0c66",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "validation-failed",
-      "blocked": false,
-      "blocked_reason": null,
+      "state": "porting",
+      "blocked": true,
+      "blocked_reason": "Reflection physics bug: cube60b shows 18% absorption vs expected 27%. Reflection events occur but do not increase absorption proportionally. Root cause unclear after deep investigation.",
       "validated_sha": null,
       "started_at": "2026-06-04T23:45:54Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T00:22:47Z",
+      "updated_at": "2026-06-05T00:58:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
