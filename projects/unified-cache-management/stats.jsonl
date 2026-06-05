@@ -35,3 +35,7 @@
 {"kind":"phase","ts":"2026-06-04T15:10:48Z","phase":"compile","seconds":16.584,"exit":1,"cmd":"D:/Develop/TheRock/.venv/Scripts/cmake.exe --build /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j6"}
 {"kind":"phase","ts":"2026-06-04T15:13:25Z","phase":"test","seconds":20.679,"exit":8,"cmd":"D:/Develop/TheRock/.venv/Scripts/ctest.exe --test-dir /d/Develop/moat/projects/unified-cache-management/build_win_gfx1151 -j1 --timeout 120 --output-on-failure -V"}
 {"kind": "tokens", "ts": "2026-06-04T15:19:27Z", "tokens": 141694, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T19:13:18Z","phase":"compile","seconds":0.065,"exit":1,"cmd":"cmake --build build_win_gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T19:14:40Z","phase":"compile","seconds":0.064,"exit":1,"cmd":"cmake --build build_win_gfx1101 --target ucmshared.test"}
+{"kind":"phase","ts":"2026-06-05T19:14:49Z","phase":"compile","seconds":0.126,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/unified-cache-management/build_win_gfx1101 --target ucm/shared/test/ucmshared.test.exe"}
+{"kind":"phase","ts":"2026-06-05T19:14:56Z","phase":"test","seconds":2.024,"exit":8,"cmd":"bash -c cd 'B:/develop/moat/projects/unified-cache-management/build_win_gfx1101' && HIP_VISIBLE_DEVICES=0 ctest -j1 --output-on-failure 2>&1"}

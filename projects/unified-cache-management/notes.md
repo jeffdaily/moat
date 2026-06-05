@@ -335,3 +335,54 @@ GPU trans gate: 3/3 PASS.
 
 Result: windows-gfx1151 COMPLETED at 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
 linux-gfx90a and linux-gfx1100 carried forward (binary-equiv, WIN32-only delta).
+
+## Validation 2026-06-05 (windows-gfx1101, Radeon PRO V710 / gfx1101 RDNA3)
+
+GPU: AMD Radeon PRO V710 (gfx1101), HIP_VISIBLE_DEVICES=0, ROCm 7.14.0a20260604 via TheRock.
+Fork: jeffdaily/unified-cache-management moat-port @ 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
+
+### Build commands
+
+ROCm root: `B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel`
+
+```
+cmake -S src -B build_win_gfx1101 -G Ninja \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=OFF -DBUILD_UNIT_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DCMAKE_C_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_CXX_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_STANDARD=17 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=<rocm_root>
+cmake --build build_win_gfx1101 -j64
+```
+
+Deploy TheRock's amdhip64_7.dll + amd_comgr.dll + rocm_kpack.dll + hiprtc0714.dll +
+hiprtc-builtins0714.dll + metrics.dll beside the test exe before running
+(System32 amdhip64_7.dll is a broken Adrenalin version).
+
+gfx1101 device code confirmed (compile_commands.json):
+  --offload-arch=gfx1101 for cuda_sm_kernel.cu (trans/rocm kernel)
+
+### Test results (ctest -j1, 34 tests discovered)
+
+GPU copy-kernel correctness gates (all PASS):
+- UCTransUnitTest.CopyDataWithCE: PASS (0.23 sec)
+- UCTransUnitTest.CopyDataWithSM: PASS (0.46 sec)
+- UCTransUnitTest.CopyDataBatchWithSM: PASS (0.45 sec)
+
+Non-GPU tests: 25/25 PASS (hashset, spsc_ring_queue, topn_heap, metrics).
+
+5 logger tests (UCLoggerPerfTest.*, UCLoggerTest.*) report "Failed" in ctest due to
+TearDown cleanup failing with "file in use" -- spdlog's async thread holds the log
+file open on Windows at process exit. The gtest body itself shows [OK] for all 5.
+Pre-existing Windows spdlog behavior, not a regression.
+
+UCMetricsUT.ConcurrentUpdateAndCollect: FAIL on this run (non-deterministic CPU
+multi-threaded counter race -- same pre-existing test that fails on Linux gfx90a/gfx1100
+deterministically and is non-deterministic on Windows; no GPU code path involved).
+
+Total: 28/34 PASS (5 logger TearDown-only failures + 1 CPU race, all pre-existing).
+GPU trans gate: 3/3 PASS.
+
+Result: windows-gfx1101 COMPLETED at 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
