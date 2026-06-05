@@ -52,3 +52,27 @@ print(f'Output: {image.shape}, range=[{image.min():.4f}, {image.max():.4f}]')
 ## Wave64 safety
 
 The code uses `cg::tiled_partition<32>` for warp-level operations. This creates a 32-lane logical tile regardless of hardware wave width. The `constexpr warp_size = 32` matches the tile size, not the wavefront. This is arch-agnostic and safe on wave64 (gfx90a).
+
+## Validation 2026-06-05 (linux-gfx90a)
+
+Platform: AMD Instinct MI250X (gfx90a:sramecc+:xnack-), ROCm 7.2, PyTorch 2.13.0a0+gitb5e90ff
+
+Build command:
+```bash
+source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12
+export HIP_VISIBLE_DEVICES=2
+cd /var/lib/jenkins/moat/projects/faster-gaussian-splatting/src/FasterGSCudaBackend
+pip install -e . --no-build-isolation
+```
+
+Test results: 15/15 PASS
+
+Validated configurations:
+- Gaussian counts: 10, 100, 500, 1000, 5000, 10000
+- Resolutions: 128x128, 256x256, 512x512, 800x600
+- SH bases: 1, 4, 8, 16
+- Determinism: bit-exact results across runs with same seed
+
+All rasterization tests produce valid output (no NaN/Inf, clamped to [0,1], correct shapes).
+
+GPU execution confirmed on real hardware. Port is validated at commit 98be02d4095ff01ac22cbf884ade6c9d950644a0.
