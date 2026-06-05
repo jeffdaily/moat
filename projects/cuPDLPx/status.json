@@ -2,7 +2,7 @@
   "schema_version": 1,
   "name": "cuPDLPx",
   "upstream_url": "https://github.com/MIT-Lu-Lab/cuPDLPx",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/cuPDLPx",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "cmake",
