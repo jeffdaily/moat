@@ -274,3 +274,58 @@ Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_c
 State: windows-gfx1101 -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).
 
 Note for linux-gfx90a and linux-gfx1100 (currently in revalidate): the new commit 3d706db adds only Windows-specific source fixes (WIN32-guarded or text-mode behavior that is a no-op on POSIX where text mode == binary mode). Those validators may run `utils/codeobj_diff.py` between 09346fd and 3d706db for their arch to confirm binary equivalence and carry forward without GPU re-run.
+
+## Revalidation 2026-06-05 (linux-gfx90a, ROCm 7.2.1)
+
+Device: AMD Instinct MI250X gfx90a, ROCm 7.2.53211 (HIP 7.2.53211.e1a6bc5663), HIP_VISIBLE_DEVICES=3.
+
+Revalidation trigger: HEAD moved from 09346fdeaa9e179e45ba23c8264356ab59884e50 to 3d706db0a455461494d06425fe3010531458eed9 (Windows build and IO compatibility fixes).
+
+Binary equivalence check: libgtsam_points_cuda.so IDENTICAL (680 exported symbols, device ISA identical), libgtsam_points.so indeterminate (no device code, expected). The GPU library binary is identical on gfx90a. However, host source changes include correctness fixes (cudaStreamSynchronize in save/load, std::ios::binary mode) that warrant real-GPU validation to confirm no behavioral regression.
+
+GTSAM dep: reused source-built borglab/gtsam @ 4.3a0 at /var/lib/jenkins/moat/_deps/gtsam/install (libgtsam.so.4.3a0, libgtsam_unstable.so.4.3a0, libmetis-gtsam.so, libcephes-gtsam.so).
+
+Build at 3d706db:
+```
+cmake -S /var/lib/jenkins/moat/projects/gtsam_points/src \
+  -B /var/lib/jenkins/moat/projects/gtsam_points/build_new \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DBUILD_WITH_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/gtsam/install \
+  -DBUILD_WITH_OPENMP=ON -DBUILD_WITH_TBB=OFF -DBUILD_TESTS=ON \
+  -DBUILD_DEMO=OFF -DBUILD_EXAMPLE=OFF -DBUILD_TOOLS=OFF
+export LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/gtsam/install/lib:/opt/rocm/lib
+utils/timeit.sh gtsam_points compile -- ninja -C /var/lib/jenkins/moat/projects/gtsam_points/build_new -j 16
+```
+Build time: recorded by timeit.sh.
+
+Test run:
+```
+export LD_LIBRARY_PATH=/var/lib/jenkins/moat/_deps/gtsam/install/lib:/opt/rocm/lib
+export HIP_VISIBLE_DEVICES=3
+utils/timeit.sh gtsam_points test -- ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/build_new --output-on-failure -j1
+```
+
+Results: 87/87 tests passed, 0 failed. Total test time: 39.31 sec.
+
+GPU gate results:
+- test_matching_cost_factors VGICP_CUDA_NONE, VGICP_CUDA_OMP, VGICP_CUDA_TBB: all PASSED. IntegratedVGICPFactorGPU converged correctly across FORWARD/BACKWARD/UNARY/MULTI_FRAME (rot < 0.015 rad, trans < 0.15 m tolerances held).
+- test_voxelmap VoxelMapGPU, VoxelMapGPU_Intensity (atomicMax on hipMallocAsync fine-grained device memory), VoxelMapGPU_IO: all PASSED. The new cudaStreamSynchronize calls in save_compact and load ensure correct stream ordering; IO binary mode prevents Windows-specific data corruption, no effect on Linux (text mode == binary mode on POSIX).
+- test_types TestPointCloudGPU: PASSED.
+- Device dispatch confirmed: AMD_LOG_LEVEL=3 shows ShaderName records for GPU kernels on gfx90a GCD 3. All GPU operations completed successfully.
+
+Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_compact_mahalanobis, test_continuous_time, test_continuous_trajectory, test_global_registration, test_headers, test_kdtree, test_loam_factors, test_voxel_raycaster -- all PASSED, no regression.
+
+Code changes at 3d706db vs 09346fd (diff analysis):
+1. CMakeLists.txt: Windows-specific build changes (STATIC libs, NOMINMAX, /FORCE:MULTIPLE, PRE_TEST discovery) all guarded by `if(WIN32 AND BUILD_WITH_HIP)` -- zero effect on Linux builds.
+2. Header includes: `#include <numeric>` added for MSVC compatibility -- no-op on GCC (header already transitively included).
+3. IO changes: std::ios::binary mode and "\n" vs std::endl -- on Linux, text mode == binary mode (no CRLF translation), so functionally identical; both changes are correctness fixes for Windows.
+4. Stream sync: cudaStreamSynchronize(0) added in save_compact (after D2H memcpy, before reading host buffer) and load (after H2D memcpy, before source buffers go out of scope) -- correctness improvement, ensures proper stream ordering on all platforms.
+5. path.generic_string() vs path.string() -- on Linux both return forward slashes, functionally identical.
+
+The libgtsam_points_cuda.so device code and exported symbols are binary-identical on gfx90a. Host-side changes are correctness fixes that do not regress GPU or non-GPU tests. Full 87/87 test pass confirms the new commit is validated on gfx90a.
+
+State: linux-gfx90a -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).

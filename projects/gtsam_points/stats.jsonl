@@ -30,3 +30,8 @@
 {"kind":"phase","ts":"2026-06-05T20:33:43Z","phase":"compile","seconds":0.069,"exit":1,"cmd":"ninja -j64 test_types"}
 {"kind":"phase","ts":"2026-06-05T20:58:29Z","phase":"test","seconds":22.952,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1 --timeout 120"}
 {"kind":"phase","ts":"2026-06-05T20:59:41Z","phase":"test","seconds":22.795,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1101 --output-on-failure -j1 --timeout 120"}
+{"kind":"phase","ts":"2026-06-05T21:43:52Z","phase":"compile","seconds":107.218,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/build_old -j 16"}
+{"kind":"phase","ts":"2026-06-05T21:45:52Z","phase":"compile","seconds":106.555,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/build_new -j 16"}
+{"kind":"phase","ts":"2026-06-05T21:46:16Z","phase":"test","seconds":0.142,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/build_new --output-on-failure -j1"}
+{"kind":"phase","ts":"2026-06-05T21:46:53Z","phase":"compile","seconds":25.297,"exit":1,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/build_new -j 16"}
+{"kind":"phase","ts":"2026-06-05T21:47:42Z","phase":"test","seconds":39.448,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/gtsam_points/build_new --output-on-failure -j1"}
