@@ -1057,3 +1057,122 @@ scan 50/50, scan_by_key 55/55, sort 71/71, topk 110/110.
 
 State transition: review-passed -> completed. validated_sha = 3782728a8254af4eef6e828a3fed62362c268502.
 Fork untouched (no commits, no push).
+
+## Validation 2026-06-05 (windows-gfx1101, attempt 1) -- RESULT: validation-failed (2 new failure classes)
+
+GPU: gfx1101 Radeon PRO V710, Windows 11, HIP_VISIBLE_DEVICES=0, ROCm/TheRock 7.14.0a20260604.
+Fork HEAD: 3782728a8254af4eef6e828a3fed62362c268502. No source changes.
+
+Build: configured fresh with Ninja + clang++ for gfx1101, AF_WITH_IMAGEIO=OFF (FreeImage not
+available on Windows; vcpkg package not installed). AF_STACKTRACE_TYPE=None (avoids Boost Windbg
+stacktrace pulling conflicting Windows API headers). AF_TEST_WITH_MTX_FILES=OFF (Windows path
+>260 char limit exceeded during cmake sparse matrix download).
+
+Configure command:
+```
+cmake -S projects/arrayfire/src -B projects/arrayfire/src/build-gfx1101 -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_PREFIX_PATH=<_rocm_sdk_devel> \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DAF_BUILD_HIP=ON -DAF_BUILD_CUDA=OFF \
+  -DAF_BUILD_CPU=ON -DAF_BUILD_OPENCL=OFF -DAF_BUILD_ONEAPI=OFF \
+  -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_FORGE=OFF \
+  -DAF_WITH_CUDNN=OFF -DAF_WITH_IMAGEIO=OFF -DAF_BUILD_DOCS=OFF \
+  -DAF_BUILD_TESTS=ON -DAF_STACKTRACE_TYPE=None -DAF_TEST_WITH_MTX_FILES=OFF
+```
+Build: ninja -j64. 1071/1071 targets. Build time: ~240s.
+
+DLL setup (required before running tests): TheRock runtime DLLs copied to build-gfx1101/bin/
+(Windows EXE dir-search precedes System32) -- amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll,
+hiprtc0714.dll, hiprtc-builtins0714.dll, hipsparse.dll, hipsolver.dll, hipblas.dll, hipfft.dll,
+libhipblaslt.dll, rocblas.dll, rocsolver.dll, rocsparse.dll, rocfft.dll, rocrand.dll,
+hiprand.dll, hipblaslt (dir), rocblas/library (dir).
+
+Test run environment:
+```bash
+BUILD_BIN="B:/develop/moat/projects/arrayfire/src/build-gfx1101/bin"
+ROCM_DEVEL="B:/develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_devel"
+ROCM_LIBS="B:/develop/TheRock/.venv/Lib/site-packages/_rocm_sdk_libraries"
+HIP_VISIBLE_DEVICES=0
+ROCM_PATH="${ROCM_DEVEL}"
+ROCM_KPACK_PATH="${ROCM_LIBS}/.kpack/blas_lib_gfx1101.kpack"
+# NOTE: ROCBLAS_TENSILE_LIBPATH was NOT set -- this was the critical omission
+PATH="${BUILD_BIN}:${ROCM_LIBS}/bin:${ROCM_DEVEL}/bin:${PATH}"
+```
+
+Test command:
+```bash
+bash utils/timeit.sh arrayfire test -- ctest --test-dir projects/arrayfire/src/build-gfx1101 \
+  -R "_cuda$" -j1 --output-on-failure
+```
+
+Tests run 1-114 completed cleanly before the run got stuck (orphan test processes
+from parallel diagnostic runs consumed the GPU). Final clean results cover 114/131 tests.
+
+PASSING (confirmed, tests 1-114 except failures listed below): ~109 tests passed cleanly.
+
+Key confirmed passes: jit (1781/1781), cholesky_dense (32/32), fft (pass), reduce (pass),
+scan (pass), scan_by_key (pass), sparse (86/86), sparse_convert (41/41), threading (9/9
+on Linux; threading_cuda result indeterminate on Windows due to process contention), blas
+(pass), qr_dense (pass), svd_dense (pass), rank_dense (pass), solve_dense (pass).
+
+FAILURES (confirmed clean, tests ran before diagnostic-process contention):
+
+1. confidence_connected (test 19): FAIL (expected). AF_WITH_IMAGEIO=OFF, no FreeImage on
+   Windows. All 36 subtests either SKIP (ConfidenceConnectedImageTest) or FAIL (TEMP_FORMAT
+   subtests call af::loadImage -> "ArrayFire compiled without Image IO support"). Same
+   disposition as Linux build without FreeImage; not a port defect.
+
+2. inverse_dense (test 57): FAIL. 8/8 large-matrix cases, ALL types (float/cfloat/double/cdouble).
+   Error magnitudes: float 0.80-6.18 >> eps 0.01; cfloat 1.09-20.46 >> eps 0.015;
+   double 0.26-1.63 >> eps 1e-5; cdouble 1.14-1.61 >> eps 1e-5.
+   Root cause: ROCBLAS_TENSILE_LIBPATH not set. rocSOLVER GETRF internally calls rocBLAS for
+   panel GEMM; without ROCBLAS_TENSILE_LIBPATH, rocblas.dll cannot find its Tensile GEMM
+   kernel libraries (TensileLibrary_*.dat in _rocm_sdk_libraries/bin/rocblas/library/). The
+   fallback path produces numerically wrong factorizations. Fix: set
+   ROCBLAS_TENSILE_LIBPATH=<_rocm_sdk_libraries>/bin/rocblas/library at run time.
+
+3. lu_dense (test 63): FAIL. 23/30 large-matrix cases, ALL types (float/cfloat/double/cdouble).
+   Small-matrix cases (3x3, InPlaceSmall/SplitSmall) PASS. Large cases catastrophically wrong:
+   float errors 0.30-2.35 >> eps 0.001; cfloat errors 1.53-4.67 >> eps 0.001;
+   double errors 0.13-1.18 >> eps 1e-8; cdouble errors 0.46-21.35 >> eps 1e-8.
+   Pivot mismatch also seen (LU/0.RectangularLarge1: 488/500 pivot matches). Same root cause
+   as inverse_dense: missing ROCBLAS_TENSILE_LIBPATH.
+
+4. sparse_arith (test 110): FAIL. SparseSparseArith subtests 40/40 crash with SEH 0xc0000005
+   (Windows ACCESS VIOLATION). Dense-sparse path (SPARSE_ARITH, 80 subtests) PASSES. The
+   crash occurs at test instantiation (~1ms), suggesting a null/invalid descriptor or a
+   hipSPARSE csrgeam2 API failure at setup. SPARSE_ARITH uses SpMV/SpMM; SparseSparseArith
+   uses hipsparseXcsrgeam2Nnz/csrgeam2. Possibly related to missing ROCBLAS_TENSILE_LIBPATH
+   (if hipsparse csrgeam2 internally uses rocBLAS for matrix ops) OR a Windows-specific
+   hipSPARSE csrgeam2 ABI/DLL issue. Needs re-check with ROCBLAS_TENSILE_LIBPATH set.
+
+INCOMPLETE (tests 115-131 not reached due to process contention):
+test_threading_cuda, test_timeit_cuda, test_topk_cuda, test_transform_cuda,
+test_transform_coordinates_cuda, test_transpose_cuda, test_transpose_inplace_cuda,
+test_triangle_cuda, test_type_traits_cuda, test_unique_cuda, test_where_cuda,
+test_write_cuda, test_variance_cuda, test_var_moments_cuda, test_sum_cuda,
+test_tile_cuda (approx 16 tests not reached).
+
+ROOT CAUSE SUMMARY:
+Primary: ROCBLAS_TENSILE_LIBPATH was not set in the test environment.
+On Windows, rocblas.dll from _rocm_sdk_devel/bin does NOT contain its Tensile GEMM
+kernel libraries. They live in _rocm_sdk_libraries/bin/rocblas/library/. Without this
+path set, rocBLAS (and rocSOLVER which calls rocBLAS for GETRF panel GEMMs) produces
+wrong numerical results. NOTE: ROCM_KPACK_PATH for the kpack system does NOT replace
+ROCBLAS_TENSILE_LIBPATH -- both must be set together on this TheRock distribution.
+
+Secondary: sparse_arith SparseSparseArith crash (may resolve once ROCBLAS_TENSILE_LIBPATH
+is set, or may be a separate Windows/hipSPARSE csrgeam2 issue).
+
+REQUIRED FOR NEXT RUN:
+Add ROCBLAS_TENSILE_LIBPATH to the test environment:
+```bash
+export ROCBLAS_TENSILE_LIBPATH="${ROCM_LIBS}/bin/rocblas/library"
+```
+Do NOT unset ROCBLAS_TENSILE_LIBPATH. Keep ROCM_KPACK_PATH as well.
+
+State transition: port-ready -> validation-failed (back to retry with fixed environment).
