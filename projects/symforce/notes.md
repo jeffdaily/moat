@@ -60,3 +60,75 @@ Minor cleanup items for PR-prep (not blockers):
 - Commit body contains "Strategy A" (MOAT vocabulary) -- scrub before upstream PR
 
 Ready for validation.
+
+## Validation linux-gfx90a 2026-06-05
+
+### Build
+
+Runtime library builds successfully for gfx90a:
+
+```bash
+cd symforce/caspar/source/runtime
+mkdir build && cd build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+make -j$(nproc)
+```
+
+Verified: libcaspar_runtime.a built successfully. Device code confirmed via:
+```
+llvm-objdump --offloading build/CMakeFiles/caspar_runtime.dir/shared_indices.cu.o
+# shows: hipv4-amdgcn-amd-amdhsa--gfx90a
+```
+
+### Test
+
+Attempted to run GPU tests via caspar examples (kernel_example). Installed symforce in editable mode. PyTorch 2.13.0 with ROCm detected GPU correctly (AMD Instinct MI250X).
+
+### Failure
+
+**Generated code templates missing compat header includes**
+
+The Jinja templates that generate .cu files include CUDA headers directly:
+
+- `symforce/caspar/source/templates/caspar_mappings.cu.jinja` line 7:
+  ```c++
+  #include <cooperative_groups.h>
+  #include <cooperative_groups/memcpy_async.h>
+  ```
+
+- `symforce/caspar/source/templates/kernel.cu.jinja` lines 4-8:
+  ```c++
+  #include <cooperative_groups.h>
+  #include <cooperative_groups/details/partitioning.h>
+  #include <cooperative_groups/memcpy_async.h>
+  #include <cooperative_groups/reduce.h>
+  #include <cuda_runtime.h>
+  ```
+
+When CasparLibrary.generate() is called from Python, it generates .cu files with these raw CUDA includes. On HIP, this fails at compile:
+
+```
+fatal error: 'cooperative_groups.h' file not found
+```
+
+The `cuda_to_hip.h` compat header IS correctly copied to the generated directory, but the generated .cu files do not include it.
+
+**Fix needed**: Update the templates to conditionally include the compat header:
+
+```c++
+#if defined(USE_HIP) || defined(__HIP_PLATFORM_AMD__)
+#include "cuda_to_hip.h"
+#else
+#include <cooperative_groups.h>
+#include <cooperative_groups/memcpy_async.h>
+// ... other CUDA includes
+#endif
+```
+
+This affects:
+- `symforce/caspar/source/templates/caspar_mappings.cu.jinja`
+- `symforce/caspar/source/templates/kernel.cu.jinja`
+
+The standalone runtime library compiles because those .cu files already have the compat header included at the top. Generated libraries fail because the templates emit raw CUDA includes.
+
+**Back to porter for template fixes.**
