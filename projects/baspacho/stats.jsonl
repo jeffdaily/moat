@@ -8,3 +8,10 @@
 {"kind":"phase","ts":"2026-06-05T08:22:06Z","phase":"compile","seconds":10.094,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/baspacho/src && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
 {"kind":"phase","ts":"2026-06-05T08:23:00Z","phase":"compile","seconds":50.531,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/baspacho/src && cmake --build build -- -j128"}
 {"kind":"phase","ts":"2026-06-05T08:23:54Z","phase":"test","seconds":43.900,"exit":8,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/baspacho/src && ctest --test-dir build --output-on-failure"}
+{"kind":"session","ts":"2026-06-05T14:35:20Z","epoch":1780670120.518517030,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-05T14:35:36Z","phase":"linux-gfx1100","seconds":0.003,"exit":127,"cmd":"compile -- bash -c cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
+{"kind":"phase","ts":"2026-06-05T14:35:43Z","phase":"compile","seconds":0.116,"exit":1,"cmd":"cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
+{"kind":"phase","ts":"2026-06-05T14:35:53Z","phase":"compile","seconds":6.565,"exit":0,"cmd":"bash -c cd projects/baspacho/src && cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
+{"kind":"phase","ts":"2026-06-05T14:36:35Z","phase":"compile","seconds":37.630,"exit":0,"cmd":"bash -c cd projects/baspacho/src && cmake --build build -- -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-05T14:37:21Z","phase":"test","seconds":39.321,"exit":8,"cmd":"bash -c cd projects/baspacho/src && HIP_VISIBLE_DEVICES=0 ctest --test-dir build --output-on-failure"}
+{"kind":"session","ts":"2026-06-05T14:37:50Z","epoch":1780670270.763804257,"event":"end","platform":"linux-gfx1100"}
