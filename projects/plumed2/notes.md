@@ -94,3 +94,7 @@ The workaround queries device attributes (`hipDeviceAttributeMaxSharedMemoryPerB
 ### Validation status
 
 Porter reports 32/32 regression tests pass on gfx90a. This is the correct validation path (real GPU run with the project's test suite). Reviewer does not block for missing GPU run; the validator stage provides that.
+
+## Review fix 2026-06-05
+
+Amended commit message to remove MOAT jargon "Strategy A pattern" -- now reads "uses a compatibility header approach". Pushed as 2ba581c3b.
