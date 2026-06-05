@@ -77,3 +77,7 @@ HIP_VISIBLE_DEVICES=0 ./build/cupdlpx 2club200v15p5scn.mps.gz . -v
 ### Action Required
 
 Porter must amend commit message to remove "Strategy A (compat header)" and describe the approach in plain language (e.g., "The port keeps sources in CUDA spelling; a compatibility header maps CUDA symbols to HIP at compile time.").
+
+### Resolution (2026-06-05)
+
+Amended commit message: replaced "Strategy A (compat header)" with "a compatibility header approach". Pushed db252232c95948f61825cf568c8a673c4e87850d to fork.
