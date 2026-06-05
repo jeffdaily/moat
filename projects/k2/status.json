@@ -7,17 +7,17 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "20f56c062675d09e34615209a811a63ff81f4b7f",
+  "updated_at": "2026-06-05T16:39:46Z",
+  "head_sha": "7531e5b6a67dcfdcb4f58dfcffcfeccd2035276c",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "20f56c062675d09e34615209a811a63ff81f4b7f",
       "started_at": "2026-05-31T02:39:49Z",
       "completed_at": "2026-05-31T08:34:10Z",
-      "updated_at": "2026-05-31T08:34:10Z",
+      "updated_at": "2026-06-05T16:39:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "20f56c062675d09e34615209a811a63ff81f4b7f",
       "started_at": "2026-05-31T08:47:00Z",
       "completed_at": "2026-05-31T08:52:30Z",
-      "updated_at": "2026-05-31T08:52:30Z",
+      "updated_at": "2026-06-05T16:39:30Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       "last_agent": "validator"
     },
     "windows-gfx1101": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "7531e5b6a67dcfdcb4f58dfcffcfeccd2035276c",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-05T16:39:46Z",
+      "updated_at": "2026-06-05T16:39:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +76,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1201": {
       "state": "port-ready",

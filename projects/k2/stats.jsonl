@@ -16,3 +16,13 @@
 {"kind":"phase","ts":"2026-05-31T08:49:42Z","phase":"test","seconds":75.307,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx1100.sh"}
 {"kind":"phase","ts":"2026-05-31T08:50:21Z","phase":"test","seconds":2.677,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
 {"kind":"phase","ts":"2026-05-31T08:52:06Z","phase":"test","seconds":31.486,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-05T15:58:26Z","phase":"compile","seconds":0.084,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build -j 64"}
+{"kind":"phase","ts":"2026-06-05T16:02:22Z","phase":"compile","seconds":55.686,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build -j 64"}
+{"kind":"phase","ts":"2026-06-05T16:06:02Z","phase":"compile","seconds":59.635,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build -j 64"}
+{"kind":"phase","ts":"2026-06-05T16:22:11Z","phase":"test","seconds":19.291,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1101.py"}
+{"kind":"phase","ts":"2026-06-05T16:23:46Z","phase":"test","seconds":31.621,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1101_v2.py"}
+{"kind":"phase","ts":"2026-06-05T16:33:15Z","phase":"compile","seconds":0.346,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j8"}
+{"kind":"phase","ts":"2026-06-05T16:33:25Z","phase":"compile","seconds":0.348,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j8"}
+{"kind":"phase","ts":"2026-06-05T16:33:46Z","phase":"compile","seconds":1.238,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j8"}
+{"kind":"phase","ts":"2026-06-05T16:34:12Z","phase":"test","seconds":19.222,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1101.py"}
+{"kind":"phase","ts":"2026-06-05T16:34:42Z","phase":"test","seconds":22.619,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1101_v2.py"}
