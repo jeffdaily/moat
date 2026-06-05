@@ -67,3 +67,27 @@ Linux FD path works for import. Mipmapped array export is stubbed due to missing
 
 ### 4. HIP kernel API mapping (RESOLVED)
 cooperative_groups, warp intrinsics, surf2D all work with HIP.
+
+## Review 2026-06-05
+
+### Commit Hygiene
+
+**MOAT jargon in commit message**: The commit message contains "Strategy A (compat header)" which is MOAT-internal vocabulary. MOAT standing rules prohibit "Strategy A/B" in upstream-visible text (commit messages, code comments, PR bodies). This must be reworded before the port is finalized.
+
+Location: Commit a912da8 message body, line 2.
+
+### Review summary
+
+The port is well-structured:
+- Strategy A correctly applied: single cuda_to_hip.h compat header that is a no-op on NVIDIA
+- CMake properly gates HIP/CUDA and allows CMAKE_HIP_ARCHITECTURES override
+- HipModularProgram.h correctly replaces nvrtc+nvJitLink with hiprtc single-step compilation
+- tiled_partition<32>, warp.shfl, warp.ballot, match_any are width-32 logical-warp ops (arch-agnostic per PORTING_GUIDE)
+- Linux platform support (mmap in MappedFile.h, O_DIRECT in unsuck_platform_specific.cpp) is cleanly implemented
+- HIP-Vulkan texture interop correctly stubbed with explanation (ROCm 7.2 lacks hipExternalMemoryGetMappedMipmappedArray)
+- No hardcoded warpSize; no wave64-only lane geometry assumptions
+- __debugbreak() properly aliased in both cuda_to_hip.h and unsuck.hpp
+
+**Note**: HipModularProgram lacks a destructor (does not free hipModule_t, events, or module pointers), but this is parity with the original CudaModularProgram which also lacks cleanup -- not a regression from the port.
+
+**Recommendation**: changes-requested due to MOAT jargon in commit message. The code itself is review-passed.
