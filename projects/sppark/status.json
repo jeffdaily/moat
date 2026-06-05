@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-05T14:16:03Z",
+  "updated_at": "2026-06-05T14:39:01Z",
   "head_sha": null,
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "MSM HIP port blocked by hipcc dual-pass compilation: __device__ functions fail in host pass. mont_t.hip extended (+500 lines), fp2 files patched, but sort.cuh/pippenger.cuh cannot compile. NTT still works.",
+      "blocked_reason": "MSM blocked by hipcc dual-pass compilation model: host functions (collect, invoke, etc.) use mont_t field operators which are __device__-only. nvcc skips host code during device pass; hipcc parses all code. Would require making mont_t operators __host__ __device__ or major code restructuring. NTT path works.",
       "validated_sha": null,
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T14:16:03Z",
+      "updated_at": "2026-06-05T14:39:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

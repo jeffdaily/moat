@@ -114,3 +114,50 @@ note: candidate function not viable: call to __device__ function from __host__ f
 - poc/msm-cuda/build.rs, poc/msm-cuda/Cargo.toml, poc/msm-cuda/cuda/pippenger_inf.cu
 - ff/bls12-381-fp2.hpp, ff/bls12-377-fp2.hpp, ff/alt_bn128-fp2.hpp
 - rust/src/build.rs, util/cuda2hip.hpp
+
+## MSM HIP Port Progress (2026-06-05 continued)
+
+### Fixed Issues
+
+1. **`__device__` macro stripped by affine_t.hpp**: ec/affine_t.hpp was redefining `__device__` to empty for non-CUDA compilers. Fixed by checking for `__HIPCC__` as well.
+
+2. **cooperative_groups duplicate definitions**: pippenger.cuh and batch_addition.cuh both defined cooperative_groups polyfills. Added include guards (`__SPPARK_COOP_GROUPS_POLYFILL__`).
+
+3. **ROCm 7 `__shfl_sync` 64-bit mask requirement**: ROCm 7's native `__shfl_sync` requires 64-bit masks. cuda2hip.hpp polyfills conflicted. Fixed by:
+   - Guarding old polyfills with `#if HIP_VERSION_MAJOR < 7`
+   - Adding 32-to-64-bit mask wrapper functions for ROCm 7+
+
+4. **`class` vs `typename` in template defaults**: Template parameters like `class bucket_h = class bucket_t::mem_t` fail with clang because `mem_t` is a type alias. Changed to `typename bucket_t::mem_t`.
+
+5. **Preprocessor guard alignment for host vs device types**: Fixed ff/*.hpp files to use `__HIP_DEVICE_COMPILE__` instead of `__HIPCC__` to properly distinguish host and device compilation phases.
+
+6. **Device-only code in sort.cuh/pippenger.cuh/batch_addition.cuh**: Added `#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)` guards around function bodies that use device intrinsics.
+
+### Remaining Blocking Issue
+
+**Host functions using device-only operators during device pass**
+
+hipcc's dual-pass compilation model differs from nvcc:
+- nvcc: Device pass only compiles device code; host code is skipped
+- hipcc: Device pass processes ALL code, including host functions
+
+The pippenger.cuh `collect()` function runs on CPU (post-GPU-kernel processing) and performs field arithmetic using mont_t operators. These operators are `__device__`-only (defined via `#define inline __device__ __forceinline__` in mont_t.hip).
+
+During hipcc device pass (compiling for gfx90a):
+1. Host function `collect()` is parsed and type-checked
+2. It instantiates field operations (`operator^`, `operator+=`, etc.) on mont_t types
+3. These operators are `__device__`-only, causing "call to __device__ function from __host__ function"
+
+For CUDA, this works because mont_t.cuh is only included when `__CUDA_ARCH__` is defined, so during host compilation, the types come from blst_t.hpp (CPU implementations). For HIP, we aligned to the same pattern (mont_t.hip only when `__HIP_DEVICE_COMPILE__`), but the issue persists because hipcc still parses host code during device pass.
+
+### Potential Solutions (require deeper refactoring)
+
+1. **Make mont_t operators `__host__ __device__`**: Would require implementing CPU-side field arithmetic in mont_t.hip (significant work).
+
+2. **Guard host-only code paths**: Add `#if !defined(__HIP_DEVICE_COMPILE__)` around `collect()` and similar host functions. But these functions are needed at runtime.
+
+3. **Use `__attribute__((host))` explicitly**: Mark all host-only functions to prevent device pass from trying to resolve their symbols.
+
+4. **Split host and device templates**: Have separate host and device versions of msm_t class and related templates.
+
+None of these are trivial; the codebase assumes nvcc's compilation model.
