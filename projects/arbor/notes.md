@@ -242,3 +242,41 @@ The port fixed the wave-size abstraction and 64-bit lane masks for CDNA/wave64, 
 
 ### Recommendation
 Return to porter for wave32-specific fixes to the `reduce_by_key` algorithm.
+
+## Delta-port 2026-06-05 (linux-gfx1100)
+
+**Root cause**: Two wave32-specific bugs in reduce_by_key algorithm.
+
+### Fix 1: num_lanes calculation (reduce_by_key.hpp)
+
+The original code used `threads_per_warp() - __clzll(key_mask)` to compute num_lanes. On wave32 with mask = 0xFFFFFFFF (32 active lanes):
+- `__clzll(0xFFFFFFFF)` = 32 (counts from bit 63, sees 32 leading zeros)
+- `threads_per_warp() - __clzll(mask)` = 32 - 32 = 0
+- This caused width=0 for all lanes, skipping all reduction iterations
+
+Fix: Use 64 (bit width of lane_mask_type) instead of threads_per_warp():
+- `64 - __clzll(0xFFFFFFFF)` = 64 - 32 = 32 (correct)
+
+This works correctly on both wave64 and wave32.
+
+### Fix 2: shfl_up/shfl_down boundary handling (hip_api.hpp)
+
+The original shfl_up/shfl_down implementations computed the source lane manually and called the generic `shfl(var, lane)`:
+```cpp
+return shfl(var, (int)lane_id - shift);  // shfl_up
+return shfl(var, (int)lane_id + shift);  // shfl_down
+```
+
+On wave32, when `lane_id + shift >= 32`, the computed lane is out of bounds. HIP's `__shfl` wraps around within the width group, causing incorrect values.
+
+Fix: Use HIP's native `__shfl_up` and `__shfl_down` intrinsics which correctly handle boundary conditions (returning the current lane's value when out of bounds).
+
+### Test Results (gfx1100)
+
+All 1182 unit tests pass, including:
+- reduce_by_key.no_repetitions
+- reduce_by_key.single_repeated_index
+- reduce_by_key.scatter
+- reduce_by_key.scatter_twice
+
+The fix is backward-compatible with gfx90a (wave64).

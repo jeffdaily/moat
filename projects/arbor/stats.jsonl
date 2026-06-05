@@ -19,3 +19,6 @@
 {"kind":"phase","ts":"2026-06-05T01:33:34Z","phase":"compile","seconds":60.020,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && cmake --build . -j$(nproc)"}
 {"kind":"phase","ts":"2026-06-05T01:40:16Z","phase":"test","seconds":0.006,"exit":126,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && ./test/unit 2>&1"}
 {"kind":"phase","ts":"2026-06-05T01:45:58Z","phase":"test","seconds":7.975,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && ./bin/unit 2>&1"}
+{"kind": "tokens", "ts": "2026-06-05T01:53:20Z", "tokens": 80259, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-05T02:04:23Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build . --target unit -j64"}
+{"kind":"phase","ts":"2026-06-05T02:10:22Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./bin/unit"}
