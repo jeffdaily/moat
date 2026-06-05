@@ -113,3 +113,33 @@ Addressed both required and recommended fixes from review:
 Commit: e1bb7068 "[ROCm] Fix hiprand typo and add rule-of-five to CUDAEventTimer"
 
 Build verified with `cmake --build build --target flamegpu boids_bruteforce tests -j$(nproc)`
+
+## Review 2026-06-05 (re-review after fixes)
+
+### Summary
+
+Re-reviewed the FLAMEGPU2 ROCm port after the porter applied fixes for two issues identified in the prior review:
+
+1. **hiprand typo** -- `include/flamegpu/detail/curand.cuh:26` now correctly has `hiprandStateMRG32k3a_t` (the `hipandStateMRG32k3a_t` typo is fixed)
+
+2. **Rule-of-five on CUDAEventTimer** -- `include/flamegpu/detail/CUDAEventTimer.cuh:39-43` now has deleted copy/move operations to prevent accidental double-destroy of GPU event handles
+
+Both fixes are complete and correct.
+
+### Verified
+
+- Commit message (`e1bb7068`) has `[ROCm]` prefix, <= 72 chars, includes Test Plan, mentions Claude, no noreply trailer
+- No hardcoded warpSize/32 assumptions (the `32` values in OccupancyMaxActiveBlocksPerMultiprocessor calls are block-size hints, not warp-size)
+- Library swaps (rocthrust, hipcub, hiprand) are correct
+- Build system properly gates CUDA vs HIP via `FLAMEGPU_GPU` option with `enable_language(HIP)`
+- No AMD-internal account references; all commits under jeffdaily or upstream authors
+- The occupancy-API workaround (`blockSize = 128` on HIP) is properly guarded and documented
+
+### Known items (not blockers for validation)
+
+- **WIP/DO NOT MERGE commits in history** -- these are from the existing amdgpu branch (77 commits ahead of upstream), not MOAT-added. Should be squashed/cleaned before the upstream PR phase.
+- **GitHub Actions workflow (Ubuntu-HIP.yml)** -- CPU-only CI, cannot validate GPU correctness. Was part of the existing port; validator should consider removal for upstream PR.
+
+### Recommendation
+
+**Approve** -- the fixes are complete. The port is ready for GPU validation on gfx90a.
