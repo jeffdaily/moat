@@ -571,3 +571,52 @@ tolerance (~1e-4 rel) and are bit-identical run-to-run. Matches gfx90a@3d098d5.
 
 No source change from the gfx90a-validated HEAD (follower validate-first; no
 delta port needed).
+
+## Review 2026-06-05 (reviewer, linux-gfx90a, Stage 2 HIPRT) -- REVIEW PASSED
+
+Re-review of moat-port HEAD db7f064 (fix commit for Transform3f struct layout).
+Previous review found that the JIT kernel's Transform3f was missing the `stamp`
+field that rmagine::Transform_ has (28 vs 32 bytes), which would corrupt pose
+data when indexing Tbm arrays in multi-pose simulations.
+
+### Fix verified correct
+
+The fix at db7f064 adds `unsigned int stamp` to Transform3f in both locations:
+- `src/rmagine_hiprt/include/rmagine/simulation/hiprt/pinhole_trace_kernel.h:33`
+- `src/rmagine_hiprt/src/simulation/PinholeSimulatorHiprt.cpp:254` (embedded JIT source)
+
+This matches the upstream `rmagine::Transform_<float>` layout:
+- `Quaternion_<DataT> R` (4 floats)
+- `Vector3_<DataT> t` (3 floats)
+- `uint32_t stamp` (1 uint32)
+
+Total: 32 bytes, matching Transform_ exactly. Fix is correct.
+
+### Non-blocking note: dead header has stale PinholeModelDev layout
+
+The header file `pinhole_trace_kernel.h` defines `PinholeModelDev` with field
+order `{width, height, f, c, range}`, while the embedded JIT source in
+`PinholeSimulatorHiprt.cpp` (lines 259-268) has the correct order `{width,
+height, range, f, c}` matching upstream `rmagine::PinholeModel`. The header is
+never included anywhere (dead code -- the actual kernel is the embedded raw
+string literal), so this inconsistency does not affect functionality. A future
+cleanup pass could either fix the header or delete it.
+
+### ROCm fault-class check
+
+- No hardcoded warpSize/32 assumptions in HIPRT code
+- No warp-synchronous primitives (__syncwarp, __shfl, etc.)
+- No texture objects requiring 256B pitch alignment
+- Memory management: HiprtMesh destructor frees pre_transform; HiprtScene
+  destructor frees m_geom and m_mesh_data_device; merged vertex/index buffers
+  are intentionally kept alive (documented as POC limitation)
+- No AMD-internal account references
+
+### Commit hygiene
+
+- `[ROCm]` prefix, 57 chars title
+- Root cause explained (4-byte size mismatch -> Tbm array corruption)
+- Claude disclosure present
+- No Co-Authored-By: noreply trailer
+
+Verdict: clean. Handing to validator for Stage 2 HIPRT validation.
