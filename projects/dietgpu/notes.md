@@ -828,3 +828,41 @@ runtime path does not tolerate it.) See memory windows-gfx1101-gfx1201-host.
 All exit 0, 0 FAILED. Matches gfx90a/gfx1100/gfx1151 (13/13). One fat binary ran on both
 GPUs. State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha
 64c792d, fork unchanged). All five platforms terminal -> PR-ready.
+
+## Revalidation 2026-06-05 (linux-gfx1100, binary-equivalence carry-forward to 8b0aec3)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1.
+Previous validated_sha: 64c792d. New HEAD: 8b0aec3.
+State: revalidate -> completed (binary-equiv carry-forward).
+
+### Delta analysis (64c792d -> 8b0aec3)
+
+Two commits between validated_sha and new HEAD:
+1. 03005c7: Squashed commit of the multi-arch port (tree-identical to 64c792d)
+2. 8b0aec3: Fix build regression in the squash (removed hip::host reference, restored LANGUAGE HIP marking)
+
+The only functional change is in dietgpu/ans/GpuANSUtils.cuh:
+- Added `#if defined(USE_HIP)` guard around `kMaxWarpSize = 64`
+- Added `#else` branch for CUDA: `kMaxWarpSize = kWarpSize`
+- Updated comments to clarify multi-arch behavior
+
+On Linux HIP builds, `USE_HIP` is always defined (set in CMakeLists.txt), so `kMaxWarpSize = 64` is unchanged. The CUDA branch is never taken on HIP builds. The change is effectively a comment update plus a conditional compilation guard that does not alter the compiled result on Linux.
+
+### Binary-equivalence check
+
+Built both 64c792d and 8b0aec3 for gfx1100 (`-DCMAKE_HIP_ARCHITECTURES=gfx1100`), each in an isolated build dir. Ran `utils/codeobj_diff.py` on the two trees:
+
+- libgpu_ans.so: **identical** (exported symbols + device ISA identical, 162 exports)
+- libgpu_float_compress.so: **identical** (exported symbols + device ISA identical, 332 exports)
+- libdietgpu_utils.so, libglog.so.0.6.0, libgtest*.so: host-only (no device code); indeterminate results expected (these libs carry no GPU ISA to compare)
+
+The GPU device code libs are byte-identical across the two builds. No GPU re-run required.
+
+### Verdict
+
+Binary-equivalence confirmed. Carried validation forward with:
+```
+python3 utils/moatlib.py carry-forward dietgpu linux-gfx1100 8b0aec3 binary-equiv "..."
+```
+
+Transitioning linux-gfx1100 to completed (validated_sha=8b0aec3).
