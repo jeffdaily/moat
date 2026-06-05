@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-05T06:26:52Z",
+  "updated_at": "2026-06-05T07:13:19Z",
   "head_sha": "b91755dfdabeeed350688eac555a32efc61a961d",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Crypto operations fail (encrypt/decrypt); encoding passes. After 2 debug attempts: GPU Barrett mult works, single-modulus NTT works, but HEonGPU coefficient moduli NTT produces wrong crypto results. Need to trace RNS NTT table generation/usage in context.cu or find the primitive root finding bug.",
       "validated_sha": null,
       "started_at": "2026-06-05T05:28:40Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T06:26:52Z",
+      "updated_at": "2026-06-05T07:13:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

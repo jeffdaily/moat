@@ -164,3 +164,48 @@ The public key formula is `pk[0] = -(s*a + e), pk[1] = a` (verified by reading p
 3. Test with a simpler configuration (smaller polynomial, single modulus) to isolate the bug
 
 4. Binary comparison of GPU memory after NTT between CUDA (if accessible) and HIP builds
+
+## Porter Debug Attempt 2 (2026-06-05)
+
+### Additional Component Verification
+
+1. **GPU Barrett mult/add/sub in isolation**: All pass on gfx90a (test_gpu_barrett.cu)
+
+2. **NTT with single modulus (N=16, N=4096)**: PASS when using `GPU_NTT_Inplace` API with correctly generated tables (test_ntt_small.cu). The NTT kernel itself works correctly.
+
+3. **NTT with separate in/out buffers**: Initially FAILED (test_ntt_coeff.cu), but after switching to `GPU_NTT_Inplace` it PASSES. This suggests either:
+   - A bug in how I was calling `GPU_NTT` (less likely)
+   - Or the test tables were mismatched (I generated them manually instead of using HEonGPU's table generator)
+
+### Key Finding
+
+The NTT kernels work correctly when:
+- Tables are generated with correct primitive roots
+- `GPU_NTT_Inplace` API is used (same pattern HEonGPU uses)
+- Single modulus configuration is tested
+
+This narrows the bug to one of:
+1. **Table generation in HEonGPU context.cu**: The `generate_ntt_table` / `generate_intt_table` functions use `generate_primitive_root_of_unity` to find psi. If this finds the wrong primitive root for some modulus, all crypto operations fail.
+
+2. **RNS table layout mismatch**: HEonGPU concatenates tables for multiple moduli `[mod0_table, mod1_table, ...]`. If the kernel indexes into the wrong modulus's table, it uses wrong twiddle factors.
+
+3. **modulus array vs table array ordering**: The `modulus_->data()` array and `ntt_table_->data()` must have matching order. A mismatch would cause polynomial_i to be NTT'd with modulus_j's table.
+
+4. **Something specific to RNS API**: The RNS version `GPU_NTT_Inplace(data, table, modulus_array, cfg, batch_size, mod_count)` may have a HIP-specific bug that the single-modulus version doesn't have.
+
+### Test Files Created
+
+- `test_gpu_barrett.cu`: GPU Barrett mult/add/sub test (PASS)
+- `test_ntt_small.cu`: Single-modulus NTT test (PASS with N=16, N=4096)
+- `test_ntt_coeff.cu`: NTT roundtrip with 36-bit prime (PASS with Inplace API)
+- `test_ntt_rns.cu`: RNS multi-modulus test (incomplete - needs correct primes)
+
+### Next Steps (for attempt 3)
+
+1. **Compare HEonGPU's generated tables with independently computed tables**: Dump the `ntt_table_` contents from context after generation and verify they match what we expect for the given primitive roots.
+
+2. **Add debug kernel to verify NTT table ordering**: Before calling keygen, verify that `modulus_[i]` corresponds to `ntt_table_[i*n : (i+1)*n]` by checking `psi^N = -1 mod q` for each modulus.
+
+3. **Trace the RNS NTT path in detail**: The failing keygen uses the RNS API. Test the exact same call pattern with known-good tables to isolate whether it's the tables or the RNS kernel.
+
+4. **Check primitive root finding**: `find_minimal_primitive_root` in util.cu may have an issue. Verify it finds the correct psi for each coefficient modulus.
