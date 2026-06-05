@@ -90,3 +90,47 @@ Result: ALL TESTS PASS
 - plc afiro.mps: LP solver converges to OPTIMAL solution with correct objective -464.75
 
 Wave64 reduction kernels (movement_1_kernel, movement_2_kernel, sum_kernel) work correctly on gfx90a CDNA2 with the __GFX9__ guards and warp-size-independent code.
+
+## Validation 2026-06-05 (gfx1100)
+
+### Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB)
+### Arch: gfx1100 (wave32, RDNA3)
+### ROCm: 7.0.53211
+
+Build:
+```bash
+cd /var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/../install -DBUILD_SHARED_LIBS=ON
+make -j$(nproc) && make install
+export HIGHS_HOME=/var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/install
+
+cd /var/lib/jenkins/moat/projects/cuPDLP-C/src/build
+cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+Tests:
+```bash
+export LD_LIBRARY_PATH=$HIGHS_HOME/lib:$PWD/lib:$LD_LIBRARY_PATH
+./bin/testcudalin
+# Output: 0.0, 1.0, 4.0, 9.0, 16.0, 25.0, 36.0, 49.0, 64.0, 81.0 (PASS)
+
+./bin/testcublas
+# Output: 2-norm is :0.000000 (PASS)
+
+./bin/plc -fname ../example/afiro.mps -nIterLim 5000
+# Solving information: Optimal current solution
+# Primal objective: -464.75089
+# Dual objective: -464.83139
+# Primal infeas: 2.69e-02 / 3.21e-05 (relative)
+# Dual infeas: 3.97e-05 / 3.60e-06 (relative)
+# Duality gap: 8.05e-02 / 8.65e-05 (relative)
+# 200 iterations, all tolerances < 1e-4 (PASS)
+```
+
+Result: ALL TESTS PASS
+- testcudalin: element-wise GPU operations correct
+- testcublas: hipBLAS nrm2 correct
+- plc afiro.mps: LP solver converges to OPTIMAL solution with correct objective -464.75
+
+Wave32 reduction kernels work correctly on gfx1100 RDNA3. The arch-dependent warp-size macros successfully handle both wave64 (gfx90a) and wave32 (gfx1100) in a single codebase.
