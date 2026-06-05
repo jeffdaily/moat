@@ -300,3 +300,31 @@ Attempted `DEMdemo_SingleSphereCollide`:
 
 All fixes from the previous curated commit plus:
 - `src/core/utils/JitKernel_hip.cpp` - Skip kernel launch when grid has zero dimension
+
+## Review 2026-06-05 (Kernel Launch Fix)
+
+### Summary
+
+Reviewing the zero-grid guard fix at a54c50c8. The porter added an early return in `KernelLauncher::launchRaw()` when grid dimension is zero.
+
+### Verified
+
+1. **Zero-grid guard correct (JitKernel_hip.cpp:388-391)**: HIP's `hipModuleLaunchKernel` returns `hipErrorInvalidValue` for grid=0 while CUDA silently treats it as a no-op. The guard correctly checks all three dimensions and returns early with no side effects.
+
+2. **CUDA path does not need this guard**: jitify internally calls cuLaunchKernel which accepts grid=0. The asymmetry is acceptable since it matches each platform's documented behavior.
+
+3. **No unintended side effects from early return**: When grid=0, there is no work to do, so skipping the launch is semantically correct.
+
+4. **Demos ran on real GPU**: notes.md confirms `DEMdemo_SingleSphereCollide` and `DEMdemo_BallDrop2D` completed successfully on gfx90a.
+
+### ROCm Fault Classes
+
+- Warp size: platform-aware via `__GFX*__` guards + runtime `prop.warpSize` query
+- No warp intrinsics in codebase
+- No texture/surface usage
+- Rule-of-five: hipModule_t initialized to nullptr, destructor guards unload, Program is move-only via unique_ptr
+- Library swap: CUB -> hipCUB correct
+
+### Recommendation
+
+**Approve** -- ready for validation.
