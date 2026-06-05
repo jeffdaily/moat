@@ -1,0 +1,4 @@
+{"kind": "tokens", "ts": "2026-06-05T01:21:52Z", "tokens": 106565, "source": "planner"}
+{"kind":"phase","ts":"2026-06-05T06:16:52Z","phase":"compile","seconds":0.147,"exit":0,"cmd":"make -j128"}
+{"kind":"phase","ts":"2026-06-05T06:20:03Z","phase":"compile","seconds":0.238,"exit":0,"cmd":"make USE_HIP=1 HIP_ARCHITECTURES=gfx90a"}
+{"kind":"phase","ts":"2026-06-05T06:25:31Z","phase":"test","seconds":0.246,"exit":0,"cmd":"make check"}
