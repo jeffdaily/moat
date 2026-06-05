@@ -81,3 +81,20 @@ Resolved review findings:
 The port now uses CUDA spellings consistently; cuda_to_hip.h performs translation on HIP builds. CUDA build path (USE_HIP=OFF) should work unchanged.
 
 Kept all sources as LANGUAGE HIP because gotcha #5: hip::host CMake target adds USE_PROF_API=1 which breaks hip_prof_str.h under plain gcc. Compiling .cpp files with hipcc avoids this.
+
+## Review 2026-06-05 (re-review after fixes)
+
+Previous review findings resolved:
+1. cudaSetDevice mapping added to cuda_to_hip.h
+2. main.cpp:80 now uses cudaSetDevice (mapped via compat header)
+3. main.cpp:133-139 now uses cudaError_t/cudaSuccess/cudaGetErrorString (mapped via compat header)
+
+Fault classes verified:
+- No warp intrinsics or hardcoded warpSize=32
+- No textures, no pitch alignment concerns
+- No resource handle rule-of-five issues
+- No OOB neighbor reads requiring clamps
+
+LANGUAGE HIP on all sources (including host .cpp) justified by gotcha #5.
+
+Ready for GPU validation.
