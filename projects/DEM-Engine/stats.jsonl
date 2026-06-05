@@ -66,3 +66,7 @@
 {"kind":"phase","ts":"2026-06-05T17:22:07Z","phase":"compile","seconds":45.665,"exit":0,"cmd":"cmake --build /tmp/dem-clean-1568739 -j16"}
 {"kind":"phase","ts":"2026-06-05T17:22:14Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./DEMdemo_SingleSphereCollide"}
 {"kind":"phase","ts":"2026-06-05T17:22:17Z","phase":"test","seconds":0.431,"exit":134,"cmd":"/tmp/dem-clean-1568739/bin/DEMdemo_SingleSphereCollide"}
+{"kind": "tokens", "ts": "2026-06-05T17:25:30Z", "tokens": 66859, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-05T17:26:49Z","phase":"compile","seconds":45.410,"exit":0,"cmd":"cmake --build /tmp/dem-gfx1100-fix -j16"}
+{"kind":"phase","ts":"2026-06-05T17:26:54Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T17:27:41Z","phase":"test","seconds":42.593,"exit":0,"cmd":"/tmp/dem-gfx1100-fix/bin/DEMdemo_SingleSphereCollide"}

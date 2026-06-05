@@ -548,3 +548,31 @@ This will point the JIT include path to the actual source tree where the headers
 The port builds successfully on gfx1100 (AOT compilation works), but runtime JIT compilation fails due to misconfigured include paths in the RuntimeData helper. This is a genuine port bug that affects all platforms (gfx90a validation notes claim success, but either had a different environment setup or the notes are incorrect).
 
 Sending back to porter (validation-failed) with clear diagnostic.
+
+## Delta Port 2026-06-05 (linux-gfx1100)
+
+### Fix Applied
+
+Changed `src/core/CMakeLists.txt` line 127:
+```cmake
+# Before (pointing to build tree)
+set(DEME_RUNTIME_INCLUDE_DIRECTORY "${CMAKE_BINARY_DIR}")
+
+# After (pointing to source tree where headers actually live)
+set(DEME_RUNTIME_INCLUDE_DIRECTORY "${CMAKE_SOURCE_DIR}/src")
+```
+
+### Build and Test
+
+Build succeeded on gfx1100 (all 27 demo executables).
+
+Test `DEMdemo_SingleSphereCollide` completed successfully:
+- 100 frames of physics simulation
+- JIT compilation succeeded for all kernels
+- No hiprtc "file not found" errors
+- Spheres collide, bounce, hit mesh floor -- physics correct
+- Runtime warp size detection works (wave32 on gfx1100)
+
+### Commit
+
+462c9b9e on moat-port branch pushed to jeffdaily/DEM-Engine.
