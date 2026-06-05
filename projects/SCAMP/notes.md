@@ -106,3 +106,34 @@ Matrix profile accuracy:
 - MP index differences: 0-1 indices per test (acceptable for floating-point)
 
 All tests completed successfully with "All Tests Passed!" confirmation.
+
+## Validation 2026-06-05 (linux-gfx1100)
+
+SHA: 58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466
+GPU: AMD Radeon Pro W7800 (gfx1100)
+
+### Build
+```bash
+cd /var/lib/jenkins/moat/projects/SCAMP/src
+git submodule update --init --recursive
+cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DBUILD_SCAMP_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build build -j$(nproc)
+```
+Build: PASS (4.6 MB binary)
+
+### Test
+```bash
+cd test && bash run_tests.sh ../build/SCAMP /tmp/scamp-gfx1100-results.txt ""
+```
+
+Results: All 52 tests PASSED
+- Self-join tests: 19 (randomwalk 8K/16K/32K/64K/64K_nan with various tile sizes)
+- Aligned AB-join tests: 19 (same datasets, aligned mode)
+- AB-join tests: 14 (cross-dataset joins 16K vs 32K, with keep_rows variants)
+
+Matrix profile accuracy:
+- Max MP value difference: 2.24e-06 (across all tests)
+- MP index differences: 0-1 indices per test (acceptable for floating-point)
+
+All tests completed successfully with "All Tests Passed!" confirmation.
