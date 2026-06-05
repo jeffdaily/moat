@@ -38,3 +38,8 @@
 {"kind":"phase","ts":"2026-06-05T15:18:15Z","phase":"test","seconds":14.127,"exit":134,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build && timeout 240 ./bin/DEMdemo_SingleSphereCollide 2>&1"}
 {"kind": "tokens", "ts": "2026-06-05T15:20:16Z", "tokens": 101333, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-05T15:35:27Z", "tokens": 57008, "source": "porter (kernel launch fix)"}
+{"kind": "tokens", "ts": "2026-06-05T15:39:03Z", "tokens": 73130, "source": "reviewer (kernel launch fix)"}
+{"kind":"phase","ts":"2026-06-05T15:39:50Z","phase":"test","seconds":17.618,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-05T15:47:46Z","phase":"test","seconds":60.065,"exit":124,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && timeout 60 ./DEMdemo_Repose"}
+{"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":700.080,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_BallDrop2D"}
+{"kind":"phase","ts":"2026-06-05T15:51:44Z","phase":"test","seconds":577.900,"exit":143,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin && ./DEMdemo_RotatingDrum"}
