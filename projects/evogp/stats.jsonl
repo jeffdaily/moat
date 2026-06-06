@@ -11,3 +11,5 @@
 {"kind":"phase","ts":"2026-06-02T02:04:22Z","phase":"compile","seconds":38.963,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/evogp/src --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-02T02:04:56Z","phase":"test","seconds":3.670,"exit":0,"cmd":"python -m evogp.sr_test"}
 {"kind":"phase","ts":"2026-06-02T02:05:08Z","phase":"test","seconds":3.710,"exit":0,"cmd":"python -m evogp.sr_test"}
+{"kind": "phase", "ts": "2026-06-06T00:06:11Z", "phase": "compile", "seconds": 29.0, "exit": 0, "cmd": "pip install -e . --no-build-isolation (gfx1101)"}
+{"kind": "phase", "ts": "2026-06-06T00:07:07Z", "phase": "test", "seconds": 5.0, "exit": 0, "cmd": "python -m evogp.sr_test (gfx1101, 2 runs)"}
