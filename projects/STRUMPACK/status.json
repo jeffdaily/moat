@@ -7,7 +7,7 @@
   "priority": 5.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T17:39:43Z",
-  "updated_at": "2026-06-05T18:55:46Z",
+  "updated_at": "2026-06-06T23:40:22Z",
   "head_sha": "ab5396f0f71e2c16955b6676399a68b21a601159",
   "depends_on": [],
   "platforms": {
@@ -81,12 +81,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Host-wide block, GPU-independent (carried from windows-gfx1101 determination): builds 8 Fortran LAPACK .f files and this Windows host has no MSVC-ABI Fortran compiler (MinGW gfortran wrong ABI, TheRock flang non-functional, no ifort). ROCm/HIP infra ready; Fortran is the sole gap. Identical on gfx1201.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-06T23:40:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
