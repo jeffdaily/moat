@@ -7,7 +7,7 @@
   "priority": 6.967,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-05T04:41:17Z",
+  "updated_at": "2026-06-06T23:40:22Z",
   "head_sha": "e1d94420d5d96b4946d26704b5b0350b88fb11d6",
   "platforms": {
     "linux-gfx90a": {
@@ -80,12 +80,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Host-wide block, GPU-independent (carried from windows-gfx1101 determination): host C++ layer uses Linux-only POSIX APIs (linux/mman.h, mmap, shm_open, NUMA) with no Windows path; never ported to Windows even for CUDA. GPU kernel surface hipifies cleanly. Identical compile-time failure on gfx1201 (same Windows host/toolchain), nothing GPU-specific to validate.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-06T23:40:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
