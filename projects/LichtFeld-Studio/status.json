@@ -7,7 +7,7 @@
   "priority": 6.263,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-05T13:29:36Z",
+  "updated_at": "2026-06-06T23:40:22Z",
   "head_sha": "13e585d4775b69961221e21f8cddcb567d66b752",
   "platforms": {
     "linux-gfx90a": {
@@ -81,12 +81,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Host-wide block, GPU-independent (carried from windows-gfx1101 determination): TheRock Windows torch_hip.dll (lld-link, no .CRT$XCU) leaves torch::cuda::is_available()==false in the standalone C++ test exe; native HIP kernels pass but torch-gated tests cannot run. Host toolchain bug, identical on gfx1201.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-06T23:40:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
