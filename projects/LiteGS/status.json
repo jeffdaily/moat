@@ -7,7 +7,7 @@
   "priority": 4.566,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-06T02:29:32Z",
+  "updated_at": "2026-06-06T23:33:27Z",
   "head_sha": "d7990e3c8b808a243d245d765cd1d5102da6b376",
   "platforms": {
     "linux-gfx90a": {
@@ -69,13 +69,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "validation-failed",
-      "blocked": true,
-      "blocked_reason": "AMD Radeon PRO V710 (gfx1101) not enumerable by ROCm runtime at time of validation: Windows device manager shows status Unknown; GPU was accessible on 2026-06-05 (alien gfx1101 validation). Need device re-enable/reboot before retry. Only gfx1201 is accessible now.",
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-06T01:52:15Z",
+      "updated_at": "2026-06-06T23:33:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
