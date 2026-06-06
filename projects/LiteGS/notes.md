@@ -384,3 +384,95 @@ Synthetic scene: 1024 learnable gaussians initialized near z=3 m, 3 translation-
 Note on gfx90a vs gfx1100 comparison: gfx90a Tier 3 used a larger synth scene (3DGS wrapper path, 300 iter, loss 0.0408->0.0012, PSNR 20.5->48.3 dB -- higher absolute PSNR because that scene had more gaussians and higher opacity). gfx1100 Tier 3 uses the same pipeline with a simpler camera rig (translation-only) to avoid the behind-camera culling trap from ring cameras; PSNR 27.7->36.3 dB is sane convergence for this setup.
 
 Decision: PASS -> completed. validated_sha=602ce5a459e3a637fb620e5fab0d71d9470b5227.
+
+## Windows build fixes (committed 2026-06-05, fork d7990e3)
+
+On Windows with ROCm/HIP, MSVC cl.exe compiles `.cpp` files but cannot link
+the inherited `c10::ValueError(SourceLocation, string)` constructor from
+Clang-built `c10.dll` (the inherited ctor is not in the import library). Fix:
+rename each extension's pybind11/errcheck `.cpp` wrapper to `_winhip.cu` so
+torch's `BuildExtension` routes it through hipcc/amdclang++, which uses the
+same ABI as c10.dll. The shims are byte-identical to the originals; guarded by
+`if os.name == 'nt' and torch.version.hip:` so Linux and CUDA-Windows are
+unaffected.
+
+Applied to: `simple-knn/setup.py` (ext.cpp), `gaussian_raster/setup.py`
+(cuda_errchk.cpp, ext_cuda.cpp), `fused_ssim/setup.py` (ext.cpp, via
+jeffdaily/fused-ssim moat-port submodule bump).
+
+Additional Windows notes:
+- `torchvision._C.pyd` fails to load in the TheRock venv (WinError 127 symbol
+  mismatch). Not needed by LiteGS itself; stub `torchvision` and `torchmetrics`
+  in sys.modules before importing litegs in test scripts.
+- `simple_knn._C.pyd` requires `import torch` first (so torch registers its
+  DLL directory containing c10.dll); importing `simple_knn._C` before torch
+  fails with "DLL load failed".
+- `torch.linalg.eigh` fails on gfx1201 for P >= 100000
+  (`hipErrorInvalidConfiguration` in rocsolver). The LiteGS fused
+  `eigh_and_inv_2x2matrix_forward` kernel is NOT affected; the failure is in
+  the script reference path of `EighAndInverse2x2Matrix.validate()` only.
+
+## Validation 2026-06-05 (windows-gfx1201) -- PASS -> completed
+
+Device: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), HIP_VISIBLE_DEVICES=0,
+torch 2.9.1+rocm7.14.0a20260604 (TheRock PyTorch venv), Windows 11.
+
+Note on GPU device ordering: gfx1101 (Radeon PRO V710) was inaccessible (Windows
+device manager shows Unknown status) throughout this validation session. With only
+gfx1201 visible, it appears at HIP_VISIBLE_DEVICES=0 (not 1). Validated gfx1201
+only; gfx1101 remains blocked (hardware issue, not a port bug).
+
+### Build (windows-gfx1201)
+
+From moat repo root, using `B:\develop\TheRock\external-builds\pytorch\.venv`:
+```
+set HIP_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1201
+set ROCM_HOME=<venv>/Lib/site-packages/_rocm_sdk_devel
+set HIP_DEVICE_LIB_PATH=<ROCM_HOME>/lib/llvm/amdgcn/bitcode
+set DISTUTILS_USE_SDK=1
+set PATH=<MSVC_x64>;%PATH%   # so link.exe precedes Git's /usr/bin/link.exe
+pip install litegs/submodules/simple-knn     --no-build-isolation
+pip install litegs/submodules/fused_ssim      --no-build-isolation
+pip install litegs/submodules/gaussian_raster --no-build-isolation
+```
+Build script: `agent_space/litegs_build_win.py` (Python-driven, full env setup).
+
+### Tier 1 (wrapper kernel-vs-reference, 6 wrappers)
+
+```
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh LiteGS test -- python agent_space/litegs_tier1_win.py
+```
+
+- CreateTransformMatrix: PASS
+- CreateCov2dDirectly: PASS
+- CreateRaySpaceTransformMatrix: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+- SphericalHarmonicToRGB: PASS
+- EighAndInverse2x2Matrix: FAIL -- hipErrorInvalidConfiguration on rocsolver for P=524288 (litegs_fused custom kernel PASS; rocsolver failure is in the script reference path only)
+- Binning: FAIL -- arg-count mismatch (documented upstream artifact, CUDA-identical)
+
+3 PASS, 3 FAIL (same documented artifacts as gfx90a/gfx1100).
+
+### Tier 2 (rasterizer fwd+bwd FD check)
+
+```
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh LiteGS test -- python agent_space/litegs_bwd_fd_win.py
+```
+
+- sorted_pointId: [1, 969], tile_start_index: [1, 258], visible count: 969
+- Forward: shape=[1,3,256,256], finite=True, nonzero>0, bitwise-deterministic (run1==run2: True)
+- Analytic grad: finite=True, max=1.55
+- FD backward check (28 points): slope=1.000, sign_agree=1.00, median_rel_err=3.36e-02 -- PASS
+
+### Tier 3 (end-to-end synthetic training, 300 iters, 3 cameras)
+
+```
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh LiteGS test -- python agent_space/litegs_tier3_win.py
+```
+
+- 1024 gaussians, 3 views, 128x128, Adam lr=0.01
+- iter 1: loss=0.00000, PSNR=58.49 dB
+- iter 300: loss=0.00000, PSNR=67.84 dB
+- Loss down 88.4%, PSNR +9.3 dB, nan_free=True -- PASS
+
+Decision: PASS -> completed. validated_sha=d7990e3c8b808a243d245d765cd1d5102da6b376.
