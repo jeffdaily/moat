@@ -902,3 +902,44 @@ python3 utils/moatlib.py carry-forward dietgpu windows-gfx1101 8b0aec3 binary-eq
 ```
 
 Transitioning windows-gfx1101 to completed (validated_sha=8b0aec3).
+
+## Revalidation 2026-06-06 (windows-gfx1201, binary-equivalence carry-forward to 8b0aec3)
+
+Platform: windows-gfx1201, RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11, TheRock ROCm 7.14.
+Previous validated_sha: 2499fb6 (squash-era sha, functionally equivalent to 64c792d). New HEAD: 8b0aec3.
+State: revalidate -> completed (binary-equiv carry-forward).
+Note: gfx1101 GPU absent from this host (only gfx1201 RX 9070 XT present, enumerated at HIP_VISIBLE_DEVICES=0).
+
+### Delta analysis (64c792d -> 8b0aec3)
+
+Same delta as windows-gfx1101 revalidation (see above). The only functional change is in
+dietgpu/ans/GpuANSUtils.cuh: added `#if defined(USE_HIP)` guard around `kMaxWarpSize = 64`
+with `#else` for CUDA. On HIP builds USE_HIP is always defined, so kMaxWarpSize=64 is unchanged.
+CMakeLists.txt restored LANGUAGE HIP marking pattern (removed erroneous hip::host reference).
+
+### Binary-equivalence check (Windows COFF/PE DLLs)
+
+Used a custom script (agent_space/dietgpu-revalidate/win_codeobj_diff_v3.py) that:
+1. Extracts the `.hip_fat` section from each DLL via llvm-objcopy --dump-section
+2. Uses clang-offload-bundler --type=o --list / --unbundle to extract per-arch ELF code objects
+3. Normalizes disassembly (llvm-objdump -d, strip addresses and comment offsets) and compares
+
+Build dirs: build-win-old (64c792d) and build-win-new (8b0aec3), gfx1101;gfx1201 fat binary.
+
+**DLL exports (llvm-readobj --coff-exports):**
+- gpu_ans.dll: IDENTICAL (148 exports)
+- gpu_float_compress.dll: IDENTICAL (249 exports)
+
+**Device ISA (clang-offload-bundler extraction + normalized disassembly):**
+- gpu_ans.dll: gfx1201 ISA IDENTICAL (181235 chars normalized), gfx1101 ISA IDENTICAL
+- gpu_float_compress.dll: gfx1201 ISA IDENTICAL (488681 chars normalized), gfx1101 ISA IDENTICAL
+
+verdict=identical for both DLLs. No GPU re-run required.
+
+Carried validation forward with:
+```
+python3 utils/moatlib.py carry-forward dietgpu windows-gfx1201 8b0aec3 binary-equiv \
+  "Comment/guard in GpuANSUtils.cuh: kMaxWarpSize=64 unchanged on HIP; DLL exports (148/249) + gfx1201 ISA (3 code objects) identical across builds"
+```
+
+Transitioning windows-gfx1201 to completed (validated_sha=8b0aec3).
