@@ -20,3 +20,6 @@
 {"kind":"phase","ts":"2026-06-04T17:52:53Z","phase":"compile","seconds":3.123,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/agent_space/Gpufit-head -B /var/lib/jenkins/moat/agent_space/Gpufit-head/build-gfx90a -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF"}
 {"kind":"phase","ts":"2026-06-04T17:53:21Z","phase":"compile","seconds":22.207,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/Gpufit-head/build-gfx90a -j"}
 {"kind": "tokens", "ts": "2026-06-04T09:18:20Z", "tokens": 41984, "source": "validator"}
+{"kind":"phase","ts":"2026-06-05T23:54:49Z","phase":"compile","seconds":11.072,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/Gpufit/src/build-gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T23:56:52Z","phase":"compile","seconds":11.107,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/Gpufit/src/build-gfx1101 -j64"}
+{"kind":"phase","ts":"2026-06-05T23:57:44Z","phase":"test","seconds":2.910,"exit":0,"cmd":"bash -c cd /b/develop/moat/projects/Gpufit/src/build-gfx1101 && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1"}

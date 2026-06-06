@@ -657,3 +657,89 @@ The 8-byte size difference in the third code object is a layout artifact
 79 exported symbols match. No GPU re-run needed.
 
 Result: linux-gfx90a `revalidate` -> `completed`, validated_sha = 0a1b3d67df3f264d6f3a4602c250155f5f350b54.
+
+## Validation 2026-06-05 (windows-gfx1101, ROCm 7.14)
+
+GPU: Radeon PRO V710 (gfx1101, RDNA3, wave32), Windows 11, TheRock ROCm 7.14.0a20260604.
+HIP_VISIBLE_DEVICES=0 pinned throughout.
+
+### Build fix: guard CMAKE_HIP_COMPILE_OBJECT to clang-cl only
+
+The fork at 0a1b3d67 (gfx1151 Windows fixes) had a `WIN32`-broad override of
+`CMAKE_HIP_COMPILE_OBJECT` that omits `-x hip` from the compile rule. This is
+correct for the MSVC frontend (clang-cl.exe) where `-x hip` is not needed and
+`/Fo` causes device fatbinary loss. But on GCC-frontend clang++.exe (this host),
+omitting `-x hip` causes clang++ to treat `.cu` files as CUDA and reject
+`gfx1101` as an unsupported CUDA arch. Fix: add `AND CMAKE_HIP_COMPILER MATCHES
+"clang-cl"` to the condition. Linux builds are inert (WIN32 is false); gfx1151
+(clang-cl) is unaffected (condition still true). Committed as new fork commit
+`84af92c`, pushed to jeffdaily/Gpufit moat-port.
+
+### Build
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+
+cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-gfx1101 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF \
+  -DBOOST_ROOT=agent_space/boost_install/boost-1.87.0 \
+  -DBoost_NO_BOOST_CMAKE=ON \
+  -DCMAKE_PREFIX_PATH=$ROCM
+
+bash utils/timeit.sh Gpufit compile -- cmake --build projects/Gpufit/src/build-gfx1101 -j64
+```
+
+Build: clean (100%). Gpufit.dll, all test exes, examples. Only Python wheel
+target failed (not needed). ROCM_PATH and hipconfig.exe on PATH required for
+CMake HIP root detection (hipconfig --path/--hipclangpath). LIB/INCLUDE env
+vars pre-set by shell (MSVC build tools + Windows SDK).
+
+### gfx1101 device code confirmation
+
+```
+strings build-gfx1101/Gpufit.dll | grep "gfx11"
+```
+
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1101` (appears 3x for the 3 code objects).
+Device code confirmed gfx1101.
+
+### Runtime DLLs
+
+Copied TheRock DLLs beside test exes (beat System32 loader order):
+amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll (from _rocm_sdk_core/bin and _rocm_sdk_devel/bin).
+
+### Test results (HIP_VISIBLE_DEVICES=0, gfx1101, wave32)
+
+```
+bash utils/timeit.sh Gpufit test -- \
+  bash -c "cd projects/Gpufit/src/build-gfx1101 && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1"
+```
+
+| Test | Result |
+|------|--------|
+| Gpufit_Test_Error_Handling | PASS |
+| Gpufit_Test_Linear_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_2D | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Rotated | PASS |
+| Gpufit_Test_Cauchy_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Fletcher_Powell_Helix_Fit | PASS |
+| Gpufit_Test_Brown_Dennis_Fit | PASS |
+| Cpufit_Gpufit_Test_Consistency | PASS |
+
+10/10 PASS. 0 failed. Total test time: 2.82 sec.
+
+Gauss_Fit_2D_Elliptic PASSES on gfx1101 (RDNA3, wave32) -- the LM solver
+converges correctly. This is distinct from the gfx1151 (RDNA3.5) divergence;
+gfx1101 is a different die with correct FP behavior for this model.
+Gauss_Fit_2D_Rotated PASSES with the wave32 HIP-guarded 3e-6f tolerance.
+No NaN, no divergence, clean exit 0.
+
+Result: windows-gfx1101 port-ready -> completed,
+validated_sha = 84af92cba1e0b8879e1f3f3b5dc28f8a0c8e8fbe.

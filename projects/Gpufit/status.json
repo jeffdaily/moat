@@ -7,17 +7,17 @@
   "priority": 4.647,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
+  "updated_at": "2026-06-05T23:59:57Z",
+  "head_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
       "started_at": "2026-05-30T05:07:21Z",
       "completed_at": "2026-06-04T17:54:06Z",
-      "updated_at": "2026-06-04T17:54:06Z",
+      "updated_at": "2026-06-05T23:59:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
       "started_at": "2026-05-30T06:15:16Z",
       "completed_at": "2026-06-04T09:17:02Z",
-      "updated_at": "2026-06-04T09:17:02Z",
+      "updated_at": "2026-06-05T23:59:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -69,13 +69,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-05T23:59:57Z",
+      "updated_at": "2026-06-05T23:59:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -88,7 +88,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1201": {
       "state": "port-ready",
