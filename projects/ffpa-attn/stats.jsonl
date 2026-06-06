@@ -19,3 +19,9 @@
 {"kind":"session","ts":"2026-06-05T05:54:48Z","epoch":1780638888.003798608,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-05T05:56:48Z", "tokens": 58354, "source": "validator (gfx1100)"}
 {"kind": "tokens", "ts": "2026-06-05T13:54:01Z", "tokens": 60405, "source": "porter (gfx1100 blocked assessment)"}
+{"kind":"phase","ts":"2026-06-06T00:18:42Z","phase":"compile","seconds":0.025,"exit":0,"cmd":"echo pure Python install, no compilation needed"}
+{"kind":"phase","ts":"2026-06-06T00:18:48Z","phase":"test","seconds":0.344,"exit":4,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest tests/ -v --ignore=tests/test_perf_tflops.py -x --timeout=300"}
+{"kind":"phase","ts":"2026-06-06T00:18:53Z","phase":"test","seconds":0.342,"exit":4,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest tests/ -v --ignore=tests/test_perf_tflops.py"}
+{"kind":"phase","ts":"2026-06-06T00:31:10Z","phase":"test","seconds":678.948,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest B:/develop/moat/projects/ffpa-attn/src/tests/ -v --ignore=B:/develop/moat/projects/ffpa-attn/src/tests/test_perf_tflops.py -p no:timeout"}
+{"kind":"phase","ts":"2026-06-06T01:42:35Z","phase":"compile","seconds":0.025,"exit":0,"cmd":"echo Pure Python Triton backend install - no compilation needed"}
+{"kind":"phase","ts":"2026-06-06T01:43:36Z","phase":"test","seconds":55.289,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest B:/develop/moat/projects/ffpa-attn/src/tests/ --ignore=B:/develop/moat/projects/ffpa-attn/src/tests/test_perf_tflops.py -q"}
