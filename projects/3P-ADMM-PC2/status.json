@@ -7,17 +7,17 @@
   "priority": 4.906,
   "ext_type": "nvcc-shared",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-04T20:53:56Z",
-  "head_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+  "updated_at": "2026-06-07T15:15:22Z",
+  "head_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+      "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": "2026-06-02T06:08:10Z",
-      "completed_at": "2026-06-02T06:30:00Z",
-      "updated_at": "2026-06-02T06:30:00Z",
+      "completed_at": "2026-06-07T15:15:22Z",
+      "updated_at": "2026-06-07T15:15:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
+        "method": "source-class",
+        "detail": "bash comment-only edit in gpu/build_hip.sh (jargon scrub); comments are never executed so the build recipe runs byte-identical commands and produces an identical .so on every arch -- inert",
+        "at": "2026-06-07T15:15:22Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+      "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": "2026-06-02T06:40:00Z",
-      "completed_at": "2026-06-02T06:50:00Z",
-      "updated_at": "2026-06-02T06:50:00Z",
+      "completed_at": "2026-06-07T15:15:22Z",
+      "updated_at": "2026-06-07T15:15:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +60,22 @@
         "first_session_at": "2026-06-02T06:40:00Z",
         "last_session_at": "2026-06-02T06:50:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
+        "method": "source-class",
+        "detail": "bash comment-only edit in gpu/build_hip.sh (jargon scrub); comments are never executed so the build recipe runs byte-identical commands and produces an identical .so on every arch -- inert",
+        "at": "2026-06-07T15:15:22Z"
+      }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+      "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": null,
-      "completed_at": "2026-06-04T20:48:42Z",
-      "updated_at": "2026-06-04T20:48:42Z",
+      "completed_at": "2026-06-07T15:15:22Z",
+      "updated_at": "2026-06-07T15:15:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,16 +89,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
+        "method": "source-class",
+        "detail": "bash comment-only edit in gpu/build_hip.sh (jargon scrub); comments are never executed so the build recipe runs byte-identical commands and produces an identical .so on every arch -- inert",
+        "at": "2026-06-07T15:15:22Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+      "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": null,
-      "completed_at": "2026-06-04T20:53:56Z",
-      "updated_at": "2026-06-04T20:53:56Z",
+      "completed_at": "2026-06-07T15:15:22Z",
+      "updated_at": "2026-06-07T15:15:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,16 +118,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
+        "method": "source-class",
+        "detail": "bash comment-only edit in gpu/build_hip.sh (jargon scrub); comments are never executed so the build recipe runs byte-identical commands and produces an identical .so on every arch -- inert",
+        "at": "2026-06-07T15:15:22Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6ef301f3204579779bbaa1f32a466934f720903a",
+      "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": null,
-      "completed_at": "2026-06-04T18:04:08Z",
-      "updated_at": "2026-06-04T18:04:08Z",
+      "completed_at": "2026-06-07T15:15:22Z",
+      "updated_at": "2026-06-07T15:15:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -122,6 +146,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
+        "method": "source-class",
+        "detail": "bash comment-only edit in gpu/build_hip.sh (jargon scrub); comments are never executed so the build recipe runs byte-identical commands and produces an identical .so on every arch -- inert",
+        "at": "2026-06-07T15:15:22Z"
       }
     }
   }
