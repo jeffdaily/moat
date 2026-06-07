@@ -141,3 +141,56 @@ Wave32 verdict:
 - No source changes required; follower delta is nil (as expected per notes "Follower delta" section).
 
 Verdict: COMPLETED. linux-gfx1100 validated_sha=29a9acf.
+
+## Validation 2026-06-07 (validator, windows-gfx1201, moat-port @ 556cdc7)
+
+Platform: AMD Radeon RX 9070 XT (RDNA4), ROCm 7.14 TheRock build (ROCm 7.14.0a20260604), wave32.
+GPU arch: gfx1201 (device#0, gcnArchName=gfx1201), 32 CUs, 16GB.
+Compiler: clang++ 23.0.0 (B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe).
+Fork: clone of jeffdaily/mHC.cu moat-port @ 556cdc7 (new commit on top of 29a9acf).
+
+Source fix required: ROCm 7.14 adds `cooperative_groups::plus` to
+amd_hip_cooperative_groups.h; the shim's own `plus` struct caused a
+redefinition error. Added a `#if !defined(HIP_VERSION) || (HIP_VERSION < 71400000)`
+guard so the shim's plus is only defined on SDK < 7.14. Committed as
+556cdc7 "[ROCm] Guard cg::plus shim against ROCm >= 7.14 which ships it natively".
+Linux platforms (7.2.1, HIP_VERSION=72100xxx < 71400000) are unaffected: the guard
+evaluates true and plus is still defined for them; they are set to revalidate but
+a binary-equivalence check will confirm no code-object change.
+
+DLL setup for test run (Windows):
+- libhipblaslt.dll: copied from _rocm_sdk_devel/bin/ into build dir (exe-dir-first loader wins over System32 which lacks it).
+- hipblaslt/library/: Tensile kernels copied from _rocm_sdk_libraries/bin/hipblaslt/library/ into build/hipblaslt/library/ (hipblaslt searches for library/ relative to itself).
+- hipblas.dll: copied from _rocm_sdk_devel/bin/ into build dir.
+- amdhip64_7.dll: System32 version works (no copy needed).
+
+Build command:
+```
+cmake -B build_gfx1201 -S projects/mHC.cu/src/src/csrc \
+  -G Ninja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM"
+cmake --build build_gfx1201 -j32
+```
+(ROCM = B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel)
+
+Build result: rc=0, no errors. All 8 test_*.cu.exe and 9 bench_*.cu.exe built clean (34/34 targets).
+
+Test run (8 tests, HIP_VISIBLE_DEVICES=0, gfx1201):
+- test_rmsnorm:                    max diff 1.14e-05, PASS (tol 1e-2)
+- test_rmsnorm_backward:           d_inp 1.45e-02, d_weight 9.54e-07, PASS (tol 2e-2)
+- test_sinkhorn_knopp:             row err 2.4e-7, col err 3.6e-7, max diff 0, PASS; doubly-stochastic holds (6 subtests)
+- test_mhc_layer:                  static 9.54e-07, dynamic 4.77e-07, PASS (tol 1e-1)
+- test_stream_ops:                 aggregate 0, distribute 2.38e-07, PASS
+- test_stream_ops_backward:        all 6 gradients PASS
+- test_fused_rmsnorm_matmul:       fwd 5.64e-02, rms 2.65e-04, PASS (tol 6e-2 / 1e-3)
+- test_fused_rmsnorm_matmul_backward: dW 2.06e-02, dx 3.10e-02, PASS (tol 5e-2 / 6e-2)
+
+Result: 8 PASS, 0 FAIL.
+
+Numeric results match gfx90a/gfx1100 within tolerance (wave32, RDNA4).
+
+Verdict: COMPLETED. windows-gfx1201 validated_sha=556cdc7.
