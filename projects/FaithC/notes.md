@@ -120,6 +120,82 @@ Pass breakdown:
 
 Verdict: completed. validated_sha=ec2fae28.
 
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), Windows 11 Pro for Workstations
+Fork: jeffdaily/FaithC @ moat-port c72480ea (delta commit on top of ec2fae28)
+Validator: claude-sonnet-4-6
+
+### Windows delta-port changes (new commit c72480e on top of ec2fae28)
+
+Two Windows-specific fixes required (neither needed on Linux):
+
+1. **LLP64 `long` fix**: On Windows, `long` is 32-bit (LLP64 ABI), while
+   `torch::kInt64` tensors are 64-bit. All `long*` kernel signatures and
+   `data_ptr<long>()` host calls replaced with `int64_t*` / `data_ptr<int64_t>()`.
+   On Linux `long` is 64-bit so the change is semantically transparent there.
+
+2. **`c10::ValueError` linker fix**: `c10.dll` does not export the inherited
+   constructor `c10::ValueError(SourceLocation, string)` (MSVC does not re-export
+   inherited constructors even for `C10_API` classes). Headers included via
+   `<torch/extension.h>` (e.g. `ATen/TensorIndexing.h`) trigger `TORCH_CHECK_VALUE`
+   which generates a `__declspec(dllimport)` reference to that constructor, causing
+   LNK2001. Fix: `/ALTERNATENAME` linker directive in `setup.py` (Windows-only)
+   redirects the dllimport thunk to `c10::Error(SourceLocation, string)`, which IS
+   exported. `ValueError IS-A Error` with no additional data members; semantically
+   identical constructors.
+
+Build environment:
+- MSVC link.exe prepended to PATH (before Git's /usr/bin/link)
+- ROCM_HOME=_rocm_sdk_devel, DISTUTILS_USE_SDK=1, HIP_VISIBLE_DEVICES=0, PYTORCH_ROCM_ARCH=gfx1201
+
+Build command (from-scratch):
+```
+export PATH="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64:$PATH"
+cd projects/FaithC/src
+rm -f src/faithcontour/_C/kernels.hip && rm -rf build/
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 \
+  ROCM_HOME=".venv/Lib/site-packages/_rocm_sdk_devel" \
+  DISTUTILS_USE_SDK=1 \
+  python.exe setup.py build_ext --inplace
+```
+Build result: PASS (27 s, exit 0, loop-unroll advisories on sat_centroid/sat_clip -- same as Linux)
+gfx1201 code-object confirmed in .pyd (`.hipFatB` section present in PE binary)
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 python.exe agent_space/faithc_harness_win.py
+```
+Test result: 17/17 PASS (2 s, exit 0)
+
+Pass breakdown:
+- seg_tri pair set: PASS
+- seg_tri dots: PASS
+- seg_tri deterministic set: PASS
+- overlap no spurious overflow: PASS
+- overlap pair set: PASS
+- overlap overflow flag set: PASS
+- voxelize_mark use_sat=False exact: PASS
+- voxelize_mark use_sat=False deterministic: PASS
+- voxelize_mark use_sat=True exact: PASS
+- voxelize_mark use_sat=True deterministic: PASS
+- sat mode0 hit_mask exact: PASS
+- sat mode0 deterministic: PASS
+- sat mode0 hit_mask exact (hits found): PASS
+- sat mode1 deterministic: PASS
+- sat mode1 idx alignment: PASS
+- sat mode2 deterministic poly verts: PASS
+- sat mode2 poly_counts in range: PASS
+
+GPU dispatch confirmed: .pyd contains `.hipFatB` section; kernels executed on
+AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32) at HIP_VISIBLE_DEVICES=0.
+
+Verdict: completed. validated_sha=c72480ea (windows-gfx1201 only).
+
+Note for linux-gfx90a/gfx1100: c72480e changed `long`->`int64_t` (source rename;
+semantically transparent on 64-bit Linux where sizeof(long)==8). Linux validators
+can carry forward via `codeobj_diff.py` binary-equivalence check.
+
 ## Validation 2026-06-02 (gfx1100)
 
 Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32, ROCm 7.2.1)
