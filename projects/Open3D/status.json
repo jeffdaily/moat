@@ -7,17 +7,17 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-04T20:43:16Z",
-  "head_sha": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
+  "updated_at": "2026-06-07T15:30:51Z",
+  "head_sha": "ab64dd56045846a864a392818d37e84e20ed47cb",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
+      "validated_sha": "ab64dd56045846a864a392818d37e84e20ed47cb",
       "started_at": "2026-05-31T00:22:40Z",
       "completed_at": "2026-05-31T09:10:00Z",
-      "updated_at": "2026-05-31T09:10:00Z",
+      "updated_at": "2026-06-07T15:30:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
+        "to": "ab64dd56045846a864a392818d37e84e20ed47cb",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only)",
+        "at": "2026-06-07T15:30:51Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
+      "validated_sha": "ab64dd56045846a864a392818d37e84e20ed47cb",
       "started_at": "2026-05-31T08:26:00Z",
       "completed_at": "2026-05-31T08:35:32Z",
-      "updated_at": "2026-05-31T08:35:32Z",
+      "updated_at": "2026-06-07T15:30:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +62,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "9eb3704d07b4b6c65cd46ac5805b0654a39e7250",
+        "to": "ab64dd56045846a864a392818d37e84e20ed47cb",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only)",
+        "at": "2026-06-07T15:30:51Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
