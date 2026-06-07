@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-07T04:57:46Z","phase":"test","seconds":0.042,"exit":127,"cmd":"HIP_VISIBLE_DEVICES=0 B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/leap_test_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T05:00:33Z","phase":"test","seconds":1.358,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/leap_test_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T05:01:10Z","phase":"test","seconds":8.245,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/leap_test_gfx1201.py"}
+{"kind": "tokens", "ts": "2026-06-07T05:08:00Z", "tokens": 53863, "source": "validator"}

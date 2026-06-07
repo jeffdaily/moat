@@ -7,7 +7,7 @@
   "priority": 4.426,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T05:06:20Z",
+  "updated_at": "2026-06-07T05:08:00Z",
   "head_sha": "0e75025be39a25dd093a60e2da7ee67fd0c42a57",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": true,
-      "blocked_reason": "gfx1101 fell off the bus; cannot validate without hardware",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-07T05:06:20Z",
+      "updated_at": "2026-06-07T05:08:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
