@@ -780,3 +780,40 @@ No GPU re-run needed. The WIN32-guarded block is inert on Linux at both SHAs.
 
 Result: linux-gfx90a `revalidate` -> `completed`,
 validated_sha = 84af92cdf504fbc8538a78d8c77b087604ed52fa.
+
+## Revalidation 2026-06-07 (linux-gfx1100, binary-equivalence carry-forward)
+
+linux-gfx1100 was in `revalidate` state (validated_sha=0a1b3d67, head_sha=84af92c)
+after the windows-gfx1101 delta-port advanced the fork HEAD.
+
+### Delta (0a1b3d67..84af92c)
+
+Single file: `CMakeLists.txt` (3 insertions, 2 deletions). The change adds
+`AND CMAKE_HIP_COMPILER MATCHES "clang-cl"` to the existing `WIN32`-guarded
+`CMAKE_HIP_COMPILE_OBJECT` override block. On Linux, `WIN32` is always false, so
+this block was never entered at either SHA. The change has no effect on Linux builds.
+
+### Binary-equivalence check
+
+Built both SHAs for gfx1100 (`-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+-DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release
+-DUSE_CUBLAS=OFF`):
+
+- Old (0a1b3d67): existing `projects/Gpufit/src/build-hip/Gpufit/libGpufit.so`
+  (confirmed gfx1100, 3 code objects: sizes 132784, 9208, 6680 bytes)
+- New (84af92c): built into `agent_space/gpufit-new-gfx1100/Gpufit/libGpufit.so`
+  (confirmed gfx1100, 3 code objects: sizes 132784, 9208, 6680 bytes -- identical sizes)
+
+```
+python3 utils/codeobj_diff.py \
+  projects/Gpufit/src/build-hip/Gpufit/libGpufit.so \
+  agent_space/gpufit-new-gfx1100/Gpufit/libGpufit.so
+verdict=identical
+  libGpufit.so vs libGpufit.so: identical (exported symbols + device ISA identical (79 exports))
+```
+
+79 exported symbols and all 3 gfx1100 device code objects are byte-identical.
+No GPU re-run needed.
+
+Result: linux-gfx1100 `revalidate` -> `completed`,
+validated_sha = 84af92cdf504fbc8538a78d8c77b087604ed52fa.

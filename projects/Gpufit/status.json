@@ -7,7 +7,7 @@
   "priority": 4.647,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T16:31:57Z",
+  "updated_at": "2026-06-07T17:09:49Z",
   "head_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
+      "validated_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
       "started_at": "2026-05-30T06:15:16Z",
-      "completed_at": "2026-06-04T09:17:02Z",
-      "updated_at": "2026-06-05T23:59:45Z",
+      "completed_at": "2026-06-07T17:09:49Z",
+      "updated_at": "2026-06-07T17:09:49Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
+        "to": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
         "method": "binary-equiv",
-        "detail": "WIN32-guarded CMAKE_HIP_COMPILE_OBJECT block + MSVC frontend-variant generator expression; resolves to original -include on Linux (GNU frontend); libGpufit.so device ISA + 79 exports identical",
-        "at": "2026-06-04T09:17:02Z"
+        "detail": "CMakeLists.txt WIN32+clang-cl condition tightening; WIN32 is false on Linux so the block was never entered at either SHA; libGpufit.so gfx1100 device ISA + 79 exports identical",
+        "at": "2026-06-07T17:09:49Z"
       }
     },
     "windows-gfx1101": {
