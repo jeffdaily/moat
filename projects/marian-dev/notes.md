@@ -332,6 +332,111 @@ No fork push (validate-first follower: no source delta needed).
 
 ### Verdict: PASS -- linux-gfx1100 completed at validated_sha 25f910c
 
+## Validation 2026-06-07 (windows-gfx1201, RX 9070 XT gfx1201, RDNA4) -- FAILED
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro.
+Only GPU on host (gfx1101 offline). HIP_VISIBLE_DEVICES=0.
+Compiler: clang++ 23.0.0 (TheRock ROCm 7.14.0a20260604), cmake 3.31.
+Fork: jeffdaily/marian-dev @ moat-port, head dc5cd4e (Windows build fixes on top of 25f910c).
+
+### Build
+
+Eight Windows-specific fixes were required to build with all-clang on Windows
+(clang++ --target=x86_64-pc-windows-msvc, not clang-cl). Committed as dc5cd4e
+on top of the existing port commit 25f910c. All changes are WIN32-guarded or
+CMAKE_CXX_COMPILER_ID=="Clang" + WIN32; the Linux/CUDA paths are byte-identical.
+
+Build command:
+```
+ROCM=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -S projects/marian-dev/src -B agent_space/marian-build-gfx1201 -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCOMPILE_CUDA=ON -DUSE_CUDNN=OFF -DUSE_NCCL=OFF \
+  -DUSE_FBGEMM=OFF -DCOMPILE_CPU=ON \
+  -DCOMPILE_TESTS=ON -DUSE_MKL=OFF -DUSE_TCMALLOC=OFF -DUSE_DOXYGEN=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_ARCH=native \
+  -DCMAKE_PREFIX_PATH="$ROCM" -DROCM_PATH="$ROCM" \
+  -DOpenBLAS_LIBRARIES="$ROCM/lib/host-math/lib/rocm-openblas.lib" \
+  -DOpenBLAS_INCLUDE_DIRS="$ROCM/lib/host-math/include/openblas"
+cmake --build agent_space/marian-build-gfx1201 -j32
+```
+
+Result: build succeeded, 20 link targets (marian.exe, marian-decoder.exe, etc. plus test executables).
+
+Windows-specific build fixes committed in dc5cd4e:
+1. Remove -fPIC on Windows (WIN32_UNICODE_FLAGS and FPIC_FLAG conditional)
+2. Add UNICODE/_UNICODE/_DLL/_MT flags + --dependent-lib=msvcrt for CRT and wide API
+3. Remove Clang exclusion from -march=native (Clang supports it fine)
+4. Add Shlwapi.lib in else(MSVC) block (pathie-cpp needs PathMatchSpecW)
+5. -Wno-string-plus-int / -Wno-unused-private-field to ALL_WARNINGS for WIN32+Clang
+6. -Wno-string-plus-int to MARIAN_HIP_NO_WARN (same spdlog warning in HIP TUs)
+7. src/3rd_party/CMakeLists.txt: guard -fPIC on libyaml-cpp/pathie-cpp with NOT WIN32
+8. sentencepiece: add NOT WIN32 to the if(NOT MSVC) -fPIC guard; constexpr -> const for kAnyType
+
+### Test results
+
+Runtime env:
+```
+HIP_VISIBLE_DEVICES=0
+ROCBLAS_TENSILE_LIBPATH=<_rocm_sdk_libraries>/bin/rocblas/library
+HIPBLASLT_TENSILE_LIBPATH=<_rocm_sdk_libraries>/bin/hipblaslt/library
+PATH=<test_dir>:<_rocm_sdk_libraries>/bin:<_rocm_sdk_core>/bin:$PATH
+```
+
+- graph_tests: 10/10 PASS -- GPU kernel dispatch confirmed on gfx1201
+- binary_tests: 9/9 PASS
+- utils_tests: 8/8 PASS
+- fastopt_tests: 23/23 PASS
+- operator_tests: 84/87 assertions PASS; 3 failures:
+  - 2 failures: csr-dot product wrong values (same cuSPARSE deferred issue as Linux)
+  - 1 FATAL (SIGSEGV): "affine transformation" section -- see blocker below
+- attention_tests: SIGSEGV immediately (hipBLASLt crash, see blocker)
+- transformer_tests: SIGSEGV immediately (hipBLASLt crash, see blocker)
+- rnn_tests: ABORT "Broken type float16" -- pre-existing Windows limitation in marian's
+  own code (types.h DISPATCH_BY_TYPE stubs out float16 under _MSC_VER; clang targeting
+  x86_64-pc-windows-msvc defines _MSC_VER=1944); not a port bug
+
+### Blocking issue: hipblasLtMatmulAlgoGetHeuristic crashes in libhipblaslt.dll
+
+marian's Affine() function calls hipblasLtMatmulAlgoGetHeuristic for fused GEMM+bias
+(the cublasLt epilogue path; CUDA_VERSION >= 11000 code path). On Windows with the
+TheRock 7.14.0a build, libhipblaslt.dll crashes inside hipblaslt_f8::is_inf when
+hipblasLtMatmulAlgoGetHeuristic is called. This is a bug in the TheRock Windows
+libhipblaslt.dll, NOT a port bug.
+
+Crash stack:
+```
+#0 hipblaslt_f8::is_inf (libhipblaslt.dll)  <- crash here
+...
+#8 string_to_epilogue_type_assert (libhipblaslt.dll)
+#9 string_to_epilogue_type_assert (libhipblaslt.dll)
+#10 hipblasLtMatmulAlgoGetHeuristic (libhipblaslt.dll)
+#11 [run_operator_tests.exe cublasLtAffineHelper -> cublasLtMatmulAlgoGetHeuristic]
+```
+
+This crashes in both FP32 and FP16 paths, for ALL Affine calls. The crash is inside
+Tensile/hipBLASLt's FP8 type-check logic even when called with FP32 data types -- a
+TheRock build bug.
+
+Affected tests: operator_tests "affine transformation" section, attention_tests,
+transformer_tests. The end-to-end train/decode also cannot run (uses Affine).
+
+Workaround for the porter: add a Windows-specific code path in prod.cpp that bypasses
+hipBLASLt for affine (use hipblasGemmEx + manual BiasAdd on Windows), falling back to
+the hipBLASLt path on Linux. The standalone hipblasGemmEx+hipblasSgemm work correctly
+on this TheRock build; only the hipblasLt matmul descriptor API crashes.
+
+### Verdict: validation-failed -- windows-gfx1201
+
+GPU dispatch confirmed (graph_tests 10/10). Blocking issue: TheRock Windows
+libhipblaslt.dll crashes in hipblasLtMatmulAlgoGetHeuristic for all Affine calls.
+Porter must add a Windows hipBLASLt bypass (hipblasGemmEx + BiasAdd) for the
+affine/attention/transformer paths.
+
 ## Status fix 2026-06-02: windows-gfx1151 invalid state
 
 windows-gfx1151 was set to `blocked-needs-gfx1100`, which is not a valid
