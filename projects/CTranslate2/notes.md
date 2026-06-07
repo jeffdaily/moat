@@ -1,5 +1,84 @@
 # CTranslate2 notes
 
+## Validation 2026-06-06 (windows-gfx1201, RX 9070 XT, TheRock ROCm 7.14.0a) -- PASS
+
+Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 (HIP_VISIBLE_DEVICES=0, sole GPU on host)
+Compiler: clang-cl 23.0.0 (TheRock ROCm 7.14.0a20260604), cmake 4.3.1, all-clang-cl CMake-HIP
+
+### Build notes (windows-gfx1201)
+
+ROCm SDK root: `_rocm_sdk_devel` (TheRock PyTorch venv, multi-arch gfx1101+gfx1201 device extras).
+OpenBLAS: same as gfx1101 -- `_rocm_sdk_devel/lib/host-math/` (lib: `rocm-openblas.lib`, headers: `include/openblas/cblas.h`).
+
+Fresh-configure difference vs gfx1101: for a clean build (CMakeFiles deleted), clang-cl 23.0.0 cannot
+auto-discover the ROCm device libs from ROCM_PATH alone. The `--rocm-device-lib-path` flag must be
+added to BOTH `CMAKE_HIP_FLAGS` AND `CMAKE_CXX_FLAGS` in the init-cache file, because `.cc` files with
+`set_source_files_properties(LANGUAGE HIP)` are compiled via the CXX compiler rule (uses
+`CMAKE_CXX_FLAGS`), not the HIP rule. On gfx1101 this was masked by reusing the old CMakeFiles/
+directory from the gfx1151 configure (which had the device lib path already in the CMake internal
+compiler ID cache). The gfx1201 fresh configure exposed the gap.
+
+### Build command (windows-gfx1201)
+
+```
+ROCM_ROOT=<TheRock venv>/_rocm_sdk_devel
+DEVLIB=$ROCM_ROOT/lib/llvm/amdgcn/bitcode
+
+# Init-cache file /tmp/ct2_gfx1201_init.cmake:
+#   set(CMAKE_CXX_FLAGS "/EHsc /wd4267 --rocm-device-lib-path=<DEVLIB> -Wno-deprecated-literal-operator -Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+#   set(CMAKE_C_FLAGS "-Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+#   set(CMAKE_HIP_FLAGS "--rocm-device-lib-path=<DEVLIB> -Wno-deprecated-literal-operator -Wno-unused-command-line-argument" CACHE STRING "" FORCE)
+
+cmake -S projects/CTranslate2/src -B projects/CTranslate2/build \
+  -G Ninja \
+  -C /tmp/ct2_gfx1201_init.cmake \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_STANDARD=17 \
+  -DWITH_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DWITH_MKL=OFF -DWITH_OPENBLAS=ON \
+  "-DOPENBLAS_INCLUDE_DIR=$ROCM_ROOT/lib/host-math/include/openblas" \
+  "-DOPENBLAS_LIBRARY=$ROCM_ROOT/lib/host-math/lib/rocm-openblas.lib" \
+  -DOPENMP_RUNTIME=NONE \
+  -DBUILD_TESTS=ON -DBUILD_CLI=OFF \
+  "-DCMAKE_PREFIX_PATH=$ROCM_ROOT" \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build projects/CTranslate2/build -j64
+```
+
+Build time: ~58s. Warnings only (unused-variable, dllimport in spdlog). No errors.
+Post-build: copy `build/ctranslate2.dll` into `build/tests/` (CMake copies it at link time but the
+DLL in tests/ was stale from the prior gfx1101 build; overwrite with the fresh gfx1201 DLL).
+
+Code-object arch evidence:
+```python
+data = open('ctranslate2.dll', 'rb').read()
+# 23 hipfb files with gfx1201 device code; 41 gfx1201 hits in DLL
+```
+
+### GPU test run 1 (CUDA/* filter):
+```
+cd tests/ && HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  ROCBLAS_TENSILE_LIBPATH=.../rocblas/library \
+  ./ctranslate2_test.exe <data_dir> --gtest_filter='CUDA/*'
+```
+Result: **164 PASSED, 3 SKIPPED** (Conv1DGroupNoBiasQuantized x3 dtypes). MATCHES bar.
+
+### Full suite (CPU+GPU, exclude Conv1DGroupNoBiasQuantized):
+```
+cd tests/ && HIP_VISIBLE_DEVICES=0 OPENBLAS_NUM_THREADS=1 OMP_NUM_THREADS=1 \
+  ROCBLAS_TENSILE_LIBPATH=.../rocblas/library \
+  ./ctranslate2_test.exe <data_dir> "--gtest_filter=-*Conv1DGroupNoBiasQuantized*"
+```
+Result: **350 PASSED, 1 SKIPPED** (CPU/OpDeviceFPTest.Conv1DDilation -- intentional). MATCHES bar. No non-GPU regressions.
+
+wave32 verdict: gfx1201 is RDNA4 wave32. C10_WARP_SIZE=32 matches hardware exactly. No wave-size source change needed.
+
+State transition: port-ready -> completed. validated_sha = dfa0d30dd18c4e65863e091f4ac99d7b936a02f1. No source change.
+
 ## Validation 2026-06-05 (windows-gfx1101, Radeon PRO V710, TheRock ROCm 7.14.0a) -- PASS
 
 Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)

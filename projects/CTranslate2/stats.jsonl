@@ -9,3 +9,9 @@
 {"kind": "phase", "ts": "2026-06-03T19:44:02Z", "phase": "test", "seconds": 3.0, "exit": 0, "cmd": "ctranslate2_test.exe tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized* OPENBLAS_NUM_THREADS=1"}
 {"kind": "tokens", "ts": "2026-06-03T19:47:02Z", "tokens": 168770, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-05T07:34:29Z", "tokens": 126661, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T03:00:01Z","phase":"compile","seconds":54.630,"exit":1,"cmd":"cmake --build projects/CTranslate2/build -j64"}
+{"kind":"phase","ts":"2026-06-07T03:01:01Z","phase":"compile","seconds":1.049,"exit":1,"cmd":"cmake --build projects/CTranslate2/build -j64"}
+{"kind":"phase","ts":"2026-06-07T03:03:20Z","phase":"compile","seconds":57.663,"exit":0,"cmd":"cmake --build projects/CTranslate2/build -j64"}
+{"kind":"phase","ts":"2026-06-07T03:04:29Z","phase":"test","seconds":0.046,"exit":127,"cmd":"./ctranslate2_test.exe B:/develop/moat/projects/CTranslate2/src/tests/data --gtest_filter=CUDA/*"}
+{"kind":"phase","ts":"2026-06-07T03:04:39Z","phase":"test","seconds":3.260,"exit":0,"cmd":"B:/develop/moat/projects/CTranslate2/build/tests/ctranslate2_test.exe B:/develop/moat/projects/CTranslate2/src/tests/data --gtest_filter=CUDA/*"}
+{"kind":"phase","ts":"2026-06-07T03:04:53Z","phase":"test","seconds":3.934,"exit":0,"cmd":"B:/develop/moat/projects/CTranslate2/build/tests/ctranslate2_test.exe B:/develop/moat/projects/CTranslate2/src/tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized*"}
