@@ -249,6 +249,214 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "cupoch-full-pipeline-modules",
+      "kind": "feature-port",
+      "project": "cupoch",
+      "component": null,
+      "summary": "Only the core point-cloud/geometry slice (utility/camera/knn/geometry, CUPOCH_CORE_ONLY=ON) is built/validated on ROCm. Deferred GPU modules: registration (ICP/GICP/Colored/FGR/FilterReg), odometry, integration (TSDF/KinectFusion), collision, planning, kinfu, imageproc (libSGM stereo), io-beyond-geometry, visualization, Python module. Causes: (a) visualization/imageproc/io/pybind need OpenGL/GLEW/GLFW + libSGM + urdfdom host stack; (b) four geometry-factory .cu have strict-clang blockers re-enablable without OpenGL.",
+      "refs": [
+        "projects/cupoch/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "cuvs-ann-deferred",
+      "kind": "feature-port",
+      "project": "cuvs",
+      "component": null,
+      "summary": "All ANN/vector-search algorithms deferred behind CUVS_HIP_SLICE=distance; only pairwise-distance + fused-NN (43/264 .cu, ~16%) is built/validated. Deferred: brute-force, IVF-Flat, IVF-PQ, CAGRA, NN-Descent, Vamana/DiskANN, ball_cover, HNSW interop, multi-GPU, plus cluster/selection/preprocessing/stats/embed and spectral/lanczos. completed status is scoped to the distance subsystem only.",
+      "refs": [
+        "projects/cuvs/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "raft-ann-cluster-deferred",
+      "kind": "feature-port",
+      "project": "raft",
+      "component": null,
+      "summary": "neighbors/ ANN (CAGRA, IVF-Flat, IVF-PQ, NN-Descent, HNSW) and cluster/ (kmeans, kmeans_balanced, single_linkage) are header-only and were never compiled or GPU-validated under HIP; warp intrinsics + ~28 wave64 0xffffffff masks in detail/cagra and detail/ivf_pq need the faiss_select treatment. Reasonable to scope out (upstream deprecated these to cuVS, de-compiled after 24.12). Validated surface: faiss_select top-k, ball_cover, KNN brute force, EpsNeighRbc, rmat, header primitives.",
+      "refs": [
+        "projects/raft/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "cuml-metrics-and-deferrals",
+      "kind": "feature-port",
+      "project": "cuml",
+      "component": null,
+      "summary": "Entire metrics module deferred though 10 cuvs-FREE metrics are buildable today (accuracy_score, adjusted_rand_index, completeness_score, entropy, homogeneity_score, kl_divergence, mutual_info_score, r2_score, rand_index, v_measure); plan option-a (split metrics target) not taken. Also deferred: dbscan/knn/tsne/umap/kmeans/hdbscan/svm/FIL/tree_shap/spectral/multi-GPU/Python and standalone hierarchy/linkage.cu. The 10 metrics are shippable now (raft headers present, no CUML_LINK_CUVS); shipping triggers gfx90a/gfx1100 revalidation.",
+      "refs": [
+        "projects/cuml/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "egg-advanced-trainers-deferred",
+      "kind": "feature-port",
+      "project": "egg.c",
+      "component": null,
+      "summary": "Only the basic CUDA trainer (full_cuda_train_egg.cu) ported; 1 of 5 trainers, 0 advanced/distributed. Deferred: full_cuda_train_egg_transformer.cu + _adam.cu (EGG_WARP_SIZE=32 on off=16 shfl_down reductions, RoPE shfl_xor width-32); full_cuda_train_transformer_adam_mgpu.cu (Int8NativeFormer) + muon_internal.cuh (cuBLAS->hipBLAS Newton-Schulz + multi-GPU); d-eggs/ distributed coordinator/worker (hipGraph capture, managed-memory atomic audit).",
+      "refs": [
+        "projects/egg.c/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "espresso-walberla-lb-ek-gpu",
+      "kind": "feature-port",
+      "project": "espresso",
+      "component": null,
+      "summary": "waLBerla LB/EK GPU backend (60 generated CUDA.cu lattice-Boltzmann + electrokinetics + reaction kernels in src/walberla_bridge) scoped out via ESPRESSO_BUILD_WITH_WALBERLA=OFF. waLBerla is a separate upstream with its own CUDA gpu backend; porting it means HIP-ifying walberla::gpu itself.",
+      "refs": [
+        "projects/espresso/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "foldseek-prostt5-gpu",
+      "kind": "feature-port",
+      "project": "foldseek",
+      "component": null,
+      "summary": "ProstT5 GPU inference (--gpu 1) not enabled on ROCm: top-level CMakeLists sets GGML_CUDA from ENABLE_CUDA but never GGML_HIP from USE_HIP, so createdb --prostt5-model --gpu 1 silently falls back to CPU. ggml ships a vendored GGML_HIP backend (lib/prostt5/ggml/src/ggml-hip); a follow-up could wire USE_HIP->GGML_HIP and validate (needs rocBLAS/hipBLAS + weights, egress-bound). Structure-search GPU path IS delivered.",
+      "refs": [
+        "projects/foldseek/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "gdtk-eilmer-gpu-chem",
+      "kind": "feature-port",
+      "project": "gdtk",
+      "component": null,
+      "summary": "Eilmer GPU finite-rate chemistry (src/eilmer/cuda_gpu_chem.d driver + utils/alpha_qss_kernel_cuda_tmplt.cu, makefile target eilmer-cuda-gpu-chem under WITH_CUDA_GPU_CHEM) not ported; opt-in non-default separate binary, plain runtime API + one hand-written kernel (cublas imported but never called) so HIP-portable. chicken is the ported primary GPU path.",
+      "refs": [
+        "projects/gdtk/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "mhc-torch-extension",
+      "kind": "feature-port",
+      "project": "mHC.cu",
+      "component": null,
+      "summary": "PyTorch extension mhc_cuda (primary advertised interface: setup.py CUDAExtension, consumed by mhc/ops.py + trainer) not ported to ROCm; hipify leaves cuBLASLt symbols un-renamed (cublasLtOrder_t, CUBLASLT_ORDER_ROW, CUBLASLT_MATRIX_LAYOUT_ORDER), needs const-void* hipFuncSetAttribute cast and the row-major to col-major hipBLASLt swap. Standalone CMake kernel harness validated on gfx90a/gfx1100 as the correctness gate.",
+      "refs": [
+        "projects/mHC.cu/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "plumed2-openacc-gpu",
+      "kind": "feature-port",
+      "project": "plumed2",
+      "component": null,
+      "summary": "Port covers only the cudaCoord (CUDA/Thrust/CUB) plugin. Excluded GPU surfaces: openaccPTM plugin (NVIDIA OpenACC offload via nvc++, the USEGPU path) -- no production ROCm OpenACC analogue; SAXS ArrayFire-CUDA backend (ArrayFire OpenCL could target AMD); core OpenACC infra (src/tools/OpenACC.h) and the libtorch-CUDA pytorch module. All opt-in/default-off.",
+      "refs": [
+        "projects/plumed2/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "visionaray-hip-device-rng",
+      "kind": "feature-port",
+      "project": "visionaray",
+      "component": null,
+      "summary": "GPU random number generator not enabled on HIP: include/visionaray/random_generator.h guards the thrust include and rand_engine device path under #if defined(__CUDACC__) only, so device RNG is unavailable under __HIPCC__. Small fix (extend both guards to accept __HIPCC__/__HIP_DEVICE_COMPILE__); needs GPU revalidation of any sampler path using it.",
+      "refs": [
+        "projects/visionaray/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "cugraph-sg-validation-coverage",
+      "kind": "other",
+      "project": "cugraph",
+      "component": null,
+      "summary": "linux-gfx90a/gfx1100 marked completed but GPU validation exercised only 3 of 46 built SG algorithms (BFS, SSSP, PageRank); 44 linked SG test binaries never run on GPU. Unvalidated algorithms share the prim machinery where real wave64 bugs were found+fixed. Resolve by running the full in-scope SG gtest set from cugraph_hip_tests, or scope the completed claim to BFS/SSSP/PageRank.",
+      "refs": [
+        "projects/cugraph/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "octproz-app-kernel-validation",
+      "kind": "other",
+      "project": "OCTproZ",
+      "component": null,
+      "summary": "Validation used a proxy microbenchmark; never exercised OCTproZ app kernels, GL-interop, or the 3D-volume surface-write path (riskiest ported feature compiled but not run) on real GPU. Re-validate by launching the built app through its OCT processing pipeline.",
+      "refs": [
+        "projects/OCTproZ/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "scamp-sumthresh-validation",
+      "kind": "other",
+      "project": "SCAMP",
+      "component": null,
+      "summary": "Recorded GPU validation exercised only the default 1NN_INDEX profile; the wave64 SUM_THRESH reduction fix is unvalidated. Validate the SUM_THRESH path against the reference oracle on gfx90a (wave64).",
+      "refs": [
+        "projects/SCAMP/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "lichtfeld-test-gate-coverage",
+      "kind": "other",
+      "project": "LichtFeld-Studio",
+      "component": null,
+      "summary": "HIP validation gate omits built GPU kernels: tensor_nn_ops.cu (max_pool2d, adaptive_avg_pool2d, bias_relu, relu) has no test, and ~51 compute-only test files are excluded from LFS_HIP_TEST_FILES (beyond the 3 the validator caught). Add test_tensor_nn_ops.cpp and the compute-only tests to the gate.",
+      "refs": [
+        "projects/LichtFeld-Studio/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "cucollections-head-drift",
+      "kind": "other",
+      "project": "cuCollections",
+      "component": null,
+      "summary": "build-hip src HEAD drifted one functional commit beyond the validated/recorded sha, undocumented and unvalidated. Reconcile status.json with the live tree (re-validate the drift or reset to the validated sha).",
+      "refs": [
+        "projects/cuCollections/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T19:04:23Z"
     }
   ]
 }
