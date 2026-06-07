@@ -96,8 +96,8 @@
     },
     "windows-gfx1201": {
       "state": "completed",
-      "blocked": true,
-      "blocked_reason": "false",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
       "started_at": null,
       "completed_at": "2026-06-07T18:40:34Z",
