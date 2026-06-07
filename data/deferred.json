@@ -1,0 +1,98 @@
+{
+  "schema_version": 1,
+  "items": [
+    {
+      "id": "hipcub-rocprim-beginbit",
+      "kind": "rocm-bug-report",
+      "project": null,
+      "component": "rocPRIM",
+      "summary": "DeviceRadixSort/radix_sort_keys drops & misorders keys when begin_bit>0 and end_bit==key width (gfx90a, ROCm 7.2.1)",
+      "refs": [
+        "findings/hipcub-rocprim-beginbit/BUG_REPORT.md",
+        "PORTING_GUIDE.md begin_bit entry"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "popsift-texsurf-coherency",
+      "kind": "rocm-bug-report",
+      "project": null,
+      "component": "HIP runtime",
+      "summary": "cudaArrayLayered+SurfaceLoadStore array written layer-by-layer collapses its layer dimension on later-launch reads (gfx90a, ROCm 7.2.1)",
+      "refs": [
+        "findings/popsift-texsurf-coherency/",
+        "PORTING_GUIDE.md layered-array entry"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "hipsolver-sparse-fr",
+      "kind": "rocm-bug-report",
+      "project": null,
+      "component": "hipSOLVER",
+      "summary": "Feature request: low-level cusolverSp sparse factorization API (csrqr*/csrchol*, csrlsvluHost, csrsymrcm) has no hipSOLVER path",
+      "refs": [
+        "findings/hipsolver-sparse-fr/"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "libhipcxx-cuda-std-gap",
+      "kind": "other",
+      "project": null,
+      "component": null,
+      "summary": "ROCm 7.2.1 ships no libcu++ (<cuda/std/*>); ROCm/libhipcxx fills it. Revisit: gsplat 3DGUT path (needs cuda::std::optional) and the MPPI-Generic cuda::std->std workaround",
+      "refs": [
+        "findings/libhipcxx/NOTES.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "cudakdtree-atomic-minmax",
+      "kind": "other",
+      "project": null,
+      "component": null,
+      "summary": "Concluded NOT a ROCm bug: atomicMin/Max on fine-grained/remote memory needs system-scope atomics (usage requirement). Minor doc papercut could still be filed",
+      "refs": [
+        "findings/cudakdtree-atomic-minmax/EXPLANATION.md"
+      ],
+      "status": "done",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "open3d-npp",
+      "kind": "feature-port",
+      "project": "Open3D",
+      "component": null,
+      "summary": "NPP-based GPU image filters have no ROCm equivalent; ops report unsupported and the CPU/IPP path is used. A rocfft/rocAL or hand-written HIP image-filter path could restore GPU acceleration",
+      "refs": [
+        "projects/Open3D/notes.md NPP scope-out"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "open3d-slabhash",
+      "kind": "feature-port",
+      "project": "Open3D",
+      "component": null,
+      "summary": "Non-default SlabHash hashmap backend is wave64-incorrect (32-lane __ffs/__ballot election); compiles but tests excluded under USE_HIP. A wave64-correct rewrite would re-enable it (default StdGPU backend already works)",
+      "refs": [
+        "projects/Open3D/notes.md SlabHash scope-out"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T16:00:58Z"
+    }
+  ]
+}

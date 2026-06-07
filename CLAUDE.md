@@ -83,6 +83,8 @@ If uncertain, choose the simpler, more concise implementation.
 - utils/ -- orient.sh (entrypoint), moatlib.py (state machine + sync), discover.py, gen_readme.py.
 - .claude/agents/ -- planner, porter, reviewer, validator.
 - data/candidates.json -- ranked discovery output.
+- findings/<slug>/ -- prepared ROCm-component bug reports / reproducers (not auto-filed upstream).
+- data/deferred.json -- the deferred-work registry (what we postponed and where to resume). Ask MOAT "what did we defer?" with `python3 utils/deferred.py list`; record a deferral with `utils/deferred.py add` (kinds: rocm-bug-report, feature-port, other). When you scope a sub-feature out of a port or prepare a findings/ bug report you do not file, register it here so it is not lost.
 
 # How to add a project
 
