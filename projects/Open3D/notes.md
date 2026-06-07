@@ -572,3 +572,53 @@ incl. all warp-select + hashmap + TSDF). The 3 failures are gfx1201/TheRock
 runtime+toolchain issues (2 invalid-image kernels, 1 rocSOLVER singular), not the
 port. gfx1201 stays NOT-completed pending triage of these; reproduce Cross
 standalone for the toolchain report.
+
+## gfx1201 failures ROOT-CAUSED 2026-06-07: TheRock multi-arch kpack (ROCm/TheRock #3531), NOT Open3D, NOT rocSOLVER
+
+All 3 gfx1201 failures trace to ONE infrastructure bug in TheRock's multi-arch
+code-object packing (kpack), confirmed by HIP runtime logs and matched to an
+existing upstream issue. NOT an Open3D port bug; NOT a rocSOLVER algorithm bug.
+
+### Evidence chain (bisected)
+- Tensor.Cross PASSES alone, FAILS in-suite, always immediately after Tensor.Det.
+- Det computes the determinant via LU = hipSOLVER/rocSOLVER getrf (LUCUDA.cpp).
+- Det+Cross repro: Det OK (correct determinant), Cross fails instantly (~15 ms);
+  Det+Add: Add fails; Det+Cross+Add: Cross fails, Add then PASSES. So getrf
+  transiently breaks the NEXT code-object load(s), then the loader recovers.
+- AMD_LOG_LEVEL=3 on Det->Cross shows the actual cause at the next kernel launch:
+    hip_fatbin.cpp:710  kpack_load_code_object failed with error: 13
+    hip_module.cpp:886  hipLaunchKernel: Returned hipErrorInvalidImage
+  i.e. the post-getrf HIP kernels cannot lazily load their code object from the
+  kpack archive. ICPDoppler / GetInformationMatrix (getrf via Inverse) hit the
+  same path: getrf's larger Tensile-backed call mis-loads -> "singular condition
+  detected" (Det's tiny matrix uses a non-Tensile path, so Det itself succeeds).
+
+### Upstream status (checked 2026-06-07; do NOT file a rocSOLVER issue)
+ROCm/TheRock #3531 "Multi-arch kpack: consumer GPU validation results and
+remaining work" documents EXACTLY this and is OPEN (TODO, no fix):
+  Root cause: "the kpack splitter processes only HIP code objects embedded in ELF
+  .hipk sections; Tensile's .co files are loaded through a separate runtime path
+  that kpack does not intercept." Affected libs it NAMES: rocblas, hipblaslt,
+  rocsparse, rocsolver -> fail with hipErrorInvalidImage on gfx1201/gfx1100.
+Related: ROCm/rocm-libraries #7192 (gfx1201 looks up wrong Tensile file
+gfx1200.dat). rocSOLVER develop CHANGELOG has no corresponding fix because the
+bug is NOT in rocSOLVER -- it is in TheRock's multi-arch artifact packaging.
+=> The bug is already reported (TheRock #3531) and unfixed; rocSOLVER tip does
+   not and would not fix it. Reporting to rocSOLVER would be misdirected.
+
+### Why no Open3D-side fix
+An attempted fix (clear the HIP error after the solver check, LinalgUtils.h) was
+tried and REVERTED: the failure is a genuine code-object LOAD failure at the next
+kernel launch (kpack), not a stale error code, so clearing hipGetLastError does
+nothing. There is no correct Open3D-side fix; the port is sound. This only
+reproduces on the TheRock Windows multi-arch (kpack) runtime -- the Linux
+gfx90a/gfx1100 validations used standard /opt/rocm (no kpack) and were clean, and
+gfx1201 will clear when TheRock fixes kpack (or with a single-arch / non-kpack
+build of the rocSOLVER Tensile kernels).
+
+### Practical validation note
+Because exactly one HIP kernel load fails per getrf and then recovers, splitting
+the gate run so getrf-using tests (Det, Inverse/Solve/Det-backed, ICP) are
+isolated from the immediately-following test makes the collateral failures
+(Cross, GetInformationMatrix) disappear; the only residual is rocSOLVER-on-kpack
+itself (ICPDoppler), which is the #3531 bug surfacing directly.
