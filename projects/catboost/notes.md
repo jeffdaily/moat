@@ -611,3 +611,67 @@ Result: PASS (gfx1101 wave32).
 GPU: AMD Radeon PRO V710 (gfx1101, compute capability 11.0, HIP_VISIBLE_DEVICES=0).
 Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
 validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
+
+## Validation 2026-06-06 (validator, windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32, compute capability 12.0), Windows 11 Pro for Workstations, TheRock ROCm 7.14 pip wheels, all-clang-cl build. HIP_VISIBLE_DEVICES=0 (only GPU present; gfx1101 offline).
+
+Build: Reconfigured from existing gfx1101 build dir by re-running cmake with CMAKE_HIP_ARCHITECTURES=gfx1201. All GPU objects recompiled for gfx1201. 4152/4152 targets rebuilt (incremental from gfx1101 build). No source changes needed.
+
+Runtime: TheRock DLLs (amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm_kpack.dll) already deployed beside each test exe from prior gfx1101 validation. GPU confirmed at runtime: "AMD Radeon RX 9070 XT (compute capability 12.0)".
+
+### Test 1 -- cuda_util-ut (two back-to-back runs for determinism):
+
+```
+export HIP_VISIBLE_DEVICES=0
+/b/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut.exe --show-fails
+```
+
+Run 1: [DONE] ok: 48 (exit 0)
+Run 2: [DONE] ok: 48 (exit 0)
+Pass sets: IDENTICAL -- deterministic on wave32 (gfx1201).
+
+### Test 2 -- gpu_data-ut (bin-builder overflow fix):
+
+```
+export HIP_VISIBLE_DEVICES=0
+/b/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/gpu_data/ut/catboost-cuda-gpu_data-ut.exe --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4 + TestCompressedSplitFloat + TreeBuilderTest32 PASS -- bin-builder overflow fix confirmed on gfx1201), TGridBuilderPerftest 1/1. Exit 0.
+
+### Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+Run from exe directory to isolate test-pool.txt generation:
+```
+export HIP_VISIBLE_DEVICES=0
+cd /b/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/methods/ut
+./catboost-cuda-methods-ut.exe --show-fails
+```
+
+[DONE] ok: 29, err: 1
+- TExactLeavesEstimationTest: 15/15 PASS
+- TPairwiseHistogramTest: 4/4 PASS
+- TPointwiseHistogramTest: 4/4 PASS
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (WithoutOneHot1/2/17 + WithOneHot3/13 + FatSplitPropsTest -- both histogram grid div-by-zero fix and scan-alignment fix confirmed on gfx1201)
+- TAddingLangevinNoiseTest: 0/1 FAIL -- pre-existing upstream test-design issue, proven NOT a ROCm defect; identical failure on all platforms including NVIDIA; not a blocker.
+
+Note: first background run corrupted test-pool.txt (concurrent processes writing to shared CWD). Clean run from the exe's own directory confirmed correct 29/30 effective pass. Run methods-ut from its exe directory to isolate test-pool.txt.
+
+### Wave32 verdict (gfx1201 = RDNA4, same wave32 ISA family as gfx1100/gfx1101)
+
+- FastInBlockReduce/BlockReduceN/SharedReduce4/8: full __syncthreads tree, wave-agnostic. CORRECT on wave32.
+- CB_FULL_WARP_MASK 64-bit: benign on wave32. CORRECT.
+- 32-lane histogram layout: native on wave32. CORRECT. CONFIRMED by TPairwiseHistogramTest 4/4 + TPointwiseHistogramTest 4/4 + TPointwiseMultiStatHistogramTest 6/6.
+- split_points.cu scan-alignment fix: wave-agnostic. CONFIRMED by TPointwiseMultiStatHistogramTest 6/6.
+- TTileReducer<64>: dead code, never instantiated. SAFE.
+- TBinSplitLoader extract/compare: wave-agnostic arithmetic. CONFIRMED by BinBuilderTest 3/3.
+- No HSA fault, no NaN, no hang observed.
+
+DETERMINISM: two back-to-back cuda_util-ut runs bit-identical. No residual wave32 race on RDNA4.
+FORK CLEAN: no changes to the fork (09612d3c18f8). No CI yaml.
+
+Result: PASS (gfx1201 wave32).
+GPU: AMD Radeon RX 9070 XT (gfx1201, compute capability 12.0, HIP_VISIBLE_DEVICES=0).
+Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
+validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
