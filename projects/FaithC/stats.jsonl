@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-07T16:32:18Z","phase":"compile","seconds":48.294,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-07T17:16:26Z","phase":"compile","seconds":35.891,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-07T17:17:29Z","phase":"compile","seconds":35.751,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FaithC/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace"}
+{"kind": "tokens", "ts": "2026-06-07T17:18:44Z", "tokens": 40538, "source": "validator"}
