@@ -13,3 +13,6 @@
 {"kind":"phase","ts":"2026-06-05T13:54:59Z","phase":"compile","seconds":10.883,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src && rm -rf build && mkdir build && cd build && unset CMAKE_PREFIX_PATH && cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release -Dglfw3_DIR=/usr/lib/x86_64-linux-gnu/cmake/glfw3 && cmake --build . --parallel"}
 {"kind":"phase","ts":"2026-06-05T13:55:17Z","phase":"test","seconds":0.212,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build && HIP_VISIBLE_DEVICES=0 ./bin/cis565_ScanMatching"}
 {"kind": "tokens", "ts": "2026-06-05T13:56:46Z", "tokens": 38611, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-07T22:47:02Z","phase":"compile","seconds":1.735,"exit":1,"cmd":"python3 /b/develop/moat/agent_space/build_scanmatcher_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T22:47:24Z","phase":"compile","seconds":10.177,"exit":0,"cmd":"python3 /b/develop/moat/agent_space/build_scanmatcher_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T22:48:08Z","phase":"test","seconds":0.340,"exit":0,"cmd":"python3 /b/develop/moat/agent_space/run_scanmatcher_gfx1201.py"}

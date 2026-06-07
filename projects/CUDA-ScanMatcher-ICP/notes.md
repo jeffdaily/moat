@@ -148,3 +148,39 @@ HIP_VISIBLE_DEVICES=0 ./bin/cis565_ScanMatching
 - NN timing: 11375us (first), then stable ~252-254us per iteration
 - No crashes, no errors, no NaN values
 - GPU computation works correctly on gfx1100
+
+## Validation 2026-06-07
+
+### Platform: windows-gfx1201
+
+**GPU**: AMD Radeon RX 9070 XT (gfx1201, RDNA4) at HIP_VISIBLE_DEVICES=0 (V710 offline this session)
+
+**Build**: gfx1201, all-clang (clang.exe/clang++.exe from _rocm_sdk_devel), Ninja
+```cmd
+cd src
+mkdir build_gfx1201 && cd build_gfx1201
+cmake .. -G Ninja \
+  -DCMAKE_C_COMPILER=<rocm_devel>/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=<rocm_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=<rocm_devel>/lib/llvm/bin/clang++.exe \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH=<rocm_devel> -DCMAKE_BUILD_TYPE=Release
+cmake --build . --parallel 32
+```
+
+Copied TheRock DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll) into bin/ so the exe loads them instead of System32's amdhip64.
+
+Build succeeded with warnings (nodiscard return values ignored, same as Linux platforms).
+
+**Test**: HIP_VISIBLE_DEVICES=0 (RX 9070 XT gfx1201)
+```cmd
+set HIP_VISIBLE_DEVICES=0
+bin\cis565_ScanMatching.exe
+```
+
+**Results**: PASS
+- 10 ICP iterations completed successfully
+- NN timing: 3688us (first, JIT compile overhead), then stable ~578-588us per iteration
+- No crashes, no errors, no NaN values
+- GPU computation works correctly on gfx1201
