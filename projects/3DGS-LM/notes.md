@@ -2,7 +2,11 @@
 
 ## Status
 - linux-gfx90a: ported + validated on real gfx90a. Both extensions build, import, all ops register; rasterizer forward/backward correct; the LM step (eval_jtf -> sort -> PCG with apply_jtj -> line-search) converges; end-to-end synthetic fit drives loss down / PSNR up.
+- windows-gfx1201: validated on RX 9070 XT (gfx1201, RDNA4). 5/5 tiers PASS including divergence gate.
 - Strategy B (torch build-time hipify), 2 CUDAExtensions. All source fixes USE_ROCM-guarded so the CUDA path is byte-identical.
+
+### Linux revalidate note (for linux-gfx90a and linux-gfx1100 validators)
+Head moved from 56cb37a to 90e3353 (Windows-only setup.py fix, `os.name == 'nt'`-guarded). The .cu and .h sources are UNCHANGED. A binary-equiv check (`python3 utils/codeobj_diff.py`) between builds at both shas will confirm identical device code objects, allowing carry-forward without a GPU re-run.
 
 ## Build recipe
 Build cwd MUST be outside /var/lib/jenkins/pytorch (its tree shadows the installed torch and breaks CUDAExtension hipify). Env: conda env py_3.12 (torch 2.13 ROCm, torch.version.hip ~7.2.5), gfx90a, ROCm 7.2.1.
