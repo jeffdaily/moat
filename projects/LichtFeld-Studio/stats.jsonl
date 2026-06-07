@@ -38,3 +38,11 @@
 {"kind": "tokens", "ts": "2026-06-05T11:00:44Z", "tokens": 70279, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-05T13:30:56Z", "tokens": 68460, "source": "validator (gfx1100 revalidate)"}
 {"kind": "tokens", "ts": "2026-06-05T11:47:37Z", "tokens": 71931, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T19:28:27Z","phase":"compile","seconds":7.286,"exit":0,"cmd":"bash agent_space/lfs_build.sh configure gfx90a"}
+{"kind":"phase","ts":"2026-06-07T19:28:58Z","phase":"compile","seconds":22.694,"exit":1,"cmd":"cmake --build projects/LichtFeld-Studio/src/build-hip --target lfs_compute_tests -j16"}
+{"kind":"phase","ts":"2026-06-07T19:30:40Z","phase":"compile","seconds":25.272,"exit":0,"cmd":"cmake --build projects/LichtFeld-Studio/src/build-hip --target lfs_compute_tests -j16"}
+{"kind":"phase","ts":"2026-06-07T19:30:57Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./cmake/hip_tests/lfs_compute_tests"}
+{"kind":"phase","ts":"2026-06-07T19:31:25Z","phase":"test","seconds":17.554,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip/cmake/hip_tests/lfs_compute_tests"}
+{"kind":"phase","ts":"2026-06-07T19:34:24Z","phase":"test","seconds":17.025,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip/cmake/hip_tests/lfs_compute_tests"}
+{"kind":"phase","ts":"2026-06-07T19:37:39Z","phase":"compile","seconds":146.318,"exit":0,"cmd":"cmake --build projects/LichtFeld-Studio/src/build-hip --target lfs_compute_tests -j16"}
+{"kind":"phase","ts":"2026-06-07T19:38:09Z","phase":"test","seconds":17.201,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/LichtFeld-Studio/src/build-hip/cmake/hip_tests/lfs_compute_tests"}

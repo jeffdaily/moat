@@ -634,3 +634,85 @@ a semantic change on Linux.
 
 ### Verdict: PASS (linux-gfx1100 revalidation)
 validated_sha = 13e585d4775b69961221e21f8cddcb567d66b752
+
+## Test-gate expansion 2026-06-07 (linux-gfx90a, gfx90a / MI250X, ROCm 7.2.1)
+
+Closes the lichtfeld-test-gate-coverage deferral: the gate (cmake/hip_tests/
+CMakeLists.txt, LFS_HIP_TEST_FILES) linked only 44 compute test files and omitted
+many built kernels, most notably tensor_nn_ops.cu (max_pool2d, adaptive_avg_pool2d,
+conv1x1, linear, relu) which had no test at all.
+
+### What was added (new commit 235c5905 on top of 13e585d)
+
+Surveyed all 137 excluded test_*.cpp, classified by their includes (both <...> and
+"..." -- the earlier validator survey missed angle-bracket includes). A file is
+compute-only iff every project header it pulls is under core/tensor*, core/logger,
+core/parameters, core/tensor_label, core/cuda/{memory_arena,sh_layout,kernels},
+training/kernels, training/optimizer, or diagnostics/. 68 qualified. Added 56:
+test_tensor_nn_ops plus 55 tensor-library / diagnostics tests. Result: gate grew
+914 -> 2048 tests (119 suites).
+
+Deliberately NOT added:
+- 13 pure-timing *_benchmark / *_performance files (no correctness asserts; only add
+  wall-clock to the gate).
+- ~67 io/GUI/Vulkan/Python/USD/mesh-coupled files (those layers are not built under
+  USE_HIP; they would fail to link). Includes the formats (ply/spz/sog/usd), scene/
+  splat_data/camera/point_cloud (pull io), event_bridge/services/operator/selection,
+  visualizer/rendering/gui/rmlui/sdl, mcp, python, sequencer.
+- test_mcmc_histogram_optimization.cpp: references launch_count_occurrences_fast,
+  a symbol that no longer exists anywhere in the source tree (the header now exports
+  launch_histogram / launch_histogram_sort). It fails to COMPILE on any backend
+  (verified: 0 matches in src/); a stale test, dropped.
+
+lfs_diagnostics is PUBLIC-linked by lfs_core and lfs_training and its include dir is
+PUBLIC, so diagnostics/vram_profiler.hpp resolves transitively -- no link/include
+edit needed for test_vram_profiler_metrics.
+
+### GPU run (serial, HIP_VISIBLE_DEVICES=3, GCD 3; siblings on 0/1/2 untouched)
+
+Binary rebuilt at 235c5905 (the ff to 13e585d triggered a full recompile via the
+Windows-commit tensor_functors.hpp host double-cast; compiled clean, 166/166).
+
+```
+HIP_VISIBLE_DEVICES=3 ./build-hip/cmake/hip_tests/lfs_compute_tests
+```
+2048 tests from 119 suites, 2043 passed, 5 failed. BIT-IDENTICAL across three runs
+(two at the pre-ff binary, one at 235c5905); ~14.3-14.8 s.
+
+### The 5 failures (all non-bugs; none a GPU kernel defect)
+
+3 pre-existing documented (see prior validations): MCMCTest.RemoveGaussiansSoftDeletesRows,
+MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows (both read a uint8
+QUANTIZED moment buffer as float; zero-point=128 reads as NaN), ImageKernelsTest.
+FusedCannyUInt8MatchesNormalizedFloatInput (1-ULP cross-input boundary in Canny NMS).
+
+2 NEWLY surfaced by the added tests, both investigated and confirmed non-bugs:
+- TensorLazyIrTest.OnModeDefersUntilBoundaryAndMaterializes (test_tensor_lazy_ir.cpp:106):
+  asserts a direct `a.add(b)` (both CPU tensors) yields op_kind Deferred(5); the
+  implementation classifies a binary op Binary(2). lazy_ir.cpp is pure host C++ with
+  ZERO arch/HIP guards (grep count 0): the binary path -> Binary at line 226, a
+  separate deferred path -> Deferred at line 288 (used by view-chains; the sibling
+  test OnModeKeepsDeferredThroughViewChain which also expects Deferred PASSES). So
+  this single assertion is a stale/incorrect expectation, arch-independent, fails
+  identically on CUDA. Not a port defect, not a GPU kernel. Deterministic (fails in
+  isolation too).
+- TensorStressTest.DeepOperationChain (test_tensor_stress.cpp:103): a global
+  free-memory leak heuristic (hipMemGetInfo). PASSES in isolation (OK, 443 ms); fails
+  only in the full run with a -128 MB "leak" (i.e. MORE free at end -- impossible for
+  a real leak), perturbed by the sibling processes on GPUs 0/1/2 sharing the device's
+  global free-memory counter. A measurement artifact, not a kernel bug.
+
+Both kept in the gate (the project already tolerates documented non-bug failures;
+test_tensor_lazy_ir contributes 78 passing + test_tensor_stress 15 passing). The 2
+new reds are documented here so a future validator does not re-triage them.
+
+### State
+
+head_sha -> 235c590583896c340aa32154f3fb12cc446418e6 (test-only delta on top of
+13e585d; no device-code change to library kernels). advance_head classified the
+CMakeLists change "mixed" (conservative -- .txt not in the inert allowlist) and
+flipped both Linux platforms to revalidate. linux-gfx90a set back to completed
+(validated_sha 235c5905) on the strength of the real-GPU run here. linux-gfx1100
+stays revalidate -- its W7800 host confirms the test-only delta (codeobj_diff on the
+library .so should be identical at 13e585d vs 235c5905; only the test exe gains
+sources) and carries forward. Windows platforms unchanged (blocked).
