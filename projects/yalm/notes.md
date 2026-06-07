@@ -121,6 +121,16 @@ Wave32 verdict (warpSize=32 on gfx1100):
 
 No source or fork changes required; the commit at 311e1c39ebf5 validates as-is on wave32. The `-x hip` cosmetic warning persists (noted in gfx90a review; non-blocking).
 
+## Validation 2026-06-07 (linux-gfx90a, revalidate carry-forward)
+
+Result: CARRY-FORWARD -- linux-gfx90a validated_sha advanced to 006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c via binary equivalence; no GPU re-run needed.
+
+Delta: 006a0fdfa7 adds `host_ptr_to_device()` in `src/infer.cu` guarded by `#if defined(USE_HIP) && defined(_WIN32)`. On Linux `_WIN32` is not defined; the helper compiles to `return host;` and is inlined away. No device code change.
+
+Verification: `python3 utils/codeobj_diff.py build_old/src/infer.cu.o build_new/src/infer.cu.o` -> `verdict=identical` (device ISA + exported symbols byte-identical). Both builds used `hipcc --offload-arch=gfx90a` (ROCm 7.2.53211).
+
+arch: gfx90a (AMD Instinct MI250X), HIP_VISIBLE_DEVICES=3. No GPU execution performed.
+
 ## Validation 2026-06-07 (windows-gfx1201)
 
 Result: PASS -- windows-gfx1201 completed, validated_sha=006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c.
