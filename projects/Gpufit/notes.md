@@ -743,3 +743,40 @@ No NaN, no divergence, clean exit 0.
 
 Result: windows-gfx1101 port-ready -> completed,
 validated_sha = 84af92cba1e0b8879e1f3f3b5dc28f8a0c8e8fbe.
+
+## Validation 2026-06-07 (linux-gfx90a, binary-equivalence carry-forward)
+
+linux-gfx90a was in `revalidate` state (validated_sha=0a1b3d67, head_sha=84af92c)
+after the windows-gfx1101 delta-port advanced the fork HEAD.
+
+### Delta (0a1b3d67..84af92c)
+
+Single file: `CMakeLists.txt` (3 insertions, 2 deletions). The change tightens
+the `WIN32`-guarded `CMAKE_HIP_COMPILE_OBJECT` override by adding
+`AND CMAKE_HIP_COMPILER MATCHES "clang-cl"`. On Linux, `WIN32` is false, so this
+entire block is never entered at either SHA. The condition change has no effect on
+Linux builds.
+
+### Binary-equivalence check
+
+Built both SHAs for gfx90a (`-DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+-DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release
+-DUSE_CUBLAS=OFF`) into separate directories. Compared GPU artifact:
+
+```
+python3 utils/codeobj_diff.py \
+  agent_space/gpufit-cmp-old/Gpufit/libGpufit.so \
+  agent_space/gpufit-cmp-new/Gpufit/libGpufit.so
+verdict=identical
+  libGpufit.so vs libGpufit.so: identical (exported symbols + device ISA identical (79 exports))
+```
+
+`libCpufit.so` is CPU-only (no device code); `roc-obj-ls` reports "No kernel
+section found" -- not a GPU artifact, does not affect the carry-forward decision.
+The overall `codeobj_diff.py` on build dirs returns `indeterminate` only because
+of `libCpufit.so`; the GPU-carrying library `libGpufit.so` is `identical`.
+
+No GPU re-run needed. The WIN32-guarded block is inert on Linux at both SHAs.
+
+Result: linux-gfx90a `revalidate` -> `completed`,
+validated_sha = 84af92cdf504fbc8538a78d8c77b087604ed52fa.

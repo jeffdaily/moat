@@ -7,17 +7,17 @@
   "priority": 4.647,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-05T23:59:57Z",
+  "updated_at": "2026-06-07T16:31:57Z",
   "head_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
+      "validated_sha": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
       "started_at": "2026-05-30T05:07:21Z",
-      "completed_at": "2026-06-04T17:54:06Z",
-      "updated_at": "2026-06-05T23:59:45Z",
+      "completed_at": "2026-06-07T16:31:57Z",
+      "updated_at": "2026-06-07T16:31:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,10 +33,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "0a1b3d67df3f264d6f3a4602c250155f5f350b54",
+        "to": "84af92cdf504fbc8538a78d8c77b087604ed52fa",
         "method": "binary-equiv",
-        "detail": "WIN32-guarded CMAKE_HIP_COMPILE_OBJECT block + MSVC /FI generator expression; resolves to original -include on Linux (GNU frontend); libGpufit.so gfx90a device ISA + 79 exports identical at both SHAs",
-        "at": "2026-06-04T17:54:06Z"
+        "detail": "CMakeLists.txt WIN32 block further gated to clang-cl only; WIN32 is false on Linux so the condition was never entered at either SHA; libGpufit.so gfx90a device ISA + 79 exports identical",
+        "at": "2026-06-07T16:31:57Z"
       }
     },
     "linux-gfx1100": {

@@ -23,3 +23,8 @@
 {"kind":"phase","ts":"2026-06-05T23:54:49Z","phase":"compile","seconds":11.072,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/Gpufit/src/build-gfx1101 -j64"}
 {"kind":"phase","ts":"2026-06-05T23:56:52Z","phase":"compile","seconds":11.107,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/Gpufit/src/build-gfx1101 -j64"}
 {"kind":"phase","ts":"2026-06-05T23:57:44Z","phase":"test","seconds":2.910,"exit":0,"cmd":"bash -c cd /b/develop/moat/projects/Gpufit/src/build-gfx1101 && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1"}
+{"kind": "tokens", "ts": "2026-06-04T17:55:31Z", "tokens": 43052, "source": "validator linux-gfx90a revalidate"}
+{"kind":"phase","ts":"2026-06-07T16:30:06Z","phase":"compile","seconds":3.047,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/agent_space/gpufit-old-wt -B /var/lib/jenkins/moat/agent_space/gpufit-cmp-old -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF"}
+{"kind":"phase","ts":"2026-06-07T16:30:29Z","phase":"compile","seconds":18.273,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/gpufit-cmp-old -j128"}
+{"kind":"phase","ts":"2026-06-07T16:30:38Z","phase":"compile","seconds":3.069,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/Gpufit/src -B /var/lib/jenkins/moat/agent_space/gpufit-cmp-new -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF"}
+{"kind":"phase","ts":"2026-06-07T16:31:02Z","phase":"compile","seconds":18.201,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/gpufit-cmp-new -j128"}
