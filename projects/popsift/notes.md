@@ -1408,3 +1408,75 @@ The wave64 ballot_group/any_group helpers with group=0 degenerate correctly to
 the full wave32 wavefront. No wave32-specific regression.
 
 State: port-ready -> completed; validated_sha = 5ee4973c.
+
+## Validation 2026-06-06 (windows-gfx1201): PASS
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11, TheRock ROCm
+7.14.0a20260604. Fork: jeffdaily/popsift @ moat-port, HEAD 5ee4973c.
+HIP_VISIBLE_DEVICES=0 (only GPU on host; gfx1101 absent).
+
+### Build
+
+Library only (no Boost; examples off). Ninja + all-clang toolchain from _rocm_sdk_devel:
+
+```
+cmake -S projects/popsift/src -B projects/popsift/src/build-win-gfx1201 -G Ninja \
+  -DUSE_HIP=ON -DPopSift_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON \
+  -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=<rocm> -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  -DCMAKE_LINKER_TYPE=LLDFIX -DCMAKE_HIP_USING_LINKER_LLDFIX=-fuse-ld=lld \
+  -DCMAKE_CXX_USING_LINKER_LLDFIX=-fuse-ld=lld
+cmake --build build-win-gfx1201 -j64
+```
+
+100% built (30/30 steps), popsift.dll linked. Only the pre-existing benign
+-Wunused-value (debug_macros nodiscard) and -Wdeprecated-declarations
+(rocThrust::identity) warnings. `strings popsift.dll | grep "hipv4-amdgcn"` ->
+`hipv4-amdgcn-amd-amdhsa--gfx1201` (single arch confirmed).
+
+### Validation harness
+
+Built popsift_validate_gfx1201.exe (agent_space/) using the same source as the
+gfx1101 harness (popsift_validate_gfx1101.cpp) compiled against the gfx1201
+popsift.dll. Flags extracted from build.ninja (DEFINES+INCLUDES for the
+popsift CMake target):
+
+```
+clang++.exe -O2 \
+  -DUSE_HIP=1 -DUSE_PROF_API=1 -D__HIP_PLATFORM_AMD__=1 -D__HIP_ROCclr__=1 \
+  -I<src>/src/popsift/hip_compat -I<src>/src \
+  -I<build>/src/generated -I<build>/src/generated/popsift \
+  -isystem <rocm>/include \
+  popsift_validate_gfx1101.cpp \
+  -o popsift_validate_gfx1201.exe \
+  -L<build>/src -lpopsift -L<rocm>/lib -lamdhip64
+```
+
+TheRock runtime DLLs (amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll, rocm_kpack.dll) placed beside the exe in a dedicated
+run dir (agent_space/popsift-gfx1201-run/) to override System32 Adrenalin DLLs.
+
+### Cross-arch Oxford boat gate -- EXACT MATCH
+
+Oxford boat dataset (6 images, 850x680 PGM, VLFeat/loop/RootSift, downsampling=-1):
+
+| Image | gfx1201 feat/desc | gfx90a ref | Match |
+|-------|-------------------|------------|-------|
+| img1  | 8351 / 9874       | 8351/9874  | EXACT |
+| img2  | 7946 / 9452       | 7946/9452  | EXACT |
+| img3  | 6158 / 7280       | 6158/7280  | EXACT |
+| img4  | 4802 / 5799       | 4802/5799  | EXACT |
+| img5  | 4618 / 5476       | 4618/5476  | EXACT |
+| img6  | 3855 / 4618       | 3855/4618  | EXACT |
+
+All 6 feature counts match gfx90a and gfx1101 exactly. 0 NaN, 0 Inf in all
+descriptors. Determinism confirmed: 2/2 runs byte-identical (8351/9874 img1
+each run). warpSize-generic extrema_count correct on wave32 (gfx1201/RDNA4).
+The wave64 ballot_group/any_group helpers with group=0 degenerate correctly to
+the full wave32 wavefront. layered-collapse workaround (non-layered 3D arrays)
+presumed correct as on gfx1100/gfx1151 (RDNA4 shares the same ROCm/clr#275
+limitation).
+
+State: port-ready -> completed; validated_sha = 5ee4973c.
