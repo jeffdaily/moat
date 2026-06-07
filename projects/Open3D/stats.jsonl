@@ -24,3 +24,4 @@
 {"kind":"phase","ts":"2026-05-31T07:11:25Z","phase":"compile","seconds":19.471,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}
 {"kind":"phase","ts":"2026-05-31T07:12:36Z","phase":"test","seconds":63.697,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/Open3D/src/build/bin/tests --gtest_filter=*Tensor*:*Reduction*:*MemoryManager*"}
 {"kind":"phase","ts":"2026-06-07T19:20:26Z","phase":"compile","seconds":493.016,"exit":0,"cmd":"cmake --build projects/Open3D/src/build -j16 --target tests"}
+{"kind":"phase","ts":"2026-06-07T19:45:44Z","phase":"compile","seconds":332.844,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/Open3D/src/build -j16 --target tests"}

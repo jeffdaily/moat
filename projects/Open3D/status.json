@@ -7,7 +7,7 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-07T19:21:16Z",
+  "updated_at": "2026-06-07T19:47:55Z",
   "head_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
+      "validated_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
       "started_at": "2026-05-31T08:26:00Z",
-      "completed_at": "2026-05-31T08:35:32Z",
-      "updated_at": "2026-06-07T18:38:51Z",
+      "completed_at": "2026-06-07T19:47:55Z",
+      "updated_at": "2026-06-07T19:47:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,12 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
-        "to": "2670bbb17ee4009a0a315934644e3de0f58559cb",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-07T16:17:35Z"
+        "to": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
+        "method": "binary-equiv",
+        "detail": "Windows-only cmake/cpp changes (WIN32 guard, [[maybe_unused]], clang warning, USE_SYSTEM_TBB guard): device ISA and exports identical on gfx1100",
+        "at": "2026-06-07T19:47:55Z"
       }
     },
     "windows-gfx1101": {
