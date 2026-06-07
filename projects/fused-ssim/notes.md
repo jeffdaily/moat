@@ -353,3 +353,28 @@ python3 utils/codeobj_diff.py /tmp/fused-ssim-build-old /tmp/fused-ssim-build-ne
 Output: `verdict=identical -- fused_ssim_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (161 exports))`
 
 **RESULT: CARRY FORWARD. linux-gfx90a -> completed (binary-equiv at cdfe1fa).**
+
+## Revalidation 2026-06-07 (gfx1100, carry-forward via binary-equiv)
+
+**GPU:** AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32). ROCm 7.2.1. torch 2.13.0a0+gitb5e90ff. Head sha: `cdfe1fa6fced7898a9c8b3ba48e78633646ce28d`. Revalidating from `666987fb`.
+
+**Delta:** `666987fb..cdfe1fa` -- identical to gfx90a delta above: two Windows-only commits (setup.py `os.name == 'nt'` block; ext.cpp `#ifdef` widens to `|| defined(FUSED_SSIM_HIP)`). Linux CXX path still receives `-DFUSED_SSIM_CUDA`; both conditions evaluate identically on Linux.
+
+**Binary-equivalence check:**
+
+Built both SHAs with `HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100`:
+
+```
+cd /tmp/fused-ssim-old && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python -m pip install -e . --no-build-isolation -v
+cd /tmp/fused-ssim-new && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python -m pip install -e . --no-build-isolation -v
+```
+
+Both builds reported: `NVCC args: ['-O3', '-DFUSED_SSIM_CUDA', '-ffast-math']. CXX args: ['-O3', '-DFUSED_SSIM_CUDA'].`
+
+```
+python3 utils/codeobj_diff.py /tmp/fused-ssim-build-old /tmp/fused-ssim-build-new
+```
+
+Output: `verdict=identical -- fused_ssim_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (161 exports))`
+
+**RESULT: CARRY FORWARD. linux-gfx1100 -> completed (binary-equiv at cdfe1fa).**
