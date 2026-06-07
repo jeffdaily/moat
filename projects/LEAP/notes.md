@@ -291,3 +291,41 @@ python3 /var/lib/jenkins/moat/utils/codeobj_diff.py /var/lib/jenkins/moat/agent_
 ```
 
 validated_sha: 0e75025be39a25dd093a60e2da7ee67fd0c42a57
+
+## Validation 2026-06-07 (validator, linux-gfx1100, revalidate, moat-port @ 0e75025)
+
+Verdict: completed (carry-forward via binary-equiv). No GPU re-run needed.
+
+Delta 1753479 -> 0e75025 adds 5 files with Windows-only changes: `leap_defines.h`
+(uint8/uint16 typedef guard under `_MSC_VER && __HIP_PLATFORM_AMD__`), `file_io.cpp`
+(local cstdint typedef under the same guard), `tomographic_models_c_interface.cpp`
+(PyInit_leapct stub under `_WIN32 && TORCH_EXTENSION_NAME`), `leapct_exports.def`
+(Windows linker DEF file), `setup_AMD.py` (Windows extra_compile_args/extra_link_args).
+None of these guards activate on Linux.
+
+codeobj_diff.py verdict: identical (1135 exported symbols + device ISA match).
+Both SHAs built for gfx1100-only with HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100.
+The .so at 0e75025 is byte-for-byte equivalent to the .so at 1753479 in exported
+symbols and all 20 GPU code objects.
+
+Commands:
+```
+# Old SHA build:
+cd /var/lib/jenkins/moat/projects/LEAP/src
+git checkout 17534792ea62722cf0537894bbab68fb5bb257cc
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 python setup_AMD.py build_ext --inplace
+cp src/leapct.cpython-312-x86_64-linux-gnu.so /var/lib/jenkins/moat/agent_space/LEAP_gfx1100_diff/old/
+
+# New SHA build:
+git checkout moat-port  # 0e75025
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 python setup_AMD.py build_ext --inplace
+cp src/leapct.cpython-312-x86_64-linux-gnu.so /var/lib/jenkins/moat/agent_space/LEAP_gfx1100_diff/new/
+
+# Diff:
+python3 /var/lib/jenkins/moat/utils/codeobj_diff.py \
+  /var/lib/jenkins/moat/agent_space/LEAP_gfx1100_diff/old \
+  /var/lib/jenkins/moat/agent_space/LEAP_gfx1100_diff/new
+# verdict=identical: leapct.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (1135 exports))
+```
+
+validated_sha: 0e75025be39a25dd093a60e2da7ee67fd0c42a57
