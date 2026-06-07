@@ -991,3 +991,136 @@ All four sensor simulators (Pinhole, Spherical, O1Dn, OnDn) trace rays correctly
 against test geometry. BVH build and ray tracing kernels execute successfully on
 AMD Instinct MI250X gfx90a. HIPRT_PATH environment variable required for JIT
 kernel source discovery (Orochi subsystem).
+
+## Validation 2026-06-07 (windows-gfx1201, HIP_VISIBLE_DEVICES=0) -- PASS
+
+Fork: jeffdaily/rmagine moat-port HEAD 4223818. GPU: AMD Radeon RX 9070 XT,
+gfx1201 (RDNA4, wave32), ROCm 7.14.0a20260604 (TheRock nightly).
+
+### Windows build prerequisites (first run)
+
+Built from source since no package manager provided these; installed once:
+- assimp v5.3.1: cloned from github/assimp/assimp, built with amdclang/amdclang++,
+  installed to agent_space/assimp_install.
+- Eigen3: reused agent_space/eigen_install (from prior gtsam/amgcl builds).
+- TBB: reused agent_space/tbb_install (pre-built).
+- Boost 1.87.0: header-only usage (boost/algorithm/string/join and
+  boost/current_function); created a minimal BoostConfig.cmake pointing to the
+  source tree headers (agent_space/boost_cmake_config/).
+
+### Windows-specific build fixes (not source changes; CMake/env only)
+
+1. `-D_USE_MATH_DEFINES -DNOMINMAX` via CMAKE_CXX_FLAGS: rmagine_core uses M_PI /
+   M_PI_2 which are not defined by default on Windows (MSVC/clang targeting MSVC
+   ABI). Standard Windows fix.
+
+2. `-DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE`: rmagine has no __declspec(dllexport)
+   decorators; CMake auto-exports all symbols when building SHARED libs.
+
+3. `-fuse-ld=lld-link` stripping: CMake 4.3's Windows-Clang platform module injects
+   `-fuse-ld=lld-link` into LINK_FLAGS for all Clang languages including HIP.
+   amdclang++ in --hip-link (device-link) mode rejects it. Post-processed
+   build.ninja to remove all occurrences. This is a build-env issue, not a source
+   issue; the fix is done once after cmake configure before building.
+
+### Configure
+
+```
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+
+cmake -S /b/develop/moat/projects/rmcl/rmagine_src \
+      -B /b/develop/moat/agent_space/rmcl_gfx1201_build \
+      -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/amdclang.exe" \
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" \
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" \
+      -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_PREFIX_PATH="$ROCM;$ROCM_CORE" \
+      -DBoost_DIR="/b/develop/moat/agent_space/boost_cmake_config" \
+      -DEigen3_DIR="/b/develop/agent_space/eigen_install/share/eigen3/cmake" \
+      -Dassimp_DIR="/b/develop/moat/agent_space/assimp_install/lib/cmake/assimp-5.3" \
+      -DTBB_DIR="/b/develop/moat/agent_space/tbb_install/lib/cmake/TBB" \
+      -DRMAGINE_EMBREE_DISABLE=ON -DRMAGINE_OPTIX_DISABLE=ON \
+      -DRMAGINE_VULKAN_DISABLE=ON -DRMAGINE_VULKAN_CUDA_INTEROP_DISABLE=ON \
+      -DRMAGINE_OUSTER_DISABLE=ON -DRMAGINE_BUILD_TESTS=ON \
+      -DRMAGINE_BUILD_TOOLS=OFF \
+      -DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES -DNOMINMAX" \
+      -DCMAKE_C_FLAGS="-D_USE_MATH_DEFINES" \
+      -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=TRUE
+
+# Post-process to strip -fuse-ld=lld-link from build.ninja (HIP device-link compat)
+sed -i 's/-fuse-ld=lld-link//g' /b/develop/moat/agent_space/rmcl_gfx1201_build/build.ninja
+```
+
+### Build
+
+```
+cmake --build /b/develop/moat/agent_space/rmcl_gfx1201_build -j64
+```
+
+38/38 targets built cleanly (rmagine-core.dll, rmagine-cuda.dll, 7 cuda test
+exes, 12 core test exes). Only pre-existing nodiscard warnings on hipMemset
+macro expansions (unchanged). rmagine_hiprt was skipped (HIPRT SDK absent, as
+expected). HIP compiler: amdclang++ 23.0.0 (ROCm 7.14).
+
+### Runtime DLL setup
+
+Copied to bin/ dir (exe-dir search takes priority over System32):
+- amdhip64_7.dll, amd_comgr.dll (TheRock runtime)
+- hiprand.dll, rocrand.dll, hiprtc0714.dll, hiprtc-builtins0714.dll
+- assimp.dll, tbb12.dll (dependency)
+
+### Test results
+
+```
+export HIP_VISIBLE_DEVICES=0  # RX 9070 XT (gfx1201)
+# Run 1
+ctest --test-dir /b/develop/moat/agent_space/rmcl_gfx1201_build --output-on-failure -R "^cuda_"
+# 7/7 PASS (1.99 s)
+# Run 2 (determinism)
+ctest --test-dir /b/develop/moat/agent_space/rmcl_gfx1201_build --output-on-failure -R "^cuda_"
+# 7/7 PASS
+ctest --test-dir /b/develop/moat/agent_space/rmcl_gfx1201_build --output-on-failure -R "^core_"
+# 12/12 PASS (1.84 s)
+```
+
+Tests passing:
+- cuda_math, cuda_memory, cuda_memory_slicing, cuda_math_svd,
+  cuda_math_statistics, cuda_math_reduction (pre-existing suite)
+- cuda_math_reduction_correctness (asserting gate for rm::sum/mean/cov vs CPU reference)
+- core_math, core_memory, core_memory_slicing, core_quaternion, core_math_svd,
+  core_math_statistics, core_math_cov_transform, core_math_gaussians,
+  core_math_matrix_slicing, core_math_reduction, core_math_cholesky, core_math_lie
+
+### GPU dispatch confirmed
+
+```
+ctest --test-dir rmcl_gfx1201_build --output-on-failure --verbose -R "cuda_math_reduction_correctness"
+```
+
+Output on device 0 (AMD Radeon RX 9070 XT):
+```
+[RMagine - CudaContext] CUDA Driver Version / Runtime Version: 71460.85.0 / 71460.85.0
+[RMagine - CudaContext] Construct context on device 0 - AMD Radeon RX 9070 XT
+sum = 143.779, 2048, -1571.54
+cov(0,0) = -0.188745 (ref -0.188745)
+PASS: rm::sum/mean/cov match CPU reference and are deterministic
+```
+
+Run 2 bit-identical (same sum/cov values). gfx1201 wave32 reduction correctness
+confirmed: full __syncthreads tree (USE_HIP-guarded, no warp tail) produces
+correct rm::sum / rm::mean / rm::cov on RDNA4 wave32. Matches gfx90a@4223818 and
+gfx1100@4223818.
+
+### Stage 2 HIPRT verdict
+
+HIPRT SDK not present on this host. CMake correctly skipped rmagine_hiprt with a
+warning. Stage 1 (rmagine_cuda HIP compute backend) is the validated deliverable.
+
+### Verdict
+
+Stage 1 (rmagine_cuda HIP compute backend): VALIDATED on windows-gfx1201. 7/7
+cuda_ tests + 12/12 core_ tests PASS on gfx1201@4223818. No regression. Matches
+prior gfx90a and gfx1100 validations at the same SHA.

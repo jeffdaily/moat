@@ -62,3 +62,7 @@
 {"kind":"phase","ts":"2026-06-05T19:29:33Z","phase":"test","seconds":2.100,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 --output-on-failure -R ^cuda_"}
 {"kind":"phase","ts":"2026-06-05T19:29:39Z","phase":"test","seconds":2.763,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/rmcl_gfx1100_revalidate_4223818 --output-on-failure -R ^core_"}
 {"kind":"session","ts":"2026-06-05T19:30:27Z","epoch":1780687827.615607911,"event":"end","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-07T14:45:18Z","phase":"compile","seconds":8.387,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/rmcl_gfx1201_build -j64"}
+{"kind":"phase","ts":"2026-06-07T14:46:05Z","phase":"compile","seconds":7.973,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/rmcl_gfx1201_build -j64"}
+{"kind":"phase","ts":"2026-06-07T14:53:02Z","phase":"compile","seconds":7.365,"exit":0,"cmd":"cmake --build /b/develop/moat/agent_space/rmcl_gfx1201_build -j64"}
+{"kind":"phase","ts":"2026-06-07T14:54:41Z","phase":"test","seconds":2.120,"exit":0,"cmd":"ctest --test-dir /b/develop/moat/agent_space/rmcl_gfx1201_build --output-on-failure -R ^cuda_"}
