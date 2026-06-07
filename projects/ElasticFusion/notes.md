@@ -387,6 +387,101 @@ HARNESS PASSED (0 failures)
 
 **Decision: PASS -> windows-gfx1101 completed, validated_sha=85283b8.**
 
+## Validation 2026-06-06 (windows-gfx1201, AMD Radeon RX 9070 XT gfx1201, ROCm 7.14.0a20260604) -- PASSED
+
+**Device:** HIP device 0 -- AMD Radeon RX 9070 XT (gfx1201) warpSize=32. HIP_VISIBLE_DEVICES=0, ROCm 7.14.0a20260604 (TheRock nightly). gfx1101 absent from host at time of validation; RX 9070 XT enumerated at HIP_VISIBLE_DEVICES=0.
+
+**Fork HEAD confirmed:** 85283b834d61c5638e5658805a229832b3caaf13 (no fork commit; follower reuses lead branch unchanged).
+
+**Build (kernel harness, all-clang, no MSVC, no -fPIC, --offload-arch=gfx1201):**
+```
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv
+ROCM=$VENV/Lib/site-packages/_rocm_sdk_devel
+CXX=$ROCM/lib/llvm/bin/clang++.exe
+SRC=B:/develop/moat/projects/ElasticFusion/src
+OUT=B:/develop/moat/agent_space/ef-harness-win-gfx1201
+ARCH=gfx1201
+INCLUDES="-I $SRC/Core/Cuda -I $SRC/Core/Cuda/containers -I $SRC/hip_compat -I $SRC/third-party/Eigen -I $ROCM/include"
+
+# Compile cudafuncs.cu and reduce.cu as HIP TUs:
+$CXX -x hip -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ \
+  -include $SRC/Core/Cuda/cuda_to_hip.h --offload-arch=$ARCH $INCLUDES \
+  -c $SRC/Core/Cuda/cudafuncs.cu -o $OUT/cudafuncs.o
+$CXX -x hip -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ \
+  -include $SRC/Core/Cuda/cuda_to_hip.h --offload-arch=$ARCH $INCLUDES \
+  -c $SRC/Core/Cuda/reduce.cu -o $OUT/reduce.o
+# Compile host C++ files (no -x hip, no -fPIC on Windows):
+$CXX -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ $INCLUDES \
+  -c $SRC/Core/Cuda/containers/device_memory.cpp -o $OUT/device_memory.o
+$CXX -std=c++17 -O2 -DUSE_HIP -D__HIP_PLATFORM_AMD__ $INCLUDES \
+  -c $SRC/rocm_validation/kernel_harness.cpp -o $OUT/kernel_harness.o
+# Link:
+$CXX -std=c++17 --offload-arch=$ARCH \
+  $OUT/kernel_harness.o $OUT/cudafuncs.o $OUT/reduce.o $OUT/device_memory.o \
+  -L $ROCM/lib -lamdhip64 -o $OUT/kernel_harness.exe
+# Result: warnings only (nodiscard), no errors. Binary: 455 KB.
+# DLL setup: copy TheRock amdhip64_7.dll/amd_comgr.dll/rocm_kpack.dll/hiprtc*.dll
+# into exe dir so it beats System32's Adrenalin amdhip64 in the DLL search order.
+```
+
+**Binary check:**
+- `strings kernel_harness.exe | grep gfx12` shows two `hipv4-amdgcn-amd-amdhsa--gfx1201` code objects (cudafuncs.cu and reduce.cu).
+- Imports: `amdhip64_7.dll`, `KERNEL32.dll` only (HIP, no CUDA).
+
+**Test run (two independent process runs, both PASSED):**
+```
+HIP_VISIBLE_DEVICES=0 ./kernel_harness.exe
+```
+Run 1 and Run 2 results (identical):
+```
+HIP device 0: AMD Radeon RX 9070 XT (gfx1201) warpSize=32
+
+[createVMap / createNMap]
+  ok:   vmap == CPU back-projection (all pixels)
+  (valid normals=2961)
+  ok:   createNMap produced a dense normal field
+  ok:   all valid normals are unit length
+[tranformMaps identity]
+  ok:   identity transform leaves vmap bit-stable
+[resizeVMap]
+  ok:   resizeVMap halved dimensions
+  ok:   resizeVMap output mostly finite
+[icpStep SE3 wave64 reduction]
+  ok:   JtJ is symmetric
+  ok:   icpStep found many inlier correspondences
+  (inliers=2961 residual=0)
+  ok:   inlier count identical across two runs
+  ok:   icpStep JtJ/JtR/residual BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   all 6 JtJ diagonal entries positive (non-degenerate reduction)
+[so3Step SO3 wave64 reduction]
+  (residual=0 inliers=2852)
+  ok:   so3Step JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+  ok:   so3Step covered many pixels
+[computeRgbResidual int2 wave64 reduction]
+  (count=2773 sigmaSum=69325)
+  ok:   int2 reduction count == CPU recount of valid correspondences (EXACT)
+  ok:   int2 reduction sigmaSum == CPU sum(diff^2) (EXACT)
+  ok:   computeRgbResidual identical across two runs
+  ok:   many RGB correspondences found
+[rgbStep SE3 photometric wave64 reduction]
+  ok:   rgbStep JtJ symmetric
+  ok:   rgbStep JtJ/JtR BIT-IDENTICAL across two runs (wave64 determinism)
+
+HARNESS PASSED (0 failures)
+```
+
+**Pass count:** 17/17 checks, both runs. 0 failures.
+
+**wave32 reduction verdict (gfx1201 RDNA4):** warpSize=32. warpReduceSum loops `offset = warpSize/2 .. 1`; on gfx1201 warpSize=32 so offset goes 16..1 (32-lane wavefront). CUDA_WARP_FULL_MASK = 0xffffffffffffffffULL (HIP); upper 32 bits are masked on wave32. icpStep/so3Step/rgbStep bit-identical across two runs; int2 count=2773 and sigmaSum=69325 exactly equal the CPU recount -- wave32 reductions correct on RDNA4, no lane lost or doubled. All values match gfx90a, gfx1100, and gfx1101 exactly (inliers=2961/2852/2773, sigmaSum=69325).
+
+**Windows DLL notes:** exe dir-copy of TheRock amdhip64_7.dll/amd_comgr.dll/rocm_kpack.dll/hiprtc*.dll is required; System32 Adrenalin amdhip64 would otherwise be picked up first by the DLL loader. All-clang build (no MSVC host compiler, no -fPIC).
+
+**Non-GPU regression:** USE_HIP=OFF cmake configure enters legacy FindCUDA else() branch (same as all prior platforms; unchanged upstream path).
+
+**Fork:** untouched; moat-port branch HEAD remains 85283b8 with zero commits added.
+
+**Decision: PASS -> windows-gfx1201 completed, validated_sha=85283b8.**
+
 ## Install as a dependency
 
 Not applicable -- ElasticFusion is a leaf application, not a base library consumed by
