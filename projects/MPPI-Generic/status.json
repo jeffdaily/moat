@@ -7,17 +7,17 @@
   "priority": 4.766,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:14Z",
-  "updated_at": "2026-06-05T23:37:21Z",
+  "updated_at": "2026-06-07T16:34:59Z",
   "head_sha": "427b693b7f89e7ef0b3ca7d9882afe0540d5c96b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4231397db862653843a84ea1dee09466294b9545",
+      "validated_sha": "427b693b7f89e7ef0b3ca7d9882afe0540d5c96b",
       "started_at": "2026-05-30T07:04:54Z",
-      "completed_at": "2026-05-30T08:29:32Z",
-      "updated_at": "2026-06-05T23:37:00Z",
+      "completed_at": "2026-06-07T16:34:59Z",
+      "updated_at": "2026-06-07T16:34:59Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "427b693b7f89e7ef0b3ca7d9882afe0540d5c96b",
+        "method": "binary-equiv",
+        "detail": "all MPPI HIP libs identical device ISA; libcnpy.so has no GPU code (roc-obj-ls false-indeterminate); Windows-only delta (sincosf host path, POSIX compat, cmake 3.5 bump) does not affect gfx90a device ",
+        "at": "2026-06-07T16:34:59Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
