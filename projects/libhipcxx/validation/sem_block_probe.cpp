@@ -11,24 +11,30 @@
 //
 // Run with a watchdog: this probe is EXPECTED to hang on wave64. Bound it, e.g.
 //   timeout 30 ./sem_block_probe; echo "exit=$? (124 = hang/deadlock)"
+//
+// NOTE: HIP does not allow in-place construction of __shared__ variables with
+// non-trivial constructors. Use aligned char storage + placement new instead.
 #include <cstdio>
 #include <hip/hip_runtime.h>
 #include <cuda/std/atomic>
 #include <cuda/__semaphore/counting_semaphore.h>
 
+using BSem = cuda::binary_semaphore<cuda::thread_scope_block>;
+
 __device__ int g_out[2] = {0, 0};
 
 __global__ void block_producer_consumer() {
-  __shared__ cuda::binary_semaphore<cuda::thread_scope_block> sem;
-  if (threadIdx.x == 0) new (&sem) cuda::binary_semaphore<cuda::thread_scope_block>(0);
+  __shared__ __attribute__((aligned(alignof(BSem)))) char sem_buf[sizeof(BSem)];
+  if (threadIdx.x == 0) new (sem_buf) BSem(0);
   __syncthreads();
+  BSem* sem = reinterpret_cast<BSem*>(sem_buf);
   if (threadIdx.x == 0) {
-    sem.acquire();          // block until lane 1 releases
+    sem->acquire();          // block until lane 1 releases
     g_out[0] = 42;
   } else if (threadIdx.x == 1) {
     for (volatile long i = 0; i < 4000000; ++i) {}  // let lane 0 reach acquire first
     g_out[1] = 7;
-    sem.release();
+    sem->release();
   }
 }
 

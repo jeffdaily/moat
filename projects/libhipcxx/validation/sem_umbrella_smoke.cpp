@@ -3,19 +3,25 @@
 // headers). Pre-change this TU fails to compile with that #error; post-change it
 // compiles and the device kernel instantiates both semaphore flavors.
 //   hipcc -std=c++17 --offload-arch=<arch> -I <libhipcxx>/include sem_umbrella_smoke.cpp -o sem_umbrella_smoke
+//
+// NOTE: HIP does not allow in-place construction of __shared__ variables with
+// non-trivial constructors. Use aligned char storage + placement new instead.
 #include <cstdio>
 #include <hip/hip_runtime.h>
 #include <cuda/semaphore>
 #include <cuda/std/semaphore>
 
+using BSem = cuda::binary_semaphore<cuda::thread_scope_device>;
+using CSem = cuda::counting_semaphore<cuda::thread_scope_device, 4>;
+
 __global__ void touch() {
-  __shared__ cuda::binary_semaphore<cuda::thread_scope_device> bsem;
-  __shared__ cuda::counting_semaphore<cuda::thread_scope_device, 4> csem;
+  __shared__ __attribute__((aligned(alignof(BSem)))) char bsem_buf[sizeof(BSem)];
+  __shared__ __attribute__((aligned(alignof(CSem)))) char csem_buf[sizeof(CSem)];
   if (threadIdx.x == 0) {
-    new (&bsem) cuda::binary_semaphore<cuda::thread_scope_device>(1);
-    new (&csem) cuda::counting_semaphore<cuda::thread_scope_device, 4>(2);
-    bsem.acquire(); bsem.release();
-    csem.acquire(); csem.release();
+    BSem* bsem = new (bsem_buf) BSem(1);
+    CSem* csem = new (csem_buf) CSem(2);
+    bsem->acquire(); bsem->release();
+    csem->acquire(); csem->release();
   }
 }
 
