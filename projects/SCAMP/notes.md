@@ -137,3 +137,41 @@ Matrix profile accuracy:
 - MP index differences: 0-1 indices per test (acceptable for floating-point)
 
 All tests completed successfully with "All Tests Passed!" confirmation.
+
+## Validation 2026-06-07 (linux-gfx90a, SUM_THRESH coverage)
+
+SHA: 58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466
+GPU: AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=2
+
+Closes deferred item `scamp-sumthresh-validation`: the initial validation ran only the default 1NN_INDEX profile via run_tests.sh; the wave64 SUM_THRESH warp reduction fix in kernels_compute.h was not exercised on real GPU.
+
+### Test: SUM_THRESH GPU vs CPU oracle
+
+```bash
+SCAMP=/var/lib/jenkins/moat/projects/SCAMP/src/build/SCAMP
+INPUT=/var/lib/jenkins/moat/projects/SCAMP/src/test/SampleInput/randomwalk8K.txt
+
+# GPU run (gfx90a wave64 SUM_THRESH reduction path)
+HIP_VISIBLE_DEVICES=2 $SCAMP \
+  --window=100 --input_a_file_name=$INPUT \
+  --profile_type=SUM_THRESH --threshold=0.5 \
+  --max_tile_size=2000000
+
+# CPU reference (same parameters, --no_gpu)
+$SCAMP \
+  --window=100 --input_a_file_name=$INPUT \
+  --profile_type=SUM_THRESH --threshold=0.5 \
+  --max_tile_size=2000000 --no_gpu --num_cpu_workers=1
+```
+
+Tested thresholds: 0.0, 0.125, 0.5 (all three thresholds from the Python test suite).
+
+Results (8093-element SUM_THRESH output, randomwalk8K window=100):
+
+| threshold | GPU non-zero | CPU non-zero | max |GPU-CPU| | verdict |
+|-----------|-------------|-------------|-----------------|---------|
+| 0.0       | 8093        | 8093        | 0.00e+00        | PASS    |
+| 0.125     | 8093        | 8093        | 0.00e+00        | PASS    |
+| 0.5       | 8082        | 8082        | 0.00e+00        | PASS    |
+
+GPU output is bit-identical to the CPU reference across all thresholds. The wave64 SUM_THRESH warp reduction (strides 32,16,8,4,2,1 under `__GFX9__` with SCAMP_FULL_WARP_MASK=0xffffffffffffffff) produces correct results on gfx90a.
