@@ -487,3 +487,73 @@ always takes the `__sincosf` path (compat header defines `__CUDA_ARCH__=1` in de
 Host-pass code differs (sincosf->sinf+cosf) but does not affect device code objects.
 
 Verdict: binary-equiv carry-forward. State: completed at 427b693b.
+
+## Validation 2026-06-07 (linux-gfx1100 revalidate, full GPU)
+
+Platform: 2x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1.
+HIP_VISIBLE_DEVICES=0. fork sha 427b693b (moat-port tip).
+
+Delta from validated_sha (4231397db): 6 Windows-specific commits (CMake 3.5 bump,
+_USE_MATH_DEFINES/NOMINMAX, sincosf->sinf/cosf in host paths, POSIX compat,
+M_PI constants, Windows CMake-exclude of racer_dubins_elevation_lstm_uncertainty).
+
+Binary-equivalence check: attempted with codeobj_diff.py; verdict was "differ"
+because exported symbols in the shared libraries differed -- `_M_rehash_aux` (old
+build, May 30) replaced by `_M_rehash` (new build, June 7). This is a libstdc++
+internal symbol rename between build times (system libstdc++ update), NOT caused by
+the Windows commits. Manual extraction of the gfx1100 device code objects confirmed
+identical ISA (same offset=204800, size=56552 in both libcartpole_mppi.so; SHA-256
+of the 56552-byte device blob differs from the tool's "differ" verdict because the
+tool stops on symbol mismatch before ISA comparison). Since codeobj_diff returned
+"differ", full GPU revalidation was performed per the pipeline rules.
+
+### Build
+
+```
+cmake -S projects/MPPI-Generic/src -B projects/MPPI-Generic/src/build-hip-new -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DMPPI_BUILD_TESTS=ON -DMPPI_BUILD_EXAMPLES=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/MPPI-Generic/src/build-hip-new -j16
+```
+Result: 157/157 targets, exit 0.
+
+### Core GPU correctness (gfx1100 wave32)
+
+```
+HIP_VISIBLE_DEVICES=0 ./tests/mppi_core/rollout_kernel_tests   # 6/6 PASS
+HIP_VISIBLE_DEVICES=0 ./tests/mppi_core/rmppi_kernel_tests     # 5/5 PASS
+HIP_VISIBLE_DEVICES=0 ./tests/mppi_core/normexp_kernel_tests   # 7/7 PASS
+HIP_VISIBLE_DEVICES=0 ./tests/dynamics/cartpole_dynamics_tests # 12/12 PASS
+```
+
+All GPU-vs-CPU reference tests (CombinedRolloutKernelGPUvsCPU, SplitRolloutKernelGPUvsCPU,
+ValidateCombined/SplitRMPPIRolloutKernelAgainstCPU) PASS. The wave32 reduction path
+is correct at the new sha.
+
+### ctest results (ctest -j1, HIP_VISIBLE_DEVICES=0, ~182s)
+
+427/457 = 93% pass. 30 failures.
+
+All 30 failures are pre-existing categories, ZERO new regressions:
+- 8 ARStandardCost.*: deferred texture linear-filter fault class
+- 2 ARRobustCostTest.*: deferred vehicle cost
+- 1 ARNeuralNetDynamics.computeGradTest: map::at NN-loader npz
+- 2 DubinsDynamics.TestUpdateStateGPU + Dynamics.stepGPU: vendor-agnostic dim_x guard
+- 1 RacerDubins.ComputeStateTrajectoryFiniteTest: pre-existing test bug (uninitialized state slot)
+- 1 WeightedReductionKernel.comparisonTestAutorallyMPPI_Generic: legacy in-place RAW hazard
+- 1 cuFFT.checkErrorCode: Bus error (hipFFT dereferences garbage plan handle)
+- 6 GaussianTests.Check*: hipRAND != cuRAND, over-tight 0.1% CDF bound
+- 1 Integration.RK4: AMD vs NVIDIA fma rounding
+- 6 FNN/LSTM/LSTMLSTMHelperTest LoadModel*: map::at NN-loader npz
+- 1 SamplingDistributionTests.CompareLikelihoodRatioCostsCPUvsGPU<GaussianDistribution<1,7>>: FP tolerance
+
+Compared to the original gfx1100 validation (4231397db, 36 failures):
+- 4 fewer: RacerDubinsElevationLSTMUncertaintyTest.* are now CMake-excluded (commit
+  427b693b adds them to the HIP REMOVE_ITEM list, same as the Windows exclusion)
+- 2 fewer: CudaFloatStructsTests.VecAddVecMultScalar and DoubleIntegratorTracking.
+  TubeMPPILargeVariance are stochastic/fma-rounding tests that passed this run
+
+No new GPU failures introduced by the 6 Windows-specific commits.
+
+Verdict: PASS. State: completed at 427b693b.
