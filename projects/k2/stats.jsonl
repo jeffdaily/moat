@@ -42,3 +42,7 @@
 {"kind":"phase","ts":"2026-06-05T18:30:30Z","phase":"test","seconds":109.275,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-05T18:31:07Z","phase":"test","seconds":29.812,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx1100.sh"}
 {"kind":"session","ts":"2026-06-05T18:31:14Z","epoch":1780684274.772620972,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-05T18:01:35Z", "tokens": 60889, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T03:19:47Z","phase":"compile","seconds":118.586,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/k2/src/build --config Release -- -j64"}
+{"kind":"phase","ts":"2026-06-07T03:20:38Z","phase":"test","seconds":20.462,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T03:21:22Z","phase":"test","seconds":37.535,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1201.py"}

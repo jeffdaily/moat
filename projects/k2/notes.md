@@ -622,3 +622,74 @@ Binary-equivalence check (incremental build at 44e7563 on gfx1101):
 - Device code objects (.hip_fat section, 33MB): byte-for-byte identical.
 
 Verdict: binary-equiv carry-forward. Transition: revalidate -> completed. validated_sha = 44e7563a. No GPU re-run needed.
+
+## Validation 2026-06-06 (windows-gfx1201)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201 / RDNA4, wave32). Follower validation.
+Fork: jeffdaily/k2 @ moat-port, HEAD 44e7563a1119833c18e875bda55162425d2d5f09 (identical to gfx1101 lead; no source change needed).
+GPU: HIP_VISIBLE_DEVICES=0 (RX 9070 XT, gfx1201 -- gfx1101 absent from bus; sole GPU on this host).
+
+### Context
+
+gfx1201 (RDNA4, wave32) is the follower to gfx1101 (RDNA3, wave32). Both share wave32; the hipCUB/rocThrust replacements are wave-agnostic. Fresh build required (gfx1101 build dir wiped; recompiled for gfx1201).
+
+### Build command
+
+```
+cmake -B build -G Ninja \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DK2_WITH_HIP=ON \
+  -DCMAKE_C_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DHIP_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DK2_COMPILER_SUPPORTS_CXX20=1 \
+  -DCMAKE_PREFIX_PATH="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/torch/share/cmake;B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/cmake" \
+  -DK2_LIBHIPCXX_INCLUDE_DIR=B:/develop/moat/_deps/libhipcxx/include \
+  -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DK2_USE_PYTORCH=ON \
+  -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF \
+  -DPYTHON_EXECUTABLE=B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe
+cmake --build build --config Release -- -j64
+```
+(timeit.sh wraps the cmake --build step)
+
+### Test commands
+
+```
+# C++ gtests (DLL path setup via Python subprocess runner):
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_gtest_gfx1201.py
+
+# Python GPU tests (in-process pytest with os.add_dll_directory):
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_pytest_gfx1201.py
+```
+
+### C++ gtest results
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0.
+Individual test counts:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (24),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+
+Note: C++ test exes run the CPU path (TheRock Windows torch CUDA hooks limitation). GPU correctness exercised by the Python test suite (AMD Radeon RX 9070 XT confirmed: torch.cuda.is_available()=True, device=AMD Radeon RX 9070 XT).
+
+### Python GPU test results
+
+227 passed, 7 failed (234 total). All 7 failures are pre-existing artifacts (identical to gfx1101):
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6+ weights_only=True refuses _k2.ragged.RaggedTensor. Device-independent.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 pickle artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation divergence from hipCUB summation order; float64 exact. Non-associative float32 reduction; benign.
+- rnnt_loss_test.py: test_rnnt_loss_basic, test_rnnt_loss_gradient, test_rnnt_loss_random -- torchaudio::rnnt_loss has no CUDA backend on this Windows ROCm torchaudio build (NotImplementedError). k2's own rnnt functions all pass on GPU.
+
+No new failures vs gfx1101. GPU confirmed: AMD Radeon RX 9070 XT (gfx1201, RDNA4).
+
+### Verdict
+
+PASS. 30/30 C++ gtests. Python slice 227/234 passed; 7 failures are all pre-existing artifacts (same categories as gfx1101). RDNA4 (wave32) matches RDNA3 at identical pass counts. Transition: port-ready -> completed. validated_sha = 44e7563a.
