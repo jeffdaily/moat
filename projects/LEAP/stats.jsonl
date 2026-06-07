@@ -29,3 +29,6 @@
 {"kind":"phase","ts":"2026-06-07T05:00:33Z","phase":"test","seconds":1.358,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/leap_test_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T05:01:10Z","phase":"test","seconds":8.245,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/leap_test_gfx1201.py"}
 {"kind": "tokens", "ts": "2026-06-07T05:08:00Z", "tokens": 53863, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T16:30:12Z","phase":"compile","seconds":0.005,"exit":127,"cmd":"bash build_rocm.sh"}
+{"kind":"phase","ts":"2026-06-07T16:30:22Z","phase":"compile","seconds":0.055,"exit":2,"cmd":"python setup_AMD.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-07T16:30:37Z","phase":"compile","seconds":6.717,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python setup_AMD.py build_ext --inplace"}

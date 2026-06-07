@@ -265,3 +265,29 @@ OVERALL: PASS (12/12). All FBP interiors within 0.02% of 1.0 (tol 3%). Results m
 Wave32/RDNA4 verdict: software-interpolation fix is arch-unified/wave-agnostic. gfx1201 (RDNA4, wave32) results are numerically identical to gfx90a (CDNA2, wave64) and gfx1100 (RDNA3, wave32) for all 12 cases.
 
 validated_sha: 0e75025be39a25dd093a60e2da7ee67fd0c42a57
+
+## Validation 2026-06-07 (validator, linux-gfx90a, revalidate, moat-port @ 0e75025)
+
+Verdict: completed (carry-forward via binary-equiv). No GPU re-run needed.
+
+Delta 1753479 -> 0e75025 adds 5 files with Windows-only changes: `leap_defines.h`
+(uint8/uint16 typedef guard under `_MSC_VER && __HIP_PLATFORM_AMD__`), `file_io.cpp`
+(local cstdint typedef under the same guard), `tomographic_models_c_interface.cpp`
+(PyInit_leapct stub under `_WIN32 && TORCH_EXTENSION_NAME`), `leapct_exports.def`
+(Windows linker DEF file), `setup_AMD.py` (Windows extra_compile_args/extra_link_args).
+None of these guards activate on Linux.
+
+codeobj_diff.py verdict: identical (1135 exported symbols + device ISA match).
+Both SHAs built for gfx90a;gfx1100 with HIP_VISIBLE_DEVICES=2. The .so at 0e75025
+is byte-for-byte equivalent to the .so at 1753479 in exported symbols and all
+20 GPU code objects.
+
+Commands:
+```
+cd /var/lib/jenkins/moat/projects/LEAP/src
+HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH="gfx90a;gfx1100" python setup_AMD.py build_ext --inplace
+python3 /var/lib/jenkins/moat/utils/codeobj_diff.py /var/lib/jenkins/moat/agent_space/LEAP_diff/old /var/lib/jenkins/moat/agent_space/LEAP_diff/new
+# verdict=identical: leapct.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (1135 exports))
+```
+
+validated_sha: 0e75025be39a25dd093a60e2da7ee67fd0c42a57

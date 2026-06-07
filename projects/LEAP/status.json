@@ -7,17 +7,17 @@
   "priority": 4.426,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T05:08:00Z",
+  "updated_at": "2026-06-07T16:31:03Z",
   "head_sha": "0e75025be39a25dd093a60e2da7ee67fd0c42a57",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "17534792ea62722cf0537894bbab68fb5bb257cc",
+      "validated_sha": "0e75025be39a25dd093a60e2da7ee67fd0c42a57",
       "started_at": "2026-06-02T08:08:39Z",
-      "completed_at": "2026-06-02T08:45:00Z",
-      "updated_at": "2026-06-07T05:05:07Z",
+      "completed_at": "2026-06-07T16:31:03Z",
+      "updated_at": "2026-06-07T16:31:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "0e75025be39a25dd093a60e2da7ee67fd0c42a57",
+        "method": "binary-equiv",
+        "detail": "Windows-only guards (_WIN32/_MSC_VER) in 0e75025 compile to identical Linux binary (1135 exports + device ISA match)",
+        "at": "2026-06-07T16:31:03Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
