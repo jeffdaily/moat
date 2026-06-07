@@ -44,3 +44,8 @@
 {"kind":"phase","ts":"2026-06-05T14:02:30Z","phase":"compile","seconds":153.676,"exit":0,"cmd":"cmake --build projects/arrayfire/src/build-gfx1101 -j64"}
 {"kind":"phase","ts":"2026-06-05T15:00:04Z","phase":"test","seconds":3171.720,"exit":8,"cmd":"ctest --test-dir /b/develop/moat/projects/arrayfire/src/build-gfx1101 -R _cuda$ -j1 --output-on-failure"}
 {"kind":"phase","ts":"2026-06-05T15:00:04Z","phase":"test","seconds":1928.007,"exit":8,"cmd":"ctest --test-dir /b/develop/moat/projects/arrayfire/src/build-gfx1101 -R _cuda$ -j1 --output-on-failure"}
+{"kind": "tokens", "ts": "2026-06-05T15:16:06Z", "tokens": 163902, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T15:18:35Z","phase":"compile","seconds":0.026,"exit":1,"cmd":"C:/Users/Shark44/AppData/Local/Temp/ninja.exe -j64"}
+{"kind":"phase","ts":"2026-06-07T15:21:18Z","phase":"compile","seconds":155.287,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/arrayfire/src/build-gfx1201 -j 64"}
+{"kind":"phase","ts":"2026-06-07T16:09:34Z","phase":"test","seconds":2788.084,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/arrayfire/src/build-gfx1201 -R cuda -j1 --output-on-failure"}
+{"kind":"phase","ts":"2026-06-07T16:31:16Z","phase":"test","seconds":1277.030,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/arrayfire/src/build-gfx1201 -R cuda -j1 --output-on-failure"}

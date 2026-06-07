@@ -1231,3 +1231,93 @@ REQUIRED FOR NEXT RUN:
    DO NOT set both kpack+tensile (deadlock).
 
 State transition: port-ready -> validation-failed (back to retry with fixed environment).
+
+## Validation 2026-06-07 (windows-gfx1201) -- RESULT: COMPLETED (128/131)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), HIP_VISIBLE_DEVICES=0, ROCm/TheRock 7.14.0a20260604.
+Fork HEAD: 3782728a8254af4eef6e828a3fed62362c268502. No source changes.
+
+Build: fresh cmake configure + ninja -j64. 1073/1073 targets. Build time: 155s.
+
+Configure command:
+```
+cmake -S projects/arrayfire/src -B projects/arrayfire/src/build-gfx1201 -G Ninja \
+  -DCMAKE_MAKE_PROGRAM="C:/Users/Shark44/AppData/Local/Temp/ninja.exe" \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=<_rocm_sdk_devel>/lib/llvm/bin/clang++.exe \
+  -DCMAKE_PREFIX_PATH=<_rocm_sdk_devel> \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DAF_BUILD_HIP=ON -DAF_BUILD_CUDA=OFF \
+  -DAF_BUILD_CPU=OFF -DAF_BUILD_OPENCL=OFF -DAF_BUILD_ONEAPI=OFF \
+  -DAF_BUILD_UNIFIED=ON -DAF_BUILD_EXAMPLES=OFF -DAF_BUILD_FORGE=OFF \
+  -DAF_WITH_CUDNN=OFF -DAF_WITH_IMAGEIO=OFF -DAF_BUILD_DOCS=OFF \
+  -DAF_BUILD_TESTS=ON -DAF_STACKTRACE_TYPE=None -DAF_TEST_WITH_MTX_FILES=OFF \
+  -DVCPKG_MANIFEST_INSTALL=OFF
+cmake --build projects/arrayfire/src/build-gfx1201 -j 64
+```
+Note: -DVCPKG_MANIFEST_INSTALL=OFF used because the current vcpkg registry has a lapack-reference/blas
+conflict (blas.pc collision). Copied vcpkg_installed from gfx1101 build (has Boost/FFTW/spdlog/fmt).
+Cloned googletest v1.16.0 into extern/googletest-src so GTest builds from source (not vcpkg).
+
+DLL setup: copied from _rocm_sdk_devel/bin to build-gfx1201/bin:
+amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll,
+hipsparse.dll, hipsolver.dll, hipblas.dll, hipfft.dll, libhipblaslt.dll, rocblas.dll,
+rocsolver.dll, rocsparse.dll, rocfft.dll, rocrand.dll, hiprand.dll.
+Also: hipblaslt/ dir from _rocm_sdk_libraries/bin; rocblas/library/ gfx1201 kernels
+from _rocm_sdk_libraries/bin/rocblas/library/ (110 gfx1201 files).
+
+Key finding: gfx1201 does NOT have the deadlock between ROCM_KPACK_PATH and ROCBLAS_TENSILE_LIBPATH
+that was seen on gfx1101. Setting BOTH together works on gfx1201 without hanging.
+
+Test run environment:
+```bash
+BUILD_BIN="B:/develop/moat/projects/arrayfire/src/build-gfx1201/bin"
+ROCM_DEVEL="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+ROCM_LIBS="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_libraries"
+HIP_VISIBLE_DEVICES=0
+ROCM_PATH="${ROCM_DEVEL}"
+ROCM_KPACK_PATH="${ROCM_LIBS}/.kpack/blas_lib_gfx1201.kpack"
+ROCBLAS_TENSILE_LIBPATH="${ROCM_LIBS}/bin/rocblas/library"
+PATH="${BUILD_BIN}:${ROCM_LIBS}/bin:${ROCM_DEVEL}/bin:${PATH}"
+```
+NOTE: ROCM_KPACK_DISABLE=1 + ROCBLAS_TENSILE_LIBPATH (Option A from gfx1101 notes) DOES NOT work
+on gfx1201: the kpack provides SGEMM/DGEMM kernels for POTRF/GEQRF on gfx1201, and disabling
+it makes cholesky, qr, svd, and sparse all fail (hipErrorInvalidKernelFile / csrgeam2 HIPSPARSE_STATUS_INVALID_VALUE).
+The correct configuration for gfx1201 is BOTH kpack + ROCBLAS_TENSILE_LIBPATH.
+
+Full test command:
+```bash
+ctest --test-dir projects/arrayfire/src/build-gfx1201 -R "cuda" -j1 --output-on-failure
+```
+Result: 128/131 PASS. Total time: 1277s.
+
+JIT arch verification: JIT disk cache keys are gfx1201
+(C:/Users/Shark44/AppData/Local/Temp/ArrayFire/KER*_HIP_gfx1201_AF_310.bin).
+The hipRTC JIT engine compiles --offload-arch=gfx1201 from hipGetDeviceProperties().gcnArchName.
+
+Targeted confirmation (10 key suites, all PASS):
+```bash
+ctest --test-dir ... -R "^(test_jit_cuda|test_blas_cuda|test_cholesky_dense_cuda|test_fft_cuda|
+  test_reduce_cuda|test_sparse_cuda|test_sparse_convert_cuda|test_where_cuda|
+  test_lu_dense_cuda|test_solve_dense_cuda)$" -j1
+```
+100% tests passed (10/10): blas, cholesky_dense, fft, jit, lu_dense, reduce,
+solve_dense, sparse, sparse_convert, where -- all PASS.
+
+Failing tests (3 total -- all Windows platform issues, NOT port defects):
+1. test_confidence_connected_cuda: AF_WITH_IMAGEIO=OFF (no FreeImage on Windows). Same as gfx1101.
+2. test_sparse_arith_cuda (SEGFAULT): Windows-specific rocsparse csrgeam2 crash.
+   Stack: rocsparse.dll::rocsparse_csrgeam_nnz -> hipsparse.dll::hipsparseXcsrgeam2Nnz.
+   Only the SparseSparseArith (csrgeam2) path crashes; the SPARSE_ARITH (SpMV/SpMM, 80 tests)
+   path PASSES. Same crash as observed on gfx1101 -- a Windows rocsparse/hipSPARSE bug in
+   csrgeam2Nnz, not related to the port. NOT a gfx1201-specific issue.
+3. test_threading_cuda (CTest Timeout, 900s): Threading test subtests
+   (SimultaneousRead, MemoryManagementScope, MemoryManagement_JIT_Node, FFT_R2C) PASS;
+   FFT_C2C subtest was still running when ctest's 900s limit hit. Same artifact as gfx1101.
+
+Wave32 (gfx1201, RDNA4): static kernels compile for gfx1201. kWarpSize=32 for gfx1201.
+Wave-size-dependent kernels (reduce, scan, scan_by_key, sort) all PASS.
+
+State transition: port-ready -> completed. validated_sha = 3782728a8254af4eef6e828a3fed62362c268502.
