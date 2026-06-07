@@ -943,3 +943,46 @@ python3 utils/moatlib.py carry-forward dietgpu windows-gfx1201 8b0aec3 binary-eq
 ```
 
 Transitioning windows-gfx1201 to completed (validated_sha=8b0aec3).
+
+## Revalidation 2026-06-07 (windows-gfx1151, binary-equivalence carry-forward to 8b0aec3)
+
+Platform: windows-gfx1151, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32), Windows 11, TheRock ROCm.
+Previous validated_sha: 2499fb6 (squash-era sha, functionally equivalent to 64c792d content). New HEAD: 8b0aec3.
+State: revalidate -> completed (binary-equiv carry-forward).
+
+### Delta analysis (64c792d -> 8b0aec3)
+
+Two commits between the prior gfx1151 validation content and new HEAD:
+1. 03005c7: Squashed commit (tree-identical to 64c792d, as previously established by squash-carry-forward)
+2. 8b0aec3: Fix build regression in the squash -- restored LANGUAGE HIP marking for DeviceUtils.cpp/StackDeviceMemory.cpp in dietgpu/utils/CMakeLists.txt; removed erroneous hip::host reference; one GpuANSUtils.cuh change: added `#if defined(USE_HIP)` guard around `kMaxWarpSize = 64`, with `#else` branch for CUDA (kMaxWarpSize = kWarpSize). On Windows HIP builds USE_HIP is always defined, so kMaxWarpSize=64 is unchanged. Comment text updated.
+
+The only compiled change that could affect device ISA is the GpuANSUtils.cuh guard -- but since USE_HIP is always defined in HIP builds, the compiled value of kMaxWarpSize=64 is identical. Confirmed by binary-equivalence check below.
+
+### Binary-equivalence check
+
+Built both 64c792d and 8b0aec3 for gfx1151 (single-arch), each in an isolated build dir (build-old / build-new in agent_space/dietgpu-revalidate). Compared using a custom script (agent_space/dietgpu-revalidate/win_codeobj_diff_v3.py) that:
+1. Extracts COFF exports via llvm-readobj --coff-exports (excluding __hip_cuid_* build-time hash symbols)
+2. Extracts .hip_fat section via llvm-objcopy --dump-section
+3. Uses clang-offload-bundler --unbundle to extract the gfx1151 ELF code object
+4. Normalizes disassembly (llvm-objdump -d, strip hex addresses and comment offsets and filename header) and compares
+
+**User-visible DLL exports (llvm-readobj --coff-exports, excluding __hip_cuid_*):**
+- gpu_ans.dll: IDENTICAL (147 user exports)
+- gpu_float_compress.dll: IDENTICAL (248 user exports)
+
+**__hip_cuid_* symbols:** differ (these are build-time hashes of TU content, not user-visible API); count matches (3 each) -- no structural change.
+
+**Device ISA (clang-offload-bundler --unbundle + normalized disassembly):**
+- gpu_ans.dll: gfx1151 ISA IDENTICAL (521431 chars normalized)
+- gpu_float_compress.dll: gfx1151 ISA IDENTICAL (1374876 chars normalized)
+
+verdict=identical. No GPU re-run required.
+
+### Carry-forward
+
+```
+python3 utils/moatlib.py carry-forward dietgpu windows-gfx1151 8b0aec3 binary-equiv \
+  "Comment/guard in GpuANSUtils.cuh: kMaxWarpSize=64 unchanged on HIP; user exports (147/248) + gfx1151 ISA identical; __hip_cuid count matches (3/3)"
+```
+
+Transitioning windows-gfx1151 to completed (validated_sha=8b0aec3).

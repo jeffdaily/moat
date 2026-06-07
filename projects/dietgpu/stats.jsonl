@@ -30,3 +30,5 @@
 {"kind":"phase","ts":"2026-06-05T23:43:33Z","phase":"compile","seconds":30.429,"exit":0,"cmd":"bash B:/develop/moat/agent_space/dietgpu-revalidate/build-old.sh"}
 {"kind":"phase","ts":"2026-06-05T23:44:23Z","phase":"compile","seconds":30.183,"exit":0,"cmd":"bash B:/develop/moat/agent_space/dietgpu-revalidate/build-new.sh"}
 {"kind": "tokens", "ts": "2026-06-05T23:49:26Z", "tokens": 91187, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T19:48:53Z","phase":"compile","seconds":17.098,"exit":0,"cmd":"cmake --build D:/Develop/moat/agent_space/dietgpu-revalidate/build-old --target ans_test ans_statistics_test batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j6"}
+{"kind":"phase","ts":"2026-06-07T19:52:41Z","phase":"compile","seconds":17.126,"exit":0,"cmd":"cmake --build D:/Develop/moat/agent_space/dietgpu-revalidate/build-new --target ans_test ans_statistics_test batch_prefix_sum_test float_test gpu_ans gpu_float_compress dietgpu_utils -j6"}
