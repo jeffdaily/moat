@@ -457,6 +457,20 @@
       "status": "done",
       "upstream_issue": null,
       "created_at": "2026-06-07T19:04:23Z"
+    },
+    {
+      "id": "cucollections-contribute-to-hipcollections",
+      "kind": "other",
+      "project": "cuCollections",
+      "component": null,
+      "summary": "Comparison vs ROCm/hipCollections (canonical AMD port, ROCm-DS-owned): our net-new asset is sub-word int8/int16 atomic CAS emulation (include/cuco/detail/hip_subword_atomic.cuh) -- hipColl packed_cas handles only 4/8-byte and would corrupt int8/int16-keyed static_set/map (no small-key tests there). Secondary candidates: gfx1100/wave32 validation evidence to promote hipColl experimental wave32 + extend arch allowlist to RDNA4/Windows; newer-cuco features (roaring_bitmap, bloom merge/intersect, dynamic_map) via a cuco rebase. NOT contributions (hipColl already has them): pre-Volta __CUDA_ARCH__ guard byte-identical, bloom host-gate (theirs better). hipCollections is ROCm-DS-owned so DEFER PRs until ROCm-DS collaboration resumes (jeff 2026-06-07).",
+      "refs": [
+        "projects/cuCollections/notes.md",
+        "agent_space/hipCollections-cmp"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T20:43:48Z"
     }
   ]
 }
