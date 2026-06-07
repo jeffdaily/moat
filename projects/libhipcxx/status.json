@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "name": "libhipcxx",
+  "upstream_url": "https://github.com/ROCm/libhipcxx",
+  "fork_url": "https://github.com/jeffdaily/libhipcxx",
+  "fork_default_branch": "enable-semaphore",
+  "priority": 0.0,
+  "ext_type": "cmake",
+  "adopted_at": "2026-06-07T20:45:45Z",
+  "updated_at": "2026-06-07T20:45:45Z",
+  "head_sha": "e2e8f70dd8737a5cf8b7b798b99654d06c8eb326",
+  "depends_on": [],
+  "platforms": {
+    "linux-gfx90a": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "e2e8f70dd8737a5cf8b7b798b99654d06c8eb326",
+      "started_at": "2026-06-07T20:45:45Z",
+      "completed_at": "2026-06-07T20:45:45Z",
+      "updated_at": "2026-06-07T20:45:45Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator"
+    },
+    "linux-gfx1100": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": "2026-06-07T20:45:45Z",
+      "completed_at": null,
+      "updated_at": "2026-06-07T20:45:45Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1101": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": "2026-06-07T20:45:45Z",
+      "completed_at": null,
+      "updated_at": "2026-06-07T20:45:45Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1201": {
+      "state": "port-ready",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": "2026-06-07T20:45:45Z",
+      "completed_at": null,
+      "updated_at": "2026-06-07T20:45:45Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1151": {
+      "state": "port-ready",
+      "blocked": true,
+      "blocked_reason": "windows-gfx1151 host retired (superseded by the gfx1101/gfx1201 machine); validation moved to windows-gfx1101 and windows-gfx1201",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-07T20:45:45Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    }
+  }
+}

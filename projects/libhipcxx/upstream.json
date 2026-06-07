@@ -1,0 +1,9 @@
+{
+  "full_name": "ROCm/libhipcxx",
+  "upstream_url": "https://github.com/ROCm/libhipcxx",
+  "default_branch": "amd-develop",
+  "fork_url": "https://github.com/jeffdaily/libhipcxx",
+  "work_branch": "enable-semaphore",
+  "ext_type": "cmake",
+  "base_sha": "fa4ccc6beb77bfaa59a6fbeeebc94a4f18678945"
+}
