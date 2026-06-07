@@ -158,3 +158,52 @@ All finite on gfx1100 (render, find_nearest_pt, rerender_backward).
 No wave-width-sensitive constructs in source (confirmed by reviewer). All 6 kernels are one-thread-per-output with no shuffle/ballot/shared-mem. Results are identical to gfx90a (wave64). Zero delta needed.
 
 Verdict: **completed** (linux-gfx1100). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. Secondary kernels: 3/3 finite. No GPU fault. Zero-churn follower: no code change from gfx90a.
+
+## Validation 2026-06-07 (validator, windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4 wave32), ROCm 7.14.0a20260604, torch 2.9.1+rocm7.14.0a20260604, HIP_VISIBLE_DEVICES=0 (only GPU present this session -- V710 offline).
+Fork: jeffdaily/DiffPhysDrone @ moat-port, validated_sha=c1d9647... (new commit on top of 2dc1a4b).
+
+### Windows build fix: ValueError linker alias
+
+c10.dll on TheRock/Windows does not export the inherited `c10::ValueError(SourceLocation, string)` constructor (MSVC does not re-export inherited constructors). `<torch/extension.h>` pulls in headers (ATen/TensorIndexing.h) that call `TORCH_CHECK_VALUE`, generating a `__declspec(dllimport)` reference to that constructor, causing LNK2001.
+
+Fix: added `/ALTERNATENAME` linker directive to `src/src/setup.py` (Windows-only, guarded by `sys.platform == "win32"`) that aliases the missing dllimport thunk to `c10::Error(SourceLocation, string)`, which IS exported. `ValueError IS-A Error` with no additional data members; semantically identical constructors. Identical fix pattern used by FaithC on this host. No effect on Linux builds.
+
+New commit: `c1d9647` `[ROCm] Fix Windows link: alias ValueError ctor to Error ctor in setup.py`
+
+### Build
+```
+export PATH="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64:$PATH"
+cd projects/DiffPhysDrone/src/src
+rm -rf build *.egg-info *.hip *.pyd
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 \
+  ROCM_HOME=".venv/Lib/site-packages/_rocm_sdk_devel" \
+  DISTUTILS_USE_SDK=1 \
+  python.exe setup.py build_ext --inplace
+# result: quadsim_cuda.cp312-win_amd64.pyd (exit 0, ~60s)
+```
+Compile: PASS. Extension .pyd loads cleanly.
+Warnings: PackedTensorAccessor deprecated (harmless, same as Linux), 333 warnings total from HIP device compilation. No errors.
+
+### Primary gate: test.py (fixed seed, run x2)
+```
+# Run 1 (seed=42)
+HIP_VISIBLE_DEVICES=0 python.exe -c "
+import sys; sys.path.insert(0, '.')
+import torch; torch.manual_seed(42)
+import runpy; runpy.run_path('test.py', run_name='__main__')
+print('PASS run 1 (seed=42)')
+"
+# Run 2 (seed=123) -- same invocation with manual_seed(123)
+```
+Both runs: PASS. All 4 forward outputs (act_next, p_next, v_next, a_next) and all 5 gradients (d_act_pred, d_act, d_p, d_v, d_a) pass torch.allclose vs reference. Deterministic across both seeds.
+
+### Secondary: env_cuda.py drive (5 steps + render + find_nearest_pt + rerender_backward)
+```
+canvas shape: (8, 24, 32), vec shape: (10, 8, 3), dddp shape: (4, 3, 24, 32)
+SECONDARY PASS
+```
+All finite on gfx1201 (render, find_nearest_pt, rerender_backward).
+
+Verdict: **completed** (windows-gfx1201). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. Secondary kernels: 3/3 finite. No GPU fault. Windows-specific fix: ValueError linker alias (1-file setup.py change, no algorithm change).

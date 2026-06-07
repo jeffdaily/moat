@@ -7,17 +7,17 @@
   "priority": 4.108,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d",
+  "updated_at": "2026-06-07T19:35:15Z",
+  "head_sha": "c1d96479220c6f830df23d98d4c9582e9fb60884",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d",
       "started_at": "2026-06-02T01:32:35Z",
       "completed_at": "2026-06-02T02:04:44Z",
-      "updated_at": "2026-06-02T02:04:44Z",
+      "updated_at": "2026-06-07T19:35:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d",
       "started_at": "2026-06-02T02:09:00Z",
       "completed_at": "2026-06-02T02:16:00Z",
-      "updated_at": "2026-06-02T02:16:00Z",
+      "updated_at": "2026-06-07T19:35:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "validated_sha": "c1d96479220c6f830df23d98d4c9582e9fb60884",
+      "started_at": "2026-06-07T19:00:00Z",
+      "completed_at": "2026-06-07T19:35:15Z",
+      "updated_at": "2026-06-07T19:35:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -95,10 +95,11 @@
           "test": 0,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
+        "session_count": 1,
+        "first_session_at": "2026-06-07T19:00:00Z",
+        "last_session_at": "2026-06-07T19:35:15Z"
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
