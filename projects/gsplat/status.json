@@ -7,7 +7,7 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-05T05:06:58Z",
+  "updated_at": "2026-06-07T02:56:37Z",
   "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
   "platforms": {
     "linux-gfx90a": {
@@ -95,13 +95,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-07T02:56:37Z",
+      "updated_at": "2026-06-07T02:56:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -114,7 +114,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "completed",

@@ -12,3 +12,8 @@
 {"kind":"phase","ts":"2026-05-30T18:41:50Z","phase":"compile","seconds":0.258,"exit":1,"cmd":"pip install -e . --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-05-30T18:43:57Z","phase":"compile","seconds":119.250,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gsplat/src && pip install -e . --no-build-isolation -v"}
 {"kind":"phase","ts":"2026-05-30T18:46:52Z","phase":"test","seconds":116.973,"exit":1,"cmd":"python3 -m pytest /var/lib/jenkins/moat/projects/gsplat/src/tests/test_basic.py -v --tb=short"}
+{"kind":"phase","ts":"2026-06-07T02:00:38Z","phase":"compile","seconds":244.241,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\gsplat_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T02:05:24Z","phase":"compile","seconds":244.434,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\gsplat_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T02:19:25Z","phase":"test","seconds":43.049,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_core_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T02:27:40Z","phase":"test","seconds":425.559,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_full_gfx1201.py tests/test_basic.py -v --tb=short"}
+{"kind":"phase","ts":"2026-06-07T02:44:49Z","phase":"test","seconds":5.760,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_full_gfx1201.py tests/test_external_distortion.py tests/test_ftheta.py -v --tb=short"}
