@@ -195,3 +195,48 @@ The hip_test successfully runs on real GPU hardware (gfx1100, RDNA3), verifying:
 The port correctly handles the warp size difference between CDNA (64) and RDNA3 (32), demonstrating portability across AMD architectures.
 
 **Validated at**: 38aa60a4232970e6c0b092dbc77cd7197749f620
+
+## Device RNG fix 2026-06-07 (audit finding visionaray-hip-device-rng)
+
+`include/visionaray/random_generator.h` selected the thrust-backed device RNG
+only under `__CUDACC__`. Under hipcc (`__HIPCC__`) `rand_engine` fell back to
+`std::default_random_engine` (host-only, not device-callable), so the GPU RNG
+was unavailable on ROCm: the jittered / basic_jittered_blend pixel samplers
+(via make_generator) and the hip_sched render kernel construct
+`random_generator<T>` on the device and could not use it.
+
+Fix: extend BOTH guards (the `thrust/random.h` include and the
+engine/distribution typedefs) to `#if defined(__CUDACC__) || defined(__HIPCC__)`,
+matching the existing pattern in macros.h / math.h / lbvh.h. Used `__HIPCC__`
+(not `__HIP_DEVICE_COMPILE__`) deliberately: both guards must be the identical
+condition so the include and the typedef stay consistent across the host AND
+device compiler passes; `random_generator` appears in host code too, so a
+device-only guard would make the type differ between passes (compile error).
+The CUDA path is byte-identical (NVCC still sees `__CUDACC__`).
+
+New GPU proof: `test/hip_random_test.hip` constructs `random_generator<float>`
+inside a HIP kernel, draws per-thread samples, and asserts finite + in [0,1) +
+varied. Built and ran on MI250X (gfx90a, wave64), ROCm 7.2.1,
+HIP_VISIBLE_DEVICES=0:
+
+```
+samples=32768 min=1.2144e-05 max=0.99997 mean=0.499811
+PASS: device random_generator produced finite, varied values
+```
+
+The original hip_test still PASSes (no regression). Functional device-code
+change, so advance_head flipped both completed Linux platforms to revalidate
+(expected); validated_sha stays at 38aa60a4 for the regression guard.
+
+New head_sha: d904b8b02cb386ac6f97be9774ede7fe8314a3ed
+
+### Gotcha: porter handoff lands in `revalidate`, not `ported`
+
+This was an audit-fix on an already-`completed` platform, not a from-scratch
+port. `advance_head` correctly classifies a functional delta on a completed
+platform as `revalidate` (validator re-confirms on GPU). The state machine
+forbids `revalidate -> ported` by design (ported routes back through the
+reviewer; revalidate routes straight to the validator). So the correct porter
+handoff state here is `revalidate`, NOT `ported` -- the validator picks it up
+and marks `completed` after re-running the GPU test. Do not try to force
+`ported` on a post-completion functional fix.
