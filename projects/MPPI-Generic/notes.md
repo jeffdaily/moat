@@ -460,3 +460,30 @@ on gfx1101. No NaN, no HIP fault, clean exits throughout.
 These commits do not change any Linux-visible code paths. The gfx90a/gfx1100
 platforms were flipped to `revalidate` by advance-head; their validators can
 carry forward via binary-equivalence check (identical device code objects on Linux).
+
+## Validation 2026-06-07 (linux-gfx90a revalidate, carry-forward)
+
+Platform: gfx90a (MI250X), ROCm 7.2.1. HIP_VISIBLE_DEVICES=3.
+Validated sha: 427b693b (head), carry-forward from 4231397db.
+
+Delta: 6 Windows-specific commits (CMake 3.5 bump, _USE_MATH_DEFINES/NOMINMAX,
+sincosf->sinf/cosf in host path, POSIX compat, M_PI constants, Windows CMake-exclude).
+
+Binary equivalence check: built both 4231397db (with -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+workaround for CMake 4.x) and 427b693b at gfx90a targeting 157 targets each.
+`utils/codeobj_diff.py build-hip-old build-hip-new` result:
+- libautorally_mppi.so: identical (198 exports)
+- libcartpole_mppi.so: identical (755 exports)
+- libdouble_integrator_mppi.so: identical (518 exports)
+- libquadrotor_mppi.so: identical (307 exports)
+- libcnpy.so: indeterminate (roc-obj-ls false-negative on pure C++ ELF with no GPU code;
+  manual nm diff of exported symbols: byte-identical)
+- rollout_kernel_tests: identical (32 exports, verified separately)
+- rmppi_kernel_tests: identical (32 exports, verified separately)
+
+All MPPI HIP libraries + key test executables: identical device ISA + exported symbols.
+The sincosf change is in the `#else` of `#ifdef __CUDA_ARCH__`; on HIP the device pass
+always takes the `__sincosf` path (compat header defines `__CUDA_ARCH__=1` in device pass).
+Host-pass code differs (sincosf->sinf+cosf) but does not affect device code objects.
+
+Verdict: binary-equiv carry-forward. State: completed at 427b693b.
