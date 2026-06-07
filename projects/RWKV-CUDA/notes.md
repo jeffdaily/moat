@@ -430,3 +430,107 @@ rests on the gfx90a revalidation's documented binary-equivalence analysis rather
 than a re-diff here.) The prior gfx1100 validation holds: all RWKV harness
 err-ratios (rwkv7 fp32 ~1e-7, bf16 ~3-5e-3; wkv5_bf16; wkv6; wkv5) match gfx90a.
 validated_sha -> 3efd11d. No GPU re-run, no fork change.
+
+## Validation 2026-06-07 (windows-gfx1201, AMD RX 9070 XT)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (only GPU after gfx1101 V710 went offline).
+Windows 11, TheRock ROCm 7.14.0a20260604 pip wheels, torch 2.9.1+rocm7.14.0a20260604.
+Fork: jeffdaily/RWKV-CUDA moat-port @ 3efd11d. Cloned to agent_space/RWKV-CUDA.
+
+**Windows torch JIT build fix (torch.utils.cpp_extension, NOT a source change):**
+torch 2.9.1+rocm7.14 has four bugs in the JIT `load()` path on Windows+HIP that were
+absent in the gfx1151 machine's torch 2.12.0+rocm7.14:
+1. `_prepare_ldflags`: adds `/LIBPATH:<CUDA_HOME>/lib/x64` + `cudart.lib` unconditionally
+   on Windows even for HIP extensions (CUDA_HOME=None on ROCm -> OSError). Fix: guard with
+   `if IS_WINDOWS and not IS_HIP_EXTENSION:`.
+2. `_jit_compile`: `hipify_result[s_abs].hipified_path` can be None for .cpp files that
+   don't need hipification; None gets added to sources. Fix: fall back to s_abs when None.
+3. `_write_ninja_file_to_build_library`: cflags include `/std:c++17` and `/EHsc` (MSVC-style)
+   which crash the device (clang) sub-pass. Fix: for HIP Windows, strip /XX flags from
+   cuda_flags except /D and /I, and replace `/std:c++17` -> `-std=c++17`. Also add `/EHsc`
+   to host cflags (IS_WINDOWS HIP branch), and use `c10_hip.lib`/`torch_hip.lib`/
+   `/LIBPATH:<ROCM_HOME>/lib amdhip64.lib` instead of CUDA equivalents.
+4. `hipify_python.py`: extra_files paths use Windows backslashes but all_files uses
+   forward slashes after `_to_unix_path`; extra_files never match, so `.cu` files are
+   never hipified (kernel launch `<<<>>>` not converted). Fix: apply `_to_unix_path` to
+   extra_files when adding to all_files.
+All four fixes applied to the venv's cpp_extension.py and hipify_python.py in-place.
+RWKV source unchanged (no code change needed beyond the gfx1151 fix already in 3efd11d).
+
+**Build commands (JIT, per subproject):**
+```
+ROCM_DEVEL=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+PYTHON=B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe
+MSVC_DIR="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64"
+export HIP_VISIBLE_DEVICES=0 CUDA_VISIBLE_DEVICES=0
+export ROCM_HOME=$ROCM_DEVEL ROCM_PATH=$ROCM_DEVEL HIP_PATH=$ROCM_DEVEL
+export PYTORCH_ROCM_ARCH=gfx1201
+export DISTUTILS_USE_SDK=1
+export HIP_DEVICE_LIB_PATH=$ROCM_DEVEL/lib/llvm/amdgcn/bitcode
+export CC=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe CXX=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe
+export PATH="$MSVC_DIR:$PATH"
+# per-subproject (each gets a fresh TORCH_EXTENSIONS_DIR):
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_vanilla_fp32 python rwkv7_cuda_benchmark.py fp32 0
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_vanilla_bf16 python rwkv7_cuda_benchmark.py bf16 0
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_state_fp32 python rwkv7_cuda_benchmark_state.py fp32 0
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_state_bf16 python rwkv7_cuda_benchmark_state.py bf16 0
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_statepassing_fp32 python rwkv7_cuda_benchmark_state_passing.py fp32 0
+cd rwkv7_fast_fused && TORCH_EXTENSIONS_DIR=.../rwkv7_statepassing_bf16 python rwkv7_cuda_benchmark_state_passing.py bf16 0
+cd wkv5_bf16 && TORCH_EXTENSIONS_DIR=.../wkv5_bf16 python run.py
+cd wkv6   && TORCH_EXTENSIONS_DIR=.../wkv6_fwdbwd python run.py
+cd wkv5   && TORCH_EXTENSIONS_DIR=.../wkv5_v1_fwd python run_v1_fwd_gfx1201.py  # exec run.py correctness w/ CUDA_KERNEL_VERSION=1
+cd wkv5   && TORCH_EXTENSIONS_DIR=.../wkv5_v1_bwd python run_v1_bwd_gfx1201.py  # v1 vs ref kernel comparison
+```
+
+**Err ratios (gfx90a reference in parens):**
+
+rwkv7 vanilla fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.60e-7 | g_r 2.28e-7 | g_w 3.56e-7 | g_k 1.71e-7 | g_v 1.87e-7
+  g_a 3.31e-7 | g_b 2.04e-7  PASS
+
+rwkv7 vanilla bf16 (gfx90a ~3.5e-3..4.6e-3):
+- y: 3.50e-3 | g_r 3.78e-3 | g_w 3.72e-3 | g_k 3.85e-3 | g_v 3.87e-3
+  g_a 4.36e-3 | g_b 4.39e-3  PASS
+
+rwkv7 state fp32 (gfx90a ~1e-7..3.5e-7):
+- y: 1.64e-7 | g_s 2.06e-7 | g_r 2.25e-7 | g_w 3.49e-7 | g_k 1.79e-7
+  g_v 1.97e-7 | g_a 3.17e-7 | g_b 2.16e-7  PASS
+
+rwkv7 state bf16 (gfx90a ~2.8e-3..4.4e-3):
+- y: 3.47e-3 | g_s 2.94e-3 | g_r 3.73e-3 | g_w 3.64e-3 | g_k 3.89e-3
+  g_v 3.79e-3 | g_a 4.29e-3 | g_b 4.34e-3  PASS
+
+rwkv7 state-passing fp32 (gfx90a ~1e-7..3.4e-7):
+- y: 1.70e-7 | sT 1.33e-7 | g_s 2.11e-7 | g_r 2.35e-7 | g_w 3.62e-7
+  g_k 1.90e-7 | g_v 2.08e-7 | g_a 3.45e-7 | g_b 2.24e-7  PASS
+
+rwkv7 state-passing bf16 (gfx90a ~2.7e-3..4.3e-3):
+- y: 3.46e-3 | sT 2.83e-3 | g_s 3.18e-3 | g_r 3.65e-3 | g_w 3.43e-3
+  g_k 3.81e-3 | g_v 3.87e-3 | g_a 4.34e-3 | g_b 4.19e-3  PASS
+
+wkv5_bf16 correctness (v1b, gfx90a: CUDA fwd 1.7e-3, grads 1.2e-3..2e-3):
+- CUDA fwd: 1.66e-3 | g_r 2.02e-3 | g_k 1.73e-3 | g_v 1.73e-3
+  g_w 1.65e-3 | g_u 1.69e-3  PASS
+
+wkv6 fwd+bwd (gfx90a: fwd 1.7e-5, grads 1e-5..1.7e-3):
+- fwd: 1.47e-5 | g_r 2.88e-5 | g_k 6.28e-5 | g_v 3.26e-5
+  g_w 1.82e-3 | g_u 1.01e-5  PASS
+
+wkv5 v1 fwd (vs formula, HEAD_SIZE=2, gfx90a: 7.5e-8):
+- err formula_1: 7.50e-8 | formula_1a: 8.46e-8  PASS
+
+wkv5 v1 bwd (v1 vs ref kernel, HEAD_SIZE=4, gfx90a: ~1e-7..2.7e-7):
+- fwd y: 0.0 | g_r 1.07e-7 | g_k 1.14e-7 | g_v 1.01e-7
+  g_w 1.33e-7 | g_u 1.18e-7  PASS
+
+**Wave32 verdict:** No warp intrinsics; all synchronization via `__syncthreads()`; wave-width agnostic.
+Err ratios on gfx1201 match gfx90a/gfx1100/gfx1151 within expected hardware FP rounding variance.
+
+**Deferred (unchanged from prior platforms):**
+- wkv5 default CUDA_KERNEL_VERSION='1d': pre-existing upstream link bug.
+- wkv/depthwise_conv1d: JIT+hipify clean; no HIP-specific risk.
+
+**Conclusion:** 10/10 test variants PASS on windows-gfx1201 (AMD RX 9070 XT, gfx1201, RDNA4).
+Err ratios on par with all prior platforms. No RWKV source change needed (gfx1151 Windows fix
+in 3efd11d covers all Windows platforms). The 4 torch JIT bugs are Windows+HIP 2.9.x regressions
+not affecting gfx1151 (which had torch 2.12.x). windows-gfx1201 -> completed @ 3efd11d.
