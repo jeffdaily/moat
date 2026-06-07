@@ -284,6 +284,80 @@ and is also correct.
 PASS: gfx1101 (RDNA3, wave32) docking results are numerically correct.
 head_sha = b623ccc.
 
+## Validation 2026-06-06 (windows-gfx1201, ROCm 7.14)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), ROCm 7.14 (TheRock PyTorch
+venv), Windows 11 Pro for Workstations 10.0.26200. HIP_VISIBLE_DEVICES=0. warpSize=32.
+
+### Build commands (Windows, direct compiler invocation, gfx1201)
+
+Same toolchain as gfx1101. No source changes; only --offload-arch changes from gfx1101 to gfx1201.
+
+```
+SITE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+HIPCC=$SITE/_rocm_sdk_devel/bin/hipcc.exe
+CXX=$SITE/_rocm_sdk_devel/lib/llvm/bin/clang++.exe
+ROCM_INC=$SITE/_rocm_sdk_devel/include
+ROCM_LIB=$SITE/_rocm_sdk_devel/lib
+SRC=B:/develop/moat/projects/AutoDock-GPU/src
+IFLAGS="-I$SRC/common -I$SRC/host/inc -I$SRC/cuda -I$ROCM_INC"
+
+# Kernel TU (64wi)
+$HIPCC -DN64WI --offload-arch=gfx1201 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP $IFLAGS \
+  -c $SRC/cuda/kernels.cu -o $SRC/kernels_64wi_gfx1201.obj
+
+# Kernel TU (128wi)
+$HIPCC -DN128WI --offload-arch=gfx1201 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP $IFLAGS \
+  -c $SRC/cuda/kernels.cu -o $SRC/kernels_128wi_gfx1201.obj
+
+# Link (64wi) -- host .obj reused from gfx1101 build (host is x86_64, arch-independent)
+$CXX $SRC/{calcenergy,getparameters,main,miscellaneous,performdocking,processgrid,processligand,processresult,setup}.obj \
+  $SRC/kernels_64wi_gfx1201.obj -L$ROCM_LIB -lamdhip64 \
+  -o $SRC/bin/autodock_gpu_64wi_gfx1201.exe
+
+# Link (128wi)
+$CXX $SRC/{calcenergy,getparameters,main,miscellaneous,performdocking,processgrid,processligand,processresult,setup}.obj \
+  $SRC/kernels_128wi_gfx1201.obj -L$ROCM_LIB -lamdhip64 \
+  -o $SRC/bin/autodock_gpu_128wi_gfx1201.exe
+```
+
+Both built cleanly (warnings only: nodiscard on hipDeviceReset, strncpy deprecation, stricmp deprecation -- all pre-existing upstream). gfx1201 is wave32 (same as gfx1101); no source changes from gfx1101 build.
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+```
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi_gfx1201.exe \
+  -ffile input/1stp/derived/1stp_protein.maps.fld \
+  -lfile input/1stp/derived/1stp_ligand.pdbqt -nrun 10 -seed 42 -resnam <out>
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_64wi_gfx1201.exe ... -seed 7 ...
+HIP_VISIBLE_DEVICES=0 bin/autodock_gpu_128wi_gfx1201.exe ... -seed 42 ...
+```
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.39 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+
+Reference (wave64, gfx90a lead):
+
+| build / seed     | best binding energy | best-pose reference RMSD |
+|------------------|---------------------|--------------------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.48 A                   |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.37 A                   |
+| 128wi / seed 42  | -8.33 kcal/mol      | 0.39 A                   |
+
+All three cases: all 10 runs converge to a single cluster; best energies match
+the gfx90a lead within 0.05 kcal/mol; best-pose reference RMSD sub-0.6 A in
+all cases. No NaN, no HIP fault, clean exit. The 128wi case exercises the
+cross-warp final reduction in kernel4 on wave32 (4 warps/block, WARP_SIZE=32)
+and is also correct. GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4).
+
+PASS: gfx1201 (RDNA4, wave32) docking results are numerically correct.
+head_sha = b623ccc.
+
 ## Revalidation 2026-06-05 (linux-gfx90a, binary-equivalence carry-forward)
 
 Platform: 4x AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP 7.2.
