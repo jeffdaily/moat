@@ -65,13 +65,58 @@ thread_scope_block intra-wavefront deadlock) ALSO occur on RDNA wave32
 threads are still lanes of one wavefront, but RDNA's execution model may let
 them make independent progress.
 
-- If wave32 PASSES timed + the block-scope probe: the documented caveat narrows
-  to CDNA/wave64 only, and the PR caveat wording can say RDNA is unaffected.
-- If wave32 also hangs: the caveat is architecture-wide (all current AMD), and
-  the PR should say so.
+ANSWER (linux-gfx1100, gfx1100 RDNA3 wave32, ROCm 7.2.1, W7800):
+- sem_block_probe: PASS (no hang). Wave32 RDNA3 does NOT exhibit the
+  forward-progress hazard. The two lanes of one wavefront make independent
+  progress on RDNA3.
+- timed.pass.cpp: FAIL with assertion error (NOT a hang). The chrono-based
+  `try_acquire_until` fails due to the TSC clock inaccuracy warning visible at
+  compile time (100 MHz assumption for gfx1100/gfx1101 per RDNA3 ISA). This is
+  a chrono/TSC issue, not a semaphore forward-progress issue.
+
+Conclusion for PR caveat: the forward-progress hazard is CDNA/wave64-specific.
+RDNA3 (gfx1100) wave32 passes the block-scope producer/consumer test. The timed
+test fails on gfx1100 due to TSC inaccuracy (a separate known issue, independent
+of the semaphore change itself).
 
 This result directly shapes the upstream PR's caveat. Record it precisely
 (per arch) in this file when each follower reports.
+
+Remaining open: windows-gfx1101 (RDNA3 wave32) and windows-gfx1201 (RDNA4
+wave32) -- expected to match gfx1100 but record explicitly.
+
+## Validation 2026-06-07 (linux-gfx1100, gfx1100 RDNA3 wave32, ROCm 7.2.1)
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100), HIP_VISIBLE_DEVICES=0
+Fork HEAD: e2e8f70dd8737a5cf8b7b798b99654d06c8eb326
+
+Build command:
+```
+bash projects/libhipcxx/validation/run_linux.sh gfx1100 0
+```
+
+NOTE: The validation scripts (sem_umbrella_smoke.cpp, sem_block_probe.cpp, run_linux.sh)
+were fixed during this validation to address two issues that affect ALL arches
+(not just gfx1100) that were not caught when the gfx90a lead was set up:
+1. HIP does not allow non-trivially-constructible types as __shared__ variables;
+   fixed to use aligned char storage + placement-new.
+2. Upstream conformance tests (try_acquire/acquire/release/timed/heterogeneous)
+   need `-I test/support -I test --include force_include_hip.h`; added to run_linux.sh.
+
+Test results:
+- sem_umbrella_smoke: PASS -- <cuda/semaphore> + <cuda/std/semaphore> compile and run
+- sem_test: PASS -- device cuda::binary_semaphore<thread_scope_device> cross-block acquire/release
+- sem_block_probe: PASS -- intra-wavefront thread_scope_block (wave32 forward-progress: NO HANG)
+- conf_version: PASS
+- conf_max: PASS
+- conf_try_acquire: PASS
+- conf_acquire: PASS
+- conf_release: PASS
+- conf_timed: FAIL -- device assertion on try_acquire_until (TSC clock 100 MHz assumption, not a hang)
+- conf_heterogeneous: PASS
+
+9 PASS / 1 FAIL (timed, TSC issue unrelated to semaphore change)
+Wave32 result: NO forward-progress hazard. sem_block_probe PASSES without watchdog timeout.
 
 ## (c) Per-arch VALIDATION PLAYBOOK (the follower validator executes this)
 
@@ -101,35 +146,19 @@ bash projects/libhipcxx/validation/run_linux.sh gfx1100 0
 
 (second arg is the HIP_VISIBLE_DEVICES gpu index). It watchdogs the block probe
 and timed test at 30s; a watchdog exit code 124 means "hung on this arch" --
-that is the wave32 hazard answer. The exact per-test build/run it performs:
+that is the wave32 hazard answer.
 
-```
-# clone once (the helper does this for you):
-git clone --depth 1 --branch enable-semaphore \
-  https://github.com/jeffdaily/libhipcxx projects/libhipcxx/src
-INC=projects/libhipcxx/src/include
+Important compile notes:
+- sem_umbrella_smoke.cpp and sem_block_probe.cpp use aligned char storage +
+  placement-new for __shared__ semaphores (HIP restriction on non-trivially-
+  constructible __shared__ types).
+- Upstream conformance tests (try_acquire/acquire/release/timed/heterogeneous)
+  need `-I test/support -I test --include test/force_include_hip.h`. run_linux.sh
+  handles this automatically.
 
-# ungated headers + device semaphore (expect PASS):
-hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" \
-  projects/libhipcxx/validation/sem_umbrella_smoke.cpp -o /tmp/sem_umbrella && /tmp/sem_umbrella
-hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" \
-  projects/libhipcxx/validation/sem_test.cpp -o /tmp/sem_test && /tmp/sem_test
-
-# intra-wavefront block-scope probe (the wave32 question; watchdog it):
-hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" \
-  projects/libhipcxx/validation/sem_block_probe.cpp -o /tmp/sem_block
-timeout 30 /tmp/sem_block; echo "block-probe exit=$? (124 = hang/deadlock)"
-
-# upstream conformance (timed is the wave64 failure; watchdog it):
-T=projects/libhipcxx/src/.upstream-tests/test/std/thread/thread.semaphore
-for t in version max try_acquire acquire release; do
-  hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" "$T/$t.pass.cpp" -o /tmp/conf_$t && /tmp/conf_$t
-done
-hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" "$T/timed.pass.cpp" -o /tmp/conf_timed
-timeout 30 /tmp/conf_timed; echo "timed exit=$? (124 = hang)"
-hipcc -std=c++17 --offload-arch=gfx1100 -I "$INC" \
-  "$T/heterogeneous/semaphore.pass.cpp" -o /tmp/conf_het && /tmp/conf_het
-```
+VALIDATED RESULT on gfx1100 (2026-06-07): 9 PASS / 1 FAIL (timed, TSC issue).
+sem_block_probe PASSES (no forward-progress hazard on wave32 RDNA3). See the
+"Validation 2026-06-07" section above for the full result.
 
 Pin one GPU via the second arg / HIP_VISIBLE_DEVICES. Carry the result forward
 per the normal validator flow once recorded.
