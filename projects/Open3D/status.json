@@ -7,17 +7,17 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-07T16:07:58Z",
-  "head_sha": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+  "updated_at": "2026-06-07T16:17:35Z",
+  "head_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+      "validated_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
       "started_at": "2026-05-31T00:22:40Z",
       "completed_at": "2026-05-31T09:10:00Z",
-      "updated_at": "2026-06-07T16:07:58Z",
+      "updated_at": "2026-06-07T16:17:35Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,22 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "d0fd92f7b2dcdbdb17aefa7a6332fb3c67647090",
-        "to": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+        "from": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+        "to": "2670bbb17ee4009a0a315934644e3de0f58559cb",
         "method": "source-class",
         "class": "doc-only",
         "detail": "no changes",
-        "at": "2026-06-07T16:07:58Z"
+        "at": "2026-06-07T16:17:35Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+      "validated_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
       "started_at": "2026-05-31T08:26:00Z",
       "completed_at": "2026-05-31T08:35:32Z",
-      "updated_at": "2026-06-07T16:07:58Z",
+      "updated_at": "2026-06-07T16:17:35Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -64,12 +64,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "d0fd92f7b2dcdbdb17aefa7a6332fb3c67647090",
-        "to": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+        "from": "4eb0669c0d1525ac7f5d90db69cf420d261c5f94",
+        "to": "2670bbb17ee4009a0a315934644e3de0f58559cb",
         "method": "source-class",
         "class": "doc-only",
         "detail": "no changes",
-        "at": "2026-06-07T16:07:58Z"
+        "at": "2026-06-07T16:17:35Z"
       }
     },
     "windows-gfx1101": {
