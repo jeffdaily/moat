@@ -417,3 +417,118 @@ to windows-gfx1201. REVERSIBLE: supply the heavy 3rdparty (tbb, vtk, assimp, emb
 jpeg, curl, openssl) as prebuilt system packages (vcpkg x64-windows) via the
 USE_SYSTEM_* options and re-run; the toolchain + GPU port are ready, only host-lib
 provisioning remains.
+
+## Windows build SOLVED via vcpkg (2026-06-07) -- gfx1201 tests.exe BUILT; GPU run pending host
+
+The Windows-clang build wall (previously blocking windows-gfx1101/gfx1201) is
+BROKEN. Open3D's full `tests` binary builds for gfx1201 under the all-clang
+toolchain by supplying the clang-unbuildable bundled host libs from vcpkg and
+fixing a handful of "code/CMake assumes MSVC on Windows" gaps. The HIP/GPU port
+itself needed ZERO new changes (validated on Linux gfx90a+gfx1100); every fix
+below is host-build-infra, WIN32/Clang-gated, so the Linux build is byte-identical.
+
+Script: agent_space/open3d_cfg_gfx1201_vcpkg.sh (configure),
+agent_space/run_tests_gfx1201.bat (run with runtime DLLs). agent_space is
+gitignored -- the authoritative recipe is here.
+
+### Root cause of the original wall
+The bundled 3rdparty did not "fail to build under clang" generically; specific
+libs inject MSVC cl.exe flags or use POSIX-isms, gated on the wrong condition.
+USE_HIP forces all-clang (clang++ GNU-driver, CMake `MSVC`=FALSE), so anything
+gated on `if(MSVC)` to pick the Windows path is skipped.
+
+### vcpkg setup (host has a TLS revocation wall)
+- VS-bundled vcpkg is a registry-only stub (no ports). Cloned full vcpkg to
+  B:/vcpkg, bootstrapped (vcpkg-tool 2026-05-27).
+- This host's schannel HTTPS downloaders fail with CRYPT_E_REVOCATION_OFFLINE
+  (cert revocation server unreachable) -- the SAME wall behind the old
+  "boringssl/curl won't build". `git` works (different TLS backend). Fix: route
+  ALL vcpkg downloads through revocation-skipping curl:
+    export X_VCPKG_ASSET_SOURCES='x-script,curl --ssl-no-revoke -L -o {dst} {url};x-block-origin'
+  (then vcpkg install ... --x-buildtrees-root=B:/vcpkg/bt --downloads-root=B:/vcpkg/dl)
+- sourceforge.net is entirely network-blocked on this host (connection reset),
+  so any vcpkg port whose source is on sourceforge fails (e.g. polyclipping, a
+  transitive dep of vcpkg `assimp`). AVOID system-assimp for this reason; the
+  bundled assimp builds fine under clang (its assimp.cmake gates the static-lib
+  name on `if(MSVC)` -> else-branch GNU flags, which clang accepts).
+- Triplet x64-windows (dynamic /MD CRT). Pair with -DSTATIC_WINDOWS_RUNTIME=OFF
+  so Open3D, the vcpkg libs, and the ROCm runtime DLLs all share one dynamic CRT
+  (mixing /MT with the dynamic-CRT HIP runtime risks multi-heap crashes). clang
+  on Windows targets the MSVC ABI, so MSVC-built vcpkg libs link against
+  clang-built Open3D.
+
+### vcpkg packages installed (x64-windows)
+  tbb libjpeg-turbo curl openssl pkgconf    # confirmed clang-failers
+  embree zeromq cppzmq                       # embree+zeromq inject /MD (see below); cppzmq = zmq.hpp
+(zlib pulled transitively.) embree is 4.4.0, matching Open3D's pin.
+
+### CMake configure (USE_SYSTEM_* + pkg-config wiring)
+- USE_SYSTEM_TBB/JPEG/OPENSSL/EMBREE resolve via find_package (CMAKE_PREFIX_PATH
+  includes the vcpkg install root).
+- USE_SYSTEM_CURL and USE_SYSTEM_ZEROMQ resolve via pkg_search_module (libcurl /
+  libzmq), NOT find_package. So point CMake's FindPkgConfig at vcpkg's pkgconf:
+    export PKG_CONFIG="$VCROOT/tools/pkgconf/pkgconf.exe"
+    export PKG_CONFIG_PATH="$VCROOT/lib/pkgconfig"
+  (find_package(PkgConfig) sets the legacy PKGCONFIG_FOUND the helper checks.)
+- MSYS arg-conversion mangles a mixed POSIX+Windows CMAKE_PREFIX_PATH and the
+  `;` separator, hiding hip-config.cmake. Use Windows-style paths (B:/...) and
+  `export MSYS2_ARG_CONV_EXCL='*'` for every cmake/cmd invocation.
+- Windows-clang preprocessor defines the build needs (the bundled build assumes
+  an MSVC environment that predefines these):
+    CMAKE_CXX_FLAGS / CMAKE_HIP_FLAGS: -DNOMINMAX -DWIN32_LEAN_AND_MEAN -D_USE_MATH_DEFINES -DWIN32
+    CMAKE_C_FLAGS: -D_USE_MATH_DEFINES   (NOT WIN32_LEAN_AND_MEAN -- it strips
+      <commdlg.h> from windows.h and breaks the bundled tinyfiledialogs.c)
+  _USE_MATH_DEFINES: M_PI (MSVC <cmath> gates it; needed for CXX AND HIP TUs).
+  WIN32 (bare): PoissonRecon's MyMiscellany.h guards `#ifndef WIN32` -> clang
+    defines _WIN32 but not bare WIN32, so it took the POSIX sys/time.h path.
+
+### Fork source/CMake fixes (all WIN32/Clang-gated; Linux byte-identical)
+1. cmake/Open3DShowAndAbortOnWarning.cmake: clang spells the ignored-nodiscard
+   hipError_t warning -Wunused-value (gcc: -Wunused-result, already relaxed).
+   Added a CMAKE_CXX_COMPILER_ID MATCHES "Clang" block: -Wno-error=unused-value.
+2. 3rdparty/embree/embree.cmake + 3rdparty/zeromq/zeromq_build.cmake inject
+   MSVC `/MD` runtime flags gated on WIN32 -> clang++ GNU-driver reads `/MD` as a
+   filename ("no such file or directory: '/MD'"). FIX: supply embree+zeromq from
+   vcpkg (USE_SYSTEM_EMBREE/ZEROMQ=ON) rather than patch -- avoids the bundled
+   /MD path entirely. (Bundled BufferConnection.cpp then needs zmq.hpp -> cppzmq.)
+3. 3rdparty/zlib/zlib.cmake + 3rdparty/libpng/libpng.cmake gate the imported
+   static-lib basename on `if(MSVC)` (-> z/png16) but the bundled libs BUILD as
+   zlibstatic.lib / libpng16_static.lib on Windows regardless of frontend, so the
+   final link could not find z.lib/png16.lib. FIX: `if(MSVC)` -> `if(WIN32)`
+   (the name follows the target platform, not the compiler). 3 sites.
+4. cpp/tests/CMakeLists.txt: the Windows tbb.dll-copy step references
+   $<TARGET_FILE:tbb>; with USE_SYSTEM_TBB the bundled `tbb` target is absent
+   (TBB::tbb is imported). FIX: `if (WIN32)` -> `if (WIN32 AND TARGET tbb)`;
+   supply the DLL on PATH at run time instead.
+5. cpp/open3d/utility/CPUInfo.cpp: two BOOL results in the `_WIN32` branch are
+   used only in Release-stripped asserts -> -Werror,-Wunused-variable under
+   clang. FIX: [[maybe_unused]] on both (C++17 idiom).
+
+### Build
+  bash agent_space/open3d_cfg_gfx1201_vcpkg.sh     # configure (build dir: build_gfx1201)
+  HIP_VISIBLE_DEVICES=1 cmake --build projects/Open3D/src/build_gfx1201 --target tests -j 64
+Result: bin/tests.exe (111 MB) links clean (only benign LNK4217 zlib warnings).
+All bundled libs (assimp/vtk/qhull/glew/poisson/...) and all ~31 HIP gfx1201 TUs
+compile.
+
+### Runtime DLL setup (for the eventual GPU run)
+agent_space/run_tests_gfx1201.bat: launch via native cmd (an MSYS-spawned
+process fails to load the UCRT api-ms-win-crt-*.dll apiset forwarders). PATH gets
+_rocm_sdk_devel/bin + vcpkg/installed/x64-windows/bin; ROCBLAS_TENSILE_LIBPATH ->
+_rocm_sdk_libraries/bin/rocblas/library. CRITICAL (per [[windows-gfx1101-gfx1201-host]]):
+for a native .exe the loader searches exe-dir > System32 > PATH, and System32 has
+the Adrenalin-driver amdhip64_7.dll -- so the TheRock runtime DLLs were COPIED
+into build_gfx1201/bin (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll,
+hiprtc0714.dll, hiprtc-builtins0714.dll from _rocm_sdk_core/bin).
+
+### GPU validation: PENDING host GPU availability (NOT a port/build problem)
+At build time the host's AMD GPUs are not detected by ANY HIP runtime: TheRock
+hipInfo.exe -> "no ROCm-capable device is detected" at HIP_VISIBLE_DEVICES=0,1,
+and unset; torch.cuda.is_available()=False, device_count=0. `wmic
+win32_VideoController` shows a Microsoft Remote Display Adapter (active RDP
+session) + a Microsoft Basic Display Adapter, and the gfx1101 V710 is absent --
+i.e. an RDP session has detached/unloaded the discrete AMD GPUs (a known Windows
+behavior). Transient host state (cf. the gfx1101 reboot in the MOAT log), fixable
+by jeff (console session / driver restart / reboot), then re-run the gate suites:
+  cmd /c "agent_space\run_tests_gfx1201.bat --gtest_filter=*Tensor*:*Reduction*:*MemoryManager*"
+  ... (same gate suites as the gfx1100 validation, 499-pass baseline) at HIP_VISIBLE_DEVICES=1.
