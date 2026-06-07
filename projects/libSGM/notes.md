@@ -545,3 +545,92 @@ Reconciliation applied on the gfx1100 host:
   and never validated fdb9d24; its host re-confirms at fdb9d24. (Note: fdb9d24 restores
   OpenCV REQUIRED in test/CMakeLists.txt -- the gfx1151 host must ensure OpenCV is
   discoverable there, or the QUIET need will resurface as a real follower delta.)
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: windows-gfx1201, AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), ROCm 7.14.0a20260604 (TheRock),
+Windows 11 Pro for Workstations 10.0.26200. HIP_VISIBLE_DEVICES=0 (only GPU present after gfx1101 V710 offline).
+
+### Source delta for this platform
+
+NONE. validated_sha = 19df416d9647bfbd03491a0f6dc72404a4b4cb72 (same commit all other platforms validated);
+no per-platform device-code change required for gfx1201.
+
+### Toolchain
+
+All-clang-cl: C, CXX, HIP compiler = `_rocm_sdk_devel/lib/llvm/bin/clang-cl.exe` (Clang 23.0.0, MSVC-like ABI).
+MSVC env (INCLUDE/LIB) already sourced in shell from vcvars64. MSVC link.exe prepended to PATH.
+CMake 4.3.1 (Ninja generator). OpenCV 4.11.0 (pre-built vc16 at B:/develop/opencv-install/extracted/opencv/build;
+MSVC ABI compatible with clang-cl; no OpenCV symbols actually used by sgm-test.exe, dependency is vestigial).
+
+### Build
+
+```
+ROCM_ROOT="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+MSVC_LINK="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64"
+OPENCV_DIR="B:/develop/opencv-install/extracted/opencv/build"
+BUILD_DIR="B:/develop/moat/projects/libSGM/src/build-win-gfx1201"
+SRC_DIR="B:/develop/moat/projects/libSGM/src"
+
+export PATH="$MSVC_LINK:$PATH"
+export HIP_DEVICE_LIB_PATH="${ROCM_ROOT}/lib/llvm/amdgcn/bitcode"
+export HIP_VISIBLE_DEVICES=0
+
+cmake -S "$SRC_DIR" -B "$BUILD_DIR" -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  "-DCMAKE_HIP_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  "-DCMAKE_C_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  "-DCMAKE_CXX_COMPILER=${ROCM_ROOT}/lib/llvm/bin/clang-cl.exe" \
+  -DCMAKE_HIP_STANDARD=17 -DENABLE_TESTS=ON -DCMAKE_BUILD_TYPE=Release \
+  "-DCMAKE_PREFIX_PATH=${ROCM_ROOT}/lib/cmake" \
+  "-DOpenCV_DIR=${OPENCV_DIR}"
+
+cmake --build "$BUILD_DIR" --config Release -j32
+```
+Build: PASS (warnings only -- reserved macro names, C++98 compat, nodiscard on hipStream* macros;
+all pre-existing upstream patterns, no errors). 33/33 Ninja steps completed.
+
+### Code-object evidence
+
+`strings sgm-test.exe | grep gfx1201` shows 14 occurrences of `hipv4-amdgcn-amd-amdhsa--gfx1201` --
+single-arch gfx1201 build. No cross-arch fat binary.
+
+### Runtime DLL deployment (TheRock)
+
+Copied TheRock's runtime DLLs next to sgm-test.exe (exe-dir search beats System32):
+```
+cp "${ROCM_CORE}/bin/amdhip64_7.dll" build-win-gfx1201/test/
+cp "${ROCM_CORE}/bin/amd_comgr.dll" build-win-gfx1201/test/
+cp "${ROCM_CORE}/bin/hiprtc0714.dll" build-win-gfx1201/test/
+cp "${ROCM_CORE}/bin/hiprtc-builtins0714.dll" build-win-gfx1201/test/
+cp "${ROCM_CORE}/bin/rocm_kpack.dll" build-win-gfx1201/test/
+```
+Note: rocm_kpack.dll is a transitive dep of amdhip64_7.dll; must be co-located.
+
+### Runtime warp-size confirmation (wave32)
+
+gfx1201 is RDNA4, wave32. `device_warp_size()` in host_utility.h calls
+hipDeviceGetAttribute(hipDeviceAttributeWarpSize, dev=0) -> 32 at runtime.
+host == device == 32; launch geometry correct for wave32.
+
+### Test runs
+
+```
+export HIP_VISIBLE_DEVICES=0
+"B:/develop/moat/projects/libSGM/src/build-win-gfx1201/test/sgm-test.exe"
+```
+Run 1: [==========] 67 tests from 9 test suites ran.  [  PASSED  ] 67 tests. (9148 ms)
+Run 2: [==========] 67 tests from 9 test suites ran.  [  PASSED  ] 67 tests. (9224 ms)
+Pass/fail outcomes byte-identical run-to-run (only per-test ms timings vary).
+
+Test suites covered: CastTest (2), CensusTransformTest (3), SymmetricCensusTest (3),
+CheckConsistencyTest (6), IntegrationTest (1), MedianFilterTest (4),
+CorrectDisparityRangeTest (18), CostAggregationTest (18), WinnerTakesAllTestP (12).
+
+Wave32 verdict: path-aggregation DP shuffles (width=WARP_SIZE=32), WTA inter-lane __syncwarp,
+and median_filter software SIMD emulation (__vcmpgtu2/4, __vminu2/4, __vmaxu2/4) all produce
+correct bit-exact disparity output at wave32 on gfx1201. No HSA faults. Results match the
+gfx90a/gfx1100/gfx1151 bar (67/67).
+
+Result: 67/67 PASS, deterministic. Transition: port-ready -> completed,
+validated_sha=19df416d9647bfbd03491a0f6dc72404a4b4cb72.
