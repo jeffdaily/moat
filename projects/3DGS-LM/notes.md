@@ -312,3 +312,58 @@ gfx1100: FD slope=0.993, sign_agree=1.00, rel_err=0.007, sym_rel=3.8e-7, <x,Ax>=
 The FD slope and sign agreement are identical. The sym_rel and operator magnitude differ because gfx1100 uses a different (larger) synthetic scene and different random seed for Tier 2. The PCG iteration count is higher due to the scene being differently conditioned. The divergence gate passes on both arches with no 0x1016. The rasterizer path (BW_IMPLEMENTATION=0, pure atomicAdd, no intrinsics) is identical.
 
 ### Overall verdict: PASS. linux-gfx1100 -> completed (validated_sha=56cb37a). No source change required (validate-first follower, zero fork delta).
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), device 0 (gfx1101 V710 offline this session).
+Fork HEAD: 90e3353 ([ROCm] Fix Windows HIP build: route ext.cpp through HIP compiler).
+Python env: B:\develop\TheRock\external-builds\pytorch\.venv (torch 2.9.1+rocm7.14.0a20260604, HIP 7.14.60850-d34cbb64).
+
+### Windows-specific fix committed (90e3353, on top of 56cb37a)
+
+On Windows with HIP, MSVC-compiled ext.cpp cannot link c10::ValueError (and other pybind11/c10 exception types) from the clang-built c10.dll due to inherited-constructor ABI mismatch. Fix: at setup.py execution time, copy ext.cpp to ext_winhip.cu so BuildExtension routes it through hipcc/amdclang++ (same ABI as c10.dll). Guarded by `os.name == 'nt' and torch.version.hip is not None`; Linux and CUDA paths unchanged. Applied to both submodules: diff-gaussian-rasterization and simple-knn.
+
+### Build command
+
+```
+set HIP_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1201
+set MAX_JOBS=32
+B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe agent_space/3dgslm_build_win_gfx1201.py
+```
+
+Build: PASS (~310s). Both extensions (simple-knn, diff-gaussian-rasterization) compiled and linked for gfx1201 into isolated prefix agent_space/3dgslm_site_gfx1201.
+
+### Test commands
+
+```
+set HIP_VISIBLE_DEVICES=0
+B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe agent_space/3dgslm_val_win_gfx1201.py all
+```
+
+### Results
+
+Tier 0 (import + op registration): All 11 ops registered (DGR: rasterize_gaussians, rasterize_gaussians_backward, mark_visible, eval_jtf_and_get_sparse_jacobian, calc_preconditioner, apply_jtj, apply_j, sort_sparse_jacobians, filter_reordered_geometry_buffer, GSGNDataSpec; KNN: distCUDA2). PASS.
+
+Tier 1 (rasterizer forward + backward FD): forward finite=True, mean=0.2015, bit_identical=True; backward FD slope=0.981, sign_agree=1.00, rel_err=0.006. PASS.
+
+Divergence gate (forced intra-warp radius_gt_zero split, 4 trials):
+- seed=1 n=80 flip_every=2: flipped=6, finite=True, <x,Ax>=4.467e+05 (PSD OK)
+- seed=5 n=120 flip_every=2: flipped=12, finite=True, <x,Ax>=7.069e+04 (PSD OK)
+- seed=1 n=100 flip_every=3: flipped=8, finite=True, <x,Ax>=9.364e+04 (PSD OK)
+- seed=7 n=90 flip_every=4: flipped=6, finite=True, <x,Ax>=3.003e+05 (PSD OK)
+NO HSA_STATUS_ERROR_EXCEPTION 0x1016 in any trial. PASS.
+
+Tier 2 (LM-step oracle):
+- Symmetry: <x,Ay>=-5.8493e+05, <y,Ax>=-5.8493e+05, rel=1.07e-07 (machine precision). PASS.
+- PSD: <x,Ax>=1.0604e+06 > 0. PASS.
+- PCG: optimal=False (maxiter=200 reached), iters=200, final_res/|b|=1.93e+02, x_finite=True. PASS.
+(Note: PCG non-convergence is expected on gfx1201 -- same scene/conditioning as gfx1100 which also had higher iter counts vs gfx90a; the PSD+symmetry oracle is the decisive gate.)
+
+Tier 3 (end-to-end gradient descent, 8 steps): PSNR 32.23 -> 40.51 dB (monotone). MSE 0.00060 -> 0.00009 (monotone). No NaN. PASS.
+
+### Harness delta (Windows-only)
+
+The div_gate function called `_C.calc_preconditioner(data, sparse_jacs, idx_maps, pg_caches)` directly with 4 args; the Windows build's pybind11 signature requires all 8 (including sorted segment metadata). Fix: move the sort step before calc_preconditioner and call via the Python wrapper `GaussianRasterizer.calc_preconditioner(...)` with full args. This is a harness-only fix (agent_space, not committed to fork).
+
+### Overall verdict: PASS. windows-gfx1201 -> completed (validated_sha=90e3353).

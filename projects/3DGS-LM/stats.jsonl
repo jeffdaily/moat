@@ -6,3 +6,8 @@
 {"kind":"phase","ts":"2026-06-02T00:45:51Z","phase":"compile","seconds":86.526,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3dgslm_build_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-02T01:06:17Z","phase":"test","seconds":4.349,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 AMD_LOG_LEVEL=3 /opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/3dgslm_div.py"}
 {"kind":"phase","ts":"2026-06-02T01:06:42Z","phase":"test","seconds":9.142,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /opt/conda/envs/py_3.12/bin/python /var/lib/jenkins/moat/agent_space/3dgslm_val.py all"}
+{"kind":"phase","ts":"2026-06-07T21:10:37Z","phase":"compile","seconds":29.792,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/3dgslm_build_win_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:13:36Z","phase":"compile","seconds":75.961,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/3dgslm_build_win_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:41:37Z","phase":"compile","seconds":73.971,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/3dgslm_build_win_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:41:48Z","phase":"test","seconds":5.166,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/3dgslm_val_win_gfx1201.py all"}
+{"kind":"phase","ts":"2026-06-07T21:43:02Z","phase":"test","seconds":4.974,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/3dgslm_val_win_gfx1201.py all"}
