@@ -7,17 +7,17 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-07T16:17:35Z",
-  "head_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
+  "updated_at": "2026-06-07T18:41:01Z",
+  "head_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
       "started_at": "2026-05-31T00:22:40Z",
       "completed_at": "2026-05-31T09:10:00Z",
-      "updated_at": "2026-06-07T16:17:35Z",
+      "updated_at": "2026-06-07T18:38:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -42,13 +42,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "2670bbb17ee4009a0a315934644e3de0f58559cb",
       "started_at": "2026-05-31T08:26:00Z",
       "completed_at": "2026-05-31T08:35:32Z",
-      "updated_at": "2026-06-07T16:17:35Z",
+      "updated_at": "2026-06-07T18:38:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -95,13 +95,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": true,
-      "blocked_reason": "Bundled 3rdparty (TBB -fPIC, then VTK/assimp/embree) fails to build under the all-clang toolchain USE_HIP forces on Windows; host build infra, not the GPU/HIP port (validated on gfx90a+gfx1100, 499 tests). Arch-independent. Reversible: supply system libs via vcpkg USE_SYSTEM_*. See notes.md Validation 2026-06-04.",
-      "validated_sha": null,
+      "blocked_reason": "false",
+      "validated_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T20:43:16Z",
+      "completed_at": "2026-06-07T18:40:34Z",
+      "updated_at": "2026-06-07T18:41:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -114,7 +114,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
