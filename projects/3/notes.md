@@ -258,3 +258,99 @@ md5sum cellindices_old_gfx90a.elf cellindices_new_gfx90a.elf  # identical
 ```
 
 Verdict: binary-equiv carry-forward. All 65 gfx90a code objects byte-identical; test-only delta does not affect device ISA. State -> completed at 7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286. No GPU re-run required.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: windows-gfx1201, AMD Radeon RX 9070 XT (gfx1201 / RDNA4, wave32), TheRock ROCm 7.14, Windows 11 Pro for Workstations, HIP_VISIBLE_DEVICES=0.
+
+New commit: f6b642d5ce5bc0f832d809953efe0ebfc01d7a83 (on top of 7ef67aa4).
+69 files changed: 65 *_wrapper.go (gfx1201 code objects), curand/generator.go, curand/status.go (curand_shim.h), cuda/curand/curand_shim.h (NEW), cuda/cu/testdata/testmodule_gfx1201.co (NEW).
+
+### Windows-specific fixes needed
+
+1. **hiprand.h C++-only incompatibility (TheRock 7.14)**
+   - `hiprand.h` -> `rocrand.h` defines `uint4` as an anonymous struct in its C-mode `#else` block, conflicting with `hip_vector_types.h`'s `uint4` definition. Also `typedef _Float16 __half` in generator.go's cgo preamble conflicts with `rocrand.h`'s `typedef unsigned short __half`.
+   - Fix: added `cuda/curand/curand_shim.h` that declares only the hiprand symbols mumax3 uses, without including the full hiprand.h chain. Changed cgo preambles in generator.go and status.go from `//typedef _Float16 __half;\n//#include <hiprand/hiprand.h>` to `//#include "curand_shim.h"`.
+
+2. **testdata/testmodule_gfx1201.co required for TestModule**
+   - module_test.go probes for `testdata/testmodule_{gcnArchName}.co` and SKIPs if absent.
+   - Built with: `hipcc --genco --offload-arch=gfx1201 -include hip/hip_runtime.h testmodule.cu -o testmodule_gfx1201.co`
+
+3. **MinGW import libraries for HIP DLLs**
+   - cgo on Windows uses MinGW gcc (Strawberry Perl); cannot link MSVC `.lib` files.
+   - Created MinGW import libraries from DLLs:
+     ```
+     gendef amdhip64.dll; dlltool -d amdhip64.def -l libamdhip64.dll.a
+     gendef hipfft.dll;   dlltool -d hipfft.def   -l libhipfft.dll.a
+     gendef hiprand.dll;  dlltool -d hiprand.def   -l libhiprand.dll.a
+     ```
+   - Stored in `C:\Users\Shark44\AppData\Local\Temp\mingw_libs\`.
+
+### Build commands
+
+```
+# Build wrappers for gfx1201 (from cuda/ subdir)
+cd B:\develop\moat\projects\3\src\cuda
+set HIP_PATH=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+make wrappers CUDA_CC=gfx1201
+
+# Build testmodule code object
+cd cuda\cu\testdata
+hipcc --genco --offload-arch=gfx1201 -include hip/hip_runtime.h testmodule.cu -o testmodule_gfx1201.co
+
+# Install mumax3
+set GOROOT=B:\develop\go_root\go
+set GOPATH=B:\develop\go_path_gfx1201
+set CGO_ENABLED=1
+set CGO_CFLAGS=-IB:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel\include -D__HIP_PLATFORM_AMD__
+set CGO_LDFLAGS=-LC:\Users\Shark44\AppData\Local\Temp\mingw_libs -lamdhip64 -lhipfft -lhiprand
+set GOFLAGS=-mod=mod
+set HIP_VISIBLE_DEVICES=0
+# PATH must include GOPATH\bin and ROCm\bin so DLLs are found
+go install -v ./...
+```
+
+### Test results
+
+GPU: ArchName=gfx1201, warpSize=32 (confirmed from TestVersion output).
+
+```
+go test -v -count=1 ./cuda/cu/...
+# TestContext, TestDevice, TestMalloc, TestMemAddressRange, TestMemGetInfo,
+# TestMemsetAsync, TestMemset, TestMemcpy, TestMemcpyAsync,
+# TestMemcpyAsyncRegistered, TestModule, TestVersion
+12/12 PASS
+```
+
+```
+go test -v -count=1 ./cuda/...
+# TestBuffer, TestReduceSum, TestReduceDot, TestReduceMaxAbs,
+# TestSlice, TestCpy, TestSliceFree, TestSliceHost
+8/8 PASS
+```
+
+```
+go test -v -count=1 ./cuda/cufft/...
+# TestExampleFFT1D
+PASS
+```
+
+```
+go test -v -count=1 ./data/... ./httpfs/...
+# non-GPU regression: all PASS
+```
+
+```
+# standardproblem4: M.Average within 1e-3 of reference
+# result: m=(-0.9846119, 0.12605, 0.04327)  ref=(-0.9846, 0.1260, 0.0435) -- PASS
+
+# standardproblem5: mx/my/mz all within 1e-4 -- PASS
+```
+
+### Impact on Linux platforms
+
+This commit regenerated the *_wrapper.go files with gfx1201 code objects (removing gfx90a/gfx1100 objects). The device kernel LOGIC is unchanged; only which arch's objects are embedded differs. Linux platforms (gfx90a, gfx1100) will be flipped to `revalidate` by advance_head. Those validators should do a binary-equivalence check after rebuilding with `make wrappers CUDA_CC=<their-arch>`: if the extracted code objects match (same kernel logic, new hipcc may produce byte-identical or near-identical output), carry forward; otherwise GPU re-run is needed.
+
+For future multi-arch builds (all platforms in one repo state): use `make wrappers CUDA_CC="gfx90a gfx1100 gfx1201"` so all arches are embedded simultaneously.
+
+Verdict: PASS. State -> completed. validated_sha = f6b642d5ce5bc0f832d809953efe0ebfc01d7a83.
