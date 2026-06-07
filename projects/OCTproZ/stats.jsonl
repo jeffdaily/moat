@@ -23,3 +23,9 @@
 {"kind":"phase","ts":"2026-06-05T05:59:12Z","phase":"test","seconds":1.352,"exit":0,"cmd":"hipcc --offload-arch=gfx1100 -o /tmp/octproz_gpu_test /tmp/octproz_gpu_test.hip -lhipfft -lm"}
 {"kind":"phase","ts":"2026-06-05T05:59:16Z","phase":"test","seconds":0.221,"exit":0,"cmd":"/tmp/octproz_gpu_test"}
 {"kind": "tokens", "ts": "2026-06-05T06:00:30Z", "tokens": 50769, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-07T19:47:03Z","phase":"compile","seconds":21.561,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx90a /var/lib/jenkins/moat/projects/OCTproZ/src/octproz_project/octproz_project.pro && make -j$(nproc) 2>&1"}
+{"kind":"phase","ts":"2026-06-07T19:51:21Z","phase":"test","seconds":0.044,"exit":1,"cmd":"bash -c \nHIP_VISIBLE_DEVICES=1 /opt/rocm/bin/hipcc -std=c++17 \\\n    --offload-arch=gfx90a \\\n    -DUSE_HIP \\\n    -I/opt/rocm/include \\\n    octproz_pipeline_test.hip \\\n    -L/opt/rocm/lib -lamdhip64 -lhipfft \\\n    -o octproz_pipeline_test 2>&1 && echo \"COMPILE_OK\"\n"}
+{"kind":"phase","ts":"2026-06-07T19:52:03Z","phase":"test","seconds":0.159,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/agent_space/octproz_real_test/octproz_pipeline_test"}
+{"kind":"phase","ts":"2026-06-07T19:53:02Z","phase":"test","seconds":0.157,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/agent_space/octproz_real_test/octproz_pipeline_test"}
+{"kind":"phase","ts":"2026-06-07T19:53:23Z","phase":"test","seconds":0.284,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/agent_space/octproz_real_test/octproz_pipeline_test"}
+{"kind":"phase","ts":"2026-06-07T19:54:25Z","phase":"test","seconds":0.291,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/agent_space/octproz_real_test/octproz_pipeline_test"}

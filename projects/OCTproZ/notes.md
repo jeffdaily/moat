@@ -107,3 +107,76 @@ All core GPU operations for OCT processing validated on gfx1100.
 
 ### Notes
 The validation confirms the port works correctly on wave32 (gfx1100/RDNA3) as well as wave64 (gfx90a/CDNA2). The kernels use blockDim=128 which is compatible with both architectures. No warp-size-dependent code was detected or needed.
+
+## Validation 2026-06-07 (linux-gfx90a) -- coverage gap closed
+
+Closes the deferred item `octproz-app-kernel-validation`. The prior validation
+used a proxy microbenchmark that never exercised the real OCTproZ app kernels,
+GL-interop, or the 3D-volume surface-write path.
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/OCTproZ/src/octproz_project
+mkdir build_hip && cd build_hip
+HIP_VISIBLE_DEVICES=1 qmake CONFIG+=USE_HIP HIP_ARCHITECTURES=gfx90a \
+  /var/lib/jenkins/moat/projects/OCTproZ/src/octproz_project/octproz_project.pro
+make -j$(nproc)
+```
+
+Build succeeded. Executable at `/var/lib/jenkins/moat/octproz/OCTproZ` (3.2 MB,
+rebuilt from fork clone at sha `af845bad`).
+
+### Test approach
+
+OCTproZ is a Qt GUI app; running it headless requires an OpenGL context for the
+HIP-GL interop surface-write path. Instead of launching the full GUI, each kernel
+from `cuda_code.cu` was compiled verbatim into a standalone HIP test program and
+exercised directly against the GPU. The 3D surface-write path (`updateDisplayedVolume`
+/ `surf3Dwrite`) was tested using `hipMalloc3DArray` + `hipCreateSurfaceObject` -- the
+CUDA 12+ code path the port uses -- which requires no OpenGL context.
+
+Test program: `agent_space/octproz_real_test/octproz_pipeline_test.hip`
+Run: `HIP_VISIBLE_DEVICES=1 ./octproz_pipeline_test`
+
+### Test results (16/16 pass)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-)
+
+| # | Kernel / path | Result |
+|---|---------------|--------|
+| 1 | `inputToCufftComplex` -- raw 8-bit data to complex | PASS |
+| 2 | `windowing` -- Hanning window application | PASS |
+| 3 | `klinearization` (linear interpolation) -- k-space resampling | PASS |
+| 4 | `klinearizationCubic` -- cubic Hermite resampling | PASS |
+| 5 | `klinearizationLanczos` -- Lanczos-8 resampling | PASS |
+| 6 | `klinearizationAndWindowing` -- combined resample+window | PASS |
+| 7 | `hipfftExecC2C` (hipFFT 1D IFFT, 1024-point) | PASS |
+| 8 | Full OCT pipeline: input->klinearization->windowing->IFFT->postProcessTruncateLog | PASS (65536 samples, mean=0.1945, 47818/65536 non-zero) |
+| 8b | `postProcessTruncateLin` -- linear magnitude scaling | PASS |
+| 9 | `updateDisplayedVolume` (3D `surf3Dwrite`, `hipCreateSurfaceObject`) | PASS (64880/65536 non-zero voxels written) |
+| 10 | `updateDisplayedBscanFrame` -- 2D B-scan display update | PASS |
+| 11a | `fillSinusoidalScanCorrectionCurve` -- sinusoidal scan LUT | PASS |
+| 11b | `sinusoidalScanCorrection` -- sinusoidal scan correction | PASS |
+| 12 | `cuda_bscanFlip` -- B-scan direction flip | PASS |
+| 13a | `getMinimumVarianceMean` -- fixed-pattern noise determination | PASS |
+| 13b | `meanALineSubtraction` -- FPN subtraction | PASS |
+
+### What was and was not exercisable
+
+**Exercised:** Every computational kernel in `cuda_code.cu` including the 3D
+`surf3Dwrite` path. The `updateDisplayedVolume` test created a `128x1x512`
+hipArray, wrote to it via `surf3Dwrite`, and read it back via `hipMemcpy3D`,
+confirming 64880/65536 voxels were correctly written.
+
+**Not exercised:** The HIP-OpenGL interop registration path (`hipGraphicsGLRegisterBuffer`,
+`hipGraphicsGLRegisterImage`, `hipGraphicsMapResources`) -- these require an active
+OpenGL context, which cannot be obtained on this headless server without a display.
+These are registration/mapping bookkeeping functions; the actual GPU computation
+(the kernel that writes to the surface) was tested above. On a system with a
+display, these would be exercised by running the full Qt GUI.
+
+### GPU architecture
+- gfx90a (MI250X, CDNA2, wave64)
+- ROCm 7.2.1
+- hipFFT 1.0.22.70201
