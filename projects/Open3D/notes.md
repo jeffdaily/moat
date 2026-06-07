@@ -532,3 +532,43 @@ behavior). Transient host state (cf. the gfx1101 reboot in the MOAT log), fixabl
 by jeff (console session / driver restart / reboot), then re-run the gate suites:
   cmd /c "agent_space\run_tests_gfx1201.bat --gtest_filter=*Tensor*:*Reduction*:*MemoryManager*"
   ... (same gate suites as the gfx1100 validation, 499-pass baseline) at HIP_VISIBLE_DEVICES=1.
+
+## gfx1201 GPU validation 2026-06-07 (RX 9070 XT, RDNA4, wave32) -- 3 real failures
+
+Ran the gfx1100 gate suites on gfx1201 via agent_space/run_tests_gfx1201.bat (no
+HIP_VISIBLE_DEVICES mask -- see below). Host GPU note: at first the GPUs were
+undetected (RDP detaches them); once gfx1201 was back, torch.cuda saw exactly 1
+ROCm device = gfx1201 at index 0 (the gfx1101 V710 is on the Basic Display
+Adapter, not ROCm-capable). With only one ROCm device, BOTH `=0` and `=1` masks
+yield 0 devices; an EMPTY HIP_VISIBLE_DEVICES enumerates gfx1201. So the batch
+clears the mask. (Revisit if both GPUs become ROCm-capable.)
+
+Results (vs gfx1100's clean 499):
+- *Tensor*:*Reduction*:*MemoryManager*: 420/422 PASS (1 skip; 1 FAIL = Tensor.Cross)
+- *NearestNeighbor*:*KnnIndex*:*FixedRadiusIndex*:*Knn*:*Hybrid*:*Registration*:*Feature*:
+  42/45 PASS (1 known NPP scope-out + 2 FAIL)
+- *HashMap*:*VoxelBlockGrid*: 34/34 PASS (stdgpu dedup + TSDF clean on RDNA4)
+
+The FAISS warp-select (NNS/KNN, the highest-risk path) and stdgpu HashMap/TSDF
+pass on gfx1201 -- the wave32 two-32-lane model holds on RDNA4 as on gfx1100.
+
+Failures, by error class:
+1. EXPECTED (not a regression): Odometry RGBDOdometryMultiScaleHybrid ->
+   NppUnsupportedOnHIP. Same scoped-out NPP GPU-image path as gfx90a/gfx1100.
+2. "device kernel image is invalid" (ParallelFor.h:66, hipErrorInvalidImage) on
+   TWO kernels: core Tensor.Cross and t::pipelines ICPDoppler. Cross is pure
+   Float32 on 2x3 tensors -- NOT FP64, NOT size. Hundreds of other ParallelFor
+   kernels in the SAME binary launch fine, so this is a gfx1201/RDNA4 code-object
+   issue for specific kernels under the TheRock clang (a silently-invalid gfx1201
+   slice), not a source port bug. These same tests PASS on gfx1100. -> toolchain
+   lead, likely a TheRock gfx1201 codegen/bundling issue to reduce + report.
+3. hipSOLVER getrf "singular condition detected" (LinalgUtils.h:68, InverseCUDA)
+   in Registration.GetInformationMatrixFromPointCloud. rocSOLVER LU on gfx1201
+   flags singular where gfx1100 did not -- a math-lib (rocSOLVER) result
+   difference on RDNA4, not the Open3D port.
+
+Verdict: the HIP PORT and the Windows-clang BUILD are sound on gfx1201 (496 pass,
+incl. all warp-select + hashmap + TSDF). The 3 failures are gfx1201/TheRock
+runtime+toolchain issues (2 invalid-image kernels, 1 rocSOLVER singular), not the
+port. gfx1201 stays NOT-completed pending triage of these; reproduce Cross
+standalone for the toolchain report.
