@@ -280,3 +280,57 @@ and the Linux host path is functionally identical (macro indirection resolves to
 the original aligned_alloc/free). The prior gfx1100 validation holds: test_gemm +
 test_tensor 2/2, exact dot-products (gemv_q6_k_large y[0]=32768, rmsnorm exact),
 wave32 correct. validated_sha -> 1249659. No GPU re-run, no fork change.
+
+## Validation 2026-06-06 (windows-gfx1201)
+
+Platform: AMD RX 9070 XT gfx1201 (RDNA4, wave32), Windows 11, TheRock ROCm 7.14.0a20260604 pip wheels (clang-cl 23.0.0git), HIP_VISIBLE_DEVICES=0 (gfx1101 absent).
+Fork: jeffdaily/ntransformer moat-port @ 124965909f8a1746c7d717dc32eba419d3757462 (same Windows commit as gfx1151).
+
+### Build (gfx1201 single-arch, all-clang-cl)
+```
+ROCM_DEVEL=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -S projects/ntransformer/src -B agent_space/ntransformer/build-hip-gfx1201 \
+  -G Ninja -DUSE_HIP=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 -DCMAKE_CXX_STANDARD=20 -DCMAKE_HIP_STANDARD=20 \
+  -DCMAKE_CXX_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang-cl.exe \
+  "-DCMAKE_CXX_FLAGS=-DNOMINMAX -DWIN32_LEAN_AND_MEAN" \
+  -DCMAKE_PREFIX_PATH=$ROCM_DEVEL
+cmake --build agent_space/ntransformer/build-hip-gfx1201 -j64
+```
+Result: BUILD CLEAN. nodiscard warnings on hipFree/hipHostFree/hipEventDestroy only -- benign (same as Linux and gfx1151, documented). All 27 build objects compiled; test_gemm.exe, test_tensor.exe, ntransformer.exe produced.
+
+### Deploy runtime DLLs (TheRock dlls, not System32 Adrenalin)
+```
+ROCM_CORE=.venv/Lib/site-packages/_rocm_sdk_core
+cp $ROCM_CORE/bin/amdhip64_7.dll build-hip-gfx1201/
+cp $ROCM_CORE/bin/amd_comgr.dll build-hip-gfx1201/
+cp $ROCM_CORE/bin/rocm_kpack.dll build-hip-gfx1201/
+cp $ROCM_CORE/bin/hiprtc0714.dll build-hip-gfx1201/
+cp $ROCM_CORE/bin/hiprtc-builtins0714.dll build-hip-gfx1201/
+```
+Note: DLL name is `amd_comgr.dll` on this TheRock build (not `amd_comgr0713.dll` as on gfx1151 host).
+
+### ctest (2 deterministic runs)
+```
+HIP_VISIBLE_DEVICES=0 ctest --test-dir agent_space/ntransformer/build-hip-gfx1201 \
+  --output-on-failure -R "test_tensor|test_gemm"
+```
+Run 1: 2/2 PASS (8.52s total). Run 2: 2/2 PASS (8.41s total). Deterministic.
+
+Exact dot-product results (vs gfx90a/gfx1100/gfx1151 -- byte-identical):
+- gemv_f32: y[0]=32.0, y[1]=-16.0 PASS
+- gemv_q4_0 (smem): y[0]=32.0, y[1]=-16.0 PASS
+- gemv_q6_k (smem): y[0]=256.0, y[1]=-256.0 PASS
+- gemv_q6_k_large (no-smem): y[0]=32768.0, y[1]=-32768.0 PASS
+- silu_mul: [0.000, 0.731, -0.269, 1.762] within tolerance PASS
+- rmsnorm: [0.365148, 0.730296, 1.095444, 1.460593] exact match PASS
+
+### Wave32 verdict (gfx1201, RDNA4)
+- NT_WARP_MASK = 0xFFFFFFFFFFFFFFFFULL: high 32 bits ignored on wave32 -- all 28 shfl sites correct.
+- warpSize-based reductions (wave32: offset starts at 16, shared[32] = 32 max warps): correct.
+- gemm.cu GEMV logical-32 butterfly native on wave32. Exact q6_k_large y[0]=32768 proves correctness.
+- Zero HSA faults, no NaN, no hang, no wrong output.
+
+### Verdict
+PASS. State: windows-gfx1201 port-ready -> completed. validated_sha=124965909f8a1746c7d717dc32eba419d3757462.
