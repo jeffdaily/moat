@@ -134,6 +134,52 @@ Test results:
 9 PASS / 1 FAIL (timed, TSC issue unrelated to semaphore change)
 Wave32 result: NO forward-progress hazard. sem_block_probe PASSES without watchdog timeout.
 
+## Per-arch TSC clockrate -- already present in base, NO code change needed (2026-06-07)
+
+Investigated adding per-arch realtime TSC clockrate for RDNA (gfx1100/gfx1101/
+gfx1201) to make `<cuda/std/chrono>` `try_acquire_for/until` and the conformance
+`timed.pass.cpp` work. FINDING: the per-arch `_LIBCUDACXX_HIP_TSC_CLOCKRATE`
+selection is ALREADY fully present in the amd-develop layout at
+`include/cuda/std/detail/libcxx/include/__config` (the `#if defined(__gfx...)`
+ladder around lines 347-393). It was added by the work's own base commit
+fa4ccc6 ("Get rid of timing related error and emit warning instead", upstream
+PR #22), so it is reachable at fork HEAD e2e8f70 without any new edit. This
+covers more than upstream `main`'s single gfx1100 fix:
+- gfx908 / gfx90a: 25 MHz (25000000) -- unchanged.
+- gfx940 / gfx941 / gfx942 / gfx950: 100 MHz.
+- catch-all `__GFX9__`: 100 MHz (warn under !NDEBUG).
+- `__GFX10__` (gfx1030, RDNA2): 100 MHz (warn).
+- `__GFX11__` (gfx1100 / gfx1101, RDNA3): 100 MHz (warn) -- equals main's fix.
+- `__GFX12__` (gfx1200 / gfx1201, RDNA4): 100 MHz (warn) -- ASSUMED from the
+  RDNA4 ISA per the existing comment; NOT confirmed on hardware here (no RDNA4).
+  The RDNA4 ISA PDF was not machine-fetchable and no secondary source indicates
+  the realtime clock changed from the 100 MHz used across gfx94x/RDNA3; ROCm's
+  rocprofiler thread-trace decoder treats RT frequency as a runtime-queried
+  value, not a fixed header constant. 100 MHz is the best-supported value and is
+  already in place; the gfx1201 follower confirms actual timed behavior.
+- unknown arch: meaningless clockrate 1 + the original FIXME/warning preserved.
+
+Verified at HEAD e2e8f70 with ROCm 7.2.1 hipcc (no source change):
+- Branch selection per arch via a `#pragma message` probe: gfx90a -> 25 MHz
+  branch; gfx1100/gfx1101 -> `__GFX11__`; gfx1201 -> `__GFX12__`.
+- Resolved literal via `static_assert(_LIBCUDACXX_HIP_TSC_CLOCKRATE == ...)`:
+  gfx90a == 25000000; gfx1100/gfx1101/gfx1201 == 100000000 (all pass).
+- Compiled the real `.upstream-tests/test/std/thread/thread.semaphore/
+  timed.pass.cpp` with the playbook recipe (`-Iinclude -I.upstream-tests/test/
+  support -I.upstream-tests/test --include .upstream-tests/test/
+  force_include_hip.h`, `-std=c++17`): gfx90a compiles clean (object unchanged);
+  gfx1100 compiles, only diagnostic is the expected `__GFX11__` "Assuming 100 MHz"
+  `#warning`. (gfx90a device code object is byte-identical -- no change to that
+  arch.) GPU-run not needed: no source delta; this is a verification, not a port.
+
+CONSEQUENCE: head_sha stays e2e8f70; NO new fork commit was made and head was NOT
+advanced (a redundant/cosmetic edit would flip the validated gfx90a + gfx1100
+platforms to revalidate for zero functional benefit). The conf_timed gfx1100
+FAILURE above is therefore NOT a missing-clockrate bug -- the 100 MHz define is
+present -- it is a separate chrono/TSC accuracy or runtime issue. The semaphore
+PR's chrono support for RDNA is already covered by the base; do not add a
+duplicate gfx1100 TSC define in this PR.
+
 ## (c) Per-arch VALIDATION PLAYBOOK (the follower validator executes this)
 
 Goal: on the target arch, (1) confirm the ungated headers compile and the
