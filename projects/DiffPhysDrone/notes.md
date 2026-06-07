@@ -207,3 +207,17 @@ SECONDARY PASS
 All finite on gfx1201 (render, find_nearest_pt, rerender_backward).
 
 Verdict: **completed** (windows-gfx1201). Pass count: 4 forward + 5 gradient allclose assertions x2 seeded runs = 18/18. Secondary kernels: 3/3 finite. No GPU fault. Windows-specific fix: ValueError linker alias (1-file setup.py change, no algorithm change).
+
+## Revalidation 2026-06-07 (carry-forward, linux-gfx90a)
+
+Delta from validated_sha=2dc1a4b to head_sha=c1d9647: one commit touching only `src/setup.py`, entirely inside an `if sys.platform == "win32":` guard (ValueError/Error linker alias, `/ALTERNATENAME` directive, Windows-only).
+
+Binary equivalence confirmed via `codeobj_diff.py`:
+```
+verdict=identical
+  quadsim_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (113 exports))
+```
+
+Both shas built from clean state (`rm -rf build *.egg-info *.so && python setup.py build_ext --inplace`) with `HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a`. The Linux compiler sees `extra_link_args=[]` at both shas (the win32 branch is never entered). Device ISA identical, no GPU re-run needed.
+
+Carry-forward: linux-gfx90a -> completed at c1d96479220c6f830df23d98d4c9582e9fb60884 (binary-equiv).

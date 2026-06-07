@@ -7,17 +7,17 @@
   "priority": 4.108,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T19:35:15Z",
+  "updated_at": "2026-06-07T20:32:21Z",
   "head_sha": "c1d96479220c6f830df23d98d4c9582e9fb60884",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2dc1a4b4d2a1cfb7341925e0bd5591f891dc098d",
+      "validated_sha": "c1d96479220c6f830df23d98d4c9582e9fb60884",
       "started_at": "2026-06-02T01:32:35Z",
-      "completed_at": "2026-06-02T02:04:44Z",
-      "updated_at": "2026-06-07T19:35:07Z",
+      "completed_at": "2026-06-07T20:32:21Z",
+      "updated_at": "2026-06-07T20:32:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "c1d96479220c6f830df23d98d4c9582e9fb60884",
+        "method": "binary-equiv",
+        "detail": "setup.py win32-only branch; Linux .so identical (113 exports, device ISA identical)",
+        "at": "2026-06-07T20:32:21Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
