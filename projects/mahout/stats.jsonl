@@ -31,3 +31,9 @@
 {"kind":"phase","ts":"2026-06-04T18:00:01Z","phase":"compile","seconds":3.663,"exit":0,"cmd":"bash -c source \"$HOME/.cargo/env\" && export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm && cargo build --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16 2>&1"}
 {"kind": "tokens", "ts": "2026-06-05T07:51:07Z", "tokens": 118419, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-04T09:14:08Z", "tokens": 47425, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T03:08:23Z","phase":"compile","seconds":0.045,"exit":127,"cmd":"cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-07T03:09:03Z","phase":"compile","seconds":0.109,"exit":101,"cmd":"cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-07T03:09:19Z","phase":"compile","seconds":3.328,"exit":0,"cmd":"cargo build --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-07T03:09:56Z","phase":"test","seconds":11.348,"exit":101,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-07T03:11:55Z","phase":"test","seconds":39.575,"exit":0,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-07T03:13:29Z","phase":"test","seconds":8.522,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest /b/develop/moat/projects/mahout/src/testing/qdp /b/develop/moat/projects/mahout/src/testing/qdp_python /b/develop/moat/projects/mahout/src/qdp/qdp-python/tests -q --tb=short"}

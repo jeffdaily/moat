@@ -570,6 +570,80 @@ python3 utils/codeobj_diff.py \
 # verdict=identical
 ```
 
+## Validation 2026-06-06 (windows-gfx1201, AMD Radeon RX 9070 XT, TheRock ROCm 7.14) -- PASS
+
+Platform: windows-gfx1201, GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4 wave32, warpSize=32),
+HIP_VISIBLE_DEVICES=0 (gfx1201 only GPU present; gfx1101 absent from bus),
+Windows 11 (26200), TheRock ROCm 7.14.0a20260604,
+torch 2.9.1+rocm7.14.0a20260604, Rust 1.96.0 (msvc target), maturin 1.13.3.
+Fork: jeffdaily/mahout @ moat-port HEAD addf01141f64bf09476ce32274ee61481b57e325.
+
+Build commands:
+```
+ROOT=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+MSVC_DIR=/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64
+export CARGO_HOME=/b/develop/moat/agent_space/cargo RUSTUP_HOME=/b/develop/moat/agent_space/rustup
+export PATH="$CARGO_HOME/bin:$MSVC_DIR:$ROOT/bin:$ROOT/lib/llvm/bin:$PATH"
+# LIB must use Windows-style paths (semicolon-separated) for MSVC link.exe test binary linking
+export LIB="$(cygpath -w /c/.../MSVC/14.44.35207/lib/x64);$(cygpath -w .../ucrt/x64);$(cygpath -w .../um/x64)"
+export HIP_DEVICE_LIB_PATH="$ROOT/lib/llvm/amdgcn/bitcode"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1201 QDP_HIPCC="$ROOT/bin/hipcc.exe"
+export ROCM_PATH="$ROOT" HIP_VISIBLE_DEVICES=0
+
+# Kernels + core (dev profile, incremental -- only kernel objects rebuilt for gfx1201)
+cargo build --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip
+# -> exit 0, 3.23s. gfx1201 kernel code objects confirmed via strings: gfx1201, gfx1250.
+
+# TheRock runtime DLLs -- already deployed from gfx1101 run (same TheRock build):
+# target/debug/deps/{amdhip64_7.dll,amd_comgr.dll,rocm_kpack.dll,hiprtc0714.dll,hiprtc-builtins0714.dll}
+
+# Python extension wheel for gfx1201
+VENV=/b/develop/TheRock/external-builds/pytorch/.venv
+maturin build --features hip --profile dev \
+  --manifest-path projects/mahout/src/qdp/qdp-python/Cargo.toml \
+  --out /b/develop/moat/agent_space/mahout_wheels_gfx1201 \
+  --interpreter $VENV/Scripts/python.exe
+pip install --no-deps --force-reinstall mahout_wheels_gfx1201/qumat_qdp-0.2.0-cp312-cp312-win_amd64.whl
+# Deploy DLLs to _qdp package dir
+cp $ROOT/bin/{amdhip64_7.dll,amd_comgr.dll,rocm_kpack.dll,hiprtc0714.dll,hiprtc-builtins0714.dll} \
+   $VENV/Lib/site-packages/_qdp/
+```
+Both build steps exit 0. gfx1201 kernel code confirmed (grep: gfx1201/gfx1250 in _qdp.pyd).
+
+Note on LIB env: `cargo build` (library-only) works with POSIX-style LIB paths, but `cargo test`
+(produces .exe test binaries) requires Windows-style semicolon-separated LIB for MSVC link.exe.
+Use `cygpath -w` to convert. This is a Windows bash-shell quirk not present on the gfx1151 build
+(which may have had LIB set in the Windows environment already).
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1):
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- qdp-core lib: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 64/64, gpu_validation 8/8.
+- Non-GPU suites: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- 0 failures total. Matches gfx90a/gfx1100/gfx1151/gfx1101 baseline exactly.
+
+Python parity (testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+- 301 passed, 12 skipped, 0 failed. Matches gfx1101 baseline exactly.
+- Skips: 2 multi-GPU, 1 tensorflow-absent, 1 loader path-timing,
+  5 torch_ref (sm_120 on gfx1201 vs sm_-cap list; Triton/torch CUDA reference path, not native engine),
+  2 AmdQdpEngine-not-built, 1 NVIDIA-ref-absent -- all pre-existing/legit.
+- Warnings: PyTorch _select_torch_device warns "sm_120 not in arch list" for fallback-path tests;
+  the native HIP engine (_qdp) runs on gfx1201 correctly.
+
+Async-pipeline tests pass: test_amplitude_encoding_async_pipeline,
+test_angle_encoding_async_pipeline (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path
+(gpu_angle_encoding) -- all via hipMemcpyAsync (non-blocking H2D).
+
+Wave32 verdict: gfx1201 RDNA4 wave32 -- all L2-norm/amplitude tests pass, identical to
+gfx1100/gfx1101/gfx1151. warp_id = threadIdx.x / warpSize == >>5 on wave32.
+QDP_FULL_WARP_MASK 0xffffffffffffffff upper 32 bits zero on wave32, identical to CUDA's 0xffffffff.
+
+Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
+
 ## Validation 2026-06-05 (windows-gfx1101, AMD Radeon PRO V710, TheRock ROCm 7.14) -- PASS
 
 Platform: windows-gfx1101, GPU: AMD Radeon PRO V710 (gfx1101, RDNA3 wave32, warpSize=32),
