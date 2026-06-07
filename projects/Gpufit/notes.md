@@ -817,3 +817,75 @@ No GPU re-run needed.
 
 Result: linux-gfx1100 `revalidate` -> `completed`,
 validated_sha = 84af92cdf504fbc8538a78d8c77b087604ed52fa.
+
+## Validation 2026-06-07 (windows-gfx1201, ROCm 7.14)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11, TheRock ROCm 7.14.0a20260604.
+HIP_VISIBLE_DEVICES=0 (only GPU present after gfx1101 V710 did not come back from reboot).
+
+### Build
+
+CMake configure required `--rocm-device-lib-path` in `CMAKE_HIP_FLAGS` (same as CTranslate2 on this host:
+clang++ 23.0.0 does not auto-discover device libs from ROCM_PATH alone on Windows).
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+DEVLIB=$ROCM/lib/llvm/amdgcn/bitcode
+
+cmake -S projects/Gpufit/src -B projects/Gpufit/src/build-gfx1201 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_CUBLAS=OFF \
+  -DBOOST_ROOT=agent_space/boost_install/boost-1.87.0 \
+  -DBoost_NO_BOOST_CMAKE=ON \
+  -DCMAKE_PREFIX_PATH=$ROCM \
+  "-DCMAKE_HIP_FLAGS=--rocm-device-lib-path=$DEVLIB"
+
+bash utils/timeit.sh Gpufit compile -- cmake --build projects/Gpufit/src/build-gfx1201 -j64
+```
+
+Build: clean (100%). Gpufit.dll, all test exes, Simple_Example.exe, CUDA_Interface_Example.exe.
+Only Python wheel targets failed (missing setuptools -- not needed for GPU validation).
+
+### gfx1201 device code confirmation
+
+```
+strings build-gfx1201/Gpufit.dll | grep "gfx1[0-9]"
+```
+
+Output: `hipv4-amdgcn-amd-amdhsa--gfx1201` (confirmed, 3 code objects embedded).
+
+### Runtime DLLs
+
+Copied TheRock DLLs beside test exes: amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll,
+hiprtc0714.dll, hiprtc-builtins0714.dll (from _rocm_sdk_core/bin).
+
+### Test results (HIP_VISIBLE_DEVICES=0, RX 9070 XT, gfx1201, wave32)
+
+```
+bash utils/timeit.sh Gpufit test -- \
+  bash -c "cd projects/Gpufit/src/build-gfx1201 && HIP_VISIBLE_DEVICES=0 ctest --output-on-failure -j1"
+```
+
+| Test | Result |
+|------|--------|
+| Gpufit_Test_Error_Handling | PASS |
+| Gpufit_Test_Linear_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_1D | PASS |
+| Gpufit_Test_Gauss_Fit_2D | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Gauss_Fit_2D_Rotated | PASS |
+| Gpufit_Test_Cauchy_Fit_2D_Elliptic | PASS |
+| Gpufit_Test_Fletcher_Powell_Helix_Fit | PASS |
+| Gpufit_Test_Brown_Dennis_Fit | PASS |
+| Cpufit_Gpufit_Test_Consistency | PASS |
+
+10/10 PASS. 0 failed. Total test time: 2.19 sec.
+
+Gauss_Fit_2D_Elliptic PASSES on gfx1201 (RDNA4) -- the LM solver converges correctly,
+unlike gfx1151 (RDNA3.5) which diverged. Gauss_Fit_2D_Rotated PASSES with the
+wave32 HIP-guarded 3e-6f tolerance. No NaN, no divergence, clean exit 0.
+
+Result: windows-gfx1201 port-ready -> completed,
+validated_sha = 84af92cdf504fbc8538a78d8c77b087604ed52fa.
