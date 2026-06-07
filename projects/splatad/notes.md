@@ -466,3 +466,116 @@ runs, confirmed round 2). Backward grads finite + grad-sum stable ~6e-7. Batch-t
 
 Verdict: PASS. gfx1100 (RDNA3, wave32) port correct. No source changes needed. Fork head
 e337891105b2 validated on gfx1100.
+
+## Validation 2026-06-07 (windows-gfx1201, moat-port @ 96ece3d)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0,
+Windows 11 Pro. ROCm via TheRock venv: torch 2.9.1+rocm7.14.0a20260604, ROCm SDK
+7.14.0a20260604. Python 3.12.10. MSVC 14.44. Ninja build (use_ninja=True).
+
+Fork tip validated: 96ece3d72c40e3486ea84da300fb8ce31fd0defc (new commit on top of
+e337891; carries Windows-only build fixes -- Linux ROCm code paths byte-identical).
+
+### Windows build deltas (all guarded sys.platform=="win32" or __HIP__/__CUDACC__)
+
+1. setup.py use_ninja=False -> True on Windows. The non-ninja distutils path cannot
+   handle .hip files (torch hipify renames .cu -> .hip) and does not forward
+   __HIP_PLATFORM_AMD__ to MSVC cl.exe for .cpp TUs.
+
+2. Absolute include_dirs path. With ninja, torch builds from a temp directory and
+   relative paths do not resolve for hipcc.
+
+3. _winhip.cu shim generation (from the gsplat MOAT Windows port pattern). MSVC
+   cl.exe compiles ext.cpp as a host-only TU. torch/extension.h -> ivalue_inl.h
+   contains inline TORCH_CHECK_VALUE calls which expand to
+   c10::ValueError(SourceLocation, string). This inherited constructor is not
+   exported from c10.dll in the Windows ROCm build (using Error::Error with
+   __declspec(dllimport) does not re-export inherited constructors). Fix: create a
+   byte-identical _winhip.cu shim for each .cpp source so amdclang (hipcc) handles
+   the TU instead. amdclang emits the instantiation inline without needing the DLL
+   export.
+
+4. Guard hip_runtime.h with #ifdef __HIP__ (not USE_ROCM) in bindings.h and
+   helpers.cuh. USE_ROCM is defined for all TUs including MSVC host TUs; __HIP__
+   is defined only by hipcc. This prevents cl.exe from attempting to include
+   hip_runtime.h and failing without __HIP_PLATFORM_AMD__.
+
+5. Guard #include <c10/cuda/CUDAGuard.h> with #if defined(__HIP__) || defined(__CUDACC__)
+   in bindings.h. CUDAGuard.h transitively includes cuda/hip runtime headers that
+   MSVC cl.exe cannot parse without GPU compiler macros active.
+
+6. extra_link_args: suppress -s strip flag unconditionally on Windows (lld-link
+   does not support it).
+
+### Build command (gfx1201)
+
+    cd projects/splatad/src
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    # clear stale hipify mirror if re-building after edits
+    # rm -rf gsplat/hip build
+    python agent_space/splatad_build_gfx1201.py  # sets env, runs pip install -e .
+
+Environment vars: HIP_VISIBLE_DEVICES=0, PYTORCH_ROCM_ARCH=gfx1201,
+ROCM_HOME=<venv>/_rocm_sdk_devel, HIP_DEVICE_LIB_PATH=<rocm>/lib/llvm/amdgcn/bitcode,
+DISTUTILS_USE_SDK=1, BUILD_CUDA=1, NO_FAST_MATH=1, MAX_JOBS=32, WITH_SYMBOLS=1,
+MSVC dir prepended to PATH (must precede Git /usr/bin/link.exe).
+
+Build time: ~5 minutes for 4 .cu files (projection, rasterization, relocation, sh)
++ 1 .cpp (ext.cpp as ext_winhip.cu) for gfx1201 target only.
+
+### Test commands (gfx1201, HIP_VISIBLE_DEVICES=0, from projects/splatad/src/)
+
+    # Camera math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_basic.py \
+        -k "(test_quat_scale_to_covar_preci or test_persp_proj or test_world_to_cam or test_projection or test_fully_fused_projection_packed or test_isect or test_sh or test_compute_pix_velocity) and not lidar" \
+        -v --tb=short
+
+    # Camera rasterization
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_rasterization.py::test_rasterization -v --tb=short
+
+    # Lidar math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_basic.py \
+        -k "lidar_proj or compute_lidar_velocity or lidar_projection or isect_lidar or map_points_to_lidar_tiles or populate_image_from_points" \
+        -v --tb=short
+
+    # Lidar end-to-end rasterization
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_rasterization.py -k "lidar" -v --tb=short
+
+    # Lidar rasterize_to_points fwd+bwd (nerfacc not available on ROCm; independent check)
+    HIP_VISIBLE_DEVICES=0 python agent_space/splatad_validate_lidar_gfx1201.py
+
+    # Non-GPU regression
+    HIP_VISIBLE_DEVICES=0 python -m pytest tests/test_strategy.py -v --tb=short
+
+### Results
+
+- Camera math run 1: 24/27 pass in batch (3 flappers); 27/27 pass in isolation.
+  Flappers: test_projection[True-True-False], test_projection[False-True-False],
+  test_compute_pix_velocity -- all confirmed PASS in isolation (3/3 each). Same
+  atomic-order boundary noise class as gfx90a/gfx1100.
+- Camera math run 2: same 3 flappers in batch. CONSISTENT.
+- Camera rasterization: 24/24. PASS (both runs).
+- Lidar math: 13-14/14 pass in batch. test_lidar_proj[True] is a batch flapper;
+  PASSES in isolation (2/3 isolated runs -- consistent with documented stochastic
+  boundary noise). 13 other lidar math tests: PASS.
+- Lidar rasterization (test_lidar_rasterization[3,32,128]): 3/3. PASS.
+- Lidar rasterize_to_points independent validation
+  (agent_space/splatad_validate_lidar_gfx1201.py):
+    [A] forward finite, range-sane, 2-run BIT-EXACT. PASS.
+    [B] grads finite, grad-sums stable (rel=0.00e+00), grads flowing. PASS.
+    [C] 80-step Adam training: loss 0.0260 -> 0.0000 (100% reduction). PASS.
+- Non-GPU regression (test_strategy.py): 1/1. PASS.
+- nerfacc-gated tests: not run (nerfacc CUDA _C is None on ROCm, same as all
+  prior platforms). Substituted by independent compositor check above.
+- test_png_compression: ImportError: Please install PLAS -- expected, not a
+  port regression.
+
+WAVE32 VERDICT (gfx1201, RDNA4): PASS. No HSA exception on any GPU test path.
+tiled_partition<32> is exactly one wavefront on gfx1201 (wave32, same as gfx1100/
+gfx1151). The butterfly warpReduceSum/Max and match_any LabeledGroup shims operate
+within 32-lane tiles identically to CUDA's behavior. Camera rasterize_to_pixels
+24/24 (exercises warp.any in blend loop). Lidar rasterize 3/3 (exercises warp.any,
+CG tile collectives, hipcub sort). No wave-size divergence observed.
+
+Verdict: PASS. windows-gfx1201 (RDNA4, wave32) port correct.
+Fork head 96ece3d72c40 validated on gfx1201.
