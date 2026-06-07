@@ -207,3 +207,25 @@ Binary-equivalence check: built both 29a9acf and 556cdc7 at -DCMAKE_HIP_ARCHITEC
 Result: carry-forward applied. No GPU re-run needed. linux-gfx90a validated_sha advanced to 556cdc7.
 
 Verdict: COMPLETED (carry-forward, binary-equiv). linux-gfx90a validated_sha=556cdc7.
+
+## Revalidation 2026-06-07 (validator, linux-gfx1100, carry-forward to moat-port @ 556cdc7)
+
+Platform: AMD Radeon Pro W7800 48GB, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0, wave32.
+GPU arch: gfx1100.
+
+Delta: commit 556cdc7 wraps the cg::plus shim in `#if !defined(HIP_VERSION) || (HIP_VERSION < 71400000)`. On this host ROCm 7.2.1, HIP_VERSION < 71400000, so the guard evaluates TRUE -- the active preprocessor branch is identical to the validated_sha code.
+
+Binary-equivalence check: built both 29a9acf and 556cdc7 at -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" into separate dirs, then ran utils/codeobj_diff.py on each of the 8 test binaries (passed as explicit file pairs). All 8 returned verdict=identical -- device ISA and exported symbols unchanged on gfx1100.
+
+Commands:
+```
+cmake -B agent_space/mhc-old-gfx1100 -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ && cmake --build agent_space/mhc-old-gfx1100 -j$(nproc)  # at 29a9acf
+cmake -B agent_space/mhc-new-gfx1100 -S projects/mHC.cu/src/src/csrc -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100" -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ && cmake --build agent_space/mhc-new-gfx1100 -j$(nproc)  # at 556cdc7
+for t in test_rmsnorm test_rmsnorm_backward test_sinkhorn_knopp test_mhc_layer test_stream_ops test_stream_ops_backward test_fused_rmsnorm_matmul test_fused_rmsnorm_matmul_backward; do
+  python3 utils/codeobj_diff.py agent_space/mhc-old-gfx1100/$t agent_space/mhc-new-gfx1100/$t
+done
+```
+
+Result: 8/8 verdict=identical. Carry-forward applied. No GPU re-run needed. linux-gfx1100 validated_sha advanced to 556cdc7.
+
+Verdict: COMPLETED (carry-forward, binary-equiv). linux-gfx1100 validated_sha=556cdc7.
