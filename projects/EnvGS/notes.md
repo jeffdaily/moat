@@ -707,3 +707,74 @@ The Stage-2 UB fixes (quat_to_rotmat_transpose / compute_transmat_xy_backward re
 Stage 1 rasterizer (3 variants): `diff_surfel_rasterization_wet`, `_wet_ch05`, `_wet_ch07` all import with correct symbols (rasterize_gaussians / rasterize_gaussians_backward / mark_visible). No Stage 1 regression.
 
 Result: ALL PASS (Stage 2 HIPRT tracer forward correct, all geometric gradients finite, FD-correct on means3D/scales, rotations finite/null-space, cold-JIT stable, no HSA fault, deterministic). State -> completed. validated_sha = 2890415c449c12d3f7a3146d8d9b282ed140c41b.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), ROCm 7.14 / HIP 7.14,
+torch 2.9.1+rocm7.14.0a20260604 (TheRock venv). HIP_VISIBLE_DEVICES=0 (only GPU online this session).
+
+Scope: Stage 1 (diff-surfel-rasterizations 3 variants) + Stage 2 (diff-surfel-tracing HIPRT tracer).
+Packages: diff_surfel_tracing @ jeffdaily/diff-surfel-tracing moat-port 415f0a4.
+Superproject: jeffdaily/EnvGS @ moat-port 7528e8d. validated_sha = 7528e8d...
+
+### Windows-specific HIPRT fixes required
+
+Four bugs prevented HIPRT BVH kernel JIT compilation on Windows gfx1201:
+
+1. DLL search order: `LoadLibraryA` with a bare name ("amdhip64_7.dll") finds the
+   display-driver copy in System32 before the ROCm SDK copy. Fixed in `hiprt.cpp`
+   and `hiprt_wrapper.cpp` by building full paths from ROCM_PATH/HIP_PATH.
+
+2. Missing `--offload-arch`: HIPRT's `addCommonOpts` does not pass `--offload-arch`
+   to hiprtc JIT. Without it, gfx1201 binaries produce `hipErrorInvalidImage (200)`.
+   Fixed in `Compiler.cpp::addCommonOpts` to add `--offload-arch=<gcnArch>` for AMD.
+
+3. `buildProgram` source name: passing the full Windows path (e.g.
+   `B:\...\BvhBuilderKernels.h`) as the `hiprtcCreateProgram` source name causes
+   comgr to fail silently (ret=6, empty log) when the name starts with a drive
+   letter. Fixed in `Compiler.cpp::buildProgram` to use `moduleName.filename()`.
+
+4. `HIPRT_PATH` env var: HIPRT's `getRootDir()` falls back to `".."` (relative)
+   when `HIPRT_PATH` is unset, which resolves to the wrong directory. Fixed in
+   `__init__.py` to set `HIPRT_PATH` to the staged `hiprt_root` directory.
+
+All four fixes are in diff-surfel-tracing @ 415f0a4.
+
+### Stage 1 GPU validation results (gfx1201)
+
+All 3 diff-surfel-rasterization-wet* variants PASS:
+
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs/validate_stage1.py
+```
+
+- wet (NC=3): forward finite min=0.0195 max=0.9419, FD opacity slope=0.978, PASS.
+- wet-ch05 (NC=5): forward finite, FD opacity slope=1.001, PASS.
+- wet-ch07 (NC=7): forward finite, FD opacity slope=0.979, PASS.
+- All backward grads finite, determinism grad_rel <1e-7. PASS.
+
+### Stage 2 GPU validation results (gfx1201)
+
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs_stage2/validate_stage2.py
+```
+
+Run 1 and Run 2 (bit-identical):
+- Forward: rgb shape=(32,32,3) finite=True min=0.0000 max=0.1473 mean=0.0011; acc nonzero_frac=0.020 max=0.2054; dpt finite=True max=0.6648; hit_frac=0.020. PASS.
+- Backward: dmeans3D L1=3.33, dopacities L1=4.17e-02, dcolors L1=2.94e-02. All finite. PASS.
+- FD colors: cosine=0.9999 slope=1.0014. PASS (exact linear gate).
+- FD opacities: cosine=1.0000 slope=0.9970. PASS.
+- Determinism: RGB max_diff run-to-run=0.00 (bit-identical). PASS.
+- VERDICT: PASS.
+
+JIT kernels compiled successfully on cold start (hiprt_cache cleared):
+kernels.h: 51552 bytes, BvhBuilderKernels.h: 667112 bytes, LbvhBuilderKernels.h: 118544 bytes.
+All ELF magic (7f454c46), gfx1201 target.
+
+### Non-GPU regressions
+
+Stage 1 rasterizer (3 variants): all import with correct symbols, all PASS. No regression.
+
+Result: ALL PASS (Stage 1 and Stage 2 HIPRT tracer). State -> completed. validated_sha = 7528e8d (jeffdaily/EnvGS moat-port).
