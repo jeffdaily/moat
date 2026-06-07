@@ -93,6 +93,162 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-07T16:00:58Z"
+    },
+    {
+      "id": "envgs-optix-reflection",
+      "kind": "feature-port",
+      "project": "EnvGS",
+      "component": null,
+      "summary": "Environment-Gaussian reflection path not ported: diff-surfel-tracing uses OptiX (optixModuleCreate), which has no ROCm equivalent. Core 3DGS rasterization path works.",
+      "refs": [
+        "projects/EnvGS/notes.md OptiX scope-out"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:58Z"
+    },
+    {
+      "id": "curast-vulkan-hip-interop",
+      "kind": "feature-port",
+      "project": "CuRast",
+      "component": null,
+      "summary": "HIP-Vulkan texture interop stubbed (importToCuda mipmapped-array export): hipExternalMemoryGetMappedMipmappedArray is not exported by libamdhip64 in ROCm 7.2. Core rasterization works.",
+      "refs": [
+        "projects/CuRast/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:58Z"
+    },
+    {
+      "id": "zhilight-moe-amd",
+      "kind": "feature-port",
+      "project": "ZhiLight",
+      "component": null,
+      "summary": "MoE path unsupported on AMD; fp16/bf16 and cublasLt-int8 Linear are supported.",
+      "refs": [
+        "projects/ZhiLight/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:58Z"
+    },
+    {
+      "id": "cucim-gds-nvjpeg",
+      "kind": "feature-port",
+      "project": "cucim",
+      "component": null,
+      "summary": "GDS/cuFile (no ROCm equivalent) and nvjpeg GPU JPEG decode scoped out (CPU libjpeg fallback); nvimgcodec/cuslide2 not built.",
+      "refs": [
+        "projects/cucim/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:58Z"
+    },
+    {
+      "id": "cudf-scoped-sources",
+      "kind": "feature-port",
+      "project": "cudf",
+      "component": null,
+      "summary": "Partial cudf port: many .cu omitted from cudf_hip_sources.cmake (full lists/strings/dictionary/structs, quantiles, scan_inclusive for strings/structs); core plus reductions/merge in scope.",
+      "refs": [
+        "projects/cudf/notes.md Scoped OUT"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "gpurir-mixed-precision",
+      "kind": "feature-port",
+      "project": "gpuRIR",
+      "component": null,
+      "summary": "Mixed-precision half2 device kernels not ported; mixed precision reports unsupported on HIP and is forced off.",
+      "refs": [
+        "projects/gpuRIR/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "k2-moderngpu-warp32",
+      "kind": "feature-port",
+      "project": "k2",
+      "component": null,
+      "summary": "moderngpu path (warp_size=32, inline PTX) not ported; k2/csrc/moderngpu_shim.h.",
+      "refs": [
+        "projects/k2/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "marian-topk-cub-segsort",
+      "kind": "feature-port",
+      "project": "marian-dev",
+      "component": null,
+      "summary": "topk.cu CUB segmented-sort path not ported; Sort() falls back to an alternative.",
+      "refs": [
+        "projects/marian-dev/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "arrayfire-sparse-hipsparse",
+      "kind": "feature-port",
+      "project": "arrayfire",
+      "component": null,
+      "summary": "Sparse (hipSPARSE generic-API) port deferred/stubbed off.",
+      "refs": [
+        "projects/arrayfire/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "rmm-hw-decompress",
+      "kind": "feature-port",
+      "project": "rmm",
+      "component": null,
+      "summary": "Hardware decompression path (no HIP equivalent) not ported.",
+      "refs": [
+        "projects/rmm/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "oneflow-libcuxx-lru-cache",
+      "kind": "feature-port",
+      "project": "oneflow",
+      "component": null,
+      "summary": "lru_cache.cu (cuda::std::semaphore, no ROCm libcu++) not ported.",
+      "refs": [
+        "projects/oneflow/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
+    },
+    {
+      "id": "cvcuda-osd-ops",
+      "kind": "feature-port",
+      "project": "CV-CUDA",
+      "component": null,
+      "summary": "OpOSD, OpBndBox, OpBoxBlur (cuOSD 3rdparty) scoped out.",
+      "refs": [
+        "projects/CV-CUDA/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-07T18:21:59Z"
     }
   ]
 }
