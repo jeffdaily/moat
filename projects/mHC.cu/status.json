@@ -7,17 +7,17 @@
   "priority": 4.192,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-07T18:56:16Z",
+  "updated_at": "2026-06-07T20:28:20Z",
   "head_sha": "556cdc7ac98055d602a6a5c63388a75a7379374a",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "29a9acfda0e1b787cee18ea96b95ce548432cb5f",
+      "validated_sha": "556cdc7ac98055d602a6a5c63388a75a7379374a",
       "started_at": "2026-06-02T06:58:53Z",
-      "completed_at": "2026-06-02T08:00:00Z",
-      "updated_at": "2026-06-07T18:55:48Z",
+      "completed_at": "2026-06-07T20:28:20Z",
+      "updated_at": "2026-06-07T20:28:20Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": "2026-06-02T07:30:00Z",
         "last_session_at": "2026-06-02T08:00:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "556cdc7ac98055d602a6a5c63388a75a7379374a",
+        "method": "binary-equiv",
+        "detail": "HIP_VERSION < 71400000 on gfx90a: cg::plus guard evaluates true, active branch identical to validated_sha; all 8 test binaries device ISA + exports identical",
+        "at": "2026-06-07T20:28:20Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

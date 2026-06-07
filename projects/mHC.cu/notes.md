@@ -194,3 +194,16 @@ Result: 8 PASS, 0 FAIL.
 Numeric results match gfx90a/gfx1100 within tolerance (wave32, RDNA4).
 
 Verdict: COMPLETED. windows-gfx1201 validated_sha=556cdc7.
+
+## Revalidation 2026-06-07 (validator, linux-gfx90a, carry-forward to moat-port @ 556cdc7)
+
+Platform: MI250X (AMD Instinct), ROCm 7.2.1, GCD 1 (HIP_VISIBLE_DEVICES=1).
+GPU arch: gfx90a.
+
+Delta: commit 556cdc7 wraps the cg::plus shim in `#if !defined(HIP_VERSION) || (HIP_VERSION < 71400000)`. On this host HIP_VERSION < 71400000, so the guard evaluates TRUE -- the active preprocessor branch is identical to the validated_sha code.
+
+Binary-equivalence check: built both 29a9acf and 556cdc7 at -DCMAKE_HIP_ARCHITECTURES="gfx90a;gfx1100", then ran utils/codeobj_diff.py on each of the 8 test binaries (passed as explicit file pairs). All 8 returned verdict=identical -- device ISA and exported symbols unchanged.
+
+Result: carry-forward applied. No GPU re-run needed. linux-gfx90a validated_sha advanced to 556cdc7.
+
+Verdict: COMPLETED (carry-forward, binary-equiv). linux-gfx90a validated_sha=556cdc7.
