@@ -615,6 +615,56 @@ No regression on the prior-passing suites (STATIC_SET sub-word CAS shim, tiled p
 
 Result: PASS. linux-gfx1100 revalidate -> completed. validated_sha = 47ae24da1c2c5f21fcb88decd57697540af34a01. Fork untouched (no commit, no push).
 
+## Validation 2026-06-07 (revalidate, linux-gfx1100)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (RDNA3, wave32), ROCm 7.2.1. Fork jeffdaily/cuCollections @ moat-port HEAD 0fb53f8811f50f0e5e9808474e9a4c29c273455f.
+
+GPU: HIP_VISIBLE_DEVICES=0 (2x gfx1100 W7800 48GB).
+
+Delta since prior gfx1100 validated_sha (47ae24da): 1 file, `include/cuco/detail/open_addressing/open_addressing_ref_impl.cuh`, +7/-3 lines. Three `#if __CUDA_ARCH__ < 700` guards gating `insert_and_find` slot-size restrictions and `cas_dependent_write` changed to `#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700`. On HIP, `__CUDA_ARCH__` is undefined, so the bare comparison previously folded to `0 < 700` (true), incorrectly applying NVIDIA pre-Volta restrictions on AMD targets. The fix adds `defined(__CUDA_ARCH__)` guards so HIP takes the modern path. Classified `mixed`, `arch_independent=False`; codeobj_diff returned `indeterminate` (no shared libs -- test executable-only build). Full GPU revalidation required and performed.
+
+### Build (compile phase, new build dir)
+
+```
+cmake -S projects/cuCollections/src -B projects/cuCollections/build-hip-gfx1100-new -GNinja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm \
+  -DLIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/agent_space/libhipcxx/include \
+  -DCATCH2_SOURCE_DIR=/var/lib/jenkins/moat/agent_space/Catch2 \
+  -DBUILD_TESTS=ON
+
+utils/timeit.sh cuCollections compile -- cmake --build projects/cuCollections/build-hip-gfx1100-new \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j$(nproc)
+# All 174 TUs built successfully, warnings only, no errors.
+```
+
+Code-object evidence: `roc-obj-ls build-hip-gfx1100-new/tests/STATIC_SET_TEST` confirms exclusively `hipv4-amdgcn-amd-amdhsa--gfx1100` code objects.
+
+### Test run (real GPU, HIP_VISIBLE_DEVICES=0, --rng-seed 12345)
+
+```
+utils/timeit.sh cuCollections test -- <exe> --rng-seed 12345
+```
+
+| suite | cases | assertions | result |
+|-------|-------|------------|--------|
+| STATIC_SET_TEST | 97 | 887 | PASS |
+| STATIC_MAP_TEST | 126 | 818 | PASS |
+| STATIC_MULTISET_TEST | 70 | 582 | PASS |
+| STATIC_MULTIMAP_TEST | 72 | 228 | PASS |
+| DYNAMIC_MAP_TEST | 18 | 254 | PASS |
+| UTILITY_TEST | 38 | 1561 | PASS |
+| ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS |
+| **TOTAL** | **~423** | **~4334** | **all passing** |
+
+All counts match the gfx90a validated suite at 0fb53f8. No OOM skips (GPUs were idle). No regression on sub-word CAS shim, tiled probing CG, retrieve_all-over-pairs adaptor, or any prior-passing suite. All documented deferrals (>8B/16B CAS, bloom_filter nv/target, dynamic_bitset, hyperloglog) remain deferred; none are failures.
+
+Result: PASS. linux-gfx1100 revalidate -> completed, validated_sha = 0fb53f8811f50f0e5e9808474e9a4c29c273455f.
+
+---
+
 ## Head-drift reconciliation 2026-06-07 (validator, linux-gfx90a)
 
 **Drift commit:** `0fb53f8811f50f0e5e9808474e9a4c29c273455f` -- "[ROCm] cuco: gate pre-Volta slot guards on __CUDA_ARCH__ defined"

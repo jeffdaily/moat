@@ -48,3 +48,11 @@
 {"kind":"phase","ts":"2026-06-07T19:26:56Z","phase":"test","seconds":0.879,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/cuCollections/build-hip/tests/DYNAMIC_MAP_TEST --rng-seed 12345"}
 {"kind":"phase","ts":"2026-06-07T19:26:56Z","phase":"test","seconds":0.206,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/cuCollections/build-hip/tests/UTILITY_TEST --rng-seed 12345"}
 {"kind":"phase","ts":"2026-06-07T19:26:56Z","phase":"test","seconds":0.195,"exit":0,"cmd":"env HIP_VISIBLE_DEVICES=1 /var/lib/jenkins/moat/projects/cuCollections/build-hip/tests/ROARING_BITMAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T19:59:24Z","phase":"compile","seconds":62.161,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j64"}
+{"kind":"phase","ts":"2026-06-07T20:00:01Z","phase":"test","seconds":12.668,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/STATIC_SET_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:06Z","phase":"test","seconds":0.841,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/STATIC_MAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:17Z","phase":"test","seconds":6.040,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/STATIC_MULTISET_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:31Z","phase":"test","seconds":0.368,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/STATIC_MULTIMAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:37Z","phase":"test","seconds":0.703,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/DYNAMIC_MAP_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:42Z","phase":"test","seconds":0.186,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/UTILITY_TEST --rng-seed 12345"}
+{"kind":"phase","ts":"2026-06-07T20:00:47Z","phase":"test","seconds":0.169,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/cuCollections/build-hip-gfx1100-new/tests/ROARING_BITMAP_TEST --rng-seed 12345"}
