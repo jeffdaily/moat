@@ -7,17 +7,17 @@
   "priority": 4.281,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T05:34:21Z",
+  "updated_at": "2026-06-07T16:32:48Z",
   "head_sha": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ec2fae28be36dd98fef94fa13fa98f75b2a399ab",
+      "validated_sha": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
       "started_at": "2026-06-02T07:02:48Z",
-      "completed_at": "2026-06-02T07:22:00Z",
-      "updated_at": "2026-06-07T05:33:52Z",
+      "completed_at": "2026-06-07T16:32:48Z",
+      "updated_at": "2026-06-07T16:32:48Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": "2026-06-02T07:20:00Z",
         "last_session_at": "2026-06-02T07:22:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
+        "method": "binary-equiv",
+        "detail": "long->int64_t rename compiles to identical gfx90a device ISA (Linux sizeof(long)==8)",
+        "at": "2026-06-07T16:32:48Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

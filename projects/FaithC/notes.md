@@ -120,6 +120,27 @@ Pass breakdown:
 
 Verdict: completed. validated_sha=ec2fae28.
 
+## Validation 2026-06-07 (linux-gfx90a carry-forward)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+Fork: jeffdaily/FaithC @ moat-port c72480ea
+Method: binary-equivalence (codeobj_diff.py)
+
+Built both ec2fae28 and c72480ea at PYTORCH_ROCM_ARCH=gfx90a; ran
+`python3 utils/codeobj_diff.py faithc-cmp-old faithc-cmp-new`:
+
+```
+verdict=identical
+  _C.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (144 exports))
+```
+
+The delta commit changes `long` -> `int64_t` in kernel signatures and host
+`data_ptr<>()` calls (a Windows LLP64 fix). On 64-bit Linux `sizeof(long)==8`,
+so this rename is semantically transparent and compiles to identical gfx90a
+device ISA. No GPU re-run needed.
+
+Verdict: carry-forward completed. validated_sha=c72480ea (linux-gfx90a).
+
 ## Validation 2026-06-07 (windows-gfx1201)
 
 Platform: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), Windows 11 Pro for Workstations
