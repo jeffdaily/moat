@@ -74,10 +74,26 @@ ANSWER (linux-gfx1100, gfx1100 RDNA3 wave32, ROCm 7.2.1, W7800):
   compile time (100 MHz assumption for gfx1100/gfx1101 per RDNA3 ISA). This is
   a chrono/TSC issue, not a semaphore forward-progress issue.
 
-Conclusion for PR caveat: the forward-progress hazard is CDNA/wave64-specific.
-RDNA3 (gfx1100) wave32 passes the block-scope producer/consumer test. The timed
-test fails on gfx1100 due to TSC inaccuracy (a separate known issue, independent
-of the semaphore change itself).
+Conclusion for PR caveat: SUPERSEDED -- see CORRECTION 2026-06-07 below. Do NOT
+claim "the hazard is CDNA/wave64-specific" in the PR.
+
+CORRECTION 2026-06-07 (re-measured on gfx90a, MI250X, ROCm 7.2.x): the committed
+validation/sem_block_probe.cpp does NOT hang on gfx90a. Re-running the exact
+committed file AND a role-reversed twin (higher lane spins acquire, lower lane
+releases) both PASS on wave64 (exit 0, fast). So the earlier "HANGS on wave64"
+baseline was the probe's `// EXPECTED to hang` comment recorded as a result, not
+a measurement; the gfx1100 "PASS" is therefore NOT evidence of a wave32-specific
+capability -- the probe passes on both arches because this 2-lane pattern, as the
+compiler lowers it (plus the s_sleep backoff), lets the releasing lane run on
+both. AMD provides no intra-wavefront forward-progress GUARANTEE on any current
+arch (no per-lane PC); a passing probe means "did not trigger the deadlock,"
+never "safe." PR caveat MUST stay conservative: same-wavefront blocking
+acquire()/release() is unsupported on ALL AMD arches (may deadlock; use
+cross-wavefront placement or the non-blocking/timed APIs). The one solid, separable
+gfx1100 finding stands: conf_timed fails because gfx1100's TSC clockrate is not
+defined on amd-develop (only gfx90a/gfx908 @ 25 MHz are) -- port main's gfx1100
+100 MHz TSC define. The block-scope probe is too weak to establish a per-arch
+hazard claim either way and should not be the basis for the caveat.
 
 This result directly shapes the upstream PR's caveat. Record it precisely
 (per arch) in this file when each follower reports.
