@@ -21,3 +21,4 @@
 {"kind":"phase","ts":"2026-06-07T20:13:49Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build build -j64"}
 {"kind":"phase","ts":"2026-06-07T20:13:57Z","phase":"compile","seconds":3.712,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build -j64"}
 {"kind":"phase","ts":"2026-06-07T20:14:06Z","phase":"test","seconds":0.398,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test && HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"}
+{"kind": "tokens", "ts": "2026-06-07T20:15:08Z", "tokens": 33942, "source": "validator"}
