@@ -386,3 +386,55 @@ Total: 28/34 PASS (5 logger TearDown-only failures + 1 CPU race, all pre-existin
 GPU trans gate: 3/3 PASS.
 
 Result: windows-gfx1101 COMPLETED at 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
+
+## Validation 2026-06-06 (windows-gfx1201, RX 9070 XT / gfx1201 RDNA4)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (sole GPU; gfx1101 absent), ROCm 7.14.0a20260604 via TheRock.
+Fork: jeffdaily/unified-cache-management moat-port @ 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
+
+### Build commands
+
+ROCm root: `B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel`
+
+```
+cmake -S src -B build_win_gfx1201 -G Ninja \
+  -DRUNTIME_ENVIRONMENT=rocm -DBUILD_UCM_STORE=OFF -DBUILD_UNIT_TESTS=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_C_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_CXX_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_COMPILER=<rocm_root>/lib/llvm/bin/clang-cl.exe \
+  -DCMAKE_HIP_STANDARD=17 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH=<rocm_root>
+cmake --build build_win_gfx1201 -j64
+```
+
+Deploy TheRock's amdhip64_7.dll + amd_comgr.dll + rocm_kpack.dll + hiprtc0714.dll +
+hiprtc-builtins0714.dll + metrics.dll beside the test exe before running
+(System32 amdhip64_7.dll is a broken Adrenalin version; DLL must be beside exe to win
+Windows loader search order over System32).
+
+gfx1201 device code confirmed (compile_commands.json):
+  --offload-arch=gfx1201 for cuda_sm_kernel.cu (trans/rocm kernel)
+
+### Test results (ctest -j1, 34 tests discovered, HIP_VISIBLE_DEVICES=0)
+
+GPU copy-kernel correctness gates (all PASS):
+- UCTransUnitTest.CopyDataWithCE: PASS (0.24 sec)
+- UCTransUnitTest.CopyDataWithSM: PASS (0.51 sec)
+- UCTransUnitTest.CopyDataBatchWithSM: PASS (0.50 sec)
+
+Non-GPU tests: 26/26 PASS (hashset, spsc_ring_queue, topn_heap, metrics including ConcurrentUpdateAndCollect).
+
+5 logger tests (UCLoggerPerfTest.*, UCLoggerTest.*) report "Failed" in ctest due to
+TearDown cleanup failing with "file in use" -- spdlog's async thread holds the log
+file open on Windows at process exit. The gtest body itself shows [OK] for all 5.
+Pre-existing Windows spdlog behavior, not a regression.
+
+UCMetricsUT.ConcurrentUpdateAndCollect: PASS on this run (non-deterministic CPU race --
+same non-deterministic behavior as gfx1151; passed on both gfx1151 and gfx1201, failed
+on gfx1101 -- all pre-existing, no GPU code path involved).
+
+Total: 29/34 PASS (5 logger TearDown-only failures, pre-existing Windows file-locking).
+GPU trans gate: 3/3 PASS.
+
+Result: windows-gfx1201 COMPLETED at 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
