@@ -90,10 +90,17 @@ arch (no per-lane PC); a passing probe means "did not trigger the deadlock,"
 never "safe." PR caveat MUST stay conservative: same-wavefront blocking
 acquire()/release() is unsupported on ALL AMD arches (may deadlock; use
 cross-wavefront placement or the non-blocking/timed APIs). The one solid, separable
-gfx1100 finding stands: conf_timed fails because gfx1100's TSC clockrate is not
-defined on amd-develop (only gfx90a/gfx908 @ 25 MHz are) -- port main's gfx1100
-100 MHz TSC define. The block-scope probe is too weak to establish a per-arch
-hazard claim either way and should not be the basis for the caveat.
+gfx1100 finding: conf_timed FAILS, but NOT because of a missing clockrate.
+UPDATE 2026-06-07: the per-arch _LIBCUDACXX_HIP_TSC_CLOCKRATE ladder is ALREADY
+present in the base (fa4ccc6) -- gfx1100/gfx1101 (__GFX11__) and gfx1201
+(__GFX12__) resolve to 100 MHz (gfx1201 assumed, unconfirmed on hardware); see
+the TSC section below. So there is NO TSC code change to make for the PR.
+conf_timed's root cause is unpinned: either a tight TSC-accuracy assertion (the
+100 MHz value is an approximation of the real RDNA RT clock) or the same
+codegen-ordering forward-progress hazard surfacing in the timed test's concurrent
+agents -- needs a gfx1100 root-cause run to decide. The block-scope probe is too
+weak to establish a per-arch hazard claim either way and should not be the basis
+for the caveat.
 
 This result directly shapes the upstream PR's caveat. Record it precisely
 (per arch) in this file when each follower reports.
