@@ -614,3 +614,42 @@ Wave32 verdict: CORRECT. The hip_device_select stream-compaction produces the co
 No regression on the prior-passing suites (STATIC_SET sub-word CAS shim, tiled probing CG, MULTISET/MULTIMAP, UTILITY, ROARING). Clean exit on all runs.
 
 Result: PASS. linux-gfx1100 revalidate -> completed. validated_sha = 47ae24da1c2c5f21fcb88decd57697540af34a01. Fork untouched (no commit, no push).
+
+## Head-drift reconciliation 2026-06-07 (validator, linux-gfx90a)
+
+**Drift commit:** `0fb53f8811f50f0e5e9808474e9a4c29c273455f` -- "[ROCm] cuco: gate pre-Volta slot guards on __CUDA_ARCH__ defined"
+
+Fork moat-port HEAD had advanced one functional commit beyond the recorded validated_sha (`47ae24da`) without being validated. The deferred-work item `cucollections-head-drift` (data/deferred.json) flagged this.
+
+**Delta:** 1 file, `include/cuco/detail/open_addressing/open_addressing_ref_impl.cuh`, +7/-3 lines. Three `#if __CUDA_ARCH__ < 700` guards gating `insert_and_find` slot-size restrictions and `cas_dependent_write` were changed to `#if defined(__CUDA_ARCH__) && __CUDA_ARCH__ < 700`. On HIP, `__CUDA_ARCH__` is undefined, so the bare comparison previously folded to `0 < 700` (true), incorrectly applying NVIDIA pre-Volta restrictions on AMD targets (manifested as a static_assert failure when cuGraph stored a 12-byte slot). The fix adds `defined(__CUDA_ARCH__)` guards so HIP (and NVIDIA Volta+) take the modern path.
+
+**Classification:** `mixed`, `arch_independent=False` (moatlib.py classify verdict). Cannot carry forward -- requires real-GPU revalidation.
+
+**Build (gfx90a):** Rebuilt all 7 test targets from the existing `projects/cuCollections/build-hip` build dir (37 TUs recompiled for the one changed source file via ninja incremental build). No errors, warnings only.
+
+```
+utils/timeit.sh cuCollections compile -- cmake --build projects/cuCollections/build-hip \
+  --target STATIC_SET_TEST STATIC_MAP_TEST STATIC_MULTISET_TEST \
+           STATIC_MULTIMAP_TEST DYNAMIC_MAP_TEST UTILITY_TEST ROARING_BITMAP_TEST -j$(nproc)
+```
+
+**Test run (real GPU, HIP_VISIBLE_DEVICES=1, GCD 1 idle, MI250X/gfx90a, ROCm 7.2.1):**
+
+```
+utils/timeit.sh cuCollections test -- env HIP_VISIBLE_DEVICES=1 <exe> --rng-seed 12345
+```
+
+| suite | cases | assertions | result |
+|-------|-------|------------|--------|
+| STATIC_SET_TEST | 97 | 887 | PASS |
+| STATIC_MAP_TEST | 126 | 818 | PASS |
+| STATIC_MULTISET_TEST | 70 | 582 | PASS |
+| STATIC_MULTIMAP_TEST | 72 | 228 | PASS |
+| DYNAMIC_MAP_TEST | 18 | 254 | PASS |
+| UTILITY_TEST | 38 | 1561 | PASS |
+| ROARING_BITMAP_TEST | 2 (1 pass + 1 skip) | 4 | PASS |
+| **TOTAL** | **~423** | **~4334** | **all passing** |
+
+No regression on the prior validated suite. All documented deferrals unchanged. No new failures.
+
+Result: PASS. linux-gfx90a revalidate -> completed, validated_sha = 0fb53f8811f50f0e5e9808474e9a4c29c273455f. linux-gfx1100 stays revalidate (must revalidate 0fb53f8 on the gfx1100 host; delta is a preprocessor-only change, arch-agnostic, but not binary-equivalent so carry-forward is not appropriate without building both SHAs on gfx1100). Deferred item cucollections-head-drift closed.
