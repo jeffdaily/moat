@@ -13,3 +13,8 @@
 {"kind":"phase","ts":"2026-06-03T06:51:17Z","phase":"compile","seconds":12.895,"exit":0,"cmd":"pip install /var/lib/jenkins/moat/projects/gpuRIR/src --no-build-isolation --force-reinstall --no-deps"}
 {"kind":"phase","ts":"2026-06-03T06:51:25Z","phase":"test","seconds":2.794,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/gpuRIR_validate.py"}
 {"kind": "tokens", "ts": "2026-06-03T14:07:27Z", "tokens": 40214, "source": "session-2026-06-02/03 backfill: audit"}
+{"kind":"phase","ts":"2026-06-07T18:25:00Z","phase":"compile","seconds":7.618,"exit":0,"cmd":"bash agent_space/gpurir_build_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:25:58Z","phase":"test","seconds":0.177,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T18:27:32Z","phase":"test","seconds":3.897,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T18:27:57Z","phase":"test","seconds":3.150,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T18:28:33Z","phase":"test","seconds":2.426,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}

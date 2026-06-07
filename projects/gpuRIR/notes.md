@@ -217,3 +217,50 @@ The two "Strategy A / colmap model" occurrences in committed source (CMakeLists.
 
 ### Conclusion
 Real tests: the agent_space/gpuRIR_validate.py harness is the maximal test for this project (upstream has no test suite); it checks physics-grounded correctness (direct-path timing, LUT accuracy, FFT conv). It was run on real gfx90a GPU in this audit and passes. Status: `completed` retained on all platforms, no state change required.
+
+## Validation 2026-06-07 (windows-gfx1201, ROCm 7.14.0a20260604)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (V710 offline this session).
+Fork branch: moat-port. Validated SHA: 6c912137c40fd1b7509722f8188bbc3f6fd0f702.
+No source change needed -- validate-first follower, CMakeLists.txt reads `${CMAKE_HIP_ARCHITECTURES}`.
+
+### Build
+
+Direct CMake/Ninja build (all-clang, ROCM_DEVEL = `_rocm_sdk_devel` from TheRock PyTorch venv):
+
+```
+VENV="B:/develop/TheRock/external-builds/pytorch/.venv"
+ROCM_DEVEL="$VENV/Lib/site-packages/_rocm_sdk_devel"
+cmake -S projects/gpuRIR/src -B projects/gpuRIR/build-win-gfx1201 -G Ninja \
+    -DCMAKE_C_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang++.exe" \
+    -DCMAKE_CXX_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang++.exe" \
+    -DCMAKE_HIP_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang++.exe" \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+    -DCMAKE_PREFIX_PATH="$ROCM_DEVEL" \
+    -DPYTHON_EXECUTABLE="$VENV/Scripts/python.exe" \
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DCMAKE_HIP_STANDARD=17 -DCMAKE_CXX_STANDARD=17 \
+    -DCMAKE_CXX_FLAGS="-DNOMINMAX -DWIN32_LEAN_AND_MEAN" -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/gpuRIR/build-win-gfx1201 --target gpuRIR_bind -j32
+```
+
+Result: build succeeded. `gpuRIR_bind.cp312-win_amd64.pyd` = 366 KB. Code object verified: `hipv4-amdgcn-amd-amdhsa--gfx1201` and `PyInit_gpuRIR_bind` confirmed in binary. IPO/LTO skipped (USE_HIP), no slim-bitcode regression.
+
+### Validation run
+
+```
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh gpuRIR test -- \
+  python agent_space/gpurir_validate_gfx1201.py
+```
+
+Shoebox room 4x5x3 m, src (1,1,1.5) -> rcv (3,4,1.5), c=343.0, Fs=16000.
+Distance = 3.6056 m, expected direct-path sample = round(3.6056/343.0*16000) = 168.
+
+- exact-sinc: first significant arrival at sample **168** (expected 168). PASS.
+- exact-sinc: pre-direct silence verified. PASS.
+- LUT path: first significant arrival at sample **168** (expected 168). PASS.
+- LUT vs sinc near direct path (samples 148-368): max diff=0.000080, peak=0.048074, **0.166% of peak** (<2% threshold). PASS.
+- LUT vs sinc full-RIR: 18.4% -- expected; divergence accumulates in the dense reverberant tail over many image sources (config-dependent, same behavior as gfx1151). Not a LUT-read fault.
+- simulateTrajectory (hipFFT convolution, 5-point trajectory): output shape (6398,1), finite, non-zero. PASS.
+- examples/example.py (2 src x 3 rcv, cardioid mic, MPLBACKEND=Agg): exit 0. PASS.
+
+Results match gfx90a/gfx1100/gfx1151 exactly (same sample 168, 0.166% near-direct agreement). No warp intrinsics; RDNA4 wave32 numerically equivalent.
