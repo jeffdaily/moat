@@ -260,3 +260,41 @@ Potential workarounds considered and rejected:
 3. **Use BLOCK_V=256 always**: May OOM on gfx1100 (lower VRAM than datacenter GPUs)
 
 The correct fix is upstream in Triton-AMD. Until then, gfx1100 is blocked.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+### Platform: windows-gfx1201
+
+**Hardware**: AMD Radeon RX 9070 XT (gfx1201 / RDNA4), HIP_VISIBLE_DEVICES=0
+**ROCm**: 7.14.0a20260604 (TheRock)
+**PyTorch**: 2.9.1+rocm7.14.0a20260604
+**Triton**: triton-windows 3.7.0.post26
+
+### Build
+
+```cmd
+pip install -e projects/ffpa-attn/src --no-build-isolation --no-deps
+```
+
+Pure Python/Triton install, no CUDA extension compiled.
+
+### Test Results
+
+```cmd
+set HIP_VISIBLE_DEVICES=0
+python -m pytest projects/ffpa-attn/src/tests/ --ignore=projects/ffpa-attn/src/tests/test_perf_tflops.py -q
+```
+
+**Results**: 683 passed, 128 skipped, 6 xfailed, 1 failed (upstream bug)
+
+- **683 PASSED**: All forward/backward GPU tests pass on gfx1201 (Triton backend)
+- **128 SKIPPED**: CUDA/CuTeDSL backend tests (NVIDIA-specific PTX, correctly skipped on AMD)
+- **6 XFAILED**: Known Triton-AMD precision issues (same set as gfx1101):
+  - fp16 GQA backward dk at large N/high GQA ratio (3 tests)
+  - bf16 causal backward dv at D=320 large N (2 tests)
+  - bf16 GQA backward dv at (32, 8, 16384, 512) (1 test)
+- **1 FAILED**: `test_autotune_wrappers_are_dtype_scoped` -- pre-existing upstream test code bug (confirmed same at upstream 67e3fff)
+
+### Summary
+
+GPU validation PASSED on gfx1201. Results are identical to gfx1101: all forward/backward Triton kernels including large headdim (D=320, 512, 640) produce correct results on RDNA4. The gfx1100 codegen bug (headdim 288-512 failures) does NOT affect gfx1201.
