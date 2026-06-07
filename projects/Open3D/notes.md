@@ -622,3 +622,35 @@ the gate run so getrf-using tests (Det, Inverse/Solve/Det-backed, ICP) are
 isolated from the immediately-following test makes the collateral failures
 (Cross, GetInformationMatrix) disappear; the only residual is rocSOLVER-on-kpack
 itself (ICPDoppler), which is the #3531 bug surfacing directly.
+
+## Validation 2026-06-07 (linux-gfx90a revalidate, binary-equiv carry-forward)
+
+Head sha advanced from 2670bbb17e to ee479e1e03 (commit "[ROCm] Build the HIP port
+under the all-clang Windows toolchain"). All five changed files are Windows-specific
+(WIN32 guards replacing MSVC guards in libpng.cmake/zlib.cmake, clang-only warning
+suppression in Open3DShowAndAbortOnWarning.cmake, [[maybe_unused]] on _WIN32-gated
+code in CPUInfo.cpp, USE_SYSTEM_TBB guard fix in cpp/tests/CMakeLists.txt). No Linux
+HIP/GPU source touched.
+
+Carry-forward method: binary-equiv.
+
+Commands run:
+```
+# Save baseline binary (build at 2670bbb17e)
+cp projects/Open3D/src/build/bin/tests agent_space/open3d_old_build/tests
+
+# Update source to ee479e1e03 (fast-forward merge)
+cd projects/Open3D/src && git merge --ff-only fork/moat-port
+
+# Incremental build (no GPU files recompiled -- all changes are Windows-only)
+utils/timeit.sh Open3D compile -- cmake --build projects/Open3D/src/build -j16 --target tests
+
+# Binary-equivalence check
+python3 utils/codeobj_diff.py agent_space/open3d_old_build/tests \
+  projects/Open3D/src/build/bin/tests
+# verdict=identical
+#   tests vs tests: identical (exported symbols + device ISA identical (29 exports))
+```
+
+Result: device ISA and exported symbols identical on gfx90a. Carried forward to
+ee479e1e03 without GPU re-run.
