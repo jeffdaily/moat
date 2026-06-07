@@ -125,6 +125,7 @@ build/bin/teststdgpu
 
 ## Validation 2026-06-05 (linux-gfx1100)
 
+
 **Platform:** AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.x, wave32
 
 **Build command:**
@@ -167,3 +168,60 @@ HIP_VISIBLE_DEVICES=0 build/bin/teststdgpu
 - `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS (5ms)
 
 **Verdict:** VALIDATED at 718d206
+
+## Validation 2026-06-07 (windows-gfx1151)
+
+**Platform:** AMD Radeon 8060S (gfx1151, RDNA3.5 APU, wave32, 20 CUs), ROCm 7.2 TheRock pip SDK, Windows 11
+
+**Build command (repeatable script: `D:/Develop/moat/agent_space/stdgpu_win_build.sh`):**
+```bash
+ROCM_ROOT="D:/Develop/moat/agent_space/venv-gsplat/Lib/site-packages/_rocm_sdk_devel"
+cmake -B build-gfx1151 -S . \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DSTDGPU_BUILD_TESTS=ON \
+  -DSTDGPU_BUILD_BENCHMARKS=OFF \
+  -DSTDGPU_BUILD_EXAMPLES=OFF \
+  -DCMAKE_C_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM_ROOT/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM_ROOT" \
+  -DCMAKE_TLS_VERIFY=OFF
+
+cmake --build build-gfx1151 --config Release --parallel 6
+bash deploy_therock_runtime.sh build-gfx1151/bin
+export PATH="build-gfx1151/bin:$ROCM_ROOT/bin:$ROCM_ROOT/../_rocm_sdk_core/bin:$PATH"
+```
+
+**Build result:** SUCCESS (30/30 targets; clang++.exe as HIP compiler, clang.exe for CXX)
+
+**Test results: VALIDATION FAILED -- 685/702 pass, 17 hang**
+
+All critical tests from the wave_lock_serialize livelock fix PASS on gfx1151:
+- `stdgpu_unordered_map/set.insert_range_unique_parallel` (x4 variants each) - PASS (~10-116ms)
+- `stdgpu_unordered_map/set.erase_range_unique_parallel` (x4 variants each) - PASS
+- `stdgpu_deque.simultaneous_push_front_and_pop_back` - PASS (44ms)
+- `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS (76ms)
+- Zero memory leaks (93999/93999 device, 90476/90476 host)
+
+**17 tests hang indefinitely** (killed after 30s timeout each; gfx90a + gfx1100 both pass all 702):
+
+Deque concurrent same-end operations (3):
+- `stdgpu_deque.simultaneous_push_back_and_pop_back`
+- `stdgpu_deque.simultaneous_push_front_and_pop_front`
+- `stdgpu_deque.simultaneous_push_back_and_pop_front`
+
+Unordered_map extreme-contention inserts into full/excess-empty table (7):
+- `insert_while_full`, `insert_multiple_while_full`, `insert_while_excess_empty`
+- `insert_parallel_while_one_free`, `insert_parallel_while_excess_empty`
+- `emplace_parallel_while_one_free`, `emplace_parallel_while_excess_empty`
+
+Unordered_set same 7 tests.
+
+**Root cause:** gfx1151 RDNA3.5 APU has 20 CUs (vs 60 on W7800 gfx1100). The `wave_lock_serialize` fix prevents within-wavefront deadlock and works correctly on gfx1151 (verified: `__ballot(1)` returns correct 0xffffffff mask, all 32 lanes serialize in order). The 17 hanging tests all involve N=100000 threads competing for 1-2 free slots (~3125 wavefronts, only ~160 run simultaneously on 20 CUs). Under this extreme cross-wavefront contention, the hardware scheduler does not preempt fast enough to prevent cross-wavefront forward-progress starvation. gfx1100 (60 CUs, 3x more simultaneous wavefronts) avoids the starvation.
+
+The tests that pass on gfx1151 (`insert_range_unique_parallel`, etc.) have each thread operating on a unique slot -- no cross-wavefront contention.
+
+**Verdict:** VALIDATION FAILED at 718d206 -- delta-port needed to fix 17 hanging tests on gfx1151 RDNA3.5 APU
