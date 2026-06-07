@@ -716,3 +716,61 @@ flipped both Linux platforms to revalidate. linux-gfx90a set back to completed
 stays revalidate -- its W7800 host confirms the test-only delta (codeobj_diff on the
 library .so should be identical at 13e585d vs 235c5905; only the test exe gains
 sources) and carries forward. Windows platforms unchanged (blocked).
+
+## Revalidation 2026-06-07 (linux-gfx1100, AMD Radeon Pro W7800, RDNA3 gfx1100)
+
+Arch: gfx1100 (AMD Radeon Pro W7800 48GB, RDNA3, wave32). HIP_VISIBLE_DEVICES=0.
+Fork validated at: 235c590583896c340aa32154f3fb12cc446418e6 (moat-port).
+
+### HEAD movement: 13e585d -> 235c5905
+
+Delta: one file, cmake/hip_tests/CMakeLists.txt (+58 lines), adding 56 compute test
+sources to the lfs_compute_tests exe. No library source changes, no device code changes.
+Source classifier verdict: mixed (conservative; .txt not in inert allowlist).
+Full GPU revalidation performed.
+
+### Build
+
+Incremental build on existing build-hip-gfx1100 (configured for gfx1100, at 13e585d).
+Fork updated to 235c5905 (only cmake/hip_tests/CMakeLists.txt changed); cmake re-ran
+and relinked the test exe.
+
+```
+cmake --build projects/LichtFeld-Studio/src/build-hip-gfx1100 --target lfs_compute_tests -j16
+```
+
+Result: 168/169 targets cached, 1 relinked. ZERO errors.
+
+### GPU test results
+
+```
+HIP_VISIBLE_DEVICES=0 ./projects/LichtFeld-Studio/src/build-hip-gfx1100/cmake/hip_tests/lfs_compute_tests
+```
+
+Run 1: 2048 tests from 119 suites ran (11238 ms). 2044 passed, 4 failed.
+Run 2: 2048 tests from 119 suites ran (11031 ms). 2044 passed, 4 failed.
+BIT-IDENTICAL across both runs (determinism confirmed).
+
+gfx1100 result: 2044/4 (vs gfx90a 2043/5). One extra pass vs gfx90a is expected:
+ImageKernelsTest.FusedCannyUInt8MatchesNormalizedFloatInput passes on gfx1100 (wave32
+FP rounding lands on the passing side of the Canny NMS hysteresis discontinuity).
+
+### Failures (4 total, all documented non-bugs)
+
+1. MCMCTest.RemoveGaussiansSoftDeletesRows -- DOCUMENTED (pre-existing, all prior runs).
+   Raw uint8 quant exp_avg read as float; zero-point=128 means "0.0" is 0x80808080 (NaN).
+2. MCMCRelocateOptimizerStateTest.ResetBothSourceAndDestinationRows -- DOCUMENTED
+   (pre-existing). Same class: raw uint8 quant bytes read as float give NaN.
+3. TensorLazyIrTest.OnModeDefersUntilBoundaryAndMaterializes -- DOCUMENTED (gfx90a
+   test-gate expansion 2026-06-07). Stale test expectation; arch-independent, fails
+   identically on CUDA.
+4. TensorStressTest.DeepOperationChain -- DOCUMENTED (gfx90a test-gate expansion
+   2026-06-07). Global free-memory measurement artifact (hipMemGetInfo perturbed by
+   sibling GPU processes). Passes in isolation.
+
+All 4 failures are test/impl design mismatches or measurement artifacts, not port
+regressions. The wave32-critical subset (tensor reductions, warp/block reductions,
+gsplat + fastgs rasterizers, cg::reduce shim, SSIM, MCMC, sort, nn_ops) ALL pass.
+
+### Verdict: PASS (linux-gfx1100 revalidation)
+validated_sha = 235c590583896c340aa32154f3fb12cc446418e6
