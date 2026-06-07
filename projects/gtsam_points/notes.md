@@ -352,3 +352,67 @@ Code changes at 3d706db vs 09346fd (diff analysis):
 The libgtsam_points_cuda.so device code and exported symbols are binary-identical on gfx90a. Host-side changes are correctness fixes that do not regress GPU or non-GPU tests. Full 87/87 test pass confirms the new commit is validated on gfx90a.
 
 State: linux-gfx90a -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).
+
+## Validation 2026-06-06 (windows-gfx1201, Windows 11)
+
+Device: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for Workstations 10.0.26200, ROCm 7.14, HIP_VISIBLE_DEVICES=0 (gfx1101 absent; gfx1201 enumerated at index 0). One-GPU-per-process rule applied.
+
+GTSAM dep: pre-built static borglab/gtsam @ 4.3a0 in B:/develop/moat/agent_space/gtsam_install_static. Same dep as windows-gfx1101.
+
+Build: jeffdaily/gtsam_points moat-port branch at 3d706db0a455461494d06425fe3010531458eed9, configured into projects/gtsam_points/src/build_hip_gfx1201. Fresh configure (no incremental reuse from gfx1101 build -- different arch).
+
+Two environment issues resolved vs gfx1101:
+- Eigen ABI: vcpkg Eigen (3.5.0-dev) is incompatible with GTSAM (built with Eigen 3.4). Added `-DEigen3_DIR=B:/develop/agent_space/eigen_install/share/eigen3/cmake` to pin the correct Eigen 3.4.0 used for GTSAM.
+- Boost link config: vcpkg config-mode Boost defaults RelWithDebInfo to Debug libs when `CMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO` is unset, causing a Debug/Release CRT heap mismatch crash in TestPointCloudCPU. Added `-DCMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO=Release` to force release Boost libs.
+- TLS: FetchContent (googletest) download needed `-DCMAKE_TLS_VERIFY=OFF` (Windows certificate revocation server offline for this environment).
+
+Configure command:
+```powershell
+$ROCM_DEVEL = "B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+cmake -S B:/develop/moat/projects/gtsam_points/src `
+  -B B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1201 `
+  -G Ninja `
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo `
+  -DCMAKE_C_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang.exe" `
+  -DCMAKE_CXX_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang++.exe" `
+  -DCMAKE_HIP_COMPILER="$ROCM_DEVEL/lib/llvm/bin/clang++.exe" `
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 `
+  -DBUILD_WITH_HIP=ON `
+  "-DCMAKE_PREFIX_PATH=$ROCM_DEVEL;B:/develop/moat/agent_space/gtsam_install_static;B:/develop/moat/projects/alien/src/external/vcpkg/installed/x64-windows" `
+  -DBUILD_WITH_OPENMP=ON -DBUILD_WITH_TBB=OFF `
+  -DBUILD_TESTS=ON -DBUILD_DEMO=OFF -DBUILD_EXAMPLE=OFF -DBUILD_TOOLS=OFF `
+  -DCMAKE_TLS_VERIFY=OFF `
+  -DEigen3_DIR=B:/develop/agent_space/eigen_install/share/eigen3/cmake `
+  -DCMAKE_MAP_IMPORTED_CONFIG_RELWITHDEBINFO=Release
+```
+
+Commands:
+```powershell
+# Build
+$env:HIP_VISIBLE_DEVICES="0"
+bash utils/timeit.sh gtsam_points compile -- ninja -C B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1201 -j64
+
+# Copy required runtime DLLs into build dir (amdhip64, hiprtc, amd_comgr, rocm_kpack, Boost, OpenMP)
+# from gfx1101 build dir and vcpkg debug/bin (both Release and Debug Boost DLLs needed)
+
+# Test run 1
+$env:HIP_VISIBLE_DEVICES="0"
+$env:PATH="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/bin;$env:PATH"
+bash utils/timeit.sh gtsam_points test -- ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1201 --output-on-failure -j1
+
+# Test run 2 (determinism)
+ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1201 --output-on-failure -j1
+```
+
+Results (both runs): 87/87 passed, 0 failed. Total test time ~23 s.
+
+GPU gate results:
+- test_matching_cost_factors VGICP_CUDA_NONE, VGICP_CUDA_OMP, VGICP_CUDA_TBB: all PASSED. IntegratedVGICPFactorGPU converged across FORWARD/BACKWARD/UNARY/MULTI_FRAME (rot < 0.015 rad, trans < 0.15 m all held).
+- test_voxelmap VoxelMapGPU, VoxelMapGPU_Intensity (atomicMax on hipMallocAsync fine-grained device memory -- correct on gfx1201), VoxelMapGPU_IO: all PASSED.
+- test_types TestPointCloudCPU, TestPointCloudGPU: both PASSED.
+
+Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_compact_mahalanobis, test_continuous_time, test_continuous_trajectory, test_global_registration, test_headers, test_kdtree, test_loam_factors, test_voxel_raycaster -- all PASSED, no regression vs gfx1101.
+
+Determinism: both runs 87/87, timing within 2%.
+
+State: windows-gfx1201 -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).
