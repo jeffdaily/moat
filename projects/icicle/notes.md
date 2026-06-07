@@ -468,3 +468,34 @@ This is not a delta to our HIP-PQC backend (backend/hip_pqc/). The HIP device ke
 ### Verdict
 
 BLOCKED. No GPU run possible. Reason: `no-windows-support-in-icicle-host-framework`. The `icicle_device` runtime.cpp explicitly errors at compile time on non-Linux/macOS with `#error "Unsupported operating system"` and uses POSIX-only dlopen/dirent APIs throughout the backend loader. This is an upstream icicle limitation, not a HIP-PQC backend issue. The HIP-PQC GPU kernels and wave-agnostic shims are correct (validated on gfx90a and gfx1100). Escalate to upstream icicle for Windows support.
+
+## Validation 2026-06-06 (windows-gfx1201) -- BLOCKED: same Windows framework blockers as gfx1151
+
+GPU: RX 9070 XT (gfx1201, RDNA4, wave32). Windows 11. TheRock ROCm. Fork moat-port @ d8e04fd.
+
+### Attempt
+
+Shallow-cloned the fork at the validated head (d8e04fd) to probe Windows compatibility:
+
+```
+git clone --depth 1 --branch moat-port https://github.com/jeffdaily/icicle agent_space/icicle_win_probe
+cd agent_space/icicle_win_probe
+git checkout FETCH_HEAD
+# HEAD: d8e04fd116ff60770d1d04bc731562f2659af7a9 -- confirmed same SHA
+```
+
+### Blockers verified at d8e04fd
+
+The same structural Windows blockers found on gfx1151 are present unchanged at the current validated head:
+
+1. `icicle/src/runtime.cpp:2-4`: `#include <dlfcn.h>`, `#include <dirent.h>`, `#include <sys/stat.h>` (POSIX only)
+2. `icicle/src/runtime.cpp:280-286`: `#ifdef __linux__ ... #elif __APPLE__ ... #else #error "Unsupported operating system" #endif` -- the `#error` fires unconditionally on Windows
+3. `icicle/src/runtime.cpp:323-336`: `dlopen()`, `opendir()`/`readdir()` -- POSIX backend loader, no LoadLibrary path
+4. `icicle/include/icicle/utils/utils.h:4`: `#include <cxxabi.h>` (GCC ABI demangler, no Windows equivalent)
+5. `icicle/tests/test_base.h:32`: `setenv()` (POSIX only, no `_putenv_s` equivalent)
+
+These are in upstream icicle host framework code, not in the HIP-PQC backend (backend/hip_pqc/). The GPU kernels, cuda_to_hip.h shim, and wave-agnostic fixes are all correct and unaffected. A Windows port of the icicle host framework (LoadLibrary, FindFirstFile/FindNextFile, demangler alternative, _putenv_s) is upstream-scope work, not within the MOAT HIP-PQC port boundary.
+
+### Verdict
+
+BLOCKED. No GPU run possible. Reason: `no-windows-support-in-icicle-host-framework`. Identical to the gfx1151 finding at the same source SHA (d8e04fd). The blocker is upstream framework, not the HIP-PQC GPU port.
