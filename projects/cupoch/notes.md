@@ -343,6 +343,61 @@ stdgpu build ported, GPU validation would likely hit the APU thrust runtime gap.
 Set blocked. Better tackled on a discrete-RDNA Windows GPU, and needs a dedicated
 stdgpu-on-Windows build port first. Not a cupoch-port-code defect (gfx90a/gfx1100 pass).
 
+## Validation 2026-06-06 (windows-gfx1201, ROCm 7.14.0a20260604)
+
+Platform: AMD RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro,
+TheRock ROCm 7.14.0a20260604, all-clang toolchain (clang.exe/clang++.exe from
+_rocm_sdk_devel/lib/llvm/bin). HIP_VISIBLE_DEVICES=0 (gfx1101 absent from bus;
+gfx1201 is the sole GPU enumerated at index 0).
+Fork sha: fdc5694737970ba7329a81cb347d92dd48ceb802 (moat-port, no new code change needed).
+
+### Build
+
+Reconfigured from the windows-gfx1101 build with only the arch changed; all 6
+Windows build fixes from fdc5694 carry over unchanged.
+
+    cmake <src> -G Ninja -DUSE_HIP=ON -DCUPOCH_CORE_ONLY=ON -DUSE_RMM=OFF \
+        -DBUILD_UNIT_TESTS=OFF -DBUILD_PYTHON_MODULE=OFF -DBUILD_PYBIND11=OFF \
+        -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+        -DCMAKE_C_COMPILER=<rocm>/lib/llvm/bin/clang.exe \
+        -DCMAKE_CXX_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+        -DCMAKE_HIP_COMPILER=<rocm>/lib/llvm/bin/clang++.exe \
+        -DCMAKE_PREFIX_PATH=<rocm> -DCMAKE_BUILD_TYPE=Release \
+        -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+    cmake --build . --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j64
+
+Result: 0 errors, 53/53 Ninja targets, 6 libs: cupoch_{utility,camera,knn,geometry}.lib +
+flann_cuda_s.lib + jsoncpp.lib. All HIP TUs compiled with --offload-arch=gfx1201 (verified in
+build.ninja). stdgpu.lib built from gfx1201 build in validate link step.
+
+### GPU dispatch confirmation
+
+AMD_LOG_LEVEL=3 on harness: 840 hipLaunchKernel calls all return hipSuccess. Real device
+execution on gfx1201 confirmed.
+
+### Validation harness
+
+agent_space/cupoch-win/validate-gfx1201/validate.cpp (gitignored): same source as gfx1101
+harness. 20000-point wavy-plane cloud, fixed seed 42, voxel_size=0.05, KNN=30. CMakeLists.txt
+updated to link against build-gfx1201 libs and target gfx1201.
+
+### VoxelDownSample (rocThrust transform -> sort_by_key -> reduce_by_key)
+
+2564 occupied-voxel centroids (identical count to gfx1101).
+- GPU vs CPU (voxel_min_bound = GetMinBound() - voxel/2 convention): max centroid error = 1.33e-07 (float eps). PASS.
+- Bitwise-identical output across 3 runs (deterministic). PASS.
+
+### EstimateNormals (flann CUDA kdtree KNN + covariance smallest-eigenvector)
+
+- No NaN in 20000 normals. PASS.
+- Per-point normals vs CPU brute-force KNN + 3x3 covariance (500-point sample): worst |dot(n_gpu, n_cpu)| = 1.000000, 0 points below 0.99. PASS.
+- Deterministic across 3 runs. PASS.
+
+### Result: 6 / 6 PASS. windows-gfx1201 -> completed.
+
+Numeric results are identical to the gfx1101 reference (2564 voxels, 1.33e-07 centroid error,
+worst dot 1.000000) -- RDNA4 produces the same floating-point output as RDNA3 on this workload.
+
 ## Windows gfx1151 root-cause CORRECTION 2026-05-30
 
 The earlier note speculated the validation would hit an "APU thrust runtime gap." That was

@@ -5,3 +5,6 @@
 {"kind":"phase","ts":"2026-06-05T17:20:12Z","phase":"compile","seconds":17.293,"exit":1,"cmd":"cmake --build B:/develop/moat/agent_space/cupoch-win/build-gfx1101 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j32"}
 {"kind":"phase","ts":"2026-06-05T17:32:13Z","phase":"compile","seconds":62.398,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/cupoch-win/build-gfx1101 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j32"}
 {"kind":"phase","ts":"2026-06-05T17:35:56Z","phase":"test","seconds":0.623,"exit":0,"cmd":"bash -c cd B:/develop/moat/agent_space/cupoch-win/validate/build && HIP_VISIBLE_DEVICES=0 ./validate.exe"}
+{"kind": "tokens", "ts": "2026-06-05T17:41:18Z", "tokens": 114429, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T03:43:30Z","phase":"compile","seconds":62.296,"exit":0,"cmd":"C:\\Program Files\\CMake\\bin\\cmake.exe --build B;C:\\Program Files\\Git\\develop\\moat\\agent_space\\cupoch-win\\build-gfx1201 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j64"}
+{"kind":"phase","ts":"2026-06-07T03:44:39Z","phase":"test","seconds":0.595,"exit":0,"cmd":"B:/develop/moat/agent_space/cupoch-win/validate-gfx1201/build/validate.exe"}
