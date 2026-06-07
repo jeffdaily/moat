@@ -21,3 +21,4 @@
 {"kind": "tokens", "ts": "2026-06-04T09:18:24Z", "tokens": 78867, "source": "validator"}
 {"kind":"phase","ts":"2026-06-03T06:31:26Z","phase":"compile","seconds":17.700,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/icicle_val_gfx1100 -j128"}
 {"kind":"phase","ts":"2026-06-03T06:47:48Z","phase":"test","seconds":21.077,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/agent_space/icicle_val_gfx1100/backend/hip_pqc/tests --output-on-failure"}
+{"kind": "tokens", "ts": "2026-06-07T04:37:53Z", "tokens": 46026, "source": "validator"}

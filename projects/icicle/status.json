@@ -7,7 +7,7 @@
   "priority": 4.507,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-07T04:36:11Z",
+  "updated_at": "2026-06-07T04:37:53Z",
   "head_sha": "d8e04fd116ff60770d1d04bc731562f2659af7a9",
   "platforms": {
     "linux-gfx90a": {
@@ -58,12 +58,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Host-wide block, GPU-independent (carried from windows-gfx1201/gfx1151 determination): icicle upstream host framework has no Windows support -- runtime.cpp uses POSIX dlfcn.h/dirent.h/sys/stat.h with an explicit #error 'Unsupported operating system', plus cxxabi.h demangler and setenv(); HIP GPU kernels are fine but the backend loader is POSIX-only. Windows port is upstream-scope. Identical on gfx1101.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "updated_at": "2026-06-07T04:37:53Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
