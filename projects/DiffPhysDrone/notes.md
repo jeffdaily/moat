@@ -221,3 +221,24 @@ verdict=identical
 Both shas built from clean state (`rm -rf build *.egg-info *.so && python setup.py build_ext --inplace`) with `HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a`. The Linux compiler sees `extra_link_args=[]` at both shas (the win32 branch is never entered). Device ISA identical, no GPU re-run needed.
 
 Carry-forward: linux-gfx90a -> completed at c1d96479220c6f830df23d98d4c9582e9fb60884 (binary-equiv).
+
+## Revalidation 2026-06-07 (carry-forward, linux-gfx1100)
+
+Delta from validated_sha=2dc1a4b to head_sha=c1d9647: one commit touching only `src/setup.py`, entirely inside an `if sys.platform == "win32":` guard (ValueError/Error linker alias, Windows-only). No Linux code path affected.
+
+Built at both SHAs from clean state for gfx1100:
+```
+cd /var/lib/jenkins/moat/projects/DiffPhysDrone/src/src
+rm -rf build *.egg-info *.hip *.so
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e . --no-build-isolation
+```
+
+Binary equivalence confirmed via `codeobj_diff.py`:
+```
+verdict=identical
+  quadsim_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (113 exports))
+```
+
+The Linux compiler sees `extra_link_args=[]` at both shas (the win32 branch is never entered on Linux). Device ISA identical, no GPU re-run needed.
+
+Carry-forward: linux-gfx1100 -> completed at c1d96479220c6f830df23d98d4c9582e9fb60884 (binary-equiv).
