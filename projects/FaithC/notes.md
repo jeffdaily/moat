@@ -274,3 +274,38 @@ clips to 0-vert) paths -- this is upstream behavior, not a regression. Harness c
 hit_mask only where poly_count>0; poly_counts (always written) confirmed deterministic.
 
 Verdict: completed. validated_sha=ec2fae28.
+
+## Revalidation 2026-06-07 (linux-gfx1100 carry-forward)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32, ROCm 7.2.1)
+Fork: jeffdaily/FaithC @ moat-port c72480ea (delta commit on top of ec2fae28)
+Method: binary-equivalence (codeobj_diff.py)
+
+Git delta (ec2fae28 -> c72480ea):
+- `kernels.cu`: `long` -> `int64_t` rename in kernel signatures and host data_ptr calls
+- `setup.py`: Windows-only `/ALTERNATENAME` linker directive guarded by `sys.platform == "win32"`
+
+The Windows setup.py change has no effect on Linux (guarded at Python level). On 64-bit
+Linux x86_64, `sizeof(long)==8 == sizeof(int64_t)`, so the `long->int64_t` rename is
+semantically transparent and compiles to identical gfx1100 device ISA.
+
+Built both SHAs at PYTORCH_ROCM_ARCH=gfx1100:
+```
+# Old (ec2fae28):
+rm -f src/faithcontour/_C/kernels.hip src/faithcontour/_C*.so && rm -rf build/
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace
+
+# New (c72480ea):
+rm -f src/faithcontour/_C/kernels.hip src/faithcontour/_C*.so && rm -rf build/
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace
+```
+
+Both builds: PASS (exit 0, loop-unroll advisories on sat_centroid/sat_clip templates)
+
+codeobj_diff result:
+```
+verdict=identical
+  _C.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (144 exports))
+```
+
+No GPU re-run needed. Verdict: carry-forward completed. validated_sha=c72480ea (linux-gfx1100).

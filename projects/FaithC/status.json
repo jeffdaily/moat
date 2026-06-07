@@ -7,7 +7,7 @@
   "priority": 4.281,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T16:32:48Z",
+  "updated_at": "2026-06-07T17:17:47Z",
   "head_sha": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ec2fae28be36dd98fef94fa13fa98f75b2a399ab",
+      "validated_sha": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
       "started_at": "2026-06-02T07:40:00Z",
-      "completed_at": "2026-06-02T08:10:00Z",
-      "updated_at": "2026-06-07T05:33:52Z",
+      "completed_at": "2026-06-07T17:17:47Z",
+      "updated_at": "2026-06-07T17:17:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-06-02T07:40:00Z",
         "last_session_at": "2026-06-02T08:10:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "c72480ea0ab40cfffef0448b0caaec0d0282507b",
+        "method": "binary-equiv",
+        "detail": "long->int64_t rename compiles to identical gfx1100 device ISA (Linux sizeof(long)==8); Windows /ALTERNATENAME setup.py change is guarded by sys.platform==win32, no effect on Linux",
+        "at": "2026-06-07T17:17:47Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
