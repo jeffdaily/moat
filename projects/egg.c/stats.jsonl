@@ -19,3 +19,5 @@
 {"kind":"phase","ts":"2026-06-04T21:15:20Z","phase":"compile","seconds":15.386,"exit":0,"cmd":"/opt/rocm/bin/hipcc -O3 --offload-arch=gfx90a -x hip /var/lib/jenkins/moat/projects/egg.c/src/full_cuda_train_egg.cu -o /var/lib/jenkins/moat/agent_space/egg_hip_old"}
 {"kind":"phase","ts":"2026-06-04T21:15:44Z","phase":"compile","seconds":16.101,"exit":0,"cmd":"/opt/rocm/bin/hipcc -O3 --offload-arch=gfx90a -x hip /var/lib/jenkins/moat/projects/egg.c/src/full_cuda_train_egg.cu -o /var/lib/jenkins/moat/agent_space/egg_hip_new"}
 {"kind": "tokens", "ts": "2026-06-04T19:30:05Z", "tokens": 39735, "source": "validator"}
+{"kind":"phase","ts":"2026-06-07T19:00:56Z","phase":"compile","seconds":7.145,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/bin/hipcc -O3 --offload-arch=gfx1201 -x hip -std=c++17 projects/egg.c/src/full_cuda_train_egg.cu -o agent_space/egg_hip_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-07T19:11:52Z","phase":"test","seconds":1.053,"exit":0,"cmd":"g++ -O3 -Iprojects/egg.c/src/d-eggs/include projects/egg.c/src/d-eggs/test_ternary.cpp -o agent_space/test_ternary_gfx1201_win.exe"}

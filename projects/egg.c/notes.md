@@ -282,3 +282,59 @@ Binary-equivalence check:
 - Result: `verdict=identical` -- exported symbols + device ISA identical (5 exports)
 
 Carry-forward applied: linux-gfx90a -> completed at 0b389ceb. No GPU re-run needed.
+
+## Validation 2026-06-07 (validator, windows-gfx1201, fork 0b389ce)
+Verdict: PASS. Real GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11, TheRock ROCm 7.14.
+
+No source changes needed; the Windows compat commit 0b389ce already contains all required guards.
+
+Commands run:
+
+```
+ROCM_SDK="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+export HIP_DEVICE_LIB_PATH="${ROCM_SDK}/lib/llvm/amdgcn/bitcode"
+export HIP_VISIBLE_DEVICES=0
+
+# 1. Build for gfx1201
+utils/timeit.sh egg.c compile -- \
+  "${ROCM_SDK}/bin/hipcc" -O3 --offload-arch=gfx1201 -x hip -std=c++17 \
+  projects/egg.c/src/full_cuda_train_egg.cu \
+  -o agent_space/egg_hip_gfx1201.exe
+
+# Verify code object
+"${ROCM_SDK}/lib/llvm/bin/llvm-objdump.exe" --offloading agent_space/egg_hip_gfx1201.exe \
+  | grep -io 'gfx[0-9a-f]*' | sort -u
+# -> gfx1201
+
+# TheRock DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc*.dll)
+# already present in agent_space/ from prior validations
+
+# 2. First training run (EGG_FIXED_SEED=12345, 300s timeout)
+cd agent_space && HIP_VISIBLE_DEVICES=0 EGG_FIXED_SEED=12345 timeout 300 \
+  ./egg_hip_gfx1201.exe > egg_gfx1201_run1.log 2>&1
+
+# 3. Second training run (determinism check)
+cd agent_space && HIP_VISIBLE_DEVICES=0 EGG_FIXED_SEED=12345 timeout 300 \
+  ./egg_hip_gfx1201.exe > egg_gfx1201_run2.log 2>&1
+
+# 4. Non-GPU regression
+utils/timeit.sh egg.c test -- \
+  g++ -O3 -Iprojects/egg.c/src/d-eggs/include \
+  projects/egg.c/src/d-eggs/test_ternary.cpp \
+  -o agent_space/test_ternary_gfx1201_win.exe
+agent_space/test_ternary_gfx1201_win.exe
+```
+
+Results:
+- Build: clean, 11 pre-existing -Wunused-value warnings (same as all prior arches), 0 errors.
+- Code-object arch: llvm-objdump confirms gfx1201-only code object in the binary.
+- GPU device: AMD Radeon RX 9070 XT (gfx1201, RDNA4), warpSize=32, 32 CUs, 15.92 GB VRAM.
+- Step time: ~9.3s/step on gfx1201 (32 CUs, 2400 MHz; faster than gfx1151 at 26-32s/step).
+- Loss decreases monotonically across 16 steps: 8.3489 -> 7.6246 -> 6.9552 -> 6.3868 -> 5.8830 -> 5.4134 -> 5.0936 -> 4.7565 -> 4.4101 -> 4.1356 -> 3.8607 -> 3.5874 -> 3.5018 -> 3.4543 -> 3.3883 -> 3.3417.
+- Cross-arch trajectory: gfx1201 step 0 Loss=8.3489 is bit-for-bit identical to gfx90a (8.3489) and gfx1151 (8.3489). EGG_WARP_SIZE=32 logical-warp is correct on wave32 gfx1201.
+- Sample text-like from step 1+: "The quick brown fox jumps over" prompt reproduced; completion increasingly word-like.
+- Determinism: two EGG_FIXED_SEED=12345 runs are BIT-IDENTICAL on Loss, Up+, Up- across all 16 steps. Only Fwd/Host/Tok/s timings differ. Decisive wave32 fingerprint.
+- No HIP errors or GPU faults in either run.
+- Non-GPU regression: d-eggs/test_ternary.cpp builds (g++ -O3) and passes (Test 1 Passed, Test 2 Passed, Verification Passed, 1.6000 bits/value).
+- Fork state: 0b389ce (Windows compat delta; no changes needed for gfx1201).
+- GPU count: 1 pass, 0 fail. Non-GPU count: 1 pass, 0 fail.
