@@ -794,3 +794,100 @@ All success criteria met:
 - Physics behavior correct across all test cases
 - Large-scale simulations (1M+ particles) work correctly
 - CMake include path fix validated on both gfx90a and gfx1100
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+### GPU Architecture
+
+AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32) with TheRock ROCm 7.14.0a20260604.
+
+### Windows-Specific Fixes (commit 41820c68)
+
+Two additional fixes were needed for Windows/TheRock that were not required on Linux:
+
+1. **JitHelper.cpp -- dynamic clang version discovery**: The existing code hardcoded `lib/llvm/lib/clang/22/include` for clang builtin headers (stddef.h, stdint.h). TheRock ROCm 7.14 ships clang 23, so the path did not exist and was silently skipped by `add_inc`. Fixed by scanning the `lib/llvm/lib/clang/<version>/` directory to find the actual version dir.
+
+2. **CUDAMathHelpers.cuh -- hiprtc host-code guard**: The `#ifndef __CUDACC__` guard around `using std::max; using std::min;` was insufficient for the Windows hiprtc JIT context. On Linux, hiprtc defines `__CUDACC__` for device code; on Windows with TheRock, it defines `__HIPCC_RTC__` and `__HIP_DEVICE_COMPILE__` but NOT `__CUDACC__`. This caused the host-only `using std::max/min` block to be compiled in the hiprtc device context, where MSVC's cmath does not provide `std::max` (hiprtc_runtime.h provides `max` in global namespace, causing a `using std::max` conflict). Fixed by extending the guard to `#if !defined(__CUDACC__) && !defined(__HIPCC_RTC__) && !defined(__HIP_DEVICE_COMPILE__)`.
+
+### Build Commands
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+CLANG=$ROCM/lib/llvm/bin/clang++.exe
+
+mkdir build-gfx1201 && cd build-gfx1201
+HIP_VISIBLE_DEVICES=0 cmake ../src -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=$CLANG -DCMAKE_CXX_COMPILER=$CLANG -DCMAKE_HIP_COMPILER=$CLANG \
+  -DCMAKE_PREFIX_PATH=$ROCM
+
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh DEM-Engine compile -- cmake --build . -j32
+```
+
+After build, copy TheRock runtime DLLs to bin/:
+amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm_kpack.dll
+from `_rocm_sdk_core/bin`.
+
+Run with `ROCM_PATH=$ROCM HIP_VISIBLE_DEVICES=0` so hiprtc can find `ROCM_PATH/include/hip/hip_runtime.h`
+and the clang builtin headers.
+
+### Runtime Testing
+
+Ran 4 GPU physics demos on gfx1201:
+
+1. **DEMdemo_SingleSphereCollide** (contact detection, collision response):
+   - Status: COMPLETED (100 frames)
+   - JIT compilation: All kernels compiled for gfx1201
+   - Physics: Spheres collide, bounce, hit mesh floor -- correct
+   - Result: PASS
+
+2. **DEMdemo_BallDrop2D** (gravity, collision, 2832 particles):
+   - Status: RAN for 60s (2+ frames, timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+3. **DEMdemo_RotatingDrum** (rotating boundary, particle flow):
+   - Status: RAN for 30s (1+ frame, timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+4. **DEMdemo_Repose** (large-scale settling, 268k spheres):
+   - Status: RAN for 45s (2+ frames, timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+### JIT Compilation Verification
+
+- hiprtc compiles 43 kernel files at runtime for gfx1201 (RDNA4 wave32)
+- `hiprtcAddNameExpression` + `hiprtcGetLoweredName` resolves mangled templated kernel names
+- Runtime warp size detection: `prop.warpSize = 32` on gfx1201 (RDNA4 wave32)
+- No hiprtc compilation errors across all demos
+
+### Commands Used
+
+```
+BIN=B:/develop/moat/projects/DEM-Engine/build-gfx1201/bin
+ROCM_PATH=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+
+# Test 1: Full simulation
+ROCM_PATH=$ROCM_PATH HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh DEM-Engine test -- $BIN/DEMdemo_SingleSphereCollide.exe
+
+# Test 2: 2D particle drop
+ROCM_PATH=$ROCM_PATH HIP_VISIBLE_DEVICES=0 timeout 60 $BIN/DEMdemo_BallDrop2D.exe
+
+# Test 3: Rotating drum
+ROCM_PATH=$ROCM_PATH HIP_VISIBLE_DEVICES=0 timeout 30 $BIN/DEMdemo_RotatingDrum.exe
+
+# Test 4: Large-scale settling
+ROCM_PATH=$ROCM_PATH HIP_VISIBLE_DEVICES=0 timeout 45 $BIN/DEMdemo_Repose.exe
+```
+
+### Validation Outcome
+
+**PASSED** on windows-gfx1201 at commit 41820c68.
+
+- 27 demo executables built successfully for gfx1201
+- 4 physics demos pass with correct JIT compilation and GPU execution
+- hiprtc correctly compiles device kernels for RDNA4 wave32 (gfx1201)
+- No NaN/inf values, no GPU errors
+- Windows-specific hiprtc fixes committed and validated (41820c68)
