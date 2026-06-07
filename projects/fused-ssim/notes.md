@@ -264,3 +264,65 @@ An earlier README-sweep note here said "DO NOT open a duplicate PR -- upstream a
 - VALIDATION DELTA (the value -> outcome=validated): first GPU validation of the ROCm path on gfx90a (CDNA2 wave64) and gfx1100 (RDNA3 wave32) at ROCm 7.2.1; upstream has no AMD GPU CI. Notably the 3D SSIM path: upstream's README disclaims "3D (CUDA only)" -- a claim the author ROLLED BACK TO in PR #39 -- yet fusedssim3d compiles, exports, and matches pytorch_msssim(spatial_dims=3) to ~1e-8 fwd / ~1e-11 grad on both AMD archs. Upstream's docs understate their own ROCm capability; we have the hardware evidence. Confirmed wave-agnostic (no warp primitives).
 
 Outcome = validated (2 arch). No upstream PR: zero code delta, and the only conceivable contribution (a README note that 3D also works on ROCm) is exactly the claim the author deliberately removed in #39, so it would need AMD-CI-grade evidence to be welcome. See [[moat-no-duplicate-amd-ports]].
+
+## Validation 2026-06-07 (gfx1201, Windows, ROCm 7.14.0a20260604)
+
+**GPU:** AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32). ROCm 7.14.0a20260604 (TheRock nightly). torch 2.9.1+rocm7.14.0a20260604, hip 7.14.60850-d34cbb64. Validated sha: `cdfe1fa6fced7898a9c8b3ba48e78633646ce28d` (adds Windows ext.cpp fix on top of the existing Windows shim commit).
+
+**Fork interaction:** two commits on moat-port for Windows:
+1. `767e3f6` -- routes ext.cpp through hipcc via `_winhip.cu` shim (c10 inherited-ctor workaround)
+2. `cdfe1fa` -- fixes 3D symbols missing on Windows: `#ifdef FUSED_SSIM_CUDA` in ext.cpp became dead on the hipcc path because torch's `_hipify_compile_flags` renames `-DFUSED_SSIM_CUDA` -> `-DFUSED_SSIM_HIP` for all nvcc/hipcc-compiled files; changed to `#if defined(FUSED_SSIM_CUDA) || defined(FUSED_SSIM_HIP)` so both Linux (CXX path, FUSED_SSIM_CUDA) and Windows (hipcc path, FUSED_SSIM_HIP) compile all four symbols.
+
+### Build
+
+```python
+# B:\develop\moat\agent_space\fused_ssim_build_gfx1201.py
+# HIP_VISIBLE_DEVICES=0, PYTORCH_ROCM_ARCH=gfx1201
+# ROCM_HOME=<venv>/_rocm_sdk_devel, HIP_DEVICE_LIB_PATH=<venv>/_rocm_sdk_devel/lib/llvm/amdgcn/bitcode
+# DISTUTILS_USE_SDK=1, MSVC link.exe prepended to PATH
+python B:\develop\moat\agent_space\fused_ssim_build_gfx1201.py
+```
+
+Compile time: ~60s. torch hipify: `ssim.cu` -> `ssim.hip`, `ssim3d.cu` -> `ssim3d.hip`, `ext_winhip.cu` (HIP path). All four symbols present (`fusedssim`, `fusedssim_backward`, `fusedssim3d`, `fusedssim_backward3d`); `is_3D_supported=True`. Linked against MSVC link.exe; `amdhip64`, `c10_hip`, `torch_hip`.
+
+### Test results (all HIP_VISIBLE_DEVICES=0, non-source cwd)
+
+**1. tests/test.py** (2D, 100 iters, B=5 CH=5 H=1080 W=1920, `torch.isclose` fwd + full-tensor grad `.all()` vs ref SSIM and pytorch_msssim): PASS (exit 0). Fused fwd ~4.0ms vs ref ~132ms.
+
+```
+HIP_VISIBLE_DEVICES=0 B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe B:\develop\moat\projects\fused-ssim\src\tests\test.py
+```
+
+**2. tests/test_3D.py** (3D, 10 iters, B=2 CH=1 D=H=W=96, `torch.allclose` rtol=1e-6 atol=1e-8 vs conv3d ref and pytorch_msssim(spatial_dims=3)): PASS (exit 0).
+
+```
+HIP_VISIBLE_DEVICES=0 B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe B:\develop\moat\projects\fused-ssim\src\tests\test_3D.py
+```
+
+**3. Independent harness** `agent_space/fused_ssim_validate_gfx1201.py` (2D: 4 configs CH=1/3/16, B=1..4; 3D: 3 shapes "valid" padding vs pytorch_msssim(spatial_dims=3); NaN/Inf; bitwise determinism):
+
+```
+cd C:\Windows\Temp && HIP_VISIBLE_DEVICES=0 B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe B:\develop\moat\agent_space\fused_ssim_validate_gfx1201.py
+```
+
+Results:
+- 2D fwd vs ref (same): max|diff| = 3.35e-08 (tolerance 1e-4; 4+ orders margin)
+- 2D fwd vs pm (valid): max|diff| = 5.59e-09
+- 2D grad vs ref: max|diff| = 1.63e-09
+- 3D fwd vs pm (valid): max|diff| = 4.97e-09; 3D grad vs pm: max|diff| = 2.87e-11
+- NaN/Inf: none in fwd or grad, 2D and 3D
+- Determinism: 2D and 3D fwd+grad bitwise identical across two calls within run
+- ALL PASS (exit 0)
+
+### Comparison to Linux platforms
+
+gfx90a (wave64): 2D fwd_ref ~1e-8, 2D grad ~1e-10, 3D fwd ~5e-9, 3D grad ~1e-11.
+gfx1100 (wave32): 2D fwd_ref 5.22e-08, 2D grad 1.75e-09, 3D fwd 1.32e-08, 3D grad 3.12e-10.
+gfx1201 (wave32): 2D fwd_ref 3.35e-08, 2D grad 1.63e-09, 3D fwd 4.97e-09, 3D grad 2.87e-11.
+All platforms within ~1 order of magnitude; well within tolerances.
+
+**RESULT: PASS. windows-gfx1201 -> completed.**
+
+### Note on linux platform revalidate state
+
+The `cdfe1fa` ext.cpp change (FUSED_SSIM_CUDA || FUSED_SSIM_HIP) is `arch_independent=False` per the classifier (token count differs), so linux-gfx90a and linux-gfx1100 are now in `revalidate`. However, on Linux the CXX compiler path gets `-DFUSED_SSIM_CUDA` (unchanged by `_hipify_compile_flags` which only touches nvcc flags), so the compiled ext.o is byte-identical to the 666987fb build. Linux validator agents can carry forward with binary-equiv check.
