@@ -458,3 +458,43 @@ HIP_VISIBLE_DEVICES=0 ./build-hip/test_homography.exe
 PASS/FAIL: PASS (29/29 checks across three binaries, all exit 0). GPU identified as AMD Radeon PRO V710 (Compute Capability 11.0, 26096 MB). No GPU fault, no safeCall abort, no crash. Numbers match the gfx90a/gfx1100/gfx1151 reference within RANSAC/self-match run-to-run variation.
 
 State: port-ready -> completed (validated_sha 0523b54, fork unchanged).
+
+## Validation 2026-06-06 (windows-gfx1201, TheRock ROCm 7.14)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (gfx1101 absent; gfx1201 is now the only GPU, enumerated at device 0). ROCm 7.14.0a20260604 via TheRock pip venv. Fork moat-port HEAD 0523b54 unchanged (zero-churn follower).
+
+### Build (no source change; all-clang CMake HIP)
+```
+ROCM_DEVEL=<venv>/Lib/site-packages/_rocm_sdk_devel
+CLANG=$ROCM_DEVEL/lib/llvm/bin/clang++.exe
+OPENCV_DIR=B:/develop/opencv-install/extracted/opencv/build/x64/vc16/lib
+
+# Wiped CMakeCache.txt + CMakeFiles/ from the prior gfx1101 build, then reconfigured:
+cmake -S projects/CudaSift/src -B projects/CudaSift/src/build-hip -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_CXX_COMPILER=$CLANG \
+  -DCMAKE_HIP_COMPILER=$CLANG \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH=$ROCM_DEVEL \
+  -DOpenCV_DIR=$OPENCV_DIR \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/CudaSift/src/build-hip -j64
+```
+Configure exit 0 (~3.4s). Build exit 0 (21/21 targets). All targets built: cudasift_lib, cudasift, test_extract, test_match, test_homography, benchmark, demo_extract, demo_match, demo_video. Same pre-existing ~152 `-Wunused-value` nodiscard hipError_t warnings; no errors. TheRock runtime DLLs (amdhip64_7, amd_comgr, rocm_kpack, hiprtc0714, hiprtc-builtins0714) + opencv_world4110.dll already present in build dir from gfx1101 run; same SDK version, valid for gfx1201.
+
+### Test results (gfx1201, HIP_VISIBLE_DEVICES=0, run from src/)
+```
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_extract.exe     # run from src/
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_match.exe
+HIP_VISIBLE_DEVICES=0 ./build-hip/test_homography.exe
+```
+
+| test            | exit | result            | key numbers |
+|-----------------|------|-------------------|-------------|
+| test_extract    | 0    | 10 passed, 0 fail | basic 1910 kpts; thresh 7077/1910/542/6; reproducibility 1910/1910=100%; scaleUp 3104 > normal 1910 |
+| test_match      | 0    | 11 passed, 0 fail | self-match 1902/1910 score>0.95; RANSAC 851/828 inliers; match 0.79 ms |
+| test_homography | 0    | 8 passed, 0 fail  | translation (30,20) recovered h[2]=30.13 h[5]=20.27; rotation 10deg 1197 matches; scale 0.8 942 matches; PGM L1452/R2082, 753 RANSAC / 674 inliers |
+
+PASS/FAIL: PASS (29/29 checks across three binaries, all exit 0). GPU identified as AMD Radeon RX 9070 XT (Compute Capability 12.0, 16304 MB). No GPU fault, no safeCall abort, no crash. Feature/match counts EXACT vs gfx90a/gfx1100/gfx1101 reference; RANSAC/self-match variation within expected run-to-run bounds.
+
+State: port-ready -> completed (validated_sha 0523b54, fork unchanged).
