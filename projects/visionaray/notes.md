@@ -273,3 +273,38 @@ PASS: device random_generator produced finite, varied values
 **Result**: PASS (both tests). Device RNG produces finite, varied, in-range values (min~1.2e-5, max~0.99997, mean~0.500). Original hip_test shows no regression.
 
 **Validated at**: d904b8b02cb386ac6f97be9774ede7fe8314a3ed
+
+## Validation 2026-06-07 (linux-gfx1100, revalidate at d904b8b0)
+
+**Purpose**: Full GPU revalidation of functional device-code change -- `random_generator.h` guards extended to `|| defined(__HIPCC__)`, new `hip_random_test.hip` added.
+
+**GPU**: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3), HIP_VISIBLE_DEVICES=0, warp size: 32
+
+**Build**: Incremental rebuild at d904b8b0 (new hip_random_test.hip compiled for gfx1100).
+
+```bash
+bash utils/timeit.sh visionaray compile -- cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build -j$(nproc)
+```
+
+**Tests run**:
+
+```bash
+bash utils/timeit.sh visionaray test -- bash -c "HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test && HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"
+```
+
+**Output**:
+```
+Testing visionaray HIP support...
+Device: AMD Radeon Pro W7800 48GB
+Warp size: 32
+PASS: Basic HIP test succeeded
+Testing visionaray device random_generator (HIP)...
+Device: AMD Radeon Pro W7800 48GB
+Warp size: 32
+samples=32768 min=1.2144e-05 max=0.99997 mean=0.499811
+PASS: device random_generator produced finite, varied values
+```
+
+**Result**: PASS (both tests). Device RNG produces finite, varied, in-range values on gfx1100 (RDNA3 wave32), identical statistics to gfx90a. Original hip_test shows no regression.
+
+**Validated at**: d904b8b02cb386ac6f97be9774ede7fe8314a3ed

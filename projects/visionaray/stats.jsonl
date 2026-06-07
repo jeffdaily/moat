@@ -18,3 +18,6 @@
 {"kind":"phase","ts":"2026-06-07T19:44:52Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build build -j128"}
 {"kind":"phase","ts":"2026-06-07T19:45:09Z","phase":"compile","seconds":9.958,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build -j128"}
 {"kind":"phase","ts":"2026-06-07T19:45:23Z","phase":"test","seconds":0.416,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test && echo '---' && HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"}
+{"kind":"phase","ts":"2026-06-07T20:13:49Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build build -j64"}
+{"kind":"phase","ts":"2026-06-07T20:13:57Z","phase":"compile","seconds":3.712,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build -j64"}
+{"kind":"phase","ts":"2026-06-07T20:14:06Z","phase":"test","seconds":0.398,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test && HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"}
