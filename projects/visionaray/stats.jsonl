@@ -14,3 +14,7 @@
 {"kind":"phase","ts":"2026-06-07T19:27:18Z","phase":"compile","seconds":6.737,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build --target hip_test hip_random_test -j128"}
 {"kind":"phase","ts":"2026-06-07T19:27:27Z","phase":"test","seconds":0.191,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test"}
 {"kind":"phase","ts":"2026-06-07T19:27:28Z","phase":"test","seconds":0.216,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"}
+{"kind": "tokens", "ts": "2026-06-07T19:44:14Z", "tokens": 62376, "source": "porter"}
+{"kind":"phase","ts":"2026-06-07T19:44:52Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"cmake --build build -j128"}
+{"kind":"phase","ts":"2026-06-07T19:45:09Z","phase":"compile","seconds":9.958,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/visionaray/src/build -j128"}
+{"kind":"phase","ts":"2026-06-07T19:45:23Z","phase":"test","seconds":0.416,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_test && echo '---' && HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/visionaray/src/build/test/hip_random_test"}

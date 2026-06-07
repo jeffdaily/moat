@@ -240,3 +240,36 @@ reviewer; revalidate routes straight to the validator). So the correct porter
 handoff state here is `revalidate`, NOT `ported` -- the validator picks it up
 and marks `completed` after re-running the GPU test. Do not try to force
 `ported` on a post-completion functional fix.
+
+## Validation 2026-06-07 (linux-gfx90a, revalidate at d904b8b0)
+
+**Purpose**: Re-confirm functional device-code change -- `random_generator.h` guards extended to `|| defined(__HIPCC__)`, new `hip_random_test.hip` added.
+
+**GPU**: AMD Instinct MI250X / MI250 (gfx90a, wave64), HIP_VISIBLE_DEVICES=0
+
+**Build**: Incremental rebuild at d904b8b0 (CMakeLists.txt updated for hip_random_test, header change compiled into new test).
+
+**Tests run**:
+
+```bash
+HIP_VISIBLE_DEVICES=0 ./build/test/hip_test
+HIP_VISIBLE_DEVICES=0 ./build/test/hip_random_test
+```
+
+**Output**:
+```
+Testing visionaray HIP support...
+Device: AMD Instinct MI250X / MI250
+Warp size: 64
+PASS: Basic HIP test succeeded
+---
+Testing visionaray device random_generator (HIP)...
+Device: AMD Instinct MI250X / MI250
+Warp size: 64
+samples=32768 min=1.2144e-05 max=0.99997 mean=0.499811
+PASS: device random_generator produced finite, varied values
+```
+
+**Result**: PASS (both tests). Device RNG produces finite, varied, in-range values (min~1.2e-5, max~0.99997, mean~0.500). Original hip_test shows no regression.
+
+**Validated at**: d904b8b02cb386ac6f97be9774ede7fe8314a3ed
