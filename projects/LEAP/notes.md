@@ -198,3 +198,70 @@ Cone-flat geometry with tilt, mu=0.01: NaN/Inf count = 0/5898240. PASS.
 The point-bound f texture at fractional 0/0 coords returns finite on gfx1100 HIP tex3D<float>.
 
 validated_sha: 17534792ea62722cf0537894bbab68fb5bb257cc
+
+## Validation 2026-06-06 (validator, windows-gfx1201, moat-port @ 0e75025)
+
+Verdict: completed. All 12 GPU tests PASS on real gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32).
+
+GPU arch: gfx1201 (RDNA4). This is the only AMD GPU on the host at this time (gfx1101 was absent from bus). HIP_VISIBLE_DEVICES=0. ROCm via TheRock pip wheels (rocm-sdk 7.14.0a20260604). torch 2.9.1+rocm7.14.0a20260604.
+
+Four Windows-specific build issues required fixes (new commit 0e75025 on top of 1753479):
+
+1. HIP vector type conflict (leap_defines.h): MSVC + -D__HIP_PLATFORM_AMD__ causes
+   amd_hip_vector_types.h to define uint8/uint16 as 8/16-element int vectors, clashing
+   with LEAP's byte/short typedefs. Fix: guard with
+   #if !(defined(_MSC_VER) && defined(__HIP_PLATFORM_AMD__)).
+   file_io.cpp adds a local cstdint-based typedef under the same guard.
+
+2. PyInit_leapct linker symbol (tomographic_models_c_interface.cpp): PYBIND11_MODULE
+   is commented out but torch CUDAExtension passes /EXPORT:PyInit_leapct.
+   Fix: minimal Windows-only PYBIND11_MODULE stub guarded by
+   #if defined(_WIN32) && defined(TORCH_EXTENSION_NAME).
+
+3. PROJECTOR_API dllexport (setup_AMD.py): C-interface functions use __declspec(dllimport)
+   by default unless PROJECTOR_EXPORTS is defined. Fix: -DPROJECTOR_EXPORTS in
+   Windows extra_compile_args.
+
+4. LTCG dead-code elimination (leapct_exports.def, setup_AMD.py): MSVC /GL+/LTCG strips
+   unreferenced dllexport functions. Fix: leapct_exports.def listing all 207 exported
+   symbols; passed as /DEF:leapct_exports.def in extra_link_args.
+
+Additionally, leapctype.py on Windows globs for *leapct*.dll but torch extension produces
+a .pyd file. Fix: cp leapct.cp312-win_amd64.pyd leapct.cp312-win_amd64.dll after build.
+DLL load requires torch imported first (to pull amdhip64 and its full dependency chain).
+
+Build commands:
+```
+# In TheRock venv, HIP_VISIBLE_DEVICES=0, MSVC link.exe before PATH
+cd B:\develop\moat\projects\LEAP\src
+set HIP_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1201
+set ROCM_HOME=<site-packages>\_rocm_sdk_devel
+set HIP_DEVICE_LIB_PATH=<site-packages>\_rocm_sdk_devel\lib\llvm\amdgcn\bitcode
+set DISTUTILS_USE_SDK=1
+python setup_AMD.py build_ext --inplace
+copy src\leapct.cp312-win_amd64.pyd src\leapct.cp312-win_amd64.dll
+```
+
+Test run (via wrapper that preloads torch, then runs gpu_vs_cpu_validate.py):
+```
+python B:\develop\moat\agent_space\leap_test_gfx1201.py
+```
+Results:
+- parallel     VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.54e-05  PASS
+- parallel     SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.64e-05  PASS
+- fan          VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=2.44e-04  PASS
+- fan          SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.85e-04  PASS
+- coneparallel VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.24e-03  PASS
+- coneparallel SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=5.07e-05  PASS
+- cone-flat    VD  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=1.42e-04  PASS
+- cone-flat    SF  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=1.46e-04  PASS
+- cone-curved  VD  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=8.54e-05  PASS
+- cone-curved  SF  finite=True  fbp_interior=1.0000 (err 0.000)  adjoint=1.30e-04  PASS
+- modular      VD  finite=True  fbp_interior=0.9998 (err 0.000)  adjoint=3.39e-03  PASS
+- modular      SF  finite=True  fwd-vs-VD  (err 0.000)  adjoint=n/a              PASS
+OVERALL: PASS (12/12). All FBP interiors within 0.02% of 1.0 (tol 3%). Results match gfx90a/gfx1100 within display precision.
+
+Wave32/RDNA4 verdict: software-interpolation fix is arch-unified/wave-agnostic. gfx1201 (RDNA4, wave32) results are numerically identical to gfx90a (CDNA2, wave64) and gfx1100 (RDNA3, wave32) for all 12 cases.
+
+validated_sha: 0e75025be39a25dd093a60e2da7ee67fd0c42a57
