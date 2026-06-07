@@ -21,14 +21,30 @@ PROJECTS = REPO_ROOT / "projects"
 SCHEMA_VERSION = 1
 
 LEAD = "linux-gfx90a"
-# Windows is validated on two distinct archs (gfx1101 RDNA3, gfx1201 RDNA4) hosted
-# on one multi-GPU machine; each is its own validation target. windows-gfx1151 is
-# the retired Strix Halo host (superseded by this machine): its already-completed
-# blocks are preserved as real validation records, but it is scheduled no new work
-# -- per project its non-completed gfx1151 block carries blocked=true, which
-# `actionable` skips and `pr_ready` treats as terminal (non-viable, never blocks a PR).
+# Windows is validated on distinct archs (gfx1101 RDNA3, gfx1201 RDNA4, plus the
+# retired gfx1151 Strix Halo host) hosted on one multi-GPU machine; each is its own
+# validation target, so work still flows to whichever Windows arch a host actually
+# has. windows-gfx1151 is scheduled no new work; its already-completed blocks are
+# preserved as real validation records, and per project its non-completed gfx1151
+# block carries blocked=true, which `actionable` skips.
 PLATFORMS = ["linux-gfx90a", "linux-gfx1100",
              "windows-gfx1101", "windows-gfx1201", "windows-gfx1151"]
+
+# PR-readiness tiers (see pr_ready). The two Linux archs are each REQUIRED: a port
+# validates on gfx90a, then gfx1100. The Windows archs form ONE redundant tier --
+# they are interchangeable proofs that the port builds and runs on Windows ROCm, so
+# only ONE Windows arch must reach `completed` to unlock the PR; the others may stay
+# queued or blocked without gating it. This matches hardware reality: a Windows host
+# can permanently lose an arch's GPU (gfx1101 on the current host), and requiring
+# every Windows arch would then wedge the PR on hardware that no longer exists. The
+# work pipeline is unchanged -- each arch still validates wherever its GPU is present.
+# Satisfying the tier does NOT close it: an un-validated Windows arch stays selectable
+# (`actionable` keeps returning True) even after a sibling satisfies the tier or the PR
+# opens, so a host that later gains that GPU can validate it to complete the set. That
+# is purely additive -- a validation changes no head_sha, so it disturbs neither the
+# open PR nor the other platforms; it just enriches the coverage record.
+PR_REQUIRED_PLATFORMS = ["linux-gfx90a", "linux-gfx1100"]
+WINDOWS_TIER = ["windows-gfx1101", "windows-gfx1201", "windows-gfx1151"]
 PORT_BRANCH = "moat-port"  # the topic branch that holds the port on each fork
 
 # Per-platform pipeline. blocked-needs-gfx90a is the follower start state; the
@@ -583,6 +599,9 @@ def squash_carry_forward(name, new_sha, repo=None):
       - each `completed` platform: validated_sha advanced to new_sha, stays completed;
       - each `blocked` (non-viable, e.g. Windows-unportable) platform: left UNTOUCHED
         -- never flipped from non-viable to passing;
+      - a redundant Windows-tier arch left un-validated because a sibling Windows arch
+        already satisfied the one-of tier (see pr_ready): reported as `optional`, not
+        a problem -- it is not required for the PR;
       - any other (actionable) state: left as-is (you should not be squashing yet).
     REFUSES if new_sha's tree differs from the current head's tree (then the squash
     introduced unvalidated content; validate it first / use advance_head). The
@@ -605,7 +624,10 @@ def squash_carry_forward(name, new_sha, repo=None):
         return (False, f"not a tree-identical squash (old tree {str(t_old)[:8]} != new {str(t_new)[:8]}); "
                        f"validate the new content first / use advance_head")
     obj["head_sha"] = new_sha
-    carried, kept_blocked, skipped = [], [], []
+    win_satisfied = any(
+        obj["platforms"][p].get("state") == "completed" and not obj["platforms"][p].get("blocked")
+        for p in WINDOWS_TIER)
+    carried, kept_blocked, skipped, optional = [], [], [], []
     for plat in PLATFORMS:
         blk = obj["platforms"][plat]
         if blk.get("blocked"):
@@ -614,26 +636,42 @@ def squash_carry_forward(name, new_sha, repo=None):
             blk["validated_sha"] = new_sha
             blk["updated_at"] = now_iso()
             carried.append(plat)
+        elif plat in WINDOWS_TIER and win_satisfied:
+            optional.append((plat, blk.get("state")))  # redundant Windows arch; tier already satisfied
         else:
             skipped.append((plat, blk.get("state")))
     save_status(name, obj)
-    return (True, {"carried": carried, "kept_blocked": kept_blocked, "skipped": skipped})
+    return (True, {"carried": carried, "kept_blocked": kept_blocked,
+                   "skipped": skipped, "optional": optional})
 
 
 def pr_ready(name):
-    """Is a port ready for its single upstream PR? Only when EVERY platform is
-    terminal: `completed` (validated on real GPU), or `blocked` (a documented
-    non-viable determination, e.g. a Windows/gfx1151 port that is not feasible --
-    that does NOT block the PR; the PR body must then scope its claim to the
-    completed platforms). Any platform still in an actionable state (port-ready,
-    revalidate, porting, planned, ported, review-passed, changes-requested,
-    delta-ported, validation-failed, unclaimed, blocked-needs-gfx90a) means work
-    is pending and BLOCKS the PR -- do not open it.
+    """Is a port ready for its single upstream PR? Readiness has two tiers:
+
+      * Linux archs (PR_REQUIRED_PLATFORMS: linux-gfx90a, linux-gfx1100) are each
+        REQUIRED -- each must be `completed` (validated on real GPU) or `blocked`
+        (a documented non-viable determination, which does NOT block the PR but
+        must be scoped out of the PR body's claim).
+      * Windows archs (WINDOWS_TIER: gfx1101, gfx1201, gfx1151) form ONE redundant
+        tier: only ONE of them must be `completed` to unlock the PR. They are
+        interchangeable proofs that the port builds and runs on Windows ROCm, so a
+        single passing arch satisfies the tier; the rest may stay queued or blocked
+        without gating it. If NONE has passed yet, the tier blocks (the still-
+        actionable Windows archs are the blockers -- completing any one clears it);
+        if every Windows arch is non-viable, the tier is non-viable and the PR
+        scopes its claim to Linux.
+
+    A REQUIRED platform in any actionable state (port-ready, revalidate, porting,
+    planned, ported, review-passed, changes-requested, delta-ported,
+    validation-failed, unclaimed, blocked-needs-gfx90a) means work is pending and
+    BLOCKS the PR.
 
     Returns False if a PR already exists (lead platform in pr-open or upstream-landed state).
 
     Returns (ready, blocking, nonviable): ready bool; blocking list of
-    (platform, state); nonviable list of platforms."""
+    (platform, state); nonviable list of platforms (documented non-viable, does not
+    block). A Windows arch that is merely optional-and-not-yet-done -- because a
+    sibling Windows arch already satisfied the tier -- appears in neither list."""
     obj = load_status(name)
 
     # Check if PR already exists (lead-only states)
@@ -645,7 +683,9 @@ def pr_ready(name):
         return (False, [(LEAD, "upstream-landed (PR already merged)")], [])
 
     blocking, nonviable = [], []
-    for plat in PLATFORMS:
+
+    # Linux archs: each individually required.
+    for plat in PR_REQUIRED_PLATFORMS:
         blk = obj["platforms"][plat]
         if blk.get("state") == "completed":
             continue
@@ -653,6 +693,21 @@ def pr_ready(name):
             nonviable.append(plat)
         else:
             blocking.append((plat, blk.get("state")))
+
+    # Windows tier: a single completed arch satisfies it.
+    win = [(p, obj["platforms"][p]) for p in WINDOWS_TIER]
+    if any(b.get("state") == "completed" for _, b in win):
+        # Satisfied. Surface only the documented non-viable archs (for PR-body
+        # scoping); leave optional-not-done archs out of both lists.
+        nonviable.extend(p for p, b in win
+                         if b.get("state") != "completed" and b.get("blocked"))
+    else:
+        actionable_win = [(p, b.get("state")) for p, b in win if not b.get("blocked")]
+        if actionable_win:
+            blocking.extend(actionable_win)  # completing any ONE clears the tier
+        else:
+            nonviable.extend(p for p, _ in win)
+
     return (not blocking, blocking, nonviable)
 
 
@@ -748,7 +803,7 @@ def main(argv=None):
     s.add_argument("tokens", type=int)
     s.add_argument("source", nargs="?", default=None)
 
-    s = sub.add_parser("pr-ready", help="check whether every platform is terminal (completed or non-viable) so the upstream PR may open")
+    s = sub.add_parser("pr-ready", help="check PR readiness: both Linux archs completed/non-viable AND any one Windows arch completed")
     s.add_argument("name")
 
     s = sub.add_parser("set-pr-open", help="mark lead as pr-open and record PR metadata after creating upstream PR")
@@ -818,6 +873,8 @@ def main(argv=None):
             print(f"REFUSED: {info}")
         else:
             msg = f"{args.name} -> {args.new_sha[:8]}: carried {info['carried']}; kept-blocked {info['kept_blocked']}"
+            if info.get("optional"):
+                msg += f"; optional Windows-tier (not required) {info['optional']}"
             if info["skipped"]:
                 msg += f"; SKIPPED actionable {info['skipped']} (should not squash yet)"
             print(msg)
@@ -825,7 +882,7 @@ def main(argv=None):
         ready, blocking, nonviable = pr_ready(args.name)
         print(f"{args.name}: PR-ready={ready}")
         if blocking:
-            print("  BLOCKING (must reach completed or non-viable): " +
+            print("  BLOCKING (Linux archs each required; Windows tier needs any ONE completed): " +
                   ", ".join(f"{p}={s}" for p, s in blocking))
         if nonviable:
             print("  non-viable (does not block; scope the PR body): " + ", ".join(nonviable))

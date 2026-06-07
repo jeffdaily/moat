@@ -98,9 +98,11 @@ def cell(block):
 
 def plat_header(key):
     """Stacked column header for a platform key: linux-gfx90a -> 'gfx90a<br>Linux'
-    (arch on top of the OS)."""
+    (arch on top of the OS). Windows archs carry a dagger -- they are a one-of tier
+    (any one completed unlocks PR-readiness); the legend explains it."""
     os_part, arch = key.split("-", 1)
-    return f"{arch}<br>{os_part.capitalize()}"
+    marker = " †" if key in moatlib.WINDOWS_TIER else ""
+    return f"{arch}{marker}<br>{os_part.capitalize()}"
 
 
 def _validated_arch_count(p):
@@ -122,7 +124,11 @@ def outcome_cell(p):
     No PR and no outcome yet -> pending (—)."""
     if p.get("pr_url"):
         glyph = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(p.get("pr_state") or "open", "🟢")
-        return f"{glyph} [#{p['pr_number']}]({p['pr_url']})"
+        num = p.get("pr_number")
+        if num is None:  # derive from the .../pull/<n> URL tail when not recorded
+            tail = p["pr_url"].rstrip("/").rsplit("/", 1)[-1]
+            num = tail if tail.isdigit() else "?"
+        return f"{glyph} [#{num}]({p['pr_url']})"
     oc = p.get("outcome")
     if oc == "validated":
         n = _validated_arch_count(p)
@@ -148,6 +154,8 @@ def render_table(projects):
               "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
               "Outcome: 🟣 PR merged · 🟢 PR open · 🔴 PR closed · 🔵 validated (existing ROCm confirmed on N archs) · "
               "🍴 fork-only · ⚪ superseded · — pending. "
+              "† The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) "
+              "satisfies the Windows requirement for PR-readiness; the two Linux archs (gfx90a then gfx1100) are each required. "
               "The project name links to upstream, (fork) to our `moat-port` branch.")
     headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Outcome"]
     aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
