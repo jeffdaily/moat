@@ -12,3 +12,7 @@
 {"kind":"phase","ts":"2026-06-01T20:27:44Z","phase":"test","seconds":63.204,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/gauss_splatting_test_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-01T20:27:48Z","phase":"test","seconds":62.594,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/gauss_splatting_test_full_gfx1100.sh"}
 {"kind":"phase","ts":"2026-06-01T20:29:57Z","phase":"test","seconds":64.929,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/gauss_splatting_test_full_gfx1100.sh"}
+{"kind":"phase","ts":"2026-06-07T21:49:09Z","phase":"compile","seconds":32.814,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:51:00Z","phase":"compile","seconds":36.047,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:53:40Z","phase":"test","seconds":68.916,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_test_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-07T21:54:53Z","phase":"test","seconds":67.566,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_test_gfx1201.py discover test -v"}

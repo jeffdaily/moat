@@ -189,3 +189,53 @@ wave32 verdict: The fix uses `cg::thread_block_tile<32>` with `shfl_xor` butterf
 No source edits needed for gfx1100. The fix is wave-agnostic as predicted: `shfl_xor` with `tile.size()=32` is correct on both wave64 (gfx90a, 2 independent 32-lane segments per wavefront) and wave32 (gfx1100, 1 exact 32-lane wavefront). No fork amendment.
 
 Decision: PASS -> completed. validated_sha = a4d8b9aa308b23ba46a10d9734817237fd2474fd.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: windows-gfx1201. Device: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (gfx1101 V710 offline this session). Fork HEAD: d7f2227cb285966c290c36efaf7f8240f10379cb.
+
+Python env: B:\develop\TheRock\external-builds\pytorch\.venv (torch 2.9.1+rocm7.14.0a20260604, HIP 7.14.60850-d34cbb64).
+
+### Windows-specific fix committed (d7f2227, on top of a4d8b9a)
+
+On Windows with HIP, MSVC-compiled bindings.cpp cannot link c10::ValueError (and other pybind11/c10 exception types) from the clang-built c10.dll due to the inherited-constructor ABI mismatch. Fix: at setup.py execution time, copy bindings.cpp to src/bindings_winhip.cu so BuildExtension routes it through hipcc/amdclang++ (same ABI as c10.dll). Guarded by `os.name == 'nt' and torch.version.hip is not None`; Linux and CUDA paths unchanged. src/bindings_winhip.cu added to .gitignore.
+
+### Build command
+
+```
+set HIP_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1201
+set MAX_JOBS=32
+python -m pip install -e . --no-build-isolation --no-deps -v
+```
+
+Build script: agent_space/gauss_build_gfx1201.py. Strategy B (torch auto-hipify). Completed successfully; .pyd at splat_cuda.cp312-win_amd64.pyd (in-place editable install). Confirmed gfx1201 device code in .pyd (.hipFatB section present, dumpbin /DEPENDENTS shows amdhip64_7.dll).
+
+### Decisive gate (16 float64 gradchecks -- run 1)
+
+```
+cd projects/gaussian_splatting/src
+HIP_VISIBLE_DEVICES=0 python -m unittest test.test_rasterize_autograd test.test_cuda_autograd_functions -v
+```
+
+test_rasterize_autograd 8/8 PASS, test_cuda_autograd_functions 8/8 PASS. Ran 16 tests in 67.3s -- OK.
+
+### Full suite
+
+```
+cd projects/gaussian_splatting/src
+HIP_VISIBLE_DEVICES=0 python -m unittest discover test -v
+```
+
+Ran 31 tests in 65.8s. FAILED (failures=5, errors=1). Non-passing tests are exactly the pre-documented gfx90a/gfx1100 set -- no new regressions on gfx1201:
+- FAIL test_rasterize_full_sh_use_precompute, test_rasterize_full_sh_use_per_pixel_viewdir: stale SH goldens
+- FAIL test_project_points, test_compute_projection_jacobian: places=4 tighter than float32 epsilon
+- FAIL test_compute_rays_world_frame: places=7 tighter than float32 epsilon (diff 5.96e-8)
+- ERROR test_dataloader: missing tyro module + hardcoded path /home/joe/Downloads/garden (CPU-only, dataset absent)
+- All other GPU tests PASS: test_rasterize_no_sh, test_depth (test_rasterize_no_sh), test_tile_culling, test_structs, test_cuda_autograd_functions (8/8), test_rasterize_autograd (8/8), test_projection (compute_conic, compute_sigma_world), test_utils (compute_rays_camera_frame, quaternion_to_rotation_torch, transform_points_torch)
+
+wave32 verdict (gfx1201 RDNA4): same as gfx1100 wave32 analysis. The warpReduceSum template with `cg::thread_block_tile<32>::shfl_xor` butterfly maps exactly one-to-one onto the hardware wavefront; each tile's 32-lane XOR butterfly is a complete all-reduce. No cross-tile contamination, no lane-math needed. 16/16 float64 gradchecks pass (forward+backward consistency via torch.autograd.gradcheck) confirming numerical correctness.
+
+Decision: PASS -> completed. validated_sha = d7f2227cb285966c290c36efaf7f8240f10379cb.
+
+Note for linux-gfx90a and linux-gfx1100 revalidators: the Windows fix (setup.py + .gitignore delta d7f2227) is entirely `os.name == 'nt'`-guarded. A binary-equivalence check (`python3 utils/codeobj_diff.py`) between builds at a4d8b9a and d7f2227 on Linux will show identical device code objects and exported symbols, allowing carry-forward without a GPU re-run.
