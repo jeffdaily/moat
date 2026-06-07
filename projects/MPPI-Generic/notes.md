@@ -557,3 +557,93 @@ Compared to the original gfx1100 validation (4231397db, 36 failures):
 No new GPU failures introduced by the 6 Windows-specific commits.
 
 Verdict: PASS. State: completed at 427b693b.
+## Validation 2026-06-07 (windows-gfx1201, ROCm TheRock PyTorch venv)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32). Windows 11 Pro for Workstations.
+ROCm via TheRock PyTorch venv (`_rocm_sdk_devel` clang 23 all-clang toolchain).
+HIP_VISIBLE_DEVICES=0 (only GPU present after gfx1101 V710 went offline; device 0 = gfx1201).
+Fork sha 427b693b (moat-port tip, unchanged from gfx1101 validation).
+
+### Build
+
+Configure:
+```
+cmake -S projects/MPPI-Generic/src -B projects/MPPI-Generic/build-hip-gfx1201 -G Ninja \
+  -DUSE_HIP=ON \
+  "-DCMAKE_HIP_ARCHITECTURES=gfx1201" \
+  -DMPPI_BUILD_TESTS=ON -DMPPI_BUILD_EXAMPLES=ON \
+  -DCMAKE_BUILD_TYPE=Release \
+  "-DCMAKE_HIP_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe" \
+  "-DCMAKE_C_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang.exe" \
+  "-DCMAKE_CXX_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe" \
+  "-DCMAKE_PREFIX_PATH=_rocm_sdk_devel;C:/Strawberry/c;B:/develop/agent_space/yaml-cpp-install;B:/develop/agent_space/eigen_install" \
+  -DENABLE_STATIC=OFF \
+  "-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST"
+cmake --build build-hip-gfx1201 -j64
+```
+Result: 155/155 targets built, exit 0. Build ~40s.
+
+Two configure adjustments vs gfx1101:
+- `CMAKE_HIP_COMPILER` must be clang++ directly (CMake 4.3 rejects the hipcc wrapper).
+- `-DENABLE_STATIC=OFF`: CMake 4.3 strictly rejects duplicate build rules; cnpy's upstream
+  CMakeLists.txt defines both a SHARED `cnpy` and a STATIC `cnpy-static` both with
+  `OUTPUT_NAME "cnpy"` -> both produce `cnpy.lib` -> ninja error. Disabling the static
+  variant (not needed by MPPI) resolves it. This is a CMake 4.3 strictness change, not a
+  code change; gfx1101 was built with an earlier CMake that allowed the duplicate.
+- `-DCMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE=PRE_TEST`: avoids DLL-load failure during
+  build-time test discovery when runtime DLLs not yet in place.
+
+### Windows runtime setup
+
+Same DLL and .kpack setup as gfx1101, but with gfx1201-specific kpack files:
+- Runtime DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc*.dll, hiprand.dll,
+  rocrand.dll, hipfft.dll, rocfft.dll) copied from `_rocm_sdk_core/bin` and `_rocm_sdk_devel/bin`
+  into the build root and each test subdirectory.
+- `.kpack/` with `rand_lib_gfx1201.kpack`, `fft_lib_gfx1201.kpack`, `blas_lib_gfx1201.kpack`
+  (from `_rocm_sdk_libraries/.kpack/`) placed in `tests/`, `build-hip-gfx1201/`, and each
+  test subdirectory.
+
+### gtest results (ctest -j1, HIP_VISIBLE_DEVICES=0, 454s, --timeout 60)
+
+421/457 passed (92%); 5 disabled/skipped not counted in denominator.
+
+All 36 failures are pre-existing categories -- ZERO new core GPU correctness regressions:
+
+- 8 ARStandardCost.* (Failed): deferred texture linear-filter fault class, same as all prior platforms.
+- 3 ARRobustCostTest.*: deferred vehicle cost (Timeout), same.
+- 1 ARNeuralNetDynamics.LoadModelTest: npz map::at, same.
+- 2 Dynamics.stepGPU + DubinsDynamics.TestUpdateStateGPU: vendor-agnostic dim_x guard, same.
+- 1 Linear.StepCPUGPUComparison: FP tolerance (diff ~0.012-0.033 vs bound 0.01); AMD vs NVIDIA
+  fma rounding in linear dynamics step, same category as RK4.
+- 1 RacerDubins.enforceLeash: FP tolerance margin, AMD fma rounding, same as gfx1101.
+- 1 RacerDubins.ComputeStateTrajectoryFiniteTest: pre-existing uninitialized STEER_ANGLE_RATE, same.
+- 5 BasePlantTest.run*: timing-based assertions fail due to Windows scheduling jitter
+  (expected 50-58ms, got 65ms; slideControlSequence count mismatches). Same class as gfx1101.
+- 2 WeightedReductionKernel.*: stack overflow + legacy RAW hazard, same as gfx1101.
+- 1 ControllerKernelChoiceTest/*.MoreEvaluationsDoNotAdjustChoice: kernel timing benchmark
+  chooses wrong kernel variant on one iteration; timing-sensitive flakiness, same class.
+- 1 cuFFT.checkErrorCode: hipFFT dereferences garbage plan handle, same as all platforms.
+- 6 GaussianTests.Check*: hipRAND != cuRAND sequence, over-tight 0.1% CDF bound, same.
+- 1 Integration.RK4: AMD vs NVIDIA fma rounding (2e-4 vs 1e-6 abs bound), same.
+- 3 FNNHelperTest.*/LSTMHelperTest.*: npz map::at NN-loader, same.
+- 1 SamplingDistributionTests.CompareLikelihoodRatioCostsCPU vsGPU<GaussianDistribution
+  <LinearDynamicsParams<1,7>>>: FP tolerance margin, AMD rounding, same category.
+
+Compared to gfx1101 (49 non-passes), gfx1201 is better (36) -- the hipFFT JIT is fast
+enough on gfx1201 that TestNoise/ColoredNoise tests do NOT time out (they did on gfx1101).
+
+### Core correctness on gfx1201 wave32
+
+- RolloutKernelTests.CombinedRolloutKernelGPUvsCPU: PASS
+- RolloutKernelTests.SplitRolloutKernelGPUvsCPU: PASS
+- RMPPIKernels.ValidateCombinedInitEvalKernelAgainstCPU: PASS
+- RMPPIKernels.ValidateSplitInitEvalKernelAgainstCPU: PASS
+- RMPPIKernels.ValidateCombinedRMPPIRolloutKernelAgainstCPU: PASS
+- RMPPIKernels.ValidateSplitRMPPIRolloutKernelAgainstCPU: PASS
+- RMPPIKernels.ValidateCombinedRMPPIRolloutKernelAgainstMPPIRollout: PASS
+- NormExpKernel 7/7: PASS
+- CartPole 12/12: PASS
+- DoubleIntegratorTracking 3/3: PASS
+
+The wave32 reduction fix (stop_condition=0, full __syncthreads() tree) is correct on
+gfx1201. No NaN, no HIP fault, clean exits throughout.
