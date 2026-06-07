@@ -7,7 +7,7 @@
   "priority": 4.218,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:34Z",
-  "updated_at": "2026-06-07T19:12:59Z",
+  "updated_at": "2026-06-07T20:11:39Z",
   "head_sha": "006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "311e1c39ebf5cfad02ca13c70aaf7f9942f39101",
+      "validated_sha": "006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c",
       "started_at": "2026-06-02T02:29:00Z",
-      "completed_at": "2026-06-02T02:32:00Z",
-      "updated_at": "2026-06-07T18:41:44Z",
+      "completed_at": "2026-06-07T20:11:39Z",
+      "updated_at": "2026-06-07T20:11:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-06-02T02:29:00Z",
         "last_session_at": "2026-06-02T02:32:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c",
+        "method": "binary-equiv",
+        "detail": "_WIN32-guarded host_ptr_to_device helper compiles to return-host on Linux; device ISA and exported symbols identical on gfx1100",
+        "at": "2026-06-07T20:11:39Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

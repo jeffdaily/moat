@@ -131,6 +131,16 @@ Verification: `python3 utils/codeobj_diff.py build_old/src/infer.cu.o build_new/
 
 arch: gfx90a (AMD Instinct MI250X), HIP_VISIBLE_DEVICES=3. No GPU execution performed.
 
+## Validation 2026-06-07 (linux-gfx1100, revalidate carry-forward)
+
+Result: CARRY-FORWARD -- linux-gfx1100 validated_sha advanced to 006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c via binary equivalence; no GPU re-run needed.
+
+Delta: 006a0fdfa7 adds `host_ptr_to_device()` in `src/infer.cu` guarded by `#if defined(USE_HIP) && defined(_WIN32)`. On Linux `_WIN32` is not defined; the helper compiles to `return host;` and is inlined away. No device code change.
+
+Verification: built at 311e1c39 and 006a0fd for gfx1100 (`make test USE_HIP=1 HIPARCH=gfx1100`), then `python3 utils/codeobj_diff.py lfs-old-gfx1100/infer.cu.o lfs-new-gfx1100/infer.cu.o` -> `verdict=identical` (device ISA + exported symbols byte-identical). Both builds used `hipcc --offload-arch=gfx1100` (ROCm 7.2.53211).
+
+arch: gfx1100 (AMD Radeon Pro W7800, RDNA3, wave32). No GPU execution performed.
+
 ## Validation 2026-06-07 (windows-gfx1201)
 
 Result: PASS -- windows-gfx1201 completed, validated_sha=006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c.
