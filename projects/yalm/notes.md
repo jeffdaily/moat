@@ -120,3 +120,41 @@ Wave32 verdict (warpSize=32 on gfx1100):
 - No 0x1016 (signal 11 / page fault), no wrong output, no NaN, no launch failure.
 
 No source or fork changes required; the commit at 311e1c39ebf5 validates as-is on wave32. The `-x hip` cosmetic warning persists (noted in gfx90a review; non-blocking).
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Result: PASS -- windows-gfx1201 completed, validated_sha=006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c.
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32). HIP_VISIBLE_DEVICES=0 (gfx1101 offline this session; gfx1201 shifted to device 0). ROCm 7.14.0a20260604 (TheRock, _rocm_sdk_devel, hipcc AMD clang 23.0, MSVC target).
+
+### Windows delta commit (required, new on moat-port)
+
+Added `host_ptr_to_device()` helper in `src/infer.cu` (guarded by `defined(USE_HIP) && defined(_WIN32)`) and applied it in the three test entry points (`mha_cuda`, `matmul_cuda`, `ffn_cuda`):
+
+On Linux, `hipHostRegister` creates a UVA alias so the host pointer is directly GPU-addressable. On Windows (WDDM), it pins the allocation but does NOT alias it into GPU VA space; the kernel must use the device-side address returned by `hipHostGetDevicePointer`. Without this fix, all kernel outputs are zero (writes silently dropped). Linux and CUDA paths are unchanged (the `#else` branch returns host unchanged, compiling to identical code).
+
+Fork commit: `006a0fdfa796d1a4ea4625e9fbbc4b8ed25e739c`
+
+This commit requires linux-gfx90a and linux-gfx1100 to revalidate (the classifier sees `mixed` since it cannot distinguish the `_WIN32` guard from a behavior-affecting change). On Linux the compiled code is identical to 311e1c39 -- the `_WIN32` guard means the new function compiles to `return host;` and is inlined away -- so the Linux validators may use `codeobj_diff.py` to verify binary equivalence and carry forward without a GPU re-run.
+
+### Build
+
+No CMake; hand-built with hipcc (AMD clang 23.0, MSVC target, `--offload-arch=gfx1201`). POSIX compat shims (agent_space/yalm_win_compat: `sys/mman.h`, `unistd.h`) allow codec.cpp and test.cpp to compile; the POSIX paths (from_file, mem_bench) are dead code during the test run. fmt 11.0.2 `FMT_STRING` consteval is broken on AMD clang MSVC target with c++20 (pointer arithmetic in consteval context); compiled with `-std=c++17` instead (infer.cu's HIP kernels use the .cu path and are unaffected). TheRock DLLs copied to exe directory (amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm_kpack.dll) so the exe-directory-search (#1) beats System32 (#2).
+
+Build script: `agent_space/build_yalm_gfx1201.sh`
+
+```
+bash agent_space/build_yalm_gfx1201.sh
+# -> projects/yalm/src/build/win/test.exe
+```
+
+### Test run
+
+```
+HIP_VISIBLE_DEVICES=0 projects/yalm/src/build/win/test.exe   # run 1 -> "All tests passed"
+HIP_VISIBLE_DEVICES=0 projects/yalm/src/build/win/test.exe   # run 2 -> "All tests passed" (deterministic)
+```
+
+Kernels dispatched (palvirtual log): `_Z6matmulIfEvPKT_PKfiiPf`, `_Z8attn_dotPK6__halfPKfiiiiiPf`, `_Z12attn_softmaxPKfiiiPf`, `_Z7att_mixPK6__halfPKfiiiiiPf`, `_Z23fused_ffn_w1_w3_glu_actIfL14ActivationType0EEvPKT_S3_PKfiiPf`, `_Z6matmulIfEvPKT_PKfiiPf`. All 6 test-path kernels exercised. Code Object V5 (AOT, native gfx1201). `hipHostGetDevicePointer: Returned hipSuccess` for all output registrations.
+
+Pass/fail counts: test_attn() CPU regression guard PASS; test_cuda_kernels() matmul/mha (attn_dot+attn_softmax+att_mix)/ffn CPU-vs-GPU epsilon 1e-4 comparisons all PASS; both runs identical.

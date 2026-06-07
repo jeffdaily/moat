@@ -12,3 +12,10 @@
 {"kind":"phase","ts":"2026-06-02T02:30:00Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-02T02:30:26Z","phase":"compile","seconds":4.252,"exit":0,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-02T02:31:31Z","phase":"test","seconds":0.178,"exit":0,"cmd":"HIP_VISIBLE_DEVICES=0 ./build/test"}
+{"kind":"phase","ts":"2026-06-07T18:30:03Z","phase":"compile","seconds":0.143,"exit":1,"cmd":"bash B:/develop/moat/agent_space/build_yalm_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:30:36Z","phase":"compile","seconds":18.893,"exit":1,"cmd":"bash B:/develop/moat/agent_space/build_yalm_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:34:04Z","phase":"compile","seconds":3.167,"exit":1,"cmd":"bash B:/develop/moat/agent_space/build_yalm_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:34:36Z","phase":"compile","seconds":6.582,"exit":0,"cmd":"bash B:/develop/moat/agent_space/build_yalm_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:39:44Z","phase":"compile","seconds":6.617,"exit":0,"cmd":"bash B:/develop/moat/agent_space/build_yalm_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-07T18:39:54Z","phase":"test","seconds":0.043,"exit":127,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 ./test.exe && HIP_VISIBLE_DEVICES=0 ./test.exe"}
+{"kind":"phase","ts":"2026-06-07T18:39:59Z","phase":"test","seconds":0.591,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 \"B:/develop/moat/projects/yalm/src/build/win/test.exe\" && HIP_VISIBLE_DEVICES=0 \"B:/develop/moat/projects/yalm/src/build/win/test.exe\""}
