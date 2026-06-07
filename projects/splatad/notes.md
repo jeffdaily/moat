@@ -467,6 +467,24 @@ runs, confirmed round 2). Backward grads finite + grad-sum stable ~6e-7. Batch-t
 Verdict: PASS. gfx1100 (RDNA3, wave32) port correct. No source changes needed. Fork head
 e337891105b2 validated on gfx1100.
 
+## Linux revalidate hint (gfx90a + gfx1100 revalidate -> 96ece3d)
+
+The Windows commit 96ece3d adds Windows-specific build fixes on top of e337891.
+All source changes are behind runtime/compile-time guards that are no-ops on Linux:
+- setup.py: use_ninja=True only when sys.platform=="win32" (Linux: unchanged False);
+  _winhip.cu shim generation behind `if sys.platform=="win32" and torch.version.hip`
+  (Linux: block never executes); abs_extensions_dir (same value on Linux, no-op);
+  extra_link_args: `sys.platform == "win32"` is False on Linux (behavior unchanged).
+- bindings.h: `#if defined(USE_ROCM)` -> `#ifdef __HIP__`. On Linux hipcc, __HIP__
+  IS defined during .cu compilation; on CUDA, __CUDACC__. The hip_runtime.h include
+  fires in exactly the same TUs as before -- only the macro guard name changed.
+- helpers.cuh: same change, same analysis.
+- .gitignore: cosmetic.
+
+Linux build inputs are byte-identical: same .cu sources, same include guards active,
+same flags. Linux revalidators should confirm codeobj_diff (build both e337891 and
+96ece3d for their arch) shows verdict=identical, then carry-forward.
+
 ## Validation 2026-06-07 (windows-gfx1201, moat-port @ 96ece3d)
 
 Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0,
