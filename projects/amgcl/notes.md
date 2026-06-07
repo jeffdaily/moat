@@ -309,6 +309,64 @@ PASS. No source changes. No fork push. validated_sha = f4b87da72010e59e944847380
 
 Toolchain: ROCm 7.14.0a20260604 (TheRock pip), hipSPARSE, rocSPARSE on gfx1101 (RDNA3, wave32). HIP version 7.14.60850.
 
+## Validation 2026-06-06 (windows-gfx1201, ROCm 7.14)
+
+Platform: windows-gfx1201. Host: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), discrete GPU, HIP_VISIBLE_DEVICES=0. Fork moat-port HEAD f4b87da -- NO source changes (zero-churn follower, same as all other platforms).
+
+### ROCm environment
+
+TheRock ROCm 7.14.0a20260604 pip SDK. Key DLL resolution finding: the new
+_rocm_sdk_libraries rocsparse.dll (67MB, Jun 4) has a `.kpackrf` section referencing
+`../.kpack/blas_lib_@GFXARCH@.kpack` (relative to the DLL's directory). This means the
+exe MUST run from a directory where the DLL lives at `../bin/rocsparse.dll` so the kpack
+resolves to `../.kpack/blas_lib_gfx1201.kpack`. Running from `_rocm_sdk_libraries/bin/`
+(where hipsparse.dll and rocsparse.dll live) works because `.kpack/blas_lib_gfx1201.kpack`
+exists in `_rocm_sdk_libraries/.kpack/`. The older TheRock/build/bin DLLs (Apr 21)
+lack gfx1201 AOT code in rocsparse.dll and cannot run on gfx1201.
+
+No `sparse_lib_gfx1201.kpack` is needed (rocsparse.dll references blas_lib_gfx1201.kpack
+for its device code dispatch, not a separate sparse kpack).
+
+### Build
+
+Standalone driver compiled with hipcc from _rocm_sdk_devel:
+
+```
+hipcc.exe -std=c++17 --offload-arch=gfx1201 -O2
+          -I B:/develop/moat/projects/amgcl/src
+          -I B:/develop/moat/projects/amgcl/src/tests
+          -Wno-deprecated-declarations -DAMGCL_NO_BOOST
+          B:/develop/moat/agent_space/amgcl_hip_validate_win.cpp
+          -o <_rocm_sdk_libraries/bin>/amgcl_hip_validate_gfx1201.exe
+          -L<_rocm_sdk_devel/lib> -lhipsparse -lrocsparse
+```
+
+Runtime: exe in `_rocm_sdk_libraries/bin/`; amdhip64_7.dll, amd_comgr.dll,
+rocm_kpack.dll, hiprtc*.dll copied from `_rocm_sdk_core/bin` into the same dir.
+Run with HIP_VISIBLE_DEVICES=0.
+
+### Solver convergence (real GPU, HIP_VISIBLE_DEVICES=0)
+
+7-point 3D Poisson, n=64 (262144 unknowns), 3-level AMG, CG.
+
+spai0 relaxation:
+  GPU: AMD Radeon RX 9070 XT (gfx1201)
+  Run 1: Iterations 17, residual 3.35779e-11
+  Run 2: Iterations 17, residual 3.35779e-11  (bitwise identical -- deterministic)
+  CPU builtin: Iterations 17, residual 3.35779e-11  (exact match)
+  Cross-backend: ||x_hip - x_cpu||_inf / ||x_cpu||_inf = 1.43732e-15  (machine epsilon)
+
+ilu0 relaxation (rocsparse_ilu0.hpp path):
+  Iterations 11, residual 9.07312e-11  (converges cleanly)
+
+gfx90a/gfx1101 reference: spai0 17 iters / resid 3.36e-11; ilu0 11 iters / resid 9.07e-11 -- IDENTICAL.
+
+### Pass/fail
+
+PASS. No source changes. No fork push. validated_sha = f4b87da72010e59e944847380ea972efa0aa15b8.
+
+Toolchain: ROCm 7.14.0a20260604 (TheRock pip), hipSPARSE, rocSPARSE on gfx1201 (RDNA4, wave32). HIP version 7.14.60850.
+
 ## PR framing note: amgcl is already AMD-capable via OpenCL (2026-06-04)
 
 README sweep: amgcl has backends cuda.hpp / vexcl.hpp / viennacl.hpp + builtin OpenMP. VexCL and ViennaCL are OpenCL-based and already run on AMD GPUs, so amgcl is NOT lacking AMD support; it lacks a NATIVE HIP/ROCm backend (no hip.hpp, 0 HIP code, no ROCm PRs). This is still a valuable port (native ROCm perf + a hipSPARSE/rocSPARSE-style backend alongside the CUDA one), but the PR MUST be framed as "add a native HIP/ROCm backend" and must NOT claim to be the first/only AMD support. Merge-policy fit is good: backends live in-tree (amgcl/backend/*.hpp), so a hip.hpp backend matches the existing pattern. See [[moat-no-duplicate-amd-ports]].
