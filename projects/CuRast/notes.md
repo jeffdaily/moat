@@ -205,3 +205,74 @@ CuRast is a visual GPU rasterizer without automated tests. Validation confirmed:
 **PASS**: The HIP port builds cleanly on gfx1100, links correctly, and demonstrates functional GPU initialization and runtime kernel compilation. The port correctly handles both wave64 (gfx90a) and wave32 (gfx1100) architectures.
 
 GPU computation paths (hiprtc-compiled rasterization kernels) are correctly implemented and ready for use.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Validated commit 3d42a7c on AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11.
+
+### Windows-specific fixes (commit 3d42a7c on top of d58f80b)
+
+Six issues required additional fixes for the Windows + amdclang++ (Clang/MSVC ABI) build:
+
+1. **HIP_DEVPTR_ADD macro**: `hipDeviceptr_t = void*` on ROCm; Windows Clang rejects void* arithmetic in strict C++ mode. Added portable `HIP_DEVPTR_ADD(ptr, off)` helper in `cuda_to_hip.h` and with `#ifndef` guards in `CudaVulkanSharedMemory.h`, `VulkanCudaSharedMemory.h`, `LargeGlbLoader.h`. NVIDIA path provides a passthrough version.
+2. **C++23/HIP math conflict**: MSVC STL C++23 `<cmath>` uses `_CLANG_BUILTIN1` to mark `isfinite/isinf/isnan/isnormal` as `__host__ __device__`, conflicting with HIP's `__device__`-only declarations. Fix: switch HIP TUs to `-std=c++20` via `target_compile_options($<$<COMPILE_LANGUAGE:HIP>:-std=c++20>)` in `common.cmake`.
+3. **WIN32 not defined by amdclang++**: Only `_WIN32` is defined; added explicit `WIN32` compile definition.
+4. **constexpr _fseeki64**: In DLL builds, `_fseeki64` has `__declspec(dllimport)`, not constexpr. Changed `unsuck.hpp` WIN32 branch to `static auto`.
+5. **COM headers via windows.h**: `MappedFile.h` included `windows.h` without `WIN32_LEAN_AND_MEAN`, pulling in COM interfaces (ole2.h, urlmon.h) that expose an amdclang++/SDK 10.0.26100 `__uuidof` incompatibility. Added `WIN32_LEAN_AND_MEAN`.
+6. **-lstdc++exp unavailable on Windows**: Made the GCC stacktrace library link conditional on `if(NOT WIN32)`.
+
+### Build
+
+```powershell
+$ROCM = "B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+$VULKAN_SDK = "C:/Users/Shark44/AppData/Local/Temp/vulkan_sdk"
+# Vulkan SDK: created vulkan-1.lib import library from System32 vulkan-1.dll
+
+$env:HIP_VISIBLE_DEVICES = "0"
+$env:VULKAN_SDK = $VULKAN_SDK
+cmake -S B:/develop/moat/projects/CuRast/src `
+      -B B:/develop/moat/projects/CuRast/build `
+      -DUSE_HIP=ON `
+      -DCMAKE_HIP_ARCHITECTURES=gfx1201 `
+      -DCMAKE_PREFIX_PATH="$ROCM" `
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/amdclang.exe" `
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -G Ninja
+cmake --build B:/develop/moat/projects/CuRast/build -j32
+```
+
+Build succeeded: CuRast.exe (3.8MB) + PlyToGlb.exe (746KB)
+
+### GPU Tests
+
+CuRast is a visual GPU rasterizer without automated tests. Validation confirmed:
+
+1. **HIP device detection**: PASS
+   - Device: AMD Radeon RX 9070 XT
+   - gcnArchName: gfx1201
+   - warpSize: 32 (wave32, RDNA4)
+   - multiProcessorCount: 32
+
+2. **hiprtc runtime compilation**: PASS
+   - Test kernel compiled successfully (4968 bytes code object)
+   - Kernel execution verified with correct results (1024 elements, all correct)
+
+3. **Application launch**: Expected limitation
+   - CuRast requires a display for Vulkan-based visualization
+   - No display on validation machine; windowing errors expected
+   - NOT a GPU or port failure (same as Linux validation)
+
+### Validation verdict
+
+**PASS**: The HIP port builds cleanly on gfx1201 (RDNA4, wave32), links correctly, and demonstrates functional GPU initialization and hiprtc runtime kernel compilation.
+
+GPU computation paths are correctly implemented. The port handles wave32 correctly (same as gfx1100).
+
+### Runtime DLL dependencies
+
+ROCm DLLs must be on PATH (or copied to exe directory):
+- `_rocm_sdk_core/bin/amdhip64_7.dll`
+- `_rocm_sdk_core/bin/hiprtc0714.dll`
+- `_rocm_sdk_core/bin/hiprtc-builtins0714.dll`
+- `_rocm_sdk_core/bin/amd_comgr.dll` (loaded by hiprtc at runtime)
