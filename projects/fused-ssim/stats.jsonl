@@ -15,3 +15,5 @@
 {"kind":"phase","ts":"2026-06-07T18:08:22Z","phase":"compile","seconds":31.139,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\fused_ssim_build_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T18:11:08Z","phase":"test","seconds":145.311,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\projects\\fused-ssim\\src\\tests\\test.py"}
 {"kind":"phase","ts":"2026-06-07T18:14:35Z","phase":"test","seconds":78.502,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\projects\\fused-ssim\\src\\tests\\test_3D.py"}
+{"kind":"phase","ts":"2026-06-07T19:12:23Z","phase":"compile","seconds":53.876,"exit":0,"cmd":"conda run -n py_3.12 bash -c cd /tmp/fused-ssim-old && pip install -e . --no-build-isolation -v --prefix=/tmp/fused-ssim-build-old 2>&1 | tail -30"}
+{"kind":"phase","ts":"2026-06-07T19:13:34Z","phase":"compile","seconds":54.603,"exit":0,"cmd":"conda run -n py_3.12 bash -c cd /tmp/fused-ssim-new && pip install -e . --no-build-isolation -v 2>&1 | tail -30"}

@@ -326,3 +326,30 @@ All platforms within ~1 order of magnitude; well within tolerances.
 ### Note on linux platform revalidate state
 
 The `cdfe1fa` ext.cpp change (FUSED_SSIM_CUDA || FUSED_SSIM_HIP) is `arch_independent=False` per the classifier (token count differs), so linux-gfx90a and linux-gfx1100 are now in `revalidate`. However, on Linux the CXX compiler path gets `-DFUSED_SSIM_CUDA` (unchanged by `_hipify_compile_flags` which only touches nvcc flags), so the compiled ext.o is byte-identical to the 666987fb build. Linux validator agents can carry forward with binary-equiv check.
+
+## Validation 2026-06-07 (gfx90a, carry-forward via binary-equiv)
+
+**GPU:** AMD Instinct MI250X, gfx90a (CDNA2, wave64). ROCm 7.2.1. Head sha: `cdfe1fa6fced7898a9c8b3ba48e78633646ce28d`.
+
+**Delta:** `666987fb..cdfe1fa` adds two commits:
+- `767e3f6` -- Windows-only setup.py shim (gated on `os.name == 'nt'`; dead on Linux)
+- `cdfe1fa` -- ext.cpp `#ifdef FUSED_SSIM_CUDA` -> `#if defined(FUSED_SSIM_CUDA) || defined(FUSED_SSIM_HIP)` (Linux CXX path still gets `-DFUSED_SSIM_CUDA`; condition evaluates identically)
+
+**Binary-equivalence check:**
+
+Built both SHAs with `HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx90a`:
+
+```
+conda run -n py_3.12 bash -c "cd /tmp/fused-ssim-old && pip install -e . --no-build-isolation -v"
+conda run -n py_3.12 bash -c "cd /tmp/fused-ssim-new && pip install -e . --no-build-isolation -v"
+```
+
+Both builds reported: `NVCC args: ['-O3', '-DFUSED_SSIM_CUDA', '-ffast-math']. CXX args: ['-O3', '-DFUSED_SSIM_CUDA'].`
+
+```
+python3 utils/codeobj_diff.py /tmp/fused-ssim-build-old /tmp/fused-ssim-build-new
+```
+
+Output: `verdict=identical -- fused_ssim_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (161 exports))`
+
+**RESULT: CARRY FORWARD. linux-gfx90a -> completed (binary-equiv at cdfe1fa).**

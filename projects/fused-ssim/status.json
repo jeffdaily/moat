@@ -7,17 +7,17 @@
   "priority": 4.269,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-07T18:20:23Z",
+  "updated_at": "2026-06-07T19:14:08Z",
   "head_sha": "cdfe1fa6fced7898a9c8b3ba48e78633646ce28d",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "666987fb33dcc378d98e5a649e13f6c6d37da620",
+      "validated_sha": "cdfe1fa6fced7898a9c8b3ba48e78633646ce28d",
       "started_at": "2026-05-30T07:21:34Z",
-      "completed_at": "2026-05-30T07:34:36Z",
-      "updated_at": "2026-06-07T18:20:23Z",
+      "completed_at": "2026-06-07T19:14:08Z",
+      "updated_at": "2026-06-07T19:14:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "cdfe1fa6fced7898a9c8b3ba48e78633646ce28d",
+        "method": "binary-equiv",
+        "detail": "ext.cpp/setup.py Windows-only changes; Linux CXX path unchanged; .so device ISA + 161 exports identical",
+        "at": "2026-06-07T19:14:08Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
