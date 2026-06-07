@@ -181,3 +181,35 @@ gfx1101 code-object evidence: strings evogp_cuda.cp312-win_amd64.pyd | grep gfx 
 Verdict: PASS. Fixed-array scratch (alloca->float stack[MAX_STACK]) holds at gfx1101 (RDNA3 wave32) occupancy. No HIP fault, no assert(top==1) canary, fitness converges monotonically from -0.2511 (gen 0) to -0.0179 (gen 99), finite throughout, two seeded runs identical. Results match gfx90a and gfx1100 baseline exactly. No fork code change needed -- arch-unified fix validated on Windows RDNA3.
 
 Result: PASS -> windows-gfx1101 completed (validated_sha ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0).
+
+## Validation 2026-06-06 (windows-gfx1201, validator)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4 wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.14.0a20260604, torch 2.9.1+rocm7.14.0a20260604.
+Fork: jeffdaily/evogp @ moat-port, SHA ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0 (no code change; follower validate-first).
+
+Note: gfx1101 (Radeon PRO V710) was absent from the bus during this validation; gfx1201 (RX 9070 XT) was the only GPU, enumerated at HIP_VISIBLE_DEVICES=0.
+
+Build command:
+```
+rm -rf B:/develop/moat/projects/evogp/src/src/evogp/*.pyd B:/develop/moat/projects/evogp/src/src/evogp/hip B:/develop/moat/projects/evogp/src/src/evogp.egg-info
+PATH="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64:$PATH" \
+  HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 \
+  ROCM_HOME="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel" \
+  DISTUTILS_USE_SDK=1 \
+  pip install -e B:/develop/moat/projects/evogp/src --no-build-isolation
+# Completed in ~29s; hipify generated src/evogp/hip/*.hip; .pyd contains hipv4-amdgcn-amd-amdhsa--gfx1201 code objects (confirmed via strings)
+```
+
+GPU gate (run twice, fixed seed):
+```
+HIP_VISIBLE_DEVICES=0 python -m evogp.sr_test
+```
+
+Run 1: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; ~3.5s total (~280ms gen0 warmup, ~4ms/gen thereafter); no HIP/HSA fault; no assert(top==1) abort.
+Run 2: Gen 0 best -0.2511 -> Gen 99 best -0.0179; exit 0; identical output -- deterministic PASS.
+
+gfx1201 code-object evidence: strings evogp_cuda.cp312-win_amd64.pyd | grep gfx -> "hipv4-amdgcn-amd-amdhsa--gfx1201".
+
+Verdict: PASS. Fixed-array scratch (alloca->float stack[MAX_STACK]) holds at gfx1201 (RDNA4 wave32) occupancy. No HIP fault, no assert(top==1) canary, fitness converges monotonically from -0.2511 (gen 0) to -0.0179 (gen 99), finite throughout, two seeded runs identical. Results match gfx90a/gfx1100/gfx1101 baseline exactly. No fork code change needed -- arch-unified fix validated on Windows RDNA4.
+
+Result: PASS -> windows-gfx1201 completed (validated_sha ba4fa7e6656fbaaf0a42eacca215e543b1c9a2e0).
