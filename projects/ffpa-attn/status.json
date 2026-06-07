@@ -7,17 +7,17 @@
   "priority": 4.62,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-06T01:44:27Z",
+  "updated_at": "2026-06-07T19:12:18Z",
   "head_sha": "940a6f985f24f0d23bc6b55391f6394821bb15d1",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "935943a22ef567d970ecbcfb0c5932cdac077e6f",
+      "validated_sha": "940a6f985f24f0d23bc6b55391f6394821bb15d1",
       "started_at": "2026-06-04T22:27:16Z",
-      "completed_at": "2026-06-05T05:35:05Z",
-      "updated_at": "2026-06-06T01:44:02Z",
+      "completed_at": "2026-06-07T19:12:18Z",
+      "updated_at": "2026-06-07T19:12:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "940a6f985f24f0d23bc6b55391f6394821bb15d1",
+        "method": "binary-equiv",
+        "detail": "pure Python/Triton package (no device objects); delta adds gfx1101-only test guards and a cutlass try/except that succeeds on Linux -- identical behavior on gfx90a",
+        "at": "2026-06-07T19:12:18Z"
+      }
     },
     "linux-gfx1100": {
       "state": "validation-failed",
