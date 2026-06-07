@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-07T16:30:37Z","phase":"compile","seconds":6.717,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/LEAP/src && python setup_AMD.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-07T17:12:34Z","phase":"compile","seconds":0.035,"exit":2,"cmd":"python setup_AMD.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-07T17:12:46Z","phase":"compile","seconds":6.737,"exit":1,"cmd":"python /var/lib/jenkins/moat/projects/LEAP/src/setup_AMD.py build_ext --inplace"}
+{"kind": "tokens", "ts": "2026-06-07T17:14:46Z", "tokens": 51026, "source": "validator"}
