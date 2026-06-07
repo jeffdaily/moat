@@ -147,7 +147,7 @@ output-precision determinism on gfx90a. Validated.
 - gfx1100: VALIDATED 2026-05-30 (see section below).
 - gfx1101: VALIDATED 2026-06-05 (see section below).
 - gfx1151: host retired; validation superseded by gfx1101/gfx1201.
-- gfx1201: pending validation.
+- gfx1201: VALIDATED 2026-06-06 (see section below).
 - The `data` submodule gitlink is missing from the dev HEAD tree (`.gitmodules`
   references it but `git ls-tree HEAD data` is empty); clone the DATA repo
   directly as above. Not a port issue.
@@ -338,3 +338,91 @@ Determinism (run1 vs run2):
 ### Verdict
 
 PASS. gfx1101 (wave32, RDNA3) produces numerically identical reconstruction results to gfx90a, gfx1100, and the CPU reference. The only changes from the Linux build are the Windows-specific include-path workarounds (compat dir for opencv4/ layout and cxxabi.h stub) and the DLL copy step. GPU kernels are unchanged.
+
+## Validation 2026-06-06 (windows-gfx1201, ROCm 7.14)
+
+Platform: windows-gfx1201. GPU: RX 9070 XT (gfx1201, RDNA4, wave32). ROCm 7.14.0a20260604 (clang++ 23.0.0). SHA validated: 633065b857387209d619468a0f765ca7460c1ccd. HIP_VISIBLE_DEVICES=0 (gfx1101 absent from bus; gfx1201 enumerated at device 0).
+
+No source or CMake changes were needed; only `-DCMAKE_HIP_ARCHITECTURES=gfx1201` differs from the gfx1101 build. Same Windows-specific adaptations apply (OPENCV4_COMPAT_DIR, cxxabi.h stub, DLL copy).
+
+### Build commands
+
+```bash
+SRC="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src"
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+GLM_DIR="B:/develop/moat/agent_space/glm/glm"
+OPENCV_DIR="B:/develop/opencv-install/extracted/opencv/build"
+OPENCV4_COMPAT="B:/develop/moat/agent_space/opencv4_compat"
+MSVC_VER="14.44.35207"
+WINSDK_VER="10.0.26100.0"
+MSVC_ROOT="C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/$MSVC_VER"
+WINSDK_ROOT="C:/Program Files (x86)/Windows Kits/10"
+
+export LIB="$MSVC_ROOT/lib/x64;$WINSDK_ROOT/Lib/$WINSDK_VER/ucrt/x64;$WINSDK_ROOT/Lib/$WINSDK_VER/um/x64"
+export INCLUDE="$MSVC_ROOT/include;$WINSDK_ROOT/Include/$WINSDK_VER/ucrt;$WINSDK_ROOT/Include/$WINSDK_VER/um;$WINSDK_ROOT/Include/$WINSDK_VER/shared"
+export HIP_DEVICE_LIB_PATH="$ROCM/lib/llvm/amdgcn/bitcode"
+export HIP_VISIBLE_DEVICES=0
+
+cmake -S "$SRC" -B "$SRC/build_gfx1201" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM" \
+  -DGLM_INCLUDE_DIR="$GLM_DIR" \
+  -DOpenCV_DIR="$OPENCV_DIR" \
+  -DOpenCV_ARCH=x64 -DOpenCV_RUNTIME=vc16 \
+  -DOPENCV4_COMPAT_DIR="$OPENCV4_COMPAT" \
+  -DGTEST=OFF
+
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU compile -- cmake --build "$SRC/build_gfx1201" -j64
+
+# Copy runtime DLLs to exe dir
+ROCM_CORE="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core"
+for dll in amdhip64_7.dll amd_comgr.dll rocm_kpack.dll hiprtc-builtins0714.dll hiprtc0714.dll; do
+    cp "$ROCM_CORE/bin/$dll" "$SRC/build_gfx1201/bin/"
+done
+cp B:/develop/opencv-install/extracted/opencv/build/x64/vc16/bin/opencv_world4110.dll "$SRC/build_gfx1201/bin/"
+```
+
+Build result: success, warnings only (fopen deprecated, nodiscard on cudaEvent aliases -- same as gfx1101 build). Binary embeds `hipv4-amdgcn-amd-amdhsa--gfx1201` code objects (confirmed via `strings SLS_GPU.exe | grep gfx1201`).
+
+### GPU reconstruction result
+
+```bash
+DATA="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src/data/alexander"
+BIN="B:/develop/moat/projects/3DUNDERWORLD-SLS-GPU_CPU/src/build_gfx1201/bin"
+export HIP_VISIBLE_DEVICES=0
+
+# Run 1
+bash utils/timeit.sh 3DUNDERWORLD-SLS-GPU_CPU test -- \
+  "$BIN/SLS_GPU.exe" \
+    --leftcam="$DATA/leftCam/dataset1" --rightcam="$DATA/rightCam/dataset1" \
+    --leftconfig="$DATA/leftCam/calib/output/calib.xml" \
+    --rightconfig="$DATA/rightCam/calib/output/calib.xml" \
+    --output="C:/Temp/output_gpu_gfx1201_run1.ply" --format=jpg --width=1024 --height=768
+# Run 2 (determinism): same with --output=...run2.ply
+# CPU reference: SLS.exe with same args
+```
+
+Point counts: GPU run1 = GPU run2 = CPU = 146064 (matches gfx90a, gfx1100, and gfx1101 reference exactly).
+
+Coordinate stats (GPU run1):
+- x: min=-119.898, max=135.822, mean=45.003
+- y: min=-117.639, max=208.327, mean=16.143
+- z: min=-116.617, max=134.885, mean=-55.124
+- No NaN/Inf detected. Matches all prior platforms exactly.
+
+GPU vs CPU nearest-neighbor correspondence (set-based NN, compare.py):
+- CPU->GPU: mean=3.69e-5, p99.9=1.0e-3, max=2.52e-3; 100% coverage @tol=0.5 and @tol=10.
+- GPU->CPU: same (symmetric). Identical to gfx1101 stats.
+
+Determinism (run1 vs run2):
+- count match: True (146064 each)
+- run1->run2: mean=6.08e-6, max=1.0e-3; 100% coverage @tol=0.5 and @tol=10.
+- Residual max (1.0e-3) is ASCII PLY 6-sig-fig print-precision ceiling; identical to all prior platforms.
+
+### Verdict
+
+PASS. gfx1201 (RDNA4, wave32) produces numerically identical reconstruction results to gfx90a, gfx1100, gfx1101, and the CPU reference. No source changes were needed; the port is wave-size-agnostic and arch-independent across all four validated platforms.
