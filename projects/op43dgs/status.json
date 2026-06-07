@@ -7,17 +7,17 @@
   "priority": 3.393,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "9430d42b5d2a2b3c6f6359694c4c5be601d07b38",
+  "updated_at": "2026-06-07T22:17:32Z",
+  "head_sha": "87173958ed14a2924349187e9e9f2744cee2c93a",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "9430d42b5d2a2b3c6f6359694c4c5be601d07b38",
       "started_at": "2026-06-01T00:39:24Z",
       "completed_at": "2026-06-01T01:32:42Z",
-      "updated_at": "2026-06-01T01:32:42Z",
+      "updated_at": "2026-06-07T22:17:32Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,13 +34,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "9430d42b5d2a2b3c6f6359694c4c5be601d07b38",
       "started_at": "2026-06-01T20:35:00Z",
       "completed_at": "2026-06-01T20:47:00Z",
-      "updated_at": "2026-06-01T20:47:00Z",
+      "updated_at": "2026-06-07T22:17:32Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "validated_sha": "87173958ed14a2924349187e9e9f2744cee2c93a",
+      "started_at": "2026-06-07T22:17:32Z",
+      "completed_at": "2026-06-07T22:17:32Z",
+      "updated_at": "2026-06-07T22:17:32Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,7 +98,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

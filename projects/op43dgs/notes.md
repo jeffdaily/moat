@@ -344,3 +344,112 @@ Determinism: pinhole forward bitwise-identical across two runs (no output atomic
 grad-sum run-to-run diffs 0.00e+00 (exact reproducibility on this GPU for these N).
 
 All gates satisfied. State: linux-gfx1100 completed, validated_sha=9430d42b5d2a2b3c6f6359694c4c5be601d07b38.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), Windows 11 Pro for Workstations.
+ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260604 (hip 7.14.60850-d34cbb64),
+torch 2.9.1+rocm7.14.0a20260604 (multi-arch venv). Python 3.12.
+Fork tip validated: 87173958ed14a2924349187e9e9f2744cee2c93a.
+State transition: port-ready -> completed.
+HIP_VISIBLE_DEVICES=0 (gfx1201 is device 0; gfx1101 offline this session).
+
+### Windows delta-port change (new commit 8717395 on top of 9430d42)
+
+One Windows-specific fix required: `c10::ValueError` dllimport LNK2001.
+
+On Windows+HIP, MSVC compiles ext.cpp (PYBIND11_MODULE) and picks up a
+`__declspec(dllimport)` reference to `c10::ValueError(SourceLocation, string)`
+from ATen headers included via `<torch/extension.h>`. c10.dll does not export
+this inherited constructor (MSVC does not re-export inherited constructors even
+for C10_API classes) -> LNK2001. Fix: `/ALTERNATENAME` linker directive in each
+setup.py (guarded by `os.name == 'nt' and torch.version.hip`) redirects the
+missing dllimport thunk to `c10::Error(SourceLocation, string)`, which IS
+exported. `ValueError IS-A Error` with no additional data members; semantically
+identical constructors. Applies to all four extensions (simple-knn and the three
+rasterizer variants).
+
+Same class as the FaithC `c10::ValueError` fix and documented in PORTING_GUIDE.
+
+### Build environment
+- Venv: B:\develop\TheRock\external-builds\pytorch\.venv
+- ROCM_HOME: _rocm_sdk_devel (inside venv site-packages)
+- HIP_DEVICE_LIB_PATH: _rocm_sdk_devel/lib/llvm/amdgcn/bitcode
+- DISTUTILS_USE_SDK=1
+- MSVC link.exe prepended to PATH (before Git /usr/bin/link.exe)
+- HIP_VISIBLE_DEVICES=0 (gfx1201, RDNA4)
+- PYTORCH_ROCM_ARCH=gfx1201, MAX_JOBS=32
+
+### Build commands (from-scratch, all four extensions)
+
+```
+MSVC_BIN="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64"
+export PATH="$MSVC_BIN:$PATH"
+export ROCM_HOME=<venv>/Lib/site-packages/_rocm_sdk_devel
+export HIP_DEVICE_LIB_PATH=<venv>/Lib/site-packages/_rocm_sdk_devel/lib/llvm/amdgcn/bitcode
+export DISTUTILS_USE_SDK=1 HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 MAX_JOBS=32
+PYTHON=<venv>/Scripts/python.exe
+SRC=projects/op43dgs/src
+
+# simple-knn
+utils/timeit.sh op43dgs compile -- \
+  $PYTHON -m pip install $SRC/submodules/simple-knn --no-build-isolation --no-deps
+
+# pinhole rasterizer
+$PYTHON -m pip uninstall -y diff_gaussian_rasterization
+utils/timeit.sh op43dgs compile -- \
+  $PYTHON -m pip install $SRC/submodules/diff-gaussian-rasterization-pinhole --no-build-isolation --no-deps
+
+# fisheye rasterizer (same pattern, uninstall between)
+# panorama rasterizer (same pattern, uninstall between)
+```
+
+Build results: all 4 extensions PASS (exit 0). gfx1201 code-object present in each .pyd (`.hipFatB` section in PE binary). Warnings: deprecated `.data<T>()` API (upstream, not ported) -- does not affect correctness.
+
+### Test commands (HIP_VISIBLE_DEVICES=0, harnesses in agent_space/op43dgs/)
+
+```
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/val_simpleknn.py
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier1_forward.py pinhole
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier2_backward.py pinhole
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier3_train.py pinhole
+# reinstall fisheye
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier1_forward.py fisheye
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier2_backward.py fisheye
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/fish_fit.py fisheye
+# reinstall panorama
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier1_forward.py panorama
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/tier2_backward.py panorama
+utils/timeit.sh op43dgs test -- $PYTHON agent_space/op43dgs/fish_fit.py panorama
+```
+
+### Results
+
+simple-knn distCUDA2 (N=50000): finite=True nonneg=True bitwise_deterministic=True. PASS.
+
+pinhole Tier 1 forward: shape (3,128,128), finite=True, coverage=1.0000, bitwise_det=True. PASS.
+pinhole Tier 2 backward:
+  grad-sum run-to-run rel diff: means=9.06e-08, opac=0.00e+00, sh=0.00e+00, scales=1.42e-07 (all stable)
+  opac: n=40 slope=1.008 sign=1.00 [gate slope~1.0] PASS
+  sh: n=40 slope=1.000 sign=1.00 [gate slope~1.0] PASS
+  scales: n=40 slope=0.954 sign=1.00 PASS
+  means: n=40 slope=0.004 sign=0.94 [gate sign~1.0; slope scaled by design] PASS
+pinhole Tier 3 training: loss 0.00485->0.00000, PSNR 23.14->54.54 dB (>30% reduction). PASS.
+GPU kernel dispatch confirmed: rasterizer prints "CUDA Kernel: Optimal GS (pinhole)" on load.
+
+fisheye Tier 1: finite=True, coverage=1.0000, bitwise_det=True. PASS.
+fisheye Tier 2: opac slope=1.006 sign=1.00; sh slope=1.043 sign=1.00;
+  scales sign=1.00 (slope=0.575, sign-gated); means sign=0.86 (>0.85 gate). PASS.
+fisheye single-cam fit: loss 0.00870->0.00002, PSNR 20.61->48.09 dB. CONVERGES. PASS.
+
+panorama Tier 1: finite=True, coverage=1.0000, bitwise_det=True. PASS.
+panorama Tier 2: opac slope=1.001 sign=1.00; sh slope=0.999 sign=1.00;
+  scales slope=0.983 sign=1.00; means sign=0.89 (slope=0.117, sign-gated). PASS.
+panorama single-cam fit: loss 0.00093->0.00000, PSNR 30.30->65.17 dB. CONVERGES. PASS.
+
+All gates satisfied. State: windows-gfx1201 completed, validated_sha=87173958ed14a2924349187e9e9f2744cee2c93a.
+
+Note for linux-gfx90a/gfx1100: commit 8717395 adds Windows-only setup.py changes
+(guarded by `os.name == 'nt' and torch.version.hip`). Linux builds are byte-identical
+to 9430d42. Binary-equivalence check via codeobj_diff.py is the shortcut to carry
+those platforms forward without a full GPU re-run.
