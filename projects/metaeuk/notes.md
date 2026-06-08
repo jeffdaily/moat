@@ -243,3 +243,59 @@ GPU flag confirmed active in logs: "Use GPU 1" shown in predictexons workflow.
 
 GPU arch: gfx1100
 Validation: PASSED
+
+## Validation 2026-06-08 (linux-gfx90a, revalidate at 2e4e953)
+
+### Delta from de54dee7 to 2e4e953
+
+head_sha changed from de54dee7 -> a1b8ad0e (Windows build fixes) -> 2e4e953 (Linux fix).
+
+classify returned `unknown/arch_independent=False` (classification failed), requiring full revalidation.
+
+The a1b8ad0e commit added `HIP_DISABLE_WARP_SYNC_BUILTINS` to suppress a bfloat16 redefinition on Windows ROCm 7.14. This macro gates `amd_warp_sync_functions.h`, which provides `__syncwarp`. `kernels.cuh:777` calls `__syncwarp()` -- the Linux build at a1b8ad0e failed with "undeclared identifier '__syncwarp'".
+
+Fix applied in new commit 2e4e953: add explicit `__syncwarp()` definition to `cuda_to_hip.h` after the `HIP_DISABLE_WARP_SYNC_BUILTINS` guard, using the same fence+wave_barrier+fence sequence from `amd_warp_sync_functions.h`. Protected by `#ifndef __syncwarp` so it is a no-op if the platform provides it.
+
+### Build
+
+```bash
+HIP_VISIBLE_DEVICES=3 cmake -S /var/lib/jenkins/moat/projects/metaeuk/src \
+  -B /var/lib/jenkins/moat/projects/metaeuk/build \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DENABLE_CUDA=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+HIP_VISIBLE_DEVICES=3 cmake --build /var/lib/jenkins/moat/projects/metaeuk/build -j16
+```
+
+Build completed successfully. Binary: 15M metaeuk at build/src/metaeuk, libmarv.so 50M.
+
+### Test Results
+
+**CPU Baseline (--gpu 0, default):**
+```bash
+cd /var/lib/jenkins/moat/projects/metaeuk/src/tests
+bash run.sh /var/lib/jenkins/moat/projects/metaeuk/build/src/metaeuk
+```
+All 9 test scripts: ALL OKAY
+
+**GPU Mode (--gpu 1), HIP_VISIBLE_DEVICES=3 (gfx90a MI250X):**
+Ran 6 core test suites with --gpu 1 in predictexons:
+- minus_strand_results_gpu: ALL OKAY
+- multi_exon_results_gpu: ALL OKAY
+- two_contigs_results_gpu: ALL OKAY
+- target_overlap_results_gpu: ALL OKAY
+- cluster_rep_results_gpu: ALL OKAY
+- target_cov_results_gpu: ALL OKAY
+
+GPU confirmed active: "Use GPU 1" in each predictexons run.
+
+### Pass/Fail Summary
+- Build: PASS (with __syncwarp fix in 2e4e953)
+- CPU baseline tests: PASS (9/9)
+- GPU functional tests: PASS (6/6 core suites, --gpu 1)
+- CPU vs GPU consistency: PASS
+
+Fork head pushed: 2e4e953a40822e1fd717d641686be5a012c4bbaf
+GPU arch: gfx90a (MI250X, GCD3)
+Validation: PASSED
