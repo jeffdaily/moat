@@ -308,3 +308,58 @@ PASS: device random_generator produced finite, varied values
 **Result**: PASS (both tests). Device RNG produces finite, varied, in-range values on gfx1100 (RDNA3 wave32), identical statistics to gfx90a. Original hip_test shows no regression.
 
 **Validated at**: d904b8b02cb386ac6f97be9774ede7fe8314a3ed
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+**Purpose**: First-time GPU validation for windows-gfx1201 at d904b8b0.
+
+**GPU**: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0
+
+**Build command**:
+```bash
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+cd projects/visionaray/src && git submodule update --init --recursive
+cmake -B build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DVSNRAY_ENABLE_HIP=ON \
+  -DVSNRAY_ENABLE_CUDA=OFF \
+  -DVSNRAY_ENABLE_UNITTESTS=OFF \
+  -DVSNRAY_ENABLE_COMMON=OFF \
+  -DVSNRAY_ENABLE_VIEWER=OFF \
+  -DVSNRAY_ENABLE_EXAMPLES=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_MAKE_PROGRAM="/c/Strawberry/c/bin/ninja" \
+  -DCMAKE_PREFIX_PATH="$ROCM"
+bash utils/timeit.sh visionaray compile -- cmake --build build -j24
+```
+
+Notes:
+- Used Ninja + all-clang (clang.exe for C, clang++.exe for C++/HIP); MSVC generator rejects HIP.
+- VSNRAY_ENABLE_COMMON=OFF (Boost not installed on this host; common lib not needed by test targets).
+- TheRock runtime DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc*.dll) copied to test/ dir to override System32 amdhip64.
+
+**Test command**:
+```bash
+# TheRock runtime DLLs copied to build/test/ to override System32
+bash utils/timeit.sh visionaray test -- bash -c "HIP_VISIBLE_DEVICES=0 ./build/test/hip_test.exe && HIP_VISIBLE_DEVICES=0 ./build/test/hip_random_test.exe"
+```
+
+**Test output**:
+```
+Testing visionaray HIP support...
+Device: AMD Radeon RX 9070 XT
+Warp size: 32
+PASS: Basic HIP test succeeded
+Testing visionaray device random_generator (HIP)...
+Device: AMD Radeon RX 9070 XT
+Warp size: 32
+samples=32768 min=1.2144e-05 max=0.99997 mean=0.499811
+PASS: device random_generator produced finite, varied values
+```
+
+**Result**: PASS (both tests). Device RNG produces identical statistics to gfx90a/gfx1100 (min~1.2e-5, max~0.99997, mean~0.500). RDNA4 wave32 handled correctly.
+
+**Validated at**: d904b8b02cb386ac6f97be9774ede7fe8314a3ed
