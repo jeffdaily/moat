@@ -212,3 +212,35 @@ Key Windows runtime requirement: rocsparse.dll references `../.kpack/blas_lib_gf
 
 Result: 3/3 PASS on AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32).
 validated_sha = 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+### Platform: linux-gfx90a (AMD Instinct MI250X / MI250, gfx90a, ROCm 7.2.1)
+### Method: binary-equivalence carry-forward (no GPU re-run needed)
+
+Delta f6105bf9..503569a5 consists of two Windows-specific commits:
+- ee2f874: `[ROCm] Fix Windows build: skip -lm on Windows` -- changes `-lm` to `$<$<NOT:$<PLATFORM_ID:Windows>>:m>` in 3 CMakeLists.txt files; Linux still links -lm (no change)
+- 503569a: `[ROCm] Fix Windows DLL export and HIP link for shared libraries` -- adds `WINDOWS_EXPORT_ALL_SYMBOLS ON` (ignored on Linux) and explicit HIP_LIBRARY links for wrapper_lp/wrapper_highs (DLL resolution only needed on Windows)
+
+Classifier returned `mixed` (CMakeLists.txt token count changed), so binary-equivalence check performed.
+
+Built at both SHAs for gfx90a:
+```bash
+export HIGHS_HOME=/var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/install
+# build_old at f6105bf9, build_new at 503569a5
+cmake <src> -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+codeobj_diff.py result:
+- lib/libcudalin.so: identical (exported symbols + device ISA identical, 74 exports)
+- lib/libcupdlp.so: indeterminate (no GPU code in lib -- roc-obj-ls: "No kernel section found")
+- lib/libwrapper_highs.so: indeterminate (no GPU code -- CPU-only wrapper)
+- lib/libwrapper_lp.so: indeterminate (no GPU code -- CPU-only wrapper)
+
+Manual nm -D symbol diff for all three indeterminate libs: zero diff (identical exported symbols).
+
+Conclusion: libcudalin.so (sole GPU kernel library) is binary-identical on gfx90a. The three
+CPU-only shared libs have identical exported symbols. Delta is Windows-only; no GPU re-run needed.
+
+Carry-forward: completed at 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750 (binary-equiv)
