@@ -226,3 +226,27 @@ Single marginal failure (same as all other platforms):
 - Verdict: Acceptable -- exact same overshoot as gfx90a and gfx1100
 
 All 88 CPU tests PASS. All 37 GPU tests pass (double precision and all other GPU kernel tests). The port is validated for production use on gfx1201 (RDNA4, wave32).
+
+## PR-prep 2026-06-08 (lead) -- docs + squash; carry-forward, no GPU re-run
+
+Port was clean (no jargon in code or commit message; CMake option USE_HIP with a
+gfx90a default-when-unset, no jargon comment). Only prep needed was docs. No local
+clone existed -- cloned jeffdaily/baspacho (origin=fork, upstream=facebookresearch).
+
+- README.md: added a "HIP / ROCm (AMD GPUs)" section alongside ### Cuda (USE_HIP,
+  hipBLAS/hipSOLVER/hipSPARSE, CMAKE_HIP_COMPILER, CMAKE_HIP_ARCHITECTURES) and an
+  optional-libraries note. (The CUDA side documents BASPACHO_CUDA_ARCHS=detect; the
+  HIP side uses the standard CMAKE_HIP_ARCHITECTURES, default gfx90a when unset.)
+
+Squashed port+doc to ONE commit on upstream main (no drift): e2e66459, parent
+bd833260 (= upstream/main tip). 9 files, +193/-16. advance_head classified the doc
+delta doc-only; squash-carry-forward carried linux-gfx90a, linux-gfx1100,
+windows-gfx1201 forward (no GPU re-run). windows-gfx1101 + windows-gfx1151 stay
+port-ready (redundant Windows tier; gfx1201 satisfies it). pr-ready=True.
+upstream.json populated (fork_url, base_sha).
+
+NOTE: facebookresearch is a Meta repo -- merges go through codesync import, so a
+MERGED PR shows API state closed/merged=false; read the meta-codesync bot
+"merged ... in <sha>" comment, not the merged flag (see [[moat-meta-codesync-merge-state]]).
+
+NEXT: upstream-PR gate (lead-only, jeff approval). base = main. No existing jeffdaily PR.
