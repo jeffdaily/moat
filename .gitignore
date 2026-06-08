@@ -27,3 +27,44 @@ projects/rmcl/rmagine_src/
 
 # clang/hip offload-bundle per-TU intermediates (never source)
 *.o.0.*
+
+# Build/test-run artifacts that land at the repo root when a validator runs a
+# build or demo from the wrong cwd (real validation scratch belongs in
+# agent_space/). MOAT tracks none of these.
+/build-*/
+/lfs-*/
+/app/
+/bin/
+/lib/
+/cache/
+/examples/
+/octproz*/
+/DemoOutput_*/
+*.ply
+*.ohm
+*.vtk
+*.qmake.stash
+*.log
+/CPackConfig.cmake
+/CPackSourceConfig.cmake
+/DartConfiguration.tcl
+/CTestTestfile.cmake
+/cmake_install.cmake
+/HConfig.h
+/highs*.cmake
+/highs_export.h
+/highs-config*.cmake
+
+# Per-arch / compare scratch dirs created at the projects/ level instead of
+# agent_space/ (these are not adopted projects -- adopted projects have a
+# status.json and an upstream repo name, never a -gfx*/-build/-revalidate suffix).
+projects/*-gfx1100/
+projects/*-gfx90a/
+projects/*-gfx1101/
+projects/*-gfx1201/
+projects/*-new-build/
+projects/*-old-build/
+projects/*-revalidate/
+projects/*-converge/
+projects/*-stage2-geom/
+projects/*-cmp-*/
