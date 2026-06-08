@@ -32,3 +32,4 @@
 {"kind":"phase","ts":"2026-06-08T19:06:54Z","phase":"compile","seconds":36.660,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/qrack_cmp_new -j16 --target unittest"}
 {"kind": "tokens", "ts": "2026-06-08T19:09:53Z", "tokens": 46180, "source": "validator"}
 {"kind":"phase","ts":"2026-06-08T19:55:49Z","phase":"compile","seconds":30.013,"exit":0,"cmd":"bash -c cd projects/qrack/src && cmake -S . -B /var/lib/jenkins/moat/agent_space/qrack-gfx1100-revalidate/build-new-eb787828 -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON && cmake --build /var/lib/jenkins/moat/agent_space/qrack-gfx1100-revalidate/build-new-eb787828 -j16 --target unittest 2>&1"}
+{"kind": "tokens", "ts": "2026-06-08T19:57:46Z", "tokens": 38664, "source": "validator"}
