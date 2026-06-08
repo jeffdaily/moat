@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-08T17:29:11Z",
-  "head_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
+  "updated_at": "2026-06-08T17:54:40Z",
+  "head_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
+      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
       "started_at": "2026-05-31T00:42:20Z",
-      "completed_at": "2026-06-08T17:27:08Z",
-      "updated_at": "2026-06-08T17:29:11Z",
+      "completed_at": "2026-06-08T17:54:38Z",
+      "updated_at": "2026-06-08T17:54:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "to": "dd46b8703561347a63326967463a1cba7a52931f",
         "method": "source-class",
-        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
-        "at": "2026-06-08T17:27:08Z"
+        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
+        "at": "2026-06-08T17:54:38Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
+      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
       "started_at": null,
-      "completed_at": "2026-06-08T17:27:08Z",
-      "updated_at": "2026-06-08T17:29:11Z",
+      "completed_at": "2026-06-08T17:54:38Z",
+      "updated_at": "2026-06-08T17:54:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,20 +61,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "to": "dd46b8703561347a63326967463a1cba7a52931f",
         "method": "source-class",
-        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
-        "at": "2026-06-08T17:27:08Z"
+        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
+        "at": "2026-06-08T17:54:38Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
+      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
       "started_at": null,
-      "completed_at": "2026-06-08T17:27:08Z",
-      "updated_at": "2026-06-08T17:29:11Z",
+      "completed_at": "2026-06-08T17:54:38Z",
+      "updated_at": "2026-06-08T17:54:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -89,20 +89,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "to": "dd46b8703561347a63326967463a1cba7a52931f",
         "method": "source-class",
-        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
-        "at": "2026-06-08T17:27:08Z"
+        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
+        "at": "2026-06-08T17:54:38Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
+      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
       "started_at": null,
-      "completed_at": "2026-06-08T17:27:08Z",
-      "updated_at": "2026-06-08T17:29:11Z",
+      "completed_at": "2026-06-08T17:54:38Z",
+      "updated_at": "2026-06-08T17:54:40Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -117,10 +117,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "to": "dd46b8703561347a63326967463a1cba7a52931f",
         "method": "source-class",
-        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
-        "at": "2026-06-08T17:27:08Z"
+        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
+        "at": "2026-06-08T17:54:38Z"
       }
     },
     "windows-gfx1151": {
