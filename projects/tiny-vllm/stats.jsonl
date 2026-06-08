@@ -14,3 +14,6 @@
 {"kind":"session","ts":"2026-06-05T05:27:38Z","epoch":1780637258.542374176,"event":"end","platform":"linux-gfx90a"}
 {"kind":"phase","ts":"2026-06-05T15:45:15Z","phase":"gfx1100-build","seconds":7.000,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/tiny-vllm/src && cmake -B build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -G Ninja && cmake --build build"}
 {"kind":"phase","ts":"2026-06-05T15:45:22Z","phase":"gfx1100-test","seconds":0.125,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/tiny-vllm/src/build/tiny-vllm"}
+{"kind":"phase","ts":"2026-06-08T19:30:06Z","phase":"compile","seconds":4.601,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/tiny-vllm/src/build -j24"}
+{"kind":"phase","ts":"2026-06-08T19:33:32Z","phase":"test","seconds":0.522,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_tinyvllm_gfx1201.py"}
+{"kind": "tokens", "ts": "2026-06-08T20:00:16Z", "tokens": 67402, "source": "validator"}
