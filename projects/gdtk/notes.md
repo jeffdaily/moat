@@ -257,3 +257,133 @@ arithmetic divergence in the sbp_asf formulation.
 (t=6.069e-04 matching Linux). However, the isentropic-vortex (sbp_asf + exchange BCs) catastrophically
 fails at step 1 with all cells bad, a gfx1201-specific regression not seen on gfx90a or gfx1100.
 Bouncing to porter for investigation of the sbp_asf/exchange-BC path on RDNA4.
+
+## sbp_asf isentropic-vortex gfx1201 blow-up root-cause (2026-06-08)
+
+ROOT CAUSE (definitive): a Windows-only host-side I/O bug in the upstream grid reader, NOT
+an RDNA4/gfx1201 arithmetic issue and NOT the sbp_asf flux. In src/chicken/block.cu,
+Block::readGrid() opens the binary `.bin` grid file WITHOUT `ios::binary`:
+
+```
+auto f = ifstream(fileName);                 // line ~798, BUG: no ios::binary
+```
+
+On Windows, a text-mode ifstream performs CRLF->LF translation and treats byte 0x1A
+(Ctrl-Z) as end-of-file, corrupting the raw little-endian fp64 vertex stream. On Linux,
+text mode == binary mode, so gfx90a/gfx1100 are unaffected -- which is why this looked
+arch-specific. The very next binary reader in the same file, readFlow() (line ~890), DOES
+pass `ios::binary` correctly, so the FLOW data (initial conserved state) loads fine; only
+the GRID VERTICES are corrupted. This is a latent upstream bug, not introduced by the HIP port.
+
+Failure mechanism: corrupted vertices -> Block::computeGeometry() (host, runs before the
+host->GPU copy) computes garbage cell volumes that fall below the verySmallVolume guard in
+hex_cell_properties() (vector3.cu ~422) and get clamped to exactly 0. In FVCell::eval_dUdt
+(cell.cu ~190), `vol_inv = one/volume = 1/0 = inf`, so dUdt = inf for every cell, and the
+stage-1 update `U1 = U0 + dt*dUdt` -> inf/NaN everywhere. decode_conserved then flags all
+~28,800 cells bad at step 1. The "all cells bad" + "could not copy bad_cell_count" symptom
+is the downstream effect of a divide-by-zero geometry, not an FP-accumulation divergence.
+
+Why shock-tube passed and vortex failed: both run with --binary. The shock-tube grid is tiny
+(a few hundred vertices) and its fp64 byte pattern happened not to contain a 0x1A or a lone
+0x0D/0x0A that the text-mode translation mangles; the 43,923-vertex vortex grid inevitably
+contains such bytes, so it corrupts. It is luck-of-the-byte-pattern, not arch behaviour --
+the same vortex would fail identically on Windows gfx1101.
+
+Decisive experiments (all on gfx1201, RX 9070 XT, HIP_VISIBLE_DEVICES=0, fork @ b611ce0):
+1. PRIMARY HYPOTHESIS REFUTED -- FP contraction/fast-math: rebuilt the single TU with
+   `-O2 -ffp-contract=off` (hipcc default is `fast`). Vortex still blew up at step 1, same
+   cell. Fast-math is NOT the cause.
+2. BC/flux race REFUTED: split the fused BC-fill+flux kernel (calculate_fluxes_on_gpu) into a
+   separate apply_convective_bcs_on_gpu kernel launched before the flux kernel, adding a true
+   inter-thread global sync between ghost-cell writes and stencil reads. Still blew up
+   identically. (Note: that fused-kernel cross-thread read/write IS a latent race, but it is
+   benign here and not the failure cause.)
+3. INSTRUMENTATION (decisive): a printf in update_stage_1_on_gpu showed
+   `vol=0, dUdt_mass=-inf` for the bad cells while U0 (mass=1.16, totE=390000) was correct and
+   face fluxes F were finite (403.169) with face areas ~1e-16 (i.e. ~0). A host-side print
+   right after computeGeometry() showed the HOST already had `vol=0` and cell-0 vertices
+   `v0=(-2,-2,-0.2) v6=(6.26667,-2,-0.2)` -- scattered, not a compact hex -> grid file read
+   corrupt on the CPU, before any GPU involvement.
+
+FIX (one line, applied to a scratch build and validated, NOT committed to the fork per the
+diagnostic scope):
+
+```
+auto f = ifstream(fileName, ios::binary);    // block.cu readGrid() binary branch
+```
+
+Validation of the fix on gfx1201:
+- isentropic-vortex: now runs to completion, 880 steps to t=5.005e-02, 49 snapshots (tindx
+  0-48), `Done in ~1.4s`, zero bad cells -- matches the gfx90a/gfx1100 Linux reference exactly.
+- shock-tube (regression): still completes, 100 steps to t=6.069e-04 -- unchanged.
+
+Fixability and scope: trivially fixable and the RIGHT general fix. It should be applied
+UNCONDITIONALLY (not guarded for RDNA4/gfx12) -- it is a plain correctness bug in the binary
+file open. It is behavior-preserving on gfx90a/gfx1100 (and on NVIDIA/Linux generally) because
+on POSIX `ios::binary` is a no-op; it only changes behaviour on Windows, where it is required.
+This is a clean upstream-quality fix (the adjacent readFlow already does exactly this), worth
+upstreaming on its own merits. With it, gfx1201 passes BOTH examples and windows-gfx1201 can be
+re-validated. (status.json left at validation-failed per the diagnostic instructions.)
+
+## Validation 2026-06-08 (windows-gfx1201, fix applied)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gcnArchName=gfx1201, HIP_VISIBLE_DEVICES=0,
+verified via B:/develop/TheRock/build/bin/hipInfo.exe).
+Commit: 8aadf2185510930b523c786e21fde116c22b2809 (new commit on top of b611ce0; one-line
+readGrid binary-mode fix in src/chicken/block.cu).
+
+The fix: `auto f = ifstream(fileName);` -> `auto f = ifstream(fileName, ios::binary);` in the
+binary `.bin` branch of Block::readGrid(). Applied unconditionally; the gzip/text branch
+(bxz::ifstream) is untouched. See the root-cause section above.
+
+### Build (single TU, ~9s rebuild)
+
+```
+ROCM_VENV_SCRIPTS=".../pytorch/.venv/Scripts"
+ROCM_DEVEL=".../pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+ROCM_CORE=".../pytorch/.venv/Lib/site-packages/_rocm_sdk_core"
+export PATH="${ROCM_VENV_SCRIPTS}:${ROCM_DEVEL}/bin:${ROCM_DEVEL}/lib/llvm/bin:${ROCM_CORE}/bin:${PATH}"
+ZLIB_INC="C:/Users/Shark44/.conan2/p/b/zlib94c8e5ebac5da/p/include"
+ZLIB_LIB="C:/Users/Shark44/.conan2/p/b/zlib94c8e5ebac5da/p/lib"
+cd src/chicken
+sed -e 's/PUT_REVISION_STRING_HERE/b611ce0/' main.cu > main_with_rev_string.cu
+hipcc.exe -DHIP -std=c++17 -O2 --offload-arch=gfx1201 -o chkn-run.exe -DIDEAL_AIR \
+    -include cuda_to_hip.h -I"${ZLIB_INC}" main_with_rev_string.cu -L"${ZLIB_LIB}" -lzlib -fopenmp
+```
+
+Build OK (only expected nlohmann/json deprecated-literal-operator, hipFree nodiscard, and
+host-side sscanf MSVC deprecation warnings).
+
+### Unit tests (4/4 PASS)
+
+```
+cd src/chicken/test
+/c/Strawberry/c/bin/gmake.exe HIP=1 test
+```
+
+gas_test, rsla_test, vector3_test, spline_test all ran to "-Done-" (each asserts internally
+and aborts on failure). 4/4 PASS.
+
+### GPU examples (both PASS)
+
+Tooling: chkn_prep.py / chkn_post.py run via the venv python with
+PYTHONPATH=B:/develop/moat/projects/gdtk/src/src/lib (the `gdtk` package); chkn-run.exe is the
+fixed gfx1201 binary with TheRock DLLs alongside it. HIP_VISIBLE_DEVICES=0.
+
+1. shock-tube (Sod), regression:
+   - `chkn-prep --job=sod --binary; chkn-run --job=sod --binary; chkn-post --job=sod --binary --tindx=all`
+   - 400 cells, 100 steps, "Done in 0.177s", HIP devices found: 1
+   - Final time t=6.069e-04 (times.data: 0.000606905) -- unchanged, matches gfx90a/gfx1100.
+   - PASS
+
+2. isentropic-vortex (sbp_asf + exchange BCs), the previously-failing case:
+   - `chkn-prep --job=vortex --binary; chkn-run --job=vortex --binary; chkn-post --job=vortex --binary --tindx=all`
+   - 28800 cells, ran to Step=880, "Done in 1.381s", ZERO bad cells, no hipMemcpy error.
+   - Final time t=5.00125e-02 (times.data tindx 48 = 0.0500125), 49 snapshots (tindx 0-48)
+     in both times.data and flow/ -- matches the gfx90a/gfx1100 Linux reference exactly.
+   - PASS (previously: all ~28,800 cells bad at step 1 with "could not copy bad_cell_count").
+
+### Verdict
+
+VALIDATED on real GPU. Both binary-grid GPU examples pass on gfx1201 with the one-line
+readGrid binary-mode fix; numerics match the Linux reference. windows-gfx1201 -> completed.
