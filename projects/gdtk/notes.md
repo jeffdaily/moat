@@ -387,3 +387,27 @@ fixed gfx1201 binary with TheRock DLLs alongside it. HIP_VISIBLE_DEVICES=0.
 
 VALIDATED on real GPU. Both binary-grid GPU examples pass on gfx1201 with the one-line
 readGrid binary-mode fix; numerics match the Linux reference. windows-gfx1201 -> completed.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate, binary-equiv carry-forward)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+Revalidate: b611ce03 -> 8aadf218 (one commit on top)
+
+Delta: single-line change in src/chicken/block.cu, host-side Block::readGrid() -- adds
+`ios::binary` to the ifstream open in the binary `.bin` grid branch. On Linux/POSIX,
+`ios::binary` is a no-op at both the library and kernel level; it only has effect on
+Windows (where it suppresses CRLF translation and Ctrl-Z EOF treatment).
+
+Classification: source-level functional (moatlib classify returned unknown/revalidate),
+but the change is host-only and POSIX-inert. Confirmed via codeobj_diff.py:
+
+```
+python3 utils/codeobj_diff.py /tmp/gdtk_build_old/chkn-run /tmp/gdtk_build_new/chkn-run
+verdict=identical
+  chkn-run vs chkn-run: identical (exported symbols + device ISA identical (24 exports))
+```
+
+Both builds (b611ce03 and 8aadf218) compiled with `make HIP=1 HIP_ARCH=gfx90a -j$(nproc)`.
+Device ISA and exported symbols are byte-identical; no GPU re-run required.
+
+Carry-forward: linux-gfx90a -> completed at 8aadf218 (binary-equiv).

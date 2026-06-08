@@ -25,3 +25,5 @@
 {"kind":"phase","ts":"2026-06-08T17:58:16Z","phase":"test","seconds":0.169,"exit":1,"cmd":"bash /b/develop/moat/agent_space/gdtk_validate.sh sod /b/develop/moat/projects/gdtk/src/examples/chicken/shock-tube"}
 {"kind":"phase","ts":"2026-06-08T17:58:42Z","phase":"test","seconds":0.634,"exit":0,"cmd":"bash /b/develop/moat/agent_space/gdtk_validate.sh sod /b/develop/moat/projects/gdtk/src/examples/chicken/shock-tube"}
 {"kind":"phase","ts":"2026-06-08T17:59:17Z","phase":"test","seconds":20.965,"exit":0,"cmd":"bash /b/develop/moat/agent_space/gdtk_validate.sh vortex /b/develop/moat/projects/gdtk/src/examples/chicken/isentropic-vortex"}
+{"kind":"phase","ts":"2026-06-08T19:01:48Z","phase":"compile","seconds":39.153,"exit":2,"cmd":"make HIP=1 HIP_ARCH=gfx90a install PREFIX=/tmp/gdtk_old_inst -j128"}
+{"kind":"phase","ts":"2026-06-08T19:02:11Z","phase":"compile","seconds":11.652,"exit":0,"cmd":"make -C /tmp/gdtk_old/src/chicken HIP=1 HIP_ARCH=gfx90a install PREFIX=/tmp/gdtk_old_inst -j128"}
