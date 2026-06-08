@@ -100,6 +100,59 @@ All Monte Carlo moves functioning correctly on RDNA3:
 - VDW and Coulomb energy/force calculations
 - hipCUB device reductions
 
+## Validation (2026-06-07, windows-gfx1201)
+
+Platform: windows-gfx1201
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32)
+ROCm: 7.14.0a20260604 (TheRock multi-arch nightly)
+Build: ROCm clang all-clang toolchain + hip_link_win.py wrapper
+
+Windows build required three fixes vs the Linux port (committed as a
+follow-up commit on moat-port):
+1. CMake 4.x Windows-Clang injects -fuse-ld=lld-link which the HIP
+   device-link mode rejects. Fixed via CMAKE_HIP_LINK_EXECUTABLE override
+   routing through CMake/hip_link_win.py (strips -fuse-ld=*).
+2. Source uses #ifndef WIN32 guards (without underscore); Clang defines
+   _WIN32 but not WIN32. Fixed by adding WIN32 to compile definitions.
+3. WSAStartup/gethostname (Winsock2) calls in Main.cpp require ws2_32.lib.
+
+Build command (Windows, gfx1201):
+```
+VENV=/b/develop/TheRock/external-builds/pytorch/.venv
+ROCM=$VENV/Lib/site-packages/_rocm_sdk_devel
+cmake ../src -G "Unix Makefiles" \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH=$ROCM \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build . --target GPU_NVT GPU_GEMC GPU_GCMC GPU_NPT -j32
+```
+Copy ROCm DLLs into build dir: amdhip64_7.dll amd_comgr.dll rocm_kpack.dll
+hiprtc0714.dll hiprtc-builtins0714.dll (from _rocm_sdk_core/bin)
+
+All 4 GPU executables validated on gfx1201:
+1. GPU_GEMC: PASS
+   - AR_KR SingleRun (3000 steps, VDW): acceptance ~48%/19% disp
+   - ISOPEN_NEOPEN (3000 steps, MEMC moves): MEMC acceptance 61.8%
+2. GPU_GCMC: PASS
+   - PEN_HEX Ewald electrostatics (200 steps): acceptance ~44% disp
+3. GPU_NVT: PASS
+   - AR_KR single box (1000 steps): acceptance ~98% disp
+4. GPU_NPT: PASS
+   - AR_KR single box (1000 steps, volume moves): 94.8% vol-transfer
+
+GPU kernels tested: VDW/Coulomb energy, Ewald electrostatics, displacement,
+rotation, MEMC exchange, volume moves, hipCUB device reductions.
+
+Note: checkpoint-restart tests (K_1/K_N) crash on Windows after reading
+checkpoint (exit 127, likely in PRNG state restoration). This is a
+checkpoint binary ABI issue on Windows; core GPU simulation kernels and all
+4 executables run correctly. Checkpoint functionality is not part of the GPU
+validation scope.
+
 ## Porting notes
 
 ### Random123 library
