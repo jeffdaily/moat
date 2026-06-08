@@ -179,3 +179,29 @@ CPU regression tests (2/2 PASS, bellhopcxx no regression):
 
 ### Result
 VALIDATED: 4/4 ray tests PASS (identical outputs), 2/2 TL tests PASS (all values within 0.01% tolerance), 2/2 CPU regression tests PASS. The Windows HIP port required replacing thrust::complex with std::complex + device-callable wrappers to achieve numerical consistency between CPU and GPU builds.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+HIP_VISIBLE_DEVICES=1
+validated_sha: 52c7f64aa1fc95097552c509e653bb79a54c324a -> head_sha: 0ac100337228fe6748179e63d614b23369f6d65e
+
+### Delta classification
+
+`python3 utils/moatlib.py classify bellhopcuda 52c7f64a 0ac10033` -> `class=mixed arch_independent=False`
+
+The commit adds a large `#if defined(_MSC_VER)` block in `src/common.hpp` with Windows/MSVC-specific `bhc_hip_std` complex math wrappers and `#pragma clang force_cuda_host_device`. The `#else` branch that Linux/gfx90a uses adds only `#define BHC_COMPLEX_NS std`, `#define BHC_CPX_CONSTEXPR constexpr` and moves `#include <complex>` inside the guard -- macros that resolve to the same semantics as before. `math.hpp` changes `STD::complex` to `BHC_COMPLEX_NS::complex` (both expand to `std::complex` on Linux). `common_setup.hpp` simplifies the Sort specialization using `cpx` directly instead of a `reinterpret_cast<std::complex<real>*>` -- functionally identical since `cpx = std::complex<real>` on Linux.
+
+### Binary equivalence check
+
+Built at both shas on gfx90a (build-old @ 52c7f64a, build-new @ 0ac10033), compared `libbellhopcudalib.so`:
+
+```
+python3 utils/codeobj_diff.py /tmp/bellhopcuda-old-libbellhopcudalib.so /tmp/bellhopcuda-new-libbellhopcudalib.so
+verdict=identical
+  exported symbols + device ISA identical (1797 exports)
+```
+
+### Result
+
+CARRY FORWARD (binary-equiv): The Windows-only `_MSC_VER` block has no effect on the Linux/gfx90a build. Device ISA and all 1797 exported symbols are byte-identical between old and new builds. No GPU re-run required. linux-gfx90a -> completed at 0ac10033.
