@@ -1321,3 +1321,41 @@ Wave32 (gfx1201, RDNA4): static kernels compile for gfx1201. kWarpSize=32 for gf
 Wave-size-dependent kernels (reduce, scan, scan_by_key, sort) all PASS.
 
 State transition: port-ready -> completed. validated_sha = 3782728a8254af4eef6e828a3fed62362c268502.
+
+## PR-prep 2026-06-08 (lead) -- jargon scrub + docs + squash; carry-forward, no GPU re-run
+
+Pre-PR cleanup, all behavior-preserving (comment/doc only). Fork moat-port
+squashed to ONE commit reparented on the upstream base (so the PR diffs clean):
+62f0a39ff [ROCm] Add HIP backend (full gtest suite GPU-green, incl. sparse),
+parent 492718b (upstream master mirror). 386 files, +44122/-14 vs base.
+
+Edits (on top of validated 3782728, then squashed tree-identical):
+- CMakeLists.txt: reworded the HIP arch-default comment to drop the in-house
+  "lead arch" wording; behavior (configurable default-when-unset) unchanged.
+- src/backend/hip/platform.cpp: refreshed the stale sparse comment (it still
+  claimed a deferral throwing AF_ERR_NOT_SUPPORTED; sparse is implemented on
+  hipSPARSE). The exact comment the two prior reviews flagged.
+- README.md: brief house-style note that the CUDA backend can target AMD GPUs
+  via ROCm/HIP (no build-command block -- arrayfire keeps build-from-source on
+  the wiki; the AF_BUILD_HIP CMake option() string already documents the knob).
+- Commit message scrub: dropped "(popsift axis)" cross-ref and the "MOAT ...
+  porting effort" tail from the AI-disclosure line; title "afhip" -> "HIP".
+
+Carry-forward (NO GPU re-run): advance_head classified the delta comment-only/
+doc-only (arch-independent), then squash-carry-forward carried linux-gfx90a,
+linux-gfx1100, windows-gfx1201 to 62f0a39ff. windows-gfx1151 kept blocked
+(retired host); windows-gfx1101 stays validation-failed but is the redundant
+Windows tier (gfx1201 satisfies it), so it does not block. pr-ready=True.
+
+MOAT tooling fix made en route (committed separately to the MOAT repo):
+utils/changeclass.py did not model multi-line CMake quoted strings (CMake "..."
+args may span newlines; Python's may not), so arrayfire's CMakeLists.txt -- which
+has a multi-line message(WARNING ...) -- was "untokenizable" -> every change to
+it classified `mixed` -> needless revalidation. Fixed _tok_line_hash to be
+language-aware (multiline_str=True for CMake). Regression-checked that real CMake
+logic/string-content changes still classify mixed (no false carry-forward) and
+Python tokenization is unchanged.
+
+NEXT: upstream-PR gate (lead-only, requires jeff's approval). No existing
+jeffdaily PR on arrayfire/arrayfire. PR body must scope OUT windows-gfx1151
+(retired/non-viable); claim Linux gfx90a + gfx1100 and Windows gfx1201.

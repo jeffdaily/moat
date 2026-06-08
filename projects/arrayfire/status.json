@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-07T10:30:00Z",
-  "head_sha": "3782728a8254af4eef6e828a3fed62362c268502",
+  "updated_at": "2026-06-08T20:19:24Z",
+  "head_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": "ported at fork 3782728 (was revalidate at 2378586). Extended the completed core: (1) SPARSE subsystem implemented on hipSPARSE -- the generic API (CreateCsr/Csc/Coo, SpMV/SpMM, DenseToSparse/SparseToDense, SpMatGetSize, Csr/CscSetPointers), legacy sort/conversion (Xcsrsort/Xcoosort/Xcsr2coo/Xcoo2csr/CreateIdentityPermutation), and typed csrgeam2 all map 1:1 (NO hipSPARSE gaps; coverage map in UPSTREAM_FINDINGS B5). Replaced the AF_ERR_NOT_SUPPORTED stubs in sparse.cu/sparse_arith.cu/sparse_blas.cu; new nvrtc_shims/cusparse_v2.h forwarding shim; cusparse.hpp/.cpp/descriptor-helpers rewritten with tag-keyed TaggedHandle for the void*-aliasing descriptors (DnVec/DnMat both typedef void*); two JIT fixes in kernel/sparse_arith (arith_op::operator() __device__, all-defines per launcher). (2) int8 gemm closed (B2): schar -> hipblasGemmEx HIP_R_8I in / HIP_R_32I out / COMPUTE_32I, cast to f32. (3) FreeImage on (AF_WITH_IMAGEIO=ON). FULL CUDA.* ctest on gfx90a (GCD 2) = 132/132 binaries (100%, 0 failed) -- all 6 prior residuals closed, no regression. Was 126/132. CUDA backend byte-for-byte unchanged. Next: reviewer -> validator -> completed.",
-      "validated_sha": "3782728a8254af4eef6e828a3fed62362c268502",
+      "validated_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": "2026-05-31T23:08:31Z",
-      "updated_at": "2026-05-31T23:08:31Z",
+      "updated_at": "2026-06-08T20:19:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3782728a8254af4eef6e828a3fed62362c268502",
+        "to": "314591d6b113f5bc19d52d331881291fe95b5404",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); src/backend/hip/platform.cpp: comment-only (comments/format only)",
+        "at": "2026-06-08T20:14:57Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": "validated at fork 3782728. CUDA.* ctest 132/132 (100%, 0 failed) on gfx1100 (W7800, RDNA3, wave32), matching gfx90a@3782728 exactly. All former gfx1100 failures now PASS: where 56/56 (ADL fix), cholesky_dense 32/32 (RDNA tolerance), sparse 86/86 + sparse_arith 123/123 + sparse_convert 41/41 + threading 9/9 (hipSPARSE), blas 127/127 (int8 gemm), confidence_connected 36/36 (FreeImage). jit 1781/1781 (--offload-arch=gfx1100). Wave32 fully correct. No NaN/HIP fault. Determinism confirmed.",
-      "validated_sha": "3782728a8254af4eef6e828a3fed62362c268502",
+      "validated_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
       "started_at": "2026-05-31T21:00:00Z",
       "completed_at": "2026-05-31T23:50:00Z",
-      "updated_at": "2026-05-31T23:50:00Z",
+      "updated_at": "2026-06-08T20:19:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +62,15 @@
         "first_session_at": "2026-05-31T21:00:00Z",
         "last_session_at": "2026-05-31T23:45:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3782728a8254af4eef6e828a3fed62362c268502",
+        "to": "314591d6b113f5bc19d52d331881291fe95b5404",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); src/backend/hip/platform.cpp: comment-only (comments/format only)",
+        "at": "2026-06-08T20:14:57Z"
+      }
     },
     "windows-gfx1101": {
       "state": "validation-failed",
@@ -82,10 +98,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": "validated at fork 3782728. ctest 128/131 PASS on RX 9070 XT (gfx1201, RDNA4, wave32). 3 failures are all Windows platform issues (confidence_connected: no FreeImage; sparse_arith: Windows rocsparse csrgeam2 SEGFAULT; threading: CTest 900s timeout). JIT engine confirmed gfx1201 (KER*_HIP_gfx1201_AF_310.bin). All core GPU ops pass: jit, blas, cholesky, fft, lu, reduce, solve, sparse, where, topk, transpose, scan, convolve.",
-      "validated_sha": "3782728a8254af4eef6e828a3fed62362c268502",
+      "validated_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
       "started_at": "2026-06-07T08:00:00Z",
       "completed_at": "2026-06-07T10:30:00Z",
-      "updated_at": "2026-06-07T10:30:00Z",
+      "updated_at": "2026-06-08T20:19:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +115,15 @@
         "first_session_at": "2026-06-07T08:00:00Z",
         "last_session_at": "2026-06-07T10:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3782728a8254af4eef6e828a3fed62362c268502",
+        "to": "314591d6b113f5bc19d52d331881291fe95b5404",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); src/backend/hip/platform.cpp: comment-only (comments/format only)",
+        "at": "2026-06-08T20:14:57Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
