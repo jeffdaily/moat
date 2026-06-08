@@ -225,3 +225,56 @@ Unordered_set same 7 tests.
 The tests that pass on gfx1151 (`insert_range_unique_parallel`, etc.) have each thread operating on a unique slot -- no cross-wavefront contention.
 
 **Verdict:** VALIDATION FAILED at 718d206 -- delta-port needed to fix 17 hanging tests on gfx1151 RDNA3.5 APU
+
+## Validation 2026-06-07 (windows-gfx1151) -- backoff fix (commit 3bf77cb)
+
+**Platform:** AMD Radeon 8060S (gfx1151, RDNA3.5 APU, wave32, 20 CUs), ROCm 7.2 TheRock pip SDK, Windows 11
+
+**Commit under test:** 3bf77cb [ROCm] Add wavefront backoff to concurrent-container spinlocks
+
+**Build command (incremental from existing build-gfx1151 dir):**
+```
+cmake --build build-gfx1151 --config Release --parallel 6
+```
+Rebuilt 5 targets: vector.hip.obj, deque.hip.obj, unordered_map.hip.obj, unordered_set.hip.obj, teststdgpu.exe.
+`__builtin_amdgcn_s_sleep` compiled without error. Build: SUCCESS.
+
+**Test command:**
+```
+# 685 non-hanging tests (excluding the 17 known hangers):
+timeout 600 build-gfx1151/bin/teststdgpu.exe "--gtest_filter=-<17 excluded>" 2>&1
+
+# Each of the 17 previously-hanging tests individually (20s timeout each):
+timeout 20 build-gfx1151/bin/teststdgpu.exe --gtest_filter="<test>" 2>&1
+```
+
+**Test results: VALIDATION FAILED -- 685/702 pass, 17 still hang**
+
+The 685 previously-passing tests all PASS (22.8s wall-clock). Zero regressions from the backoff fix.
+Zero memory leaks (93999/93999 device, 90476/90476 host).
+
+**All 17 previously-hanging tests still hang** (killed at 20s timeout, same as before):
+
+Deque concurrent same-end operations (3):
+- `stdgpu_deque.simultaneous_push_back_and_pop_back` -- HANG
+- `stdgpu_deque.simultaneous_push_front_and_pop_front` -- HANG
+- `stdgpu_deque.simultaneous_push_back_and_pop_front` -- HANG
+
+Unordered_map extreme-contention tests (7):
+- `insert_while_full`, `insert_multiple_while_full`, `insert_while_excess_empty` -- HANG
+- `insert_parallel_while_one_free`, `insert_parallel_while_excess_empty` -- HANG
+- `emplace_parallel_while_one_free`, `emplace_parallel_while_excess_empty` -- HANG
+
+Unordered_set same 7 tests -- all HANG.
+
+**Analysis of why the backoff fix is insufficient:**
+
+`wave_backoff()` issues `s_sleep` (via `__builtin_amdgcn_s_sleep`) on contended retries inside the `wave_lock_serialize` body. This correctly deschedules the CURRENT lane's execution but cannot reschedule the lock holder if that holder's wavefront is non-resident. The fundamental problem is that `s_sleep` operates at wavefront granularity: even if only one lane is running (elected by `wave_lock_serialize`), the other 31 inactive lanes of the same wavefront are still "alive" from the scheduler's perspective, so the wavefront cannot be fully evicted by `s_sleep` alone on this hardware.
+
+Additionally, `insert_while_full` (single N=1 thread insert into an already-full 1-slot table) hangs, which rules out cross-wavefront starvation as the cause for that case. The root cause for the full/excess-empty tests appears to be a livelock within `wave_lock_serialize` itself on gfx1151 RDNA3.5, likely triggered by a subtle divergence or ballot behavior issue in the capacity-constrained path. The 20s timeout on a single-thread operation confirms this is a true hang, not just slowness.
+
+The backoff approach addresses the right symptom (yield to let a blocked holder run) but the mechanism (`s_sleep` inside a diverged warp with 31 inactive lanes waiting at reconvergence) does not produce the desired effect on gfx1151 RDNA3.5. A fundamentally different strategy is needed -- for example, a wavefront-level fallback to a non-spinning wait (e.g., polling with `__builtin_amdgcn_s_barrier` or using a different synchronization primitive that cooperates with the hardware scheduler).
+
+**No host instability observed** during this test run.
+
+**Verdict:** VALIDATION FAILED at 3bf77cb -- backoff fix insufficient; 0/17 previously-hanging tests now pass; 685/685 non-hanging tests still pass (no regression)
