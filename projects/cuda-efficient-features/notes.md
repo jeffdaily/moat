@@ -185,3 +185,41 @@ but are benign -- hipBLASLt lazy loading falls back to plain hipblas GEMM (hipbl
 correctly. All 22 HashSIFT tests pass.
 
 All tests pass on gfx1201 (wave32 RDNA4 arch).
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+**Platform**: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1)
+**validated_sha**: 0611e58 -> **head_sha**: ebf2595
+**Classification**: carry-forward (binary-equiv)
+
+### Delta 0611e58..ebf2595
+
+Single CMakeLists.txt change: wraps `target_compile_options($<COMPILE_LANGUAGE:HIP>:-fPIE>)` with `if(NOT WIN32)`. On Linux `NOT WIN32` is always true, so the flag still applies unchanged.
+
+`python3 utils/moatlib.py classify` returned `mixed` (token count differs), so binary-equivalence check was performed.
+
+### Build commands
+
+Built at both SHAs into separate dirs:
+
+```bash
+# Old SHA (0611e58)
+git worktree add /tmp/cef-old 0611e58
+cmake -S /tmp/cef-old -B /tmp/cef-old-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF
+cmake --build /tmp/cef-old-build -j8
+
+# New SHA (ebf2595) -- from projects/cuda-efficient-features/src
+cmake -S projects/cuda-efficient-features/src -B /tmp/cef-new-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF
+cmake --build /tmp/cef-new-build -j8
+```
+
+### codeobj_diff result
+
+```
+python3 utils/codeobj_diff.py /tmp/cef-old-build/modules/cuda_efficient_features/libcuda_efficient_features.a \
+                               /tmp/cef-new-build/modules/cuda_efficient_features/libcuda_efficient_features.a
+verdict=identical
+  libcuda_efficient_features.a vs libcuda_efficient_features.a: identical (exported symbols + device ISA identical (0 exports))
+```
+
+Both builds identical on gfx90a. Carried forward to completed at ebf2595 with no GPU re-run required.

@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-08T14:54:15Z",
+  "updated_at": "2026-06-08T15:29:05Z",
   "head_sha": "ebf2595",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0611e58",
+      "validated_sha": "ebf2595",
       "started_at": "2026-06-05T08:23:04Z",
-      "completed_at": "2026-06-05T09:26:10Z",
-      "updated_at": "2026-06-08T14:53:34Z",
+      "completed_at": "2026-06-08T15:29:05Z",
+      "updated_at": "2026-06-08T15:29:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "ebf2595",
+        "method": "binary-equiv",
+        "detail": "if(NOT WIN32) guard on -fPIE is always true on Linux; compiled output identical (codeobj_diff verdict=identical)",
+        "at": "2026-06-08T15:29:05Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

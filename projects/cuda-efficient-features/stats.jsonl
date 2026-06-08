@@ -33,3 +33,7 @@
 {"kind":"phase","ts":"2026-06-08T14:49:39Z","phase":"test","seconds":0.087,"exit":127,"cmd":"B:/develop/moat/projects/cuda-efficient-features/src/build-gfx1201/tests/tests.exe"}
 {"kind":"phase","ts":"2026-06-08T14:49:55Z","phase":"test","seconds":0.048,"exit":127,"cmd":"B:/develop/moat/projects/cuda-efficient-features/src/build-gfx1201/tests/tests.exe"}
 {"kind":"phase","ts":"2026-06-08T14:51:44Z","phase":"test","seconds":0.025,"exit":127,"cmd":"./tests.exe"}
+{"kind":"phase","ts":"2026-06-08T15:27:48Z","phase":"compile","seconds":3.793,"exit":0,"cmd":"cmake -S /tmp/cef-old -B /tmp/cef-old-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF"}
+{"kind":"phase","ts":"2026-06-08T15:28:09Z","phase":"compile","seconds":16.603,"exit":0,"cmd":"cmake --build /tmp/cef-old-build -j8"}
+{"kind":"phase","ts":"2026-06-08T15:28:18Z","phase":"compile","seconds":3.716,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/cuda-efficient-features/src -B /tmp/cef-new-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF"}
+{"kind":"phase","ts":"2026-06-08T15:28:42Z","phase":"compile","seconds":16.648,"exit":0,"cmd":"cmake --build /tmp/cef-new-build -j8"}
