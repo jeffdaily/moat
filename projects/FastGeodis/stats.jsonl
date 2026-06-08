@@ -21,3 +21,6 @@
 {"kind":"phase","ts":"2026-06-08T01:36:14Z","phase":"compile","seconds":0.366,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T01:37:14Z","phase":"compile","seconds":51.188,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T01:38:37Z","phase":"test","seconds":73.103,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && python -m pytest tests/ -v"}
+{"kind":"phase","ts":"2026-06-08T01:42:24Z","phase":"compile-old","seconds":0.306,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T01:43:09Z","phase":"compile-old","seconds":39.320,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/agent_space/FastGeodis-gfx1100-gpu0/old-src --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T01:45:44Z","phase":"compile-new","seconds":39.426,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/agent_space/FastGeodis-gfx1100-gpu0/new-src --no-build-isolation"}

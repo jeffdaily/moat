@@ -174,3 +174,25 @@ Result: PASS
 - GPU tests (TestFastGeodis, TestFastGeodisSigned, TestGSF with cuda device) all passed
 - CPU tests (TestToivanen, TestPixelQueue, TestFastMarch) all passed - no regression
 - 4 pre-existing SyntaxWarning (invalid escape sequence in test docstrings) - not new
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm 7.2.53211)
+Revalidated at: 5fc19ecea7e516778ab4db264e584230c83676b4
+Previous validated_sha: bef0d9317d896706c5d36fbf5ec24ddf6909c876
+Method: binary-equivalence carry-forward (codeobj_diff)
+
+Delta: one commit (5fc19ec) adds a /ALTERNATENAME linker directive in setup.py gated by
+`if sys.platform == "win32" and BUILD_CUDA`. That block never executes on Linux.
+
+Binary-equivalence check:
+- Built bef0d93 at agent_space/FastGeodis-gfx1100-gpu0/old-src with PYTORCH_ROCM_ARCH=gfx1100
+- Built 5fc19ec at agent_space/FastGeodis-gfx1100-gpu0/new-src with PYTORCH_ROCM_ARCH=gfx1100
+- python3 utils/codeobj_diff.py old-build new-build
+
+Result: `verdict=identical`
+- FastGeodisCpp.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical, 552 exports)
+- Device code objects and exported symbols are byte-identical between both SHAs on gfx1100.
+
+Carry-forward: linux-gfx1100 advanced to 5fc19ec via binary-equiv without GPU re-run.
+Prior GPU validation (300/300 tests on gfx1100 at bef0d93) remains the evidence base.

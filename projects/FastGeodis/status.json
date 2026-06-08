@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:24:38Z",
-  "updated_at": "2026-06-08T01:39:34Z",
+  "updated_at": "2026-06-08T01:46:07Z",
   "head_sha": "5fc19ecea7e516778ab4db264e584230c83676b4",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "bef0d9317d896706c5d36fbf5ec24ddf6909c876",
+      "validated_sha": "5fc19ecea7e516778ab4db264e584230c83676b4",
       "started_at": null,
-      "completed_at": "2026-06-05T14:03:25Z",
-      "updated_at": "2026-06-08T00:58:47Z",
+      "completed_at": "2026-06-08T01:46:07Z",
+      "updated_at": "2026-06-08T01:46:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +55,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "5fc19ecea7e516778ab4db264e584230c83676b4",
+        "method": "binary-equiv",
+        "detail": "Windows-only /ALTERNATENAME guard never executes on Linux; codeobj_diff identical (552 exports, device ISA identical)",
+        "at": "2026-06-08T01:46:07Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
