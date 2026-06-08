@@ -96,3 +96,60 @@ GPU validation (pytest + manual verification):
 Note: `test_cuda_equal_to_cpu` and `test_compare_to_scipy` fail with "RuntimeError: Numpy is not available" due to PyTorch/numpy version incompatibility (same as gfx90a). The GPU code path executes correctly as verified by the passing tests and manual validation.
 
 Validation result: PASS - GPU kernels execute correctly on gfx1100, assignments are valid, optimal, and deterministic.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+Arch: gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (only GPU present after gfx1101 V710 offline)
+Head SHA: 4024f61 (adds Windows /ALTERNATENAME linker fix on top of 9c842e3)
+ROCm: 7.14.0a20260604 (TheRock nightly), Python 3.12.10 (MSVC), numpy 2.4.6, scipy 1.17.1
+
+### Windows delta (new commit 4024f61)
+
+One Windows-specific linker fix required (not needed on Linux):
+
+**`c10::ValueError` LNK2001**: `c10.dll` does not export the inherited constructor
+`c10::ValueError(SourceLocation, string)` (MSVC does not re-export inherited
+constructors even for `C10_API` classes). Headers included via `<torch/extension.h>`
+(e.g. `ATen/TensorIndexing.h`) trigger `TORCH_CHECK_VALUE` which generates a
+`__declspec(dllimport)` reference to that constructor, causing LNK2001. Fix:
+`/ALTERNATENAME` linker directive in `setup.py` (Windows-only, `sys.platform=="win32"`)
+redirects the dllimport thunk to `c10::Error(SourceLocation, string)`, which IS
+exported. `ValueError IS-A Error` with no additional data members; semantically
+identical constructors.
+
+### Build command (gfx1201)
+
+```python
+# Environment: MSVC link.exe must precede Git's /usr/bin/link.exe on PATH
+# Requires: ROCM_HOME, HIP_DEVICE_LIB_PATH, DISTUTILS_USE_SDK
+# See /tmp/build_tla_fixed.py for the full wrapper used
+
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 \
+  ROCM_HOME=<venv>/Lib/site-packages/_rocm_sdk_devel \
+  HIP_DEVICE_LIB_PATH=<venv>/Lib/site-packages/_rocm_sdk_devel/lib/llvm/amdgcn/bitcode \
+  DISTUTILS_USE_SDK=1 \
+  pip install --no-build-isolation -e . --no-deps
+```
+
+Build result: PASS (~29s, exit 0). gfx1201 code object confirmed present in .pyd (`hipFatB` section, `gfx1201` string found).
+
+### Test command
+
+```
+HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v --tb=short
+```
+
+### Test results: 3/3 PASS
+
+```
+tests/test_assignment.py::TestAssignment::test_cuda_equal_to_cpu PASSED
+tests/test_assignment.py::TestAssignment::test_simple PASSED
+tests/test_to_indices.py::TestAssignmentToIndices::test_compare_to_scipy PASSED
+3 passed in 1.45s
+```
+
+Note: All 3 tests pass on Windows (including `test_cuda_equal_to_cpu` and `test_compare_to_scipy` which fail on Linux due to numpy 1.x/2.x incompatibility). Windows venv has numpy 2.4.6 which is compatible.
+
+Assignments deterministic and match expected values: simple 4x3 assignment [0,2,-1,1] exact match; CPU/GPU agreement verified; scipy reference comparison verified.
+
+Validation result: PASS - GPU kernels execute correctly on gfx1201, assignments valid and deterministic.

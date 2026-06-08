@@ -7,8 +7,8 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:25:53Z",
-  "updated_at": "2026-06-05T15:48:45Z",
-  "head_sha": "9c842e3",
+  "updated_at": "2026-06-08T20:19:22Z",
+  "head_sha": "4024f61",
   "depends_on": [],
   "platforms": {
     "windows-gfx1151": {
@@ -37,10 +37,39 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9c842e3",
+      "validated_sha": "4024f61",
       "started_at": "2026-06-05T09:50:01Z",
-      "completed_at": "2026-06-05T10:01:07Z",
-      "updated_at": "2026-06-05T10:01:07Z",
+      "completed_at": "2026-06-08T20:19:12Z",
+      "updated_at": "2026-06-08T20:19:12Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "4024f61",
+        "method": "binary-equiv",
+        "detail": "win32-only /ALTERNATENAME linker flag in setup.py; all kernel and host C++ source files unchanged; sys.platform==win32 guard ensures Linux builds are unaffected",
+        "at": "2026-06-08T20:19:12Z"
+      }
+    },
+    "windows-gfx1201": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "4024f61",
+      "started_at": null,
+      "completed_at": "2026-06-08T20:19:22Z",
+      "updated_at": "2026-06-08T20:19:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,36 +85,14 @@
       },
       "last_agent": "validator"
     },
-    "windows-gfx1201": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-05T13:20:31Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9c842e3",
+      "validated_sha": "4024f61",
       "started_at": null,
-      "completed_at": "2026-06-05T15:48:45Z",
-      "updated_at": "2026-06-05T15:48:45Z",
+      "completed_at": "2026-06-08T20:19:17Z",
+      "updated_at": "2026-06-08T20:19:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,6 +105,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "4024f61",
+        "method": "binary-equiv",
+        "detail": "win32-only /ALTERNATENAME linker flag in setup.py; all kernel and host C++ source files unchanged; sys.platform==win32 guard ensures Linux builds are unaffected",
+        "at": "2026-06-08T20:19:17Z"
       }
     },
     "windows-gfx1101": {
