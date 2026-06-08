@@ -17,3 +17,7 @@
 {"kind": "tokens", "ts": "2026-06-05T14:03:55Z", "tokens": 47616, "source": "validator (gfx1100)"}
 {"kind":"phase","ts":"2026-06-08T00:45:08Z","phase":"compile","seconds":0.481,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T00:51:43Z","phase":"test","seconds":0.329,"exit":4,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest tests/ -v --tb=short"}
+{"kind":"phase","ts":"2026-06-08T01:30:23Z","phase":"compile","seconds":51.741,"exit":0,"cmd":"bash -c cd projects/FastGeodis/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T01:36:14Z","phase":"compile","seconds":0.366,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T01:37:14Z","phase":"compile","seconds":51.188,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T01:38:37Z","phase":"test","seconds":73.103,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && python -m pytest tests/ -v"}

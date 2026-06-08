@@ -145,3 +145,32 @@ Note for linux-gfx90a/gfx1100: the 5fc19ec commit adds only a sys.platform=="win
 /ALTERNATENAME linker directive. Linux build inputs and kernels are unchanged. The Linux
 validators can carry forward via binary-equivalence check (codeobj_diff.py) without re-running
 GPU tests.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.x)
+Revalidated at: 5fc19ecea7e516778ab4db264e584230c83676b4
+Previous validated_sha: bef0d9317d896706c5d36fbf5ec24ddf6909c876
+
+Delta: one commit (5fc19ec) adds a /ALTERNATENAME linker directive in setup.py gated by
+`if sys.platform == "win32" and BUILD_CUDA`. That block never executes on Linux; the compiled
+extension and device code are byte-identical to the bef0d93 build. Full GPU suite run as
+ground truth rather than codeobj_diff (suite is cheap at ~71s).
+
+Build:
+```bash
+HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a pip install -e . --no-build-isolation
+```
+(extension already built from prior validation; editable install confirmed)
+
+Test:
+```bash
+HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v
+```
+Test time: 71.13s
+
+Result: PASS
+- 300/300 tests passed (matching all prior validations)
+- GPU tests (TestFastGeodis, TestFastGeodisSigned, TestGSF with cuda device) all passed
+- CPU tests (TestToivanen, TestPixelQueue, TestFastMarch) all passed - no regression
+- 4 pre-existing SyntaxWarning (invalid escape sequence in test docstrings) - not new
