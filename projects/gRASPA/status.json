@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-08T17:32:59Z",
+  "updated_at": "2026-06-08T19:02:01Z",
   "head_sha": "312048e73b2afab04296ba7990814ba863651789",
   "depends_on": [],
   "platforms": {
@@ -57,13 +57,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ddf08ad4208fc4a426bbf0897d6f7186878bc48e",
+      "validated_sha": "312048e7",
       "started_at": "2026-06-05T08:58:58Z",
-      "completed_at": "2026-06-05T10:11:18+00:00",
-      "updated_at": "2026-06-08T17:32:23Z",
+      "completed_at": "2026-06-08T19:02:01Z",
+      "updated_at": "2026-06-08T19:02:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,7 +77,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "312048e7",
+        "method": "binary-equiv",
+        "detail": "Windows-only cmake/cpp guards compile to identical device ISA and exported symbols on Linux gfx90a (codeobj_diff: 87 exports identical)",
+        "at": "2026-06-08T19:02:01Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

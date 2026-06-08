@@ -266,3 +266,19 @@ Runtime DLL: `amdhip64_7.dll` found via `C:\WINDOWS\SYSTEM32\amdhip64_7.dll` (on
 **Verdict**: VALIDATED -- All three benchmark simulations pass on gfx1201 (RDNA4).
 GPU kernels produce correct results (zero GPU drift). Molecule counts match expected
 ranges (Monte Carlo stochastic variance: 17/18 CO2, 53/58 CH4, 1323/1327 Ar).
+
+## Validation 2026-06-08 (linux-gfx90a revalidate -> carry-forward, MI250X gfx90a)
+
+**Delta**: ddf08ad4 -> 312048e7 (one commit: "Add Windows build support for HIP port")
+
+**Changes in delta**:
+- `src_clean/CMakeLists.txt`: added `if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")` block to prepend clang intrinsic headers -- dead on Linux
+- `src_clean/main.cpp`: `#ifndef _WIN32` guards around `unistd.h` include, `/proc/self/statm` body, and `readlink` call -- same Linux behavior
+- `src_clean/lambda.h`: added `#include <numeric>` -- was already available transitively on Linux; no behavioral change
+- `src_clean/mc_widom.h`: added `#include <numeric>` -- same
+
+**Binary equivalence check** (codeobj_diff.py):
+- Built both SHAs at gfx90a: `HIP_VISIBLE_DEVICES=0 cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a`
+- `codeobj_diff build_old/src_clean/graspa build_new/src_clean/graspa`: `verdict=identical` (87 exported symbols + device ISA identical)
+
+**Verdict**: CARRY-FORWARD (binary-equiv) -- Windows-only CMake/C++ guards compile to identical device code and exported symbols on Linux gfx90a. No GPU re-run required.
