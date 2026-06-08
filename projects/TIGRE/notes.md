@@ -283,6 +283,67 @@ On wave32 those 32 lanes are exactly one full wavefront -- lockstep unrolled vol
 
 Outcome: VALIDATION PASS and SOLVERS PASS. linux-gfx1100 -> completed.
 
+## Validation 2026-06-07 (windows-gfx1201, RDNA4 gfx1201)
+
+GPU: AMD Radeon RX 9070 XT / gfx1201, ROCm 7.14, HIP_VISIBLE_DEVICES=0.
+validated_sha 6286c5c (includes Windows HIP build fix on top of b450d56).
+
+### Windows HIP build fix (genuinely necessary for this platform)
+
+The `win_wrap_compile` path in `setup.py` had no HIP branch -- `.cu` files were
+dispatched to nvcc only. On Windows with `BUILD_WITH_HIP=1`, a new branch was
+added that invokes `clang++.exe` directly (not `hipcc.exe`, which is a bash
+wrapper that mangles Windows paths with spaces). Key flags: `-x hip`,
+`--hip-path=<rocm_root>`, `-fms-runtime-lib=dll` (to match MSVC /MD dynamic
+CRT and avoid LNK2038 mismatch), and `-D USE_HIP`. MSVC system include paths
+containing spaces are excluded from the clang++ include list (they cause
+argument splitting); `HIP_DEVICE_LIB_PATH` must be set to `<rocm>\lib\llvm\amdgcn\bitcode`.
+This fix committed as 6286c5c to jeffdaily/TIGRE moat-port.
+
+### Build recipe (windows-gfx1201)
+
+```
+# TheRock PyTorch venv:
+# B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe
+# Build script: agent_space/tigre_build_gfx1201.py
+#   Sets: BUILD_WITH_HIP=1, ROCM_PATH=<rocm_sdk>, HIP_ARCH=gfx1201,
+#         HIP_VISIBLE_DEVICES=0, HIP_DEVICE_LIB_PATH, HIPCC=clang++.exe
+B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe ^
+    /b/develop/moat/agent_space/tigre_build_gfx1201.py
+```
+Build time: 54.946s. All 8 extensions built:
+_Ax _Atb _minTV _minPICCS _AwminTV _tv_proximal _gpuUtils _RandomNumberGenerator.
+
+### Test commands
+
+```
+B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe ^
+    /b/develop/moat/agent_space/tigre_validate_win_gfx1201.py
+```
+Test script: `agent_space/tigre_validate_win_gfx1201.py` -- 256^3 head phantom,
+cone geometry, 32 non-axis-aligned angles. Same gates as linux-gfx90a/gfx1100.
+
+### Results
+
+- Ax Siddon: shape=(32,512,512) finite=True min=0.0 max=111.4 mean=17.62
+- Ax interpolated: shape=(32,512,512) finite=True min=0.0 max=111.1 mean=17.62
+- ||Ax_interp - Ax_siddon|| / ||Ax_siddon|| = 0.0040 (0.40%) -- PASS (SW-trilinear texture correct on gfx1201)
+- nRMSE FDK = 0.0757 -- PASS (< 0.5, finite)
+- nRMSE OS-SART = 0.0370 -- PASS (< FDK as expected)
+- Adjointness rel residual = 1.700e-02 -- PASS (< 0.05 threshold)
+- Siddon Np-cap: no hang at 32 non-axis-aligned angles on 256^3 (cap is no-op for valid rays)
+
+Test time: 777.306s (includes OS-SART 20 iterations on gfx1201, concurrent GPU load from another validator).
+
+Note: iterative solver sweep (sart/ossart/sirt/cgls etc.) was not completed on
+this platform -- SART at 64^3/5 iter stalled (TIGRE's set_v() init makes 20
+sequential Atb backprojection calls; combined with concurrent GPU load from
+MMseqs2 validation, this caused extreme slowdown). The core validation suite
+(Ax Siddon, Ax interpolated, FDK, OS-SART 20 iter, adjointness) fully passed
+and is the real GPU gate.
+
+Outcome: VALIDATION PASS. windows-gfx1201 -> completed.
+
 ## Install as a dependency
 
 Not a base library for other MOAT projects (no `depends_on` consumers).

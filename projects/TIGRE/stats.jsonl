@@ -25,3 +25,6 @@
 {"kind":"phase","ts":"2026-06-04T02:56:43Z","phase":"test","seconds":6.504,"exit":0,"cmd":"python3 agent_space/tigre_solvers.py"}
 {"kind":"session","ts":"2026-06-04T02:56:59Z","epoch":1780541819.207399427,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-04T02:59:07Z", "tokens": 77364, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T02:02:08Z","phase":"compile","seconds":4.191,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T02:06:02Z","phase":"compile","seconds":54.946,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_build_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T02:22:02Z","phase":"test","seconds":777.306,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_validate_win_gfx1201.py"}

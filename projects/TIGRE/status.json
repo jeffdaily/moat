@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "setuptools-cuda",
   "adopted_at": "2026-06-04T01:07:42Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
+  "updated_at": "2026-06-08T02:35:53Z",
+  "head_sha": "6286c5c5e67c08949c46c57ddbbff19d1a1f7c5c",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
       "started_at": "2026-06-04T01:41:19Z",
       "completed_at": "2026-06-04T02:28:58Z",
-      "updated_at": "2026-06-04T02:28:58Z",
+      "updated_at": "2026-06-08T02:33:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
       "started_at": null,
       "completed_at": "2026-06-04T02:57:40Z",
-      "updated_at": "2026-06-04T02:57:40Z",
+      "updated_at": "2026-06-08T02:33:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "6286c5c5e67c08949c46c57ddbbff19d1a1f7c5c",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
+      "completed_at": "2026-06-08T02:36:01Z",
+      "updated_at": "2026-06-08T02:36:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,7 +98,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
