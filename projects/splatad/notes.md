@@ -597,3 +597,50 @@ CG tile collectives, hipcub sort). No wave-size divergence observed.
 
 Verdict: PASS. windows-gfx1201 (RDNA4, wave32) port correct.
 Fork head 96ece3d72c40 validated on gfx1201.
+
+## Validation 2026-06-08 (validator, linux-gfx90a, moat-port @ 96ece3d)
+
+Platform: AMD Instinct MI250X / MI250 (gfx90a), HIP_VISIBLE_DEVICES=3 (GCD 3), ROCm 7.2.1.
+Revalidate: validated_sha e337891 -> head_sha 96ece3d (Windows build fixes on top of the
+Linux-validated port).
+
+codeobj_diff verdict: differ (exported symbols: old has weak `std::_Sp_counted_base::_M_release`,
+new does not). The differ is a C++ stdlib weak symbol, NOT a GPU kernel or API entrypoint; all
+4 gfx90a device code objects are byte-identical by disassembly (llvm-objdump -d, normalized,
+zero diff across all 4 code objects). Per the MOAT rule (any differ verdict -> full GPU revalidation),
+full GPU revalidation was performed.
+
+Analysis of the delta (e337891 -> 96ece3d):
+- setup.py: Windows-only paths (`sys.platform == "win32"` guards, `use_ninja = sys.platform == "win32"`,
+  shim generation guarded `if sys.platform == "win32" and torch.version.hip`). Linux build inputs
+  byte-identical (same flags, same sources, use_ninja unchanged at False).
+- bindings.h / helpers.cuh: `#if defined(USE_ROCM)` -> `#ifdef __HIP__` guard on hip_runtime.h include.
+  On Linux hipcc, both USE_ROCM and __HIP__ are defined, so the include fires in exactly the same TUs.
+  Additionally, CUDAGuard.h now guarded with `#if defined(__HIP__) || defined(__CUDACC__)` (same
+  effective set on Linux hipcc). The weak symbol delta in the host code is a template instantiation
+  artifact from the guard rename, NOT a kernel or API change.
+- .gitignore: cosmetic.
+
+Build command (96ece3d, gfx90a):
+    cd /tmp/splatad_cobj_diff/new  # checkout of 96ece3d
+    git submodule update --init --recursive gsplat/cuda/csrc/third_party/glm
+    rm -rf gsplat/hip build
+    HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx90a BUILD_CUDA=1 NO_FAST_MATH=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -q
+Build time: ~7 minutes. csrc.so built; roc-obj-ls confirms 4 gfx90a code objects.
+
+Test results (all run from /tmp/splatad_cobj_diff/new/, HIP_VISIBLE_DEVICES=3):
+
+- Camera math: 27/27. PASS (no flapper this run).
+- Camera rasterization: 24/24. PASS.
+- Lidar math: 14/14. PASS (all lidar_projection parametrizations pass).
+- Lidar rasterization (test_lidar_rasterization[3,32,128]): 3/3. PASS.
+- Lidar rasterize_to_points independent validation (agent_space/splatad_validate_lidar.py):
+    [A] forward finite, range-sane (alphas [0.0000,0.9999], 100% lit), 2-run BIT-EXACT. PASS.
+    [B] grads finite (all 5 inputs), grad-sums stable to rel ~1e-7..1e-5, FD slope=1.0000,
+        sign-agreement=100%, median rel-err=0.000. PASS.
+    [C] 80-step Adam training: loss 0.0441 -> 0.0001 (99.7% down), grads finite. PASS.
+- Non-GPU regression (test_strategy.py): 1/1. PASS.
+
+Verdict: PASS. linux-gfx90a (MI250X, wave64) revalidated at 96ece3d. No regression.
+Windows-only guards do not affect Linux code paths; all GPU tests pass.
