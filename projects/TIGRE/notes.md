@@ -372,6 +372,29 @@ Note: the status.json head_sha was corrected from `6286c5c5e67c08949c46c57ddbbff
 (typo recorded by the windows-gfx1201 validator) to the actual fork tip
 `6286c5c2474182dced7f06a807ae241300e10a05`. windows-gfx1201 validated_sha corrected too.
 
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Delta: b450d56f -> 6286c5c2474182dced7f06a807ae241300e10a05 (one commit).
+Changed files: setup.py only. The change adds a HIP build branch inside
+`win_wrap_compile` (reached only when `self.compiler.compiler_type == "msvc"`).
+On Linux, `unix_wrap_compile` is always used and is unchanged. Arch-independent
+for gfx1100.
+
+Binary-equivalence check: built TIGRE at 6286c5c for gfx1100
+(`BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx1100 HIP_VISIBLE_DEVICES=3
+pip install -e . --no-build-isolation`), then ran `utils/codeobj_diff.py`:
+- _Ax, _Atb, _minTV, _minPICCS, _AwminTV, _tv_proximal, _RandomNumberGenerator:
+  `identical` (device ISA + exported symbols match).
+- _gpuUtils: `indeterminate` (no GPU device kernels -- host-only HIP runtime calls);
+  exported function symbols (4 T entries: PyInit__gpuUtils, GetGpuIdArray, GetGpuCount,
+  GetGpuName) confirmed identical by inspection.
+
+All device code objects and exported symbols are identical between the b450d56f
+and 6286c5c2 builds on gfx1100. Carry-forward method: binary-equiv.
+
+Result: linux-gfx1100 -> completed at 6286c5c2474182dced7f06a807ae241300e10a05.
+No GPU re-run required; compiled device code is unchanged.
+
 ## Install as a dependency
 
 Not a base library for other MOAT projects (no `depends_on` consumers).
