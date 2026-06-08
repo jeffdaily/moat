@@ -266,3 +266,10 @@ base (not the port) and touch a different file set -- not a clean match, so not
 blindly mergeable. jeff has notified the gfx1201 host to merge its exact
 validated fixes into moat-port and re-confirm. DO NOT open the PR claiming
 Windows until that lands; the Linux-only PR is ready if desired.
+## INTEGRITY GAP (windows-gfx1201) -- 2026-06-08
+
+windows-gfx1201 was marked `completed`, but the ~9 amdclang++/Windows build fixes the gfx1201 validation depended on (MatOps.h `#ifndef _WIN32` around `<cxxabi.h>`, malloc.h vs alloca.h, localtime_s, `unsigned int`/`size_t` loop-index and `std::min` casts, `<numeric>` include, examples/Utils.h guard) were applied as LOCAL working-tree edits and NEVER committed to the moat-port branch. The committed branch (69ab913 locally; status head e2e66459 from the gfx90a PR-prep) still has unguarded `#include <cxxabi.h>` at MatOps.h:11, so the committed PR branch does NOT build on Windows. The Windows-tier "satisfied" rested on uncommitted edits.
+
+The stranded fork side branches (fix_compile, alloca_fix, debug_msg) branch off `base`, not the port, and touch a DIFFERENT/overlapping file set (pixi.toml, BlasDefs.h, Solver.cpp, ...) -- they do NOT correspond to the 9 validated fixes; do not merge them.
+
+Recovery: the validated uncommitted diff (7 files, all `_WIN32`-guarded) is preserved at agent_space/baspacho-recovery/windows-fixes-uncommitted.patch. A porter must: reconcile the head (fetch origin; local moat-port 69ab913 vs status head e2e66459), commit the `_WIN32`-guarded Windows fixes onto the canonical port head, rebuild on gfx1201 from a CLEAN tree (no uncommitted edits), re-run the 124/125 test suite, then advance-head and re-mark windows-gfx1201 completed at the fix-containing sha. windows-gfx1201 set to `revalidate` until then; PR BLOCKED.
