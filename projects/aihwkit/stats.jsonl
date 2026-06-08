@@ -27,3 +27,8 @@
 {"kind":"phase","ts":"2026-06-08T03:05:37Z","phase":"compile","seconds":0.190,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/aihwkit_gfx1201_build -j32"}
 {"kind":"phase","ts":"2026-06-08T03:08:53Z","phase":"compile","seconds":143.689,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/aihwkit_gfx1201_build -j32"}
 {"kind":"phase","ts":"2026-06-08T03:51:43Z","phase":"test","seconds":8.813,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest B:/develop/moat/projects/aihwkit/src/tests/test_specific_tiles.py -x -v --tb=short -p no:warnings"}
+{"kind":"phase","ts":"2026-06-08T04:23:22Z","phase":"compile","seconds":143.500,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-build-old.sh"}
+{"kind":"phase","ts":"2026-06-08T04:26:09Z","phase":"compile","seconds":141.293,"exit":1,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-build-new.sh"}
+{"kind":"phase","ts":"2026-06-08T04:38:25Z","phase":"compile","seconds":81.682,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-setup-build.sh"}
+{"kind":"phase","ts":"2026-06-08T04:38:32Z","phase":"compile","seconds":1.064,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-setup-build.sh"}
+{"kind":"phase","ts":"2026-06-08T04:41:51Z","phase":"test","seconds":136.298,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-test.sh"}

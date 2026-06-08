@@ -324,3 +324,33 @@ Test results (PYTHONPATH=src, HIP_VISIBLE_DEVICES=0):
 
 Total GPU-gated tests: 1520 passed, 327 skipped, 1 failed (stochastic non-GPU pre-existing).
 Verdict: PASS. Transitioning windows-gfx1201 to completed (validated_sha 50360f7).
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+State: revalidate (validated_sha 9b4f7be7 -> head_sha 50360f7a -> new head d6d4561).
+
+Delta classification: The 9b4f7be7..50360f7a delta (Windows Clang fix) was classified `mixed`
+by moatlib.classify. Binary equivalence check revealed a Linux compilation failure: the Windows
+fix used `c10::hip::getCurrentHIPStream(device_index)` unconditionally, but that symbol is
+guarded by `#ifdef USE_ROCM` in HIPStream.h and aihwkit does not define USE_ROCM -- so the
+build failed on Linux ROCm 7.2.1 with "no member named 'getCurrentHIPStream' in namespace
+'c10::hip'". This is the "Windows commit breaks Linux ROCm compilation" trap from CLAUDE.md.
+
+Fix applied (new commit d6d4561 on moat-port on top of 50360f7a): gate the function body on
+HIP_VERSION_MINOR. ROCm <= 7.2 uses `c10::cuda::getCurrentCUDAStream` (still present in
+torch 2.13/ROCm 7.2.1 HIPStream.h). ROCm >= 7.14 uses `c10::hip::getCurrentHIPStream`
+(supported by the TheRock torch headers on Windows which expose it without the USE_ROCM guard,
+as proven by the windows-gfx1201 validation at 50360f7a). This is a host-side change; device
+code objects are unchanged on gfx90a.
+
+Build: setup.py build_ext --inplace, USE_HIP=ON USE_CUDA=OFF RPU_CXX_STANDARD=20
+CMAKE_HIP_ARCHITECTURES=gfx90a. 29 gfx90a code objects confirmed. Build time ~216 s.
+
+Full GPU test suite (HIP_VISIBLE_DEVICES=3, gfx90a wave64, ROCm 7.2.1):
+- tests/test_specific_tiles.py: **18/18 PASSED** (CRITICAL -- bit_line_maker + pulsed-weight-update warp-size path on gfx90a wave64).
+- tests/test_simulator_tiles.py + tests/test_bindings_tiles.py: **531 passed, 56 skipped, 0 failed**.
+- tests/test_torch_tiles.py + tests/test_inference_tiles.py: **406 passed, 55 skipped, 0 failed**.
+- tests/test_layers_linear.py + tests/test_layers_convolution.py: **566 passed, 216 skipped, 0 failed**.
+
+Total: 1521 passed, 383 skipped, 0 failed. Identical pass count to original validation.
+Verdict: PASS. Transitioning linux-gfx90a to completed (validated_sha d6d4561).
