@@ -453,3 +453,36 @@ Note for linux-gfx90a/gfx1100: commit 8717395 adds Windows-only setup.py changes
 (guarded by `os.name == 'nt' and torch.version.hip`). Linux builds are byte-identical
 to 9430d42. Binary-equivalence check via codeobj_diff.py is the shortcut to carry
 those platforms forward without a full GPU re-run.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate, 9430d42 -> 87173958ed)
+
+Platform: gfx90a (MI250X), ROCm 7.2.1, HIP_VISIBLE_DEVICES=2.
+Delta: commit 8717395 adds Windows-only `/ALTERNATENAME` linker directive in all
+four setup.py files, guarded by `os.name == 'nt' and torch.version.hip`. On Linux
+`os.name == 'posix'` so no compile/link flags change.
+
+codeobj_diff.py: simple-knn verdict=identical (292 exports; device ISA identical).
+Pinhole verdict=differ -- one instruction with a PIC-relative offset shifted by
+0xC0 bytes due to a 256-byte code-layout shift (the only functional ISA content is
+unchanged; this is a v1 limitation where embedded PC-relative constants are not
+normalized). Full GPU revalidation triggered per protocol.
+
+All four extensions rebuilt from head sha (87173958ed), HIP_VISIBLE_DEVICES=2, gfx90a.
+Arch: PYTORCH_ROCM_ARCH=gfx90a, MAX_JOBS=16, pip install --no-build-isolation --no-deps.
+
+Results:
+  simple-knn distCUDA2 (N=50000): finite=True nonneg=True bitwise_deterministic=True. PASS.
+  pinhole Tier 1 forward: shape (3,128,128) finite=True coverage=0.24 bitwise_det=True. PASS.
+  pinhole Tier 2 backward: opac slope=0.984 sign=1.00; sh slope=1.000 sign=1.00;
+    scales slope=0.969 sign=1.00; means slope=0.157 sign=0.98. PASS.
+  pinhole Tier 3 training: loss 0.01151->0.00053 PSNR 25.74->49.90 dB. PASS.
+  fisheye Tier 1: finite=True coverage=0.16 bitwise_det=True. PASS.
+  fisheye Tier 2: opac slope=0.983 sign=1.00; sh slope=0.994 sign=1.00;
+    means sign=0.92 (slope=0.040, sign-gated); scales slope=0.712 sign=1.00. PASS.
+  fisheye single-cam fit: loss 0.01790->0.00759 PSNR 22.28->29.22 dB. CONVERGES. PASS.
+  panorama Tier 1: finite=True coverage=0.01 bitwise_det=True. PASS.
+  panorama Tier 2: opac slope=1.000 sign=1.00; sh slope=0.999 sign=1.00;
+    means slope=1.768 sign=1.00; scales slope=0.988 sign=1.00. PASS.
+  panorama single-cam fit: loss 0.00154->0.00013 PSNR 32.65->45.26 dB. CONVERGES. PASS.
+
+All gates satisfied. State: linux-gfx90a completed, validated_sha=87173958ed14a2924349187e9e9f2744cee2c93a.
