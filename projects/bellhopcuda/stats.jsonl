@@ -32,3 +32,4 @@
 {"kind":"phase","ts":"2026-06-08T16:54:17Z","phase":"compile","seconds":2.259,"exit":0,"cmd":"cmake /var/lib/jenkins/moat/agent_space/bellhopcuda-gfx1100-gpu3/src-old -DBHC_ENABLE_CUDA=OFF -DBHC_ENABLE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release"}
 {"kind":"phase","ts":"2026-06-08T16:55:10Z","phase":"compile","seconds":40.222,"exit":0,"cmd":"cmake --build . -j64"}
 {"kind":"phase","ts":"2026-06-08T16:56:05Z","phase":"compile","seconds":31.948,"exit":0,"cmd":"cmake --build . -j64"}
+{"kind": "tokens", "ts": "2026-06-08T17:01:22Z", "tokens": 43897, "source": "validator"}
