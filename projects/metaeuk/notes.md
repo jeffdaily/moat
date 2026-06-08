@@ -368,3 +368,56 @@ On Windows/TheRock 7.14 with HIP_DISABLE_WARP_SYNC_BUILTINS always set, `__syncw
 This is a functional device-code change: the `__syncwarp()` intrinsic implementation changes (was potentially undefined/missing, now explicitly fence+wave_barrier+fence). Device ISA for gfx1201 is NOT identical.
 
 VERDICT: Cannot carry forward. Left as `revalidate`. A GPU test run is required to validate the __syncwarp fix on gfx1201 RDNA4.
+
+## Validation 2026-06-08 (windows-gfx1201, revalidate at 2e4e953)
+
+Platform: Windows 11, AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32).
+ROCm 7.14.0a20260604 (TheRock nightly pip SDK). HIP_VISIBLE_DEVICES=0.
+Fork head: 2e4e953 (__syncwarp fix commit).
+
+### Build
+
+Rebuilt libmarv from scratch at 2e4e953 for gfx1201:
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+
+cmake -S projects/metaeuk/src/lib/mmseqs/lib/libmarv/src \
+      -B projects/metaeuk/build-marv-gfx1201 \
+      -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_PREFIX_PATH=$ROCM -DLIBRARY_ONLY=1 \
+      -DCMAKE_BUILD_TYPE=Release
+
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh metaeuk compile -- \
+  cmake --build projects/metaeuk/build-marv-gfx1201 -j16 --target marv
+```
+
+Build succeeded (exit code 0). marv.dll is 61621248 bytes (same size as prior validated build). gfx1201 device code embedded including the new explicit __syncwarp definition.
+
+### GPU validation (Marv API harness)
+
+Recompiled agent_space/metaeuk_val_gfx1201.exe against the new marv.dll, then ran:
+
+```
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh metaeuk test -- \
+  agent_space/metaeuk_val_gfx1201.exe
+```
+
+Results:
+- Test 1: 20-residue query (all 20 standard amino acids). GPU returns
+  top hit id=2, score=116 (expected BLOSUM62 self-score). PASS.
+- Test 2: 16xAla query. Top hit id=3, score=64 (16 * BLOSUM62[A][A]=4).
+  PASS.
+
+The explicit fence+wave_barrier+fence __syncwarp definition on TheRock 7.14 (HIP_DISABLE_WARP_SYNC_BUILTINS set) produces correct BLOSUM62 alignment scores on gfx1201 RDNA4.
+
+### Pass/Fail Summary
+- Build: PASS (gfx1201, fork HEAD 2e4e953)
+- GPU code present: PASS (gfx1201 device code with new __syncwarp)
+- GPU functional tests: PASS (2/2: score=116 and score=64)
+- __syncwarp validation: PASS (fence+wave_barrier+fence correct on RDNA4 wave32)
+
+GPU arch: gfx1201 (RX 9070 XT, RDNA4)
+Validation: PASSED. State -> completed (validated_sha = 2e4e953).
