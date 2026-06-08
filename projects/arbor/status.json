@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-08T19:24:06Z",
-  "head_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
+  "updated_at": "2026-06-08T19:42:52Z",
+  "head_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
+      "validated_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
       "started_at": "2026-06-05T00:11:13Z",
-      "completed_at": "2026-06-08T19:24:04Z",
-      "updated_at": "2026-06-08T19:24:06Z",
+      "completed_at": "2026-06-08T19:42:49Z",
+      "updated_at": "2026-06-08T19:42:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "to": "984d303a2b1f9032d7d9c3683d1eca4e82d6fc2e",
         "method": "source-class",
-        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
-        "at": "2026-06-08T19:24:04Z"
+        "detail": "revert gratuitous global CMake changes (cmake_minimum 3.19->4.0.0; remove benchmark WERROR OFF); built with cmake 4.0.3, unit target unaffected -- device code unchanged",
+        "at": "2026-06-08T19:42:49Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
+      "validated_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
       "started_at": "2026-06-05T01:46:00Z",
-      "completed_at": "2026-06-08T19:24:04Z",
-      "updated_at": "2026-06-08T19:24:06Z",
+      "completed_at": "2026-06-08T19:42:49Z",
+      "updated_at": "2026-06-08T19:42:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "to": "984d303a2b1f9032d7d9c3683d1eca4e82d6fc2e",
         "method": "source-class",
-        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
-        "at": "2026-06-08T19:24:04Z"
+        "detail": "revert gratuitous global CMake changes (cmake_minimum 3.19->4.0.0; remove benchmark WERROR OFF); built with cmake 4.0.3, unit target unaffected -- device code unchanged",
+        "at": "2026-06-08T19:42:49Z"
       }
     },
     "windows-gfx1101": {
@@ -95,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
+      "validated_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
       "started_at": null,
-      "completed_at": "2026-06-08T19:24:04Z",
-      "updated_at": "2026-06-08T19:24:06Z",
+      "completed_at": "2026-06-08T19:42:49Z",
+      "updated_at": "2026-06-08T19:42:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -114,10 +114,10 @@
       },
       "last_agent": "porter",
       "carry_forward": {
-        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "to": "984d303a2b1f9032d7d9c3683d1eca4e82d6fc2e",
         "method": "source-class",
-        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
-        "at": "2026-06-08T19:24:04Z"
+        "detail": "revert gratuitous global CMake changes (cmake_minimum 3.19->4.0.0; remove benchmark WERROR OFF); built with cmake 4.0.3, unit target unaffected -- device code unchanged",
+        "at": "2026-06-08T19:42:49Z"
       }
     },
     "windows-gfx1151": {
