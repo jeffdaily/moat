@@ -332,6 +332,53 @@ No fork push (validate-first follower: no source delta needed).
 
 ### Verdict: PASS -- linux-gfx1100 completed at validated_sha 25f910c
 
+## Validation 2026-06-08 (linux-gfx90a revalidate carry-forward)
+
+Platform: linux-gfx90a (AMD Instinct MI250X gfx90a), ROCm 7.2.1.
+Delta: validated_sha 25f910ceef -> head_sha dc5cd4e2364 ([ROCm] Fix Windows Clang build for HIP port).
+
+Changed files: CMakeLists.txt, src/3rd_party/CMakeLists.txt, src/3rd_party/sentencepiece (submodule pointer).
+All changes are WIN32-guarded (Shlwapi.lib, -Wno-string-plus-int/-Wno-unused-private-field, UNICODE/CRT flags, -fPIC conditional).
+One Clang/Linux-visible change: the `-march=native` exclusion for Clang compilers was removed, so `-march=native` now also applies to the Clang host compiler on Linux. This affects only host CPU code; the GPU device code is unchanged.
+
+Built both SHAs for gfx90a in separate build dirs; ran `utils/codeobj_diff.py` on marian, marian-decoder, and run_operator_tests:
+- marian: identical (56 exported symbols, device ISA identical)
+- marian-decoder: identical (55 exported symbols, device ISA identical)
+- run_operator_tests: identical (34 exported symbols, device ISA identical)
+
+Commands:
+```
+# build old SHA (25f910c) already in agent_space/marian-build
+# build new SHA (dc5cd4e):
+git worktree add /var/lib/jenkins/moat/agent_space/marian-src-new dc5cd4e23649546cebc4b7cba84cf2df38b1c82d
+cmake -S /var/lib/jenkins/moat/agent_space/marian-src-new \
+  -B /var/lib/jenkins/moat/agent_space/marian-build-new-gfx90a -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCOMPILE_CUDA=ON -DUSE_CUDNN=OFF -DUSE_NCCL=OFF -DUSE_FBGEMM=OFF \
+  -DCOMPILE_CPU=ON -DCMAKE_BUILD_TYPE=Release -DCOMPILE_TESTS=ON \
+  -DUSE_MKL=OFF -DUSE_TCMALLOC=OFF -DUSE_DOXYGEN=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_ARCH=native
+cmake --build /var/lib/jenkins/moat/agent_space/marian-build-new-gfx90a -j$(nproc)  # 292/292
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build/marian \
+  agent_space/marian-build-new-gfx90a/marian
+# verdict=identical
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build/marian-decoder \
+  agent_space/marian-build-new-gfx90a/marian-decoder
+# verdict=identical
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build/src/tests/units/run_operator_tests \
+  agent_space/marian-build-new-gfx90a/src/tests/units/run_operator_tests
+# verdict=identical
+```
+
+Verdict: CARRY FORWARD -- linux-gfx90a completed at dc5cd4e23649546cebc4b7cba84cf2df38b1c82d (binary-equiv, no GPU re-run needed).
+
 ## Validation 2026-06-07 (windows-gfx1201, RX 9070 XT gfx1201, RDNA4) -- FAILED
 
 Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro.
