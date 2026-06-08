@@ -529,3 +529,33 @@ Changed files:
 On this Windows host (TheRock 7.14 PyTorch), torch hipify version is 1.0.0 (v1). Therefore TORCH_HIPIFY_V2 is NOT defined at configure time, and the #if branch is dead code. The compiled output at b346589 uses the same `c10::hip::getCurrentHIPStream(device_index)` path as 50360f7a. No GPU device code (.cu files) was changed. Device ISA for gfx1201 is identical by construction.
 
 VERDICT: CARRY-FORWARD (source-class). State -> completed (validated_sha = b346589). No GPU re-run required.
+
+## PR-prep 2026-06-08 (lead) -- docs + squash; carry-forward, no GPU re-run
+
+Pre-PR cleanup. The port was already clean (no MOAT jargon in code or commit
+messages; CMake arch handling already correct -- CMAKE_HIP_ARCHITECTURES,
+default gfx90a only when unset). Only substantive prep was documentation.
+
+- docs/source/developer_install.rst: documented the ROCm/HIP build alongside the
+  CUDA build in house style -- a GPU build example, gfx-arch identification via
+  rocminfo (parallel to the nvidia-smi CUDA_ARCH snippet), the USE_HIP row in the
+  compilation-flags table, and a USE_HIP build example (setup.py + cmake, noted
+  mutually exclusive with USE_CUDA). No ROCm wheel/conda/docker exists, so the
+  prebuilt-install docs (install.rst, README install section) were left alone --
+  ROCm is from-source only.
+- README.md: feature line "(CUDA-capable)" -> "(CUDA- and ROCm/HIP-capable)".
+
+Squashed the 4 port commits + the doc commit into ONE commit on the upstream
+base (clean PR diff): 0b49124 [ROCm] Add AMD GPU (HIP) support to the RPUCuda
+backend, parent 4d73afd. 11 files, +367/-31. The squashed message consolidates
+the four commit messages and drops the stream-shim iteration narrative (it
+describes the final TORCH_HIPIFY_V2-keyed shim, not the HIP_VERSION steps).
+
+advance_head classified the doc delta doc-only; squash-carry-forward carried
+linux-gfx90a, linux-gfx1100, windows-gfx1201 to 0b49124. gfx1151 kept blocked
+(retired); gfx1101 stays port-ready (redundant Windows tier, gfx1201 satisfies
+it). pr-ready=True.
+
+NEXT: upstream-PR gate (lead-only, jeff approval). No existing jeffdaily PR on
+IBM/aihwkit. PR body scopes out gfx1151; claims Linux gfx90a + gfx1100 and
+Windows gfx1201.
