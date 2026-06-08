@@ -58,3 +58,4 @@
 {"kind":"phase","ts":"2026-06-08T22:52:24Z","phase":"compile","seconds":0.119,"exit":1,"cmd":"cmake --build build -j64"}
 {"kind":"phase","ts":"2026-06-08T22:53:11Z","phase":"compile","seconds":39.880,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/stdgpu/src/build -j64"}
 {"kind":"phase","ts":"2026-06-08T22:54:17Z","phase":"test","seconds":60.933,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
+{"kind": "tokens", "ts": "2026-06-08T22:55:45Z", "tokens": 50205, "source": "validator"}
