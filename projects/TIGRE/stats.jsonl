@@ -35,4 +35,3 @@
 {"kind":"phase","ts":"2026-06-08T13:30:24Z","phase":"compile","seconds":0.281,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T13:31:18Z","phase":"compile","seconds":48.567,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T13:33:06Z","phase":"compile","seconds":45.931,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation"}
-{"kind": "tokens", "ts": "2026-06-08T13:42:24Z", "tokens": 44436, "source": "validator"}

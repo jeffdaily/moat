@@ -1,2 +1,0 @@
-{"kind":"phase","ts":"2026-06-05T05:31:25Z","phase":"compile","seconds":110.113,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && cmake .. -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=\"gfx1100\" -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang && cmake --build . -j32"}
-{"kind":"phase","ts":"2026-06-05T05:32:48Z","phase":"test","seconds":8.006,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/arbor/src/build && HIP_VISIBLE_DEVICES=0 ./bin/unit"}

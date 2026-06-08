@@ -1,2 +1,0 @@
-{"kind":"phase","ts":"2026-06-01T23:22:46Z","phase":"compile","seconds":0.005,"exit":1,"cmd":"ninja -C colmap/build-hip colmap"}
-{"kind":"phase","ts":"2026-06-01T23:26:07Z","phase":"compile","seconds":180.783,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/agent_space/herzjesu/colmap/build-hip colmap"}

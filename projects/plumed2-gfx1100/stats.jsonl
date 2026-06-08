@@ -1,6 +1,0 @@
-{"kind":"phase","ts":"2026-06-05T15:40:32Z","phase":"build-base","seconds":0.002,"exit":127,"cmd":"./configure --prefix=/var/lib/jenkins/moat/_deps/plumed2/install --enable-modules=all"}
-{"kind":"phase","ts":"2026-06-05T15:40:46Z","phase":"build-base","seconds":0.003,"exit":127,"cmd":"bash -c ./configure --prefix=/var/lib/jenkins/moat/_deps/plumed2/install --enable-modules=all"}
-{"kind":"phase","ts":"2026-06-05T15:43:11Z","phase":"build-base","seconds":126.962,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/plumed2/src && make -j$(nproc)"}
-{"kind":"phase","ts":"2026-06-05T15:44:13Z","phase":"compile","seconds":0.005,"exit":127,"cmd":"bash -c ./configure.sh"}
-{"kind":"phase","ts":"2026-06-05T15:44:39Z","phase":"compile","seconds":14.360,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord && make USE_HIP=1 HIP_ARCHITECTURES=gfx1100"}
-{"kind":"phase","ts":"2026-06-05T15:45:32Z","phase":"test","seconds":29.240,"exit":2,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/plumed2/src/plugins/cudaCoord && make USE_HIP=1 check"}
