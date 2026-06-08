@@ -7,8 +7,8 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:25:53Z",
-  "updated_at": "2026-06-08T17:26:30Z",
-  "head_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+  "updated_at": "2026-06-08T18:18:50Z",
+  "head_sha": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
@@ -44,10 +44,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+      "validated_sha": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
       "started_at": null,
-      "completed_at": "2026-06-08T16:59:38Z",
-      "updated_at": "2026-06-08T16:59:38Z",
+      "completed_at": "2026-06-08T18:18:50Z",
+      "updated_at": "2026-06-08T18:18:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "to": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
         "method": "source-class",
-        "detail": "Python/Triton wave-agnostic reverse (flip identity) + import-stub exports; prior forward+backward unchanged; new path validated on gfx90a, identical wave-agnostic code",
-        "at": "2026-06-08T16:59:38Z"
+        "detail": "README: document ROCm/AMD support (doc-only)",
+        "at": "2026-06-08T18:18:50Z"
       }
     },
     "windows-gfx1101": {
@@ -95,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+      "validated_sha": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
       "started_at": null,
-      "completed_at": "2026-06-08T16:59:38Z",
-      "updated_at": "2026-06-08T16:59:38Z",
+      "completed_at": "2026-06-08T18:18:50Z",
+      "updated_at": "2026-06-08T18:18:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -114,10 +114,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "to": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
         "method": "source-class",
-        "detail": "Python/Triton wave-agnostic reverse + exports; validated on gfx90a, identical code path",
-        "at": "2026-06-08T16:59:38Z"
+        "detail": "README: document ROCm/AMD support (doc-only)",
+        "at": "2026-06-08T18:18:50Z"
       }
     },
     "windows-gfx1151": {
