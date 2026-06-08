@@ -355,3 +355,35 @@ ran `python3 utils/codeobj_diff.py old/ new/`:
   mast3r_slam_backends.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (200 exports))
 
 No GPU re-run required. Carried forward to completed at 07385a22.
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+State: revalidate -> completed at 07385a22 (carry-forward, binary-equiv).
+
+Delta b2f86d46..07385a22: same single commit "[ROCm] Fix Windows LLP64 and c10-ABI link errors" as the gfx90a revalidation.
+- gn_kernels.cu, matching_kernels.cu: `long` -> `int64_t`. On Linux x86_64, `long` and `int64_t` are the same 64-bit type; typedef-equivalent spelling change with no effect on the compiled binary.
+- setup.py, curope/setup.py: `/ALTERNATENAME` MSVC linker directives added exclusively under `if sys.platform == "win32"`, inert on Linux (extra_link_args stays empty on this host).
+
+Build commands (both SHAs, gfx1100, HIP_VISIBLE_DEVICES=1):
+```
+# old SHA (b2f86d46)
+cd projects/MASt3R-SLAM/src
+rm -f mast3r_slam/backend/src/gn_kernels.hip mast3r_slam/backend/src/matching_kernels.hip
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 python setup.py build_ext --inplace
+cd thirdparty/mast3r/dust3r/croco/models/curope
+rm -f kernels.hip; rm -rf build
+PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 python setup.py build_ext --inplace
+
+# new SHA (07385a22) -- same commands, sources at head_sha
+```
+
+Binary-equivalence check:
+```
+python3 utils/codeobj_diff.py agent_space/MASt3R-SLAM-gfx1100-gpu1/old-build agent_space/MASt3R-SLAM-gfx1100-gpu1/new-build
+```
+  verdict=identical
+  curope.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (66 exports))
+  mast3r_slam_backends.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (200 exports))
+
+No GPU re-run required. Carried forward to completed at 07385a22.

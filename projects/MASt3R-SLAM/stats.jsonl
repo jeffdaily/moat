@@ -30,3 +30,5 @@
 {"kind":"phase","ts":"2026-06-08T04:00:28Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-08T04:00:44Z","phase":"compile","seconds":9.622,"exit":1,"cmd":"python /var/lib/jenkins/moat/projects/MASt3R-SLAM/src/setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-08T04:00:50Z","phase":"compile","seconds":0.040,"exit":2,"cmd":"python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T13:30:04Z","phase":"compile-old-gfx1100","seconds":0.972,"exit":2,"cmd":"conda run -n py_3.12 bash -c export HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 && python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T13:30:51Z","phase":"compile-old-gfx1100","seconds":40.666,"exit":0,"cmd":"conda run -n py_3.12 bash -c cd /var/lib/jenkins/moat/projects/MASt3R-SLAM/src && export HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 && python setup.py build_ext --inplace"}
