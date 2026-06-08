@@ -484,6 +484,55 @@ libhipblaslt.dll crashes in hipblasLtMatmulAlgoGetHeuristic for all Affine calls
 Porter must add a Windows hipBLASLt bypass (hipblasGemmEx + BiasAdd) for the
 affine/attention/transformer paths.
 
+## Validation 2026-06-08 (linux-gfx1100 revalidate carry-forward)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 gfx1100), ROCm 7.2.1.
+Delta: validated_sha 25f910ceef -> head_sha dc5cd4e2364 ([ROCm] Fix Windows Clang build for HIP port).
+
+Changed files: CMakeLists.txt, src/3rd_party/CMakeLists.txt, src/3rd_party/sentencepiece (submodule pointer).
+All significant changes are WIN32-guarded (Shlwapi.lib, UNICODE/CRT flags, -fPIC conditional, -Wno-string-plus-int/-Wno-unused-private-field).
+Linux-visible changes: removal of `NOT CMAKE_CXX_COMPILER_ID MATCHES "Clang"` exclusion (so -march=native now also applies to Clang host compiler on Linux) and -Wno-string-plus-int added to MARIAN_HIP_NO_WARN. Both affect only host/warning flags; GPU device code is unchanged.
+
+Built both SHAs for gfx1100 in separate build dirs; ran `utils/codeobj_diff.py` on marian, marian-decoder, and run_operator_tests:
+- marian: identical (56 exported symbols, device ISA identical)
+- marian-decoder: identical (55 exported symbols, device ISA identical)
+- run_operator_tests: identical (34 exported symbols, device ISA identical)
+
+Commands:
+```
+# Old build at 25f910c already in agent_space/marian-build-gfx1100
+# New worktree at dc5cd4e:
+git worktree add /var/lib/jenkins/moat/agent_space/marian-src-new dc5cd4e23649546cebc4b7cba84cf2df38b1c82d
+cp -r projects/marian-dev/src/src/3rd_party/sentencepiece/. agent_space/marian-src-new/src/3rd_party/sentencepiece/
+
+utils/timeit.sh marian-dev compile -- cmake -S agent_space/marian-src-new \
+  -B agent_space/marian-build-new-gfx1100 -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCOMPILE_CUDA=ON -DUSE_CUDNN=OFF -DUSE_NCCL=OFF \
+  -DUSE_FBGEMM=OFF -DCOMPILE_CPU=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCOMPILE_TESTS=ON -DUSE_MKL=OFF -DUSE_TCMALLOC=OFF -DUSE_DOXYGEN=OFF \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 -DBUILD_ARCH=native
+cmake --build agent_space/marian-build-new-gfx1100 -j$(nproc)  # 292/292
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build-gfx1100/marian \
+  agent_space/marian-build-new-gfx1100/marian
+# verdict=identical
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build-gfx1100/marian-decoder \
+  agent_space/marian-build-new-gfx1100/marian-decoder
+# verdict=identical
+
+python3 utils/codeobj_diff.py \
+  agent_space/marian-build-gfx1100/src/tests/units/run_operator_tests \
+  agent_space/marian-build-new-gfx1100/src/tests/units/run_operator_tests
+# verdict=identical
+```
+
+Verdict: CARRY FORWARD -- linux-gfx1100 completed at dc5cd4e23649546cebc4b7cba84cf2df38b1c82d (binary-equiv, no GPU re-run needed).
+
 ## Status fix 2026-06-02: windows-gfx1151 invalid state
 
 windows-gfx1151 was set to `blocked-needs-gfx1100`, which is not a valid

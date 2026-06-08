@@ -7,7 +7,7 @@
   "priority": 3.968,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-08T00:18:32Z",
+  "updated_at": "2026-06-08T00:25:52Z",
   "head_sha": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "25f910ceefedbb907300fca1d275762fb046472b",
+      "validated_sha": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
       "started_at": "2026-06-02T05:35:00Z",
-      "completed_at": "2026-06-02T05:42:00Z",
-      "updated_at": "2026-06-07T20:25:11Z",
+      "completed_at": "2026-06-08T00:25:52Z",
+      "updated_at": "2026-06-08T00:25:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-06-02T05:35:00Z",
         "last_session_at": "2026-06-02T05:42:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
+        "method": "binary-equiv",
+        "detail": "Windows-only CMake fixes + Clang -march/warning flags; gfx1100 device ISA + exported symbols identical (marian 56, marian-decoder 55, run_operator_tests 34)",
+        "at": "2026-06-08T00:25:52Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
