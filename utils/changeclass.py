@@ -204,12 +204,14 @@ def _tok_c(src: str):
     return toks
 
 
-def _tok_line_hash(src: str, kws):
+def _tok_line_hash(src: str, kws, multiline_str: bool = False):
     """Shared tokenizer for # line-comment languages (CMake, Python).
 
-    Strings are treated atomically. Python triple-quotes and CMake bracket
-    args/comments are not fully modeled; their delimiters are handled, and
-    anything ambiguous returns None (-> mixed)."""
+    Strings are treated atomically. multiline_str=True lets a double-quoted
+    string span newlines (CMake quoted arguments do; Python single/double
+    quotes do not -- only its triple-quotes, handled separately). Python
+    triple-quotes and CMake bracket args/comments are not fully modeled; their
+    delimiters are handled, and anything ambiguous returns None (-> mixed)."""
     toks = []
     i, n = 0, len(src)
     while i < n:
@@ -238,7 +240,9 @@ def _tok_line_hash(src: str, kws):
                 if src[j] == "\\":
                     j += 2
                     continue
-                if src[j] == q or src[j] == "\n":
+                if src[j] == q:
+                    break
+                if src[j] == "\n" and not multiline_str:
                     break
                 j += 1
             if j >= n or src[j] != q:
@@ -270,7 +274,8 @@ def _tokenize(lang: str, src: str):
     if lang == "c":
         return _tok_c(src)
     if lang == "cmake":
-        return _tok_line_hash(src, frozenset())  # CMake commands are not reserved
+        # CMake commands are not reserved; quoted "..." args may span newlines.
+        return _tok_line_hash(src, frozenset(), multiline_str=True)
     if lang == "py":
         return _tok_line_hash(src, PY_KEYWORDS)
     return None
