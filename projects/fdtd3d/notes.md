@@ -184,3 +184,91 @@ All tests passed on real GPU hardware.
 
 ### Summary
 Port validated successfully on gfx1100. Both GPU tests pass with correct numerical output.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+### Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, RDNA4)
+
+Built from scratch at commit 049a6237251dc27e9b5273fb1e18aa722ddd9f5f (adds Windows
+POSIX-header fixes on top of the original port at baae8b3c).
+
+### Windows-specific fixes required (new commit on fork)
+
+Three POSIX-only system headers are absent on Windows MSVC/clang ABI:
+
+1. `Source/Settings/Settings.cpp`: `<alloca.h>` -> `<malloc.h>` on Windows via `#ifdef _WIN32`
+2. `Source/Grid/Clock.h`: `clock_gettime(CLOCK_MONOTONIC, ...)` not available; shimmed via `timespec_get` (C11/UCRT)
+3. `Source/main.cpp`: `<sys/time.h>` / `gettimeofday` not available; shimmed via `timespec_get`
+
+Additionally, two CMake configuration adjustments needed:
+- `-G Ninja` (HIP language is not supported by Visual Studio generator)
+- `-DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES -DWIN32"` and `-DCMAKE_HIP_FLAGS=...` (M_PI requires _USE_MATH_DEFINES)
+- `-DCMAKE_HIP_USING_LINKER_DEFAULT="-fuse-ld=lld"` (note: overridden by platform module; must patch build.ninja directly)
+
+The lld-link issue: CMake's `Platform/Windows-Clang.cmake` sets `-fuse-ld=lld-link` as the HIP linker
+default, but `-fuse-ld=lld-link` is rejected when clang invokes `--hip-link` (offload bundler) mode.
+Replace with `-fuse-ld=lld` in the generated `build.ninja` after cmake configuration.
+
+### Build
+```bash
+ROCM_SDK="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+CLANGPP="$ROCM_SDK/lib/llvm/bin/clang++.exe"
+
+cmake B:/develop/moat/projects/fdtd3d/src \
+  -G Ninja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DSOLVER_DIM_MODES=DIM3 \
+  -DVALUE_TYPE=d \
+  -DCOMPLEX_FIELD_VALUES=ON \
+  -DPRINT_MESSAGE=ON \
+  -DCMAKE_HIP_COMPILER="$CLANGPP" \
+  -DCMAKE_C_COMPILER="$CLANGPP" \
+  -DCMAKE_CXX_COMPILER="$CLANGPP" \
+  -DCMAKE_PREFIX_PATH="$ROCM_SDK" \
+  -DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES -DWIN32" \
+  -DCMAKE_HIP_FLAGS="-D_USE_MATH_DEFINES -DWIN32" \
+  -B build-gfx1201
+
+# Patch the generated build files: -fuse-ld=lld-link -> -fuse-ld=lld
+sed -i 's/-fuse-ld=lld-link/-fuse-ld=lld/g' build-gfx1201/build.ninja
+
+HIP_VISIBLE_DEVICES=0 cmake --build build-gfx1201 -j24
+```
+Note: EasyBMP zip must be downloaded and extracted first (the CMake wget/unzip does not work on Windows):
+```bash
+cd src/Third-party/EasyBMP && curl -k -L "https://github.com/zer011b/EasyBMP/archive/v1.6.zip" -o EasyBMP.zip && unzip -q EasyBMP.zip && mv EasyBMP-1.6/source . && rm -rf EasyBMP-1.6 EasyBMP.zip
+```
+
+Build completed successfully (65/65 targets).
+
+### Test Results
+All tests passed on real GPU hardware (HIP_VISIBLE_DEVICES=0, AMD Radeon RX 9070 XT gfx1201).
+
+1. **GPU unit test**: `unit-test-cuda-grid.exe 0`
+   - Status: PASS (exit 0)
+   - Creates and operates on CudaGrid objects on device
+   - Device: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32)
+
+2. **3D electromagnetic simulation**:
+   ```
+   ./Source/fdtd3d.exe --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100
+   ```
+   - Status: PASS (exit 0)
+   - All 100 time steps completed
+   - Total time = 0.054948 seconds
+   - Grid size: 20x20x20
+   - Device: AMD Radeon RX 9070 XT (gfx1201)
+   - No numerical errors
+
+### Summary
+Port validated successfully on gfx1201 (RDNA4). Both GPU tests pass with correct numerical output.
+Three Windows-specific POSIX compatibility patches were required (committed as a follow-on commit);
+the lld-link->lld linker substitution is a build.ninja post-process step (CMake platform module
+always overrides the cache variable).
+
+Note: linux-gfx90a and linux-gfx1100 were flipped to `revalidate` by advance_head since the
+Windows fixes classify as `mixed`. The `#ifdef _WIN32` guards are zero-effect on Linux (the `#else`
+branches replicate the original code exactly), so those platforms should carry forward via
+codeobj_diff binary equivalence check.
