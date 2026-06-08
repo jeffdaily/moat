@@ -272,3 +272,65 @@ Note: linux-gfx90a and linux-gfx1100 were flipped to `revalidate` by advance_hea
 Windows fixes classify as `mixed`. The `#ifdef _WIN32` guards are zero-effect on Linux (the `#else`
 branches replicate the original code exactly), so those platforms should carry forward via
 codeobj_diff binary equivalence check.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate)
+
+### Platform: linux-gfx90a (AMD Instinct MI250X, GCD 1)
+
+Revalidation at head 049a6237251dc27e9b5273fb1e18aa722ddd9f5f (Windows POSIX fixes commit on top of baae8b3c).
+
+### Change classification
+
+Delta is one commit: "[ROCm] Fix Windows build: POSIX headers missing on MSVC/clang target". All changes are `#ifdef _WIN32 ... #else ... #endif` guards where the `#else` branch replicates the original Linux code exactly (`alloca.h`, `sys/time.h`, `clock_gettime` usage). Zero effect on Linux/gfx90a.
+
+`moatlib.py classify` returned `unknown` (mixed delta -- tool could not auto-classify). `codeobj_diff.py` returned `indeterminate` (the project produces executables, not shared libs -- no `.so` entry points found). Per carry-forward rules, an `indeterminate` verdict requires full GPU revalidation.
+
+### Build
+
+Built new SHA (049a6237) from scratch at the same config as prior validation:
+
+```bash
+cmake /var/lib/jenkins/moat/projects/fdtd3d/src \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DSOLVER_DIM_MODES=DIM3 \
+  -DVALUE_TYPE=d \
+  -DCOMPLEX_FIELD_VALUES=ON \
+  -DPRINT_MESSAGE=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -B /var/lib/jenkins/moat/projects/fdtd3d/build-new
+cmake --build /var/lib/jenkins/moat/projects/fdtd3d/build-new -j$(nproc)
+```
+Build time: ~321s
+
+### Test Results
+
+All tests passed on real GPU hardware (HIP_VISIBLE_DEVICES=1, AMD Instinct MI250X / MI250, gfx90a).
+
+1. **GPU unit test**: `unit-test-cuda-grid 0`
+   - Status: PASS
+   - Grid operations on device verified
+
+2. **3D electromagnetic simulation**:
+   ```
+   HIP_VISIBLE_DEVICES=1 ./Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100
+   ```
+   - Status: PASS
+   - Total time = 0.276s (100 time steps, 20x20x20 grid)
+   - Device: AMD Instinct MI250X / MI250
+
+3. **CPU unit tests** (non-GPU regression check):
+   - unit-test-settings: PASS
+   - unit-test-clock: PASS
+   - unit-test-complex: PASS
+   - unit-test-coordinate: PASS
+   - unit-test-approximation: PASS
+   - unit-test-grid: PASS
+   - unit-test-layout: PASS
+
+Test suite wall time: 148.6s
+
+### Summary
+
+All GPU and CPU tests pass at head 049a6237. No regressions. The Windows POSIX compatibility fixes have zero effect on Linux, confirming expected arch-independence.
