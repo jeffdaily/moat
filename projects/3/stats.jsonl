@@ -30,3 +30,4 @@
 {"kind":"phase","ts":"2026-06-08T00:45:32Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make CUDA_CC=gfx1100"}
 {"kind":"phase","ts":"2026-06-08T00:46:28Z","phase":"compile","seconds":45.721,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/3/src/cuda && make CUDA_CC=gfx1100"}
 {"kind":"phase","ts":"2026-06-08T00:49:16Z","phase":"compile","seconds":47.800,"exit":0,"cmd":"bash -c \nexport GOROOT=/var/lib/jenkins/goroot\nexport PATH=/var/lib/jenkins/goroot/bin:/opt/rocm/bin:$PATH\nexport GOPATH=/var/lib/jenkins/go\nexport CGO_ENABLED=1\nexport GOFLAGS=-mod=mod\nexport HIP_VISIBLE_DEVICES=0\ncd /var/lib/jenkins/moat/projects/3/src/cuda\nmake CUDA_CC=gfx1100\necho \"=== Make exit $? ===\"\ncd ..\ngo build ./cmd/mumax3 2>&1\necho \"=== Build exit $? ===\"\n"}
+{"kind": "tokens", "ts": "2026-06-08T00:56:26Z", "tokens": 69538, "source": "validator"}

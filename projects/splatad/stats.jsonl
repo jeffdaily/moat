@@ -40,3 +40,4 @@
 {"kind":"phase","ts":"2026-06-08T00:27:42Z","phase":"test","seconds":0.691,"exit":4,"cmd":"env HIP_VISIBLE_DEVICES=3 python -m pytest tests/test_basic.py -k (test_quat_scale_to_covar_preci or test_persp_proj or test_world_to_cam or test_projection or test_fully_fused_projection_packed or test_isect or test_sh or test_compute_pix_velocity) and not lidar -v --tb=short"}
 {"kind":"phase","ts":"2026-06-08T00:52:59Z","phase":"compile","seconds":0.003,"exit":0,"cmd":"echo build complete for codeobj_diff (two builds at e337891 and 96ece3d for gfx1100)"}
 {"kind":"phase","ts":"2026-06-08T00:54:20Z","phase":"test","seconds":0.002,"exit":0,"cmd":"echo full GPU revalidation on gfx1100 PASSED: camera 27/27, rast 24/24, lidar 12/14 (2 documented batch flappers pass in isolation), lidar rast 3/3, lidar validate ALL, strategy 1/1"}
+{"kind": "tokens", "ts": "2026-06-08T00:56:26Z", "tokens": 68757, "source": "validator"}
