@@ -244,3 +244,60 @@ correctly on gfx1201 RDNA4. Results match expected BLOSUM62 scores.
 The Windows build requires 3 minor fixes (tinyexpr -fPIC guard, strtok_r
 alias, cooperative_groups version guard); these are all Windows-only guards
 that do not affect Linux build behavior.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate, MI250X gfx90a)
+
+**Verdict: PASS**
+
+Revalidated at commit 796bcfb64558ceee46e4746f2f94688d28a01914.
+
+Delta from prior validated_sha (e7f5b62d): the head commit `796bcfb6` adds Windows-only
+build guards (tinyexpr -fPIC guard for WIN32, strtok_r->strtok_s under _WIN32, and a
+HIP_VERSION_MINOR < 4 guard for cooperative_groups). The classify tool returned
+`unknown` so binary-equivalence was attempted: builds at b58f888 and 796bcfb6 were
+compared with codeobj_diff.py, which reported `differ (device ISA differs)`. Full GPU
+revalidation was therefore required.
+
+### Build
+
+```bash
+cmake -S projects/foldmason/src -B agent_space/foldmason_new_build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+
+cmake --build agent_space/foldmason_new_build --target foldmason -j16
+```
+
+Build succeeded. libmarv.so contains gfx90a device code.
+
+### GPU search validation (HIP_VISIBLE_DEVICES=3)
+
+**CPU reference:**
+```bash
+foldmason search exDB exDB aln_cpu tmp_cpu --gpu 0 -e 10
+```
+Result: 867 alignments
+
+**GPU test:**
+```bash
+HIP_VISIBLE_DEVICES=3 foldmason search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10
+```
+Result: 905 alignments (GPU superset of CPU, as expected)
+
+**Determinism:** Two independent GPU runs produce identical score distributions.
+
+### Non-GPU regression
+
+Bundled regression tests: run_msa2lddt PASS (LDDT=0.801621, exact match). run_easymsa
+and run_structuremsa show same pre-existing MSA algorithmic variance as original
+validation (LDDT delta 0.000727 < 0.1%). These are CPU-only MSA algorithms, not a
+GPU/HIP regression.
+
+### Summary
+
+GPU search (libmarv ungappedprefilter on gfx90a) works correctly at 796bcfb6. The
+Windows-only guards in the head commit do not introduce any GPU regression on Linux.
+1 PASS (msa2lddt), 2 expected-variant (easymsa, structuremsa).
