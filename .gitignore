@@ -28,6 +28,15 @@ projects/rmcl/rmagine_src/
 # clang/hip offload-bundle per-TU intermediates (never source)
 *.o.0.*
 
+# CMake build artifacts (by name, at any depth -- a validator that configures at
+# the repo root or inside config/ drops these; never tracked content).
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+/Makefile
+/solution-sum.json
+
 # Build/test-run artifacts that land at the repo root when a validator runs a
 # build or demo from the wrong cwd (real validation scratch belongs in
 # agent_space/). MOAT tracks none of these.
