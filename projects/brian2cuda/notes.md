@@ -319,3 +319,45 @@ ALL TESTS PASSED (3/3)
 ### Verdict
 
 **VALIDATED** - HIP port functional on gfx1201 (RDNA4, wave32). All three simulations pass on AMD Radeon RX 9070 XT. The wave-serialized spinlock works correctly on wave32 RDNA4. Windows DLL loading and kpack GPU kernel file setup confirmed working.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+### Delta classification: 5b961a6 -> 94a9869
+
+Single commit "[ROCm] Fix Windows HIP build and runtime environment" modifying only `brian2cuda/device.py` (207 insertions, 3 deletions).
+
+All changes are either gated on `os.name == 'nt'` (Windows) or are platform-neutral no-ops on Linux:
+- `get_hipcc_path()`: adds `.exe` suffix lookup on Windows; on Linux `hipcc_in_rocm_exe == hipcc_in_rocm`, same path returned.
+- `get_hip_gpu_arch()`: new `gpu_arch_pref` check returns early only if pref is non-None; default pref is None so passes through to existing `rocminfo` on Linux.
+- `generate_makefile()`: Windows ROCM device-lib path injection gated on `if os.name == 'nt'`.
+- `build()`: compiler bypass gated on `if is_hip_backend() and os.name == 'nt'`.
+- `run()` override: entirely gated on `is_hip_backend() and os.name == 'nt'`; Linux always calls `super().run()`.
+
+No device code templates, kernel files, or brianlib headers were changed. This is a Windows-only behavioral delta.
+
+`moatlib classify` returned `class=mixed` (source-level token count differs), so full GPU revalidation was performed per protocol.
+
+### Method: full GPU re-run on gfx90a
+
+- Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a)
+- ROCm: 7.2.1
+- HIP_VISIBLE_DEVICES=3 (pinned to GCD 3)
+- HEAD: 94a9869
+
+```bash
+pip install brian2==2.10.1
+pip install -e /var/lib/jenkins/moat/projects/brian2cuda/src
+HIP_VISIBLE_DEVICES=3 USE_HIP=1 utils/timeit.sh brian2cuda test -- python3 agent_space/brian2cuda_reval_gfx90a.py
+# Phase: test, wall: 37.88s, exit: 0
+```
+
+### Test Results
+
+3/3 tests PASSED:
+1. Basic neuron group simulation (100 neurons, 10ms): PASS -- final v range [0.0000, 0.3642]
+2. Synapse connectivity with delay / spinlock test (963 synapses, 50/50 target neurons active): PASS
+3. Large recurrent network stress test (200 neurons, 11822 synapses, 19641 total spikes, 98.2 avg/neuron): PASS
+
+### Verdict
+
+**REVALIDATED** at 94a9869. Wave-serialized spinlock confirmed still functioning on gfx90a wave64. No regression.
