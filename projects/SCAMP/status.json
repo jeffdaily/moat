@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T23:25:55Z",
-  "updated_at": "2026-06-05T01:27:18Z",
+  "updated_at": "2026-06-08T01:54:00Z",
   "head_sha": "58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466",
   "depends_on": [],
   "platforms": {
@@ -80,13 +80,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-05T00:41:43Z",
+      "completed_at": "2026-06-08T01:54:00Z",
+      "updated_at": "2026-06-08T01:54:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +99,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

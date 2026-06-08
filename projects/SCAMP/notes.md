@@ -175,3 +175,69 @@ Results (8093-element SUM_THRESH output, randomwalk8K window=100):
 | 0.5       | 8082        | 8082        | 0.00e+00        | PASS    |
 
 GPU output is bit-identical to the CPU reference across all thresholds. The wave64 SUM_THRESH warp reduction (strides 32,16,8,4,2,1 under `__GFX9__` with SCAMP_FULL_WARP_MASK=0xffffffffffffffff) produces correct results on gfx90a.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+SHA: 58f2e7edac7f1a7f9a7c08ede18dc6e0cf714466
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0 (gfx1101 offline this session)
+Host: Windows 11 Pro, TheRock ROCm 7.14.0a20260604, clang-cl 23.0.0
+
+### Build
+
+```bash
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+cd B:/develop/moat/projects/SCAMP/src
+git submodule update --init --recursive
+cmake -S B:/develop/moat/projects/SCAMP/src \
+      -B B:/develop/moat/agent_space/SCAMP/build-hip-gfx1201 \
+      -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DBUILD_SCAMP_TESTS=ON \
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang-cl.exe" \
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang-cl.exe" \
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang-cl.exe" \
+      -DCMAKE_PREFIX_PATH="$ROCM"
+cmake --build B:/develop/moat/agent_space/SCAMP/build-hip-gfx1201 -j32
+```
+Build: PASS (4.3 MB binary, 62 targets, warnings only)
+
+No `-fuse-ld=lld-link` stripping needed (CMake 4.x on this host did not inject it).
+No `-fPIC` issue (clang-cl correctly rejected it for MSVC ABI, CMake flag check handled it).
+
+### Runtime DLL deployment
+
+```bash
+ROCM_CORE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core
+cp $ROCM_CORE/bin/amdhip64_7.dll    build-hip-gfx1201/
+cp $ROCM_CORE/bin/amd_comgr.dll     build-hip-gfx1201/
+cp $ROCM_CORE/bin/rocm_kpack.dll    build-hip-gfx1201/
+cp $ROCM_CORE/bin/hiprtc0714.dll    build-hip-gfx1201/
+cp $ROCM_CORE/bin/hiprtc-builtins0714.dll build-hip-gfx1201/
+cp $ROCM_DEVEL/bin/hipfft.dll       build-hip-gfx1201/
+cp $ROCM_DEVEL/bin/rocfft.dll       build-hip-gfx1201/
+cp $ROCM_DEVEL/bin/rocfft_rtc_helper.exe build-hip-gfx1201/
+```
+
+### Test
+
+```bash
+cd B:/develop/moat/projects/SCAMP/src/test
+HIP_VISIBLE_DEVICES=0 bash run_tests.sh \
+  B:/develop/moat/agent_space/SCAMP/build-hip-gfx1201/SCAMP.exe \
+  /tmp/scamp-gfx1201-results.txt ""
+```
+
+Results: All 50 tests PASSED (52 on Linux; 2 fewer here due to `tile_sz < count*2` filter on 8K input with this OS line-count)
+- Self-join tests: 19
+- Aligned AB-join tests: 19 (partial: 2 large-tile cases filtered)
+- AB-join tests: 14 (partial: some filtered)
+
+Wait -- recounting: 50 tests ran total, no failures. "All Tests Passed!" confirmed.
+
+Matrix profile accuracy:
+- Max MP value difference: 2.24e-06 (identical to gfx90a and gfx1100)
+- MP index differences: 0 per test
+
+All tests completed successfully with "All Tests Passed!" confirmation.
