@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
-  "updated_at": "2026-06-08T13:53:50Z",
+  "updated_at": "2026-06-08T14:42:27Z",
   "head_sha": "d6d4561",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "porting",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "d6d4561",
       "started_at": "2026-06-04T01:28:01Z",
       "completed_at": "2026-06-08T04:42:35Z",
-      "updated_at": "2026-06-08T04:42:35Z",
+      "updated_at": "2026-06-08T14:42:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,39 +34,10 @@
       },
       "last_agent": "validator"
     },
-    "linux-gfx1100": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "d6d4561",
-      "started_at": null,
-      "completed_at": "2026-06-08T13:53:50Z",
-      "updated_at": "2026-06-08T13:53:50Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "d6d4561",
-        "method": "binary-equiv",
-        "detail": "9b4f7be->d6d4561: Windows Clang/MSVC flag and HIPStream compat fixes; on Linux ROCm 7.2.1 all three changed files compile identically (MSVC=false, HIP_VERSION_MINOR=2<14, ELF ABI struct/class neutral)",
-        "at": "2026-06-08T13:53:50Z"
-      }
-    },
-    "windows-gfx1101": {
+    "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "windows-gfx1151 host retired (superseded by the gfx1101/gfx1201 machine); validation moved to windows-gfx1101 and windows-gfx1201",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
@@ -107,10 +78,10 @@
         "last_session_at": null
       }
     },
-    "windows-gfx1151": {
+    "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": true,
-      "blocked_reason": "windows-gfx1151 host retired (superseded by the gfx1101/gfx1201 machine); validation moved to windows-gfx1101 and windows-gfx1201",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
@@ -127,6 +98,35 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      }
+    },
+    "linux-gfx1100": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "d6d4561",
+      "started_at": null,
+      "completed_at": "2026-06-08T13:53:50Z",
+      "updated_at": "2026-06-08T13:53:50Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "d6d4561",
+        "method": "binary-equiv",
+        "detail": "9b4f7be->d6d4561: Windows Clang/MSVC flag and HIPStream compat fixes; on Linux ROCm 7.2.1 all three changed files compile identically (MSVC=false, HIP_VERSION_MINOR=2<14, ELF ABI struct/class neutral)",
+        "at": "2026-06-08T13:53:50Z"
       }
     }
   }
