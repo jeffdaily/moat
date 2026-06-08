@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-08T16:58:55Z",
+  "updated_at": "2026-06-08T20:51:49Z",
   "head_sha": "398b7c00",
   "depends_on": [],
   "platforms": {
@@ -91,13 +91,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d34d42d3",
+      "validated_sha": "398b7c00",
       "started_at": null,
-      "completed_at": "2026-06-08T02:29:20Z",
-      "updated_at": "2026-06-08T15:25:39Z",
+      "completed_at": "2026-06-08T20:51:49Z",
+      "updated_at": "2026-06-08T20:51:49Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -110,6 +110,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "398b7c00",
+        "method": "source-class",
+        "detail": "d34d42d3->398b7c00: HIP_DISABLE_WARP_SYNC_BUILTINS re-keyed from unconditional to HIP_VERSION>=7.14 guard (and intermediate _WIN32-only step); on Windows TheRock 7.14 HIP_VERSION_MAJOR=7 HIP_VERSION_M",
+        "at": "2026-06-08T20:51:49Z"
       }
     },
     "windows-gfx1151": {

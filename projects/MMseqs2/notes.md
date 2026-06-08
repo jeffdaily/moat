@@ -624,3 +624,22 @@ codeobj_diff verdict: `identical` (exported symbols + device ISA identical,
 exactly as it was for gfx90a.
 
 VERDICT: CARRY-FORWARD (binary-equiv). State -> completed (validated_sha = 398b7c00).
+
+## Validation 2026-06-08 (windows-gfx1201, carry-forward)
+
+Delta: d34d42d3 -> 398b7c00 (two commits, both touch only lib/libmarv/src/cuda_to_hip.h).
+
+Method: source-class inspection.
+
+Commit chain:
+- dbeac858: Scoped HIP_DISABLE_WARP_SYNC_BUILTINS to `#ifdef _WIN32` (was unconditional)
+- 398b7c00: Re-keyed to `#include <hip/hip_version.h>` + HIP_VERSION_MAJOR/MINOR check (>=7.14)
+
+On Windows (_WIN32 defined) with TheRock 7.14 (HIP_VERSION_MAJOR=7, HIP_VERSION_MINOR=14):
+- d34d42d3: HIP_DISABLE_WARP_SYNC_BUILTINS is always set
+- dbeac858: `#ifdef _WIN32` -> set (same)
+- 398b7c00: `HIP_VERSION_MAJOR==7 && HIP_VERSION_MINOR>=14` -> true -> set (same)
+
+All three commits produce identical preprocessing on this host. The gfx1201 libmarv.dll device ISA is unchanged.
+
+VERDICT: CARRY-FORWARD (source-class). State -> completed (validated_sha = 398b7c00). No GPU re-run required.
