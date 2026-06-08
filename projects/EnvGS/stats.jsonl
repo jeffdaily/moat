@@ -59,3 +59,4 @@
 {"kind":"phase","ts":"2026-06-08T00:39:34Z","phase":"test","seconds":2.870,"exit":0,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
 {"kind":"phase","ts":"2026-06-08T00:39:55Z","phase":"test","seconds":9.357,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
 {"kind":"phase","ts":"2026-06-08T00:40:06Z","phase":"test","seconds":2.677,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind": "tokens", "ts": "2026-06-08T00:42:26Z", "tokens": 85797, "source": "validator"}

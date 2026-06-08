@@ -13,3 +13,4 @@
 {"kind":"phase","ts":"2026-06-07T21:43:02Z","phase":"test","seconds":4.974,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/3dgslm_val_win_gfx1201.py all"}
 {"kind":"phase","ts":"2026-06-08T00:31:30Z","phase":"compile","seconds":90.868,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3DGS-LM-gfx1100-gpu1/build_old.sh"}
 {"kind":"phase","ts":"2026-06-08T00:33:11Z","phase":"compile","seconds":86.339,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3DGS-LM-gfx1100-gpu1/build_new.sh"}
+{"kind": "tokens", "ts": "2026-06-08T00:42:26Z", "tokens": 60680, "source": "validator"}
