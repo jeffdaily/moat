@@ -238,3 +238,84 @@ ALL TESTS PASSED
 ### Verdict
 
 **VALIDATED** - HIP port functional on gfx1100. Wave32 execution confirmed working. The wave-serialized spinlock implementation is architecture-agnostic and works correctly on both CDNA (wave64) and RDNA3 (wave32).
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+### Platform: windows-gfx1201
+
+- GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32)
+- ROCm: TheRock 7.x (PyTorch venv)
+- HIP_VISIBLE_DEVICES=0
+- HEAD (pre-fix): 5b961a6
+- HEAD (post-fix): 94a9869 (adds Windows-specific HIP fixes to device.py)
+
+### Windows-Specific Fixes Required
+
+Five changes to `brian2cuda/device.py` were necessary to run on Windows:
+
+1. **`get_hipcc_path()`**: Added `.exe` suffix check (`hipcc.exe` on Windows vs `hipcc` on Linux).
+
+2. **`get_hip_gpu_arch()`**: Added preference check at top of function (`prefs.devices.hip_standalone.hip_backend.gpu_arch`) before attempting `rocminfo`, which is not available on Windows.
+
+3. **`build()`**: When `is_hip_backend() and os.name == 'nt'`, bypass `get_compiler_and_args()` which crashes because `distutils.sysconfig.customize_compiler()` returns `None` for the compiler on Windows, causing a `TypeError` when trying to construct compiler flags.
+
+4. **`generate_makefile()`**: On Windows, pass `--rocm-device-lib-path=<bitcode_path>` and `-I<include_path>` to hipcc so clang can find the ROCm device bitcode libraries and headers (not auto-discovered on Windows).
+
+5. **`run()`**: On Windows with HIP, override `CPPStandaloneDevice.run()` to:
+   - Use an absolute path for the generated `main.exe` (`subprocess.call` with a bare name `"main"` does not search CWD on Windows)
+   - Copy the required TheRock DLLs (`amdhip64_7.dll`, `hiprand.dll`, `amd_comgr.dll`, `rocm_kpack.dll`, `rocrand.dll`) beside the generated executable so it loads the TheRock-built runtime instead of the potentially incompatible System32 copy (exe directory beats System32 in Windows DLL search order)
+   - Set `ROCM_KPACK_PATH` to the `.kpack` file for the target GPU arch (`_rocm_sdk_libraries/.kpack/rand_lib_gfx1201.kpack`) so `rocrand` can find its pre-compiled GPU kernel packages
+
+### Build / Install
+
+```powershell
+$env:HIP_VISIBLE_DEVICES = "0"
+$env:USE_HIP = "1"
+$env:ROCM_PATH = "B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel"
+$env:PATH = "B:\develop\TheRock\external-builds\pytorch\.venv\Scripts;" +
+            "$env:ROCM_PATH\bin;" +
+            "C:\Strawberry\c\bin;" +
+            $env:PATH
+
+# Install (editable)
+cd B:\develop\moat\projects\brian2cuda\src
+B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\pip install -e .
+```
+
+### Test Script
+
+`B:\develop\moat\agent_space\brian2cuda_test\test_basic.py` -- sets env vars, imports `brian2cuda.hip_prefs`, sets `prefs.devices.cpp_standalone.make_cmd_unix = 'mingw32-make'`, `prefs.devices.hip_standalone.hip_backend.gpu_arch = 'gfx1201'`, and runs 3 simulations.
+
+### Test Results
+
+```
+utils/timeit.sh brian2cuda test -- <venv>/python.exe agent_space/brian2cuda_test/test_basic.py
+Phase: test, wall: 24.93s, exit: 0
+```
+
+```
+=== Test 1: Neuron Group Simulation ===
+  PASS: 100 neurons simulated for 10 timesteps
+  Initial v range: [0.0000, 0.9900]
+  Final v range: [0.0000, 0.0400]
+
+=== Test 2: Synapse Connectivity with Delay (Spinlock Test) ===
+  Synaptic connections: 981
+  Total spikes: 27
+  Target neurons with v > 0: 50/50
+  PASS: Synaptic propagation with delay working correctly
+        (spinlock in spikequeue.h exercised successfully)
+
+=== Test 3: Large Synapse Network (Stress Test) ===
+  Neurons: 200
+  Synaptic connections: ~12000
+  Total spikes: ~6550
+  Avg spikes per neuron: ~32.8
+  PASS: Large network simulation completed without deadlock
+
+ALL TESTS PASSED (3/3)
+```
+
+### Verdict
+
+**VALIDATED** - HIP port functional on gfx1201 (RDNA4, wave32). All three simulations pass on AMD Radeon RX 9070 XT. The wave-serialized spinlock works correctly on wave32 RDNA4. Windows DLL loading and kpack GPU kernel file setup confirmed working.
