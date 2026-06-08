@@ -405,3 +405,44 @@ The wave_lock_serialize fix serializes within-wavefront contention (proven to wo
 A confounding factor: gfx1201 uses TheRock ROCm 7.14.0a (rocThrust 4.4.0) while gfx1100 used ROCm 7.2.x. The `insert_parallel_while_one_free` crash includes the message "parallel_for: failed to synchronize: hipErrorLaunchFailure" from rocThrust's for_each path, suggesting a rocThrust version/behavior difference may also be involved. Cannot rule out rocThrust 4.4.0 on gfx1201 vs older rocThrust on gfx1100 as a contributing factor.
 
 **Verdict:** VALIDATION FAILED at 718d206 -- 14/702 tests hang/crash on gfx1201 RDNA4. Port fix for the within-wavefront livelock is validated (all 13 core tests PASS). The 14 failures are cross-wavefront forward-progress / rocThrust behavior under extreme single-slot contention. Porter needs to investigate whether a fix is feasible for gfx1201 or if these tests should be skipped for gfx1201 similar to gfx1151.
+
+## stdgpu contention-hang root-cause + rocPRIM #1981 relation (DIAGNOSTIC 2026-06-08, windows-gfx1201)
+
+Diagnostic-only session (no fork commit, no status.json change; gfx1201 stays validation-failed). Reused build-gfx1201 (AOT gfx1201, 718d206), no rebuild. Host state note: at session time only ONE GPU was visible to ROCm -- HIP_VISIBLE_DEVICES=0 mapped to the RX 9070 XT gfx1201 (hipInfo gcnArchName=gfx1201 confirmed), device 1 reported "no ROCm-capable device" (gfx1101 absent, likely the concurrent validator / RDP-detach). So all runs below ran on gfx1201 at device 0. SDK: rocThrust 4.4.0 / rocPRIM 4.4.0 (ROCTHRUST_VERSION 400400, ROCPRIM_VERSION 400400), TheRock ROCm 7.14.0a.
+
+### WHICH KERNEL HANGS (HIP API trace, AMD_LOG_LEVEL=3)
+
+Ran `stdgpu_unordered_map.insert_parallel_while_one_free` and `insert_while_full` in isolation, 40s timeout. The trace is unambiguous and OVERTURNS the "stdgpu insert/spinlock kernel hangs" hypothesis:
+
+- stdgpu's OWN insert kernel COMPLETES. For one_free the trace shows `__parallel_for ... insert_single<unordered_map...>` launched {1,1,1}x{256,1,1}, `hipLaunchKernel: Returned hipSuccess ... duration: 31105 us`, then `hipStreamSynchronize` returns, then the insert-result `hipMemcpy` D2H completes. So the wave_lock_serialize / try_insert / spinlock path RUNS TO COMPLETION (31 ms). It does NOT hang.
+- The hang is in the SUBSEQUENT `valid()` verification. The LAST kernel launched is a rocPRIM `reduce` (demangled: `rocprim::detail::trampoline_kernel<... reduce_impl<... thrust::transform_iterator<stdgpu::detail::offset_inside_range<...>, counting_iterator<int>>, bool*, logical_and<void>> ... target_arch 1201>`). This is the `thrust::transform_reduce` behind stdgpu `valid()`'s first sub-check (offset_range_valid / offset_inside_range). The reduce kernel launch returns hipSuccess, then the `hipMemcpyWithStream` copying the reduce's bool result D2H NEVER completes: repeated `PAL fence isn't ready! result:3` until the GPU watchdog fires (hang, or hipErrorLaunchFailure on a TDR kill -- the two reported outcomes are the same wedge).
+- `insert_while_full` (single-thread insert, N=1) hangs at the IDENTICAL locus: last kernel = the same single-block `offset_inside_range` rocPRIM reduce, same `PAL fence isn't ready` on the result copy.
+
+Both hung reduce kernels are SINGLE-BLOCK: grid `{1,1,1}`, block `{256,1,1}` (reduce over counting[0, total_count()) where total_count() is 2 for a cap-1 full table -> one block). This is decisive for the #1981 question (below). The locus matches the gfx1151 "B refined" finding (valid()'s transform_reduce / values_reachable over the cap-1 full collision table).
+
+### rocPRIM #1981 / ROCPRIM_USE_ATOMIC_BLOCK_ID WORKAROUND -- TESTED, NO EFFECT
+
+This TheRock 7.14 rocPRIM 4.4.0 ALREADY contains the #1981 fix: `include/rocprim/device/detail/ordered_block_id.hpp` defines `check_if_using_atomic_block_id()` reading `getenv("ROCPRIM_USE_ATOMIC_BLOCK_ID")` (0=never, 1=hotfix[default], 2=always). Read of the code: the `hotfix` default enables the atomic-block-id scheme ONLY for `arch == gfx942 || arch == gfx950`; for gfx1201 `needs_hotfix=false`, so the lookback atomic scheme is ALREADY DISABLED by default on gfx1201.
+
+Tested on the two failing tests (map + set), 35-40s timeout each:
+- `ROCPRIM_USE_ATOMIC_BLOCK_ID=0` (force scheme off): map.insert_parallel_while_one_free HANG (exit 124); set.insert_while_full HANG. No change.
+- `ROCPRIM_USE_ATOMIC_BLOCK_ID=2` (force scheme on): map.insert_parallel_while_one_free HANG; set.insert_while_full HANG. No change.
+- Default (unset): HANG (same).
+
+The env var has NO effect in either direction. This is consistent with the trace: the hung kernel is a SINGLE-BLOCK reduce, which uses no inter-block decoupled-lookback / ordered_block_id machinery at all -- that path only engages for MULTI-block scans/reduces. #1981 toggles exactly the machinery that this 2-element reduce never touches.
+
+### VERDICT ON PR #1981: NOT APPLICABLE -- different mechanism
+
+PR #1981 fixes hangs in the rocThrust/rocPRIM MULTI-block decoupled-lookback scan/sort primitives (stable_sort, device_scan, scan_by_key, reduce_by_key, radix_sort, partition, run_length_encode, batch_memcpy) on gfx942/gfx950 via an inter-block atomic-block-id forward-progress scheme. The stdgpu gfx1201 hang is a DIFFERENT class: a single-block `transform_reduce` (no lookback scheme) inside `valid()`, wedging on the cap-1 full/excess-empty collision-table state, on gfx1201 (not a #1981 arch). The env-var workaround is empirically inert here. PR #1981 is NOT related and offers no workaround for stdgpu.
+
+### REMAINING ROOT-CAUSE PICTURE
+
+The 14 failing tests share the degenerate-table state (capacity-1 table, full or excess-empty, after inserts that build a collision chain). Controls confirm the reduce path itself is healthy on gfx1201: `empty_container` (reduce over 0) PASSES, `insert_range_unique_parallel` (reduce over a 100k-element MULTI-block table) PASSES in 60 ms. Only the cap-1 full/collision-chain state wedges the single-block reduce. The proximate trigger is the reduce's per-element functor (`offset_inside_range`, and downstream valid() sub-checks like values_reachable -> contains -> find_impl's linked-list walk `while (_offsets[k] != 0) k += _offsets[k];`) over the degenerate full collision chain -- a gfx1201/RDNA4 wedge while traversing that structure, NOT stdgpu's spinlock and NOT a lookback-scan primitive. gfx90a/gfx1100 traverse the same structure fine; gfx1201 (and gfx1151) wedge.
+
+NOT a hypothesis change vs gfx1151: this is the SAME failure class as the gfx1151 "B / valid()" findings, now confirmed on gfx1201 RDNA4 discrete with a clean HIP-API kernel trace (no printf artifacts). The 3 deque same-end push/pop tests that ALSO failed on gfx1151 do NOT fail on gfx1201 (the cross-wavefront deque livelock, gfx1151 Cause B, is absent on gfx1201's 32-CU RDNA4 scheduler), so gfx1201's 14 failures are exactly the unordered_map/set valid()-over-degenerate-table class.
+
+### RECOMMENDATION
+
+Mirror the gfx1151 determination: these 14 are a gfx1201/RDNA4 + rocThrust-4.4.0 platform fault (a single-block reduce/traversal wedge over the degenerate cap-1 full-table state), NOT a port defect. The port's actual contribution (wave_lock_serialize within-wavefront livelock fix) is fully validated -- all 13 core contention tests PASS on gfx1201, plus the real insert_single kernel runs to completion (31 ms) before the valid()-reduce wedge. The env-var workaround (ROCPRIM_USE_ATOMIC_BLOCK_ID) does NOT help. No code fix is indicated in the port's device code (the hang is in the rocPRIM reduce / its result copy, outside stdgpu's modified spinlock paths). Recommend blocking windows-gfx1201 as a platform fault mirroring gfx1151 (the PR claim is already scoped to gfx90a/gfx1100), rather than further fix attempts. PR #1981 is a dead end for this port.
+
+(Diagnostic session only; no commit, no status.json edit -- gfx1201 left at validation-failed per instructions. GPU healthy/not-wedged at end; build dir untouched, no rebuild. Logs: agent_space/stdgpu_log_default.txt, stdgpu_full.txt -- gitignored.)

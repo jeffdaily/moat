@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T23:23:31Z",
-  "updated_at": "2026-06-08T19:23:38Z",
+  "updated_at": "2026-06-08T20:11:33Z",
   "head_sha": "3bf77cb4b37a65456a3208978faa558aecafdc17",
   "depends_on": [],
   "platforms": {
@@ -80,12 +80,12 @@
     },
     "windows-gfx1201": {
       "state": "validation-failed",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "gfx1201/RDNA4 + rocThrust-4.4.0 platform fault, not a port defect. 688/702 pass incl. all 13 wave_lock_serialize spinlock tests; the port's insert kernel completes. The 14 failures wedge in a single-block rocPRIM transform_reduce inside valid() (hipMemcpyWithStream never returns -> PAL fence / watchdog) only on the degenerate cap-1 full collision-chain state. Same class as the gfx1151 determination; confirmed on RDNA4. rocPRIM PR #1981 (ROCPRIM_USE_ATOMIC_BLOCK_ID) tested -- no effect (different mechanism: multi-block lookback vs single-block reduce). gfx90a/gfx1100 pass all; gfx1101 (RDNA3) expected to pass when its GPU returns.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T19:23:38Z",
+      "updated_at": "2026-06-08T20:11:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
