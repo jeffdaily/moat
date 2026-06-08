@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-08T04:17:15Z","phase":"compile","seconds":45.258,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/TTT3R_new/src/croco/models/curope && HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx90a python setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-08T13:49:25Z","phase":"compile","seconds":34.861,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/TTT3R-gfx1100-gpu0/old && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace 2>&1"}
 {"kind":"phase","ts":"2026-06-08T13:50:04Z","phase":"compile","seconds":34.640,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/TTT3R-gfx1100-gpu0/new && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 python setup.py build_ext --inplace 2>&1"}
+{"kind": "tokens", "ts": "2026-06-08T13:55:10Z", "tokens": 36702, "source": "validator"}
