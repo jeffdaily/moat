@@ -32,3 +32,4 @@
 {"kind": "tokens", "ts": "2026-06-08T00:26:56Z", "tokens": 44843, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-07T20:28:23Z", "tokens": 120895, "source": "validator"}
 {"kind":"phase","ts":"2026-06-08T20:30:45Z","phase":"compile","seconds":8.248,"exit":0,"cmd":"cmake --build agent_space/marian-build-gfx1201 -j24"}
+{"kind": "tokens", "ts": "2026-06-08T22:00:03Z", "tokens": 417698, "source": "validator (revalidation sweep: marian-dev carried fwd; prismatic/symforce assessed)"}
