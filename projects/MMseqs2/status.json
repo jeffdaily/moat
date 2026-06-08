@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-08T15:26:25Z",
+  "updated_at": "2026-06-08T16:58:55Z",
   "head_sha": "398b7c00",
   "depends_on": [],
   "platforms": {
@@ -41,13 +41,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dbeac858",
+      "validated_sha": "398b7c00",
       "started_at": null,
-      "completed_at": "2026-06-08T13:41:11Z",
-      "updated_at": "2026-06-08T15:25:39Z",
+      "completed_at": "2026-06-08T16:58:55Z",
+      "updated_at": "2026-06-08T16:58:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,6 +60,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "398b7c00",
+        "method": "binary-equiv",
+        "detail": "On Linux ROCm 7.2.1, HIP_VERSION_MINOR=2<14 so HIP_DISABLE_WARP_SYNC_BUILTINS stays undef; codeobj_diff libmarv.so (gfx1100) shows identical device ISA + exports (3096 symbols)",
+        "at": "2026-06-08T16:58:55Z"
       }
     },
     "windows-gfx1101": {

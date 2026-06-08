@@ -587,3 +587,40 @@ ISA + exports identical, GPU smoke confirms). linux-gfx1100 and windows-gfx1201
 left at revalidate for their own hosts (gfx1100 is device-identical on Linux 7.2
 too; gfx1201 on Windows 7.14 now fires the guard via HIP_VERSION rather than
 _WIN32 -- identical effect, but a real check confirms it).
+
+## Revalidation 2026-06-08 (linux-gfx1100, RDNA3 wave32, GPU index 0)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm 7.2.1).
+HIP_VISIBLE_DEVICES=0. Revalidate triggered by HEAD advance dbeac858 -> 398b7c00.
+
+### Delta classification
+
+dbeac858 -> 398b7c00: one commit "[ROCm] Key HIP_DISABLE_WARP_SYNC_BUILTINS on
+ROCm version, not OS". Changes only cuda_to_hip.h comment and preprocessor guard.
+
+### Binary-equivalence carry-forward
+
+On Linux ROCm 7.2.1, HIP_VERSION_MINOR=2 < 14, so `HIP_DISABLE_WARP_SYNC_BUILTINS`
+evaluates false under the new version check -- identical behavior to the prior
+`#ifdef _WIN32` path (also false on Linux). Built at 398b7c00 for gfx1100 (new
+build) and compared to the existing dbeac858 build (MMseqs2-gfx1100-gpu2-new):
+
+```
+HIP_VISIBLE_DEVICES=0 cmake -S projects/MMseqs2/src \
+  -B agent_space/MMseqs2-gfx1100-gpu0 \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/rocm
+utils/timeit.sh MMseqs2 compile -- \
+  cmake --build agent_space/MMseqs2-gfx1100-gpu0 -j16 --target mmseqs
+
+python3 utils/codeobj_diff.py \
+  agent_space/MMseqs2-gfx1100-gpu2-new/lib/libmarv/src/libmarv.so \
+  agent_space/MMseqs2-gfx1100-gpu0/lib/libmarv/src/libmarv.so
+```
+
+codeobj_diff verdict: `identical` (exported symbols + device ISA identical,
+3096 exports). The preprocessor change is inert on Linux ROCm 7.2.1 for gfx1100
+exactly as it was for gfx90a.
+
+VERDICT: CARRY-FORWARD (binary-equiv). State -> completed (validated_sha = 398b7c00).
