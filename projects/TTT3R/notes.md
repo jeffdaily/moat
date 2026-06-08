@@ -191,3 +191,23 @@ print(f'PASS: GPU vs CPU match (max diff={diff:.2e})')
 ```
 
 Real GPU validation passed.
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100, HIP_VISIBLE_DEVICES=0)
+Revalidate: d162988b -> d064cc9a
+
+Delta: one commit "[ROCm] Fix Windows c10::ValueError LNK2001 in curope extension"
+Change: adds `import sys` and a `if sys.platform == "win32" and IS_ROCM:` block in setup.py that populates `extra_link_args` with a `/ALTERNATENAME` linker directive. On Linux this block is unreachable; `extra_link_args=[]` (no-op). The `extra_compile_args` and `kernels.cu` are unchanged.
+
+Method: binary-equivalence carry-forward. Built both SHAs with `PYTORCH_ROCM_ARCH=gfx1100 HIP_VISIBLE_DEVICES=0` into agent_space/TTT3R-gfx1100-gpu0/{old,new} and ran `utils/codeobj_diff.py`.
+
+```
+python3 utils/codeobj_diff.py \
+  agent_space/TTT3R-gfx1100-gpu0/old \
+  agent_space/TTT3R-gfx1100-gpu0/new
+```
+
+Result: `verdict=identical` -- device ISA and all 66 exported symbols match.
+
+Conclusion: carry-forward to `completed` at d064cc9a; no GPU re-run required.

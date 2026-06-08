@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-04T23:49:50Z",
-  "updated_at": "2026-06-08T04:17:28Z",
+  "updated_at": "2026-06-08T13:50:18Z",
   "head_sha": "d064cc9a55b88763e5a3873dfa4a6b45e2751e00",
   "depends_on": [],
   "platforms": {
@@ -41,13 +41,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d162988b5af74e7939faaea422c004ddc1511503",
+      "validated_sha": "d064cc9a55b88763e5a3873dfa4a6b45e2751e00",
       "started_at": null,
-      "completed_at": "2026-06-05T01:30:01Z",
-      "updated_at": "2026-06-08T02:40:39Z",
+      "completed_at": "2026-06-08T13:50:18Z",
+      "updated_at": "2026-06-08T13:50:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "d064cc9a55b88763e5a3873dfa4a6b45e2751e00",
+        "method": "binary-equiv",
+        "detail": "Windows-only linker workaround (sys.platform==win32 guard), device ISA and exports identical (66 symbols) on gfx1100",
+        "at": "2026-06-08T13:50:18Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
