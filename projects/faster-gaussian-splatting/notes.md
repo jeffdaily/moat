@@ -99,3 +99,78 @@ Validated configurations:
 All rasterization tests produce valid output (no NaN/Inf, clamped to [0,1], correct shapes).
 
 GPU execution confirmed on real hardware (gfx1100). Port is validated at commit 98be02d4095ff01ac22cbf884ade6c9d950644a0.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), Windows 11 Pro for Workstations
+Fork: jeffdaily/faster-gaussian-splatting @ moat-port be2217e (two Windows-specific commits on top of 98be02d)
+Validator: claude-sonnet-4-6
+ROCm: 7.14.0a20260604 (TheRock nightly). torch 2.9.1+rocm7.14.0a20260604
+
+### Windows delta-port changes (commit be2217e on top of 98be02d)
+
+Two Windows-specific fixes required:
+
+1. **c10::ValueError LNK2001**: `c10.dll` (clang-built) does not export the
+   inherited constructor `c10::ValueError(SourceLocation, string)`. Headers pulled
+   in by `<torch/extension.h>` trigger `TORCH_CHECK_VALUE` which generates a
+   `__declspec(dllimport)` reference to that ctor, causing LNK2001. Fix:
+   `/ALTERNATENAME` linker directive in `setup.py` (Windows-only, guarded by
+   `sys.platform == 'win32'`) aliases the missing thunk to
+   `Error(SourceLocation, string)` which IS exported from c10.dll.
+
+2. **scalar lerp unavailable in device context (C++20 Windows hipcc)**: In
+   `helper_math.h`, the C++20 branch defined scalar `lerp` as `__device__` only
+   (to avoid conflict with std::lerp on host). On Windows hipcc, `__HIP_DEVICE_COMPILE__`
+   is not set during the device pass, so the `#elif defined(__HIP_DEVICE_COMPILE__)`
+   branch is not taken. The `#else` fallback defined only `__host__` lerp, which
+   is not callable from `__device__` functions. Fix: changed the `#else` branch to
+   `__device__ __host__`. Safe because `.hip` files don't pull in `using namespace std`
+   so no std::lerp ambiguity arises.
+
+Build environment:
+- MSVC link.exe prepended to PATH (before Git's /usr/bin/link)
+- ROCM_HOME=_rocm_sdk_devel, DISTUTILS_USE_SDK=1, HIP_VISIBLE_DEVICES=0, PYTORCH_ROCM_ARCH=gfx1201
+
+Build command:
+```
+export PATH="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64:$PATH"
+cd projects/faster-gaussian-splatting/src/FasterGSCudaBackend
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv
+ROCM_HOME=$VENV/Lib/site-packages/_rocm_sdk_devel
+export PATH="$ROCM_HOME/bin:$ROCM_HOME/lib/llvm/bin:$VENV/Scripts:$PATH"
+export ROCM_HOME DISTUTILS_USE_SDK=1 HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201
+rm -rf build/ FasterGSCudaBackend/_C*.pyd
+$VENV/Scripts/python.exe setup.py build_ext --inplace
+```
+Build result: PASS (~45 s, exit 0)
+gfx1201 code-object confirmed in .pyd (`hipv4-amdgcn-amd-amdhsa--gfx1201` in .hipFatB)
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 python.exe agent_space/fgs_test_gfx1201.py
+```
+Test result: 15/15 PASS (2 s, exit 0)
+
+Pass breakdown (n=Gaussian count, res=resolution, sh=SH bases):
+- n=10, 256x256, sh=1: PASS range=[0.1714, 0.5559]
+- n=100, 256x256, sh=1: PASS range=[0.3996, 0.7272]
+- n=500, 256x256, sh=1: PASS range=[0.4212, 0.6443]
+- n=1000, 256x256, sh=1: PASS range=[0.3628, 0.5121]
+- n=5000, 256x256, sh=1: PASS range=[0.3866, 0.6907]
+- n=10000, 256x256, sh=1: PASS range=[0.4808, 0.5798]
+- n=500, 128x128, sh=1: PASS
+- n=500, 256x256, sh=1: PASS
+- n=500, 512x512, sh=1: PASS
+- n=500, 800x600, sh=1: PASS
+- n=500, 256x256, sh=1: PASS
+- n=500, 256x256, sh=4: PASS range=[0.2016, 0.6140]
+- n=500, 256x256, sh=8: PASS range=[0.2628, 0.7612]
+- n=500, 256x256, sh=16: PASS range=[0.4894, 0.5676]
+- determinism (bit-exact across runs): PASS
+
+All outputs valid (no NaN/Inf, clamped to [0,1], correct shapes).
+GPU dispatch confirmed: .pyd contains `.hipFatB` section with gfx1201 code object.
+AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32) at HIP_VISIBLE_DEVICES=0.
+
+Verdict: completed. validated_sha=be2217e (windows-gfx1201).
