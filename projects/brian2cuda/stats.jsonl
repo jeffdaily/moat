@@ -27,3 +27,4 @@
 {"kind":"phase","ts":"2026-06-08T13:51:36Z","phase":"test","seconds":24.930,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe /b/develop/moat/agent_space/brian2cuda_test/test_basic.py"}
 {"kind":"phase","ts":"2026-06-08T15:18:10Z","phase":"test","seconds":37.880,"exit":0,"cmd":"python3 agent_space/brian2cuda_reval_gfx90a.py"}
 {"kind":"phase","ts":"2026-06-08T17:05:29Z","phase":"test","seconds":22.440,"exit":0,"cmd":"python3 agent_space/brian2cuda-gfx1100-gpu0/test_gfx1100.py"}
+{"kind": "tokens", "ts": "2026-06-08T17:07:55Z", "tokens": 53244, "source": "validator"}
