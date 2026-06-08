@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:23:49Z",
-  "updated_at": "2026-06-07T23:29:33Z",
+  "updated_at": "2026-06-08T00:14:58Z",
   "head_sha": "3d42a7c",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d58f80b",
+      "validated_sha": "3d42a7c",
       "started_at": "2026-06-05T10:02:41Z",
-      "completed_at": "2026-06-05T10:48:40Z",
-      "updated_at": "2026-06-07T23:29:08Z",
+      "completed_at": "2026-06-08T00:14:58Z",
+      "updated_at": "2026-06-08T00:14:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "3d42a7c",
+        "method": "binary-equiv",
+        "detail": "Windows-only build fixes compile to identical gfx90a device ISA (34 exports, codeobj_diff=identical)",
+        "at": "2026-06-08T00:14:58Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
