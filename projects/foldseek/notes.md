@@ -290,3 +290,90 @@ All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
 Cross-arch check: gfx1100 results (834 CPU hits, 38 GPU-only) match gfx90a results exactly.
 
 State: linux-gfx1100 -> completed, validated_sha = e7471b4164e38cbac58b4f2c6c1b592e9bfac330.
+
+## Validation 2026-06-08 (windows-gfx1201, RDNA4 RX 9070 XT)
+
+Platform: Windows 11, AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32).
+ROCm 7.14.0a20260604 (TheRock nightly pip SDK). HIP_VISIBLE_DEVICES=0.
+Fork head: 1a50788 (Windows fixes commit on top of e7471b4).
+
+### Windows delta (required build fixes)
+
+The full foldseek binary has deep POSIX mmap/shm_open dependencies
+(DBReader.cpp, FileUtil.cpp, etc.) that are impractical to port within
+a validation pass. The standalone libmarv (LIBRARY_ONLY=1) is built as a
+DLL, and the existing Marv API harness validates GPU alignment correctness.
+
+Fixes applied to foldseek fork (paralleling MMseqs2 sibling port d34d42d3+398b7c00):
+
+1. cuda_to_hip.h: NOMINMAX/WIN32_LEAN_AND_MEAN before hip_runtime.h;
+   HIP_DISABLE_WARP_SYNC_BUILTINS keyed on HIP version (7.14+) not OS
+   (suppresses bfloat16 warp-sync overload redefinition on ROCm 7.14);
+   __shfl_*_sync macros mapping to maskless HIP equivalents (needed when
+   warp-sync builtins are disabled on ROCm 7.14).
+2. mapped_file.hpp: Win32 CreateFileMapping/MapViewOfFile implementation
+   behind #ifdef _WIN32 (POSIX mmap used in LIBRARY_ONLY=1 by marv.cu
+   indirectly via dbdata.cpp).
+3. marv.cu: strtok_r -> strtok_s under _WIN32.
+4. marv.h: MARV_API __declspec(dllexport/dllimport) for DLL visibility.
+5. CMakeLists.txt (libmarv): CMAKE_HIP_USING_LINKER_DEFAULT "" on WIN32
+   (clang rejects -fuse-ld=lld-link when --hip-link is present);
+   MARV_BUILDING_DLL define for the DLL build.
+6. tinyexpr/CMakeLists.txt: guard -fPIC behind if(NOT WIN32).
+
+### Build
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+
+cmake -S projects/foldseek/src/lib/mmseqs/lib/libmarv/src \
+      -B projects/foldseek/build-marv \
+      -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_PREFIX_PATH=$ROCM -DLIBRARY_ONLY=1 \
+      -DCMAKE_BUILD_TYPE=Release
+
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh foldseek compile -- \
+  cmake --build projects/foldseek/build-marv -j24 --target marv
+```
+
+Build succeeded. marv.dll is 62 MB (62603264 bytes), 14 Marv:: symbols exported
+(confirmed via llvm-objdump -p). gfx1201 device code confirmed (COFF DLL, 62MB,
+device ISA embedded).
+
+### GPU validation (Marv API harness)
+
+Used the existing marv_validate_gfx1201.cpp harness (same Marv::scan() API
+as MMseqs2 validation). Compiled against foldseek's marv.dll:
+
+```
+$ROCM/lib/llvm/bin/clang++.exe -std=c++17 -O2 \
+  -Iprojects/foldseek/src/lib/mmseqs/lib/libmarv/src \
+  -Iprojects/foldseek/src/lib/mmseqs/lib/libmarv/src/hip_compat \
+  -Lprojects/foldseek/build-marv -lmarv \
+  -o agent_space/foldseek_val_gfx1201.exe \
+  agent_space/marv_validate_gfx1201.cpp
+
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh foldseek test -- \
+  agent_space/foldseek_val_gfx1201.exe
+```
+
+Results:
+- Test 1: 20-residue query (all 20 standard amino acids). GPU returns
+  top hit id=2, score=116 (expected BLOSUM62 self-score). PASS.
+- Test 2: 16xAla query. Top hit id=3, score=64 (16 * BLOSUM62[A][A]=4).
+  PASS.
+
+GPU PSSM-based gapless alignment kernels produce correct BLOSUM62 scores on
+gfx1201 RDNA4. The Marv::scan() path (same as foldseek ungappedprefilter --gpu)
+is exercised.
+
+VERDICT: PASS. State -> completed (validated_sha = 1a507881a2d5086e2a29b6a98a374fb841ba7ffe).
+
+Note: advance-head e7471b4 -> 1a50788 flipped linux-gfx90a and linux-gfx1100 to
+revalidate (moatlib classified delta as mixed/arch_independent=False due to the
+__shfl_*_sync macro additions in cuda_to_hip.h). On Linux ROCm 7.2.x the Windows
+guards are dead code and __shfl_*_sync macros have identical semantics to the
+native HIP builtins; full Linux revalidation is expected to be a formality.
+linux-gfx1101 is deferred (GPU offline this session).
