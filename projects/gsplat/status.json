@@ -7,17 +7,17 @@
   "priority": 6.676,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-07T02:56:37Z",
+  "updated_at": "2026-06-08T16:22:59Z",
   "head_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "e17d495cc004eee356a2d72f2ba535d64fe4c311",
       "started_at": "2026-05-30T07:12:53Z",
       "completed_at": "2026-06-02T18:15:00Z",
-      "updated_at": "2026-06-02T18:23:49Z",
+      "updated_at": "2026-06-08T16:22:59Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -146,5 +146,8 @@
         "at": "2026-06-03T13:30:29Z"
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/nerfstudio-project/gsplat/pull/970",
+  "pr_number": 970,
+  "pr_opened_at": "2026-06-08T16:22:59Z"
 }
