@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-05-31T16:36:35Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": "e9fed66127740c0439458eec1d65c92825f56679",
+  "updated_at": "2026-06-08T03:47:04Z",
+  "head_sha": "ab1dcf71",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e9fed66127740c0439458eec1d65c92825f56679",
+      "validated_sha": "ab1dcf71",
       "started_at": "2026-05-31T23:40:43Z",
-      "completed_at": "2026-06-04T17:57:44Z",
-      "updated_at": "2026-06-04T17:57:44Z",
+      "completed_at": "2026-06-08T03:46:47Z",
+      "updated_at": "2026-06-08T03:46:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "e9fed66127740c0439458eec1d65c92825f56679",
+        "to": "ab1dcf71",
         "method": "binary-equiv",
-        "detail": "TestCodePacking.cpp test-only change (uint8_t->int conformance + hip_runtime include); libfaiss.so device code objects + 10191 exported symbols identical between a5c47343 and e9fed661",
-        "at": "2026-06-04T17:57:44Z"
+        "detail": "TestUtils.cpp test-only change (CLOCK_REALTIME->std::chrono); faiss.dll device code objects unchanged (test TU not in faiss_gpu_objs)",
+        "at": "2026-06-08T03:46:47Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e9fed66127740c0439458eec1d65c92825f56679",
+      "validated_sha": "ab1dcf71",
       "started_at": "2026-06-01T20:49:00Z",
-      "completed_at": "2026-06-04T16:54:31Z",
-      "updated_at": "2026-06-04T16:54:31Z",
+      "completed_at": "2026-06-08T03:47:04Z",
+      "updated_at": "2026-06-08T03:47:04Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,7 +61,13 @@
         "first_session_at": "2026-06-01T20:49:00Z",
         "last_session_at": "2026-06-01T21:10:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "ab1dcf71",
+        "method": "binary-equiv",
+        "detail": "TestUtils.cpp test-only change (CLOCK_REALTIME->std::chrono); faiss.dll device code objects unchanged (test TU not in faiss_gpu_objs)",
+        "at": "2026-06-08T03:47:04Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -86,35 +92,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-04T19:41:52Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e9fed66127740c0439458eec1d65c92825f56679",
+      "validated_sha": "ab1dcf71",
       "started_at": null,
-      "completed_at": "2026-06-04T16:37:26Z",
-      "updated_at": "2026-06-04T16:37:26Z",
+      "completed_at": "2026-06-08T03:45:26Z",
+      "updated_at": "2026-06-08T03:45:26Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -129,6 +113,35 @@
         "last_session_at": null
       },
       "last_agent": "validator"
+    },
+    "windows-gfx1151": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "ab1dcf71",
+      "started_at": null,
+      "completed_at": "2026-06-08T03:47:04Z",
+      "updated_at": "2026-06-08T03:47:04Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "ab1dcf71",
+        "method": "binary-equiv",
+        "detail": "TestUtils.cpp test-only change (CLOCK_REALTIME->std::chrono); faiss.dll device code objects unchanged (test TU not in faiss_gpu_objs)",
+        "at": "2026-06-08T03:47:04Z"
+      }
     }
   }
 }

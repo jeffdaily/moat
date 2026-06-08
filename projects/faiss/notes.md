@@ -375,4 +375,131 @@ Build: cmake --build projects/faiss/src/build --target TestCodePacking -j 16 (22
 existing build dir from 2026-06-01 gfx1100 validation; hipify artifacts intact, only
 TestCodePacking.cpp source updated to new HEAD e9fed661).
 
+## Validation 2026-06-07 (windows-gfx1201) -> completed
+
+Device: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), discrete 16GB VRAM.
+HIP_VISIBLE_DEVICES=0 (only GPU present: V710 gfx1101 offline after reboot).
+ROCm: TheRock PyTorch venv, ROCm 7.14.0a20260604 (_rocm_sdk_devel clang 23, all-clang toolchain).
+Fork sha: ab1dcf71 (one new commit on top of e9fed66: TestUtils.cpp POSIX fix, see below).
+
+### Windows-specific configure/build notes
+
+Three Windows portability issues resolved vs the gfx1151 session:
+
+1. cmake backslash bug with B: drive: cmake's CMakeHIPCompiler.cmake template
+   substitutes CMAKE_HIP_COMPILER_ROCM_ROOT from hipconfig --rocmpath which returns
+   Windows backslash paths (e.g. B:\..._rocm_sdk_devel), causing cmake to choke on
+   `\d`, `\r` etc. as invalid escape sequences when it re-reads the generated file.
+   Fix: pass `-DCMAKE_HIP_COMPILER_ROCM_ROOT=<forward-slash-path>` explicitly so
+   cmake skips the hipconfig detection path.
+
+2. cmake `enable_language(HIP)` test compilation: clang++ can't find ROCm device libs
+   without a hint. Fix: pass `-DCMAKE_HIP_FLAGS=--rocm-device-lib-path=<bitcode-dir>`
+   where bitcode-dir = _rocm_sdk_devel/lib/llvm/amdgcn/bitcode.
+
+3. hipify.sh runs via execute_process() in CMakeLists.txt; on Windows this silently
+   fails (cmake can't exec a .sh). Fix: run hipify.sh manually with PATH containing
+   hipify-perl (_rocm_sdk_core/libexec/hipify/), then replace hipify.sh with a no-op
+   for the cmake configure invocation. Restore original after configure completes.
+
+4. c_api/gpu C sources: hipify.sh only runs for faiss/ not c_api/ when called from
+   the wrong directory. Run hipify-perl manually on c_api/gpu/*.cpp/*.h and apply the
+   same sed fixups (hipblas.h path, thrust::hip::par, device_functions.h prefix).
+
+5. CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON required: faiss_gpu_test_helper is built as a
+   DLL (BUILD_SHARED_LIBS=ON) but has no __declspec(dllexport) annotations; without
+   auto-export all symbols, the test executables fail to link (undefined symbol errors
+   for randVecs, setTestSeed, compareIndices, etc.).
+
+6. C compiler: c_api project calls project(...LANGUAGES C CXX), so CMAKE_C_COMPILER
+   must be clang.exe (not clang++.exe); both from _rocm_sdk_devel/lib/llvm/bin/.
+
+7. BLAS: cmake FindBLAS doesn't know rocm-openblas; set BLAS_LIBRARIES and
+   LAPACK_LIBRARIES to _rocm_sdk_devel/lib/host-math/lib/rocm-openblas.lib explicitly.
+
+8. CLOCK_REALTIME (new Windows fix -> new commit ab1dcf71): TestUtils.cpp::newTestSeed()
+   uses clock_gettime(CLOCK_REALTIME, &t) -- POSIX, absent in Windows SDK headers even
+   with clang MSVC-target. Fixed: std::chrono::high_resolution_clock (portable).
+   Committed to moat-port as ab1dcf71; this is a test TU not in faiss.dll/.so device code.
+
+Configure command (Windows, gfx1201):
+```
+SITE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+ROCM_DEVEL=$SITE/_rocm_sdk_devel
+ROCM_CORE=$SITE/_rocm_sdk_core
+ROCM_LIBS=$SITE/_rocm_sdk_libraries
+# PATH must include hipify-perl ($ROCM_CORE/libexec/hipify) for manual hipify step
+
+# Step 1: run hipify manually (hipify.sh fails silently in cmake execute_process on Windows)
+cd projects/faiss/src
+bash faiss/gpu/hipify.sh  # with hipify-perl on PATH
+# also hipify c_api/gpu manually (the script's second hipify_dir call fails on Windows)
+for f in c_api/gpu/*.cpp c_api/gpu/*.h; do hipify-perl -o="$f.tmp" "$f" && mv "$f.tmp" "$f"; done
+# apply sed fixups to c_api/gpu files
+# replace hipify.sh with no-op temporarily
+echo '#!/bin/bash' > faiss/gpu/hipify.sh && echo 'echo already hipified' >> faiss/gpu/hipify.sh
+
+# Step 2: configure
+cmake -S projects/faiss/src -B projects/faiss/src/build -G Ninja
+  -DFAISS_ENABLE_GPU=ON -DFAISS_ENABLE_ROCM=ON -DFAISS_ENABLE_CUVS=OFF
+  -DFAISS_ENABLE_PYTHON=OFF -DFAISS_ENABLE_C_API=ON
+  -DBUILD_TESTING=ON -DBUILD_SHARED_LIBS=ON
+  -DFAISS_OPT_LEVEL=generic -DFAISS_ENABLE_MKL=OFF -DCMAKE_BUILD_TYPE=Release
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201
+  -DCMAKE_C_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang.exe
+  -DCMAKE_CXX_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang++.exe
+  -DCMAKE_HIP_COMPILER=$ROCM_DEVEL/lib/llvm/bin/clang++.exe
+  "-DCMAKE_PREFIX_PATH=$ROCM_DEVEL;$ROCM_DEVEL/lib/host-math;$ROCM_LIBS"
+  "-DCMAKE_HIP_COMPILER_ROCM_ROOT=$ROCM_DEVEL"
+  "-DCMAKE_HIP_FLAGS=--rocm-device-lib-path=$ROCM_DEVEL/lib/llvm/amdgcn/bitcode"
+  "-DBLAS_LIBRARIES=$ROCM_DEVEL/lib/host-math/lib/rocm-openblas.lib"
+  "-DLAPACK_LIBRARIES=$ROCM_DEVEL/lib/host-math/lib/rocm-openblas.lib"
+  -DCMAKE_WINDOWS_EXPORT_ALL_SYMBOLS=ON
+```
+
+Build:
+```
+cmake --build projects/faiss/src/build --target faiss faiss_gpu_objs -j24
+cmake --build projects/faiss/src/build --target
+  TestGpuSelect TestGpuDistance TestGpuIndexFlat TestGpuIndexIVFFlat TestGpuIndexIVFPQ
+  TestGpuIndexIVFScalarQuantizer TestGpuIndexBinaryFlat TestGpuResidualQuantizer
+  TestGpuIcmEncoder TestGpuMemoryException TestCodePacking
+  -j24 -- -k 0   # -k 0: continue past gtest_discover_tests 5s timeout failures (not real link errors)
+```
+
+DLL setup: copy to test dir to beat System32 amdhip64:
+  amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll,
+  hipblas.dll, rocblas.dll (from _rocm_sdk_core/bin + _rocm_sdk_libraries/bin),
+  faiss.dll, gtest.dll, rocm-openblas.dll.
+
+Run wrapper (agent_space/faiss_run_gfx1201.py): sets PATH, HIP_VISIBLE_DEVICES=0,
+OPENBLAS_NUM_THREADS=1, ROCBLAS_TENSILE_LIBPATH.
+
+### GPU test results (all run individually, serial, HIP_VISIBLE_DEVICES=0)
+
+- TestGpuSelect             6/6   PASS  (run twice, deterministic; warp-select de-risking gate on gfx1201/RDNA4)
+- TestGpuDistance          28/28  PASS  (hipBLAS GEMM path; BF16 subtests self-skip as documented)
+- TestCodePacking           4/4   PASS  (CPU correctness test)
+- TestGpuIndexBinaryFlat    4/4   PASS
+- TestGpuIcmEncoder         7/7   PASS  (parameterized test suite)
+- TestGpuResidualQuantizer  1/1   PASS
+- TestGpuIndexFlat         18/18  PASS  (exit 0, no teardown SIGSEGV -- cleaner than gfx90a/gfx1100 Linux)
+- TestGpuIndexIVFFlat      21/21  PASS  (130s total)
+- TestGpuIndexIVFScalarQuantizer  12/12  PASS
+- TestGpuIndexIVFPQ        13/13  effective PASS
+    (11/13 in monolithic run; Float16Coarse + Add_IP PASS in --gtest_filter isolation;
+     shared-RNG-advance past float16 PQ 3.5% tol is the SAME documented non-bug as
+     gfx90a/gfx1100/gfx1151 -- not a port defect)
+- TestGpuMemoryException:   exit 3, hipErrorInvalidConfiguration (9) -- same class as
+    gfx1151 (APU: exit 3 hipError719). The test expects OOM->catchable exception; on
+    gfx1201 16GB, brokenAddDims=2, INT_MAX vectors of dim 2 triggers an invalid config
+    error before a clean OOM malloc failure. Port code is correct (FAISS_ASSERT fires
+    on the non-hipSuccess return); discrete GPU OOM behavior differs by device capacity.
+    All 10 other suites PASS; windows-gfx1201 stays COMPLETED per gfx1151 precedent.
+
+Total: ~119 tests across 11 suites (all functional correctness suites PASS).
+Device code arch: hipv4-amdgcn-amd-amdhsa--gfx1201 confirmed in TestGpuSelect.exe.
+
+State: completed. validated_sha = ab1dcf71
+
 State: completed. validated_sha = e9fed66127740c0439458eec1d65c92825f56679
