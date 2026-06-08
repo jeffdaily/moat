@@ -17,3 +17,6 @@
 {"kind":"phase","ts":"2026-06-05T06:03:32Z","phase":"test","seconds":1.578,"exit":0,"cmd":"bash -c cd agent_space && /opt/rocm/bin/hipcc -o velvet_kernel_test_gfx1100 velvet_kernel_test_gfx1100.cpp --offload-arch=gfx1100 && ./velvet_kernel_test_gfx1100"}
 {"kind":"session","ts":"2026-06-05T06:04:17Z","epoch":1780639457.507873093,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-05T06:05:35Z", "tokens": 58721, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T02:47:26Z","phase":"compile","seconds":10.394,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/Velvet/src/build_win_gfx1201 -j32"}
+{"kind":"phase","ts":"2026-06-08T02:49:06Z","phase":"compile","seconds":11.016,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/Velvet/src/build_win_gfx1201 -j32"}
+{"kind":"phase","ts":"2026-06-08T02:50:27Z","phase":"test","seconds":0.291,"exit":0,"cmd":"B:/develop/moat/agent_space/velvet_kernel_test_gfx1201.exe"}

@@ -245,3 +245,80 @@ cd agent_space
 - WarpSize correctly adapts to 32 on RDNA3 (gfx1100) vs 64 on CDNA2 (gfx90a), confirming no hardcoded warp size assumptions.
 - No source changes required from gfx90a validated commit - the CMake `CMAKE_HIP_ARCHITECTURES` parameter correctly retargets to gfx1100.
 - Conda glfw3 cmake config conflict required `-DCMAKE_IGNORE_PATH=/opt/conda` workaround to use system glfw3.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+### Build Fix
+
+Windows build required one CMakeLists.txt fix: `imgui` static library needs `target_link_libraries(imgui PRIVATE glfw OpenGL::GL)` so imgui_impl_glfw.cpp can find `GLFW/glfw3.h` from the vcpkg-installed GLFW. On Linux the system GLFW headers are on the default include path; on Windows with vcpkg the transitive include propagation is required. Committed as `74af688` on top of the validated `9d5dc08`.
+
+### Build
+
+```cmd
+set HIP_VISIBLE_DEVICES=0
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+ROCM_DEVEL=$VENV/_rocm_sdk_devel
+cmake -B build_win_gfx1201 -S . -G Ninja ^
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 ^
+  -DCMAKE_BUILD_TYPE=Release ^
+  -DCMAKE_C_COMPILER=%ROCM_DEVEL%/lib/llvm/bin/clang.exe ^
+  -DCMAKE_CXX_COMPILER=%ROCM_DEVEL%/lib/llvm/bin/clang++.exe ^
+  -DCMAKE_HIP_COMPILER=%ROCM_DEVEL%/lib/llvm/bin/clang++.exe ^
+  -DCMAKE_PREFIX_PATH="%ROCM_DEVEL%;B:/develop/moat/agent_space/assimp_install" ^
+  -DCMAKE_TOOLCHAIN_FILE=B:/vcpkg/scripts/buildsystems/vcpkg.cmake ^
+  -DVCPKG_TARGET_TRIPLET=x64-windows
+cmake --build build_win_gfx1201 -j32
+```
+
+**Result**: Build succeeded. Binary: `build_win_gfx1201/bin/Velvet.exe` (2.6 MB).
+
+**Dependencies**: glfw3 3.4, fmt 12.1.0, glm 1.0.3 from vcpkg; assimp 5.3 from agent_space/assimp_install; hipcub/rocthrust from `_rocm_sdk_devel`.
+
+### Device Code Verification
+
+gfx1201 device code confirmed in binary:
+
+```
+strings build_win_gfx1201/bin/Velvet.exe | grep gfx1201
+# -> hipv4-amdgcn-amd-amdhsa--gfx1201
+```
+
+All 12 expected kernels present (mangled names verified via strings):
+- InitializePositions_Kernel, PredictPositions_Kernel, SolveStretch_Kernel
+- SolveBending_Kernel, SolveAttachment_Kernel, ApplyDeltas_Kernel
+- CollideSDF_Kernel, CollideParticles_Kernel, Finalize_Kernel
+- ComputeParticleHash_Kernel, FindCellStart_Kernel, CacheNeighbors_Kernel
+
+### GPU Runtime Validation
+
+Velvet is an interactive OpenGL application with no automated test suite. Validated using a minimal standalone HIP kernel test (`agent_space/velvet_kernel_test_gfx1201.cpp`) exercising the same HIP features Velvet uses (same approach as gfx90a and gfx1100):
+
+1. hipMallocManaged allocation (Velvet's allocation strategy)
+2. InitializePositions-style kernel (position writes)
+3. PredictPositions-style kernel (Euler integration with gravity)
+4. atomicAdd kernel (constraint delta accumulation, 10k threads -> sum)
+5. hipDeviceSynchronize
+
+**Test command**:
+```bash
+HIP_VISIBLE_DEVICES=0 hipcc -o velvet_kernel_test_gfx1201.exe \
+  velvet_kernel_test_gfx1201.cpp --offload-arch=gfx1201
+HIP_VISIBLE_DEVICES=0 ./velvet_kernel_test_gfx1201.exe
+```
+
+**Result**: PASS on gfx1201
+- GPU: AMD Radeon RX 9070 XT (gfx1201)
+- WarpSize: 32 (RDNA4 wave32, as expected)
+- Init kernel: PASS
+- Integrate kernel: PASS
+- atomicAdd kernel: PASS (delta[0]=10000.0, expected 10000.0)
+- All tests PASSED on gfx1201
+
+### Validation Summary
+
+**PASS** -- The HIP port compiles successfully for gfx1201 on Windows, all device kernels are present in the code object, and GPU execution is verified functional on real hardware.
+
+**Hardware**: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32)
+**ROCm**: TheRock 7.14.0a20260604
+**Commit**: 74af688 (builds on validated 9d5dc08)
+**Pass/fail**: 3/3 GPU kernel tests PASS; 0 failures
