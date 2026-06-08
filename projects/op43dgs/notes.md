@@ -486,3 +486,56 @@ Results:
   panorama single-cam fit: loss 0.00154->0.00013 PSNR 32.65->45.26 dB. CONVERGES. PASS.
 
 All gates satisfied. State: linux-gfx90a completed, validated_sha=87173958ed14a2924349187e9e9f2744cee2c93a.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate, 9430d42 -> 87173958ed)
+
+Platform: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), HIP_VISIBLE_DEVICES=1, ROCm 7.2.1.
+Delta: commit 8717395 adds Windows-only `/ALTERNATENAME` linker directive in all four setup.py files,
+guarded by `os.name == 'nt' and torch.version.hip`. On Linux `os.name == 'posix'` so the Linux build
+is unchanged. codeobj_diff triggered a full revalidation (symbols differed due to compiler ABI version
+change between original install and current rebuild -- not a real code change; protocol requires full GPU
+re-run unless verdict is `identical`). All four extensions rebuilt from head sha (87173958ed),
+PYTORCH_ROCM_ARCH=gfx1100, MAX_JOBS=16, pip install --no-build-isolation --no-deps.
+
+Build commands:
+
+```
+export HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16
+P=/opt/conda/envs/py_3.12/bin/python
+SRC=/var/lib/jenkins/moat/projects/op43dgs/src
+
+# simple-knn
+utils/timeit.sh op43dgs compile -- $P -m pip install $SRC/submodules/simple-knn --no-build-isolation --no-deps
+
+# pinhole (uninstall between variants; shared module name)
+$P -m pip uninstall -y diff_gaussian_rasterization
+utils/timeit.sh op43dgs compile -- $P -m pip install $SRC/submodules/diff-gaussian-rasterization-pinhole --no-build-isolation --no-deps
+
+# fisheye and panorama (same pattern)
+```
+
+Results:
+
+simple-knn distCUDA2 (N=50000): finite=True nonneg=True bitwise_deterministic=True. PASS.
+
+pinhole Tier 1 forward: shape (3,128,128), finite=True, coverage=1.0000, bitwise_det=True. PASS.
+pinhole Tier 2 backward:
+  grad-sum run-to-run rel diff: means=0.00e+00, opac=0.00e+00, sh=0.00e+00, scales=0.00e+00 (all stable)
+  opac: n=40 slope=0.998 sign=1.00 [gate slope~1.0] PASS
+  sh: n=40 slope=1.000 sign=1.00 [gate slope~1.0] PASS
+  scales: n=40 slope=0.962 sign=1.00 [gate slope~1.0] PASS
+  means: n=40 slope=0.295 sign=1.00 [gate sign~1.0; slope scaled by design] PASS
+pinhole Tier 3 training: loss 0.02679->0.00048, PSNR 82.63->87.77 dB. PASS.
+GPU kernel dispatch confirmed: rasterizer prints "CUDA Kernel: Optimal GS (pinhole)" on load.
+
+fisheye Tier 1: finite=True, coverage=1.0000, bitwise_det=True. PASS.
+fisheye Tier 2: opac slope=0.997 sign=1.00; sh slope=1.000 sign=1.00;
+  scales slope=0.662 sign=1.00 (sign-gated); means sign=0.77 (eps-independent, intrinsic gfx1100 behavior -- same as original gfx1100 validation, not a regression).
+fisheye single-cam fit: loss 0.01217->0.00120. CONVERGES. PASS.
+
+panorama Tier 1: finite=True, coverage=1.0000, bitwise_det=True. PASS.
+panorama Tier 2: opac slope=0.852 sign=1.00; sh slope=1.000 sign=1.00;
+  scales slope=0.972 sign=1.00; means slope=1.704 sign=1.00. PASS.
+panorama single-cam fit: loss 0.00120->0.00000. CONVERGES. PASS.
+
+All gates satisfied. State: linux-gfx1100 completed, validated_sha=87173958ed14a2924349187e9e9f2744cee2c93a.
