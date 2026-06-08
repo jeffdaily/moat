@@ -268,3 +268,71 @@ harness uses slightly different test parameters (delta_thresh=0 vs 1e-6, and the
 calib K construction differs). The CRITICAL determinism gate (wave32 reduction race
 detection) passes cleanly: max_run_diff=0 across all 20 runs at every n straddling
 32/64/256 lane boundaries. No wave32 reduction divergence observed.
+
+## Validation 2026-06-07 (windows-gfx1201, RDNA4 wave32)
+
+State: port-ready -> completed. Fork 07385a2 (two Windows-fix commits on top of b2f86d46).
+GPU: AMD Radeon RX 9070 XT (gfx1201), HIP_VISIBLE_DEVICES=0.
+Env: TheRock PyTorch venv, torch 2.9.1+rocm7.14.0a20260604, HIP 7.14.60850-d34cbb64.
+Windows 11 Pro for Workstations. Only GPU visible this session (gfx1101 V710 offline).
+
+Windows-specific source fixes required (two commits on top of b2f86d46):
+1. `long` -> `int64_t` in gn_kernels.cu and matching_kernels.cu: Windows LLP64 ABI
+   makes `long` 32-bit; PyTorch exports `mutable_data_ptr<int64_t>` not `<long>`.
+2. `/ALTERNATENAME` linker directive in both setup.py files: c10.dll does not export
+   `c10::ValueError(SourceLocation, string)` on Windows (MSVC skips re-exporting
+   inherited constructors); TORCH_CHECK generates a dllimport reference causing
+   LNK2001. Redirected to `c10::Error(SourceLocation, string)` which IS exported.
+   ValueError IS-A Error with no extra data members.
+Both fixes are guarded by `sys.platform == "win32"` (setup.py) or are semantically
+transparent on Linux (int64_t == long on x86_64 Linux). Fix is identical to
+the FaithC Windows port pattern.
+
+Additional Windows environment setup required (not in source):
+- Git for Windows `/usr/bin/link.exe` shadows MSVC's link.exe; prepend MSVC bin dir
+  `C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Tools\MSVC\14.44.35207\bin\Hostx64\x64`
+  to PATH before running setup.py.
+- `HIP_DEVICE_LIB_PATH` must point to `<rocm_sdk_devel>/lib/llvm/amdgcn/bitcode/`
+  for hipcc to locate device bitcode.
+- `DISTUTILS_USE_SDK=1` required.
+
+Build commands (via agent_space/mast3r_build_win_gfx1201.py wrapper):
+```
+# From B:\develop\moat
+HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_build_win_gfx1201.py
+# Wrapper sets: PYTORCH_ROCM_ARCH=gfx1201, ROCM_HOME, HIP_DEVICE_LIB_PATH,
+# DISTUTILS_USE_SDK=1, MAX_JOBS=32, prepends MSVC bin dir to PATH,
+# then runs: python setup.py build_ext --inplace (both mast3r_slam_backends and curope)
+```
+
+Output artifacts:
+- `projects/MASt3R-SLAM/src/mast3r_slam_backends.cp312-win_amd64.pyd`
+- `projects/MASt3R-SLAM/src/thirdparty/mast3r/dust3r/croco/models/curope/curope.cp312-win_amd64.pyd`
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 python agent_space/mast3r_validate_win_gfx1201.py
+```
+
+Results (16/16 PASS):
+- gauss_newton_points determinism (20x, bit-exact): PASS
+- gauss_newton_points finite: PASS
+- gauss_newton_points finite non-zero step: PASS (|dx_iter1|=3.477)
+- gauss_newton_rays determinism (20x, bit-exact): PASS
+- gauss_newton_rays finite: PASS
+- gauss_newton_rays finite non-zero step: PASS (|dx_iter1|=0.3083)
+- gauss_newton_calib determinism (20x, bit-exact): PASS
+- gauss_newton_calib finite: PASS
+- gauss_newton_calib finite non-zero step: PASS (|dx_iter1|=1.829)
+- iter_proj determinism (20x): PASS
+- iter_proj finite: PASS
+- iter_proj clamp valid: PASS
+- refine_matches determinism (20x): PASS
+- refine_matches pixel-mismatch-frac=0: PASS
+- curope rope_2d determinism (20x): PASS
+- curope rope_2d max-abs-diff: PASS (max-abs-diff=4.817e-06, tol 1e-3)
+
+Wave32 gate (gfx1201 native wave32): volatile DROID-SLAM block reduction is wave32-safe.
+20x bit-exact determinism at every n straddling 32/64/256 boundaries. No reduction race.
+
+head_sha at validation: 07385a2 (includes Windows fixes on top of b2f86d46)
