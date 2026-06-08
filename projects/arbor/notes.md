@@ -565,6 +565,55 @@ Concurrency note: an earlier full-suite run while the brian2cuda validator was s
 
 `gpu_intrinsics.exprelr` now passes on gfx1201 under the per-arch 2-ULP bound; no GPU/port test regressed. The 4 remaining failures are 3 documented non-GPU Windows-platform issues plus 1 pre-existing full-suite accumulated-state probe artifact, none gating. windows-gfx1201 -> completed at sha 246575c.
 
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+**Trigger**: HEAD moved from f400d9a6 to 246575c (Windows build fixes + RDNA4 exprelr test tolerance)
+**GPU**: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32)
+**ROCm**: 7.x
+
+### Delta classification
+
+Two commits in the delta:
+- `8188758f`: Windows build fixes. Includes `R123_NO_SINCOS` define in rand_impl.hpp and network.cpp under `#ifdef __HIP_PLATFORM_AMD__` -- fires on Linux too, changes Random123 boxmuller device code path.
+- `246575c`: Relaxes `gpu_intrinsics.exprelr` test bound from 1 ULP to 2 ULP on RDNA4 only (runtime `gcnArchName` gfx12 check). On gfx1100 (gfx11xx) this branch is not taken; the strict 1-ULP bound still applies.
+
+`python3 utils/moatlib.py classify arbor f400d9a6 246575c` -> `class=mixed arch_independent=False`. gfx90a revalidation confirmed `verdict=differ` for this same delta (R123_NO_SINCOS alters device ISA). Full GPU re-run required.
+
+### Build Configuration
+Existing build at `/var/lib/jenkins/moat/projects/arbor/src/build` was configured for gfx1100. Updated local moat-port branch to HEAD (246575c) and rebuilt:
+```bash
+export HIP_VISIBLE_DEVICES=2
+cmake --build /var/lib/jenkins/moat/projects/arbor/src/build --target unit -j$(nproc)
+```
+Build completed successfully (only changed files recompiled).
+
+### Test Results
+**Command**: `HIP_VISIBLE_DEVICES=2 /var/lib/jenkins/moat/projects/arbor/src/build/bin/unit`
+**Result**: PASS
+- Total tests: 1182 from 182 test suites
+- Passed: 1182
+- Failed: 0
+- Total time: ~15.8 seconds
+
+### Critical GPU Tests Validated
+All GPU tests pass:
+- reduce_by_key.no_repetitions: PASS (0ms)
+- reduce_by_key.single_repeated_index: PASS (2ms)
+- reduce_by_key.scatter: PASS (0ms)
+- reduce_by_key.scatter_twice: PASS (0ms)
+- cable_cell_group.gpu_test: PASS (836ms)
+- event_stream_gpu.single_step: PASS (0ms)
+- event_stream_gpu.multi_step: PASS (8ms)
+- gpu_intrinsics.gpu_atomic_add: PASS
+- gpu_intrinsics.gpu_atomic_sub: PASS
+- gpu_intrinsics.minmax: PASS
+- gpu_intrinsics.exprelr: PASS (gfx1100; strict 1-ULP bound applies, not RDNA4 relaxation)
+- spikes_gpu.threshold_watcher: PASS (1ms)
+- spikes_gpu.threshold_watcher_interpolation: PASS (28ms)
+
+### Conclusion
+All 1182 tests pass on gfx1100. The R123_NO_SINCOS change and the RDNA4 exprelr relaxation are both backward-compatible with wave32 gfx1100. linux-gfx1100 -> completed at sha 246575c.
+
 ## Revalidation 2026-06-08 (linux-gfx90a)
 
 **Trigger**: HEAD moved from f400d9a6 to 246575c (Windows build fixes + RDNA4 exprelr test tolerance)

@@ -45,3 +45,6 @@
 {"kind":"phase","ts":"2026-06-08T15:18:43Z","phase":"compile","seconds":0.146,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/arbor/src -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang"}
 {"kind":"phase","ts":"2026-06-08T15:18:49Z","phase":"compile","seconds":0.147,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/arbor/src -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang"}
 {"kind":"phase","ts":"2026-06-08T15:27:08Z","phase":"test","seconds":12.406,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/build-new2/bin/unit"}
+{"kind":"phase","ts":"2026-06-08T16:53:05Z","phase":"compile","seconds":0.123,"exit":1,"cmd":"cmake --build . --target unit -j64"}
+{"kind":"phase","ts":"2026-06-08T16:55:38Z","phase":"compile","seconds":2.906,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/src/build --target unit -j64"}
+{"kind":"phase","ts":"2026-06-08T16:55:59Z","phase":"test","seconds":16.172,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
