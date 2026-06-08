@@ -51,3 +51,4 @@
 {"kind":"phase","ts":"2026-06-08T16:59:07Z","phase":"compile","seconds":158.420,"exit":0,"cmd":"bash -c \nexport HIP_VISIBLE_DEVICES=1\ncd /var/lib/jenkins/moat/agent_space/aihwkit-gfx1100-gpu1/new\ncmake -S . -B build_gfx1100 -GNinja   -DUSE_HIP=ON -DUSE_CUDA=OFF -DRPU_CXX_STANDARD=20   -DCMAKE_HIP_ARCHITECTURES=gfx1100   -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++   '-DCMAKE_PREFIX_PATH=/opt/conda/envs/py_3.12/lib/python3.12/site-packages/torch/share/cmake;/opt/rocm'   -DRPU_BLAS=OpenBLAS -DBUILD_TEST=OFF -DRPU_USE_TORCH_BUFFERS=OFF   -DCMAKE_BUILD_TYPE=Release 2>&1\ncmake --build build_gfx1100 -j16 2>&1\n"}
 {"kind": "tokens", "ts": "2026-06-08T17:01:17Z", "tokens": 50822, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T16:13:38Z", "tokens": 71037, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T03:59:32Z", "tokens": 40723, "source": "validator"}

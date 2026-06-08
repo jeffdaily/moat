@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
-  "updated_at": "2026-06-08T17:00:05Z",
+  "updated_at": "2026-06-08T20:51:39Z",
   "head_sha": "b346589",
   "depends_on": [],
   "platforms": {
@@ -63,13 +63,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "50360f7a07281ce9cf0272b2e078e6821d5f9a07",
+      "validated_sha": "b346589",
       "started_at": null,
-      "completed_at": "2026-06-08T03:55:57Z",
-      "updated_at": "2026-06-08T04:36:43Z",
+      "completed_at": "2026-06-08T20:51:39Z",
+      "updated_at": "2026-06-08T20:51:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -82,6 +82,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "b346589",
+        "method": "source-class",
+        "detail": "50360f7a->b346589: host-side pybind TU only (rpu_base_tiles_cuda.cpp #if TORCH_HIPIFY_V2 branch); on Windows TheRock 7.14 hipify is v1.0.0 so TORCH_HIPIFY_V2 is not defined, compiled output identical ",
+        "at": "2026-06-08T20:51:39Z"
       }
     },
     "windows-gfx1101": {

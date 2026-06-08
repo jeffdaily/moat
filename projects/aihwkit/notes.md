@@ -514,3 +514,18 @@ Binary equivalence check:
     verdict=identical
 
 Carry-forward applied. linux-gfx1100 -> completed (validated_sha b346589). No GPU re-run required.
+
+## Validation 2026-06-08 (windows-gfx1201, carry-forward)
+
+Delta: 50360f7a -> b346589 (3 host-side files only).
+
+Method: source-class inspection.
+
+Changed files:
+- cmake/dependencies_hip.cmake: adds cmake `execute_process` to detect torch hipify version and set RPU_TORCH_HIPIFY_V2 if version >= 2.0.0
+- src/aihwkit/simulator/CMakeLists.txt: passes TORCH_HIPIFY_V2 compile definition if RPU_TORCH_HIPIFY_V2 is set
+- src/aihwkit/simulator/rpu_base_src/rpu_base_tiles_cuda.cpp: adds `#if defined(TORCH_HIPIFY_V2)` branch for getCurrentCUDAStream
+
+On this Windows host (TheRock 7.14 PyTorch), torch hipify version is 1.0.0 (v1). Therefore TORCH_HIPIFY_V2 is NOT defined at configure time, and the #if branch is dead code. The compiled output at b346589 uses the same `c10::hip::getCurrentHIPStream(device_index)` path as 50360f7a. No GPU device code (.cu files) was changed. Device ISA for gfx1201 is identical by construction.
+
+VERDICT: CARRY-FORWARD (source-class). State -> completed (validated_sha = b346589). No GPU re-run required.
