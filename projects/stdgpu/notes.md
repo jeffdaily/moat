@@ -446,3 +446,65 @@ NOT a hypothesis change vs gfx1151: this is the SAME failure class as the gfx115
 Mirror the gfx1151 determination: these 14 are a gfx1201/RDNA4 + rocThrust-4.4.0 platform fault (a single-block reduce/traversal wedge over the degenerate cap-1 full-table state), NOT a port defect. The port's actual contribution (wave_lock_serialize within-wavefront livelock fix) is fully validated -- all 13 core contention tests PASS on gfx1201, plus the real insert_single kernel runs to completion (31 ms) before the valid()-reduce wedge. The env-var workaround (ROCPRIM_USE_ATOMIC_BLOCK_ID) does NOT help. No code fix is indicated in the port's device code (the hang is in the rocPRIM reduce / its result copy, outside stdgpu's modified spinlock paths). Recommend blocking windows-gfx1201 as a platform fault mirroring gfx1151 (the PR claim is already scoped to gfx90a/gfx1100), rather than further fix attempts. PR #1981 is a dead end for this port.
 
 (Diagnostic session only; no commit, no status.json edit -- gfx1201 left at validation-failed per instructions. GPU healthy/not-wedged at end; build dir untouched, no rebuild. Logs: agent_space/stdgpu_log_default.txt, stdgpu_full.txt -- gitignored.)
+
+## valid()-reduce alternative-implementation experiment 2026-06-08 (windows-gfx1201) -- ALTERNATIVE FOUND, all 702 PASS
+
+Experiment-only session (no fork commit, no status.json change; gfx1201 stays validation-failed per instructions). GPU verified gfx1201 (hipInfo gcnArchName=gfx1201, RX 9070 XT, 32 CUs) at HIP_VISIBLE_DEVICES=0. Build dir reused: projects/stdgpu/src/build-gfx1201 (AOT gfx1201, base 718d206). Working tree reverted clean at end; binary rebuilt back to the unmodified (validation-failed) thrust version.
+
+### The exact wedging call (confirmed)
+
+valid() -> unordered_base::valid(execution::device) (impl/unordered_base_detail.cuh:1202) is a short-circuit AND of six sub-checks. The FIRST, offset_range_valid (line 248), calls stdgpu::transform_reduce_index (impl/numeric_detail.h:74), which is a thin wrapper over `thrust::transform_reduce(policy, counting_iterator(0), counting_iterator(total_count()=2), offset_inside_range, true, logical_and<>())`. On the degenerate cap-1 full / excess-empty table this lowers to a SINGLE-BLOCK rocPRIM reduce (grid {1,1,1}, block {256}); the reduce kernel launch returns hipSuccess but the `hipMemcpyWithStream` of the bool result never completes (PAL fence isn't ready -> watchdog). All six valid() sub-checks (offset_range_valid, loop_free, values_reachable, unique, plus bitset::count) route through the SAME transform_reduce_index, so patching that one wrapper covers the whole class.
+
+### Alternatives tried (env-gated experimental rewrite of transform_reduce_index; each measured under a 30-400s timeout)
+
+Substitution: replaced the body of `transform_reduce_index` for the DEVICE execution policy only with a hand-written HIP reduction: one `__global__` kernel doing a grid-stride apply-functor + shared-memory tree reduce with the same BinaryFunction, writing the per-block T result to a reusable device scratch buffer, then a PLAIN `hipMemcpy` D2H (NOT hipMemcpyWithStream) + host-side fold. Host execution policy falls through to the original thrust path unchanged (dispatched by `std::is_same<remove_cvref_t<ExecutionPolicy>, execution::device_policy>`). Selected at runtime by env STDGPU_ALT_REDUCE so the same binary runs both ways.
+
+- mode 0 (default thrust, CONTROL): insert_while_full HANG (exit 124); insert_parallel_while_one_free HANG. Baseline reproduced.
+- mode 1 (SINGLE-block custom kernel + plain hipMemcpy): ALL 14 previously-failing tests PASS -- unordered_map AND unordered_set x {insert_while_full, insert_multiple_while_full, insert_while_excess_empty, insert_parallel_while_one_free, insert_parallel_while_excess_empty, emplace_parallel_while_one_free, emplace_parallel_while_excess_empty}. FULL SUITE 702/702 PASS, zero memory leaks (184538/184538 device), 22.4s; deterministic (702/702 on a 2nd full run).
+- mode 2 (forced 32-block multi-block launch + plain hipMemcpy): the 2 spot-checked targets PASS. Confirms the alternative also works multi-block, but is not required.
+
+Decisive sub-finding: a SINGLE-BLOCK custom kernel (mode 1) already passes. So the wedge is NOT the single-block launch shape per se -- it is specifically thrust/rocPRIM's reduce primitive together with its internal `hipMemcpyWithStream` result-copy on this degenerate state on gfx1201. Replacing that primitive+copy with a plain kernel + plain `hipMemcpy` dodges it entirely.
+
+Process notes (false leads, now resolved): a naive GLOBAL replacement (all policies) crashed the memory suite ("unspecified launch failure" in copyHost2HostArray_empty). Root cause = the experiment initially ignored the execution policy and launched a DEVICE kernel for HOST-policy reductions (memory.inc equal_range/equal_value reduce over host pointers, ~49k calls), so the device kernel dereferenced host memory. Gating the alternative to the device policy only (host policy keeps thrust) fixed it: memory suite 94/94, then full 702/702. Per-call hipMalloc churn was also ruled out (a cached static scratch buffer alone did not fix the host-policy crash; the policy gate did). So the alternative is correct and regression-free when applied device-policy-only.
+
+### VERDICT + RECOMMENDATION
+
+An alternative implementation DOES avoid the gfx1201 wedge. Apply as a porter fix:
+- WHERE: `src/stdgpu/impl/numeric_detail.h`, function `transform_reduce_index` (the single wrapper behind every valid() sub-check and bitset::count).
+- WHAT: for the device execution policy, replace `thrust::transform_reduce` with a small hand-written reduction kernel (grid-stride apply + shared-mem tree reduce over the same BinaryFunction/init) writing to device memory, then a plain `hipMemcpy` D2H (avoid the thrust `hipMemcpyWithStream` result-copy). Keep the existing `thrust::transform_reduce` path for the host policy (dispatch via `is_same<..., execution::device_policy>`). On a non-AMD build the device branch should stay thrust (gate the custom kernel behind the HIP backend).
+- BEHAVIOR-PRESERVING: yes -- same logical result (transform each index, fold with the binary op from init). Validated 702/702 on gfx1201. It computes the identical reduction, so gfx90a/gfx1100 keep passing (would need a confirmatory run there; logically equivalent). Empty/zero-size short-circuits to init.
+- UPSTREAMABLE vs MOAT-local: borderline-upstreamable but most naturally a HIP-backend-scoped workaround. It belongs in stdgpu library code (numeric_detail.h is library, not test), but it works around a TheRock-7.14 rocThrust/rocPRIM reduce+WithStream-copy fault on RDNA4, so frame it as a HIP-backend reduction path (guarded by STDGPU_BACKEND_HIP) rather than changing the CUDA path. A cleaner upstream framing: file the rocThrust/rocPRIM single-block-reduce + hipMemcpyWithStream wedge on gfx1201/degenerate input as the real bug; the stdgpu-side kernel is the pragmatic unblock.
+
+This SUPERSEDES the prior "platform fault, mirror gfx1151, no code fix" recommendation FOR gfx1201: there is a clean, behavior-preserving, regression-free port-side change that makes all 702 pass on gfx1201. Recommend handing this to the porter as a reviewed fix (device-policy alt-reduce in numeric_detail.h) to unblock windows-gfx1201, rather than blocking it. (Note: gfx1151 was a different/retired host with additional deque cross-wavefront failures; this experiment was not run there. The gfx1151 block stands on its own record.)
+
+(Experiment session only; no commit, no status.json edit -- gfx1201 left at validation-failed per instructions. Working tree reverted clean (git status shows no tracked changes); build-gfx1201 binary rebuilt back to the original thrust version. Backup of the original header kept at agent_space/stdgpu-altreduce/numeric_detail.h.orig -- gitignored. GPU healthy at end.)
+
+## Validation 2026-06-08 (windows-gfx1201) -- FIX APPLIED + VALIDATED, all 702 PASS
+
+**Platform:** AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32, 32 CUs), ROCm 7.14 (TheRock), Windows 11. HIP_VISIBLE_DEVICES=0; hipInfo.exe confirms gcnArchName=gfx1201.
+
+**Commit under test:** 4db4d21 [ROCm] Use a plain device reduction in valid() to avoid RDNA hang -- a NEW commit on top of the real fork HEAD 718d206 (the gfx1151 backoff commit 3bf77cb referenced in status.json was never actually pushed; remote and local moat-port were both at 718d206, so the fix sits directly on 718d206).
+
+**The fix:** in `src/stdgpu/impl/numeric_detail.h`, `transform_reduce_index` now dispatches on the execution policy. For `execution::device_policy` under `STDGPU_BACKEND == STDGPU_BACKEND_HIP`, it calls a new `detail::transform_reduce_index_device`: a hand-written `transform_reduce_index_kernel` (grid-stride apply of the same UnaryFunction + 256-wide shared-memory tree reduce with the same BinaryFunction and init), capped at 64 blocks, writing per-block partials to a hipMalloc'd buffer, then a PLAIN `hipMemcpy` D2H + host-side fold. The HOST policy and the CUDA backend keep the original `thrust::transform_reduce` path unchanged (the host-policy gotcha from the experiment: a device kernel must never run on host-pointer reductions). size<=0 short-circuits to init.
+
+**Build command:**
+```
+cmake --build build-gfx1201 --config Release --parallel 24
+```
+Build result: SUCCESS (11/11 incremental targets; only a benign `--rtlib=compiler-rt unused` warning).
+
+**Test command:**
+```
+HIP_VISIBLE_DEVICES=0 build-gfx1201/bin/teststdgpu.exe
+```
+
+**Test results: ALL 702 PASS, zero memory leaks (184538/184538 device, 180605/180605 host), ~26.8s.** Deterministic: 702/702 on two separate full runs (post-fix and post namespace-cleanup rebuild).
+
+**The 14 previously hanging/crashing tests now PASS** (verified in an isolated filtered run, map+set each):
+insert_while_full, insert_multiple_while_full, insert_while_excess_empty, insert_parallel_while_one_free, insert_parallel_while_excess_empty, emplace_parallel_while_one_free, emplace_parallel_while_excess_empty.
+
+**No regression:** all 4 deque `simultaneous_push_*` + vector simultaneous push/pop (the wave_lock_serialize spinlock tests) still PASS; the memory suite passes with zero leaks (the device/host-policy dispatch is correct).
+
+**Note for followers:** 4db4d21 is a FUNCTIONAL change (new device-policy code path), so `advance_head` correctly flipped linux-gfx90a and linux-gfx1100 from completed to revalidate; they re-run the new sha on their own hosts. The reduction is logically identical (same init, same associative binary op) so they are expected to pass.
+
+**Verdict:** VALIDATED at 4db4d21 -- windows-gfx1201 unblocked and marked completed. This supersedes the earlier "mirror gfx1151 platform fault" determination for gfx1201.

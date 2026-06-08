@@ -44,3 +44,9 @@
 {"kind":"phase","ts":"2026-06-08T19:09:44Z","phase":"test","seconds":930.346,"exit":3,"cmd":"bash -c cd \"B:/develop/moat/projects/stdgpu/src/build-gfx1201/bin\" && HIP_VISIBLE_DEVICES=0 ./teststdgpu.exe 2>&1"}
 {"kind": "tokens", "ts": "2026-06-08T19:24:59Z", "tokens": 93538, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T20:11:33Z", "tokens": 69501, "source": "investigator"}
+{"kind": "tokens", "ts": "2026-06-08T21:04:17Z", "tokens": 90464, "source": "investigator"}
+{"kind":"phase","ts":"2026-06-08T21:07:31Z","phase":"compile","seconds":0.056,"exit":1,"cmd":"cmake --build build-gfx1201 --config Release --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T21:08:38Z","phase":"compile","seconds":56.404,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/stdgpu/src/build-gfx1201 --config Release --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T21:09:12Z","phase":"test","seconds":27.037,"exit":0,"cmd":"B:/develop/moat/projects/stdgpu/src/build-gfx1201/bin/teststdgpu.exe"}
+{"kind":"phase","ts":"2026-06-08T21:11:17Z","phase":"compile","seconds":55.559,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/stdgpu/src/build-gfx1201 --config Release --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T21:11:51Z","phase":"test","seconds":27.683,"exit":0,"cmd":"B:/develop/moat/projects/stdgpu/src/build-gfx1201/bin/teststdgpu.exe"}

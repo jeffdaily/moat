@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T23:23:31Z",
-  "updated_at": "2026-06-08T20:11:33Z",
-  "head_sha": "3bf77cb4b37a65456a3208978faa558aecafdc17",
+  "updated_at": "2026-06-08T21:13:44Z",
+  "head_sha": "4db4d21b7fbea6ddc2f29c1081534ca1f4c4a098",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "718d20647f02d2df3a7dc31502c699e0aa0c1674",
       "started_at": "2026-06-04T23:45:57Z",
       "completed_at": "2026-06-05T14:26:15Z",
-      "updated_at": "2026-06-05T14:26:15Z",
+      "updated_at": "2026-06-08T21:12:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "718d20647f02d2df3a7dc31502c699e0aa0c1674",
       "started_at": null,
       "completed_at": "2026-06-05T15:49:30Z",
-      "updated_at": "2026-06-05T15:49:30Z",
+      "updated_at": "2026-06-08T21:12:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "validation-failed",
-      "blocked": true,
-      "blocked_reason": "gfx1201/RDNA4 + rocThrust-4.4.0 platform fault, not a port defect. 688/702 pass incl. all 13 wave_lock_serialize spinlock tests; the port's insert kernel completes. The 14 failures wedge in a single-block rocPRIM transform_reduce inside valid() (hipMemcpyWithStream never returns -> PAL fence / watchdog) only on the degenerate cap-1 full collision-chain state. Same class as the gfx1151 determination; confirmed on RDNA4. rocPRIM PR #1981 (ROCPRIM_USE_ATOMIC_BLOCK_ID) tested -- no effect (different mechanism: multi-block lookback vs single-block reduce). gfx90a/gfx1100 pass all; gfx1101 (RDNA3) expected to pass when its GPU returns.",
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-08T20:11:33Z",
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "4db4d21b7fbea6ddc2f29c1081534ca1f4c4a098",
+      "started_at": "2026-06-08T21:05:42Z",
+      "completed_at": "2026-06-08T21:13:16Z",
+      "updated_at": "2026-06-08T21:13:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
