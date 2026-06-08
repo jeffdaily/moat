@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:16:31Z",
-  "updated_at": "2026-06-08T18:06:39Z",
+  "updated_at": "2026-06-08T18:08:12Z",
   "head_sha": "cb90687f8",
   "depends_on": [],
   "platforms": {
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "PLUMED build system is Linux-only for the GPU plugin: requires autotools (autoconf/automake, absent on this Windows host) and emits POSIX .so plugins via dlopen -- configure.ac detects only .so/.dylib, no Windows .dll/LoadLibrary path. Not buildable on Windows without an upstream build-system port.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T06:37:02Z",
+      "updated_at": "2026-06-08T18:08:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,12 +57,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "gfx1151 host retired",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T06:37:02Z",
+      "updated_at": "2026-06-08T18:08:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
