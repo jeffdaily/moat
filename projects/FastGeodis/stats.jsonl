@@ -24,3 +24,4 @@
 {"kind":"phase","ts":"2026-06-08T01:42:24Z","phase":"compile-old","seconds":0.306,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T01:43:09Z","phase":"compile-old","seconds":39.320,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/agent_space/FastGeodis-gfx1100-gpu0/old-src --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T01:45:44Z","phase":"compile-new","seconds":39.426,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/agent_space/FastGeodis-gfx1100-gpu0/new-src --no-build-isolation"}
+{"kind": "tokens", "ts": "2026-06-08T01:48:10Z", "tokens": 42786, "source": "validator"}
