@@ -194,6 +194,61 @@ on gfx1201 RDNA4. The Marv::scan() path (same as metaeuk ungappedprefilter
 
 VERDICT: PASS. State -> completed (validated_sha = a1b8ad0).
 
+## Validation 2026-06-08 (linux-gfx1100, revalidate at 2e4e953)
+
+### Delta from de54dee to 2e4e953
+
+Two commits on top of the original port:
+- a1b8ad0: Windows (MSVC-ABI clang) build support -- adds `#ifdef _WIN32` guards in mapped_file.hpp, marv.cu, marv.h, CMakeLists.txt, tinyexpr/CMakeLists.txt; adds `HIP_DISABLE_WARP_SYNC_BUILTINS` and `__syncwarp` definition to cuda_to_hip.h (affects Linux HIP device code)
+- 2e4e953: Fix `__syncwarp` missing after `HIP_DISABLE_WARP_SYNC_BUILTINS` -- adds explicit `__device__ inline void __syncwarp()` to cuda_to_hip.h
+
+The `HIP_DISABLE_WARP_SYNC_BUILTINS` define affects Linux builds (it suppresses amd_warp_sync_functions.h and changes the `__syncwarp` inline function, affecting compiled device code). Full GPU revalidation required.
+
+### Build
+
+Built from scratch at head_sha (2e4e953) for gfx1100 (HIP_VISIBLE_DEVICES=2):
+```bash
+export HIP_VISIBLE_DEVICES=2
+cmake -S /var/lib/jenkins/moat/projects/metaeuk/src \
+  -B /var/lib/jenkins/moat/projects/metaeuk/build-gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DENABLE_CUDA=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build /var/lib/jenkins/moat/projects/metaeuk/build-gfx1100 -j16
+```
+Build completed successfully. metaeuk: 15M, libmarv.so: 52M with gfx1100 device code (confirmed via strings | grep gfx1100).
+
+### Test Results
+
+**CPU Baseline (--gpu 0, default):**
+```bash
+cd tests; for test in minus_strand multi_exon two_contigs target_overlap cluster_rep target_cov; do
+  perl compare_fasta_results.pl ${test}_results/predExFlat.fas ${test}_results/predRedFlat.fas \
+    ${test}/as_should_final_united_exons_aa.fas ${test}/as_should_final_grouped_predictions_rep.fas; done
+```
+All 6 core tests: ALL OKAY. test_agg_tax: Saccharomyces FOUND. test_no_overlap and test_start_scan results present.
+
+**GPU Mode (--gpu 1), HIP_VISIBLE_DEVICES=2 (gfx1100, Radeon Pro W7800):**
+```bash
+export HIP_VISIBLE_DEVICES=2
+for test in minus_strand multi_exon two_contigs target_overlap cluster_rep target_cov; do
+  # createdb, predictexons --gpu 1, unitesetstofasta, reduceredundancy, compare
+  perl compare_fasta_results.pl ${test}_results_gpu_new/predExFlat.fas ...
+done
+```
+All 6 core GPU tests: ALL OKAY. GPU confirmed active: "Use GPU 1" in predictexons logs.
+
+### Pass/Fail Summary
+- Build: PASS (gfx1100, fork HEAD 2e4e953)
+- GPU code present: PASS (gfx1100 in libmarv.so .hip_fatbin)
+- CPU baseline tests: PASS (6/6 fasta comparisons, test_agg_tax, test_no_overlap, test_start_scan)
+- GPU functional tests: PASS (6/6 core suites, --gpu 1)
+- CPU vs GPU consistency: PASS (identical results)
+
+GPU arch: gfx1100 (Radeon Pro W7800 48GB)
+Validation: PASSED
+
 ## Validation 2026-06-05 (linux-gfx1100)
 
 ### Build
