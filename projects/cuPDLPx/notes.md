@@ -331,3 +331,52 @@ CLI LP test (2club200v15p5scn.mps.gz, 17013 rows, 200 cols):
 
 Result: PASS - All tests pass on gfx90a. Numerical results match original validation exactly.
 No regression from the Windows-specific build fixes.
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Platform: gfx1100 RDNA3 (HIP_VISIBLE_DEVICES=2), ROCm 7.2.1
+Commit: 98ce76664d227a9c634e963ea928b340e189d749 (head)
+Previous validated: b114e2dcec9f9d35165b2f9355b13016c648fbc0
+
+### Delta classification
+
+Same single commit as gfx90a revalidation: `mixed` (moatlib classify). codeobj_diff result:
+- `libcupdlpx.so`: identical (151 exports, device ISA identical for gfx1100)
+- `_deps/pslp-build/libPSLP.so`: indeterminate (extraction failed), but MD5 byte-for-byte identical (d4fe3160240a0953289a2845c0709334)
+
+Per CLAUDE.md policy, `indeterminate` triggers full GPU revalidation.
+
+### Build
+
+```bash
+cmake -S projects/cuPDLPx/src -B agent_space/cuPDLPx-gfx1100-gpu2/build-test \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=ON -DCUPDLPX_BUILD_PYTHON=OFF \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build agent_space/cuPDLPx-gfx1100-gpu2/build-test -j$(nproc)
+```
+
+Build result: SUCCESS (warnings only, no errors)
+
+### Test results (HIP_VISIBLE_DEVICES=2)
+
+test_interface (9/9 PASS, RC=0):
+- Tests 1-4: LP solve via Dense/CSR/CSC/COO matrix formats -> OPTIMAL (primal obj=3, presolve reduces to 0 rows)
+- Tests 5-8: same with warm start -> OPTIMAL (presolve reduces; warm start silently ignored as documented)
+- Test 9: CSR with presolve=false -> GPU PDLP solver invoked, 400 iterations, primal obj=3.000539 (gap 7.338e-05 < 1e-4)
+
+CLI LP test (2club200v15p5scn.mps.gz, 17013 rows, 200 cols):
+- Status: OPTIMAL
+- Primal objective: -121.2216698 (matches gfx90a validation exactly)
+- Dual objective: -121.2221271
+- Objective gap: 1.879e-06
+- Primal infeas: 4.889e-06 (< 1e-4)
+- Dual infeas: 2.399e-05 (< 1e-4)
+- Iterations: 3000
+
+GPU execution confirmed:
+- Test 9 runs GPU PDLP solver (hipBLAS SpMV, BLAS-1, HIP Graphs) on gfx1100
+- hipSPARSE SpMV, hipBLAS operations produce identical numerical results to gfx90a
+
+Result: PASS - All tests pass on gfx1100 RDNA3. Numerical results match gfx90a validation exactly.
+No regression from the Windows-specific build fixes.
