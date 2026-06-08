@@ -377,3 +377,41 @@ __shfl_*_sync macro additions in cuda_to_hip.h). On Linux ROCm 7.2.x the Windows
 guards are dead code and __shfl_*_sync macros have identical semantics to the
 native HIP builtins; full Linux revalidation is expected to be a formality.
 linux-gfx1101 is deferred (GPU offline this session).
+
+## Validation 2026-06-08 (linux-gfx90a revalidate, HIP_VISIBLE_DEVICES=3)
+
+Platform: Linux, AMD Instinct MI250X GCD 3 (gfx90a, 104 CUs). ROCm 7.2.1.
+Fork head: 1a507881 (Windows fixes commit on top of e7471b4).
+
+Change class: classify reported mixed/arch_independent=False (due to unconditional
+__shfl_*_sync macro additions in cuda_to_hip.h). codeobj_diff verdict=differ (device
+code objects differ between e7471b41 and 1a507881 builds). Full GPU revalidation required.
+
+Build: cmake configure + cmake --build --target foldseek -j16 for gfx90a at 1a507881
+into build-1a507881/. Build succeeded. libmarv.so confirmed at 1a507881 (gfx90a device code).
+
+GPU vs CPU validation (bundled example/, 28 SCOP structures):
+```
+FOLDSEEK=projects/foldseek/build-1a507881/src/foldseek
+HIP_VISIBLE_DEVICES=3
+
+$FOLDSEEK createdb example/ exDB
+$FOLDSEEK search exDB exDB aln_cpu tmp_cpu --gpu 0 -e 10
+$FOLDSEEK makepaddedseqdb exDB exDB_pad
+HIP_VISIBLE_DEVICES=3 $FOLDSEEK search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10
+$FOLDSEEK convertalis exDB exDB aln_cpu cpu.m8
+$FOLDSEEK convertalis exDB exDB_pad aln_gpu gpu.m8
+```
+
+Results:
+- CPU hits: 834, GPU hits: 872
+- CPU-only pairs: 0 (all 834 CPU hits reproduced on GPU)
+- GPU-only pairs: 38 (borderline low-bitscore, expected ungapped-prefilter sensitivity difference)
+- Common pairs with identical fields: 834/834 (0 mismatches, byte-identical pident/alnlen/coords/evalue/bitscore)
+
+GPU search log confirmed `ungappedprefilter ... --gpu 1` (libmarv GPU prefilter on gfx90a) ran.
+All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
+
+Cross-arch check: results (834 CPU hits, 38 GPU-only) match previous gfx90a and gfx1100 results exactly.
+
+State: linux-gfx90a -> completed, validated_sha = 1a507881a2d5086e2a29b6a98a374fb841ba7ffe.

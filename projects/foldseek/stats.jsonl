@@ -18,3 +18,6 @@
 {"kind":"phase","ts":"2026-06-08T16:04:50Z","phase":"compile","seconds":110.559,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/foldseek/build-marv -j24 --target marv"}
 {"kind":"phase","ts":"2026-06-08T16:19:10Z","phase":"compile","seconds":747.050,"exit":0,"cmd":"cmake --build /b/develop/moat/projects/foldseek/build-marv -j24 --target marv"}
 {"kind":"phase","ts":"2026-06-08T16:28:21Z","phase":"test","seconds":0.554,"exit":0,"cmd":"B:/develop/moat/agent_space/foldseek_val_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-08T17:42:25Z","phase":"compile","seconds":459.466,"exit":0,"cmd":"cmake --build projects/foldseek/build-1a507881 --target foldseek -j16"}
+{"kind":"phase","ts":"2026-06-08T17:43:24Z","phase":"test","seconds":0.026,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/foldseek/build-1a507881/src/foldseek search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10"}
+{"kind":"phase","ts":"2026-06-08T17:43:39Z","phase":"test","seconds":1.404,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/foldseek/build-1a507881/src/foldseek search /var/lib/jenkins/moat/agent_space/foldseek-revalidate/exDB /var/lib/jenkins/moat/agent_space/foldseek-revalidate/exDB_pad /var/lib/jenkins/moat/agent_space/foldseek-revalidate/aln_gpu /var/lib/jenkins/moat/agent_space/foldseek-revalidate/tmp_gpu --gpu 1 -e 10"}
