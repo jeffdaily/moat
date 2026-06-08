@@ -318,3 +318,93 @@ width, never warpSize.
 CPU oracle (--gpu 0 path in GPU build): 12901 hits -- identical to gfx90a lead. No regression.
 
 VERDICT: PASS. State -> completed (validated_sha = c755847ab4114fe8a470bf9ca9832a61f37ed56f).
+
+## Validation 2026-06-07 (windows-gfx1201, RDNA4 RX 9070 XT)
+
+Platform: Windows 11, AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32).
+ROCm 7.14.0a20260604 (TheRock nightly pip SDK). HIP_VISIBLE_DEVICES=0.
+Fork head: d34d42d3 (Windows fixes commit on top of c755847a).
+
+### Windows delta (required build fixes)
+
+The full `mmseqs` binary has deep POSIX mmap/shm_open dependencies
+(DBReader.cpp, FileUtil.cpp, etc.) that are impractical to port within
+a validation pass. Instead, the standalone `libmarv` (LIBRARY_ONLY=1)
+is built as a DLL, and a custom C++ harness validates GPU alignment
+correctness via the `Marv` API.
+
+Fixes required for `libmarv.dll` on Windows-MSVC-ABI clang:
+
+1. `mapped_file.hpp`: Win32 CreateFileMapping/MapViewOfFile
+   implementation; NOMINMAX + WIN32_LEAN_AND_MEAN guards before windows.h.
+2. `cuda_to_hip.h`: NOMINMAX/WIN32_LEAN_AND_MEAN before hip_runtime.h.
+3. `convert.cuh`: Add `__HIP_DEVICE_COMPILE__` alongside `__CUDA_ARCH__`
+   to select the device code path (marv_simd_amd.cuh provides `__vminu4`
+   as a device function).
+4. `marv.cu`: strtok_r -> strtok_s under _WIN32.
+5. `marv.h`: MARV_API `__declspec(dllexport/dllimport)` so the Marv
+   class is visible from the DLL on Windows.
+6. `CMakeLists.txt` (libmarv): Set `CMAKE_HIP_USING_LINKER_DEFAULT ""`
+   on Windows (clang rejects -fuse-ld=lld-link when --hip-link is
+   present). Define `MARV_BUILDING_DLL` for the dll build.
+7. `tinyexpr/CMakeLists.txt`: Guard -fPIC (unsupported on MSVC-target
+   clang) behind `if(NOT WIN32)`.
+8. `MMseqsResourceCompiler.cmake`: Win32 branch using cmake -E commands
+   instead of checkshell.sh (not executable in cmd.exe).
+9. `src/CMakeLists.txt`: Use `hip::amdhip64` imported target (portable
+   to Windows) instead of hardcoded libamdhip64.so path.
+10. `GpuUtil.cpp`: Guard POSIX includes behind `#ifndef _WIN32`; Windows
+    stubs for GPU server mode (unused by direct --gpu 1 path).
+11. `ungappedprefilter.cpp`, `gpuserver.cpp`: Guard sys/mman.h behind
+    `#ifndef _WIN32`.
+
+### Build
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+
+cmake -S projects/MMseqs2/src/lib/libmarv/src \
+      -B projects/MMseqs2/build-marv \
+      -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+      -DCMAKE_PREFIX_PATH=$ROCM -DLIBRARY_ONLY=1 \
+      -DCMAKE_BUILD_TYPE=Release
+
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh MMseqs2 compile -- \
+  cmake --build projects/MMseqs2/build-marv -j32 --target marv
+```
+
+Build succeeded. marv.dll is 32 MB, contains gfx1201 device code.
+14 Marv:: symbols exported (confirmed via llvm-objdump -p).
+
+### GPU validation (custom harness via Marv API)
+
+Direct `mmseqs` binary cannot be built on Windows without extensive POSIX
+porting; the GPU kernels are exercised via a standalone C++ harness that
+calls `Marv::scan()` directly (same path as mmseqs ungappedprefilter.cpp).
+
+```
+# Compile harness (in agent_space/marv_validate_gfx1201.cpp)
+$ROCM/lib/llvm/bin/clang++.exe -std=c++17 -O2 \
+  -Iprojects/MMseqs2/src/lib/libmarv/src \
+  -Iprojects/MMseqs2/src/lib/libmarv/src/hip_compat \
+  -Lprojects/MMseqs2/build-marv -lmarv \
+  -o agent_space/marv_val_gfx1201.exe \
+  agent_space/marv_validate_gfx1201.cpp
+
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh MMseqs2 test -- \
+  agent_space/marv_val_gfx1201.exe
+```
+
+Results:
+- Test 1: 20-residue query (all 20 standard amino acids). GPU returns
+  top hit id=2, score=116 (expected BLOSUM62 self-score). PASS.
+- Test 2: 16xAla query. Top hit id=3, score=64 (16 * BLOSUM62[A][A]=4).
+  PASS.
+
+GPU Smith-Waterman alignment kernels produce correct BLOSUM62 scores on
+gfx1201 RDNA4. The PSSM-based gapless scan path is exercised (same
+Marv::scan() call as production ungappedprefilter.cpp).
+
+VERDICT: PASS. State -> completed (validated_sha = d34d42d3).

@@ -15,3 +15,7 @@
 {"kind":"phase","ts":"2026-06-04T08:17:54Z","phase":"test","seconds":24.998,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta /tmp/mmseqs2_val/targetDB_padded /tmp/mmseqs2_val/gpu.m8 /tmp/mmseqs2_val/tmp_gpu --gpu 1"}
 {"kind":"session","ts":"2026-06-04T08:18:29Z","epoch":1780561109.591205649,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-04T08:19:51Z", "tokens": 39511, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T01:47:57Z","phase":"compile","seconds":55.006,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/MMseqs2/build-marv -j32 --target marv"}
+{"kind":"phase","ts":"2026-06-08T02:23:58Z","phase":"test","seconds":0.433,"exit":1,"cmd":"B:/develop/moat/agent_space/marv_val_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-08T02:24:43Z","phase":"test","seconds":0.434,"exit":0,"cmd":"B:/develop/moat/agent_space/marv_val_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-08T02:24:53Z","phase":"compile","seconds":0.066,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/MMseqs2/build-marv -j32 --target marv"}
