@@ -474,3 +474,54 @@ All 12438 common pairs: GPU Smith-Waterman scores match CPU oracle EXACTLY.
 Identical result counts to the original gfx90a validation (c755847a).
 
 VERDICT: PASS. State -> completed (validated_sha = dbeac858).
+
+## Revalidation 2026-06-08 (linux-gfx1100, RDNA3 wave32, GPU index 2)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm 7.2.1).
+HIP_VISIBLE_DEVICES=2. Triggered by HEAD advance from c755847a to dbeac858.
+
+### Delta classification
+
+c755847a -> dbeac858: two commits (d34d42d3 Windows build support, dbeac858 scope
+HIP_DISABLE_WARP_SYNC_BUILTINS to Windows only). Classified `mixed` (arch_independent=False).
+codeobj_diff verdict: `differ` (libmarv.so device ISA differs). Full GPU revalidation required.
+
+### Build (at dbeac858)
+
+```
+cd projects/MMseqs2/src
+cmake -S . -B agent_space/MMseqs2-gfx1100-gpu2-new \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/rocm
+HIP_VISIBLE_DEVICES=2 utils/timeit.sh MMseqs2 compile -- \
+  cmake --build agent_space/MMseqs2-gfx1100-gpu2-new -j16 --target mmseqs
+```
+
+Build succeeded. gfx1100 code object confirmed (hipv4-amdgcn-amd-amdhsa--gfx1100).
+
+### GPU vs CPU validation
+
+```
+MMSEQS=agent_space/MMseqs2-gfx1100-gpu2-new/src/mmseqs
+HIP_VISIBLE_DEVICES=2 CUDA_VISIBLE_DEVICES=2 utils/timeit.sh MMseqs2 test -- \
+  $MMSEQS easy-search examples/QUERY.fasta targetDB_padded gpu.m8 tmp_gpu --gpu 1
+$MMSEQS easy-search examples/QUERY.fasta targetDB cpu.m8 tmp_cpu --gpu 0
+```
+
+Results:
+- GPU (--gpu 1): 14482 hit pairs
+- CPU (--gpu 0): 12901 hit pairs
+- Common pairs: 12438
+- GPU-only pairs: 2044 (prefilter-boundary, low-score; expected)
+- CPU-only pairs: 463 (prefilter-boundary; expected)
+- Pairs with |bitscore diff| > 0.5: 0
+- Pairs with |pident diff| > 0.5: 0
+- Max bitscore diff: 0.0000, max pident diff: 0.0000
+
+All 12438 common pairs: GPU Smith-Waterman scores match CPU oracle EXACTLY.
+Identical to original gfx1100 validation and gfx90a revalidation results.
+The dbeac858 Linux fix (HIP_DISABLE_WARP_SYNC_BUILTINS scoped to _WIN32) builds
+and runs correctly on Linux ROCm 7.2.1.
+
+VERDICT: PASS. State -> completed (validated_sha = dbeac858).
