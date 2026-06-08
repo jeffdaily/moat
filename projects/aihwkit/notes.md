@@ -469,3 +469,23 @@ old #else already resolved, so gfx90a / gfx1100 / gfx1201 all carry forward via
 construction -- device ISA unchanged). Hands to validator for carry-forward
 confirmation; no functional GPU re-run is required for this behavior-preserving
 host-only change.
+
+## Validation 2026-06-08 (linux-gfx90a, re-key carry-forward)
+
+GPU: AMD Instinct MI250X / MI250 (gfx90a, wave64). ROCm 7.2.1. HIP_VISIBLE_DEVICES=0.
+Delta: d6d4561 -> b346589 (hipify-version re-key, host-only pybind TU).
+
+Build: CMake + Ninja at BOTH shas (fresh build dirs, not recycled). At b346589 cmake configured
+with `-- torch hipify version: 2.0.0` and set -DTORCH_HIPIFY_V2 in build.ninja DEFINES for
+rpu_base_tiles_cuda.cpp.o (confirmed). At d6d4561 (worktree, HIP_VERSION_MINOR gate, ROCm 7.2 <
+7.14 takes the c10::cuda::getCurrentCUDAStream path). Both builds produced
+rpu_base.cpython-312-x86_64-linux-gnu.so.
+
+codeobj_diff: verdict=identical -- exported symbols + device ISA identical (53320 exports).
+Matches the porter's prior run exactly. On Linux v2 both gates resolve the same
+c10::cuda::getCurrentCUDAStream symbol, so device ISA is unchanged by construction; diff confirms.
+
+GPU smoke (gfx90a wave64, HIP_VISIBLE_DEVICES=0): tests/test_specific_tiles.py 18/18 PASSED
+(bit_line_maker + pulsed-weight-update warp-size path, 9 Cuda-parametrized cases).
+
+Verdict: carry-forward confirmed. linux-gfx90a -> completed (validated_sha b346589).

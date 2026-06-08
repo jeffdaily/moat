@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
-  "updated_at": "2026-06-08T15:56:15Z",
+  "updated_at": "2026-06-08T16:12:18Z",
   "head_sha": "b346589",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6d4561",
+      "validated_sha": "b346589",
       "started_at": "2026-06-04T01:28:01Z",
-      "completed_at": "2026-06-08T04:42:35Z",
-      "updated_at": "2026-06-08T15:56:15Z",
+      "completed_at": "2026-06-08T16:12:07Z",
+      "updated_at": "2026-06-08T16:12:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "b346589",
+        "method": "binary-equiv",
+        "detail": "d6d4561->b346589: hipify-version re-key (host-side pybind TU only, no .cu device code); on Linux v2 (hipify 2.0.0) both gates select c10::cuda::getCurrentCUDAStream; codeobj_diff verdict=identical (53320 exports, gfx90a device ISA unchanged). GPU smoke: 18/18 test_specific_tiles PASS.",
+        "at": "2026-06-08T16:12:07Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
