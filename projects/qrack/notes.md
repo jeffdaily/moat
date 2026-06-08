@@ -419,3 +419,30 @@ The #else branch is dead code on Linux (ENABLE_PTHREAD=ON by default); the compi
 no change on this platform. Device code objects are byte-identical on gfx90a.
 
 Status: linux-gfx90a revalidate -> completed at eb787828 (binary-equiv carry-forward, no GPU re-run needed).
+
+## Validation 2026-06-08 (linux-gfx1100, revalidate eb787828 -- binary-equiv carry-forward)
+
+Platform: AMD Radeon Pro W7800 48GB gfx1100 (RDNA3, wave32), ROCm 7.2.1.
+Delta: dcb5e180 -> eb787828 (same DispatchFn #else branch as gfx90a above).
+
+Source classifier: mixed. Proceeded to binary-equivalence check for gfx1100.
+
+Built both shas for gfx1100 into agent_space/qrack-gfx1100-revalidate/:
+- build-old-dcb5e180: copied from projects/qrack/src/_build (gfx1100, ENABLE_PTHREAD=ON)
+- build-new-eb787828: fresh cmake/build:
+```
+cmake -S projects/qrack/src -B agent_space/qrack-gfx1100-revalidate/build-new-eb787828 \
+  -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON
+cmake --build agent_space/qrack-gfx1100-revalidate/build-new-eb787828 -j16 --target unittest
+```
+
+codeobj_diff results (HIP_VISIBLE_DEVICES=0):
+- libqrack.a: verdict=identical (exported symbols + device ISA identical, 0 exports)
+- unittest:   verdict=identical (exported symbols + device ISA identical, 32 exports)
+
+The #else branch is dead code on Linux (ENABLE_PTHREAD=ON by default); compiler sees
+no change. Device code objects byte-identical on gfx1100, same reasoning as gfx90a.
+
+Status: linux-gfx1100 revalidate -> completed at eb787828 (binary-equiv carry-forward, no GPU re-run needed).
