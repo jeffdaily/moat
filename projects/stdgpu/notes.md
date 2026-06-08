@@ -558,3 +558,45 @@ insert_while_full, insert_multiple_while_full, insert_while_excess_empty, insert
 **Note for followers:** 4db4d21 is a FUNCTIONAL change (new device-policy code path), so `advance_head` correctly flipped linux-gfx90a and linux-gfx1100 from completed to revalidate; they re-run the new sha on their own hosts. The reduction is logically identical (same init, same associative binary op) so they are expected to pass.
 
 **Verdict:** VALIDATED at 4db4d21 -- windows-gfx1201 unblocked and marked completed. This supersedes the earlier "mirror gfx1151 platform fault" determination for gfx1201.
+
+## Validation 2026-06-08 (linux-gfx1100) -- REVALIDATE at 4db4d21
+
+**Platform:** AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.x, wave32
+**GPU pinned:** HIP_VISIBLE_DEVICES=0
+
+**Commit under test:** 4db4d21 [ROCm] Use a plain device reduction in valid() to avoid RDNA hang
+
+**Context:** Revalidation triggered by 4db4d21 functional change (new device-policy reduction path in numeric_detail.h). Delta from validated_sha 718d206: only `src/stdgpu/impl/numeric_detail.h` modified -- adds a hand-written device-policy `transform_reduce_index_device` path that avoids the rocThrust/rocPRIM single-block reduce + hipMemcpyWithStream wedge observed on gfx1201/gfx1151.
+
+**Build command (incremental from existing gfx1100 build dir):**
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake --build /var/lib/jenkins/moat/projects/stdgpu/src/build -j$(nproc)
+```
+
+**Build result:** SUCCESS (incremental; rebuilt numeric_detail.h-affected targets)
+
+**Test command:**
+```bash
+export HIP_VISIBLE_DEVICES=0
+/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu
+```
+
+**Test results:** ALL 702 PASS, zero memory leaks (184538/184538 device, 180605/180605 host), 60.8s
+
+**Critical tests verified (new fix path + original wave_lock_serialize):**
+- `stdgpu_unordered_map.insert_while_full` - PASS
+- `stdgpu_unordered_map.insert_multiple_while_full` - PASS
+- `stdgpu_unordered_map.insert_while_excess_empty` - PASS
+- `stdgpu_unordered_map.insert_parallel_while_one_free` - PASS
+- `stdgpu_unordered_map.insert_parallel_while_excess_empty` - PASS
+- `stdgpu_unordered_map.emplace_parallel_while_one_free` - PASS
+- `stdgpu_unordered_map.emplace_parallel_while_excess_empty` - PASS
+- `stdgpu_unordered_set.*` (same 7 tests) - all PASS
+- All 4 `stdgpu_deque.simultaneous_push_*` - PASS
+- `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS
+- All 8 `insert_range_unique_parallel` / `erase_range_unique_parallel` variants - PASS
+
+**No regression** versus 718d206: identical 702/702 pass count, identical leak count.
+
+**Verdict:** VALIDATED at 4db4d21 -- linux-gfx1100 revalidate -> completed.

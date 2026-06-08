@@ -55,3 +55,6 @@
 {"kind": "phase", "ts": "2026-06-08T22:34:54Z", "phase": "compile", "seconds": 180.0, "exit": 0, "cmd": "cmake --build /var/lib/jenkins/moat/projects/stdgpu/src/build -j16"}
 {"kind":"phase","ts":"2026-06-08T22:36:16Z","phase":"test","seconds":76.250,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
 {"kind": "tokens", "ts": "2026-06-08T22:47:24Z", "tokens": 52596, "source": "validator (gfx90a GPU revalidation: teststdgpu 702/702)"}
+{"kind":"phase","ts":"2026-06-08T22:52:24Z","phase":"compile","seconds":0.119,"exit":1,"cmd":"cmake --build build -j64"}
+{"kind":"phase","ts":"2026-06-08T22:53:11Z","phase":"compile","seconds":39.880,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/stdgpu/src/build -j64"}
+{"kind":"phase","ts":"2026-06-08T22:54:17Z","phase":"test","seconds":60.933,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu"}
