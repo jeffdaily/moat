@@ -86,3 +86,8 @@
 {"kind":"phase","ts":"2026-06-07T23:48:56Z","phase":"test","seconds":0.037,"exit":127,"cmd":"./DEMdemo_SingleSphereCollide.exe"}
 {"kind":"phase","ts":"2026-06-07T23:50:15Z","phase":"test","seconds":72.782,"exit":0,"cmd":"B:/develop/moat/projects/DEM-Engine/build-gfx1201/bin/DEMdemo_SingleSphereCollide.exe"}
 {"kind":"phase","ts":"2026-06-07T23:51:22Z","phase":"test","seconds":60.121,"exit":124,"cmd":"timeout 60 B:/develop/moat/projects/DEM-Engine/build-gfx1201/bin/DEMdemo_BallDrop2D.exe"}
+{"kind":"phase","ts":"2026-06-08T01:20:10Z","phase":"compile","seconds":65.237,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/DEM-Engine/src/build -j128"}
+{"kind":"phase","ts":"2026-06-08T01:21:10Z","phase":"test","seconds":40.281,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-08T01:22:24Z","phase":"test","seconds":60.093,"exit":124,"cmd":"timeout 60 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_BallDrop2D"}
+{"kind":"phase","ts":"2026-06-08T01:22:59Z","phase":"test","seconds":30.107,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_RotatingDrum"}
+{"kind":"phase","ts":"2026-06-08T01:23:34Z","phase":"test","seconds":30.070,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_Repose"}
