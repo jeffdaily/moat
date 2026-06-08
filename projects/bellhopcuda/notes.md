@@ -134,3 +134,48 @@ Transmission loss tests:
 
 ### Result
 VALIDATED: All ray tracing tests produce identical CPU vs GPU outputs. Transmission loss tests execute successfully on GPU. The build required removing the system GLM package (which lacks HIP support) to use the project's GLM submodule that includes HIP device annotations.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201, RDNA4, wave32)
+Commit: 0ac100337228fe6748179e63d614b23369f6d65e (adds Windows HIP complex fix on top of port)
+HIP_VISIBLE_DEVICES=0 (gfx1201 only; gfx1101 V710 not enumerated this session)
+
+### Windows-Specific Port Fix
+
+Initial validation attempt revealed that the prior Windows port (using thrust::complex<T>) caused >25% TL errors at certain ranges (ir=278-377) due to numerical differences in caustic detection. Root cause: thrust::complex division uses a different algorithm than std::complex, causing the beam spreading factor q to cross zero at a different step on GPU vs CPU, triggering a pi/2 phase error in all subsequent beam contributions at those ranges.
+
+Fix: use std::complex<T> on Windows GPU (not thrust::complex). The #pragma clang force_cuda_host_device pragma makes std::complex constructors and arithmetic device-callable. For math functions that call MSVC host-only internals (_Exp, swap), device-callable wrappers in namespace bhc_hip_std are provided using HIP math builtins. This gives numerically identical complex arithmetic between CPU and GPU builds.
+
+Committed as: 0ac100337228fe6748179e63d614b23369f6d65e
+Pushed to: https://github.com/jeffdaily/bellhopcuda moat-port
+
+### Build
+```
+cd build-hip-gfx1201
+cmake --build . -j24
+```
+Build: PASS (warnings about nodiscard hipDeviceReset, non-blocking)
+
+### Test Results
+
+Ray tracing tests (4/4 PASS, GPU output identical to CPU):
+- blockB_ray: IDENTICAL outputs (CPU vs GPU binary comparison)
+- MunkB_ray: IDENTICAL outputs
+- DickinsBray: IDENTICAL outputs
+- ParaBot (eigenray): IDENTICAL outputs
+
+Transmission loss tests (2/2 PASS):
+- MunkB_Coh: GPU output within 0.01% of CPU reference (all 1023022 values)
+- arcticB_cpp: GPU output within 0.01% of CPU reference (all 1523522 values)
+
+CPU regression tests (2/2 PASS, bellhopcxx no regression):
+- MunkB_Coh: PASS (matches reference exactly)
+- arcticB_cpp: PASS (matches reference exactly)
+
+### GPU Verification
+- Device detected: AMD Radeon RX 9070 XT / compute 12.0
+- All tests ran successfully on real GPU hardware (gfx1201)
+
+### Result
+VALIDATED: 4/4 ray tests PASS (identical outputs), 2/2 TL tests PASS (all values within 0.01% tolerance), 2/2 CPU regression tests PASS. The Windows HIP port required replacing thrust::complex with std::complex + device-callable wrappers to achieve numerical consistency between CPU and GPU builds.
