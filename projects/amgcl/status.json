@@ -7,17 +7,17 @@
   "priority": 5.432,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-07T03:35:16Z",
-  "head_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
+  "updated_at": "2026-06-08T19:09:24Z",
+  "head_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
+      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
       "started_at": "2026-05-30T07:08:22Z",
-      "completed_at": "2026-05-30T07:28:58Z",
-      "updated_at": "2026-05-30T07:28:58Z",
+      "completed_at": "2026-06-08T19:09:22Z",
+      "updated_at": "2026-06-08T19:09:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "method": "source-class",
+        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
+        "at": "2026-06-08T19:09:22Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
+      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
       "started_at": "2026-05-30T08:00:00Z",
-      "completed_at": "2026-05-30T08:30:00Z",
-      "updated_at": "2026-05-30T08:30:00Z",
+      "completed_at": "2026-06-08T19:09:22Z",
+      "updated_at": "2026-06-08T19:09:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +60,22 @@
         "first_session_at": "2026-05-30T08:00:00Z",
         "last_session_at": "2026-05-30T08:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "method": "source-class",
+        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
+        "at": "2026-06-08T19:09:22Z"
+      }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
+      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
       "started_at": null,
-      "completed_at": "2026-06-05T16:55:24Z",
-      "updated_at": "2026-06-05T16:55:24Z",
+      "completed_at": "2026-06-08T19:09:22Z",
+      "updated_at": "2026-06-08T19:09:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,16 +89,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "method": "source-class",
+        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
+        "at": "2026-06-08T19:09:22Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f4b87da72010e59e944847380ea972efa0aa15b8",
+      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
       "started_at": null,
-      "completed_at": "2026-06-07T03:35:16Z",
-      "updated_at": "2026-06-07T03:35:16Z",
+      "completed_at": "2026-06-08T19:09:22Z",
+      "updated_at": "2026-06-08T19:09:24Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,6 +117,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "method": "source-class",
+        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
+        "at": "2026-06-08T19:09:22Z"
       }
     },
     "windows-gfx1151": {
