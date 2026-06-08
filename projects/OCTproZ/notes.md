@@ -180,3 +180,63 @@ display, these would be exercised by running the full Qt GUI.
 - gfx90a (MI250X, CDNA2, wave64)
 - ROCm 7.2.1
 - hipFFT 1.0.22.70201
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+### Build
+
+```bash
+VENV="B:/develop/TheRock/external-builds/pytorch/.venv"
+ROCM="$VENV/Lib/site-packages/_rocm_sdk_devel"
+BUILD="B:/develop/moat/agent_space/octproz_win_gfx1201"
+
+HIP_VISIBLE_DEVICES=0 "$ROCM/bin/hipcc" \
+  --offload-arch=gfx1201 \
+  -DUSE_HIP -D_USE_MATH_DEFINES -D__CUDACC_VER_MAJOR__=13 -DCUDART_VERSION=13000 -DWIN32 \
+  -I"$ROCM/include" \
+  -o "$BUILD/octproz_pipeline_test.exe" \
+  "$BUILD/octproz_pipeline_test.hip" \
+  -L"$ROCM/lib" -lhipfft
+```
+
+Runtime DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll, hipfft.dll, rocfft.dll) copied from `_rocm_sdk_core/bin`
+and `_rocm_sdk_libraries/bin` into the exe directory so the Windows loader uses
+TheRock's runtime instead of System32's amdhip64.
+
+Build succeeded. Test program: `agent_space/octproz_win_gfx1201/octproz_pipeline_test.hip`
+
+### Test results (16/16 pass)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, warpSize=32, 32 CUs, 15.9 GB)
+Run: `HIP_VISIBLE_DEVICES=0 ./octproz_pipeline_test.exe`
+
+| # | Kernel / path | Result |
+|---|---------------|--------|
+| 1 | `inputToCufftComplex` -- raw 8-bit data to complex | PASS |
+| 2 | `windowing` -- Hanning window application | PASS |
+| 3 | `klinearization` (linear interpolation) -- k-space resampling | PASS |
+| 4 | `klinearizationCubic` -- cubic Hermite resampling | PASS |
+| 5 | `klinearizationLanczos` -- Lanczos-8 resampling | PASS |
+| 6 | `klinearizationAndWindowing` -- combined resample+window | PASS |
+| 7 | `hipfftExecC2C` (hipFFT 1D 1024-pt C2C IFFT, DC signal) | PASS |
+| 8 | Full OCT pipeline: input->klinearization->windowing->IFFT->postProcessTruncateLog | PASS (32768/32768 non-zero, mean=0.5933) |
+| 8b | `postProcessTruncateLin` -- linear magnitude scaling | PASS |
+| 9 | `updateDisplayedVolume` (3D `surf3Dwrite`, `hipCreateSurfaceObject`) | PASS (65278/65536 non-zero voxels written) |
+| 10 | `updateDisplayedBscanFrame` -- 2D B-scan display update | PASS |
+| 11a | `fillSinusoidalScanCorrectionCurve` -- sinusoidal scan LUT | PASS |
+| 11b | `sinusoidalScanCorrection` -- sinusoidal scan correction | PASS |
+| 12 | `cuda_bscanFlip` -- B-scan direction flip | PASS |
+| 13a | `getMinimumVarianceMean` -- fixed-pattern noise determination | PASS |
+| 13b | `meanALineSubtraction` -- FPN subtraction | PASS |
+
+### GPU architecture
+- gfx1201 (RX 9070 XT, RDNA4, wave32)
+- ROCm 7.14.0a20260604 (TheRock nightly)
+- hipFFT (from _rocm_sdk_devel)
+
+### Notes
+No code changes required for gfx1201. Same kernel test as Linux validation; only
+adaptation was adding `-D_USE_MATH_DEFINES` (Windows M_PI) and copying TheRock
+runtime DLLs beside the exe (standard Windows amdhip64 DLL-path workaround).
+The `surf3Dwrite` path worked correctly on RDNA4 wave32 -- 65278/65536 voxels written.
