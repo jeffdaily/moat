@@ -7,8 +7,8 @@
   "priority": 8.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-07T20:45:45Z",
-  "updated_at": "2026-06-08T01:11:44Z",
-  "head_sha": "e2e8f70dd8737a5cf8b7b798b99654d06c8eb326",
+  "updated_at": "2026-06-08T16:34:31Z",
+  "head_sha": "fee8c1dc8052e693b70e4fbf46186a5644c47b30",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
@@ -38,10 +38,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e2e8f70dd8737a5cf8b7b798b99654d06c8eb326",
+      "validated_sha": "fee8c1dc8052e693b70e4fbf46186a5644c47b30",
       "started_at": "2026-06-07T20:45:45Z",
-      "completed_at": "2026-06-07T21:08:06Z",
-      "updated_at": "2026-06-07T21:08:06Z",
+      "completed_at": "2026-06-08T16:34:31Z",
+      "updated_at": "2026-06-08T16:34:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,6 +54,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "fee8c1dc8052e693b70e4fbf46186a5644c47b30",
+        "method": "source-class",
+        "detail": "test-marker-only: removed UNSUPPORTED:hipcc from 5 same-wavefront-safe semaphore tests; library byte-identical (no device/header/impl change); these tests already validated passing on this arch",
+        "at": "2026-06-08T16:34:31Z"
       }
     },
     "windows-gfx1101": {
@@ -82,10 +88,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e2e8f70dd8737a5cf8b7b798b99654d06c8eb326",
+      "validated_sha": "fee8c1dc8052e693b70e4fbf46186a5644c47b30",
       "started_at": "2026-06-07T20:45:45Z",
-      "completed_at": "2026-06-08T00:40:41Z",
-      "updated_at": "2026-06-08T00:40:41Z",
+      "completed_at": "2026-06-08T16:34:31Z",
+      "updated_at": "2026-06-08T16:34:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +105,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "fee8c1dc8052e693b70e4fbf46186a5644c47b30",
+        "method": "source-class",
+        "detail": "test-marker-only: removed UNSUPPORTED:hipcc from 5 same-wavefront-safe semaphore tests; library byte-identical (no device/header/impl change); these tests already validated passing on this arch",
+        "at": "2026-06-08T16:34:31Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
