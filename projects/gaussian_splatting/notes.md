@@ -239,3 +239,23 @@ wave32 verdict (gfx1201 RDNA4): same as gfx1100 wave32 analysis. The warpReduceS
 Decision: PASS -> completed. validated_sha = d7f2227cb285966c290c36efaf7f8240f10379cb.
 
 Note for linux-gfx90a and linux-gfx1100 revalidators: the Windows fix (setup.py + .gitignore delta d7f2227) is entirely `os.name == 'nt'`-guarded. A binary-equivalence check (`python3 utils/codeobj_diff.py`) between builds at a4d8b9a and d7f2227 on Linux will show identical device code objects and exported symbols, allowing carry-forward without a GPU re-run.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate carry-forward)
+
+Platform: linux-gfx90a. validated_sha a4d8b9aa30 -> head_sha d7f2227cb2.
+
+Delta: d7f2227 adds a Windows-only setup.py guard (`if os.name == 'nt' and torch.version.hip is not None`) that copies bindings.cpp to bindings_winhip.cu on Windows HIP builds only. Dead code on Linux (os.name == 'posix'). Also adds two lines to .gitignore for the generated bindings_winhip.cu.
+
+`python3 utils/moatlib.py classify gaussian_splatting a4d8b9aa30 d7f2227cb2` -> `class=mixed arch_independent=False` (classifier flagged setup.py token change -- not inert by classifier alone, so binary check required).
+
+Build at d7f2227 (Strategy B, gfx90a, MAX_JOBS=16) via `bash utils/timeit.sh gaussian_splatting compile -- bash agent_space/gsplat_build.sh`. Build succeeded; .so size unchanged at 811360 bytes.
+
+`python3 utils/codeobj_diff.py agent_space/gsplat_diff/old agent_space/gsplat_diff/new`:
+```
+verdict=identical
+  splat_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (230 exports))
+```
+
+Carry-forward: `python3 utils/moatlib.py carry-forward gaussian_splatting linux-gfx90a d7f2227cb2 binary-equiv "Windows-only setup.py guard (os.name=='nt') is dead on Linux; codeobj_diff: identical (230 exports, device ISA)"`.
+
+Decision: CARRY-FORWARD -> completed. validated_sha = d7f2227cb285966c290c36efaf7f8240f10379cb. No GPU re-run needed.
