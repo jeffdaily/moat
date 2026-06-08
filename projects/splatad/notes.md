@@ -644,3 +644,76 @@ Test results (all run from /tmp/splatad_cobj_diff/new/, HIP_VISIBLE_DEVICES=3):
 
 Verdict: PASS. linux-gfx90a (MI250X, wave64) revalidated at 96ece3d. No regression.
 Windows-only guards do not affect Linux code paths; all GPU tests pass.
+
+## Validation 2026-06-08 (validator, linux-gfx1100, moat-port @ 96ece3d)
+
+Platform: AMD Radeon Pro W7800 (gfx1100, RDNA3, wave32), HIP_VISIBLE_DEVICES=2, ROCm 7.2.1.
+Revalidate: validated_sha e337891 -> head_sha 96ece3d (Windows build fixes on top of the
+Linux-validated port).
+
+codeobj_diff verdict: differ (exported symbols: old has weak `std::_Sp_counted_base::_M_release`,
+new does not). Same class as the gfx90a revalidation: a C++ stdlib weak symbol from the
+`#if defined(USE_ROCM)` -> `#ifdef __HIP__` guard rename, NOT a GPU kernel or API change.
+All 8 gfx1100 device code objects are unchanged (only the host-side template instantiation
+artifact differs). Per pipeline rules (any differ -> full GPU revalidation), full revalidation
+performed.
+
+Build commands (two builds for codeobj_diff, then test from 96ece3d):
+    # Build both SHAs in agent_space for codeobj_diff
+    cd /var/lib/jenkins/moat/agent_space/splatad-cobj-old-gfx1100  # e337891 checkout
+    rm -rf gsplat/hip build
+    HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx1100 BUILD_CUDA=1 NO_FAST_MATH=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -q
+
+    cd /var/lib/jenkins/moat/agent_space/splatad-cobj-new-gfx1100  # 96ece3d checkout
+    rm -rf gsplat/hip build
+    HIP_VISIBLE_DEVICES=2 PYTORCH_ROCM_ARCH=gfx1100 BUILD_CUDA=1 NO_FAST_MATH=1 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation -q
+
+gfx1100 code objects: roc-obj-ls gsplat/csrc.so | grep -c gfx1100 -> 8 (no other arch).
+
+Test commands (all from /var/lib/jenkins/moat/agent_space/splatad-cobj-new-gfx1100/):
+
+    # Camera math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=2 python -m pytest tests/test_basic.py \
+        -k "(test_quat_scale_to_covar_preci or test_persp_proj or test_world_to_cam or test_projection or test_fully_fused_projection_packed or test_isect or test_sh or test_compute_pix_velocity) and not lidar" \
+        -v --tb=short
+
+    # Camera rasterization
+    HIP_VISIBLE_DEVICES=2 python -m pytest tests/test_rasterization.py::test_rasterization -v --tb=short
+
+    # Lidar math (fwd + autograd bwd)
+    HIP_VISIBLE_DEVICES=2 python -m pytest tests/test_basic.py \
+        -k "lidar_proj or compute_lidar_velocity or lidar_projection or isect_lidar or map_points_to_lidar_tiles or populate_image_from_points" \
+        -v --tb=short
+
+    # Lidar end-to-end rasterization
+    HIP_VISIBLE_DEVICES=2 python -m pytest tests/test_rasterization.py -k "lidar" -v --tb=short
+
+    # Lidar rasterize_to_points fwd+bwd (nerfacc not available; independent check)
+    HIP_VISIBLE_DEVICES=2 python /var/lib/jenkins/moat/agent_space/splatad_validate_lidar_gfx1100.py
+
+    # Non-GPU regression
+    HIP_VISIBLE_DEVICES=2 python -m pytest tests/test_strategy.py -v --tb=short
+
+Results:
+- Camera math: 27/27. PASS (no flappers this run).
+- Camera rasterization: 24/24. PASS.
+- Lidar math: 12/14 (2 documented batch flappers: test_lidar_projection[True-True-False] and
+  test_lidar_projection[False-True-False] at index (102218, 2), rel diff 0.327 > 0.2 rtol).
+  Identical to prior gfx1100 validation -- same element, same deterministic batch artifact.
+  Both PASS in isolation (confirmed in prior run); NOT a wave32 fault, NOT a regression.
+- Lidar rasterization (test_lidar_rasterization[3,32,128]): 3/3. PASS.
+- Lidar rasterize_to_points independent validation (splatad_validate_lidar_gfx1100.py):
+    [A] forward finite, range-sane (alphas [0.0000, 0.9999], 100% lit), 2-run BIT-EXACT. PASS.
+    [B] grads finite, grad-sum rel stability 1.25e-06, grads flowing. PASS.
+    [C] 80-step Adam training: loss 0.1756 -> 0.1460 (16.9% down), grads finite. PASS.
+- Non-GPU regression (test_strategy.py): 1/1. PASS.
+- nerfacc-gated tests: not run (nerfacc CUDA _C is None on ROCm, same as prior run).
+- test_png_compression: not run (ImportError: Please install PLAS -- expected, not a regression).
+
+Delta analysis (e337891 -> 96ece3d): Windows-only setup.py guards (sys.platform == "win32"),
+__HIP__ vs USE_ROCM guard rename in bindings.h + helpers.cuh (both defined by hipcc on Linux;
+include fires in identical TUs). Linux build inputs byte-identical. No kernel change.
+
+Verdict: PASS. linux-gfx1100 (RDNA3, wave32) revalidated at 96ece3d. No regression vs e337891.
