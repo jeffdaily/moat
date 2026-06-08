@@ -28,3 +28,6 @@
 {"kind":"phase","ts":"2026-06-08T02:02:08Z","phase":"compile","seconds":4.191,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_build_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T02:06:02Z","phase":"compile","seconds":54.946,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_build_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T02:22:02Z","phase":"test","seconds":777.306,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_validate_win_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T04:10:55Z","phase":"compile","seconds":0.377,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T04:11:02Z","phase":"compile","seconds":3.355,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a HIP_VISIBLE_DEVICES=0 pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T04:12:29Z","phase":"compile","seconds":66.471,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && BUILD_WITH_HIP=1 ROCM_PATH=/opt/rocm HIP_ARCH=gfx90a HIP_VISIBLE_DEVICES=0 pip install -e . --no-build-isolation 2>&1"}

@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "setuptools-cuda",
   "adopted_at": "2026-06-04T01:07:42Z",
-  "updated_at": "2026-06-08T02:35:53Z",
-  "head_sha": "6286c5c5e67c08949c46c57ddbbff19d1a1f7c5c",
+  "updated_at": "2026-06-08T04:13:21Z",
+  "head_sha": "6286c5c2474182dced7f06a807ae241300e10a05",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b450d56f66dbb6531135bf0c62055ee17c28a3ba",
+      "validated_sha": "6286c5c2474182dced7f06a807ae241300e10a05",
       "started_at": "2026-06-04T01:41:19Z",
-      "completed_at": "2026-06-04T02:28:58Z",
-      "updated_at": "2026-06-08T02:33:21Z",
+      "completed_at": "2026-06-08T04:13:21Z",
+      "updated_at": "2026-06-08T04:13:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "6286c5c2474182dced7f06a807ae241300e10a05",
+        "method": "binary-equiv",
+        "detail": "Windows-only win_wrap_compile change in setup.py (MSVC path); gfx90a build produces identical device code and exported symbols across all 8 extensions (7 confirmed binary-equiv, _gpuUtils host-only no",
+        "at": "2026-06-08T04:13:21Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
@@ -82,7 +88,7 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "6286c5c5e67c08949c46c57ddbbff19d1a1f7c5c",
+      "validated_sha": "6286c5c2474182dced7f06a807ae241300e10a05",
       "started_at": null,
       "completed_at": "2026-06-08T02:36:01Z",
       "updated_at": "2026-06-08T02:36:01Z",
