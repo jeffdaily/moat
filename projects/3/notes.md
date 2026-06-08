@@ -371,3 +371,20 @@ Binary-equivalence check:
 - Note: codeobj_diff.py not applicable to Go executables (looks for .so/.hsaco only); manual .co comparison used instead.
 
 Verdict: binary-equiv carry-forward. All 64 gfx90a code objects byte-identical; host-only curand_shim.h change compiles clean. State -> completed at f6b642d5ce5bc0f832d809953efe0ebfc01d7a83. No GPU re-run required.
+
+## Validation 2026-06-08 (linux-gfx1100, revalidate carry-forward)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Revalidate trigger: head advanced from linux-gfx1100 validated_sha 7ef67aa4 to f6b642d5 (windows-gfx1201 delta).
+
+Delta (7ef67aa4 -> f6b642d5): 65 *_wrapper.go files regenerated with gfx1201 code objects; cuda/cu/testdata/testmodule_gfx1201.co (new); cuda/curand/curand_shim.h (new, Windows SDK compat shim); cuda/curand/generator.go + status.go (cgo preamble switches from typedef+hiprand.h to curand_shim.h). No .cu, .cuh, or Makefile changes.
+
+Binary-equivalence check:
+- Rebuilt gfx1100 code objects at both shas using identical toolchain (ROCm 7.2.1, same Makefile/HIPCCFLAGS):
+  `make realclean && make CUDA_CC=gfx1100` at 7ef67aa4 -> 64 *_gfx1100.co files saved to agent_space/3-gfx1100-revalidate/co-old/.
+  `make realclean && make CUDA_CC=gfx1100` at f6b642d5 -> 64 *_gfx1100.co files saved to agent_space/3-gfx1100-revalidate/co-head/.
+- cmp -s comparison: all 64 gfx1100 .co files byte-identical across both shas (same .cu sources, same Makefile; diff confirms no .cu/.h/Makefile changes).
+- curand_shim.h host change: compiled successfully on Linux/ROCm 7.2.1 (`go build ./cmd/mumax3` -- no errors, deprecation warnings only, same as before).
+- Note: codeobj_diff.py not applicable to Go executables (looks for .so/.hsaco only); manual .co comparison used instead.
+
+Verdict: binary-equiv carry-forward. All 64 gfx1100 code objects byte-identical; host-only curand_shim.h change compiles clean. State -> completed at f6b642d5ce5bc0f832d809953efe0ebfc01d7a83. No GPU re-run required.
