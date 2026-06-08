@@ -131,6 +131,45 @@ python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py
 ### Result
 **PASS**: Core library builds and all SpMM operations execute correctly on gfx1100. Forward passes produce correct results.
 
+## Validation 2026-06-08 (linux-gfx90a revalidate)
+
+Delta c262d8bc -> 81b34042: one commit "[ROCm] Add Windows build support for HIP/ROCm". Changed files: `.gitignore`, `include/cuda/csr2csc.cuh` (`#ifdef USE_ROCM` macro aliases), `setup.py` (Windows-only `IS_WINDOWS` guards), `src/spmm.cpp` (`#ifdef _WIN32` stub). The `csr2csc.cuh` macros are active on Linux ROCm builds, so a full GPU revalidation was run.
+
+Binary check: built at both SHAs for gfx90a -- `_spmm_cuda.so` confirmed identical (codeobj_diff: 701 exported symbols, device ISA identical); all other .so files byte-for-byte identical. Source change is behavior-preserving on gfx90a.
+
+### Build
+```bash
+export HIP_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=gfx90a
+cd projects/dgSPARSE-Lib/src
+pip install -e . --no-build-isolation
+```
+
+Build successful at 81b34042.
+
+### Testing
+```bash
+export HIP_VISIBLE_DEVICES=0
+python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py
+```
+
+Results:
+- [PASS] spmm_sum (forward + backward)
+- [PASS] spmm_max (forward)
+- [PASS] spmm_min (forward)
+- [PASS] spmm_mean (forward)
+- [PASS] spmm_sum correctness (max err=4.77e-07)
+
+5/5 PASS.
+
+### GPU Architecture
+- AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-)
+- PyTorch 2.13.0a0+gitb5e90ff
+- ROCm 7.2.53211
+
+### Result
+**PASS**: All SpMM operations execute correctly on gfx90a at 81b34042. Windows port commit does not regress Linux GPU behavior.
+
 ## Validation 2026-06-08 (windows-gfx1201)
 
 ### Build

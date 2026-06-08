@@ -28,3 +28,8 @@
 {"kind":"phase","ts":"2026-06-08T15:18:31Z","phase":"compile","seconds":35.879,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T15:28:19Z","phase":"compile","seconds":0.016,"exit":0,"cmd":"echo build complete (already done)"}
 {"kind":"phase","ts":"2026-06-08T15:28:29Z","phase":"test","seconds":3.129,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/test_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T17:44:50Z","phase":"compile","seconds":149.371,"exit":0,"cmd":"bash -c cd projects/dgSPARSE-Lib/src && pip install -e . --no-build-isolation 2>&1 | tail -10"}
+{"kind":"phase","ts":"2026-06-08T17:44:57Z","phase":"test","seconds":2.589,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
+{"kind":"phase","ts":"2026-06-08T17:45:45Z","phase":"test","seconds":2.447,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
+{"kind":"phase","ts":"2026-06-08T17:46:19Z","phase":"test","seconds":2.711,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
+{"kind":"phase","ts":"2026-06-08T17:46:41Z","phase":"test","seconds":4.390,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
