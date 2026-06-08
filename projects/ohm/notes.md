@@ -184,3 +184,34 @@ HIP_VISIBLE_DEVICES=0 ctest --test-dir agent_space/ohm_gfx1201_build -j1
 **All tests: 5/5 executables PASSED**
 
 All occupancy-map population, ray integration, line query, NDT, traversal, and TSDF GPU tests pass on gfx1201 (RDNA4 wave32). Results match prior linux-gfx90a and linux-gfx1100 validations.
+
+## Validation 2026-06-08 (linux-gfx90a revalidate at 80ea8a81)
+
+**GPU arch**: gfx90a (MI250X, GCD 3)
+**ROCm version**: 7.2.1
+**Fork HEAD**: 80ea8a81 (09782e7f + `#include <iomanip>` Windows portability fix in 6 test files)
+
+**Delta class**: Source classifier returned `unknown` (forced full GPU revalidation). The delta is 6 x `#include <iomanip>` additions in test .cpp files only -- no kernel or GPU-abstraction source changes.
+
+**Build command**:
+```bash
+/usr/bin/cmake -B agent_space/ohm_build_gfx90a -S projects/ohm/src \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DOHM_FEATURE_HIP=ON \
+  -DOHM_FEATURE_CUDA=OFF \
+  -DOHM_FEATURE_OPENCL=OFF \
+  -DOHM_FEATURE_TEST=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a
+
+/usr/bin/cmake --build agent_space/ohm_build_gfx90a -j$(nproc)
+```
+
+**Test results**:
+- `gputiltesthip`: 8/8 PASSED
+- `ohmtesthip`: 58/58 PASSED
+- `ohmtest` (CPU): 53/53 PASSED
+- `slamiotest` (CPU): 4/4 PASSED
+
+**Total**: 66/66 GPU tests PASSED, 57/57 CPU tests PASSED
+
+All GPU and CPU tests pass. No regressions versus prior validation at 09782e7f.

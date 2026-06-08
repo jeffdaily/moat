@@ -34,3 +34,7 @@
 {"kind":"phase","ts":"2026-06-08T18:05:36Z","phase":"compile","seconds":13.044,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/ohm_gfx1201_build -j24"}
 {"kind":"phase","ts":"2026-06-08T18:06:10Z","phase":"test","seconds":4.513,"exit":0,"cmd":"bash -c cd 'B:/develop/moat/agent_space/ohm_gfx1201_build' && HIP_VISIBLE_DEVICES=0 ctest --test-dir . -R 'gputiltesthip' --output-on-failure -j1 -V 2>&1"}
 {"kind":"phase","ts":"2026-06-08T18:07:22Z","phase":"test","seconds":58.181,"exit":0,"cmd":"bash -c cd 'B:/develop/moat/agent_space/ohm_gfx1201_build' && HIP_VISIBLE_DEVICES=0 ctest --test-dir . -R 'ohmtesthip' --output-on-failure -j1 2>&1"}
+{"kind":"phase","ts":"2026-06-08T19:03:01Z","phase":"compile","seconds":18.691,"exit":0,"cmd":"/usr/bin/cmake --build agent_space/ohm_build_gfx90a -j128"}
+{"kind":"phase","ts":"2026-06-08T19:03:30Z","phase":"test","seconds":3.924,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/gputiltesthip 2>&1"}
+{"kind":"phase","ts":"2026-06-08T19:04:53Z","phase":"test","seconds":70.778,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/ohmtesthip 2>&1"}
+{"kind":"phase","ts":"2026-06-08T19:05:12Z","phase":"test","seconds":12.024,"exit":0,"cmd":"bash -c /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/ohmtest 2>&1 && /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/slamiotest 2>&1"}
