@@ -435,3 +435,156 @@ Actions: (1) registered deferred work autodock-gpu-tensor-core-reduction
 to the commit message and a "## Scope" section to the PR body so the upstream PR does
 not overclaim parity. Commit message amended (tree-identical) 43041f8 -> 221e2d4f;
 all 4 platforms carried forward (no GPU re-run). Fork moat-port @ 221e2d4f.
+
+## TENSOR=ON tensor-core reduction on AMD via rocWMMA 2026-06-08 (gfx90a)
+
+Implemented the optional TENSOR=ON sum-reduction (previously the scoped-out
+NVIDIA-only feature) on AMD using rocWMMA, as a NEW commit on top of 221e2d4f
+(221e2d4f stays the validated port; this is additive). 3 files: cuda/kernels.cu,
+host/src/performdocking.cpp, Makefile.Hip. CUDA (nvcuda/tcec), OpenCL, and CPU
+paths are byte-for-byte unchanged (git diff shows ZERO removed lines in
+kernels.cu and performdocking.cpp; only the AMD `#if defined(__HIP_PLATFORM_AMD__)`
+branches and the `#else` wrappers were added around the original code).
+
+### What the reduction does (so the wave64 rework is checkable)
+
+data_to_be_reduced is 4*NUM_OF_THREADS_PER_BLOCK floats; thread t writes 4 values
+(torque_rot.xyz, energy) at data[4t..4t+3]. The reduction sums each of the 4
+interleaved components across all threads, leaving the 4 sums in data[0..3]. As a
+16x16 col-major tile (ld=16), offset o -> (row=o%16, col=o/16), so component c
+lands in rows {c, c+4, c+8, c+12}. Stage 1 (V = sum of A*ones over tiles) row-sums
+each tile -> V[r] = partial sum of component r%4 over a quarter of the threads.
+Stage 2 (C = Q*W, Q = a 4x4-tiled 4x4 identity, i.e. Q[i][k]=1 iff i%4==k%4)
+sums the four row-blocks -> C[c][0] = full sum of component c. data[0..3] = first
+column of C.
+
+### rocWMMA mapping (1:1 with nvcuda::wmma)
+
+rocwmma::fragment / fill_fragment / load_matrix_sync / mma_sync /
+store_matrix_sync / matrix_a,matrix_b,accumulator,col_major,mem_col_major map
+directly onto the NVIDIA names (aliased `namespace adwmma = rocwmma`). Data type
+is plain `float`: CDNA gfx9 has native fp32 MFMA, so the reduction is EXACT fp32
+and the tf32 split-and-correct error compensation (mtk::wmma::tcec) is dropped
+entirely. The 16x16x16 fragment shape composes fine -- rocWMMA builds it from the
+native K=4 MFMA internally (verified: the device code object carries 32
+v_mfma_f32_16x16x4f32 instructions; 4 per mma_sync = K=16/K=4).
+
+### PoC (agent_space/adgpu_poc/) -- ran on gfx90a before touching the source
+
+- poc_k16.cpp: confirmed fragment<...,16,16,16,float,...> compiles AND runs
+  correctly on gfx90a (1 tile / NUMWI=64). The K=16 shape does compose; no need to
+  hand-loop K=4 with rocWMMA.
+- poc_k16_2tile.cpp: confirmed the 2-tile accumulation loop (NUMWI=128) is correct.
+Both reproduced the exact reference column/row sums.
+
+### CRITICAL wave64 adaptations (get these wrong -> wrong result or hang)
+
+1. Wave width: nvcuda WMMA is a 32-lane warp collective; CDNA MFMA is a 64-lane
+   wavefront collective. The `if (threadIdx.x <= 31)` guard becomes
+   `if (threadIdx.x < 64)`.
+2. Identity-tile fill: the NVIDIA per-lane index math (k = threadIdx.x<<3,
+   kk = 16-(threadIdx.x>>1), 8 entries/lane) assumes 32 lanes filling 256 entries.
+   On wave64 that math does not cover the tile. Reworked to derive each entry from
+   its column-major offset (wave-size independent):
+   `for (o = threadIdx.x; o < 256; o += 64) Q[o] = ((o%16)&3)==((o/16)&3) ? 1 : 0`.
+3. LDS round-trip barriers (the subtle one; caused a NUMWI=128 SIGSEGV at first):
+   rocWMMA load/store_matrix_sync are per-lane LDS ops with NO implicit barrier
+   (unlike nvcuda's `.sync` collectives -- rocWMMA's synchronize_workgroup is a
+   separate explicit call). The V->W round-trip through LDS and the identity-fill
+   both need a barrier. But `__syncthreads()` is WORKGROUP-scoped and DEADLOCKS
+   when the block has >1 wavefront (NUMWI=128: only wavefront 0 enters the `if`,
+   the others never reach the barrier -> EXIT 139). Fix: a wavefront-scoped
+   barrier `wavefront_lds_barrier()` = LDS release-fence + __builtin_amdgcn_wave_barrier()
+   + acquire-fence, at all three LDS hazards (V-store->W-load, W-load->Q-fill
+   clobber, Q-fill->Q-load). NUMWI=64 happened to work with __syncthreads (block ==
+   1 wavefront, non-divergent) which is why the bug only showed at 128.
+
+### Makefile.Hip
+
+Removed `$(error TENSOR=ON ...)`. TENSOR=ON now sets `NVTENSOR = -DUSE_NVTENSOR`
+(reaches both the hipcc kernel TU and the g++ host TUs, activating the
+calcMergeEneGra.cu call sites and the kernels.cu code) and enforces NUMWI in
+{64,128,256} (the original NUMWI>32 requirement) with a clean `$(error)`. rocWMMA
+is header-only, already on `-I$(ROCM_PATH)/include`; no extra link. HIP_ARCH stays
+configurable. Gotcha: directive lines inside the `ifeq` must NOT be tab-indented
+(a leading tab makes `$(error)` "recipe commences before first target"); use no
+indentation.
+
+### Build (gfx90a, ROCm 7.2.1)
+
+    make DEVICE=HIP NUMWI=64  TENSOR=ON HIP_ARCH=gfx90a
+    make DEVICE=HIP NUMWI=128 TENSOR=ON HIP_ARCH=gfx90a
+    make DEVICE=HIP NUMWI=64            HIP_ARCH=gfx90a   # baseline
+NB: `make clean` with TARGET=autodock_gpu_64wi wipes bin/autodock_gpu_64wi* (so a
+saved *_tensoron next to it is deleted on the next clean) -- copy benchmark
+binaries OUTSIDE bin/. All four (64/128 x on/off) built clean (pre-existing
+nodiscard warnings only).
+
+### Correctness -- TENSOR=ON vs OFF parity (1stp, -nrun 10, GPU 3 = MI250X)
+
+| config            | best energy | best-pose ref RMSD | cluster       |
+|-------------------|-------------|--------------------|---------------|
+| 64wi  OFF seed42  | -8.28       | 0.48 A             | 1, 10/10 runs |
+| 64wi  ON  seed42  | -8.27       | 0.31 A             | 1, 10/10 runs |
+| 64wi  OFF seed7   | -8.37       | 0.37 A             | 1, 10/10 runs |
+| 64wi  ON  seed7   | -8.37       | 0.40 A             | 1, 10/10 runs |
+| 128wi OFF seed42  | -8.33       | 0.39 A             | 1, 10/10 runs |
+| 128wi ON  seed42  | -8.25       | 0.59 A             | 1, 10/10 runs |
+
+TENSOR=ON matches TENSOR=OFF to docking tolerance in every case: native biotin
+pose recovered, best energy ~-8.28 +/- 0.08 kcal/mol, all 10 runs in one cluster,
+ref RMSD sub-0.6 A. Per-run scatter differs slightly (the tensor reduction sums in
+a different float order, so the GA trajectory diverges) -- expected and benign; the
+best pose converges identically. No NaN, no HIP fault, clean exit.
+
+### Benchmark -- honest numbers (1stp, nrun 100, ngen 80000, "Job took" docking-only, best-of-5/median-of-8, GPU 3)
+
+| config       | docking time | TENSOR=ON vs OFF |
+|--------------|--------------|------------------|
+| 64wi  OFF    | 0.634 s      | --               |
+| 64wi  ON     | 0.701 s      | 1.11x SLOWER     |
+| 128wi OFF    | 0.809 s (median, +/-0.002) | --  |
+| 128wi ON     | 0.514 s (median, +/-0.002) | 1.57x FASTER |
+
+The reduction is small, so the result is configuration-dependent and honest: at
+NUMWI=64 the MFMA setup is pure overhead vs an already-cheap single-wavefront
+shuffle (tensor LOSES ~11%); at NUMWI=128 the standard reduction pays cross-
+wavefront shuffle + atomicAdd costs that the single-wavefront MFMA collective
+avoids (tensor WINS 1.57x, rock-stable across 8 reps). So tensor cores help here
+only when the block spans multiple wavefronts.
+
+### ck_tile feasibility spike (PROVEN in-kernel; rocWMMA wins on fit)
+
+ck_tile CAN implement this as a __device__ sub-reduction called mid-kernel -- it is
+NOT host-launch-only. Evidence (agent_space/adgpu_poc/poc_cktile_init.cpp):
+ck_tile::WarpGemmMfmaF32F32F32M16N16K4 invoked via its CK_TILE_DEVICE operator()
+on register-resident static_distributed_tensor fragments inside a kernel
+(one wavefront) compiled and ran correctly (C=4.0 for A=B=ones, K=4) on gfx90a.
+The warp/ MFMA primitives (ops/gemm/warp/warp_gemm.hpp) are device building blocks,
+exactly the in-kernel op we need.
+
+BUT the fit is worse than rocWMMA, with concrete reasons found while spiking:
+1. In ROCm 7.2.1 the convenient f32 M16N16K16 alias is NOT exposed (only ...K4);
+   I'd manually loop K=4 four times. rocWMMA composes K=16 for me.
+2. The fragment fill/extract API drifts in this version: sweep_tile fails to
+   instantiate over a WarpGemm fragment (reverse_slice_sequence_impl<sequence<>...>
+   / get_y_unpacks_from_x_unpacks), and static_distributed_tensor::initialize /
+   thread_buffer::initialize do not exist. I had to poke the raw thread buffer with
+   static_for, which means manually reimplementing the lane->(row,col) data
+   distribution to load the LDS tile and to build the identity in the warp-gemm's
+   own register layout (rocWMMA's load_matrix_sync/store_matrix_sync handle that).
+3. ck_tile WarpGemm fragments are designed to be fed by tile_window + load_tile
+   pipelines; using them for a tiny ad-hoc 16x16 mid-kernel reduction fights the
+   framework's grain.
+
+Decision: kept rocWMMA. Its fragment API is a near-mechanical 1:1 swap for the
+existing nvcuda::wmma code (matches house style, reads like the original), composes
+K=16, and manages the LDS<->fragment distribution. ck_tile would be materially more
+boilerplate for no correctness or (for this small reduction) clear perf gain. Did
+NOT force a ck_tile implementation, per the spike's "rocWMMA wins on fit" outcome.
+
+### Scope / state
+
+This is additive work on top of the validated port; status.json platform states are
+the lead's to manage (TENSOR=OFF default build is unchanged and stays validated).
+No upstream PR action taken here.
