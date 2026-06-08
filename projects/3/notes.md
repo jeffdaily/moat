@@ -388,3 +388,140 @@ Binary-equivalence check:
 - Note: codeobj_diff.py not applicable to Go executables (looks for .so/.hsaco only); manual .co comparison used instead.
 
 Verdict: binary-equiv carry-forward. All 64 gfx1100 code objects byte-identical; host-only curand_shim.h change compiles clean. State -> completed at f6b642d5ce5bc0f832d809953efe0ebfc01d7a83. No GPU re-run required.
+
+## Restructure 2026-06-08 (additive HIP backend)
+
+The earlier commits replaced the CUDA path in place (rewrote cuda/cu, cuda/cufft,
+cuda/curand to HIP; -lcuda -> -lamdhip64; deleted testmodule.ptx and mode.go).
+That breaks every NVIDIA user, so it could not be upstreamed. This restructure
+(new commit on top of the validated f6b642d5, NOT an amend) makes the HIP support
+ADDITIVE and opt-in: default `go build` still compiles the unchanged upstream
+CUDA path; `go build -tags hip` (plus `make BACKEND=hip`) compiles the HIP path.
+No device kernel logic changed -- only the file layout, build tags, and the
+kernel-build backend selection.
+
+### Build-tag dual backend (the file-layout scheme)
+
+Idiomatic Go build tags select the backend. For every cgo/build file that the
+HIP port had rewritten, the upstream CUDA file is restored verbatim and
+constrained with `//go:build !hip`, and the HIP version moves to a sibling file
+constrained with `//go:build hip`:
+
+- cuda/cu/*: context.go [!hip] + context_hip.go [hip]; cgoflags.go (-lcuda) +
+  cgoflags_hip.go (-lamdhip64); result.go (CUresult) + result_hip.go
+  (hipError_t); device/execution/function/init/memory/memset/module/peer/
+  stream/version the same. Test files: context_test.go [!hip] +
+  context_hip_test.go [hip] (the HIP test sibling is named *_hip_test.go, NOT
+  *_test_hip.go, so `go test` still recognizes it as a test file). testdata
+  carries both testmodule.ptx (CUDA test) and testmodule_<arch>.co (HIP test).
+- cuda/cufft/*, cuda/curand/*: same split. cufft/mode.go (uses
+  CUFFT_COMPATIBILITY_FFTW_PADDING, no hipFFT equivalent) restored as a
+  [!hip]-only file. curand/curand_shim.h stays HIP-only (included only by the
+  hip cgo preamble).
+- cuda/ build infra: fatbin.go (determineCC/PTX-map, map[int]string) [!hip] +
+  fatbin_hip.go (determineArch/gcnArchName, map[string][]byte) [hip]; init.go +
+  init_hip.go the same. The 65 generated wrappers: upstream PTX *_wrapper.go
+  [!hip] (keyed by compute capability) alongside HIP *_wrapper_hip.go [hip]
+  (code-object bytes keyed by gfx arch). The committed *_wrapper_hip.go embed a
+  multi-arch set (gfx90a gfx1100 gfx1201) so all validated platforms are served
+  by one committed state.
+- cuda/cuda2go.go: now backend-aware via -backend=cuda|hip; the cuda branch
+  emits PTX *_wrapper.go (//go:build !hip), the hip branch emits code-object
+  *_wrapper_hip.go (//go:build hip). It can regenerate either set.
+- cuda/Makefile: BACKEND ?= cuda. Default = upstream nvcc `-ptx` per compute
+  capability in $CUDA_CC; BACKEND=hip = hipcc `--genco --offload-arch=<arch>`
+  per gfx arch in $CUDA_CC. Both branches drive cuda2go with the matching
+  -backend flag.
+- Host files: engine/engine.go's UNAME var moved into engine/uname.go [!hip]
+  (CUDA wording, cu.CUDA_VERSION) and engine/uname_hip.go [hip] (HIP wording,
+  cu.HIP_VERSION); engine.go keeps everything else and drops the now-unused
+  fmt/runtime/cu imports. cmd/mumax3/main.go's one backend-specific print line
+  becomes gpuInfoLine(), defined in cmd/mumax3/gpuinfo.go [!hip] ("cc=%d PTX",
+  cuda.UseCC) and gpuinfo_hip.go [hip] ("%s code object", cuda.UseArch). Those
+  two files also define goBuildTags ("" / "hip"); runGoFile forwards `-tags hip`
+  to the `go run` of a .go input script on the HIP build so the script compiles
+  with the same backend (the default build's `go run` args are unchanged).
+
+### #ifdef-guarded device headers (compiled by BOTH nvcc and hipcc)
+
+cuda/reduce.h and cuda/atomicf.h are ONE shared file each, guarded with
+`#ifdef __HIP_PLATFORM_AMD__ ... #else <upstream code> #endif`:
+
+- reduce.h: the reduce() macro is a backslash-continued #define, so a directive
+  cannot sit inside one body; the whole macro is defined twice -- HIP branch =
+  all-__syncthreads tree to s>0 (wave64-correct), CUDA #else branch = the
+  upstream unrolled 32-lane warp tail, byte-identical to upstream.
+- atomicf.h: HIP branch = atomicCAS loop on the float bits; CUDA #else branch =
+  upstream int atomicMax one-liner, byte-identical.
+- cuComplex.h stays HIP-only and is reached only via the hipcc -I. include path
+  (nvcc finds the real cuComplex.h).
+
+The hipcc compile sets -D__HIP_PLATFORM_AMD__ (HIPCCFLAGS + the cgo CFLAGS), so
+the HIP branch is taken on the AMD build and the upstream branch on nvcc.
+
+### CUDA-preservation proof (structural; CUDA path NOT built here -- no nvcc/libcuda)
+
+For every restored CUDA cgo .go file, `git diff 3fe3d41f -- <file>` shows ONLY
+the added `//go:build !hip` constraint plus its mandatory trailing blank line
+(zero removed lines, CUDA cgo/content otherwise byte-identical to upstream).
+Verified programmatically across all 26 restored .go files and all 65 PTX
+*_wrapper.go: PASS. The CUDA #else branches of reduce.h/atomicf.h were extracted
+and compared byte-for-byte to upstream: identical. The default build cannot be
+linked on this AMD host (no CUDA Toolkit): `go build` of cuda/cu stops at
+"fatal error: cuda.h: No such file or directory" -- a C-preprocessor error, not
+a Go error, confirming the !hip Go structure typechecks and only the missing
+CUDA headers block it. Preservation is structural by construction, not claimed
+as built/run.
+
+### HIP gfx90a build + test (real MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0)
+
+Build: `make wrappers BACKEND=hip CUDA_CC="gfx90a gfx1100 gfx1201"` then
+`go install -tags hip github.com/mumax/3/...` -> mumax3 binary (15.6 MB) linking
+libamdhip64/libhipfft/libhiprand/librocfft. Deprecated-HIP-context-API warnings
+only.
+
+- `go test -tags hip ./cuda/`: 8/8 PASS (TestBuffer, TestReduceSum,
+  TestReduceDot, TestReduceMaxAbs -- the reduce.h wave64 fix and the atomicCAS
+  atomicFmaxabs -- TestSlice, TestCpy, TestSliceFree, TestSliceHost).
+- `go test -tags hip ./cuda/cu/...`: 12/12 PASS (module load+launch, memcpy,
+  memset, context, version).
+- `go test -tags hip ./cuda/cufft/...`: TestExampleFFT1D PASS.
+- `go test -tags hip ./data/... ./httpfs/...`: PASS (non-GPU regression). oommf
+  fails a pre-existing `go vet` nit (int->string in unmodified ovf2.go); with
+  `-vet=off`, the project's documented mode, it has no test files. Not a port
+  regression.
+- standardproblem4 (M.Average within 1e-3): m=(-0.98461181, 0.12604699,
+  0.04326887), all OK. UNAME line shows "HIP-7.2", "using gfx90a code object".
+- standardproblem5 (mx/my/mz within 1e-4): mx=-0.23488, my=-0.09453, mz=0.02296,
+  all OK.
+- `mumax3 -vet *.mx3`: 176/176 OK.
+- Broader self-checking scripts: demag2D (9 OK), cubicanisotropy (15 OK),
+  anisenergyconservation (10 OK), dmi (2 OK) -- demag FFT, cubic anisotropy,
+  energy conservation, DMI kernel paths, zero failures.
+
+### Code-object byte-identity (cross-arch carry-forward)
+
+Built the 64 gfx90a .co at f6b642d5 (its HIP-only Makefile) in a detached
+worktree and `cmp`-compared to the 64 gfx90a .co from the restructured tree:
+MATCH=64 DIFFER=0. The restructure changed no device code (same .cu, same
+HIPCCFLAGS, byte-identical HIP header branches), so the per-arch code objects
+are bit-for-bit unchanged. Cross-arch implication: gfx1100 and gfx1201 revalidate
+as a binary-equiv carry-forward on their own hosts -- the validator rebuilds its
+arch's .co (`make wrappers BACKEND=hip CUDA_CC=<arch>`) and confirms it matches
+the previously-validated bytes; no GPU re-run needed for the followers since the
+ISA is identical.
+
+### Subtleties for the next agent
+
+- The HIP test-file siblings must end in `_test.go` (named `*_hip_test.go`), not
+  `*_test_hip.go`; Go only treats `_test.go` files as tests. The non-test HIP
+  siblings are `*_hip.go`; `hip` is not a GOOS/GOARCH so it carries no implicit
+  constraint and the explicit `//go:build hip` controls them.
+- mumax runs .go input scripts by shelling out to `go run`; that subprocess
+  must get `-tags hip` on the HIP build (goBuildTags + runGoFile), or the script
+  recompiles the default CUDA path and fails on cuda.h. The cmd-only `-failfast`
+  flag is not defined on the script's flag set, so a script run with `-f` should
+  omit cmd-batch-only flags (pre-existing upstream behavior, not port-specific).
+- To regenerate a single backend's wrappers, the Makefile is timestamp-driven;
+  `rm -f cuda/*_wrapper_hip.go` (or *_wrapper.go) before `make wrappers
+  BACKEND=...` forces a full regen.

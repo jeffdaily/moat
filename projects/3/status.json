@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-08T00:49:37Z",
-  "head_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
+  "updated_at": "2026-06-08T04:19:39Z",
+  "head_sha": "074bfdce7e7a93821841b7761ba753d0fc4481eb",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "delta-ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
       "started_at": "2026-06-04T04:33:12Z",
       "completed_at": "2026-06-08T00:20:36Z",
-      "updated_at": "2026-06-08T00:20:36Z",
+      "updated_at": "2026-06-08T04:19:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer",
+      "last_agent": "porter",
       "carry_forward": {
         "to": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
         "method": "binary-equiv",
@@ -41,13 +41,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
       "started_at": "2026-06-04T06:40:10Z",
       "completed_at": "2026-06-08T00:49:37Z",
-      "updated_at": "2026-06-08T00:49:37Z",
+      "updated_at": "2026-06-08T04:19:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -92,13 +92,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
       "started_at": null,
       "completed_at": "2026-06-07T22:54:41Z",
-      "updated_at": "2026-06-07T22:54:41Z",
+      "updated_at": "2026-06-08T04:19:23Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
