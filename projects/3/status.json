@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-08T04:44:08Z",
+  "updated_at": "2026-06-08T13:34:28Z",
   "head_sha": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
   "depends_on": [],
   "platforms": {
@@ -41,13 +41,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
+      "validated_sha": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
       "started_at": "2026-06-04T06:40:10Z",
-      "completed_at": "2026-06-08T00:49:37Z",
-      "updated_at": "2026-06-08T04:19:23Z",
+      "completed_at": "2026-06-08T13:34:28Z",
+      "updated_at": "2026-06-08T13:34:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
+        "to": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
         "method": "binary-equiv",
-        "detail": "all 64 gfx1100 .co files byte-identical (unchanged .cu+Makefile); curand_shim.h host-only change compiles clean on ROCm 7.2.1",
-        "at": "2026-06-08T00:49:37Z"
+        "detail": "all 64 gfx1100 .co files byte-identical (f6b642d5->4f3de0cf); additive dual-backend restructure changes no device source (.cu) and no HIPCCFLAGS; host-side -tags hip build compiles clean on ROCm 7.2.1",
+        "at": "2026-06-08T13:34:28Z"
       }
     },
     "windows-gfx1101": {
