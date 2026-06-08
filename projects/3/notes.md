@@ -602,3 +602,15 @@ All 64 gfx90a code objects byte-identical. The restructure changed no device sou
 No GPU re-run required. Carry-forward confirmed.
 
 Verdict: binary-equiv carry-forward. State -> completed at 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc. No GPU re-run required.
+
+## Revalidate check 2026-06-08 (windows-gfx1201)
+
+Delta: f6b642d5 -> 4f3de0cf (two commits: 074bfdce additive-backend restructure, 4f3de0cf Makefile comment reword).
+
+Method: code object byte comparison.
+
+The gfx1201 code objects embedded in the new wrappers (cellindices_wrapper_hip.go, etc.) were compiled with AMD clang 22.0.0 (ROCm 7.2.1, Linux) vs the previously validated objects which were compiled with AMD clang 23.0.0 (TheRock 7.14, Windows). Sizes differ (e.g., cellindices_co_gfx1201: 10352 bytes in new vs 10224 bytes in old). Not byte-identical.
+
+The linux carry-forward correctly confirmed gfx90a and gfx1100 objects were unchanged -- those were re-built on the same Linux host. But the gfx1201 objects were regenerated on a different toolchain (Linux ROCm 7.2.1 instead of Windows TheRock 7.14). The source .cu files are unchanged, but the device ISA bytes are compiler-dependent.
+
+VERDICT: Cannot carry forward by binary-equivalence. Left as `revalidate`. Needs either: (a) a GPU test run on gfx1201 with the new objects, or (b) rebuild the gfx1201 code objects on this Windows host at 4f3de0cf and compare.
