@@ -224,3 +224,51 @@ The Windows commit (aff8ee6) adds `_WIN32`-guarded code paths only. On Linux,
 WIN32 is false and the guards don't execute, so compiled device code is
 unchanged. Binary-equivalence check (codeobj_diff.py) expected to show
 `verdict=identical` -> carry forward without GPU re-run.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+Platform: AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1 (GCD 1)
+Fork: jeffdaily/cuSZ @ moat-port, SHA aff8ee6 (validated_sha was 36a9bfd6)
+
+### Delta classification
+
+`git diff 36a9bfd..aff8ee6` spans 14 files (66 insertions, 28 deletions). Most changes are `_WIN32`-guarded, but two are unconditional:
+
+1. `cmake/hip.cmake`: adds `psz_hip_stat` to `psz_hip_utils` link libraries (host link order fix, no device code change)
+2. `psz/src/utils/viewer.cc`: removes `const` qualifier from `unordered_map` key types (fixes MSVC hash<const E> missing specialization)
+
+`python3 utils/codeobj_diff.py build-hip-old build-hip-new` returned `verdict=differ`: `libpsz_hip_utils.so` exported symbol names changed because the mangled names for the unordered_map template instantiations changed (`K13psz_predictor` -> `13psz_predictor`, i.e., key-const removed). Device ISA is identical across all libraries. Because exported symbols differ, carry-forward was not applicable; full GPU revalidation was required.
+
+Build note: both SHAs require `-DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++` to avoid c++ receiving `-x hip --offload-arch=gfx90a` from psz_hip_compile_settings. The old SHA had build errors in example files (cuda_runtime.h not found, hipMallocHost arity errors) that the new SHA fixes; core targets built successfully at both SHAs.
+
+### Build command
+
+```bash
+cd /var/lib/jenkins/moat/projects/cuSZ/src
+rm -rf build-hip-new
+cmake -S . -B build-hip-new \
+  -DPSZ_BACKEND=HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++
+cmake --build build-hip-new -j$(nproc)
+```
+
+### Test results
+
+```bash
+cd build-hip-new
+HIP_VISIBLE_DEVICES=1 ctest --output-on-failure -E 'histsp_hip' -j1
+```
+
+Result: 6/6 tests PASS (100%)
+- test_zigzag: PASS (0.00s, CPU-only zigzag codec)
+- test_l1_compact: PASS (0.25s, GPU sparse vector compaction, gfx90a)
+- test_lrz_seq: PASS (0.00s, CPU-only Lorenzo predictor)
+- test_stat_identical: PASS (0.22s, GPU statistical functions)
+- test_stat_max_error: PASS (0.23s, GPU error calculation)
+- test_mem_unique: PASS (0.19s, GPU memory management)
+
+Verdict: PASS. validated_sha=aff8ee6 (linux-gfx90a).
