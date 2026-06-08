@@ -525,3 +525,65 @@ The dbeac858 Linux fix (HIP_DISABLE_WARP_SYNC_BUILTINS scoped to _WIN32) builds
 and runs correctly on Linux ROCm 7.2.1.
 
 VERDICT: PASS. State -> completed (validated_sha = dbeac858).
+
+## Re-key HIP_DISABLE_WARP_SYNC_BUILTINS to runtime version 2026-06-08 (linux-gfx90a, GCD3)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1). HIP_VISIBLE_DEVICES=3.
+
+### Change
+
+cuda_to_hip.h previously gated `HIP_DISABLE_WARP_SYNC_BUILTINS` on `#ifdef _WIN32`.
+That OS proxy is only correct by accident in this fleet (Windows == ROCm 7.14 via
+TheRock; Linux == ROCm 7.2). The real trigger is the HIP runtime version: on ROCm
+7.14+ `<amd_hip_bf16.h>` defines `__shfl_*_sync` bf16 overloads that collide with
+this header's own warp-sync shuffle definitions, so the flag must suppress the
+runtime builtins; on ROCm 7.2.x those overloads AND `__syncwarp` (kernels.cuh:777)
+share the same guard, so the flag must NOT be set there or `__syncwarp` disappears
+and the build breaks. Re-keyed to `HIP_VERSION_MAJOR/MINOR >= 7.14` (include
+`<hip/hip_version.h>`, keep the define before `<hip/hip_runtime.h>`). A Linux+7.14
+or Windows+7.2 build is now handled correctly rather than by OS coincidence.
+
+Committed on top of dbeac858 as `398b7c00`
+"[ROCm] Key HIP_DISABLE_WARP_SYNC_BUILTINS on ROCm version, not OS".
+Pushed to fork moat-port (fast-forward dbeac858..398b7c00). advance-head flipped
+the three completed platforms to revalidate (delta classed `mixed`: cuda_to_hip.h
+preprocessor token count differs).
+
+### Behavior-preserving proof (device identity)
+
+On Linux ROCm 7.2.1 the new check evaluates false (7.2 < 7.14), so
+`HIP_DISABLE_WARP_SYNC_BUILTINS` stays undefined and `__syncwarp` remains -- the
+exact prior `_WIN32`-not-defined Linux behavior. Built libmarv.so fresh from both
+trees (baseline dbeac858 via `git stash` of the edit; new 398b7c00) on gfx90a GPU3:
+
+```
+cmake -S . -B <dir> -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/rocm
+HIP_VISIBLE_DEVICES=3 utils/timeit.sh MMseqs2 compile -- cmake --build <dir> -j16 --target marv   # baseline
+HIP_VISIBLE_DEVICES=3 utils/timeit.sh MMseqs2 compile -- cmake --build <dir> -j16 --target mmseqs # new (full kernels.cuh compile, __syncwarp present)
+python3 utils/codeobj_diff.py <base>/libmarv.so <new>/libmarv.so
+```
+
+codeobj_diff verdict: `identical` (exported symbols + device ISA identical,
+3096 exports). Both libmarv.so are 30306584 bytes. (a) libmarv extension builds
+clean; (b) device code unchanged.
+
+### GPU search smoke (gfx90a, GPU3)
+
+```
+MMSEQS=<new build>/src/mmseqs
+HIP_VISIBLE_DEVICES=3 CUDA_VISIBLE_DEVICES=3 $MMSEQS createdb examples/DB.fasta targetDB
+HIP_VISIBLE_DEVICES=3 CUDA_VISIBLE_DEVICES=3 $MMSEQS makepaddedseqdb targetDB targetDB_padded
+HIP_VISIBLE_DEVICES=3 CUDA_VISIBLE_DEVICES=3 utils/timeit.sh MMseqs2 test -- \
+  $MMSEQS easy-search examples/QUERY.fasta targetDB_padded gpu.m8 tmp_gpu --gpu 1
+```
+
+14482 GPU hit pairs (identical to every prior validated gfx90a/gfx1100 run); self
+hit pident 1.000 score 487. (c) GPU path runs correctly.
+
+linux-gfx90a carried forward to completed at 398b7c00 (method binary-equiv: device
+ISA + exports identical, GPU smoke confirms). linux-gfx1100 and windows-gfx1201
+left at revalidate for their own hosts (gfx1100 is device-identical on Linux 7.2
+too; gfx1201 on Windows 7.14 now fires the guard via HIP_VERSION rather than
+_WIN32 -- identical effect, but a real check confirms it).
