@@ -148,3 +148,42 @@ All Triton-based scan operations (scalar and complex) execute correctly on gfx11
 - Data types: float32, bfloat16, float16 all work correctly
 
 The Triton `tl.associative_scan` implementation is wave-size agnostic and handles wave32 (RDNA3) correctly.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+Validated commit 94e47c4 on gfx1201 (AMD Radeon RX 9070 XT, RDNA4) on Windows 11.
+
+### GPU Architecture
+
+- Device: AMD Radeon RX 9070 XT
+- Architecture: gfx1201 (RDNA4)
+- Wave size: 32
+
+### Build
+
+```
+HIP_VISIBLE_DEVICES=0 pip install -e .
+```
+
+Build succeeded. Pure Python package; Triton backend JIT-compiles at runtime, no C++ extension build needed.
+
+### Test Results
+
+```
+HIP_VISIBLE_DEVICES=0 pytest tests/test_eq.py -v              # 400/400 passed
+HIP_VISIBLE_DEVICES=0 pytest tests/tests_eq_complex.py -v      # 240/240 passed
+```
+
+**Total: 640/640 tests passed**
+
+All tests pass on gfx1201, including `test_eq_ref_reverse[65536-1]` which was marginal on gfx90a/gfx1100 (timing-sensitive; passes cleanly here).
+
+### GPU Correctness
+
+All Triton-based scan operations (scalar and complex) execute correctly on gfx1201 (RDNA4, wave32):
+- Forward scan: All sequence lengths (32 to 131072, power-of-2 and irregular) pass
+- Backward scan: All gradient tests pass
+- Complex scan: All 240 complex-valued scan tests pass
+- Data types: float32, bfloat16, float16 all work correctly
+
+The Triton `tl.associative_scan` implementation is wave-size agnostic and handles gfx1201 (RDNA4, wave32) correctly.
