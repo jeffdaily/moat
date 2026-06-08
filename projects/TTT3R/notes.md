@@ -93,6 +93,54 @@ print(f'PASS: GPU vs CPU match (max diff={diff:.2e})')
 
 Real GPU validation passed.
 
+## Validation 2026-06-07 (windows-gfx1201)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201, HIP_VISIBLE_DEVICES=0)
+Commit: d064cc9a55b88763e5a3873dfa4a6b45e2751e00
+
+Windows fix required: `c10::ValueError` LNK2001. On Windows, MSVC compiles
+curope.cpp and generates a `__declspec(dllimport)` reference to
+`c10::ValueError(SourceLocation, string)` which c10.dll (clang-built) does not
+export. Fixed by adding a `/ALTERNATENAME` linker directive in setup.py that
+aliases the missing ValueError thunk to `c10::Error(SourceLocation, string)`,
+which IS exported. This fix is guarded by `sys.platform == "win32" and IS_ROCM`.
+
+Build:
+```bat
+call "C:\Program Files (x86)\Microsoft Visual Studio\2022\BuildTools\VC\Auxiliary\Build\vcvars64.bat"
+set HIP_VISIBLE_DEVICES=0
+set PYTORCH_ROCM_ARCH=gfx1201
+set ROCM_HOME=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+set DISTUTILS_USE_SDK=1
+cd B:\develop\moat\projects\TTT3R\src\src\croco\models\curope
+B:\develop\TheRock\external-builds\pytorch\.venv\Scripts\python.exe setup.py build_ext --inplace
+```
+
+Test results:
+- Import test: PASS
+- GPU vs CPU correctness: PASS (max diff=2.38e-06, tolerance 1e-5)
+
+Validation commands:
+```bash
+HIP_VISIBLE_DEVICES=0 python -c "import torch; import curope; print('curope imported successfully')"
+
+HIP_VISIBLE_DEVICES=0 python -c "
+import torch, curope
+torch.manual_seed(42)
+tokens = torch.randn(2, 16, 8, 64, device='cuda')
+pos = torch.randint(0, 10, (2, 16, 2), device='cuda', dtype=torch.int64)
+ref = tokens.clone().cpu()
+pos_cpu = pos.cpu()
+curope.rope_2d(tokens, pos, 100.0, 1.0)
+curope.rope_2d(ref, pos_cpu, 100.0, 1.0)
+diff = (tokens.cpu() - ref).abs().max().item()
+assert diff < 1e-5, f'diff={diff}'
+print(f'PASS: GPU vs CPU match (max diff={diff:.2e})')
+"
+```
+
+Real GPU validation passed.
+
 ## Validation 2026-06-05 (linux-gfx1100)
 
 Platform: linux-gfx1100 (AMD Radeon Pro W7800)
