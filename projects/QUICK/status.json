@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-05T14:31:30Z",
+  "updated_at": "2026-06-08T01:43:25Z",
   "head_sha": "d369e07",
   "depends_on": [],
   "platforms": {
@@ -59,12 +59,12 @@
     },
     "windows-gfx1101": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Windows host has no MSVC-ABI Fortran compiler; QUICK is a mixed Fortran/HIP build (.f90 modules, gfortran, rocBLAS/rocSOLVER Fortran bindings) -- not buildable on Windows.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T07:43:43Z",
+      "updated_at": "2026-06-08T01:43:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -81,12 +81,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "Windows host has no MSVC-ABI Fortran compiler; QUICK is a mixed Fortran/HIP build (.f90 modules, gfortran, rocBLAS/rocSOLVER Fortran bindings) -- not buildable on Windows.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T07:43:43Z",
+      "updated_at": "2026-06-08T01:43:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -103,12 +103,12 @@
     },
     "windows-gfx1151": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "gfx1151 host retired",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T07:43:43Z",
+      "updated_at": "2026-06-08T01:43:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
