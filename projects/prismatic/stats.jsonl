@@ -31,3 +31,8 @@
 {"kind":"session","ts":"2026-06-05T10:13:11Z","epoch":1780654391.051782486,"event":"end","platform":"linux-gfx90a"}
 {"kind":"session","ts":"2026-06-05T15:40:36Z","epoch":1780674036.073972575,"event":"start","platform":"linux-gfx1100"}
 {"kind":"session","ts":"2026-06-05T15:43:20Z","epoch":1780674200.667772038,"event":"end","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-08T18:22:09Z","phase":"compile","seconds":4.249,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/prismatic/src/build-gfx1201 --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T18:27:36Z","phase":"compile","seconds":11.051,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/prismatic/src/build-gfx1201 --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T18:29:13Z","phase":"test","seconds":0.143,"exit":201,"cmd":"B:/develop/moat/projects/prismatic/src/build-gfx1201/prismatic-tests.exe"}
+{"kind":"phase","ts":"2026-06-08T18:45:30Z","phase":"test","seconds":0.131,"exit":201,"cmd":"B:/develop/moat/projects/prismatic/src/build-gfx1201/prismatic-tests.exe"}
+{"kind":"phase","ts":"2026-06-08T18:47:54Z","phase":"test","seconds":129.486,"exit":201,"cmd":"bash B:/develop/moat/projects/prismatic/src/build-gfx1201/run_tests.sh B:/develop/moat/projects/prismatic/src/build-gfx1201/prismatic-tests.exe"}
