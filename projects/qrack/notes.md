@@ -393,3 +393,29 @@ Key gate validation (all PASS on gfx1201):
 
 Status: windows-gfx1201 port-ready -> completed at dcb5e180. 197/205 test cases pass;
 8 sd_xfail tests have 2 Windows-PAL failures (test_decompose, test_compose) unrelated to the HIP port.
+
+## Validation 2026-06-08 (linux-gfx90a, revalidate eb787828 -- binary-equiv carry-forward)
+
+Delta dcb5e180 -> eb787828: single commit "[ROCm] Fix DispatchFn undefined on Windows when
+ENABLE_PTHREAD=OFF". Change: adds `#else` branch with `#include <functional>` + `typedef
+std::function<void(void)> DispatchFn` to `include/qengine_cpu.hpp`, inside the
+`#if ENABLE_QUNIT_CPU_PARALLEL && ENABLE_PTHREAD` guard.
+
+Source classifier: mixed (token count differs). Proceeded to binary-equivalence check.
+
+Built both shas for gfx90a (clean builds into agent_space/qrack_cmp_old and qrack_cmp_new):
+```
+cmake -S ... -B <dir> -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON
+cmake --build <dir> -j16 --target unittest
+```
+
+codeobj_diff results:
+- libqrack.a: verdict=identical (exported symbols + device ISA identical, 0 exports)
+- unittest:   verdict=identical (exported symbols + device ISA identical, 32 exports)
+
+The #else branch is dead code on Linux (ENABLE_PTHREAD=ON by default); the compiler sees
+no change on this platform. Device code objects are byte-identical on gfx90a.
+
+Status: linux-gfx90a revalidate -> completed at eb787828 (binary-equiv carry-forward, no GPU re-run needed).

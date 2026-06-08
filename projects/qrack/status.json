@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T05:14:47Z",
-  "updated_at": "2026-06-08T18:42:34Z",
+  "updated_at": "2026-06-08T19:07:29Z",
   "head_sha": "eb787828",
   "depends_on": [],
   "platforms": {
@@ -79,13 +79,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dcb5e180",
+      "validated_sha": "eb787828",
       "started_at": "2026-06-04T05:24:58Z",
-      "completed_at": "2026-06-04T21:05:28Z",
-      "updated_at": "2026-06-08T18:41:16Z",
+      "completed_at": "2026-06-08T19:07:29Z",
+      "updated_at": "2026-06-08T19:07:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +99,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "eb787828",
+        "method": "binary-equiv",
+        "detail": "Windows-only DispatchFn fallback typedef in qengine_cpu.hpp #else branch; ENABLE_PTHREAD=ON on Linux so #else never compiled; device ISA and exported symbols identical on gfx90a",
+        "at": "2026-06-08T19:07:29Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
