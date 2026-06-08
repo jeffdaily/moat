@@ -40,3 +40,5 @@
 {"kind": "tokens", "ts": "2026-06-08T00:25:11Z", "tokens": 107285, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T01:41:26Z", "tokens": 104890, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T05:59:02Z", "tokens": 137211, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T18:53:24Z","phase":"compile","seconds":268.314,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 cmake --build \"B:/develop/moat/projects/stdgpu/src/build-gfx1201\" --config Release --parallel 24 2>&1"}
+{"kind":"phase","ts":"2026-06-08T19:09:44Z","phase":"test","seconds":930.346,"exit":3,"cmd":"bash -c cd \"B:/develop/moat/projects/stdgpu/src/build-gfx1201/bin\" && HIP_VISIBLE_DEVICES=0 ./teststdgpu.exe 2>&1"}

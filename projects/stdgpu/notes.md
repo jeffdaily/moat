@@ -343,3 +343,65 @@ IMPORTANT META-FINDING: standalone HIP programs that LINK stdgpu hang spuriously
 ONLY trustworthy B finding (localized INSIDE the real teststdgpu.exe, deterministic 5/5): insert_while_full hangs in the FIRST valid() call. Within valid(): offset_range_valid PASSES (returns true -> NO out-of-range offset; the corrupt-offset hypothesis is refuted and offset_inside_range's conditional printf never fires), loop_free PASSES, and **values_reachable HANGS**. Controls in the same binary: valid() over a populated 100k table (hash_inside_range path) passes in 78ms; empty_container passes -- so valid()/transform_reduce do NOT universally hang (consistent with 62 valid()-calling tests, 685/702 passing). values_reachable's functor calls device contains() -> find_impl(), a linked-list walk `while (_offsets[key_index] != 0) key_index += _offsets[key_index];` over the cap-1 full collision table. WHERE is established (values_reachable); WHY is NOT confirmed (could not wire a coherent buffer into the multi-TU gtest -- a __device__ global won't link across non-RDC HIP objects). Hypothesis (unconfirmed): a gfx1151-specific wedge/infinite-traversal in find_impl on the full cap-1 excess-list entry; gfx90a/gfx1100 pass insert_while_full so it is gfx1151-specific.
 
 CONCLUSION: B has NO trustworthy standalone reproducer on this host; its mechanism is not confidently isolated, and the host's standalone-debug environment is too noisy to nail it here. gfx1151 stays blocked (correct regardless; port validated on gfx90a/gfx1100). The strong, fileable artifact remains Class A. Further B isolation needs a more reliable environment / different host. Stopped here to avoid more reversals on a retired/unstable host.
+
+## Validation 2026-06-08 (windows-gfx1201) -- VALIDATION FAILED
+
+**Platform:** AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32, 32 CUs), ROCm 7.14.0a20260604 (TheRock), Windows 11
+
+**GPU verified:** `hipInfo.exe` reports gcnArchName=gfx1201 at HIP_VISIBLE_DEVICES=0
+
+**Build command:**
+```
+cmake -B build-gfx1201 -S . -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DSTDGPU_BUILD_TESTS=ON -DSTDGPU_BUILD_BENCHMARKS=OFF -DSTDGPU_BUILD_EXAMPLES=OFF \
+  -DCMAKE_C_COMPILER=".../clang.exe" -DCMAKE_CXX_COMPILER=".../clang++.exe" \
+  -DCMAKE_HIP_COMPILER=".../clang++.exe" -DCMAKE_PREFIX_PATH=_rocm_sdk_devel \
+  -DCMAKE_TLS_VERIFY=OFF
+
+cmake --build build-gfx1201 --config Release --parallel 24
+```
+
+**Build result:** SUCCESS (30/30 targets)
+
+**Test command:**
+```
+HIP_VISIBLE_DEVICES=0 build-gfx1201/bin/teststdgpu.exe
+```
+
+**Test results: VALIDATION FAILED -- 688/702 PASS, 14 HANG/CRASH**
+
+All 13 critical wave_lock_serialize tests PASS (the primary motivation for the port fix):
+- `stdgpu_unordered_map/set.insert_range_unique_parallel` (x2 variants each) - PASS (~49ms/16ms)
+- `stdgpu_unordered_map/set.erase_range_unique_parallel` (x2 variants each) - PASS (~19-20ms)
+- All 4 `stdgpu_deque.simultaneous_push_*` tests - PASS (7-40ms)
+- `stdgpu_vector.simultaneous_push_back_and_pop_back` - PASS (11ms)
+- Zero memory leaks (184156/184156 device, 180591/180591 host)
+
+**14 tests hang or crash** (all run in isolated single-test processes; same 14 as gfx1151 minus the 3 deque tests):
+
+Unordered_map extreme-contention inserts (7):
+- `insert_while_full` -- hipErrorLaunchFailure (kernel crash/GPU watchdog)
+- `insert_multiple_while_full` -- HANG (timeout)
+- `insert_while_excess_empty` -- HANG
+- `insert_parallel_while_one_free` -- hipErrorLaunchFailure + valid()=false
+- `insert_parallel_while_excess_empty` -- FAIL (exit 1)
+- `emplace_parallel_while_one_free` -- HANG
+- `emplace_parallel_while_excess_empty` -- HANG
+
+Unordered_set same 7 tests -- same failures.
+
+**Comparison with other platforms:**
+- gfx90a (linux): ALL 702 PASS
+- gfx1100 (linux, RDNA3 discrete): ALL 702 PASS (ROCm 7.2.x, same 718d206 commit)
+- gfx1201 (windows, RDNA4 discrete): 688/702 PASS, 14 FAIL (ROCm 7.14.0a TheRock)
+- gfx1151 (windows APU, RDNA3.5): 685/702 PASS, 17 FAIL (same 14 + 3 deque)
+
+**Root cause analysis:**
+The 14 failing tests all involve extreme contention: N=100000 threads competing for 1-2 free slots in a capacity-1 table. The `insert_while_full` crash (hipErrorLaunchFailure) indicates a GPU hardware watchdog kill. The hangs indicate GPU kernels that never terminate.
+
+The wave_lock_serialize fix serializes within-wavefront contention (proven to work on all arches), but these tests additionally require cross-wavefront forward progress with ~3125 simultaneous wavefronts and only 1-2 available slots. On gfx1100 (RDNA3) the hardware scheduler makes progress; on gfx1201 (RDNA4) it does not.
+
+A confounding factor: gfx1201 uses TheRock ROCm 7.14.0a (rocThrust 4.4.0) while gfx1100 used ROCm 7.2.x. The `insert_parallel_while_one_free` crash includes the message "parallel_for: failed to synchronize: hipErrorLaunchFailure" from rocThrust's for_each path, suggesting a rocThrust version/behavior difference may also be involved. Cannot rule out rocThrust 4.4.0 on gfx1201 vs older rocThrust on gfx1100 as a contributing factor.
+
+**Verdict:** VALIDATION FAILED at 718d206 -- 14/702 tests hang/crash on gfx1201 RDNA4. Port fix for the within-wavefront livelock is validated (all 13 core tests PASS). The 14 failures are cross-wavefront forward-progress / rocThrust behavior under extreme single-slot contention. Porter needs to investigate whether a fix is feasible for gfx1201 or if these tests should be skipped for gfx1201 similar to gfx1151.
