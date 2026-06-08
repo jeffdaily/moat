@@ -7,8 +7,8 @@
   "priority": 6.667,
   "ext_type": "makefile",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-05T19:24:41Z",
-  "head_sha": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
+  "updated_at": "2026-06-08T18:50:21Z",
+  "head_sha": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
@@ -45,10 +45,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
+      "validated_sha": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
       "started_at": "2026-05-31T01:25:00Z",
-      "completed_at": "2026-06-04T06:37:40Z",
-      "updated_at": "2026-06-04T06:59:06Z",
+      "completed_at": "2026-06-08T18:50:21Z",
+      "updated_at": "2026-06-08T18:50:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -64,68 +64,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3282a74bc323a737fd55d53c2a88b1d8fe651619",
-        "to": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
+        "to": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-04T06:59:06Z"
+        "detail": "README: add AMD GPU (ROCm/HIP) quick start (doc-only)",
+        "at": "2026-06-08T18:50:21Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
+      "validated_sha": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
       "started_at": null,
-      "completed_at": "2026-06-04T23:26:19Z",
-      "updated_at": "2026-06-04T23:26:19Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator"
-    },
-    "windows-gfx1201": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
-      "started_at": null,
-      "completed_at": "2026-06-04T23:26:19Z",
-      "updated_at": "2026-06-04T23:26:19Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator"
-    },
-    "windows-gfx1151": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
-      "started_at": null,
-      "completed_at": "2026-06-04T06:37:40Z",
-      "updated_at": "2026-06-04T06:59:06Z",
+      "completed_at": "2026-06-08T18:50:21Z",
+      "updated_at": "2026-06-08T18:50:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -141,12 +93,68 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3282a74bc323a737fd55d53c2a88b1d8fe651619",
-        "to": "d19a3220d7b61af86c4d7a8a978a76f94dbbaa71",
+        "to": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-04T06:59:06Z"
+        "detail": "README: add AMD GPU (ROCm/HIP) quick start (doc-only)",
+        "at": "2026-06-08T18:50:21Z"
+      }
+    },
+    "windows-gfx1201": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
+      "started_at": null,
+      "completed_at": "2026-06-08T18:50:21Z",
+      "updated_at": "2026-06-08T18:50:21Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
+        "method": "source-class",
+        "detail": "README: add AMD GPU (ROCm/HIP) quick start (doc-only)",
+        "at": "2026-06-08T18:50:21Z"
+      }
+    },
+    "windows-gfx1151": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
+      "started_at": null,
+      "completed_at": "2026-06-08T18:50:21Z",
+      "updated_at": "2026-06-08T18:50:21Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "e33cc586256e11e2637a7d6d061dafed7733e2e1",
+        "method": "source-class",
+        "detail": "README: add AMD GPU (ROCm/HIP) quick start (doc-only)",
+        "at": "2026-06-08T18:50:21Z"
       }
     }
   },
