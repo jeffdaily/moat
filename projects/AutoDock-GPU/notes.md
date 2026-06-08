@@ -417,3 +417,21 @@ path here.
 
 NEXT: upstream-PR gate (lead-only, jeff approval). No existing jeffdaily PR on
 ccsb-scripps/AutoDock-GPU. PR base = develop; scope out retired gfx1151.
+
+## PR-prep addendum 2026-06-08 -- TENSOR=ON scope disclosed
+
+jeff flagged the `$(error TENSOR=ON ...)` guard in Makefile.Hip. Verified: TENSOR=ON
+(USE_NVTENSOR) is an OPTIONAL, off-by-default NVIDIA tensor-core (WMMA) acceleration
+of ONLY the energy/gradient sum-reduction in cuda/calcMergeEneGra.cu, gated
+MIN_COMPUTE 8.0 (Ampere+). The code is #ifdef USE_NVTENSOR / [tensor path] / #else
+[standard reduction] / #endif, so the default build (which the HIP port builds) uses
+the standard reduction with identical docking results -- it is a perf path, not core
+functionality. The HIP backend fail-fasts on TENSOR=ON (clean, not a silent
+mis-build). So the port is functionally complete for the default docking pipeline;
+the one optional tensor-core optimization is scoped out.
+
+Actions: (1) registered deferred work autodock-gpu-tensor-core-reduction
+(feature-port; rocWMMA/MFMA mapping); (2) added an explicit "Out of scope" paragraph
+to the commit message and a "## Scope" section to the PR body so the upstream PR does
+not overclaim parity. Commit message amended (tree-identical) 43041f8 -> 221e2d4f;
+all 4 platforms carried forward (no GPU re-run). Fork moat-port @ 221e2d4f.
