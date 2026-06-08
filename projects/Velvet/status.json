@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-08T02:52:50Z",
+  "updated_at": "2026-06-08T04:19:09Z",
   "head_sha": "74af688",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9d5dc0875c43389a16c777d57f871c48075484e0",
+      "validated_sha": "74af6885cfb847a37d6e6fb278f9e55547d5cef9",
       "started_at": "2026-06-05T05:26:23Z",
-      "completed_at": "2026-06-05T05:33:49Z",
-      "updated_at": "2026-06-08T02:52:11Z",
+      "completed_at": "2026-06-08T04:19:09Z",
+      "updated_at": "2026-06-08T04:19:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "74af6885cfb847a37d6e6fb278f9e55547d5cef9",
+        "method": "binary-equiv",
+        "detail": "CMakeLists.txt adds target_link_libraries(imgui PRIVATE glfw OpenGL::GL) for Windows vcpkg; PRIVATE linkage, no Linux effect, device ISA identical (19 exports)",
+        "at": "2026-06-08T04:19:09Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

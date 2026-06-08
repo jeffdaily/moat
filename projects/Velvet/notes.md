@@ -322,3 +322,39 @@ HIP_VISIBLE_DEVICES=0 ./velvet_kernel_test_gfx1201.exe
 **ROCm**: TheRock 7.14.0a20260604
 **Commit**: 74af688 (builds on validated 9d5dc08)
 **Pass/fail**: 3/3 GPU kernel tests PASS; 0 failures
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+### Delta Classification
+
+Delta: `9d5dc087 -> 74af688` (one commit: "[ROCm] Fix imgui GLFW dependency for Windows build")
+
+Change: `CMakeLists.txt` only -- adds `target_link_libraries(imgui PRIVATE glfw OpenGL::GL)` so the imgui static library can find GLFW headers via vcpkg on Windows. `PRIVATE` linkage means this only affects imgui's own compilation, not the Velvet target or any HIP device code.
+
+Classifier verdict: `mixed` (token count differs in CMakeLists.txt) -- binary-equivalence check required.
+
+### Binary-Equivalence Check
+
+Built at both SHAs for gfx90a:
+
+```bash
+# HEAD (74af688)
+cd /var/lib/jenkins/moat/projects/Velvet/src
+cmake -B build_new -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+cmake --build build_new -j$(nproc)
+
+# old validated SHA (9d5dc087)
+git checkout 9d5dc0875c43389a16c777d57f871c48075484e0
+cmake -B build_old -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release
+cmake --build build_old -j$(nproc)
+
+# Compare
+python3 utils/codeobj_diff.py build_old/bin/Velvet build_new/bin/Velvet
+# -> verdict=identical (exported symbols + device ISA identical, 19 exports)
+```
+
+**Result**: `verdict=identical` -- device ISA and exported symbols unchanged. No GPU re-run required.
+
+### Outcome
+
+Carry-forward to `completed` at `74af688` (binary-equiv). The Windows CMake fix has no effect on gfx90a device code.
