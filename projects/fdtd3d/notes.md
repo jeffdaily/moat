@@ -334,3 +334,61 @@ Test suite wall time: 148.6s
 ### Summary
 
 All GPU and CPU tests pass at head 049a6237. No regressions. The Windows POSIX compatibility fixes have zero effect on Linux, confirming expected arch-independence.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate)
+
+### Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100)
+
+Revalidation at head 049a6237251dc27e9b5273fb1e18aa722ddd9f5f (Windows POSIX fixes commit on top of baae8b3c). Validated_sha was baae8b3c.
+
+### Change classification
+
+Delta is one commit: "[ROCm] Fix Windows build: POSIX headers missing on MSVC/clang target". All changes are `#ifdef _WIN32 ... #else ... #endif` guards where the `#else` branch replicates the original Linux code exactly. Zero effect on Linux/gfx1100. moatlib classify returned `mixed` (not auto-inert); codeobj_diff returns `indeterminate` for executables (no shared-lib exports), so full GPU revalidation was performed per protocol.
+
+### Build
+
+```bash
+export HIP_VISIBLE_DEVICES=1
+cmake /var/lib/jenkins/moat/projects/fdtd3d/src \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DSOLVER_DIM_MODES=DIM3 \
+  -DVALUE_TYPE=d \
+  -DCOMPLEX_FIELD_VALUES=ON \
+  -DPRINT_MESSAGE=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -B /var/lib/jenkins/moat/agent_space/fdtd3d-gfx1100-gpu1/build-head
+cmake --build /var/lib/jenkins/moat/agent_space/fdtd3d-gfx1100-gpu1/build-head -j$(nproc)
+```
+Build completed successfully (warnings only, no errors).
+
+### Test Results
+
+All tests passed on real GPU hardware (HIP_VISIBLE_DEVICES=1, AMD Radeon Pro W7800 48GB, gfx1100).
+
+1. **GPU unit test**: `unit-test-cuda-grid 0`
+   - Status: PASS
+   - Grid operations on device verified
+
+2. **3D electromagnetic simulation**:
+   ```
+   HIP_VISIBLE_DEVICES=1 ./Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100
+   ```
+   - Status: PASS
+   - Total time = 0.198460 seconds (100 time steps, 20x20x20 grid)
+   - Device: AMD Radeon Pro W7800 48GB (gfx1100)
+   - No numerical errors
+
+3. **CPU unit tests** (non-GPU regression check):
+   - unit-test-settings: PASS
+   - unit-test-clock: PASS
+   - unit-test-complex: PASS
+   - unit-test-coordinate: PASS
+   - unit-test-approximation: PASS
+   - unit-test-grid: PASS
+   - unit-test-layout: PASS
+
+### Summary
+
+All GPU and CPU tests pass at head 049a6237 on gfx1100. No regressions. The Windows POSIX compatibility fixes have zero effect on Linux/gfx1100.
