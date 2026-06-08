@@ -283,3 +283,35 @@ git clone --branch enable-semaphore https://github.com/jeffdaily/libhipcxx \
 ```
 
 No build/install step is required for the headers themselves.
+
+## Validation 2026-06-07 (windows-gfx1201, RX 9070 XT, RDNA4 wave32, TheRock ROCm 7.14)
+
+GPU: AMD Radeon RX 9070 XT, gcnArchName=gfx1201, HIP_VISIBLE_DEVICES=0. NOTE: the
+gfx1101 V710 went offline (host reboot) and gfx1201 is now device 0 -- the older
+note above saying "HIP_VISIBLE_DEVICES=1 for gfx1201" is stale; use index 0 here.
+
+Runner: `bash projects/libhipcxx/validation/run_windows.sh gfx1201 0` (Windows
+analogue of run_linux.sh; all-clang `clang++ -x hip`). Two Windows-only build
+adjustments were needed, both flags-only (no source change, so Linux/CUDA builds
+and the gfx90a/gfx1100 device code objects are unaffected):
+- `-DNOMINMAX`: Windows SDK minwindef.h defines min()/max() macros that collide
+  with libhipcxx's `static constexpr ptrdiff_t max()`.
+- ROCm root must be the TheRock venv `_rocm_sdk_devel` SDK (ships
+  `rocm-core/rocm_version.h`, which the upstream conformance tests pull in via
+  `amd/amd_utils.h`); the bare `build/` tree omits rocm-core. run_windows.sh
+  defaults to the `_rocm_sdk_devel` path and passes `--rocm-device-lib-path`.
+
+Result: 10/10 PASS (fork HEAD e2e8f70).
+- sem_umbrella_smoke: PASS (both ungated public headers compile + run).
+- sem_test: PASS (cross-block device binary_semaphore<thread_scope_device>).
+- sem_block_probe: PASS, no hang under 30s watchdog -- wave32 RDNA4 shows NO
+  forward-progress hazard (matches gfx1100 RDNA3; unlike wave64 CDNA).
+- conf_version / max / try_acquire / acquire / release: PASS.
+- conf_heterogeneous: PASS (all 4 host/device permutations).
+- conf_timed: PASS. This EXCEEDS the gfx1100 baseline (9/1 -- conf_timed failed
+  there on the 100 MHz TSC assertion). On gfx1201 RDNA4 the timed acquire returns
+  within its deadline and the test passes; the `__GFX12__` 100 MHz TSC branch (the
+  expected "Assuming 100 MHz" #warning still fires at compile) is accurate enough
+  here. The per-arch TSC clockrate the port assumes for gfx1201 is thus confirmed
+  on real hardware -- closes the "ASSUMED, unconfirmed on hardware" open item for
+  gfx1201 in the TSC section above.

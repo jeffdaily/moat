@@ -3,3 +3,4 @@
 {"kind":"phase","ts":"2026-06-07T21:02:42Z","phase":"compile","seconds":33.231,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/libhipcxx/validation/run_linux.sh gfx1100 0"}
 {"kind":"phase","ts":"2026-06-07T21:08:01Z","phase":"compile","seconds":38.716,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/libhipcxx/validation/run_linux.sh gfx1100 0"}
 {"kind": "tokens", "ts": "2026-06-07T21:09:27Z", "tokens": 84404, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T00:40:38Z","phase":"compile","seconds":59.984,"exit":0,"cmd":"bash projects/libhipcxx/validation/run_windows.sh gfx1201 0"}
