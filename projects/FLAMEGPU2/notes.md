@@ -223,3 +223,114 @@ Example validation:
 ```
 
 Verdict: PASS - Real GPU validation successful on gfx1100.
+
+## Validation 2026-06-07 (windows-gfx1201)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4) at HIP_VISIBLE_DEVICES=0
+ROCm: 7.14.0a20260604 (TheRock nightly)
+Arch: gfx1201
+Head SHA: a290861 (adds `#include <windows.h>` fix for CUDAEnsemble.cu)
+
+### Windows build fixes required
+
+Two Windows-specific issues resolved before tests could run:
+
+1. `#include <windows.h>` missing in `CUDAEnsemble.cu`: The file uses
+   `SetThreadExecutionState`, `ES_CONTINUOUS`, `ES_SYSTEM_REQUIRED` inside
+   `#ifdef _MSC_VER` but was missing the header. Committed as a290861.
+
+2. CMake 4.3 `Windows-Clang` platform module injects `-fuse-ld=lld-link` into
+   all Clang language LINK_FLAGS including HIP. amdclang++ in `--hip-link`
+   (device-link) mode rejects `lld-link` as a linker name (must be `lld`).
+   Fix: `sed -i 's/-fuse-ld=lld-link//g' build/build.ninja` after configure.
+   This is a build-env issue, not a source change.
+
+3. FetchContent URL downloads fail (CRYPT_E_REVOCATION_OFFLINE SSL revocation
+   check). Workaround: pre-clone nlohmann_json, tinyxml2, googletest via git
+   and supply via FETCHCONTENT_SOURCE_DIR_<NAME>. Jitify not needed for HIP.
+
+### Build command
+
+```
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+DEPS="B:/develop/moat/agent_space/flamegpu2-deps"
+SRC="B:/develop/moat/projects/FLAMEGPU2/src"
+BUILD="$SRC/build"
+
+# Pre-clone deps (git works; URL downloads fail on this host)
+git clone --depth 1 --branch v3.11.3 https://github.com/nlohmann/json.git "$DEPS/nlohmann_json-src"
+git clone --depth 1 --branch 9.0.0 https://github.com/leethomason/tinyxml2.git "$DEPS/tinyxml2-src"
+cp -r "$DEPS/tinyxml2-src/"* "$DEPS/tinyxml2-wrapper/tinyxml2/"
+git clone --depth 1 --branch v1.14.0 https://github.com/google/googletest.git "$DEPS/googletest-src"
+
+cmake -S "$SRC" -B "$BUILD" -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DFLAMEGPU_GPU=HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM" \
+  -DFLAMEGPU_BUILD_TESTS=ON \
+  -DFETCHCONTENT_SOURCE_DIR_NLOHMANN_JSON="$DEPS/nlohmann_json-src" \
+  -DFETCHCONTENT_SOURCE_DIR_TINYXML2="$DEPS/tinyxml2-wrapper/tinyxml2" \
+  -DFETCHCONTENT_SOURCE_DIR_GOOGLETEST="$DEPS/googletest-src"
+
+# Strip incompatible linker flag (CMake 4.3 Windows-Clang injects this; HIP device-link rejects it)
+sed -i 's/-fuse-ld=lld-link//g' "$BUILD/build.ninja"
+
+HIP_VISIBLE_DEVICES=0 cmake --build "$BUILD" --target flamegpu boids_bruteforce tests -j32
+```
+
+### Runtime DLLs (copied to bin/Release/ for exe-dir priority over System32)
+
+```
+amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll, hiprand.dll, rocrand.dll
+```
+Source: `_rocm_sdk_core/bin` and `_rocm_sdk_devel/bin`
+
+### Test results
+
+GPU verified: `hipInfo.exe` reports gcnArchName=gfx1201 at HIP_VISIBLE_DEVICES=0.
+
+```
+HIP_VISIBLE_DEVICES=0 tests.exe 2>&1
+[==========] Running 1133 tests from 89 test suites.
+[  PASSED  ] 1058 tests.
+[  SKIPPED ] 64 tests (all RTC-related, expected on AMD/HIP)
+[  FAILED  ] 11 tests (TestCUDASimulationConcurrency suite only)
+```
+
+Test command:
+```
+HIP_VISIBLE_DEVICES=0 tests.exe
+```
+
+### Concurrency benchmark tests (TestCUDASimulationConcurrency)
+
+The 11 `TestCUDASimulationConcurrency` failures are performance benchmarks (the
+suite's own header notes it is "only meaningful in release builds (measure
+performance)"). They assert a >=1.5x speedup from running multiple agent
+functions concurrently via HIP streams. That benchmark threshold was met on
+linux-gfx90a and linux-gfx1100, but not on windows-gfx1201 (measured speedup
+~1.0x). This is a performance/benchmark result only; all functional correctness
+tests pass. The cause has not been characterized -- we draw no broader
+conclusion from it (the benchmark was not run in a datacenter configuration,
+and whether it is specific to this OS/arch is not yet known).
+
+### Example runs (functional verification)
+
+```
+# boids_bruteforce
+HIP_VISIBLE_DEVICES=0 boids_bruteforce.exe --steps 1
+# Runs successfully; GPU: AMD Radeon RX 9070 XT
+
+# Key functional test suites
+HIP_VISIBLE_DEVICES=0 tests.exe --gtest_filter="GPUTest*:TestCUDASubAgent*:DeviceAPITest*:HostFunctionTest*:TestMessage_BruteForce*:TestMessage_Array*:TestMessage_Spatial*"
+# 300/300 PASSED
+```
+
+Verdict: PASS (with documented benchmark note) - functional GPU validation successful on gfx1201:
+all 1058 functional tests pass, 64 RTC tests skipped as expected. The 11 `TestCUDASimulationConcurrency`
+performance benchmarks met their speedup threshold on gfx90a and gfx1100 but not on gfx1201 (Windows);
+functional correctness is unaffected.
