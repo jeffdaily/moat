@@ -7,17 +7,17 @@
   "priority": 5.001,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-07T04:01:13Z",
-  "head_sha": "633065b857387209d619468a0f765ca7460c1ccd",
+  "updated_at": "2026-06-08T15:48:54Z",
+  "head_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "633065b857387209d619468a0f765ca7460c1ccd",
+      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
       "started_at": "2026-05-30T07:07:24Z",
-      "completed_at": "2026-06-05T18:42:10Z",
-      "updated_at": "2026-06-05T18:42:10Z",
+      "completed_at": "2026-06-08T15:38:45Z",
+      "updated_at": "2026-06-08T15:48:54Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "reviewer",
       "carry_forward": {
-        "to": "633065b857387209d619468a0f765ca7460c1ccd",
-        "method": "binary-equiv",
-        "detail": "CMakeLists.txt change adds WIN32-only conditional (include_directories guarded on WIN32 AND OPENCV4_COMPAT_DIR); evaluated to false on all Linux builds; device code and exported symbols provably uncha",
-        "at": "2026-06-05T18:42:10Z"
+        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "method": "source-class",
+        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
+        "at": "2026-06-08T15:38:45Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "633065b857387209d619468a0f765ca7460c1ccd",
+      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
       "started_at": null,
-      "completed_at": "2026-06-05T18:42:16Z",
-      "updated_at": "2026-06-05T18:42:16Z",
+      "completed_at": "2026-06-08T15:38:45Z",
+      "updated_at": "2026-06-08T15:38:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "633065b857387209d619468a0f765ca7460c1ccd",
-        "method": "binary-equiv",
-        "detail": "CMakeLists.txt change adds WIN32-only conditional (include_directories guarded on WIN32 AND OPENCV4_COMPAT_DIR); evaluated to false on all Linux builds; device code and exported symbols provably uncha",
-        "at": "2026-06-05T18:42:16Z"
+        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "method": "source-class",
+        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
+        "at": "2026-06-08T15:38:45Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "633065b857387209d619468a0f765ca7460c1ccd",
+      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
       "started_at": null,
-      "completed_at": "2026-06-05T18:41:27Z",
-      "updated_at": "2026-06-05T18:41:27Z",
+      "completed_at": "2026-06-08T15:38:46Z",
+      "updated_at": "2026-06-08T15:38:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -90,20 +90,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "633065b857387209d619468a0f765ca7460c1ccd",
-        "method": "binary-equiv",
-        "detail": "WIN32-only cmake change (include_directories conditional on WIN32 AND OPENCV4_COMPAT_DIR); Linux device code and symbols identical by inspection; validated at new SHA on real gfx1101 GPU",
-        "at": "2026-06-05T18:41:27Z"
+        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "method": "source-class",
+        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
+        "at": "2026-06-08T15:38:46Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "633065b857387209d619468a0f765ca7460c1ccd",
+      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
       "started_at": null,
-      "completed_at": "2026-06-07T04:01:13Z",
-      "updated_at": "2026-06-07T04:01:13Z",
+      "completed_at": "2026-06-08T15:38:46Z",
+      "updated_at": "2026-06-08T15:38:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -116,6 +116,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "method": "source-class",
+        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
+        "at": "2026-06-08T15:38:46Z"
       }
     },
     "windows-gfx1151": {
@@ -140,5 +146,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU/pull/33",
+  "pr_number": 33,
+  "pr_opened_at": "2026-06-08T15:48:54Z"
 }
