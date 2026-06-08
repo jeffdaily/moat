@@ -13,7 +13,10 @@ language is not Cuda AND none of those fields contains "cuda" (exemplar:
 facebookresearch/pytorch3d -- Python-dominant, empty topics, no "cuda" in
 description, yet 328 KB of .cu). The `--code-search` pass closes this by
 querying the REST code-search API on CUDA SOURCE (config `[code_search]`) and
-merging new repos into candidates.json.
+merging new repos into candidates.json. The metadata pass is non-clobbering:
+it preserves those code:-sourced records on its next run instead of
+overwriting them (historically it truncated the file and silently erased
+every code-search find -- the actual cause of the blind spot).
 
 Output: data/candidates.json (ranked, filtered) and data/candidates.raw.jsonl
 (every unique hit before filtering, for audit). Adopt rows with
@@ -464,13 +467,30 @@ def main(argv=None):
                 n_nocuda += 1
                 continue
         recs.append(to_record(h, cfg))
+    # Non-clobbering write: the metadata pass cannot reproduce code-search
+    # findings (the blind-spot class -- Python-dominant repos with .cu but no
+    # "cuda" in name/description/topics), so preserve any code:-sourced records
+    # already in the output instead of truncating the file to just this pass's
+    # hits. Fresh metadata records for the same repo take precedence; code-only
+    # records the metadata pass did not re-find are carried forward. Without
+    # this, a routine metadata run silently erases everything --code-search
+    # merged in (the root cause of the historical blind spot).
+    out_path = Path(args.out)
+    existing = json.loads(out_path.read_text()) if out_path.exists() else []
+    fresh = {r["full_name"].lower() for r in recs}
+    preserved = [r for r in existing
+                 if r["full_name"].lower() not in fresh
+                 and r.get("matched_queries")
+                 and all(q.startswith("code:") for q in r["matched_queries"])]
+    recs = recs + preserved
     recs.sort(key=lambda r: (-r["priority"], r["full_name"].lower()))
-    with open(args.out, "w") as f:
+    with open(out_path, "w") as f:
         json.dump(recs, f, indent=2)
         f.write("\n")
     sys.stderr.write(
         f"discover: {len(raw_hits)} unique hits -> {len(recs)} candidates "
-        f"(dropped {n_filter} filters, {n_org} excluded-org, {n_nocuda} no-CUDA-code) -> {args.out}\n")
+        f"({len(preserved)} code-search records preserved; dropped {n_filter} filters, "
+        f"{n_org} excluded-org, {n_nocuda} no-CUDA-code) -> {out_path}\n")
     return 0
 
 

@@ -64,6 +64,7 @@ queries = [
 #   __global__ extension:cu ........................... 98176  broad (last)
 queries = [
   "CUDAExtension extension:py filename:setup",
+  "CUDA_HOME extension:py filename:setup",
   "cpp_extension.load extension:py",
   "BuildExtension extension:py filename:setup",
   "load_inline extension:py",
