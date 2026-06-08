@@ -7,8 +7,8 @@
   "priority": 4.792,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-05T20:50:20Z",
-  "head_sha": "a48ee1f6",
+  "updated_at": "2026-06-08T18:38:10Z",
+  "head_sha": "adfe9a62399b44ac01e33c65831c24188d8e2624",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
@@ -37,10 +37,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a48ee1f6",
+      "validated_sha": "adfe9a62399b44ac01e33c65831c24188d8e2624",
       "started_at": "2026-05-30T21:08:00Z",
-      "completed_at": "2026-06-05T20:50:15Z",
-      "updated_at": "2026-06-05T20:50:15Z",
+      "completed_at": "2026-06-08T18:38:10Z",
+      "updated_at": "2026-06-08T18:38:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +54,22 @@
         "first_session_at": "2026-05-30T21:08:00Z",
         "last_session_at": "2026-05-30T21:10:45Z"
       },
-      "last_agent": "orchestrator"
+      "last_agent": "orchestrator",
+      "carry_forward": {
+        "to": "adfe9a62399b44ac01e33c65831c24188d8e2624",
+        "method": "source-class",
+        "detail": "README: note ROCm/HIP support (doc-only)",
+        "at": "2026-06-08T18:38:10Z"
+      }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a48ee1f6",
+      "validated_sha": "adfe9a62399b44ac01e33c65831c24188d8e2624",
       "started_at": null,
-      "completed_at": "2026-06-05T20:50:15Z",
-      "updated_at": "2026-06-05T20:50:15Z",
+      "completed_at": "2026-06-08T18:38:10Z",
+      "updated_at": "2026-06-08T18:38:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,16 +83,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "orchestrator"
+      "last_agent": "orchestrator",
+      "carry_forward": {
+        "to": "adfe9a62399b44ac01e33c65831c24188d8e2624",
+        "method": "source-class",
+        "detail": "README: note ROCm/HIP support (doc-only)",
+        "at": "2026-06-08T18:38:10Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a48ee1f6",
+      "validated_sha": "adfe9a62399b44ac01e33c65831c24188d8e2624",
       "started_at": null,
-      "completed_at": "2026-06-05T20:50:15Z",
-      "updated_at": "2026-06-05T20:50:15Z",
+      "completed_at": "2026-06-08T18:38:10Z",
+      "updated_at": "2026-06-08T18:38:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,7 +112,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "orchestrator"
+      "last_agent": "orchestrator",
+      "carry_forward": {
+        "to": "adfe9a62399b44ac01e33c65831c24188d8e2624",
+        "method": "source-class",
+        "detail": "README: note ROCm/HIP support (doc-only)",
+        "at": "2026-06-08T18:38:10Z"
+      }
     },
     "windows-gfx1151": {
       "state": "revalidate",
