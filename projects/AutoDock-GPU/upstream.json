@@ -2,7 +2,7 @@
   "full_name": "ccsb-scripps/AutoDock-GPU",
   "upstream_url": "https://github.com/ccsb-scripps/AutoDock-GPU",
   "default_branch": "develop",
-  "fork_url": null,
-  "ext_type": "unknown",
-  "base_sha": null
+  "fork_url": "https://github.com/jeffdaily/AutoDock-GPU",
+  "ext_type": "makefile",
+  "base_sha": "28a61394827e4a7cc1a0c277bf23f1fdc917bb4f"
 }
