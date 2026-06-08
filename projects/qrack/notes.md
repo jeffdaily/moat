@@ -311,3 +311,85 @@ Key observations:
   sampling tests that run many shots; they passed with correct probabilities.
 
 Status: linux-gfx1100 port-ready -> completed at dcb5e180.
+
+## Validation 2026-06-08 (windows-gfx1201, first-time validation)
+
+Platform: AMD Radeon RX 9070 XT gfx1201 (RDNA4, wave32), ROCm 7.14.0a20260604 (TheRock nightly).
+Fork: jeffdaily/qrack moat-port @ dcb5e180.
+GPU: HIP_VISIBLE_DEVICES=0 (gfx1201 is device 0 this session -- gfx1101 offline).
+
+### Windows-specific build adaptations (cmake flags only, no source change to port files)
+
+The fork source has one Windows-only fix applied to pass compilation:
+- `include/qengine_cpu.hpp`: added fallback `typedef std::function<void(void)> DispatchFn`
+  inside `#else` of the `ENABLE_QUNIT_CPU_PARALLEL && ENABLE_PTHREAD` guard, to resolve
+  "unknown type name DispatchFn" when ENABLE_PTHREAD=OFF. Upstream source bug; unrelated to HIP port.
+
+CMake configure flags for Windows:
+```
+ROCM="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+ROCM_CORE="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core"
+
+cmake -S projects/qrack/src \
+      -B agent_space/qrack_gfx1201_build \
+      -G Ninja \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/amdclang.exe" \
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" \
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" \
+      -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_PREFIX_PATH="$ROCM;$ROCM_CORE" \
+      -Dhip_DIR="$ROCM/lib/cmake/hip" \
+      -DENABLE_TESTS=ON \
+      -DENABLE_SSE3=OFF -DENABLE_FMA=OFF \
+      -DSEED_DEVRAND=OFF \
+      -DENABLE_PTHREAD=OFF \
+      -DCMAKE_CXX_FLAGS="-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -Wno-deprecated-declarations" \
+      -DCMAKE_HIP_FLAGS="-D_CRT_SECURE_NO_WARNINGS -D_CRT_NONSTDC_NO_WARNINGS -Wno-deprecated-declarations"
+
+cmake --build agent_space/qrack_gfx1201_build -j24 --target unittest
+```
+Runtime DLLs copied beside unittest.exe: amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll,
+hiprtc0714.dll, hiprtc-builtins0714.dll (from _rocm_sdk_core/bin).
+
+Config: QBCAPPOW=7, FPPOW=5 (float). 38/38 targets built cleanly. HIP device code for gfx1201
+compiled by amdclang++ 23.0.0. Init confirms: "CUDA device #0: AMD Radeon RX 9070 XT".
+
+### Test results
+
+Full suite (205 test cases):
+```
+HIP_VISIBLE_DEVICES=0 unittest.exe --proc-cuda --layer-qengine -d yes
+```
+Result: 86 passed, 119 failed. The 119 failures all share a common cause: `test_decompose`
+(the first test in the failing batch) triggers a Windows PAL command ring exhaustion
+("PAL failed to submit CMD! result:-87"), which puts the HIP context into an irrecoverable
+error state for all subsequent tests in the same process (error 719 / hipErrorLaunchFailure).
+
+Non-xfail suite (197 test cases, excluding the 8 `[sd_xfail]` tagged tests):
+```
+HIP_VISIBLE_DEVICES=0 unittest.exe --proc-cuda --layer-qengine -d yes "~[sd_xfail]"
+```
+Result: All tests passed -- 9409 assertions in 197 test cases. Wall time: ~170s.
+
+Individual isolation tests for the 8 `[sd_xfail]` cases:
+- test_decompose: FAIL (PAL ring exhaustion with error 719 on Windows; passes on Linux gfx90a/gfx1100)
+- test_compose: FAIL (same root cause: useHostMem=true variant hits PAL ring limit)
+- test_dispose, test_dispose_perm, test_trydecompose, test_qunit_paging, test_getquantumstate, test_qneuron: all PASS in isolation.
+
+Analysis: `test_decompose` and `test_compose` both use `CreateQuantumInterface(..., useHostMem=true)`
+which triggers `hipHostRegister` for pinned host memory. On Windows ROCm 7.14 (TheRock nightly),
+rapid GPU command submissions from the Compose/Decompose/hipHostRegister sequence hit the PAL
+command ring limit and fail with `hipErrorLaunchFailure`. These same tests pass on Linux ROCm 7.2.1
+(gfx90a, gfx1100). This is a Windows PAL/ROCm runtime limitation, NOT a defect in the HIP port.
+
+Key gate validation (all PASS on gfx1201):
+- test_ucmtrx (the deferred-free fix): 0.037s, 8/8 assertions PASS. No hang, no wrong result.
+- test_ccnot, test_swap, test_fsim, test_uniform_c_single, test_apply_controlled_single_bit: all PASS.
+- test_m_array: 47.6s (measurement sampling), PASS.
+- test_bell_m: 96s (Bell measurement, many shots), PASS.
+- test_grover (Grover's algorithm), test_teleport, test_mirror_circuit_* (1-36): all PASS.
+
+Status: windows-gfx1201 port-ready -> completed at dcb5e180. 197/205 test cases pass;
+8 sd_xfail tests have 2 Windows-PAL failures (test_decompose, test_compose) unrelated to the HIP port.

@@ -18,3 +18,11 @@
 {"kind":"session","ts":"2026-06-04T23:05:13Z","epoch":1780614313.949003968,"event":"start","platform":"linux-gfx1100"}
 {"kind":"session","ts":"2026-06-04T23:07:25Z","epoch":1780614445.690098699,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-04T23:08:57Z", "tokens": 52149, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T18:17:32Z","phase":"compile","seconds":2.301,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
+{"kind":"phase","ts":"2026-06-08T18:18:33Z","phase":"compile","seconds":7.171,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
+{"kind":"phase","ts":"2026-06-08T18:19:12Z","phase":"compile","seconds":14.428,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
+{"kind":"phase","ts":"2026-06-08T18:19:55Z","phase":"compile","seconds":13.925,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
+{"kind":"phase","ts":"2026-06-08T18:20:28Z","phase":"compile","seconds":4.572,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
+{"kind":"phase","ts":"2026-06-08T18:23:34Z","phase":"test","seconds":49.454,"exit":119,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 '/b/develop/moat/agent_space/qrack_gfx1201_build/unittest.exe' --proc-cuda --layer-qengine -d yes"}
+{"kind":"phase","ts":"2026-06-08T18:38:16Z","phase":"test","seconds":170.792,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 '/b/develop/moat/agent_space/qrack_gfx1201_build/unittest.exe' --proc-cuda --layer-qengine -d yes '~[sd_xfail]'"}
+{"kind":"phase","ts":"2026-06-08T18:38:26Z","phase":"compile","seconds":0.070,"exit":0,"cmd":"cmake --build /b/develop/moat/agent_space/qrack_gfx1201_build -j24 --target unittest"}
