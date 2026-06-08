@@ -423,3 +423,49 @@ codeobj_diff result:
 
 Carry-forward applied: moatlib carry-forward binary-equiv, validated_sha -> d6d4561.
 No GPU re-run required. linux-gfx1100 -> completed.
+
+## Review 2026-06-08 (reviewer, linux-gfx90a, re-key delta d6d4561..b346589)
+
+Verdict: review-passed. Reviewed the hipify-version re-key of the
+at::cuda::getCurrentCUDAStream shim (3 files, +35/-7). No defects found; all
+load-bearing claims verified against the build env's torch headers, not trusted.
+
+No blocking findings. Verified directly:
+
+- Probe (cmake/dependencies_hip.cmake:34-46): uses RPU_PYTHON_EXECUTABLE, which
+  dependencies.cmake:84 sets from Python3_EXECUTABLE and is included at
+  CMakeLists.txt:53, BEFORE dependencies_hip.cmake at :55 -- so the build's own
+  Python runs the probe. Ran the exact probe command in the env: exit 0, stdout
+  "2.0.0" clean; the NumPy import warning goes to stderr (ERROR_QUIET-suppressed,
+  not captured into the version var). The RESULT==0 AND NOT STREQUAL "" guard is
+  robust; detection failure leaves RPU_TORCH_HIPIFY_V2 unset (safe v1 default).
+- Variable scope: set(RPU_TORCH_HIPIFY_V2 ON) is in the top-level include scope
+  (CMakeLists.txt:55); src/aihwkit/simulator is add_subdirectory at :156 (> :55),
+  so the child scope inherits it. target_compile_definitions(rpu_base PRIVATE
+  TORCH_HIPIFY_V2) (src/aihwkit/simulator/CMakeLists.txt:32-34) applies ONLY to
+  the pybind module target (the rpu_base_src/*.cpp binding TUs incl.
+  rpu_base_tiles_cuda.cpp), NOT via add_compile_definitions -- so the .cu device
+  TUs in RPU_GPU are untouched (consistent with codeobj_diff = identical).
+- #if defined(TORCH_HIPIFY_V2) SENSE is correct (and is the flip of the old
+  HIP_VERSION gate). Confirmed in this env's c10/hip/HIPStream.h: getCurrentCUDAStream
+  is unconditional in c10::cuda (:235); getCurrentHIPStream is #ifdef USE_ROCM (:256)
+  which this build does not define. So v2 -> c10::cuda::getCurrentCUDAStream (the
+  only available symbol), v1 -> c10::hip::getCurrentHIPStream. Env hipify = 2.0.0,
+  so VERSION_GREATER_EQUAL "2.0.0" true -> define set -> c10::cuda branch taken.
+- Orphan cleanup complete: <hip/hip_version.h> removed; no remaining HIP_VERSION*
+  macro usage in the TU (grep clean).
+- CUDA/CPU paths unaffected: the shim is double-guarded by #ifdef RPU_USE_CUDA (:7)
+  and #if defined(USE_HIP) (:17). A CUDA build (RPU_USE_CUDA set, USE_HIP unset)
+  takes the #else at :39 (<ATen/cuda/CUDAContext.h>), unchanged; a pure-CPU build
+  compiles none of it. TORCH_HIPIFY_V2 is only ever defined on the HIP pybind build.
+- Commit hygiene: title 72 chars exactly, [ROCm] prefix; no MOAT jargon in message
+  or comments; ASCII clean, no em-dash; no noreply trailer, no ghstack; Claude
+  disclosed; Test Plan present; no AMD-internal account refs.
+
+Carry-forward note: this delta changes only a host-side pybind TU and no .cu
+device code; on Linux v2 it selects the same c10::cuda::getCurrentCUDAStream the
+old #else already resolved, so gfx90a / gfx1100 / gfx1201 all carry forward via
+.co byte-identity (gfx90a codeobj_diff already identical; gfx1100/gfx1201 same by
+construction -- device ISA unchanged). Hands to validator for carry-forward
+confirmation; no functional GPU re-run is required for this behavior-preserving
+host-only change.
