@@ -564,3 +564,59 @@ Concurrency note: an earlier full-suite run while the brian2cuda validator was s
 ### Conclusion
 
 `gpu_intrinsics.exprelr` now passes on gfx1201 under the per-arch 2-ULP bound; no GPU/port test regressed. The 4 remaining failures are 3 documented non-GPU Windows-platform issues plus 1 pre-existing full-suite accumulated-state probe artifact, none gating. windows-gfx1201 -> completed at sha 246575c.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+**Trigger**: HEAD moved from f400d9a6 to 246575c (Windows build fixes + RDNA4 exprelr test tolerance)
+**GPU**: AMD Instinct MI250X / MI250 (gfx90a)
+**ROCm**: 7.2.1
+
+### Delta classification
+
+Two commits in the delta:
+- `8188758f`: Windows build fixes (posix_memalign -> _aligned_malloc, dlfcn.h -> Win32, etc.). Most changes `#ifdef _WIN32`-guarded. However `arbor/backends/rand_impl.hpp` and `arbor/network.cpp` add `R123_NO_SINCOS` under `#ifdef __HIP_PLATFORM_AMD__` -- this fires on Linux too and changes the Random123 boxmuller device code path (sin+cos fallback vs sincosf).
+- `246575c`: Relaxes `gpu_intrinsics.exprelr` test bound from 1 ULP to 2 ULP on RDNA4 (`#ifdef ARB_HIP` + runtime `gcnArchName` gfx12 check). On gfx90a this branch is not taken; the 1-ULP bound still applies.
+
+`python3 utils/moatlib.py classify arbor f400d9a6 246575c` reports `class=mixed arch_independent=False`.
+
+### Binary equivalence check
+
+Built both shas in separate directories on gfx90a:
+- `build-old-real/`: from `src-old/` at f400d9a6
+- `build-new2/`: from `src/` at 246575c
+
+```bash
+cmake /var/lib/jenkins/moat/projects/arbor/src-old \
+  -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a \
+  -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang
+cmake --build . --target unit -j$(nproc)
+```
+
+`python3 utils/codeobj_diff.py build-old-real/bin/unit build-new2/bin/unit` -> `verdict=differ (device ISA differs)`. The R123_NO_SINCOS change altered the compiled device code on gfx90a, so carry-forward is not applicable. Full GPU re-run required.
+
+### Test Results
+**Command**: `HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/arbor/build-new2/bin/unit`
+**Result**: PASS
+- Total tests: 1182 from 182 test suites
+- Passed: 1182
+- Failed: 0
+- Total time: ~12.3 seconds
+
+### Critical GPU Tests Validated
+All GPU tests pass, including:
+- reduce_by_key.no_repetitions: PASS
+- reduce_by_key.single_repeated_index: PASS
+- reduce_by_key.scatter: PASS
+- reduce_by_key.scatter_twice: PASS
+- abi.gpu_initialisation: PASS
+- abi.gpu_null: PASS
+- cable_cell_group.gpu_test: PASS
+- event_stream_gpu.single_step: PASS
+- event_stream_gpu.multi_step: PASS
+- spikes_gpu.threshold_watcher: PASS
+- spikes_gpu.threshold_watcher_interpolation: PASS
+- gpu_intrinsics.exprelr: PASS (gfx90a; strict 1-ULP bound retained, as expected)
+
+### Conclusion
+Full GPU re-run required (codeobj_diff: differ -- R123_NO_SINCOS device code change). All 1182 tests pass on gfx90a including all GPU-specific tests. linux-gfx90a -> completed at sha 246575c.

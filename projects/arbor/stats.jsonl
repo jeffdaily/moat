@@ -40,3 +40,8 @@
 {"kind":"phase","ts":"2026-06-08T13:12:03Z","phase":"compile","seconds":33.640,"exit":0,"cmd":"cmake --build projects/arbor/src/build-gfx1201 --target unit -j24"}
 {"kind":"phase","ts":"2026-06-08T13:15:35Z","phase":"test","seconds":197.020,"exit":1,"cmd":"./projects/arbor/src/build-gfx1201/bin/unit.exe"}
 {"kind":"phase","ts":"2026-06-08T13:58:29Z","phase":"test","seconds":196.636,"exit":1,"cmd":"./projects/arbor/src/build-gfx1201/bin/unit.exe"}
+{"kind":"phase","ts":"2026-06-08T15:16:25Z","phase":"compile","seconds":85.526,"exit":0,"cmd":"cmake /var/lib/jenkins/moat/projects/arbor/src-old -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang"}
+{"kind":"phase","ts":"2026-06-08T15:18:37Z","phase":"compile","seconds":126.164,"exit":0,"cmd":"cmake --build . --target unit -j128"}
+{"kind":"phase","ts":"2026-06-08T15:18:43Z","phase":"compile","seconds":0.146,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/arbor/src -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang"}
+{"kind":"phase","ts":"2026-06-08T15:18:49Z","phase":"compile","seconds":0.147,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/arbor/src -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang"}
+{"kind":"phase","ts":"2026-06-08T15:27:08Z","phase":"test","seconds":12.406,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/build-new2/bin/unit"}
