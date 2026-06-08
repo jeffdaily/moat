@@ -614,3 +614,41 @@ The gfx1201 code objects embedded in the new wrappers (cellindices_wrapper_hip.g
 The linux carry-forward correctly confirmed gfx90a and gfx1100 objects were unchanged -- those were re-built on the same Linux host. But the gfx1201 objects were regenerated on a different toolchain (Linux ROCm 7.2.1 instead of Windows TheRock 7.14). The source .cu files are unchanged, but the device ISA bytes are compiler-dependent.
 
 VERDICT: Cannot carry forward by binary-equivalence. Left as `revalidate`. Needs either: (a) a GPU test run on gfx1201 with the new objects, or (b) rebuild the gfx1201 code objects on this Windows host at 4f3de0cf and compare.
+
+## Validation 2026-06-08 (windows-gfx1201, revalidate at 4f3de0cf)
+
+Platform: windows-gfx1201, AMD Radeon RX 9070 XT (gfx1201 / RDNA4, wave32), TheRock ROCm 7.14, Windows 11 Pro for Workstations, HIP_VISIBLE_DEVICES=0.
+Revalidate trigger: head advanced from f6b642d5 to 4f3de0cf (additive dual-backend restructure + Makefile comment reword). gfx1201 code objects in the new head were compiled on Linux (ROCm 7.2.1, AMD clang 22.0.0), not on this host -- binary-equiv is not valid; full GPU run required.
+Fork sha: 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc.
+
+Build (with -tags hip, additive backend structure):
+```
+ROCM_PATH=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+GOROOT=B:\develop\go_root\go
+GOPATH=B:\develop\go_path_gfx1201
+CGO_CFLAGS=-I$ROCM_PATH/include -D__HIP_PLATFORM_AMD__
+CGO_LDFLAGS=-LC:\Users\Shark44\AppData\Local\Temp\mingw_libs -lamdhip64 -lhipfft -lhiprand
+HIP_VISIBLE_DEVICES=0
+cd projects/3/src && go install -tags hip ./...
+```
+
+Build result: PASS (deprecation warnings for hipCtxCreate/hipMemAllocHost only, no errors).
+
+Test results:
+```
+go test -tags hip -count=1 github.com/mumax/3/cuda/cu   # 12/12 PASS
+go test -tags hip -count=1 github.com/mumax/3/cuda       # 8/8 PASS
+go test -tags hip -count=1 github.com/mumax/3/cuda/cufft # TestExampleFFT1D PASS
+go test -tags hip -count=1 github.com/mumax/3/data github.com/mumax/3/httpfs  # PASS (non-GPU)
+```
+
+GPU: ArchName=gfx1201, warpSize=32 confirmed from TestDevice output.
+TestModule PASS confirms the Linux-compiled gfx1201 code objects load and execute correctly on the RX 9070 XT.
+
+Headline gates:
+- standardproblem4 (M.Average within 1e-3): m=(-0.9846119, 0.1260456, 0.0432690) vs ref=(-0.9846124, 0.1260409, 0.0432712) -- PASS (max delta 4.7e-6).
+- standardproblem5 (mx/my/mz within 1e-4): mx=-0.23488 (diff 8.6e-5 OK), my=-0.09453 (diff 3.0e-6 OK), mz=0.02296 (diff 1.8e-6 OK) -- PASS.
+
+Note: mumax3.exe used `HIP Library Path: C:\WINDOWS\SYSTEM32\amdhip64_7.dll` (AMD Adrenalin driver System32 copy) -- this works fine for standardproblem5.mx3 via the installed binary since that path ships with Adrenalin. The go test runs also used the System32 amdhip64 without issue.
+
+Verdict: PASS. State -> completed. validated_sha = 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc.

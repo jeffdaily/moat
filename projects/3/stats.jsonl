@@ -38,3 +38,10 @@
 {"kind":"phase","ts":"2026-06-08T04:43:05Z","phase":"compile","seconds":0.015,"exit":0,"cmd":"go install -tags hip github.com/mumax/3/..."}
 {"kind": "tokens", "ts": "2026-06-08T13:45:29Z", "tokens": 54130, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-07T22:55:55Z", "tokens": 44226, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T20:54:53Z", "tokens": 26777, "source": "revalidate-batch"}
+{"kind":"phase","ts":"2026-06-08T21:17:56Z","phase":"compile","seconds":0.057,"exit":0,"cmd":"go install -tags hip -v github.com/mumax/3/..."}
+{"kind":"phase","ts":"2026-06-08T21:18:14Z","phase":"compile","seconds":0.048,"exit":1,"cmd":"go install -tags hip ./..."}
+{"kind":"phase","ts":"2026-06-08T21:18:56Z","phase":"test","seconds":0.045,"exit":1,"cmd":"go test -tags hip -v -count=1 ./cuda/cu/..."}
+{"kind":"phase","ts":"2026-06-08T21:21:07Z","phase":"compile","seconds":0.048,"exit":1,"cmd":"go build -tags hip ./..."}
+{"kind":"phase","ts":"2026-06-08T21:21:16Z","phase":"compile","seconds":0.398,"exit":0,"cmd":"bash -c cd projects/3/src && go build -tags hip github.com/mumax/3/... 2>&1 | grep -v deprecated | grep -v declared | grep -v 'note:' | grep -v cgo-gcc | tail -5"}
+{"kind":"phase","ts":"2026-06-08T21:21:32Z","phase":"test","seconds":6.942,"exit":0,"cmd":"bash -c \ncd projects/3/src &&\ngo test -tags hip -count=1 github.com/mumax/3/cuda/cu &&\ngo test -tags hip -count=1 github.com/mumax/3/cuda &&\ngo test -tags hip -count=1 github.com/mumax/3/cuda/cufft &&\ngo test -tags hip -count=1 github.com/mumax/3/data github.com/mumax/3/httpfs\n"}
