@@ -118,3 +118,70 @@ HIP_VISIBLE_DEVICES=0 ./build-gfx1100/tests/tests
 Total runtime: 15784 ms
 
 All tests pass on gfx1100 (wave32 RDNA3 arch). The port correctly handles both wave64 (gfx90a) and wave32 (gfx1100) architectures with the same code.
+
+## Validation 2026-06-08
+
+### Platform: windows-gfx1201
+**GPU arch**: gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32)
+**HIP_VISIBLE_DEVICES**: 0 (only GPU present; gfx1101 V710 offline this session)
+**Validated commit**: ebf2595 (0611e58 + Windows -fPIE guard)
+**ROCm**: TheRock 7.14.0a20260604 via PyTorch venv
+
+### Windows Source Fix Required
+The porter's CMakeLists.txt used `target_compile_options($<COMPILE_LANGUAGE:HIP>:-fPIE>)` unconditionally.
+clang targeting x86_64-pc-windows-msvc rejects -fPIE. Guarded it with `if(NOT WIN32)` --
+Linux builds are unchanged (the flag is still applied on Linux).
+Committed as ebf2595 to fork moat-port.
+
+### Build Commands
+```
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+ROCM_DEVEL=$VENV/_rocm_sdk_devel
+CLANG=$ROCM_DEVEL/lib/llvm/bin/clang++.exe
+CLANG_C=$ROCM_DEVEL/lib/llvm/bin/clang.exe
+OPENCV_DIR=B:/develop/opencv-install/extracted/opencv/build/x64/vc16/lib
+
+cmake -S src -B src/build-gfx1201 -GNinja \
+  -DUSE_HIP=ON \
+  -DCMAKE_C_COMPILER=$CLANG_C \
+  -DCMAKE_CXX_COMPILER=$CLANG \
+  -DCMAKE_HIP_COMPILER=$CLANG \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH=$ROCM_DEVEL \
+  -DOpenCV_DIR=$OPENCV_DIR \
+  -DBUILD_TESTS=ON \
+  -DBUILD_SAMPLES=OFF \
+  -DCMAKE_BUILD_TYPE=Release
+
+cmake --build src/build-gfx1201 -j24
+```
+
+Build: 25/25 targets, exit 0. Warnings only (pre-existing -Wunused-* and -Winconsistent-missing-override).
+
+### DLL Setup (runtime)
+Copy into `src/build-gfx1201/tests/` before running:
+- amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll (from _rocm_sdk_core/bin)
+- hipblas.dll, rocblas.dll, rocsolver.dll, libhipblaslt.dll (from _rocm_sdk_devel/bin)
+- opencv_world4110.dll (from opencv build/x64/vc16/bin)
+
+### Test Commands
+```
+cd src/build-gfx1201/tests
+HIP_VISIBLE_DEVICES=0 \
+ROCBLAS_TENSILE_LIBPATH=<venv>/_rocm_sdk_libraries/bin/rocblas/library \
+./tests.exe
+```
+
+### Test Results
+**PASS**: 44/44 tests passed on real GPU
+
+- BAD descriptor tests: 22/22 PASS
+- HashSIFT descriptor tests: 22/22 PASS
+
+Total runtime: 15467 ms
+
+Note: rocblaslt "Cannot read TensileLibrary_lazy_gfx1201.dat" messages are printed at HashSIFT/0 startup
+but are benign -- hipBLASLt lazy loading falls back to plain hipblas GEMM (hipblasGemmEx), which works
+correctly. All 22 HashSIFT tests pass.
+
+All tests pass on gfx1201 (wave32 RDNA4 arch).
