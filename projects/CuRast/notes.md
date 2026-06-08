@@ -276,3 +276,36 @@ ROCm DLLs must be on PATH (or copied to exe directory):
 - `_rocm_sdk_core/bin/hiprtc0714.dll`
 - `_rocm_sdk_core/bin/hiprtc-builtins0714.dll`
 - `_rocm_sdk_core/bin/amd_comgr.dll` (loaded by hiprtc at runtime)
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Revalidating commit 3d42a7c (head_sha) vs d58f80b (validated_sha) on gfx1100 (AMD Radeon Pro W7800 48GB).
+
+### Delta analysis
+
+Commit 3d42a7c adds Windows-only build fixes: `HIP_DEVPTR_ADD` macro for void* arithmetic, WIN32 guards for `if(WIN32)` CMake blocks, `WIN32_LEAN_AND_MEAN` in MappedFile.h, and `-lstdc++exp` conditional on non-Windows. While the `HIP_DEVPTR_ADD` macro is used in host-side virtual memory code (replacing void* arithmetic with uint8_t* casts, which GCC permits as an extension), the device ISA is unchanged.
+
+### Binary-equivalence check
+
+Built both SHAs for gfx1100 and compared device code objects:
+
+```bash
+export HIP_VISIBLE_DEVICES=2
+cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-old   # at d58f80b
+cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-old -j$(nproc)
+
+cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-new   # at 3d42a7c
+cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-new -j$(nproc)
+
+python3 utils/codeobj_diff.py \
+    /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-old/CuRast \
+    /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu2/build-new/CuRast
+```
+
+Result: `verdict=identical` -- CuRast vs CuRast: identical (exported symbols + device ISA identical (34 exports))
+
+### Outcome
+
+Carried forward: linux-gfx1100 validated_sha advanced to 3d42a7c via binary-equiv (Windows build fixes compile to identical gfx1100 device ISA).
