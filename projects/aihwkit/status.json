@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
-  "updated_at": "2026-06-08T16:12:18Z",
+  "updated_at": "2026-06-08T17:00:05Z",
   "head_sha": "b346589",
   "depends_on": [],
   "platforms": {
@@ -107,13 +107,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6d4561",
+      "validated_sha": "b346589",
       "started_at": null,
-      "completed_at": "2026-06-08T13:53:50Z",
-      "updated_at": "2026-06-08T14:58:51Z",
+      "completed_at": "2026-06-08T17:00:05Z",
+      "updated_at": "2026-06-08T17:00:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -129,10 +129,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "d6d4561",
+        "to": "b346589",
         "method": "binary-equiv",
-        "detail": "9b4f7be->d6d4561: Windows Clang/MSVC flag and HIPStream compat fixes; on Linux ROCm 7.2.1 all three changed files compile identically (MSVC=false, HIP_VERSION_MINOR=2<14, ELF ABI struct/class neutral)",
-        "at": "2026-06-08T13:53:50Z"
+        "detail": "d6d4561->b346589: hipify-version re-key (host-side pybind TU only, no .cu device code); on Linux v2 (hipify 2.0.0) both gates select c10::cuda::getCurrentCUDAStream; codeobj_diff verdict=identical (11",
+        "at": "2026-06-08T17:00:05Z"
       }
     }
   }

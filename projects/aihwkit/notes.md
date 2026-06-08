@@ -489,3 +489,28 @@ GPU smoke (gfx90a wave64, HIP_VISIBLE_DEVICES=0): tests/test_specific_tiles.py 1
 (bit_line_maker + pulsed-weight-update warp-size path, 9 Cuda-parametrized cases).
 
 Verdict: carry-forward confirmed. linux-gfx90a -> completed (validated_sha b346589).
+
+## Revalidation 2026-06-08 (linux-gfx1100, delta d6d4561->b346589)
+
+State: revalidate (validated_sha d6d4561 -> head_sha b346589).
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, wave32 native). ROCm 7.2.1. HIP_VISIBLE_DEVICES=1.
+
+Delta d6d4561..b346589 (hipify-version re-key): changes only 3 host-side files --
+cmake/dependencies_hip.cmake, src/aihwkit/simulator/CMakeLists.txt, and
+src/aihwkit/simulator/rpu_base_src/rpu_base_tiles_cuda.cpp. No .cu device code changed.
+On this Linux env, hipify version is 2.0.0 (v2), so TORCH_HIPIFY_V2 is defined and the
+re-keyed gate selects the same c10::cuda::getCurrentCUDAStream the old HIP_VERSION_MINOR<14
+branch already selected (ROCm 7.2 < 7.14). Device ISA is unchanged by construction.
+
+Binary equivalence check:
+- Build at d6d4561: cmake -S . -B build_gfx1100 -GNinja -DUSE_HIP=ON -DUSE_CUDA=OFF
+  -DRPU_CXX_STANDARD=20 -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++
+  -DCMAKE_PREFIX_PATH="${TORCH_CMAKE};/opt/rocm" -DRPU_BLAS=OpenBLAS -DBUILD_TEST=OFF
+  -DRPU_USE_TORCH_BUFFERS=OFF -DCMAKE_BUILD_TYPE=Release; cmake --build build_gfx1100 -j16
+- Build at b346589: same flags. Both built successfully (warnings only, no errors).
+- codeobj_diff result:
+    src/aihwkit/simulator/rpu_base.cpython-312-x86_64-linux-gnu.so: identical
+    (exported symbols + device ISA identical (11257 exports))
+    verdict=identical
+
+Carry-forward applied. linux-gfx1100 -> completed (validated_sha b346589). No GPU re-run required.
