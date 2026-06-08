@@ -218,3 +218,49 @@ Full test suite (test/test_spmm.py) requires torch_sparse which cannot be built 
 
 ### Result
 **PASS**: Core library builds and all SpMM operations (spmm_sum, spmm_max, spmm_min, spmm_mean) execute correctly on gfx1201 (RDNA4, Windows). 5/5 tests pass.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate)
+
+### Delta classification
+
+Delta c262d8bc -> 81b3404: one commit "[ROCm] Add Windows build support for HIP/ROCm". Changed files: `.gitignore`, `include/cuda/csr2csc.cuh` (`#ifdef USE_ROCM` macro aliases), `setup.py` (Windows-only `IS_WINDOWS` guards), `src/spmm.cpp` (`#ifdef _WIN32` stub).
+
+Classifier verdict: `mixed arch_independent=False` -- full GPU revalidation required.
+
+Binary check: built at both SHAs for gfx1100. codeobj_diff verdict: `indeterminate` (`_spmm_cuda.so` was identical with 701 symbols, but CPU-code-only `.so` files returned device-code extraction failed). Per protocol, full GPU revalidation was performed.
+
+### Build
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=gfx1100
+cd /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src
+pip install --no-build-isolation -e .
+```
+
+Build successful at 81b34042 (head_sha).
+
+### Testing
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py
+```
+
+Results:
+- [PASS] spmm_sum (forward)
+- [PASS] spmm_max (forward)
+- [PASS] spmm_min (forward)
+- [PASS] spmm_mean (forward)
+
+4/4 PASS.
+
+### GPU Architecture
+
+- AMD Radeon Pro W7800 48GB (gfx1100)
+- PyTorch 2.13.0a0+gitb5e90ff
+- ROCm 7.2.53211
+
+### Result
+
+**PASS**: All SpMM operations execute correctly on gfx1100 at 81b34042. Windows port commit does not regress Linux gfx1100 GPU behavior.

@@ -33,3 +33,9 @@
 {"kind":"phase","ts":"2026-06-08T17:45:45Z","phase":"test","seconds":2.447,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
 {"kind":"phase","ts":"2026-06-08T17:46:19Z","phase":"test","seconds":2.711,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
 {"kind":"phase","ts":"2026-06-08T17:46:41Z","phase":"test","seconds":4.390,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx90a_revalidate.py"}
+{"kind":"phase","ts":"2026-06-08T18:15:50Z","phase":"compile-old","seconds":0.290,"exit":1,"cmd":"pip install --no-build-isolation --prefix=/var/lib/jenkins/moat/agent_space/dgSPARSE-Lib-gfx1100-gpu0/old-install -e ."}
+{"kind":"phase","ts":"2026-06-08T18:16:01Z","phase":"compile-old","seconds":0.255,"exit":1,"cmd":"pip install --no-build-isolation ."}
+{"kind":"phase","ts":"2026-06-08T18:18:16Z","phase":"compile-old","seconds":124.639,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src && pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-08T18:18:52Z","phase":"compile-new","seconds":0.281,"exit":1,"cmd":"pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-08T18:20:51Z","phase":"compile-new","seconds":113.059,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src && rm -f dgsparse/*.so && pip install --no-build-isolation -e ."}
+{"kind":"phase","ts":"2026-06-08T18:21:27Z","phase":"test","seconds":3.279,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
