@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-08T16:56:13Z",
-  "head_sha": "246575c",
+  "updated_at": "2026-06-08T19:24:06Z",
+  "head_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "246575c",
+      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
       "started_at": "2026-06-05T00:11:13Z",
-      "completed_at": "2026-06-08T15:28:12Z",
-      "updated_at": "2026-06-08T15:28:12Z",
+      "completed_at": "2026-06-08T19:24:04Z",
+      "updated_at": "2026-06-08T19:24:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "method": "source-class",
+        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
+        "at": "2026-06-08T19:24:04Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "246575c",
+      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
       "started_at": "2026-06-05T01:46:00Z",
-      "completed_at": "2026-06-08T16:56:13Z",
-      "updated_at": "2026-06-08T16:56:13Z",
+      "completed_at": "2026-06-08T19:24:04Z",
+      "updated_at": "2026-06-08T19:24:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "method": "source-class",
+        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
+        "at": "2026-06-08T19:24:04Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -83,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "246575c",
+      "validated_sha": "e1eec7a0ff4028a3db7e528c0cf0ea3696119375",
       "started_at": null,
-      "completed_at": "2026-06-08T14:04:02Z",
-      "updated_at": "2026-06-08T14:04:02Z",
+      "completed_at": "2026-06-08T19:24:04Z",
+      "updated_at": "2026-06-08T19:24:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,7 +112,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "porter",
+      "carry_forward": {
+        "to": "a311b6fabbb2dbe7d3e3b2c7887ce653126dee2c",
+        "method": "source-class",
+        "detail": "doc: refresh AMD GPU support note in build_install.rst (doc-only)",
+        "at": "2026-06-08T19:24:04Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
