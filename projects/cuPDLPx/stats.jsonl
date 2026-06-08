@@ -25,3 +25,10 @@
 {"kind":"phase","ts":"2026-06-08T14:11:13Z","phase":"compile","seconds":0.177,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/cupdlpx_gfx1201_build -j24"}
 {"kind":"phase","ts":"2026-06-08T14:12:27Z","phase":"compile","seconds":0.177,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/cupdlpx_gfx1201_build -j24"}
 {"kind":"phase","ts":"2026-06-08T14:13:24Z","phase":"test","seconds":0.075,"exit":127,"cmd":"B:/develop/moat/agent_space/cupdlpx_gfx1201_build/tests/test_interface.exe"}
+{"kind":"phase","ts":"2026-06-08T15:21:58Z","phase":"compile_old","seconds":0.148,"exit":1,"cmd":"bash -c cmake -B /var/lib/jenkins/moat/agent_space/cupdlpx_old_build \\\n    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \\\n    -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=OFF -DCUPDLPX_BUILD_PYTHON=OFF \\\n    -DCMAKE_BUILD_TYPE=Release 2>&1 && \\\n  cmake --build /var/lib/jenkins/moat/agent_space/cupdlpx_old_build -j$(nproc) 2>&1"}
+{"kind":"phase","ts":"2026-06-08T15:22:26Z","phase":"compile_old","seconds":11.905,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/cupdlpx_old_build -j128"}
+{"kind":"phase","ts":"2026-06-08T15:22:56Z","phase":"compile","seconds":11.893,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/cupdlpx_new_build -j128"}
+{"kind":"phase","ts":"2026-06-08T15:23:50Z","phase":"compile","seconds":11.470,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/cupdlpx_test_build -j128"}
+{"kind":"phase","ts":"2026-06-08T15:23:55Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./tests/test_interface"}
+{"kind":"phase","ts":"2026-06-08T15:24:02Z","phase":"test","seconds":0.422,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cupdlpx_test_build/tests/test_interface"}
+{"kind":"phase","ts":"2026-06-08T15:24:29Z","phase":"test_lp","seconds":0.573,"exit":139,"cmd":"/var/lib/jenkins/moat/agent_space/cupdlpx_test_build/cupdlpx 2club200v15p5scn.mps.gz . -v"}

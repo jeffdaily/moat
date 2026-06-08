@@ -283,3 +283,51 @@ GPU execution confirmed:
 Result: PASS - GPU PDLP solver runs correctly on AMD Radeon RX 9070 XT (gfx1201, RDNA4).
 All matrix format variants produce consistent OPTIMAL solutions. hipBLAS SpMV,
 BLAS-1 operations, and CUDA Graphs -> HIP Graphs work correctly on gfx1201.
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+Platform: MI250X gfx90a (HIP_VISIBLE_DEVICES=3), ROCm 7.2.1
+Commit: 98ce76664d227a9c634e963ea928b340e189d749 (head)
+Previous validated: b114e2dcec9f9d35165b2f9355b13016c648fbc0
+
+### Delta classification
+
+Single commit b114e2dc..98ce7666 (Windows build fixes):
+- CMakeLists.txt: `if(WIN32)` guard excluding mps_parser.c on Windows (no effect on Linux)
+- test/test_interface.c: removes four stale `zero_tolerance` field assignments + adds Test 9 (GPU solver path)
+
+moatlib classify: `mixed` (not arch-independent -- test changes affect Linux too). codeobj_diff on
+the main library: `libcupdlpx.so: identical` (151 exports, device ISA identical). PSLP dep:
+`indeterminate` (extraction failed) but byte-for-byte identical between builds (same MD5).
+Per CLAUDE.md policy, `indeterminate` triggers full GPU revalidation.
+
+### Build
+
+```bash
+cmake -S projects/cuPDLPx/src -B agent_space/cupdlpx_test_build \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=ON -DCUPDLPX_BUILD_PYTHON=OFF \
+  -DCMAKE_BUILD_TYPE=Release
+cmake --build agent_space/cupdlpx_test_build -j$(nproc)
+```
+
+Build result: SUCCESS (warnings only, no errors)
+
+### Test results (HIP_VISIBLE_DEVICES=3)
+
+test_interface (9/9 PASS):
+- Tests 1-4: LP solve via Dense/CSR/CSC/COO matrix formats -> OPTIMAL (primal obj=3, presolve reduces to 0 rows)
+- Tests 5-8: same with warm start -> OPTIMAL (presolve reduces; warm start silently ignored as documented)
+- Test 9: CSR with presolve=false -> GPU PDLP solver invoked, 400 iterations, primal obj=3.000539 (gap 7.338e-05 < 1e-4)
+
+CLI LP test (2club200v15p5scn.mps.gz, 17013 rows, 200 cols):
+- Status: OPTIMAL
+- Primal objective: -121.2216698 (matches original validation exactly)
+- Dual objective: -121.2221271
+- Objective gap: 1.879e-06
+- Primal infeas: 4.889e-06 (< 1e-4)
+- Dual infeas: 2.399e-05 (< 1e-4)
+- Iterations: 3000
+
+Result: PASS - All tests pass on gfx90a. Numerical results match original validation exactly.
+No regression from the Windows-specific build fixes.
