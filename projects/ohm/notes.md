@@ -215,3 +215,49 @@ All occupancy-map population, ray integration, line query, NDT, traversal, and T
 **Total**: 66/66 GPU tests PASSED, 57/57 CPU tests PASSED
 
 All GPU and CPU tests pass. No regressions versus prior validation at 09782e7f.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate at 80ea8a81 -- carry-forward)
+
+**GPU arch**: gfx1100 (Navi31, GPU index 3)
+**ROCm version**: 7.2.1
+**Fork HEAD**: 80ea8a81 (09782e7f + `#include <iomanip>` Windows portability fix in 6 test files)
+
+**Delta**: 6 x `#include <iomanip>` additions in test .cpp host files only; no GPU kernel or device-abstraction source changes.
+
+**Method**: Binary equivalence via `utils/codeobj_diff.py`. Built both shas at gfx1100 into separate directories and compared GPU binaries:
+
+```bash
+export HIP_VISIBLE_DEVICES=3
+
+# Build validated sha (09782e7)
+/usr/bin/cmake -B agent_space/ohm-gfx1100-gpu3/build-old -S projects/ohm/src \
+  -DCMAKE_BUILD_TYPE=Release -DOHM_FEATURE_HIP=ON -DOHM_FEATURE_CUDA=OFF \
+  -DOHM_FEATURE_OPENCL=OFF -DOHM_FEATURE_TEST=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100
+utils/timeit.sh ohm compile -- /usr/bin/cmake --build agent_space/ohm-gfx1100-gpu3/build-old -j$(nproc)
+
+# Build head sha (80ea8a81)
+/usr/bin/cmake -B agent_space/ohm-gfx1100-gpu3/build-new -S projects/ohm/src \
+  -DCMAKE_BUILD_TYPE=Release -DOHM_FEATURE_HIP=ON -DOHM_FEATURE_CUDA=OFF \
+  -DOHM_FEATURE_OPENCL=OFF -DOHM_FEATURE_TEST=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100
+utils/timeit.sh ohm compile -- /usr/bin/cmake --build agent_space/ohm-gfx1100-gpu3/build-new -j$(nproc)
+
+# Compare
+python3 utils/codeobj_diff.py \
+  agent_space/ohm-gfx1100-gpu3/build-old/bin/gputiltesthip \
+  agent_space/ohm-gfx1100-gpu3/build-new/bin/gputiltesthip
+# verdict=identical (exported symbols + device ISA identical, 19 exports)
+
+python3 utils/codeobj_diff.py \
+  agent_space/ohm-gfx1100-gpu3/build-old/bin/ohmtesthip \
+  agent_space/ohm-gfx1100-gpu3/build-new/bin/ohmtesthip
+# verdict=identical (exported symbols + device ISA identical, 21 exports)
+
+python3 utils/codeobj_diff.py \
+  agent_space/ohm-gfx1100-gpu3/build-old/lib/libohmhip.a \
+  agent_space/ohm-gfx1100-gpu3/build-new/lib/libohmhip.a
+# verdict=identical (exported symbols + device ISA identical)
+```
+
+All GPU binaries identical on gfx1100 -- carry-forward applied (no GPU re-run needed).

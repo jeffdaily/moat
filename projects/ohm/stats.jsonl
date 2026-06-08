@@ -38,3 +38,5 @@
 {"kind":"phase","ts":"2026-06-08T19:03:30Z","phase":"test","seconds":3.924,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/gputiltesthip 2>&1"}
 {"kind":"phase","ts":"2026-06-08T19:04:53Z","phase":"test","seconds":70.778,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/ohmtesthip 2>&1"}
 {"kind":"phase","ts":"2026-06-08T19:05:12Z","phase":"test","seconds":12.024,"exit":0,"cmd":"bash -c /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/ohmtest 2>&1 && /var/lib/jenkins/moat/agent_space/ohm_build_gfx90a/bin/slamiotest 2>&1"}
+{"kind":"phase","ts":"2026-06-08T19:40:16Z","phase":"compile","seconds":15.095,"exit":0,"cmd":"/usr/bin/cmake --build /var/lib/jenkins/moat/agent_space/ohm-gfx1100-gpu3/build-old -j64"}
+{"kind":"phase","ts":"2026-06-08T19:41:04Z","phase":"compile","seconds":15.714,"exit":0,"cmd":"/usr/bin/cmake --build /var/lib/jenkins/moat/agent_space/ohm-gfx1100-gpu3/build-new -j64"}
