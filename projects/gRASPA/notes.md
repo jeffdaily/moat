@@ -282,3 +282,30 @@ ranges (Monte Carlo stochastic variance: 17/18 CO2, 53/58 CH4, 1323/1327 Ar).
 - `codeobj_diff build_old/src_clean/graspa build_new/src_clean/graspa`: `verdict=identical` (87 exported symbols + device ISA identical)
 
 **Verdict**: CARRY-FORWARD (binary-equiv) -- Windows-only CMake/C++ guards compile to identical device code and exported symbols on Linux gfx90a. No GPU re-run required.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate -> carry-forward, RDNA3 gfx1100)
+
+**Delta**: ddf08ad4 -> 312048e7 (one commit: "Add Windows build support for HIP port")
+
+**Changes in delta**: Same Windows-only changes as gfx90a carry-forward above:
+- `src_clean/CMakeLists.txt`: `if(WIN32 AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")` block -- dead on Linux
+- `src_clean/main.cpp`: `#ifndef _WIN32` guards around `unistd.h`, `/proc/self/statm`, and `readlink` -- same Linux behavior
+- `src_clean/lambda.h`, `src_clean/mc_widom.h`: added `#include <numeric>` -- already transitively available on Linux
+
+**Binary equivalence check** (codeobj_diff.py):
+```bash
+# Build old SHA (ddf08ad)
+mkdir build_old && cd build_old
+HIP_VISIBLE_DEVICES=0 cmake ../build_old_src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+cmake --build . -j$(nproc)
+
+# Build new SHA (312048e)
+mkdir build_new && cd build_new
+HIP_VISIBLE_DEVICES=0 cmake ../build_new_src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+cmake --build . -j$(nproc)
+
+python3 utils/codeobj_diff.py build_old/src_clean/graspa build_new/src_clean/graspa
+# verdict=identical (exported symbols + device ISA identical (12 exports))
+```
+
+**Verdict**: CARRY-FORWARD (binary-equiv) -- Windows-only CMake/C++ guards compile to identical device ISA and exported symbols on Linux gfx1100. No GPU re-run required.
