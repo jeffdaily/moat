@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-08T17:57:03Z",
+  "updated_at": "2026-06-08T18:27:33Z",
   "head_sha": "4388973775382e8f157c40e36e05c583b465e03f",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "4388973775382e8f157c40e36e05c583b465e03f",
       "started_at": "2026-05-31T00:42:20Z",
       "completed_at": "2026-06-08T17:57:01Z",
-      "updated_at": "2026-06-08T17:57:03Z",
+      "updated_at": "2026-06-08T18:27:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
       },
       "last_agent": "validator"
     }
-  }
+  },
+  "pr_url": "Warning: 44 uncommitted changes\nhttps://github.com/chrxh/alien/pull/710",
+  "pr_number": 710,
+  "pr_opened_at": "2026-06-08T18:27:33Z"
 }
