@@ -7,7 +7,7 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-08T21:24:15Z",
+  "updated_at": "2026-06-08T22:57:09Z",
   "head_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
   "platforms": {
     "linux-gfx90a": {
@@ -95,13 +95,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": "validated at fork 3782728. ctest 128/131 PASS on RX 9070 XT (gfx1201, RDNA4, wave32). 3 failures are all Windows platform issues (confidence_connected: no FreeImage; sparse_arith: Windows rocsparse csrgeam2 SEGFAULT; threading: CTest 900s timeout). JIT engine confirmed gfx1201 (KER*_HIP_gfx1201_AF_310.bin). All core GPU ops pass: jit, blas, cholesky, fft, lu, reduce, solve, sparse, where, topk, transpose, scan, convolve.",
       "validated_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
       "started_at": "2026-06-07T08:00:00Z",
       "completed_at": "2026-06-07T10:30:00Z",
-      "updated_at": "2026-06-08T20:19:24Z",
+      "updated_at": "2026-06-08T22:57:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -115,7 +115,7 @@
         "first_session_at": "2026-06-07T08:00:00Z",
         "last_session_at": "2026-06-07T10:30:00Z"
       },
-      "last_agent": "validator",
+      "last_agent": "integrity-check",
       "carry_forward": {
         "from": "3782728a8254af4eef6e828a3fed62362c268502",
         "to": "314591d6b113f5bc19d52d331881291fe95b5404",

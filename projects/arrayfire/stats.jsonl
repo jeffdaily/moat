@@ -49,3 +49,4 @@
 {"kind":"phase","ts":"2026-06-07T15:21:18Z","phase":"compile","seconds":155.287,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/arrayfire/src/build-gfx1201 -j 64"}
 {"kind":"phase","ts":"2026-06-07T16:09:34Z","phase":"test","seconds":2788.084,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/arrayfire/src/build-gfx1201 -R cuda -j1 --output-on-failure"}
 {"kind":"phase","ts":"2026-06-07T16:31:16Z","phase":"test","seconds":1277.030,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/arrayfire/src/build-gfx1201 -R cuda -j1 --output-on-failure"}
+{"kind": "tokens", "ts": "2026-06-07T16:39:20Z", "tokens": 24731, "source": "validator"}

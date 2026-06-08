@@ -1359,3 +1359,6 @@ Python tokenization is unchanged.
 NEXT: upstream-PR gate (lead-only, requires jeff's approval). No existing
 jeffdaily PR on arrayfire/arrayfire. PR body must scope OUT windows-gfx1151
 (retired/non-viable); claim Linux gfx90a + gfx1100 and Windows gfx1201.
+
+## INTEGRITY GAP (windows-gfx1201) -- 2026-06-08
+windows-gfx1201 was marked completed, but the `_WIN32`/`std::filesystem` guard in `src/backend/hip/compile_module.cpp` (replacing POSIX dirent.h/readdir for the clang-resource-version scan) was a LOCAL uncommitted edit and is NOT in the PR branch (origin/moat-port @ 62f0a39, which still has unguarded `#include <dirent.h>`). The OPEN upstream PR #3708 therefore does not build on Windows. Validated fix preserved at agent_space/baspacho-recovery/arrayfire-compile_module-winfix.patch. windows-gfx1201 de-rated to revalidate; the Windows claim is not reproducible from the PR branch until this guard is committed to it (upstream-visible -- needs Jeff's decision).
