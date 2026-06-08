@@ -138,8 +138,11 @@ Test results:
 - conf_timed: FAIL -- device assertion on try_acquire_until (TSC clock 100 MHz assumption, not a hang)
 - conf_heterogeneous: PASS
 
-9 PASS / 1 FAIL (timed, TSC issue unrelated to semaphore change)
-Wave32 result: NO forward-progress hazard. sem_block_probe PASSES without watchdog timeout.
+9 PASS / 1 FAIL (timed). SUPERSEDED INTERPRETATION -- see the CORRECTION and the
+HAZARD SIGNAL note below: conf_timed's failure IS the same-wavefront
+forward-progress hazard (concurrent_agents), not a TSC issue; and sem_block_probe
+passing does NOT mean wave32 is forward-progress-safe (it passes by codegen
+ordering on gfx90a too).
 
 ## Per-arch TSC clockrate -- already present in base, NO code change needed (2026-06-07)
 
@@ -190,19 +193,35 @@ duplicate gfx1100 TSC define in this PR.
 ## (c) Per-arch VALIDATION PLAYBOOK (the follower validator executes this)
 
 Goal: on the target arch, (1) confirm the ungated headers compile and the
-device semaphore works, then (2) answer the wave32 forward-progress question by
-running the block-scope probe and timed test under a watchdog. Report which
-tests pass and, crucially, whether sem_block_probe and timed.pass.cpp hang.
+device semaphore works (sem_umbrella_smoke, sem_test, and the
+version/max/try_acquire/acquire/release/heterogeneous conformance tests), and
+(2) record the forward-progress behavior.
+
+HAZARD SIGNAL -- read before interpreting results:
+- The AUTHORITATIVE same-wavefront forward-progress signal is conf_timed
+  (.upstream-tests/.../thread.semaphore/timed.pass.cpp). Its acquirer and releaser
+  run as concurrent agents within ONE wavefront via a divergent function-pointer
+  dispatch, which forces the unfavorable co-scheduling; on AMD the timed acquire
+  reaches its deadline and returns false (assertion at timed.pass.cpp:65),
+  reflecting the hazard. A conf_timed failure is EXPECTED on AMD; it is NOT a port
+  defect and NOT a TSC/clockrate bug (the 100 MHz RDNA clockrate is present -- see
+  the TSC section).
+- sem_block_probe.cpp is NOT a reliable hazard signal. It is a simple if/else
+  probe whose completion depends only on whether the compiler lays the release
+  branch before the spin branch; on gfx90a (re-measured) it PASSES in both lane
+  orderings without exercising the hazard. DO NOT conclude "wave32 is
+  forward-progress-safe" from sem_block_probe passing. Run it for the record, but
+  weight conf_timed.
 
 Test inventory (all in projects/libhipcxx/validation/, copied from the proven
 gfx90a run so followers do not reconstruct them):
 - sem_umbrella_smoke.cpp -- the two ungated public headers compile + run.
-- sem_test.cpp           -- device producer/consumer (oneflow type), PASS on gfx90a.
-- sem_block_probe.cpp    -- intra-wavefront thread_scope_block probe; HANGS on wave64.
+- sem_test.cpp           -- cross-block device producer/consumer (oneflow type), the SUPPORTED pattern; PASS on gfx90a + gfx1100.
+- sem_block_probe.cpp    -- single-wavefront if/else probe; codegen-ordering dependent and unreliable (see HAZARD SIGNAL); PASSES on gfx90a + gfx1100.
 - upstream conformance under the fork's
   `.upstream-tests/test/std/thread/thread.semaphore/`:
-  version/max/try_acquire/acquire/release.pass.cpp (PASS on gfx90a),
-  timed.pass.cpp (FAILS on wave64), heterogeneous/semaphore.pass.cpp (PASS).
+  version/max/try_acquire/acquire/release.pass.cpp (PASS) + heterogeneous/semaphore.pass.cpp (PASS);
+  timed.pass.cpp is the hazard signal (returns false / assertion on AMD, expected).
 
 ### Linux (linux-gfx1100; gfx1100 RDNA3 wave32)
 
