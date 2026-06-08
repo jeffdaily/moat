@@ -19,3 +19,5 @@
 {"kind":"phase","ts":"2026-06-08T02:23:58Z","phase":"test","seconds":0.433,"exit":1,"cmd":"B:/develop/moat/agent_space/marv_val_gfx1201.exe"}
 {"kind":"phase","ts":"2026-06-08T02:24:43Z","phase":"test","seconds":0.434,"exit":0,"cmd":"B:/develop/moat/agent_space/marv_val_gfx1201.exe"}
 {"kind":"phase","ts":"2026-06-08T02:24:53Z","phase":"compile","seconds":0.066,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/MMseqs2/build-marv -j32 --target marv"}
+{"kind":"phase","ts":"2026-06-08T04:10:29Z","phase":"compile","seconds":358.135,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/MMseqs2/src/build-hip-new -j16 --target mmseqs"}
+{"kind":"phase","ts":"2026-06-08T04:11:39Z","phase":"test","seconds":44.808,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/MMseqs2/src/build-hip-new/src/mmseqs easy-search /var/lib/jenkins/moat/projects/MMseqs2/src/examples/QUERY.fasta /var/lib/jenkins/moat/projects/MMseqs2/valdir-revalidate-20260608/targetDB_padded /var/lib/jenkins/moat/projects/MMseqs2/valdir-revalidate-20260608/gpu.m8 /var/lib/jenkins/moat/projects/MMseqs2/valdir-revalidate-20260608/tmp_gpu --gpu 1"}

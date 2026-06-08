@@ -408,3 +408,69 @@ gfx1201 RDNA4. The PSSM-based gapless scan path is exercised (same
 Marv::scan() call as production ungappedprefilter.cpp).
 
 VERDICT: PASS. State -> completed (validated_sha = d34d42d3).
+
+## Revalidation 2026-06-08 (linux-gfx90a, GCD3)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a, ROCm 7.2.1). HIP_VISIBLE_DEVICES=3.
+
+### Delta classification
+
+c755847a -> d34d42d3: one commit "[ROCm] Windows (MSVC-ABI clang) build support
+for HIP port". Classified `mixed` (arch_independent=False) by moatlib. Includes
+changes to cuda_to_hip.h, CMakeLists.txt, convert.cuh, and Windows POSIX stubs.
+Binary-equivalence carry-forward not attempted due to mixed classification.
+
+### Build regression found (Linux fix required)
+
+d34d42d3 defined `HIP_DISABLE_WARP_SYNC_BUILTINS` unconditionally in
+cuda_to_hip.h to work around a bfloat16 redefinition error in ROCm 7.14
+(Windows/TheRock). On Linux ROCm 7.2.1 this guard wraps `__syncwarp` inside
+`amd_warp_sync_functions.h`, so suppressing it removes `__syncwarp` and breaks
+compilation of `kernels.cuh:777`. Fix: scope the define to `_WIN32` only.
+
+Fix committed as: `dbeac858` "[ROCm] Scope HIP_DISABLE_WARP_SYNC_BUILTINS to Windows only"
+Pushed to fork moat-port; head_sha updated to dbeac858.
+
+### Build (at dbeac858)
+
+```
+cmake -S projects/MMseqs2/src -B projects/MMseqs2/src/build-hip-new \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=/opt/rocm
+HIP_VISIBLE_DEVICES=3 utils/timeit.sh MMseqs2 compile -- \
+  cmake --build projects/MMseqs2/src/build-hip-new -j16 --target mmseqs
+```
+
+Build succeeded (clean, no errors).
+
+codeobj_diff verdict between build-hip (c755847a) and build-hip-new (dbeac858):
+`differ` -- full GPU re-run required.
+
+### GPU vs CPU validation
+
+```
+MMSEQS=projects/MMseqs2/src/build-hip-new/src/mmseqs
+mmseqs createdb examples/DB.fasta valdir-revalidate-20260608/targetDB
+mmseqs makepaddedseqdb valdir-revalidate-20260608/targetDB valdir-revalidate-20260608/targetDB_padded
+HIP_VISIBLE_DEVICES=3 CUDA_VISIBLE_DEVICES=3 utils/timeit.sh MMseqs2 test -- \
+  mmseqs easy-search examples/QUERY.fasta valdir-revalidate-20260608/targetDB_padded \
+  valdir-revalidate-20260608/gpu.m8 valdir-revalidate-20260608/tmp_gpu --gpu 1
+mmseqs easy-search examples/QUERY.fasta valdir-revalidate-20260608/targetDB \
+  valdir-revalidate-20260608/cpu.m8 valdir-revalidate-20260608/tmp_cpu --gpu 0
+```
+
+Results:
+- GPU (--gpu 1): 14482 hit pairs
+- CPU (--gpu 0): 12901 hit pairs
+- Common pairs: 12438
+- GPU-only pairs: 2044 (prefilter-boundary, low-score; expected)
+- CPU-only pairs: 463 (prefilter-boundary; expected)
+- Pairs with |bitscore diff| > 0.5: 0
+- Pairs with |pident diff| > 0.5: 0
+- Max bitscore diff: 0.0000, max pident diff: 0.0000
+
+All 12438 common pairs: GPU Smith-Waterman scores match CPU oracle EXACTLY.
+Identical result counts to the original gfx90a validation (c755847a).
+
+VERDICT: PASS. State -> completed (validated_sha = dbeac858).
