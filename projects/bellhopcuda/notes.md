@@ -231,3 +231,36 @@ verdict=identical
 ### Result
 
 CARRY FORWARD (binary-equiv): The Windows-only `_MSC_VER` block has no effect on the Linux/gfx1100 build. Device ISA and all 1797 exported symbols are byte-identical between old and new builds on gfx1100. No GPU re-run required. linux-gfx1100 -> completed at 0ac10033.
+
+## PR-prep 2026-06-08 (lead) -- docs + squash; carry-forward, no GPU re-run
+
+Port was clean (CMake USE_HIP option, gfx90a default-when-unset, no jargon comment;
+the Windows complex-arith fix IS committed in-branch -- good, unlike baspacho). Only
+prep: docs + a commit-message jargon scrub.
+
+- doc/compilation.md: added a "Building bellhopcuda (with HIP/ROCm support, AMD GPUs)"
+  section alongside the CUDA section (BHC_ENABLE_HIP, CMAKE_HIP_COMPILER,
+  CMAKE_HIP_ARCHITECTURES). README.md: noted AMD GPU support via HIP/ROCm.
+- Commit message: dropped "The port follows Strategy A:" (in-house label) when
+  squashing the 2 port commits + doc into one.
+
+Squashed to ONE commit on upstream main (no drift): fe191f8, parent d28b2173
+(= upstream/main tip). 14 files, +364/-30. Carried gfx90a/gfx1100/gfx1201 forward
+(doc-only). gfx1101/gfx1151 port-ready (redundant Windows tier). pr-ready=True.
+upstream.json populated.
+
+IMPORTANT -- pre-existing clone had a DIRTY INDEX (near-miss): projects/bellhopcuda/src
+pre-existed (from a prior session) with STAGED uncommitted WIP in 3 files
+(include/bhc/math.hpp, src/common.hpp [-129 lines], src/common_setup.hpp). My first
+doc commit accidentally SWEPT them in -- `git commit` includes the WHOLE index, not
+just files I `git add`-ed. Caught it via the classifier (flagged math.hpp/common.hpp
+as changed), reset the (unpushed) commit, and re-committed ONLY the docs via explicit
+paths (`git commit -- README.md doc/compilation.md`). The squash excludes the WIP
+(unstaged), so the PR has the validated port only. The prior session's WIP is
+PRESERVED as unstaged working-tree modifications in projects/bellhopcuda/src -- NOT
+lost, NOT in the PR. Whoever owns that WIP should decide what to do with it.
+LESSON: in a shared/pre-existing clone, verify `git diff --cached --name-only` is
+empty (or commit with explicit `-- <paths>`) before committing -- a pre-dirty index
+gets swept even without `git add -A`.
+
+NEXT: upstream-PR gate (lead-only). base = main. No existing jeffdaily PR.

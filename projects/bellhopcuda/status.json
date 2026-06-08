@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-08T16:58:44Z",
-  "head_sha": "0ac100337228fe6748179e63d614b23369f6d65e",
+  "updated_at": "2026-06-08T23:14:15Z",
+  "head_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0ac100337228fe6748179e63d614b23369f6d65e",
+      "validated_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
       "started_at": "2026-06-05T04:49:54Z",
       "completed_at": "2026-06-08T15:19:08Z",
-      "updated_at": "2026-06-08T15:19:08Z",
+      "updated_at": "2026-06-08T23:14:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "0ac100337228fe6748179e63d614b23369f6d65e",
-        "method": "binary-equiv",
-        "detail": "Windows-only _MSC_VER block; non-MSC paths compile identical device ISA + symbols on gfx90a (1797 exports, codeobj_diff=identical)",
-        "at": "2026-06-08T15:19:08Z"
+        "from": "0ac100337228fe6748179e63d614b23369f6d65e",
+        "to": "780f3a8d969723b5f39290c97f7eca5211a45c40",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-08T23:13:04Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0ac100337228fe6748179e63d614b23369f6d65e",
+      "validated_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
       "started_at": "2026-06-05T13:19:55.629517Z",
       "completed_at": "2026-06-08T16:58:44Z",
-      "updated_at": "2026-06-08T16:58:44Z",
+      "updated_at": "2026-06-08T23:14:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +65,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "0ac100337228fe6748179e63d614b23369f6d65e",
-        "method": "binary-equiv",
-        "detail": "Windows-only _MSC_VER block; non-MSC paths compile identical device ISA + symbols on gfx1100 (1797 exports, codeobj_diff=identical)",
-        "at": "2026-06-08T16:58:44Z"
+        "from": "0ac100337228fe6748179e63d614b23369f6d65e",
+        "to": "780f3a8d969723b5f39290c97f7eca5211a45c40",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-08T23:13:04Z"
       }
     },
     "windows-gfx1101": {
@@ -95,10 +99,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0ac100337228fe6748179e63d614b23369f6d65e",
+      "validated_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
       "started_at": null,
       "completed_at": "2026-06-08T05:30:14Z",
-      "updated_at": "2026-06-08T05:30:14Z",
+      "updated_at": "2026-06-08T23:14:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,6 +115,14 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "from": "0ac100337228fe6748179e63d614b23369f6d65e",
+        "to": "780f3a8d969723b5f39290c97f7eca5211a45c40",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-08T23:13:04Z"
       }
     },
     "windows-gfx1151": {
