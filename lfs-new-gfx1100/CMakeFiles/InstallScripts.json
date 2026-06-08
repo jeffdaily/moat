@@ -1,0 +1,19 @@
+{
+	"InstallScripts" : 
+	[
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/diagnostics/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/geometry/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/core/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/core/tensor/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/core/cuda/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/core/event_bridge/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/core/logger/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/training/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/training/rasterization/fastgs/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/training/rasterization/gsplat/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/src/training/rasterization/edge_compute/cmake_install.cmake",
+		"/var/lib/jenkins/moat/lfs-new-gfx1100/cmake/hip_tests/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

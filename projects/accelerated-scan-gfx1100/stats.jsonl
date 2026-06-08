@@ -1,0 +1,4 @@
+{"kind":"phase","ts":"2026-06-05T14:32:46Z","phase":"compile","seconds":0.299,"exit":1,"cmd":"pip install -e ."}
+{"kind":"phase","ts":"2026-06-05T14:32:55Z","phase":"compile","seconds":3.044,"exit":0,"cmd":"bash -c pip install -e /var/lib/jenkins/moat/projects/accelerated-scan/src"}
+{"kind":"phase","ts":"2026-06-05T14:33:01Z","phase":"test","seconds":0.511,"exit":4,"cmd":"pytest tests/test_eq.py -v"}
+{"kind":"phase","ts":"2026-06-05T14:33:19Z","phase":"test","seconds":11.981,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/accelerated-scan/src && pytest tests/test_eq.py -v"}

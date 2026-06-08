@@ -1,0 +1,3 @@
+{"kind":"phase","ts":"2026-06-05T05:41:52Z","phase":"compile","seconds":0.287,"exit":1,"cmd":"pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T05:42:06Z","phase":"compile","seconds":11.419,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-05T05:51:55Z","phase":"test","seconds":581.630,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/ffpa-attn/src && HIP_VISIBLE_DEVICES=0 pytest tests/ -v --ignore=tests/test_perf_tflops.py"}

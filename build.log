@@ -1,0 +1,5 @@
+Using pip 26.0.1 from /opt/conda/envs/py_3.12/lib/python3.12/site-packages/pip (python 3.12)
+
+[notice] A new release of pip is available: 26.0.1 -> 26.1.2
+[notice] To update, run: pip install --upgrade pip
+ERROR: Directory '.' is not installable. Neither 'setup.py' nor 'pyproject.toml' found.

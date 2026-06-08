@@ -1,0 +1,1 @@
+{"kind":"phase","ts":"2026-06-02T05:00:54Z","phase":"compile","seconds":33.610,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/cudf/build-hip-gfx1100 -j16"}

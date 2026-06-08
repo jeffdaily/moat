@@ -1,0 +1,1 @@
+{"kind":"phase","ts":"2026-06-05T15:50:24Z","phase":"test","seconds":38.879,"exit":8,"cmd":"ctest --test-dir projects/baspacho/src/build --output-on-failure"}

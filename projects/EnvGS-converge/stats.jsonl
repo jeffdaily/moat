@@ -1,0 +1,2 @@
+{"kind":"phase","ts":"2026-06-02T01:25:42Z","phase":"test","seconds":8.204,"exit":1,"cmd":"python3 agent_space/envgs/train_converge.py"}
+{"kind":"phase","ts":"2026-06-02T01:26:43Z","phase":"test","seconds":8.028,"exit":0,"cmd":"python3 agent_space/envgs/train_converge.py"}

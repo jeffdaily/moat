@@ -1,0 +1,863 @@
+[15:16:38] [info] RXMesh: Total number of device: 1
+[15:16:38] [info] RXMesh: Using device Number: 0
+[15:16:38] [info] RXMesh: Device name: AMD Radeon Pro W7800 48GB
+[15:16:38] [info] RXMesh: Compute Capability: 11.0
+[15:16:38] [info] RXMesh: Total amount of global memory (MB): 46064.0
+[15:16:38] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:38] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:38] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:38] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:38] [info] RXMesh: 35 Multiprocessors, 128 CUDA Cores/MP: 4480 CUDA Cores
+[15:16:38] [info] RXMesh: Maximum # blocks per SM: 64
+[15:16:38] [info] RXMesh: ECC support: Disabled
+[15:16:38] [info] RXMesh: GPU Max Clock rate: 1750.0 MHz (1.75 GHz)
+[15:16:38] [info] RXMesh: Memory Clock rate: 1124.0 Mhz
+[15:16:38] [info] RXMesh: Memory Bus Width:  384-bit
+[15:16:38] [info] RXMesh: Peak Memory Bandwidth: 107.904000(GB/s)
+[15:16:38] [info] RXMesh: Kernels compiled for compute capability: 0
+[15:16:38] [info] RXMesh: input= /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:38] [info] RXMesh: output_folder= /var/lib/jenkins/moat/projects/RXMesh/src/output/
+[15:16:38] [info] RXMesh: device_id= 0
+[15:16:38] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/bunnyhead.obj
+[15:16:38] [info] RXMesh: import_obj() #vertices= 1550 
+[15:16:38] [info] RXMesh: import_obj() #faces= 3000 
+[15:16:38] [info] RXMesh: import_obj() #tex= 0 
+[15:16:38] [info] RXMesh: import_obj() #face_tex= 3000 
+[15:16:38] [info] RXMesh: import_obj() #normals = 0 
+[15:16:38] [info] RXMesh: import_obj() #face_normal= 3000 
+[15:16:38] [info] RXMesh: RXMeshStatic: load_obj took= 0.616501 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 9
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 10
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 387.42868 (ms) and 38.742867 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 580, min_patch_size= 244, avg_patch_size= 438
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 943 (31.43%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 8
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 1550, #Faces= 3000, #Edges= 4549, #Patches = 9
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is Not closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 9
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 580
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 911
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 332
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 415.78116 (ms)
+[15:16:39] [info] RXMesh:   build = 414.3809 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.039404 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.015329 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.996697 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.092855 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00017 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.084649 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.155483 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 9 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 10970 (dynamic) + 792 (static) = 11762 (bytes) and 54 registers/thread with occupancy of 5 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/plane_5.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 25 
+[15:16:39] [info] RXMesh: import_obj() #faces= 32 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 32 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 32 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.148159 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 1
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 0
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0 (ms) and 0 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 32, min_patch_size= 32, avg_patch_size= 32
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 0 (0.00%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 1
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 25, #Faces= 32, #Edges= 56, #Patches = 1
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is Not closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 32
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 56
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 25
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 12.082795 (ms)
+[15:16:39] [info] RXMesh:   build = 11.362809 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.00022 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002073 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.412316 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.075281 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00011 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.067898 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.151705 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 1 blocks with 320 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 1528 (dynamic) + 256 (static) = 1784 (bytes) and 53 registers/thread with occupancy of 6 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.150193 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0.985854 (ms) and 0.985854 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 469, min_patch_size= 464, avg_patch_size= 466
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 165 (21.48%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 469
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 723
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 255
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 14.481602 (ms)
+[15:16:39] [info] RXMesh:   build = 13.708736 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.002515 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002806 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.452793 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.075733 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00011 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.071555 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.155743 (ms)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/cube.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 8 
+[15:16:39] [info] RXMesh: import_obj() #faces= 12 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 12 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 12 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.07409 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 1
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 0
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0 (ms) and 0 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 12, min_patch_size= 12, avg_patch_size= 12
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 0 (0.00%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 1
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 8, #Faces= 12, #Edges= 18, #Patches = 1
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 5
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 12
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 18
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 8
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.613578 (ms)
+[15:16:39] [info] RXMesh:   build = 12.895646 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.00019 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.001994 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.409691 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.076654 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.000101 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.068028 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.149883 (ms)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.20674899 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0.970354 (ms) and 0.970354 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 486, min_patch_size= 449, avg_patch_size= 467
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 167 (21.74%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 486
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 747
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 262
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.723264 (ms)
+[15:16:39] [info] RXMesh:   build = 12.959576 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.002605 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002725 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.450067 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.076183 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00011 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.070834 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.149582 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 0 (dynamic) + 0 (static) = 0 (bytes) and 0 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 0 (dynamic) + 0 (static) = 0 (bytes) and 0 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 0 (dynamic) + 0 (static) = 0 (bytes) and 0 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.271131 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0.897723 (ms) and 0.897723 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 508, min_patch_size= 422, avg_patch_size= 465
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 162 (21.09%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 508
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 779
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 272
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.58823 (ms)
+[15:16:39] [info] RXMesh:   build = 12.811306 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.002174 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002805 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.46211 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.075132 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.000121 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.071955 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.150974 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 320 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 4312 (dynamic) + 256 (static) = 4568 (bytes) and 55 registers/thread with occupancy of 6 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 320 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11834 (dynamic) + 904 (static) = 12738 (bytes) and 68 registers/thread with occupancy of 5 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64632 (bytes) = 63.117188 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 1.150485 (ms) and 1.150485 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 536, min_patch_size= 379, avg_patch_size= 457
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 147 (19.14%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 536
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 822
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 287
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.465459 (ms)
+[15:16:39] [info] RXMesh:   build = 12.668478 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.001863 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002675 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.47246 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.075212 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00012 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.081724 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.152037 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11150 (dynamic) + 792 (static) = 11942 (bytes) and 55 registers/thread with occupancy of 5 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  VV  passed  time = 0.032896545 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 7930 (dynamic) + 792 (static) = 8722 (bytes) and 55 registers/thread with occupancy of 7 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  VE  passed  time = 0.03102324 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 7800 (dynamic) + 792 (static) = 8592 (bytes) and 55 registers/thread with occupancy of 7 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  VF  passed  time = 0.033652674 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 4488 (dynamic) + 256 (static) = 4744 (bytes) and 53 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  EV  passed  time = 0.019890253 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 9942 (dynamic) + 792 (static) = 10734 (bytes) and 55 registers/thread with occupancy of 6 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  EF  passed  time = 0.027998872 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 6648 (dynamic) + 256 (static) = 6904 (bytes) and 53 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  FV  passed  time = 0.022601955 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 4448 (dynamic) + 256 (static) = 4704 (bytes) and 54 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  FE  passed  time = 0.0198731 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 14218 (dynamic) + 792 (static) = 15010 (bytes) and 55 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64744 (bytes) = 63.226562 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh:  FF  passed  time = 0.032764103 (ms)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/plane.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 9 
+[15:16:39] [info] RXMesh: import_obj() #faces= 8 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 8 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 8 
+[15:16:39] [info] RXMesh: Patcher: num_patches = 1
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 0
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0 (ms) and 0 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 8, min_patch_size= 8, avg_patch_size= 8
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 0 (0.00%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 1
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 9, #Faces= 8, #Edges= 16, #Patches = 1
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is Not closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 8
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 2
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 8
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 16
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 9
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.130618 (ms)
+[15:16:39] [info] RXMesh:   build = 12.369004 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.00026 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002505 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.439768 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.083137 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 9e-05 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.071565 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.152848 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 1 blocks with 320 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 1276 (dynamic) + 904 (static) = 2180 (bytes) and 55 registers/thread with occupancy of 6 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64632 (bytes) = 63.117188 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/cube.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 8 
+[15:16:39] [info] RXMesh: import_obj() #faces= 12 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 12 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 12 
+[15:16:39] [info] RXMesh: Patcher: num_patches = 1
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 0
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 0 (ms) and 0 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 12, min_patch_size= 12, avg_patch_size= 12
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 0 (0.00%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 1
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 8, #Faces= 12, #Edges= 18, #Patches = 1
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 5
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 12
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 18
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 8
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 15.533183 (ms)
+[15:16:39] [info] RXMesh:   build = 14.789693 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.000181 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002064 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.428146 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.075683 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 8e-05 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.069731 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.157146 (ms)
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 1 blocks with 320 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 1316 (dynamic) + 904 (static) = 2220 (bytes) and 55 registers/thread with occupancy of 6 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64632 (bytes) = 63.117188 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.191651 (ms)
+[15:16:39] [trace] RXMesh: Patcher: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3_patches
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 4.850688 (ms) and 4.850688 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 574, min_patch_size= 348, avg_patch_size= 461
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 154 (20.05%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 574
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 878
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 305
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 15.446339 (ms)
+[15:16:39] [info] RXMesh:   build = 14.611377 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.002985 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002905 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.50458 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.088326 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.00027 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.070332 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.15376 (ms)
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host started
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host finished
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 4 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11902 (dynamic) + 1320 (static) = 13222 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: iter = 1
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 4 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 34015 (dynamic) + 5192 (static) = 39207 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 2
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 4 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 34015 (dynamic) + 5192 (static) = 39207 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 3
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 4 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 34015 (dynamic) + 5192 (static) = 39207 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 4
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 4 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 34015 (dynamic) + 5192 (static) = 39207 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host started
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host finished
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 4 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11902 (dynamic) + 1320 (static) = 13222 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.204996 (ms)
+[15:16:39] [trace] RXMesh: Patcher: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3_patches
+[15:16:39] [info] RXMesh: Patcher: num_patches = 2
+[15:16:39] [info] RXMesh: Patcher: patches_size = 512
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 1
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 4.850688 (ms) and 4.850688 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 574, min_patch_size= 348, avg_patch_size= 461
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 154 (20.05%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 2
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 2
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 574
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 878
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 305
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 13.128835 (ms)
+[15:16:39] [info] RXMesh:   build = 12.318829 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.002785 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.002846 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.485244 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.088397 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.000161 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.06897 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.149632 (ms)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11902 (dynamic) + 1320 (static) = 13222 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: iter = 1
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 33458 (dynamic) + 5192 (static) = 38650 (bytes) and 131 registers/thread with occupancy of 1 blocks/SM, 1392 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 2
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 2 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 33458 (dynamic) + 5192 (static) = 38650 (bytes) and 131 registers/thread with occupancy of 1 blocks/SM, 1392 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host started
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host finished
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 2 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 13082 (dynamic) + 1320 (static) = 14402 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [warning] RXMesh: Line 59 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/attribute.cu
+[15:16:39] [warning] RXMesh: Attribute 'dynamicSoAFallback' requested true SoA on a mesh that does not support global SoA attributes. Falling back to AoSoA.
+[15:16:39] [info] RXMesh: Total number of device: 1
+[15:16:39] [info] RXMesh: Using device Number: 0
+[15:16:39] [info] RXMesh: Device name: AMD Radeon Pro W7800 48GB
+[15:16:39] [info] RXMesh: Compute Capability: 11.0
+[15:16:39] [info] RXMesh: Total amount of global memory (MB): 46064.0
+[15:16:39] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:39] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:39] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:39] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:39] [info] RXMesh: 35 Multiprocessors, 128 CUDA Cores/MP: 4480 CUDA Cores
+[15:16:39] [info] RXMesh: Maximum # blocks per SM: 64
+[15:16:39] [info] RXMesh: ECC support: Disabled
+[15:16:39] [info] RXMesh: GPU Max Clock rate: 1750.0 MHz (1.75 GHz)
+[15:16:39] [info] RXMesh: Memory Clock rate: 1124.0 Mhz
+[15:16:39] [info] RXMesh: Memory Bus Width:  384-bit
+[15:16:39] [info] RXMesh: Peak Memory Bandwidth: 107.904000(GB/s)
+[15:16:39] [info] RXMesh: Kernels compiled for compute capability: 0
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/cloth.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 900 
+[15:16:39] [info] RXMesh: import_obj() #faces= 1682 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 1682 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 1682 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.346843 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 10
+[15:16:39] [info] RXMesh: Patcher: patches_size = 256
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 5
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 5.617391 (ms) and 1.1234782 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 330, min_patch_size= 106, avg_patch_size= 231
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 637 (37.87%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 8
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 900, #Faces= 1682, #Edges= 2581, #Patches = 10
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is Not closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 11
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 330
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 526
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 197
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 19.736507 (ms)
+[15:16:39] [info] RXMesh:   build = 18.171732 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.026851 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.010049 (ms)
+[15:16:39] [info] RXMesh:   build_device = 1.18433 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.086513 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.000491 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.09027 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.154692 (ms)
+[15:16:39] [info] RXMesh: Total number of device: 1
+[15:16:39] [info] RXMesh: Using device Number: 0
+[15:16:39] [info] RXMesh: Device name: AMD Radeon Pro W7800 48GB
+[15:16:39] [info] RXMesh: Compute Capability: 11.0
+[15:16:39] [info] RXMesh: Total amount of global memory (MB): 46064.0
+[15:16:39] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:39] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:39] [warning] RXMesh: Line 56 File /var/lib/jenkins/moat/projects/RXMesh/src/include/rxmesh/util/cuda_query.h
+[15:16:39] [warning] RXMesh: MapSMtoCores for SM 11.0 is undefined.  Default to use 128 Cores/SM
+
+[15:16:39] [info] RXMesh: 35 Multiprocessors, 128 CUDA Cores/MP: 4480 CUDA Cores
+[15:16:39] [info] RXMesh: Maximum # blocks per SM: 64
+[15:16:39] [info] RXMesh: ECC support: Disabled
+[15:16:39] [info] RXMesh: GPU Max Clock rate: 1750.0 MHz (1.75 GHz)
+[15:16:39] [info] RXMesh: Memory Clock rate: 1124.0 Mhz
+[15:16:39] [info] RXMesh: Memory Bus Width:  384-bit
+[15:16:39] [info] RXMesh: Peak Memory Bandwidth: 107.904000(GB/s)
+[15:16:39] [info] RXMesh: Kernels compiled for compute capability: 0
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/sphere3.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 386 
+[15:16:39] [info] RXMesh: import_obj() #faces= 768 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 768 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 768 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 0.404632 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 4
+[15:16:39] [info] RXMesh: Patcher: patches_size = 256
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 7
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 5.601213 (ms) and 0.8001733 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 325, min_patch_size= 161, avg_patch_size= 270
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 312 (40.62%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 4
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 386, #Faces= 768, #Edges= 1152, #Patches = 4
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 6
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 325
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 506
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 182
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 19.048204 (ms)
+[15:16:39] [info] RXMesh:   build = 18.051306 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.01022 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.004428 (ms)
+[15:16:39] [info] RXMesh:   build_device = 0.66409 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.078448 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.000381 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.071936 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.155663 (ms)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 4 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 6914 (dynamic) + 1320 (static) = 8234 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: Input mesh #Patches 4
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host started
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host finished
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 8 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 6914 (dynamic) + 1320 (static) = 8234 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/bumpy-cube.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 19970 
+[15:16:39] [info] RXMesh: import_obj() #faces= 39936 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 39936 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 39936 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 6.285798 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 228
+[15:16:39] [info] RXMesh: Patcher: patches_size = 256
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 10
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 10.03192 (ms) and 1.0031921 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 361, min_patch_size= 165, avg_patch_size= 262
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 19881 (49.78%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 14
+[15:16:39] [info] RXMesh: RXMesh: #Vertices = 19970, #Faces= 39936, #Edges= 59904, #Patches = 228
+[15:16:39] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:39] [info] RXMesh: RXMesh: Input is closed
+[15:16:39] [info] RXMesh: RXMesh: Input max valence = 8
+[15:16:39] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:39] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum face count = 361
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum edge count = 567
+[15:16:39] [info] RXMesh: RXMesh: per-patch maximum vertex count = 209
+[15:16:39] [info] RXMesh: RXMesh::init timings:
+[15:16:39] [info] RXMesh:   total = 74.37435 (ms)
+[15:16:39] [info] RXMesh:   build = 38.955505 (ms)
+[15:16:39] [info] RXMesh:   populate_patch_stash = 0.701682 (ms)
+[15:16:39] [info] RXMesh:   coloring = 0.257796 (ms)
+[15:16:39] [info] RXMesh:   build_device = 33.80436 (ms)
+[15:16:39] [info] RXMesh:   PatchScheduler = 0.077937 (ms)
+[15:16:39] [info] RXMesh:   compute_max_lp_capacity = 0.012022 (ms)
+[15:16:39] [info] RXMesh:   create_handles = 0.401676 (ms)
+[15:16:39] [info] RXMesh:   context.init = 0.147017 (ms)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 228 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 7964 (dynamic) + 1320 (static) = 9284 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 5590 (dynamic) + 256 (static) = 5846 (bytes) and 60 registers/thread with occupancy of 8 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 65280 (bytes) = 63.75 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: avg_area = 0.0038377773
+[15:16:39] [info] RXMesh: iter = 1
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 2
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 3
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 4
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 5
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 6
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 7
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 8
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 9
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 10
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 11
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 12
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 13
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 14
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 15
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 16
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 17
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 18
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 19
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [info] RXMesh: iter = 20
+[15:16:39] [trace] RXMesh: RXMeshDynamic::calc_shared_memory() launching 228 blocks with 256 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 46750 (dynamic) + 5192 (static) = 51942 (bytes) and 129 registers/thread with occupancy of 1 blocks/SM, 1472 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 60344 (bytes) = 58.929688 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host started
+[15:16:39] [trace] RXMesh: RXMeshDynamic updating host finished
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:39] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 228 blocks with 512 threads on the device
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 11034 (dynamic) + 1320 (static) = 12354 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:39] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:39] [info] RXMesh: Reading /var/lib/jenkins/moat/projects/RXMesh/src/input/dragon.obj
+[15:16:39] [info] RXMesh: import_obj() #vertices= 10000 
+[15:16:39] [info] RXMesh: import_obj() #faces= 20000 
+[15:16:39] [info] RXMesh: import_obj() #tex= 0 
+[15:16:39] [info] RXMesh: import_obj() #face_tex= 20000 
+[15:16:39] [info] RXMesh: import_obj() #normals = 0 
+[15:16:39] [info] RXMesh: import_obj() #face_normal= 20000 
+[15:16:39] [info] RXMesh: RXMeshStatic: load_obj took= 3.563902 (ms)
+[15:16:39] [info] RXMesh: Patcher: num_patches = 117
+[15:16:39] [info] RXMesh: Patcher: patches_size = 256
+[15:16:39] [info] RXMesh: Patcher: num_components = 1
+[15:16:39] [info] RXMesh: Patcher: Num lloyd run = 10
+[15:16:39] [info] RXMesh: Patcher: Parallel patches construction time = 7.880289 (ms) and 0.7880289 (ms/lloyd_run)
+[15:16:39] [info] RXMesh: Patcher: max_patch_size= 382, min_patch_size= 150, avg_patch_size= 262
+[15:16:39] [info] RXMesh: Patcher: number external ribbon faces = 10740 (53.70%)
+[15:16:39] [info] RXMesh: RXMesh: Num colors = 16
+[15:16:40] [info] RXMesh: RXMesh: #Vertices = 10000, #Faces= 20000, #Edges= 30000, #Patches = 117
+[15:16:40] [info] RXMesh: RXMesh: Input is edge manifold
+[15:16:40] [info] RXMesh: RXMesh: Input is closed
+[15:16:40] [info] RXMesh: RXMesh: Input max valence = 12
+[15:16:40] [info] RXMesh: RXMesh: max edge incident faces = 2
+[15:16:40] [info] RXMesh: RXMesh: max face adjacent faces = 3
+[15:16:40] [info] RXMesh: RXMesh: per-patch maximum face count = 382
+[15:16:40] [info] RXMesh: RXMesh: per-patch maximum edge count = 606
+[15:16:40] [info] RXMesh: RXMesh: per-patch maximum vertex count = 225
+[15:16:40] [info] RXMesh: RXMesh::init timings:
+[15:16:40] [info] RXMesh:   total = 38.315006 (ms)
+[15:16:40] [info] RXMesh:   build = 30.052708 (ms)
+[15:16:40] [info] RXMesh:   populate_patch_stash = 0.507255 (ms)
+[15:16:40] [info] RXMesh:   coloring = 0.147377 (ms)
+[15:16:40] [info] RXMesh:   build_device = 7.244393 (ms)
+[15:16:40] [info] RXMesh:   PatchScheduler = 0.060794 (ms)
+[15:16:40] [info] RXMesh:   compute_max_lp_capacity = 0.003646 (ms)
+[15:16:40] [info] RXMesh:   create_handles = 0.171543 (ms)
+[15:16:40] [info] RXMesh:   context.init = 0.113043 (ms)
+[15:16:40] [trace] RXMesh: RXMeshDynamic validation started
+[15:16:40] [trace] RXMesh: RXMeshStatic::calc_shared_memory() launching 117 blocks with 512 threads on the device
+[15:16:40] [trace] RXMesh: RXMeshStatic::check_shared_memory() user function requires shared memory = 9172 (dynamic) + 1320 (static) = 10492 (bytes) and 47 registers/thread with occupancy of 4 blocks/SM, 0 local mem/thread (bytes)
+[15:16:40] [trace] RXMesh: RXMeshStatic::check_shared_memory() max dynamic shared memory per block for this function = 64216 (bytes) = 62.710938 (Kb)
+[15:16:40] [trace] RXMesh: RXMeshStatic::check_shared_memory() max total shared memory per block for the current device = 65536 (bytes) = 64 (Kb)
+[15:16:40] [trace] RXMesh: RXMeshDynamic validation finished
+[15:16:40] [info] RXMesh: #Nodes = 8781
