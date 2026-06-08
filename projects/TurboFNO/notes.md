@@ -88,6 +88,62 @@ by the same cgemm-vs-hipBLAS and fft_8-vs-hipFFT harness on the follower host,
 and/or a cross-arch output diff against the gfx90a result (deterministic).
 gfx1151: confirm hipFFT/hipBLAS presence in the Windows HIP SDK.
 
+## Validation 2026-06-07 (windows-gfx1201, RDNA4 wave32)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201, warpSize=32, 32 CUs. ROCm 7.14.0a20260604 (TheRock nightly).
+Fork: jeffdaily/TurboFNO moat-port @ e100b3d (submodule jeffdaily/TurboFFT @ e285704).
+
+Build: all 10 fusion variants configured and compiled clean for gfx1201 via Ninja + all-clang
+(clang++ 23.0.0 from _rocm_sdk_devel). Warnings only, no errors.
+
+Commands:
+```
+# Set up environment
+export PROJECT_ROOT=B:\develop\moat\projects\TurboFNO\src
+export HIP_VISIBLE_DEVICES=0   # gfx1201 is device 0 (V710 offline this session)
+ROCM=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+CLANG=$ROCM\lib\llvm\bin\clang++.exe
+
+# Build all 10 variants (Ninja, -j32 shared with another concurrent build)
+# python3 agent_space/turbofno_build_win_gfx1201.py --arch gfx1201 --jobs 32
+
+# Build numerical harness directly
+$CLANG -x hip --offload-arch=gfx1201 -DUSE_HIP -std=c++17 -O2 -ffp-contract=on \
+    -I$PROJECT_ROOT/utils \
+    -I$PROJECT_ROOT/fusion_variants/1D_A_exp_fft+cgemm+ifft \
+    -I$PROJECT_ROOT/TurboFFT/TurboFFT/include/code_gen/generated/float2 \
+    -I$ROCM/include \
+    agent_space/turbofno_validate_win.cu \
+    $PROJECT_ROOT/utils/utils.cu \
+    -L$ROCM/lib -lhipfft -lhipblas \
+    -o agent_space/turbofno_validate_win.exe
+
+# Run (DLLs from _rocm_sdk_core/bin and _rocm_sdk_devel/bin on PATH;
+#      ROCBLAS_TENSILE_LIBPATH for rocBLAS Tensile kernels)
+# HIP_VISIBLE_DEVICES=0 agent_space/turbofno_validate_win.exe
+```
+
+Windows-specific note: harness uses utils.cuh include before the generated FFT headers
+(turboFFT_ZADD/ZSUB/ZMUL macros must be visible when fft_radix_2_logN_8_upload_0.cuh is
+included). Harness compilation is agent_space/turbofno_validate_win.cu.
+Runtime: DLLs (amdhip64_7.dll, hipfft.dll, hipblas.dll, rocfft.dll) copied next to exe
+or on PATH from _rocm_sdk_core/bin + _rocm_sdk_devel/bin. ROCBLAS_TENSILE_LIBPATH=
+_rocm_sdk_libraries/bin/rocblas/library. The rocblaslt stderr errors (cannot read
+TensileLibrary_lazy_gfx1201.dat) are non-fatal; they do not affect hipblasCgemm path.
+
+Numerical results (agent_space/turbofno_validate_win.cu on GPU 0):
+- Device: AMD Radeon RX 9070 XT, warpSize=32, CUs=32
+- GEMM: cgemm (logical-32 tiling, wave32) vs hipblasCgemm M=256 N=256 K=128 (col-maj):
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=3.958292e-05 -> PASS
+- FFT: fft_8 (hand-rolled radix-2 256pt) vs hipfftExecC2C FORWARD, batch=1024:
+  outlier_cnt=0, outlier_perct=0.000000%, max_rel_diff=3.576712e-04 -> PASS
+
+Runtime smoke (RC=0, no CHECK_CUDA_KERNEL errors):
+- TurboFNO_1D_D (fused FFT-GEMM-iFFT): ran to completion, RC=0.
+- TurboFNO_1D_E (hipFFT+hipBLAS baseline): ran to completion, RC=0.
+
+Result: windows-gfx1201 COMPLETED at e100b3d.
+
 ## Validation 2026-06-04 (linux-gfx1100, RDNA3 wave32)
 
 GPU: AMD Radeon Pro W7800 48GB, gfx1100, warpSize=32, 35 CUs. ROCm 7.2.1.
