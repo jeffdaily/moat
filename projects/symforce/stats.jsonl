@@ -28,3 +28,12 @@
 {"kind":"phase","ts":"2026-06-05T01:56:59Z","phase":"test","seconds":23.658,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce && HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py"}
 {"kind":"phase","ts":"2026-06-05T01:58:44Z","phase":"test","seconds":24.031,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/symforce && HIP_VISIBLE_DEVICES=0 python3 test_hip_validation.py 2>&1 | tail -30"}
 {"kind": "tokens", "ts": "2026-06-05T01:59:59Z", "tokens": 55518, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T19:25:17Z","phase":"compile","seconds":1.421,"exit":1,"cmd":"cmake --build B:/develop/moat/agent_space/symforce_hip_test/runtime_build --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T19:25:55Z","phase":"compile","seconds":11.259,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/symforce_hip_test/runtime_build --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T19:26:15Z","phase":"compile","seconds":3.403,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/symforce_hip_test/test_build --parallel 24"}
+{"kind":"phase","ts":"2026-06-08T19:26:41Z","phase":"test","seconds":0.253,"exit":0,"cmd":"B:/develop/moat/agent_space/symforce_hip_test/test_build/test_caspar_runtime.exe"}
+{"kind":"phase","ts":"2026-06-08T19:38:38Z","phase":"test","seconds":1.765,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T19:39:00Z","phase":"test","seconds":2.556,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T19:40:46Z","phase":"test","seconds":90.962,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T19:41:21Z","phase":"test","seconds":10.728,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T19:42:03Z","phase":"test","seconds":17.673,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}

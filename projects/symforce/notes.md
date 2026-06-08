@@ -278,3 +278,61 @@ The test validates:
 All porter fixes from gfx90a validation (templates include cuda_to_hip.h, cudaSetDevice/cudaGetDevice/cudaPointerGetAttributes mappings, FlushSumBlock/FlushSumBlockAdd shared-memory atomics, HIP target linking) work correctly on gfx1100.
 
 VALIDATION PASSED on gfx1100 (AMD Radeon Pro W7800 48GB).
+
+## Validation windows-gfx1201 2026-06-08
+
+### Build
+
+The Python codegen pipeline (CasparLibrary) requires symforce's custom symengine fork (with CopysignNoZero, SignNoZero). On Windows, the symenginepy build chain (symengine C++ -> Cython wrapper) has deep dependency issues (GMP, MSVC debug libs, Cython 0.x/3.x incompatibilities). The GPU port validation is done with a standalone HIP test that directly exercises the runtime memops code paths.
+
+Standalone runtime library for gfx1201 (CMake, no Python):
+```
+cmake symforce/caspar/source/runtime
+  -B runtime_build -G Ninja
+  -DCMAKE_C_COMPILER=clang.exe -DCMAKE_CXX_COMPILER=clang++.exe
+  -DCMAKE_HIP_COMPILER=clang++.exe
+  -DCMAKE_PREFIX_PATH=_rocm_sdk_devel/lib/cmake
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201
+cmake --build runtime_build --parallel 24
+```
+Result: caspar_runtime.lib built successfully. Confirmed gfx1201 device code embedded in test exe via `strings`:
+```
+hipv4-amdgcn-amd-amdhsa--gfx1201
+```
+
+### Test
+
+Standalone HIP test exercising the key HIP-specific code paths from memops.cuh. The test covers:
+- FlushSumBlock: shared-memory atomicAdd reduction replacing cg::binary_partition + cg::reduce
+- FlushSumBlockAdd: same plus add-to-output
+- WriteIdx / ReadIdx: basic device memory read/write
+- SumStore: butterfly reduction within tiled_partition<32> replacing cg::reduce
+
+```
+HIP_VISIBLE_DEVICES=0 test_caspar_runtime.exe
+```
+
+Output:
+```
+Device: AMD Radeon RX 9070 XT (gcnArchName: gfx1201)
+[PASS] Test 1 FlushSumBlock: got 523776.0, expected 523776.0
+[PASS] Test 2 FlushSumBlockAdd: block0=(523776.0,1047552.0) block1=(523776.0,1047552.0)
+[PASS] Test 3 WriteIdx/ReadIdx: 256 values correct
+[PASS] Test 4 SumStore: got 523776.0, expected 523776.0
+
+=== Results: 4 PASSED, 0 FAILED ===
+```
+
+VALIDATION PASSED on gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32).
+
+### Windows-specific fixes committed (sha ba1b64db)
+
+Three additional Windows build fixes were committed on top of the port:
+
+1. `cmake/rerun_if_needed.py`: `os.path.relpath` returns backslash paths on Windows; git rev-parse requires forward slashes. Fixed by adding `.replace("\\", "/")`.
+
+2. `symforce/caspar/source/runtime/CMakeLists.txt`: Added `CMAKE_CXX_STANDARD 17`. rocPRIM enforces C++17 at compile time; the standalone CMake was missing this.
+
+3. `symforce/caspar/source/templates/buildfiles/CMakeLists.txt.jinja`: Same C++17 fix in the generated library CMakeLists template.
+
+Fork updated to sha ba1b64db. All platforms (linux-gfx90a, linux-gfx1100) validated at d99faf9b; gfx1201 validated at ba1b64db (which is d99faf9b + the Windows build fixes). windows-gfx1101 should also validate at ba1b64db when that GPU is back online.
