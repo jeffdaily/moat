@@ -18,3 +18,8 @@
 {"kind":"phase","ts":"2026-06-08T02:54:21Z","phase":"compile","seconds":5.047,"exit":0,"cmd":"bash -c cd B:/develop/moat/projects/accelerated-scan/src && HIP_VISIBLE_DEVICES=0 B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/pip.exe install -e . 2>&1"}
 {"kind":"phase","ts":"2026-06-08T02:54:41Z","phase":"test","seconds":12.363,"exit":0,"cmd":"bash -c cd B:/develop/moat/projects/accelerated-scan/src && HIP_VISIBLE_DEVICES=0 B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/pytest.exe tests/test_eq.py -v 2>&1"}
 {"kind":"phase","ts":"2026-06-08T02:55:15Z","phase":"test","seconds":24.399,"exit":0,"cmd":"bash -c cd B:/develop/moat/projects/accelerated-scan/src && HIP_VISIBLE_DEVICES=0 B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/pytest.exe tests/tests_eq_complex.py -v 2>&1"}
+{"kind":"phase","ts":"2026-06-08T16:52:03Z","phase":"build","seconds":0.003,"exit":127,"cmd":"pip install -e projects/accelerated-scan/src"}
+{"kind":"phase","ts":"2026-06-08T16:52:32Z","phase":"compile","seconds":19.004,"exit":0,"cmd":"pip install -e projects/accelerated-scan/src"}
+{"kind":"phase","ts":"2026-06-08T16:52:53Z","phase":"test","seconds":10.204,"exit":1,"cmd":"bash -c cd projects/accelerated-scan/src && python3 -m pytest tests/test_eq.py -q -k \"reverse or bindings\" 2>/dev/null"}
+{"kind":"phase","ts":"2026-06-08T16:53:44Z","phase":"test","seconds":28.709,"exit":1,"cmd":"bash -c cd projects/accelerated-scan/src && python3 -m pytest tests/test_eq.py tests/tests_eq_complex.py -q 2>/dev/null"}
+{"kind": "tokens", "ts": "2026-06-08T16:59:38Z", "tokens": 56703, "source": "porter"}

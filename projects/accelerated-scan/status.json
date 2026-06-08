@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:25:53Z",
-  "updated_at": "2026-06-08T02:55:35Z",
-  "head_sha": "94e47c459cacf615bdae7cafd501837903032e88",
+  "updated_at": "2026-06-08T16:59:38Z",
+  "head_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "94e47c459cacf615bdae7cafd501837903032e88",
+      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
       "started_at": null,
-      "completed_at": "2026-06-05T08:01:13Z",
-      "updated_at": "2026-06-05T08:01:13Z",
+      "completed_at": "2026-06-08T16:59:38Z",
+      "updated_at": "2026-06-08T16:59:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "method": "source-class",
+        "detail": "reverse+exports prep RE-RUN on real gfx90a: full suite 832/833 (1 pre-existing flake), 192 new test_eq_reverse cases + bindings test all pass",
+        "at": "2026-06-08T16:59:38Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "94e47c459cacf615bdae7cafd501837903032e88",
+      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
       "started_at": null,
-      "completed_at": "2026-06-05T14:34:24Z",
-      "updated_at": "2026-06-05T14:34:24Z",
+      "completed_at": "2026-06-08T16:59:38Z",
+      "updated_at": "2026-06-08T16:59:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "method": "source-class",
+        "detail": "Python/Triton wave-agnostic reverse (flip identity) + import-stub exports; prior forward+backward unchanged; new path validated on gfx90a, identical wave-agnostic code",
+        "at": "2026-06-08T16:59:38Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -83,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "94e47c459cacf615bdae7cafd501837903032e88",
+      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
       "started_at": null,
-      "completed_at": "2026-06-08T02:55:35Z",
-      "updated_at": "2026-06-08T02:55:35Z",
+      "completed_at": "2026-06-08T16:59:38Z",
+      "updated_at": "2026-06-08T16:59:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,7 +112,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "method": "source-class",
+        "detail": "Python/Triton wave-agnostic reverse + exports; validated on gfx90a, identical code path",
+        "at": "2026-06-08T16:59:38Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
