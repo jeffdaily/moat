@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T01:19:43Z",
-  "updated_at": "2026-06-08T04:42:35Z",
+  "updated_at": "2026-06-08T13:53:50Z",
   "head_sha": "d6d4561",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "9b4f7be7406cc939109690eb9e05f9ba2dcd3a5c",
+      "validated_sha": "d6d4561",
       "started_at": null,
-      "completed_at": "2026-06-04T03:09:26Z",
-      "updated_at": "2026-06-08T03:55:14Z",
+      "completed_at": "2026-06-08T13:53:50Z",
+      "updated_at": "2026-06-08T13:53:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +55,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "d6d4561",
+        "method": "binary-equiv",
+        "detail": "9b4f7be->d6d4561: Windows Clang/MSVC flag and HIPStream compat fixes; on Linux ROCm 7.2.1 all three changed files compile identically (MSVC=false, HIP_VERSION_MINOR=2<14, ELF ABI struct/class neutral)",
+        "at": "2026-06-08T13:53:50Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

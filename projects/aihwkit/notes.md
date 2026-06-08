@@ -354,3 +354,31 @@ Full GPU test suite (HIP_VISIBLE_DEVICES=3, gfx90a wave64, ROCm 7.2.1):
 
 Total: 1521 passed, 383 skipped, 0 failed. Identical pass count to original validation.
 Verdict: PASS. Transitioning linux-gfx90a to completed (validated_sha d6d4561).
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+State: revalidate (validated_sha 9b4f7be -> head_sha d6d4561).
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, wave32 native). ROCm 7.2.1. HIP_VISIBLE_DEVICES=2.
+
+Delta 9b4f7be..d6d4561 (2 commits: Windows Clang build fixes + getCurrentCUDAStream ROCm compat):
+- CMakeLists.txt: guard /O2 with if(MSVC) instead of if(WIN32). On Linux MSVC=false; the else() branch is unchanged.
+- rpu_base_tiles_cuda.cpp: HIP_VERSION_MINOR-gated getCurrentHIPStream/getCurrentCUDAStream. On Linux ROCm 7.2.1: HIP_VERSION_MAJOR=7, HIP_VERSION_MINOR=2 < 14, so c10::cuda::getCurrentCUDAStream path taken -- same as before the change.
+- pwu_kernel_parameter_base.h: class->struct for PulsedUpdateMetaParameter forward declaration. On Linux/ELF both mangle identically; no ABI impact.
+
+No .cu device files changed. Binary equivalence check:
+
+Build commands (HIP_VISIBLE_DEVICES=2, CMAKE_HIP_ARCHITECTURES=gfx1100):
+```
+cmake -S . -B build_hip -GNinja -DUSE_HIP=ON -DUSE_CUDA=OFF -DRPU_CXX_STANDARD=20 \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_PREFIX_PATH="${TORCH_CMAKE};/opt/rocm" -DRPU_BLAS=OpenBLAS -DBUILD_TEST=OFF \
+  -DRPU_USE_TORCH_BUFFERS=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build build_hip -j16
+```
+
+codeobj_diff result:
+  src/aihwkit/simulator/rpu_base.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (11257 exports))
+  verdict=identical
+
+Carry-forward applied: moatlib carry-forward binary-equiv, validated_sha -> d6d4561.
+No GPU re-run required. linux-gfx1100 -> completed.
