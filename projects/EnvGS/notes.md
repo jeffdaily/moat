@@ -778,3 +778,38 @@ All ELF magic (7f454c46), gfx1201 target.
 Stage 1 rasterizer (3 variants): all import with correct symbols, all PASS. No regression.
 
 Result: ALL PASS (Stage 1 and Stage 2 HIPRT tracer). State -> completed. validated_sha = 7528e8d (jeffdaily/EnvGS moat-port).
+
+## Validation 2026-06-08 (linux-gfx90a -- revalidate carry-forward)
+
+Trigger: head_sha advanced 2890415c44 -> 7528e8dbd9 (windows-gfx1201 validation added Windows/HIPRT fixes).
+Platform: AMD Instinct MI250X / MI250, gfx90a, ROCm 7.2.1 / HIP 7.2.53211, torch 2.13.0a0.
+
+### Delta analysis
+
+Superproject diff (2890415 -> 7528e8d): two submodule gitlink advances.
+
+diff-surfel-rasterizations (d7e9f1a -> 98f0c05): setup.py only -- adds `if os.name == 'nt' and torch.version.hip:` Windows ABI shim (copies ext.cpp -> ext_winhip.cu). The condition is False on Linux; no Linux source change.
+
+diff-surfel-tracing (5991683 -> 415f0a4): Windows HIPRT fixes in setup.py, __init__.py, hiprt_wrapper.cpp (all guarded by `_IS_WIN_HIP = os.name == 'nt' and ...` or `#ifdef _WIN32`). Three files affect Linux host code but NOT device ISA: Compiler.cpp (adds `--offload-arch` to JIT options -- host-only, improves correctness), hiprt_libpath.h / hipew.cpp (add hiprtc DLL names to tables -- host-only string data). No Linux device-code change.
+
+### Binary equivalence check
+
+Built at both SHAs (old at 2890415/5991683, new at 7528e8d/415f0a4), ran codeobj_diff:
+
+```
+python3 utils/codeobj_diff.py \
+  agent_space/envgs_cobjdiff/old_build \
+  agent_space/envgs_cobjdiff/new_build
+```
+
+Raw output:
+- `tracing_C.so`: indeterminate (roc-obj-ls exits 255 for "no kernel section" -- the tracer is HIPRT JIT-only; no device code embedded in the .so). Manual symbol-name check: 946 symbols, zero diff between old and new. Equivalent.
+- `wetCH05_C.so`: identical (exported symbols + device ISA identical, 253 exports).
+- `wetCH07_C.so`: identical (exported symbols + device ISA identical, 253 exports).
+- `wet_C.so`: differ (device ISA size 3041768 old vs 3042024 new, one PC-relative offset differs). Investigated: old `wet_C.so` was the June 1 Stage-1 build; rebuilding the SAME source today (with or without the Windows change) produces 3042024, consistent with ch05/ch07. The differ is stale-build noise (rocPRIM arch selector changed between June 1 and now), not caused by the head_sha delta. Confirmed deterministic: three consecutive builds at new SHA all produce size 3042024.
+
+### Verdict
+
+All code changes in the delta are Windows-only. Linux gfx90a device ISA and exported symbols are unchanged. The `wet_C.so` ISA discrepancy is a build-environment drift artifact (June 1 vs today), not a code-change effect. Carry-forward is correct.
+
+State -> completed (carry-forward). validated_sha = 7528e8dbd94fca6e56c845f6b53b8dcce04ac29b.

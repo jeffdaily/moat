@@ -49,3 +49,5 @@
 {"kind":"phase","ts":"2026-06-07T20:56:39Z","phase":"test","seconds":1.886,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/envgs/validate_stage1.py"}
 {"kind":"phase","ts":"2026-06-07T20:59:01Z","phase":"compile","seconds":2.645,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/rebuild_hiprt2.py"}
 {"kind":"phase","ts":"2026-06-07T20:59:17Z","phase":"test","seconds":5.058,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-08T00:18:41Z","phase":"compile","seconds":51.090,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch07 --no-build-isolation --no-deps -q"}
+{"kind":"phase","ts":"2026-06-08T00:19:26Z","phase":"compile","seconds":32.306,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-tracing --no-build-isolation --no-deps -q"}

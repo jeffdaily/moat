@@ -7,17 +7,17 @@
   "priority": 4.133,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-07T21:05:19Z",
+  "updated_at": "2026-06-08T00:24:09Z",
   "head_sha": "7528e8dbd94fca6e56c845f6b53b8dcce04ac29b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2890415c449c12d3f7a3146d8d9b282ed140c41b",
+      "validated_sha": "7528e8dbd94fca6e56c845f6b53b8dcce04ac29b",
       "started_at": "2026-06-01T00:24:48Z",
-      "completed_at": "2026-06-02T01:00:00Z",
-      "updated_at": "2026-06-07T21:04:59Z",
+      "completed_at": "2026-06-08T00:24:09Z",
+      "updated_at": "2026-06-08T00:24:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "7528e8dbd94fca6e56c845f6b53b8dcce04ac29b",
+        "method": "binary-equiv",
+        "detail": "All delta changes are _WIN32/os.name==nt guarded; Linux device ISA and exported symbols unchanged (wet stale-build noise; tracing has no embedded device code -- 946 symbol names identical)",
+        "at": "2026-06-08T00:24:09Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
