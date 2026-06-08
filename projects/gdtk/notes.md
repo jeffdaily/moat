@@ -411,3 +411,28 @@ Both builds (b611ce03 and 8aadf218) compiled with `make HIP=1 HIP_ARCH=gfx90a -j
 Device ISA and exported symbols are byte-identical; no GPU re-run required.
 
 Carry-forward: linux-gfx90a -> completed at 8aadf218 (binary-equiv).
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate, binary-equiv carry-forward)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, HIP_VISIBLE_DEVICES=1)
+Revalidate: b611ce03 -> 8aadf218 (one commit on top)
+
+Delta: same single-line change in src/chicken/block.cu as the gfx90a revalidate (adds
+`ios::binary` to Block::readGrid()). On Linux/POSIX, `ios::binary` is a no-op.
+
+Classification: moatlib classify returned `mixed` (token count differs), so codeobj_diff
+was run between builds at both SHAs compiled with `make HIP=1 HIP_ARCH=gfx1100 -j$(nproc)`.
+
+```
+export HIP_VISIBLE_DEVICES=1
+# worktree at b611ce03 -> build-old/chkn-run
+# worktree at 8aadf218 -> build-new/chkn-run
+python3 utils/codeobj_diff.py agent_space/gdtk-gfx1100-gpu1/build-old/chkn-run \
+                              agent_space/gdtk-gfx1100-gpu1/build-new/chkn-run
+verdict=identical
+  chkn-run vs chkn-run: identical (exported symbols + device ISA identical (24 exports))
+```
+
+Device ISA and all 24 exported symbols are byte-identical; no GPU re-run required.
+
+Carry-forward: linux-gfx1100 -> completed at 8aadf218 (binary-equiv).
