@@ -7,39 +7,10 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-05T01:25:53Z",
-  "updated_at": "2026-06-08T18:18:50Z",
+  "updated_at": "2026-06-08T19:21:42Z",
   "head_sha": "84770b4d7d7c1ab7e8add748bd26213a59d4411c",
   "depends_on": [],
   "platforms": {
-    "linux-gfx90a": {
-      "state": "pr-open",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
-      "started_at": null,
-      "completed_at": "2026-06-08T16:59:38Z",
-      "updated_at": "2026-06-08T17:26:30Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
-        "method": "source-class",
-        "detail": "reverse+exports prep RE-RUN on real gfx90a: full suite 832/833 (1 pre-existing flake), 192 new test_eq_reverse cases + bindings test all pass",
-        "at": "2026-06-08T16:59:38Z"
-      }
-    },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
@@ -118,6 +89,35 @@
         "method": "source-class",
         "detail": "README: document ROCm/AMD support (doc-only)",
         "at": "2026-06-08T18:18:50Z"
+      }
+    },
+    "linux-gfx90a": {
+      "state": "pr-open",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+      "started_at": null,
+      "completed_at": "2026-06-08T16:59:38Z",
+      "updated_at": "2026-06-08T17:26:30Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "64ac44f3f850a99f025ecbabcc0f3e8cb4d58e40",
+        "method": "source-class",
+        "detail": "reverse+exports prep RE-RUN on real gfx90a: full suite 832/833 (1 pre-existing flake), 192 new test_eq_reverse cases + bindings test all pass",
+        "at": "2026-06-08T16:59:38Z"
       }
     },
     "windows-gfx1151": {

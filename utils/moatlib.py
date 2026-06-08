@@ -9,6 +9,7 @@ advance_head). State transitions are validated; illegal jumps raise."""
 
 import argparse
 import json
+import re
 import subprocess
 import sys
 import time
@@ -228,11 +229,21 @@ def set_blocked(name, platform, blocked, reason=None):
     return obj
 
 
+def _clean_pr_url(raw):
+    """Extract the http(s) URL from a pr_url argument. Guards against a caller
+    capturing extra stdout (e.g. a `Warning: N uncommitted changes` line) into
+    the value via command substitution -- store only the URL, never the noise."""
+    m = re.search(r"https?://\S+", raw or "")
+    if not m:
+        raise ValueError(f"set-pr-open: no http(s) URL found in pr_url {raw!r}")
+    return m.group(0)
+
+
 def set_pr_open(name, pr_url, pr_number):
     """Set lead platform to pr-open state and record PR metadata.
     Call this after successfully creating the upstream PR."""
     obj = load_status(name)
-    obj["pr_url"] = pr_url
+    obj["pr_url"] = _clean_pr_url(pr_url)
     obj["pr_number"] = int(pr_number)
     obj["pr_opened_at"] = now_iso()
     # Only the lead platform transitions to pr-open; followers stay at completed

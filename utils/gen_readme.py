@@ -83,17 +83,34 @@ def load_projects():
     return out
 
 
-def cell(block):
-    """Status glyph for one platform. A blocked=true platform shows the blocked
-    glyph (🚫) unless the block reason indicates a retired/optional platform
-    (gfx1151), in which case we show n/a (—) to avoid misleading stop signs."""
+# Windows archs whose 'port-ready' (lead done, not yet validated here) reads as
+# pending (—) rather than the 🟡 'queued' glyph. For now gfx1201 is the only
+# active Windows validation target, so 🟡 'queued' appears there alone; gfx1101
+# and gfx1151 are queued-but-not-active and show pending to keep the table honest.
+PENDING_WINDOWS = {"windows-gfx1101", "windows-gfx1151"}
+
+# gfx1151 is a retired/optional tier that never gates PR-readiness, so a blocked
+# gfx1151 cell reads as n/a (—) -- EXCEPT the handful where we actually ran
+# validation on the APU and it genuinely failed on the arch (wrong numerics,
+# hangs, or host faults of an otherwise-correct port). Those stay 🚫. Curated
+# here rather than parsed from blocked_reason free text (the substring matching
+# that this replaces was applied inconsistently).
+GFX1151_ATTEMPTED_FAIL = {"Gpufit", "alien", "lc0", "stdgpu"}
+
+
+def cell(block, key, project_name):
+    """Status glyph for one platform cell. Blocked platforms show 🚫, except the
+    retired gfx1151 tier which shows n/a (—) unless it is a curated genuine
+    attempt-and-fail. Windows 'port-ready' shows 🟡 only on gfx1201; gfx1101 and
+    gfx1151 show pending (—)."""
+    state = block.get("state")
     if block.get("blocked"):
-        reason = block.get("blocked_reason", "")
-        # Retired platforms (gfx1151) are optional, not failed gates
-        if "gfx1151 host retired" in reason:
-            return "—"
+        if key == "windows-gfx1151":
+            return "🚫" if project_name in GFX1151_ATTEMPTED_FAIL else "—"
         return "🚫"
-    return EMOJI.get(block.get("state"), "❓")
+    if state == "port-ready" and key in PENDING_WINDOWS:
+        return "—"
+    return EMOJI.get(state, "❓")
 
 
 def plat_header(key):
@@ -150,8 +167,8 @@ def render_table(projects):
     # reference; the per-row glyphs still convey status. (Popularity/priority order
     # buried manually-adopted projects at priority 0 and told no progress story.)
     projects = sorted(projects, key=lambda p: p.get("name", "").lower())
-    legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (follower; lead done) · "
-              "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked · — n/a. "
+    legend = ("Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done) · "
+              "🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked/failed · — n/a or pending. "
               "Outcome: 🟣 PR merged · 🟢 PR open · 🔴 PR closed · 🔵 validated (existing ROCm confirmed on N archs) · "
               "🍴 fork-only · ⚪ superseded · — pending. "
               "† The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) "
@@ -170,7 +187,7 @@ def render_table(projects):
         else:
             proj = f"[{name}]({up})"
         plats = p.get("platforms", {})
-        cells = [cell(plats.get(k, {"state": "?"})) for k in moatlib.PLATFORMS]
+        cells = [cell(plats.get(k, {"state": "?"}), k, name) for k in moatlib.PLATFORMS]
         lines.append("| " + " | ".join([proj] + cells + [outcome_cell(p)]) + " |")
     return "\n".join(lines)
 
