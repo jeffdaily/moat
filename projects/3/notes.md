@@ -545,3 +545,23 @@ Verified sound (so the next agent need not recheck):
 - Hygiene: commit title "[ROCm] Make the HIP/AMD backend additive and opt-in" (51 chars); Test Plan with literal commands; root cause explained; Claude disclosed; no Co-Authored-By/noreply trailer; author jeff.daily@amd.com (public). All changed hand-written files ASCII, no em-dash. No AMD-internal account references (the "internal" hits are upstream API constants CUFFT_INTERNAL_ERROR / CURAND_STATUS_INTERNAL_ERROR and the upstream -test help text).
 
 Carry-forward note for the validator (post-fix): the device .cu sources and the HIP branches of reduce.h/atomicf.h are unchanged vs f6b642d5, and the gfx90a/gfx1100/gfx1201 .co bytes are bit-for-bit identical (porter cmp MATCH=64 DIFFER=0); gfx1100 and gfx1201 carry forward via .co byte-identity once the gfx90a HIP path validates at the new sha.
+
+## Validation 2026-06-08 (linux-gfx90a, additive-restructure carry-forward)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Delta: f6b642d5 -> 4f3de0cf (074bfdce additive-backend restructure + 4f3de0cf comment-only Makefile reword).
+
+Method: built 64 gfx90a .co files at 4f3de0cf (HEAD) via `make wrappers BACKEND=hip CUDA_CC=gfx90a` in projects/3/src/cuda, and at f6b642d5 via `make CUDA_CC=gfx90a` in a git worktree. Compared each pair with `cmp -s`.
+
+Binary-equivalence check:
+```
+# co-head: 64 *_gfx90a.co from HEAD (4f3de0cf), same .cu sources + HIPCCFLAGS
+# co-old:  64 *_gfx90a.co from f6b642d5 (prior validated sha)
+cmp -s result: MATCH=64 DIFFER=0
+```
+
+All 64 gfx90a code objects byte-identical. The restructure changed no device source (.cu) and no HIPCCFLAGS; the comment reword (4f3de0cf) only touched a Makefile comment with no effect on kernel compilation. HIP path `go install -tags hip ./...` at HEAD compiles clean (deprecation warnings only, no errors; binary 15.6 MB).
+
+No GPU re-run required. Carry-forward confirmed.
+
+Verdict: binary-equiv carry-forward. State -> completed at 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc. No GPU re-run required.

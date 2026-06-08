@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-08T04:37:43Z",
+  "updated_at": "2026-06-08T04:44:08Z",
   "head_sha": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
+      "validated_sha": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
       "started_at": "2026-06-04T04:33:12Z",
-      "completed_at": "2026-06-08T00:20:36Z",
-      "updated_at": "2026-06-08T04:37:43Z",
+      "completed_at": "2026-06-08T04:44:08Z",
+      "updated_at": "2026-06-08T04:44:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,12 +32,12 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer",
+      "last_agent": "validator",
       "carry_forward": {
-        "to": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
+        "to": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
         "method": "binary-equiv",
-        "detail": "all 64 gfx90a .co files byte-identical (unchanged .cu+Makefile); curand_shim.h host-only change compiles clean on ROCm 7.2.1",
-        "at": "2026-06-08T00:20:36Z"
+        "detail": "all 64 gfx90a .co byte-identical (f6b642d5->4f3de0cf); comment-only Makefile reword, no device source change",
+        "at": "2026-06-08T04:44:08Z"
       }
     },
     "linux-gfx1100": {

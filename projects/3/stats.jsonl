@@ -34,3 +34,5 @@
 {"kind":"phase","ts":"2026-06-08T04:15:51Z","phase":"test","seconds":12.851,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/3/src/test && for s in demag2D.mx3 cubicanisotropy.mx3 anisenergyconservation.mx3 dmi.mx3; do echo \"=== $s ===\"; HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/go/bin/mumax3 -cache /tmp -http \"\" \"$s\" 2>&1 | grep -iE \": OK|FAIL|expect|panic|error\" | grep -v \"deprecated\" | head -6; done"}
 {"kind": "tokens", "ts": "2026-06-08T04:21:27Z", "tokens": 209138, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-08T04:33:18Z", "tokens": 123473, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-08T04:39:24Z","phase":"compile","seconds":0.035,"exit":2,"cmd":"make wrappers BACKEND=hip CUDA_CC=gfx90a"}
+{"kind":"phase","ts":"2026-06-08T04:43:05Z","phase":"compile","seconds":0.015,"exit":0,"cmd":"go install -tags hip github.com/mumax/3/..."}
