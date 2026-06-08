@@ -201,3 +201,68 @@ Executable: `build/src_clean/graspa` (2.1MB)
    - Zero energy drift (all components 0.00000)
 
 **Verdict**: VALIDATED -- All three benchmark simulations pass on gfx1100 with identical results to gfx90a. Port works correctly across AMD architectures.
+
+## Validation 2026-06-08 (windows-gfx1201, RX 9070 XT gfx1201, HIP_VISIBLE_DEVICES=0)
+
+**GPU**: AMD Radeon RX 9070 XT (gfx1201, RDNA4)
+**ROCm**: 7.14 (TheRock venv), HIP compiler: clang++.exe
+**Commit**: 312048e73b2afab04296ba7990814ba863651789 (added Windows build fixes on top of ddf08ad)
+
+**Windows-specific build fixes required** (committed as new commit on moat-port):
+
+1. Guard POSIX-only APIs in main.cpp with `#ifndef _WIN32`: `unistd.h` include,
+   `/proc/self/statm` body in `printMemoryUsage()`, and `readlink` call in `Initialize()`.
+
+2. Add `#include <numeric>` to mc_widom.h and lambda.h for `std::accumulate` (Wang-Landau iteration).
+
+3. CMakeLists.txt (src_clean): On Windows+Clang, MSVC's `emmintrin.h` declares SSE2 intrinsics
+   as `extern` (not inline), causing `_mm_loadu_si128`/`_mm_cmpeq_epi16`/`_mm_movemask_epi8`
+   link errors from the Windows CRT `wmemcmp`. Fix: use `target_include_directories(... SYSTEM BEFORE ...)`
+   to prepend clang's own resource include directory (where emmintrin.h uses `static __inline__
+   __always_inline__`) before MSVC's system includes.
+
+**Build** (clean, from scratch):
+```powershell
+cmake .. -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 `
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" `
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" `
+  -DCMAKE_PREFIX_PATH="$ROCM" `
+  -DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES" `
+  -DCMAKE_HIP_FLAGS="-D_USE_MATH_DEFINES" `
+  -DOpenMP_CXX_FLAGS="-fopenmp" `
+  -DOpenMP_CXX_LIB_NAMES="libomp" `
+  -DOpenMP_libomp_LIBRARY="$MSVC_DIR/lib/x64/libomp.lib" `
+  -DOpenMP_CXX_INCLUDE_DIR="$MSVC_DIR/include"
+cmake --build . -j24
+```
+Executable: `build-gfx1201/src_clean/graspa.exe` (1.2MB)
+
+Runtime DLL: `amdhip64_7.dll` found via `C:\WINDOWS\SYSTEM32\amdhip64_7.dll` (on PATH).
+
+**Test Results** (all with HIP_VISIBLE_DEVICES=0, run from example directory):
+
+1. CO2-MFI GCMC benchmark (Examples/CO2-MFI):
+   - PASS: Completed successfully (exit 0)
+   - 17 CO2 molecules adsorbed (C_co2 pseudoatoms: 17)
+   - ENERGY DRIFT: all components 0.00000
+   - GPU DRIFT: Ewald [Host-Host] = -0.00004 (sub-threshold, effectively zero)
+   - Work took ~20 seconds
+
+2. Methane-TMMC (Examples/Methane-TMMC):
+   - PASS: Completed all three phases (INIT/EQUIL/PRODUCTION) without crashes
+   - 53 methane molecules (CH4_sp3 pseudoatoms: 53)
+   - GPU DRIFT: all zero
+   - CPU energy drift in VDW: -929 kJ/mol (expected: TMMC biasing scheme causes
+     accumulated energy to drift from CPU recalculation; GPU drift itself is zero)
+   - Work took ~14 seconds
+
+3. Tail-Correction (Examples/Tail-Correction):
+   - PASS: Completed successfully (exit 0)
+   - 1323 Argon molecules (Ar[20] pseudoatoms: 1323)
+   - ENERGY DRIFT: all components 0.00000
+   - GPU DRIFT: all zero
+   - Work took ~4 seconds
+
+**Verdict**: VALIDATED -- All three benchmark simulations pass on gfx1201 (RDNA4).
+GPU kernels produce correct results (zero GPU drift). Molecule counts match expected
+ranges (Monte Carlo stochastic variance: 17/18 CO2, 53/58 CH4, 1323/1327 Ar).

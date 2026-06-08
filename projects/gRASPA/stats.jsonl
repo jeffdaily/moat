@@ -22,3 +22,9 @@
 {"kind":"phase","ts":"2026-06-05T10:09:34Z","phase":"test","seconds":166.260,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Methane-TMMC && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
 {"kind":"phase","ts":"2026-06-05T10:10:34Z","phase":"test","seconds":53.813,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/gRASPA/src/Examples/Tail-Correction && /var/lib/jenkins/moat/projects/gRASPA/src/build/src_clean/graspa"}
 {"kind":"session","ts":"2026-06-05T15:38:06Z","epoch":1780673886.182005670,"event":"end","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-08T16:37:03Z","phase":"compile","seconds":6.156,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/gRASPA/src/build-gfx1201 -j24"}
+{"kind":"phase","ts":"2026-06-08T16:43:21Z","phase":"compile","seconds":9.303,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/gRASPA/src/build-gfx1201 -j24"}
+{"kind":"phase","ts":"2026-06-08T17:08:21Z","phase":"compile","seconds":9.352,"exit":1,"cmd":"cmake --build /b/develop/moat/projects/gRASPA/src/build-gfx1201 -j24"}
+{"kind":"phase","ts":"2026-06-08T17:11:20Z","phase":"compile","seconds":10.009,"exit":0,"cmd":"cmake --build /b/develop/moat/projects/gRASPA/src/build-gfx1201 -j24"}
+{"kind":"phase","ts":"2026-06-08T17:11:57Z","phase":"test","seconds":0.248,"exit":0,"cmd":"B:/develop/moat/projects/gRASPA/src/build-gfx1201/src_clean/graspa.exe /b/develop/moat/projects/gRASPA/src/Examples/CO2-MFI/simulation.input"}
+{"kind":"phase","ts":"2026-06-08T17:30:29Z","phase":"test","seconds":45.677,"exit":0,"cmd":"bash /tmp/run_graspa_tests.sh /b/develop/moat/projects/gRASPA/src/build-gfx1201/src_clean/graspa.exe /b/develop/moat/projects/gRASPA/src/Examples"}
