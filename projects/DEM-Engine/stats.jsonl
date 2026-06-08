@@ -91,3 +91,9 @@
 {"kind":"phase","ts":"2026-06-08T01:22:24Z","phase":"test","seconds":60.093,"exit":124,"cmd":"timeout 60 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_BallDrop2D"}
 {"kind":"phase","ts":"2026-06-08T01:22:59Z","phase":"test","seconds":30.107,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_RotatingDrum"}
 {"kind":"phase","ts":"2026-06-08T01:23:34Z","phase":"test","seconds":30.070,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/projects/DEM-Engine/src/build/bin/DEMdemo_Repose"}
+{"kind":"phase","ts":"2026-06-08T01:33:14Z","phase":"compile","seconds":42.769,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-old -j64"}
+{"kind":"phase","ts":"2026-06-08T01:34:15Z","phase":"compile","seconds":42.898,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new -j64"}
+{"kind":"phase","ts":"2026-06-08T01:35:38Z","phase":"test","seconds":39.199,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new/bin/DEMdemo_SingleSphereCollide"}
+{"kind":"phase","ts":"2026-06-08T01:36:46Z","phase":"test","seconds":60.067,"exit":124,"cmd":"timeout 60 /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new/bin/DEMdemo_BallDrop2D"}
+{"kind":"phase","ts":"2026-06-08T01:37:21Z","phase":"test","seconds":30.094,"exit":124,"cmd":"timeout 30 /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new/bin/DEMdemo_RotatingDrum"}
+{"kind":"phase","ts":"2026-06-08T01:38:10Z","phase":"test","seconds":45.050,"exit":124,"cmd":"timeout 45 /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new/bin/DEMdemo_Repose"}

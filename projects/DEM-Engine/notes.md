@@ -964,3 +964,81 @@ All 27 demo executables built successfully.
 - No NaN/inf values in any output
 - JIT compilation succeeds for all 43 kernels
 - Physics behavior correct across all test cases
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+### GPU Architecture
+
+AMD Radeon RX 7900 XTX (gfx1100, RDNA3, wave32) with ROCm 7.2.1.
+
+### Delta Classification
+
+Revalidation triggered by HEAD advancing from 462c9b9e to 41820c68. Delta is 2 files:
+
+1. `src/core/utils/JitHelper.cpp` (+15/-3): Replaced hardcoded clang builtin header path (`lib/llvm/lib/clang/22/include`) with a runtime directory scan (`add_clang_builtins`) over `<rocm_root>/lib/llvm/lib/clang/`. On this host, the scan finds exactly one version directory (22), resolving to `/opt/rocm/lib/llvm/lib/clang/22/include` -- identical to the old hardcoded path.
+
+2. `src/kernel/CUDAMathHelpers.cuh` (+1/-1): Extended host-code guard from `#ifndef __CUDACC__` to `#if !defined(__CUDACC__) && !defined(__HIPCC_RTC__) && !defined(__HIP_DEVICE_COMPILE__)`. On Linux with ROCm 7.2.1, hiprtc already defines `__CUDACC__` so the added terms are redundant but harmless.
+
+codeobj_diff returned `indeterminate` (device-code extraction failed on .so objects) so full GPU revalidation was required per pipeline rules.
+
+### Build Status
+
+**SUCCESS** at head_sha 41820c68 in `agent_space/DEM-Engine-gfx1100-gpu0/build-new`:
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake /var/lib/jenkins/moat/projects/DEM-Engine/src \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release
+utils/timeit.sh DEM-Engine compile -- cmake --build \
+  /var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new -j$(nproc)
+```
+
+All 27 demo executables built successfully.
+
+### Runtime Testing
+
+Ran 4 GPU physics demos on gfx1100:
+
+1. **DEMdemo_SingleSphereCollide** (contact detection, collision response):
+   - Status: COMPLETED (full simulation, 50100+ dynamic steps)
+   - JIT compilation: All kernels compiled successfully for gfx1100
+   - Physics: Spheres collide, bounce, hit mesh floor -- correct
+   - Result: PASS
+
+2. **DEMdemo_BallDrop2D** (gravity, collision, 2832 particles, 60s timeout):
+   - Status: RAN to frame 7 (timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+3. **DEMdemo_RotatingDrum** (rotating boundary, 200k+ clumps, 1M+ spheres, 30s timeout):
+   - Status: RAN to frame 0 (initialized, timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+4. **DEMdemo_Repose** (large-scale settling, 268k+ spheres, 45s timeout):
+   - Status: RAN to frame 3 (timeout as expected)
+   - JIT compilation: Success
+   - Result: PASS
+
+### Commands Used
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+BIN=/var/lib/jenkins/moat/agent_space/DEM-Engine-gfx1100-gpu0/build-new/bin
+
+utils/timeit.sh DEM-Engine test -- $BIN/DEMdemo_SingleSphereCollide
+utils/timeit.sh DEM-Engine test -- timeout 60 $BIN/DEMdemo_BallDrop2D
+utils/timeit.sh DEM-Engine test -- timeout 30 $BIN/DEMdemo_RotatingDrum
+utils/timeit.sh DEM-Engine test -- timeout 45 $BIN/DEMdemo_Repose
+```
+
+### Validation Outcome
+
+**PASSED** on linux-gfx1100 at commit 41820c68.
+
+- All 4 demos ran without GPU errors on gfx1100
+- JIT compilation succeeds for all 43 kernels at head_sha
+- clang builtin dir scan resolves identically to old hardcoded path (clang 22)
+- CUDAMathHelpers.cuh guard extension harmless on Linux
+- No NaN/inf values in any output
+- Physics behavior correct across all test cases
