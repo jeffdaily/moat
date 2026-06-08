@@ -272,3 +272,47 @@ Result: 6/6 tests PASS (100%)
 - test_mem_unique: PASS (0.19s, GPU memory management)
 
 Verdict: PASS. validated_sha=aff8ee6 (linux-gfx90a).
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+Platform: AMD Radeon RX 7900 XTX (gfx1100), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3
+Fork: jeffdaily/cuSZ @ moat-port, SHA aff8ee6 (validated_sha was 26b1f91)
+
+### Delta classification
+
+`git diff 26b1f91..aff8ee6` spans 8 files (44 insertions, 6 deletions). Same delta as the gfx90a revalidation: most changes are `_WIN32`-guarded, but two are unconditional:
+
+1. `cmake/hip.cmake`: adds `psz_hip_stat` to `psz_hip_utils` link libraries (host link order fix)
+2. `psz/src/utils/viewer.cc`: removes `const` qualifier from `unordered_map` key types
+
+`python3 utils/codeobj_diff.py build-hip-old build-hip-new` returned `verdict=differ`: `libpsz_hip_utils.so` exported symbol names changed (mangled names for `unordered_map<K13psz_predictor, ...>` changed to `unordered_map<13psz_predictor, ...>` -- `const` removed from key). Device ISA is identical across all libraries. Carry-forward not applicable; full GPU revalidation required.
+
+### Build command
+
+```bash
+cd /var/lib/jenkins/moat/projects/cuSZ/src
+cmake -S . -B build-hip-new \
+  -DPSZ_BACKEND=HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_TESTING=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/bin/amdclang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/amdclang++
+cmake --build build-hip-new -j$(nproc)
+```
+
+### Test results
+
+```bash
+HIP_VISIBLE_DEVICES=3 ctest --test-dir build-hip-new --output-on-failure -E 'histsp_hip' -j1
+```
+
+Result: 6/6 tests PASS (100%)
+- test_zigzag: PASS (0.00s, CPU-only zigzag codec)
+- test_l1_compact: PASS (0.22s, GPU sparse vector compaction, gfx1100)
+- test_lrz_seq: PASS (0.00s, CPU-only Lorenzo predictor)
+- test_stat_identical: PASS (0.21s, GPU statistical functions)
+- test_stat_max_error: PASS (0.23s, GPU error calculation)
+- test_mem_unique: PASS (0.15s, GPU memory management)
+
+Verdict: PASS. validated_sha=aff8ee6 (linux-gfx1100).

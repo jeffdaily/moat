@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-08T15:31:26Z",
+  "updated_at": "2026-06-08T17:07:14Z",
   "head_sha": "aff8ee6",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "26b1f916d7df2877c415354f3660192b44c747b5",
+      "validated_sha": "aff8ee6",
       "started_at": "2026-06-05T14:50:00Z",
-      "completed_at": "2026-06-05T14:58:00Z",
-      "updated_at": "2026-06-08T14:53:16Z",
+      "completed_at": "2026-06-08T17:07:14Z",
+      "updated_at": "2026-06-08T17:07:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
