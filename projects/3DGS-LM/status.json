@@ -7,17 +7,17 @@
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-08T00:33:44Z",
-  "head_sha": "90e3353",
+  "updated_at": "2026-06-08T15:08:58Z",
+  "head_sha": "eb3a8c14f743bd728b82b47759ee0056cd2691d3",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "90e3353",
+      "validated_sha": "eb3a8c14f743bd728b82b47759ee0056cd2691d3",
       "started_at": "2026-06-01T00:55:34Z",
-      "completed_at": "2026-06-08T00:12:58Z",
-      "updated_at": "2026-06-08T00:12:58Z",
+      "completed_at": "2026-06-08T15:06:54Z",
+      "updated_at": "2026-06-08T15:08:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "90e3353",
-        "method": "binary-equiv",
-        "detail": "setup.py changes guarded by os.name=='nt'; Linux build inputs unchanged, device code objects identical",
-        "at": "2026-06-08T00:12:58Z"
+        "to": "198197071e7347799a810f20df466cfcd083baa9",
+        "method": "source-class",
+        "detail": "comment-only jargon scrub (.gitignore + hip_warp_compat.h comments); arch-independent, device code unaffected",
+        "at": "2026-06-08T15:06:54Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "90e3353a66468481cbd715416d230ab11a629357",
+      "validated_sha": "eb3a8c14f743bd728b82b47759ee0056cd2691d3",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-08T00:33:44Z",
-      "updated_at": "2026-06-08T00:33:44Z",
+      "completed_at": "2026-06-08T15:06:54Z",
+      "updated_at": "2026-06-08T15:06:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "90e3353a66468481cbd715416d230ab11a629357",
-        "method": "binary-equiv",
-        "detail": "setup.py changes guarded by os.name=='nt'; Linux build inputs unchanged, device code objects identical (codeobj_diff verdict=identical)",
-        "at": "2026-06-08T00:33:44Z"
+        "to": "198197071e7347799a810f20df466cfcd083baa9",
+        "method": "source-class",
+        "detail": "comment-only jargon scrub (.gitignore + hip_warp_compat.h comments); arch-independent, device code unaffected",
+        "at": "2026-06-08T15:06:54Z"
       }
     },
     "windows-gfx1101": {
@@ -94,10 +94,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "90e3353a",
+      "validated_sha": "eb3a8c14f743bd728b82b47759ee0056cd2691d3",
       "started_at": null,
-      "completed_at": "2026-06-07T21:43:30Z",
-      "updated_at": "2026-06-07T21:43:30Z",
+      "completed_at": "2026-06-08T15:06:54Z",
+      "updated_at": "2026-06-08T15:06:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,7 +111,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "198197071e7347799a810f20df466cfcd083baa9",
+        "method": "source-class",
+        "detail": "comment-only jargon scrub (.gitignore + hip_warp_compat.h comments); arch-independent, device code unaffected",
+        "at": "2026-06-08T15:06:54Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
@@ -135,5 +141,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/lukasHoel/3DGS-LM/pull/15",
+  "pr_number": 15,
+  "pr_opened_at": "2026-06-08T15:08:58Z"
 }
