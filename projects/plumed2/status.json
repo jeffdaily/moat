@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:16:31Z",
-  "updated_at": "2026-06-05T17:03:54Z",
+  "updated_at": "2026-06-08T18:06:39Z",
   "head_sha": "cb90687f8",
   "depends_on": [],
   "platforms": {
@@ -35,12 +35,12 @@
     },
     "windows-gfx1201": {
       "state": "port-ready",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "plumed2 requires autotools+POSIX build toolchain (autoconf/automake absent on Windows host); PLUMED main library uses ./configure+make producing .so/.dlopen -- no Windows-native build path; plugin prereq plumed binary unavailable without building PLUMED first",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-05T06:37:02Z",
+      "updated_at": "2026-06-08T18:06:39Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

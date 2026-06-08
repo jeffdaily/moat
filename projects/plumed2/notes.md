@@ -338,3 +338,24 @@ Result: PASS
 - The gfx1100 runtime initialization fix does not affect gfx90a behavior
 
 Validated commit: cb90687f8706326ed2ce02f4a98c18bd05bdc582
+
+## Validation 2026-06-08
+
+### Platform: windows-gfx1201
+
+GPU: AMD Radeon RX 9070 XT (gfx1201), HIP_VISIBLE_DEVICES=0 (confirmed via hipInfo.exe -- V710 offline, RX 9070 XT now at device 0).
+
+### Toolchain assessment: BLOCKED
+
+PLUMED is an autoconf/autotools project. Its build requires:
+
+1. `./configure` (a GNU Autoconf 2.69-generated POSIX shell script) to build the main PLUMED library -- this requires autoconf, automake, and standard POSIX compiler detection that does not work on Windows without MSYS2/MinGW toolchains targeting native Windows.
+2. The cudaCoord plugin's `configure.sh` calls `plumed config makefile_conf` and `plumed info --include-dir` -- these require a working `plumed` binary in PATH from a completed PLUMED build.
+3. The Makefile produces a `.so` shared library (SOEXT=so). PLUMED's plugin mechanism uses `dlopen` -- a POSIX-only API with no `.dll` equivalent in the current build system.
+4. No conda available on this host; no pre-built `plumed.exe` in PATH; `autoconf`/`automake`/`autoreconf` are absent.
+
+hipcc is available at `B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/bin/hipcc.exe` and `gmake` at `/c/Strawberry/c/bin/gmake`, so the GPU compiler toolchain is present. But building PLUMED itself (the prerequisite for the plugin) requires autotools + a POSIX shell environment that this Windows host does not have configured for native compilation.
+
+Specifically: no `autoconf`, no `automake`, no `autoreconf` in PATH. The pre-generated `configure` script is a POSIX sh script that will fail on Windows because it tries to detect POSIX tools (gcc, ld, ranlib, etc.) and generate POSIX Makefiles using Linux conventions (`-fPIC`, `-ldl`, SONAME, `dlopen`) incompatible with Windows native builds.
+
+**Resolution**: windows-gfx1201 is blocked with reason: plumed2 requires autotools + POSIX build toolchain for the main PLUMED library (prerequisite for the cudaCoord plugin). No autoconf/automake present on this Windows host, and PLUMED's build system has no Windows-native (MSVC/clang-cl) build path; the plugin output is a .so using dlopen which is POSIX-only.
