@@ -371,3 +371,35 @@ Tier 3 (end-to-end gradient descent, 8 steps): PSNR 32.23 -> 40.51 dB (monotone)
 The div_gate function called `_C.calc_preconditioner(data, sparse_jacs, idx_maps, pg_caches)` directly with 4 args; the Windows build's pybind11 signature requires all 8 (including sorted segment metadata). Fix: move the sort step before calc_preconditioner and call via the Python wrapper `GaussianRasterizer.calc_preconditioner(...)` with full args. This is a harness-only fix (agent_space, not committed to fork).
 
 ### Overall verdict: PASS. windows-gfx1201 -> completed (validated_sha=90e3353).
+
+## Revalidation 2026-06-08 (validator, linux-gfx1100) -- binary-equiv carry-forward
+
+HEAD moved from 56cb37a to 90e3353 (Windows-only setup.py fix, `os.name == 'nt'`-guarded). Only `setup.py` files changed; all new code paths are gated by `os.name == 'nt' and torch.version.hip is not None`, which is never true on Linux (`os.name == 'posix'`). The `.cu`/`.h` source files, build flags, and `ext.cpp` are completely unchanged on Linux.
+
+### Binary-equivalence check
+
+Built both SHAs for gfx1100 (HIP_VISIBLE_DEVICES=1, PYTORCH_ROCM_ARCH=gfx1100):
+
+```
+# Old SHA (validated_sha=56cb37a): installed to agent_space/3DGS-LM-gfx1100-gpu1/site_old
+bash utils/timeit.sh 3DGS-LM compile -- bash agent_space/3DGS-LM-gfx1100-gpu1/build_old.sh
+
+# New SHA (head_sha=90e3353): installed to agent_space/3DGS-LM-gfx1100-gpu1/site_new
+bash utils/timeit.sh 3DGS-LM compile -- bash agent_space/3DGS-LM-gfx1100-gpu1/build_new.sh
+
+# Diff device code objects
+python3 utils/codeobj_diff.py \
+  agent_space/3DGS-LM-gfx1100-gpu1/site_old \
+  agent_space/3DGS-LM-gfx1100-gpu1/site_new
+```
+
+Result:
+```
+verdict=identical
+  diff_gaussian_rasterization/_C.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (439 exports))
+  simple_knn/_C.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (292 exports))
+```
+
+`codeobj_diff verdict=identical` confirms the compiled program is unchanged on gfx1100. Validation carried forward without GPU re-run.
+
+### Overall verdict: carry-forward via binary-equiv. linux-gfx1100 -> completed (validated_sha=90e3353).
