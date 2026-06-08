@@ -7,17 +7,17 @@
   "priority": 6.146,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-08T20:19:24Z",
+  "updated_at": "2026-06-08T21:24:15Z",
   "head_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": "ported at fork 3782728 (was revalidate at 2378586). Extended the completed core: (1) SPARSE subsystem implemented on hipSPARSE -- the generic API (CreateCsr/Csc/Coo, SpMV/SpMM, DenseToSparse/SparseToDense, SpMatGetSize, Csr/CscSetPointers), legacy sort/conversion (Xcsrsort/Xcoosort/Xcsr2coo/Xcoo2csr/CreateIdentityPermutation), and typed csrgeam2 all map 1:1 (NO hipSPARSE gaps; coverage map in UPSTREAM_FINDINGS B5). Replaced the AF_ERR_NOT_SUPPORTED stubs in sparse.cu/sparse_arith.cu/sparse_blas.cu; new nvrtc_shims/cusparse_v2.h forwarding shim; cusparse.hpp/.cpp/descriptor-helpers rewritten with tag-keyed TaggedHandle for the void*-aliasing descriptors (DnVec/DnMat both typedef void*); two JIT fixes in kernel/sparse_arith (arith_op::operator() __device__, all-defines per launcher). (2) int8 gemm closed (B2): schar -> hipblasGemmEx HIP_R_8I in / HIP_R_32I out / COMPUTE_32I, cast to f32. (3) FreeImage on (AF_WITH_IMAGEIO=ON). FULL CUDA.* ctest on gfx90a (GCD 2) = 132/132 binaries (100%, 0 failed) -- all 6 prior residuals closed, no regression. Was 126/132. CUDA backend byte-for-byte unchanged. Next: reviewer -> validator -> completed.",
       "validated_sha": "62f0a39ff11000715947d7fb6831d88588ed2b44",
       "started_at": "2026-05-31T02:38:19Z",
       "completed_at": "2026-05-31T23:08:31Z",
-      "updated_at": "2026-06-08T20:19:24Z",
+      "updated_at": "2026-06-08T21:24:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/arrayfire/arrayfire/pull/3708",
+  "pr_number": 3708,
+  "pr_opened_at": "2026-06-08T21:24:15Z"
 }
