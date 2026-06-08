@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-08T17:03:52Z","phase":"compile","seconds":0.328,"exit":1,"cmd":"cmake --build build-hip-old -j64"}
 {"kind":"phase","ts":"2026-06-08T17:04:42Z","phase":"compile","seconds":0.002,"exit":0,"cmd":"echo old-build-done"}
 {"kind":"phase","ts":"2026-06-08T17:06:23Z","phase":"test","seconds":0.937,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuSZ/src/build-hip-new --output-on-failure -E histsp_hip -j1"}
+{"kind": "tokens", "ts": "2026-06-08T17:08:00Z", "tokens": 44219, "source": "validator"}
