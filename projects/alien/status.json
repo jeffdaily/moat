@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-05T03:55:44Z",
-  "head_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
+  "updated_at": "2026-06-08T17:29:11Z",
+  "head_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
+      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
       "started_at": "2026-05-31T00:42:20Z",
-      "completed_at": "2026-06-05T03:46:10Z",
-      "updated_at": "2026-06-05T03:46:10Z",
+      "completed_at": "2026-06-08T17:27:08Z",
+      "updated_at": "2026-06-08T17:29:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
-        "method": "binary-equiv",
-        "detail": "Windows GCC-frontend HIP link changes: CMakeLists.txt additions in WIN32 guards only, hip_link_win.py only called on Windows -- no effect on Linux device ISA",
-        "at": "2026-06-05T03:46:10Z"
+        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "method": "source-class",
+        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
+        "at": "2026-06-08T17:27:08Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
+      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
       "started_at": null,
-      "completed_at": "2026-06-05T03:46:15Z",
-      "updated_at": "2026-06-05T03:46:15Z",
+      "completed_at": "2026-06-08T17:27:08Z",
+      "updated_at": "2026-06-08T17:29:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,20 +61,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
-        "method": "binary-equiv",
-        "detail": "Windows GCC-frontend HIP link changes: CMakeLists.txt additions in WIN32 guards only, hip_link_win.py only called on Windows -- no effect on Linux device ISA",
-        "at": "2026-06-05T03:46:15Z"
+        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "method": "source-class",
+        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
+        "at": "2026-06-08T17:27:08Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
+      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
       "started_at": null,
-      "completed_at": "2026-06-05T03:46:29Z",
-      "updated_at": "2026-06-05T03:46:29Z",
+      "completed_at": "2026-06-08T17:27:08Z",
+      "updated_at": "2026-06-08T17:29:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -87,16 +87,22 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "method": "source-class",
+        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
+        "at": "2026-06-08T17:27:08Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d3327404d34c3ad8fa6ff9a0b71c7f62b52f9f3e",
+      "validated_sha": "53fc3f9279388fb909103774cbc4f77aba0205fb",
       "started_at": null,
-      "completed_at": "2026-06-05T03:55:44Z",
-      "updated_at": "2026-06-05T03:55:44Z",
+      "completed_at": "2026-06-08T17:27:08Z",
+      "updated_at": "2026-06-08T17:29:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -109,6 +115,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "d89778ebe01255f8312f6f3ccc695ff69f146c90",
+        "method": "source-class",
+        "detail": "comment-only: scrubbed internal vocabulary from 3 build comments (CMakeLists/build_hip.sh/reduce.h); no code or behavior change",
+        "at": "2026-06-08T17:27:08Z"
       }
     },
     "windows-gfx1151": {
