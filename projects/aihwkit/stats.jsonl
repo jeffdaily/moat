@@ -23,3 +23,7 @@
 {"kind":"phase","ts":"2026-06-04T03:07:50Z","phase":"test","seconds":55.100,"exit":0,"cmd":"env -C /var/lib/jenkins/moat/projects/aihwkit/src bash -c HIP_VISIBLE_DEVICES=1 PYTHONPATH=src python -m pytest   tests/test_specific_tiles.py tests/test_simulator_tiles.py tests/test_bindings_tiles.py   tests/test_torch_tiles.py tests/test_inference_tiles.py   tests/test_layers_linear.py tests/test_layers_convolution.py   -v --tb=short 2>&1"}
 {"kind":"session","ts":"2026-06-04T03:08:30Z","epoch":1780542510.768188529,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-04T03:09:58Z", "tokens": 52203, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T03:04:54Z","phase":"compile","seconds":0.182,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/aihwkit_gfx1201_build -j32"}
+{"kind":"phase","ts":"2026-06-08T03:05:37Z","phase":"compile","seconds":0.190,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/aihwkit_gfx1201_build -j32"}
+{"kind":"phase","ts":"2026-06-08T03:08:53Z","phase":"compile","seconds":143.689,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/aihwkit_gfx1201_build -j32"}
+{"kind":"phase","ts":"2026-06-08T03:51:43Z","phase":"test","seconds":8.813,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest B:/develop/moat/projects/aihwkit/src/tests/test_specific_tiles.py -x -v --tb=short -p no:warnings"}

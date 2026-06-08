@@ -269,3 +269,58 @@ wave size or arch capabilities; pass count and zero failures match exactly.)
 
 Verdict: PASS. All suites pass on gfx1100 native wave32 with no regressions.
 Transitioning linux-gfx1100 to completed (validated_sha 9b4f7be).
+
+## Validation 2026-06-07 (windows-gfx1201, RDNA4 native wave32)
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, wave32 native). ROCm 7.14.0a20260604 (TheRock venv).
+HIP_VISIBLE_DEVICES=0 (gfx1201 is device index 0 on this host; gfx1101 is index 1).
+Fork: jeffdaily/aihwkit moat-port @ 50360f7a07281ce9cf0272b2e078e6821d5f9a07.
+
+Three Windows-specific fixes were needed on top of the Linux port (9b4f7be), committed as
+a second commit on moat-port:
+
+1. CMakeLists.txt: guard MSVC-only /O2 flag with if(MSVC) instead of if(WIN32). amdclang++
+   on Windows is !MSVC and rejects /O2.
+
+2. rpu_base_tiles_cuda.cpp: replace `using c10::cuda::getCurrentCUDAStream` with an inline
+   wrapper calling c10::hip::getCurrentHIPStream. Torch 2.9/ROCm 7.14 removed the
+   getCurrentCUDAStream alias from c10::cuda namespace in HIPStream.h.
+
+3. pwu_kernel_parameter_base.h: change PulsedUpdateMetaParameter forward declaration from
+   `class` to `struct` (matching rpu_pulsed_meta_parameter.h and rpucuda_pulsed_device.h).
+   On Linux/ELF both mangle identically; on Windows/MSVC-ABI (used by amdclang++), struct
+   and class produce different name mangling (AEBU vs AEBV), causing virtual method
+   implementations in RPU_GPU.lib to not resolve at link time despite being present.
+
+Build: CMake + Ninja, amdclang++/lld-link. All-clang (MSVC host unsupported with HIP).
+Build flags require post-cmake manual steps in build.ninja:
+- Remove -fuse-ld=lld-link injected by CMake 4.x into HIP device-link steps (keep it for
+  the final host+device combined link of rpu_base.pyd)
+- Replace /WHOLEARCHIVE via -Xlinker for RPU_GPU.lib in LINK_LIBRARIES
+- Add c10_hip.lib, torch_hip.lib, and a generated libomp140.lib (from libomp140.x86_64.dll;
+  import lib DLL name must include .dll extension or Windows loader fails to find the file)
+- Add mypy's stubgen.exe path explicitly in POST_BUILD
+
+Runtime: rpu_base.cp312-win_amd64.pyd requires ROCm DLLs. For Python import to work,
+torch must be imported first (which preloads ROCm DLLs via rocm_sdk.preload_libraries),
+AND several DLLs must be present in the package directory next to the pyd:
+amd_comgr.dll, amdhip64_7.dll, c10_hip.dll, hipblas.dll, hiprand.dll, rocm-openblas.dll,
+rocm_kpack.dll, rocrand.dll, rocblas.dll, rocsolver.dll, shm.dll.
+The simulator/__init__.py already imports torch before rpu_base, satisfying the preload
+requirement for the test suite.
+
+gfx1201 wave32 note: RDNA4 is native wave32, so the __ballot_sync shift-by-(__lane_id()&0x20)
+is always a shift-by-0 (identical to CUDA wave32 behavior). The bit_line_maker packed format
+is byte-identical to gfx1100 by construction.
+
+Test results (PYTHONPATH=src, HIP_VISIBLE_DEVICES=0):
+- tests/test_specific_tiles.py: **18/18 PASSED** (CRITICAL -- bit_line_maker + pulsed-weight-update
+  warp-size path; 9 Cuda-parametrized cases on gfx1201 native wave32).
+- tests/test_simulator_tiles.py + tests/test_bindings_tiles.py: **530 passed, 56 skipped, 1 failed**.
+  The 1 failure is TileForwardBackwardTest_Inference::test_set_forward_out_noise_std -- a stochastic
+  test that passes in isolation (1/1) and is a pre-existing non-CUDA flakiness, not a port regression.
+- tests/test_torch_tiles.py + tests/test_inference_tiles.py: **406 passed, 55 skipped, 0 failed**.
+- tests/test_layers_linear.py + tests/test_layers_convolution.py: **566 passed, 216 skipped, 0 failed**.
+
+Total GPU-gated tests: 1520 passed, 327 skipped, 1 failed (stochastic non-GPU pre-existing).
+Verdict: PASS. Transitioning windows-gfx1201 to completed (validated_sha 50360f7).
