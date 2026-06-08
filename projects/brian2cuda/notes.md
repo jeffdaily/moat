@@ -361,3 +361,42 @@ HIP_VISIBLE_DEVICES=3 USE_HIP=1 utils/timeit.sh brian2cuda test -- python3 agent
 ### Verdict
 
 **REVALIDATED** at 94a9869. Wave-serialized spinlock confirmed still functioning on gfx90a wave64. No regression.
+
+## Validation 2026-06-08 (linux-gfx1100, revalidate 5b961a6 -> 94a9869)
+
+### Platform: linux-gfx1100
+
+- GPU: AMD Radeon Pro W7800 (gfx1100, RDNA3, wave32)
+- ROCm: 7.2.1
+- HIP_VISIBLE_DEVICES=0
+- validated_sha: 5b961a6
+- HEAD: 94a9869
+
+### Delta Analysis
+
+The single commit "[ROCm] Fix Windows HIP build and runtime environment" modifies only `brian2cuda/device.py`. All new code paths are gated on `os.name == 'nt'` or are no-ops on Linux (preference check returns None -> falls through to existing rocminfo logic). No kernel templates, brianlib headers, or HIP device code changed. `moatlib classify` returned `class=mixed`, so full GPU revalidation was performed per protocol (no carry-forward).
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/brian2cuda/src
+git checkout moat-port && git pull origin moat-port  # fast-forward to 94a9869
+pip install -e .
+```
+
+### Test Results
+
+```
+HIP_VISIBLE_DEVICES=0 USE_HIP=1 utils/timeit.sh brian2cuda test -- \
+    python3 agent_space/brian2cuda-gfx1100-gpu0/test_gfx1100.py
+# Phase: test, wall: 22.44s, exit: 0
+```
+
+3/3 tests PASSED:
+1. Basic neuron group simulation (100 neurons, 10 timesteps): PASS -- final v range [0.0000, 0.8958]
+2. Synapse connectivity with delay / spinlock test (5000 synapses, 50/50 target neurons active): PASS
+3. Large recurrent network stress test (200 neurons, 11872 synapses): PASS -- no deadlock
+
+### Verdict
+
+**REVALIDATED** at 94a9869. Wave-serialized spinlock confirmed still functioning on gfx1100 wave32. Windows-only delta has no effect on Linux. No regression.

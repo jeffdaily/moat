@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "codegen",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-08T15:19:15Z",
+  "updated_at": "2026-06-08T17:06:12Z",
   "head_sha": "94a9869",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5b961a6",
+      "validated_sha": "94a9869",
       "started_at": null,
-      "completed_at": "2026-06-05T14:43:53Z",
-      "updated_at": "2026-06-08T13:52:48Z",
+      "completed_at": "2026-06-08T17:06:12Z",
+      "updated_at": "2026-06-08T17:06:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
