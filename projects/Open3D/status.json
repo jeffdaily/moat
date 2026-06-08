@@ -7,17 +7,17 @@
   "priority": 7.305,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-07T19:47:55Z",
+  "updated_at": "2026-06-08T16:22:56Z",
   "head_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "ee479e1e03bf24d94dcb6696e27029ed7c320724",
       "started_at": "2026-05-31T00:22:40Z",
       "completed_at": "2026-06-07T19:21:16Z",
-      "updated_at": "2026-06-07T19:21:16Z",
+      "updated_at": "2026-06-08T16:22:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -137,5 +137,7 @@
     }
   },
   "pr_url": "https://github.com/isl-org/Open3D/pull/7509",
-  "pr_state": "open"
+  "pr_state": "open",
+  "pr_number": 7509,
+  "pr_opened_at": "2026-06-08T16:22:56Z"
 }
