@@ -28,3 +28,15 @@
 {"kind": "tokens", "ts": "2026-06-05T02:12:45Z", "tokens": 96180, "source": "porter (gfx1100 delta-port)"}
 {"kind": "tokens", "ts": "2026-06-05T04:57:52Z", "tokens": 63218, "source": "reviewer (gfx1100 delta-port)"}
 {"kind": "tokens", "ts": "2026-06-05T05:34:44Z", "tokens": 43301, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T03:01:03Z","phase":"compile","seconds":0.043,"exit":1,"cmd":"cmake --build . -j32"}
+{"kind":"phase","ts":"2026-06-08T03:01:19Z","phase":"compile","seconds":5.341,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/arbor/src/build-gfx1201 -j32"}
+{"kind":"phase","ts":"2026-06-08T03:01:58Z","phase":"compile","seconds":3.845,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/arbor/src/build-gfx1201 -j32"}
+{"kind":"phase","ts":"2026-06-08T03:02:47Z","phase":"compile","seconds":0.174,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/arbor/src/build-gfx1201 -j32 --target unit"}
+{"kind":"phase","ts":"2026-06-08T03:04:36Z","phase":"compile","seconds":5.346,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/arbor/src/build-gfx1201 -j32 --target unit"}
+{"kind":"phase","ts":"2026-06-08T03:24:10Z","phase":"test","seconds":202.004,"exit":1,"cmd":"B:/develop/moat/projects/arbor/src/build-gfx1201/bin/unit.exe"}
+{"kind":"phase","ts":"2026-06-08T03:28:00Z","phase":"compile","seconds":0.089,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/arbor/src/build-gfx1201 -j32 --target unit"}
+{"kind": "tokens", "ts": "2026-06-08T03:30:41Z", "tokens": 157549, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T04:04:41Z", "tokens": 64570, "source": "investigator"}
+{"kind":"phase","ts":"2026-06-08T13:12:03Z","phase":"compile","seconds":33.640,"exit":0,"cmd":"cmake --build projects/arbor/src/build-gfx1201 --target unit -j24"}
+{"kind":"phase","ts":"2026-06-08T13:15:35Z","phase":"test","seconds":197.020,"exit":1,"cmd":"./projects/arbor/src/build-gfx1201/bin/unit.exe"}
+{"kind":"phase","ts":"2026-06-08T13:58:29Z","phase":"test","seconds":196.636,"exit":1,"cmd":"./projects/arbor/src/build-gfx1201/bin/unit.exe"}
