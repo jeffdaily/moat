@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-08T04:41:51Z","phase":"test","seconds":136.298,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/aihwkit-test.sh"}
 {"kind":"phase","ts":"2026-06-08T13:49:58Z","phase":"compile","seconds":1.066,"exit":1,"cmd":"conda run -n py_3.12 cmake -S . -B build_hip_old -GNinja -DUSE_HIP=ON -DUSE_CUDA=OFF -DRPU_CXX_STANDARD=20 -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/conda/envs/py_3.12/lib/python3.12/site-packages/torch/share/cmake;/opt/rocm -DRPU_BLAS=OpenBLAS -DBUILD_TEST=OFF -DRPU_USE_TORCH_BUFFERS=OFF -DCMAKE_BUILD_TYPE=Release"}
 {"kind":"phase","ts":"2026-06-08T13:52:38Z","phase":"compile","seconds":135.868,"exit":0,"cmd":"conda run -n py_3.12 bash /var/lib/jenkins/moat/agent_space/aihwkit-gfx1100-gpu2/build_new.sh"}
+{"kind": "tokens", "ts": "2026-06-08T13:55:10Z", "tokens": 48496, "source": "validator"}
