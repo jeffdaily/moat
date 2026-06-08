@@ -273,3 +273,82 @@ windows-gfx1201 was marked `completed`, but the ~9 amdclang++/Windows build fixe
 The stranded fork side branches (fix_compile, alloca_fix, debug_msg) branch off `base`, not the port, and touch a DIFFERENT/overlapping file set (pixi.toml, BlasDefs.h, Solver.cpp, ...) -- they do NOT correspond to the 9 validated fixes; do not merge them.
 
 Recovery: the validated uncommitted diff (7 files, all `_WIN32`-guarded) is preserved at agent_space/baspacho-recovery/windows-fixes-uncommitted.patch. A porter must: reconcile the head (fetch origin; local moat-port 69ab913 vs status head e2e66459), commit the `_WIN32`-guarded Windows fixes onto the canonical port head, rebuild on gfx1201 from a CLEAN tree (no uncommitted edits), re-run the 124/125 test suite, then advance-head and re-mark windows-gfx1201 completed at the fix-containing sha. windows-gfx1201 set to `revalidate` until then; PR BLOCKED.
+
+## Validation 2026-06-08 (windows-gfx1201) -- INTEGRITY GAP CLOSED
+
+**Verdict: PASS (completed). Integrity gap closed.**
+
+Head reconciliation: `origin/moat-port` was force-updated to `e2e66459` (the gfx90a
+PR-prep squash: one `[ROCm] Add HIP/ROCm support for AMD GPUs` commit on upstream
+main `bd83326` plus the README docs). Local moat-port was the stale `69ab913`; the
+only tree delta `69ab913 -> e2e66459` is the 9-line README HIP/ROCm section. So
+`e2e66459` is the canonical port head. The 7 live uncommitted Windows edits were
+stashed, the clone reset --hard to `e2e66459`, and the preserved patch
+(agent_space/baspacho-recovery/windows-fixes-uncommitted.patch) reapplied cleanly
+(`git apply --check` OK on all 7 files; guards verified -- Linux path byte-identical:
+`#ifndef _WIN32` keeps cxxabi.h, `#else` keeps alloca.h/localtime_r, and `uint` ->
+`unsigned int` is a typedef-equivalent rename on Linux).
+
+Committed as ONE commit on top of `e2e66459`:
+- New fork head: **5db6b5f61190bb7d87293adb28bc3117d2d3a36b**
+- Title: `[ROCm] Fix amdclang++/Windows build of baspacho`
+- Pushed to jeffdaily/baspacho moat-port (force-with-lease). advance-head flipped
+  linux-gfx90a/gfx1100 to `revalidate` (correct: `_WIN32`-guarded, binary-equiv
+  carry-forward on Linux is the other hosts' job).
+
+INTEGRITY GATE -- build from a CLEAN tree (the whole point): after committing,
+`git status --porcelain` on projects/baspacho/src was EMPTY (zero uncommitted edits;
+HEAD = 5db6b5f). A FRESH build dir `build_gfx1201_clean` was configured and built
+from the committed sources alone -- NO manual source edits during the build. All 14
+test exes + BaSpaCho_static.lib compiled and linked successfully. (The only
+build-time hiccup was gtest_discover_tests running each exe with exit 0xc0000135 =
+STATUS_DLL_NOT_FOUND -- a runtime-environment issue, not a source fault; resolved by
+co-locating the 14 TheRock DLLs and blas_lib_gfx1201.kpack as documented below, then
+the build completed 10/10.) The committed branch builds on Windows.
+
+Build recipe deltas vs the earlier (incomplete) notes recipe, all required to
+configure on this host: pass BLAS explicitly
+(`-DBLAS_LIBRARIES=$ROCM/lib/host-math/lib/rocm-openblas.lib
+-DBLAS_INCLUDE_DIRS=$ROCM/lib/host-math/include`; `BLA_VENDOR=OpenBLAS` auto-find
+fails), pass `-DLLVM_AR=$ROCM/lib/llvm/bin/llvm-ar.exe` (BundleStaticLibrary.cmake's
+`find_program(LLVM_AR ...)` otherwise fails FATAL), and put `$ROCM/lib/llvm/bin` +
+`$ROCM/bin` on PATH. Then `sed -i 's/-fuse-ld=lld-link//g' build.ninja` (21 hits;
+note: no trailing space in the token -- strip the bare string, not `"...link "`).
+PowerShell `-ExecutionPolicy Bypass` is blocked on this host; invoke cmake/ctest
+directly via Bash instead.
+
+```
+cmake -S src -B build_gfx1201_clean -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/amdclang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+  -DLLVM_AR=$ROCM/lib/llvm/bin/llvm-ar.exe \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH="$ROCM;$ROCM_CORE;$ROCM/lib/host-math" \
+  -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS \
+  -DBLAS_INCLUDE_DIRS=$ROCM/lib/host-math/include \
+  -DBLAS_LIBRARIES=$ROCM/lib/host-math/lib/rocm-openblas.lib \
+  -DEigen3_DIR=B:/develop/agent_space/eigen_install/share/eigen3/cmake \
+  -DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES -DNOMINMAX" \
+  -DCMAKE_HIP_FLAGS="-D_USE_MATH_DEFINES -DNOMINMAX" -DCMAKE_TLS_VERIFY=OFF
+sed -i 's/-fuse-ld=lld-link//g' build_gfx1201_clean/build.ninja
+cmake --build build_gfx1201_clean -- -j24
+# co-locate 14 DLLs (amdhip64_7, amd_comgr, rocm_kpack, hiprtc*, hipblas, rocblas,
+#   libhipblaslt, hipsolver, hipsparse, rocsolver, rocsparse, rocm-openblas, amdocl64)
+#   into build_gfx1201_clean/baspacho/tests/ and place blas_lib_gfx1201.kpack at
+#   build_gfx1201_clean/baspacho/.kpack/
+```
+
+Test command (gfx1201 sole GPU at device 0; gcnArchName=gfx1201 confirmed via hipInfo):
+```
+export HIP_VISIBLE_DEVICES=0
+export ROCBLAS_TENSILE_LIBPATH=$ROCM_LIBS/bin/rocblas/library
+cd build_gfx1201_clean && ctest -j1 --timeout 300 -C Release
+```
+
+Result: **124/125 PASS** (47.05s total). The sole failure is test 109
+`BatchedCudaFactor.CoalescedFactor_Many_float`: norm 5.0610484e-05 vs
+Epsilon::value2 4.9999999e-05 (1.22% overshoot) -- the identical float32 FMA
+rounding tolerance overshoot seen on gfx90a and gfx1100, non-gating. The clean
+COMMITTED branch reproduces the exact validated result. Integrity gap CLOSED;
+windows-gfx1201 re-marked completed at 5db6b5f.
