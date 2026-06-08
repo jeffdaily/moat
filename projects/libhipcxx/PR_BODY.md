@@ -1,11 +1,4 @@
-<!-- DRAFT - held until RDNA validation completes. Before opening:
-       (1) fill the Testing arch list with the Windows gfx1101 (RDNA3) and gfx1201 (RDNA4) results;
-       (2) confirm the gfx1201 realtime-counter rate (currently assumed 100 MHz);
-       (3) decide whether to also flip the UNSUPPORTED markers (see "Test enablement" note) in this PR;
-       (4) delete this comment block.
-     Title (conventional-commit style, matching this repo):
-       feat(semaphore): support <cuda/std/semaphore> and <cuda/semaphore> on HIP/AMD
--->
+<!-- PR title: feat(semaphore): support <cuda/std/semaphore> and <cuda/semaphore> on HIP/AMD -->
 
 ## Summary
 
@@ -31,13 +24,14 @@ Supported patterns:
 
 ## Testing
 
-Built and run on real AMD GPUs (ROCm 7.2.1):
-- gfx90a (CDNA2, wave64)
-- gfx1100 (RDNA3, wave32)
+Built and run on real AMD GPUs:
+- gfx90a (CDNA2, wave64), ROCm 7.2.1
+- gfx1100 (RDNA3, wave32), ROCm 7.2.1
+- gfx1201 (RDNA4, wave32, Windows), ROCm 7.14
 
-The `version`, `max`, `try_acquire`, `acquire`, `release`, and `heterogeneous` semaphore conformance tests pass. A producer/consumer using `cuda::binary_semaphore<cuda::thread_scope_device>` across two blocks acquires and releases correctly, as does `cuda::thread_scope_system`. The realtime-counter rate used by `<cuda/std/chrono>` (100 MHz on RDNA) is already defined in the tree, so `try_acquire_for` and `try_acquire_until` resolve correctly on these targets.
+The `version`, `max`, `try_acquire`, `acquire`, `release`, and `heterogeneous` semaphore conformance tests pass on each, and a producer/consumer using `cuda::binary_semaphore<cuda::thread_scope_device>` across two blocks acquires and releases correctly, as does `cuda::thread_scope_system`. The realtime-counter rate used by `<cuda/std/chrono>` (100 MHz on RDNA) is already defined in the tree and resolves correctly on these targets, confirmed on gfx1201 where the timed paths run within their deadlines.
 
-`std/thread/thread.semaphore/timed.pass.cpp` launches a producer and a consumer as concurrent agents within a single wavefront, so on AMD it reflects the single-wavefront forward-progress property described above: the timed acquire reaches its deadline and returns false rather than acquiring. It is left `UNSUPPORTED: hipcc` with a note pointing at the forward-progress section.
+`std/thread/thread.semaphore/timed.pass.cpp` launches a producer and a consumer as concurrent agents within a single wavefront, so on AMD its outcome tracks that single-wavefront forward-progress property: the timed acquire can reach its deadline and return false instead of acquiring, depending on how the two agents are scheduled. It is left `UNSUPPORTED: hipcc` with a note pointing at the forward-progress section.
 
 ## Test enablement
 
