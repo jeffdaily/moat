@@ -22,3 +22,6 @@
 {"kind":"phase","ts":"2026-06-08T02:50:27Z","phase":"test","seconds":0.291,"exit":0,"cmd":"B:/develop/moat/agent_space/velvet_kernel_test_gfx1201.exe"}
 {"kind":"phase","ts":"2026-06-08T04:17:27Z","phase":"compile","seconds":0.286,"exit":0,"cmd":"bash -c cmake -B build_new -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -5 && cmake --build build_new -j128 2>&1 | tail -10"}
 {"kind":"phase","ts":"2026-06-08T04:17:58Z","phase":"compile","seconds":25.875,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/Velvet/src && cmake -B build_new -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -5 && cmake --build build_new -j128 2>&1 | tail -15"}
+{"kind":"phase","ts":"2026-06-08T13:48:42Z","phase":"compile","seconds":0.015,"exit":1,"cmd":"cmake -B /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-old -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release -DCMAKE_IGNORE_PATH=/opt/conda"}
+{"kind":"phase","ts":"2026-06-08T13:49:11Z","phase":"compile","seconds":15.187,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-old -j64"}
+{"kind":"phase","ts":"2026-06-08T13:49:44Z","phase":"compile","seconds":15.181,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-new -j64"}

@@ -358,3 +358,51 @@ python3 utils/codeobj_diff.py build_old/bin/Velvet build_new/bin/Velvet
 ### Outcome
 
 Carry-forward to `completed` at `74af688` (binary-equiv). The Windows CMake fix has no effect on gfx90a device code.
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+### Delta Classification
+
+Delta: `9d5dc087 -> 74af688` (one commit: "[ROCm] Fix imgui GLFW dependency for Windows build")
+
+Change: `CMakeLists.txt` only -- adds `target_link_libraries(imgui PRIVATE glfw OpenGL::GL)`. `PRIVATE` linkage means this only affects imgui's own compilation on Windows with vcpkg; no device code or Linux behavior changed.
+
+Classifier verdict: `mixed` -- binary-equivalence check required.
+
+### Binary-Equivalence Check
+
+Built at both SHAs for gfx1100:
+
+```bash
+export HIP_VISIBLE_DEVICES=1
+export PATH=/var/lib/jenkins/.cargo/bin:/var/lib/jenkins/.local/bin:/opt/rocm/bin:/opt/rocm/llvm/bin:/opt/cache/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# old SHA (9d5dc087)
+cd /var/lib/jenkins/moat/projects/Velvet/src
+git checkout 9d5dc0875c43389a16c777d57f871c48075484e0
+cmake -S . -B /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-old \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release -DCMAKE_IGNORE_PATH=/opt/conda
+cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-old -j$(nproc)
+
+# new SHA (74af688)
+git checkout moat-port
+cmake -S . -B /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-new \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release -DCMAKE_IGNORE_PATH=/opt/conda
+cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-new -j$(nproc)
+
+# Compare
+python3 utils/codeobj_diff.py \
+  agent_space/Velvet-gfx1100-gpu1/build-old/bin/Velvet \
+  agent_space/Velvet-gfx1100-gpu1/build-new/bin/Velvet
+# -> verdict=identical (exported symbols + device ISA identical, 19 exports)
+```
+
+**Result**: `verdict=identical` -- device ISA and exported symbols unchanged on gfx1100. No GPU re-run required.
+
+### Outcome
+
+Carry-forward to `completed` at `74af688` (binary-equiv). The Windows CMake fix has no effect on gfx1100 device code.
+
+**Hardware**: AMD Radeon Pro W7800 48GB (gfx1100)
+**ROCm**: 7.2.1 (via /opt/rocm)
+**Commit**: 74af6885cfb847a37d6e6fb278f9e55547d5cef9
