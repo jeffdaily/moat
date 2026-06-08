@@ -7,7 +7,7 @@
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-08T00:12:58Z",
+  "updated_at": "2026-06-08T00:33:44Z",
   "head_sha": "90e3353",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "56cb37a6bcfa556ff88094d66ff6fc1362ddaf03",
+      "validated_sha": "90e3353a66468481cbd715416d230ab11a629357",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-02T01:30:00Z",
-      "updated_at": "2026-06-07T21:43:18Z",
+      "completed_at": "2026-06-08T00:33:44Z",
+      "updated_at": "2026-06-08T00:33:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-06-02T01:00:00Z",
         "last_session_at": "2026-06-02T01:30:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "90e3353a66468481cbd715416d230ab11a629357",
+        "method": "binary-equiv",
+        "detail": "setup.py changes guarded by os.name=='nt'; Linux build inputs unchanged, device code objects identical (codeobj_diff verdict=identical)",
+        "at": "2026-06-08T00:33:44Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
