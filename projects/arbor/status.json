@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-08T19:42:52Z",
+  "updated_at": "2026-06-08T19:44:18Z",
   "head_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
       "started_at": "2026-06-05T00:11:13Z",
       "completed_at": "2026-06-08T19:42:49Z",
-      "updated_at": "2026-06-08T19:42:52Z",
+      "updated_at": "2026-06-08T19:44:18Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -142,5 +142,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/arbor-sim/arbor/pull/2512",
+  "pr_number": 2512,
+  "pr_opened_at": "2026-06-08T19:44:18Z"
 }
