@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-04T23:25:55Z",
-  "updated_at": "2026-06-05T01:20:52Z",
-  "head_sha": "993bd1019464d3b72656bd702155bd4eb0a39167",
+  "updated_at": "2026-06-08T00:34:28Z",
+  "head_sha": "50df2a0d9121cf600d2b188f158121b6129fff94",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "993bd1019464d3b72656bd702155bd4eb0a39167",
+      "validated_sha": "50df2a0d9121cf600d2b188f158121b6129fff94",
       "started_at": "2026-06-04T23:45:55Z",
-      "completed_at": "2026-06-05T00:04:28Z",
-      "updated_at": "2026-06-05T00:04:28Z",
+      "completed_at": "2026-06-08T00:33:12Z",
+      "updated_at": "2026-06-08T00:33:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "50df2a0d9121cf600d2b188f158121b6129fff94",
+        "method": "source-class",
+        "detail": "all new files are Windows-only (hip_cuda_compat/ shims, *_winhip.cu wrappers); setup.py Windows additions gated behind IS_WINDOWS check; Linux build path is identical to validated 993bd10",
+        "at": "2026-06-08T00:33:12Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "993bd1019464d3b72656bd702155bd4eb0a39167",
+      "validated_sha": "50df2a0d9121cf600d2b188f158121b6129fff94",
       "started_at": null,
-      "completed_at": "2026-06-05T01:20:52Z",
-      "updated_at": "2026-06-05T01:20:52Z",
+      "completed_at": "2026-06-08T00:33:16Z",
+      "updated_at": "2026-06-08T00:33:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "50df2a0d9121cf600d2b188f158121b6129fff94",
+        "method": "source-class",
+        "detail": "all new files are Windows-only (hip_cuda_compat/ shims, *_winhip.cu wrappers); setup.py Windows additions gated behind IS_WINDOWS check; Linux build path is identical to validated 993bd10",
+        "at": "2026-06-08T00:33:16Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -80,13 +92,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "50df2a0d9121cf600d2b188f158121b6129fff94",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-05T00:04:28Z",
+      "completed_at": "2026-06-08T00:34:28Z",
+      "updated_at": "2026-06-08T00:34:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +111,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
