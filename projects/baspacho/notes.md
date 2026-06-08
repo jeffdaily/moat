@@ -250,3 +250,19 @@ MERGED PR shows API state closed/merged=false; read the meta-codesync bot
 "merged ... in <sha>" comment, not the merged flag (see [[moat-meta-codesync-merge-state]]).
 
 NEXT: upstream-PR gate (lead-only, jeff approval). base = main. No existing jeffdaily PR.
+
+## HOLD 2026-06-08 -- Windows fixes stranded; PR gate pending gfx1201 host
+
+Linux prep is complete (squashed e2e66459 on upstream main, README docs added,
+gfx90a+gfx1100 carried forward, 124/125). PR HELD because of a Windows
+integrity gap: windows-gfx1201 is marked completed at this sha, but the committed
+moat-port branch is MISSING the 9 amdclang++/Windows source fixes the gfx1201
+validator documented (MatOps.h still has unguarded #include <cxxabi.h>; also
+localtime_s, alloca.h->malloc.h, uint->unsigned int casts, size_t casts,
+<numeric> include, ::microsecondsString qualification). They were applied locally
+and never merged into moat-port, so the branch will NOT build on Windows.
+Stranded fork side branches (fix_compile / alloca_fix / debug_msg) branch off
+base (not the port) and touch a different file set -- not a clean match, so not
+blindly mergeable. jeff has notified the gfx1201 host to merge its exact
+validated fixes into moat-port and re-confirm. DO NOT open the PR claiming
+Windows until that lands; the Linux-only PR is ready if desired.
