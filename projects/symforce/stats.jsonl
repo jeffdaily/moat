@@ -41,3 +41,4 @@
 {"kind":"phase","ts":"2026-06-08T22:08:21Z","phase":"compile","seconds":11.779,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_ba1b64db_gfx90a -j16"}
 {"kind":"phase","ts":"2026-06-08T22:09:38Z","phase":"compile","seconds":10.883,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_d99faf9b_gfx1100 -j16"}
 {"kind":"phase","ts":"2026-06-08T22:09:38Z","phase":"compile","seconds":11.212,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_ba1b64db_gfx1100 -j16"}
+{"kind": "tokens", "ts": "2026-06-08T22:18:24Z", "tokens": 49696, "source": "validator (binary-equiv revalidation gfx90a+gfx1100)"}
