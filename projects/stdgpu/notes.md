@@ -336,6 +336,56 @@ A reduction pass moved B's locus earlier (corroborated by the test source: inser
 
 NO standalone reproducer found (failure class B does NOT reduce to stdgpu-free). Tried (all PASS, >=20 runs each, in agent_space/gfx1151-repro): t6 raw-HIP reduction-like kernel <<<1,256>>> bound to lane 0 after 2 fill kernels (+ manylaunch/nosync variants); t5 rocThrust `thrust::transform_reduce(counting[0,2), logical_and, fn)` matching the exact hung call shape, incl. a `bigfunc` variant capturing a large by-value struct (8 device ptrs + 6 ints, mimicking unordered_base) and a `lockseq` variant running the real wave_lock_serialize+atomicOr/atomicAnd mutex in the 2 prior launches. None reproduce. Irreducible ingredient = the genuine `unordered_base` device object from `createDeviceObject(1)` (its real multi-sub-buffer allocator layout: _values/_offsets/_occupied bitset/_locks mutex_array/_excess_list_positions vector/_occupied_count atomic) in the exact post-2-fill state, captured by value into the reduce functor. A struct-of-pointers stand-in does not trigger it. => B is the WEAKER issue-filing candidate (no clean repro); A (the ITS reconvergence hazard) remains the strong one.
 
+## Validation 2026-06-08 (linux-gfx90a) -- REVALIDATE at 4db4d21
+
+**Platform:** AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1 (HIP 7.2.53211), wave64
+**GPU pinned:** HIP_VISIBLE_DEVICES=0 (104 CUs, 63.9 GiB VRAM, idle at validation time)
+**Commit under test:** 4db4d21 [ROCm] Use a plain device reduction in valid() to avoid RDNA hang
+
+**Build command:**
+```bash
+HIP_VISIBLE_DEVICES=0 cmake -B build -S . \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DSTDGPU_BACKEND=STDGPU_BACKEND_HIP \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DSTDGPU_BUILD_TESTS=ON \
+  -DSTDGPU_BUILD_EXAMPLES=ON \
+  -DSTDGPU_BUILD_BENCHMARKS=OFF
+
+HIP_VISIBLE_DEVICES=0 cmake --build build -j16
+```
+
+**Build result:** SUCCESS (100% / 100% targets)
+
+**Test command:**
+```bash
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/projects/stdgpu/src/build/bin/teststdgpu
+```
+
+**Test results:** ALL 702 PASS, zero memory leaks (364762/364762 device, 360829/360829 host), 76.0s
+
+**The 14 previously-failing valid()-reduction tests (fixed by 4db4d21) PASS on gfx90a:**
+- `stdgpu_unordered_map.insert_while_full` - PASS (1ms)
+- `stdgpu_unordered_map.insert_multiple_while_full` - PASS (1ms)
+- `stdgpu_unordered_map.insert_while_excess_empty` - PASS (1ms)
+- `stdgpu_unordered_map.insert_parallel_while_one_free` - PASS (6ms)
+- `stdgpu_unordered_map.emplace_parallel_while_one_free` - PASS (5ms)
+- `stdgpu_unordered_map.emplace_parallel_while_excess_empty` - PASS (1ms)
+- `stdgpu_unordered_set.insert_while_full` - PASS (1ms)
+- `stdgpu_unordered_set.insert_multiple_while_full` - PASS (1ms)
+- `stdgpu_unordered_set.insert_while_excess_empty` - PASS (1ms)
+- `stdgpu_unordered_set.insert_parallel_while_one_free` - PASS (5ms)
+- `stdgpu_unordered_set.emplace_parallel_while_one_free` - PASS (5ms)
+- `stdgpu_unordered_set.emplace_parallel_while_excess_empty` - PASS (1ms)
+- (insert_parallel_while_excess_empty also passes)
+
+**wave_lock_serialize tests (original fix, unchanged) still PASS:**
+All 13 previously-verified parallel insert/erase/simultaneous-push tests pass as before.
+
+**No regression** versus 718d206: all 702 tests pass (identical count); logic-equivalent reduction path.
+
+**Verdict:** VALIDATED at 4db4d21 -- linux-gfx90a revalidate -> completed.
+
 ## B status 2026-06-08 (FINAL this session) -- prior B conclusions SUPERSEDED; standalone harness unreliable on this host
 
 IMPORTANT META-FINDING: standalone HIP programs that LINK stdgpu hang spuriously on this gfx1151 host even on trivial cases (a fresh empty createDeviceObject(8) + valid() hangs in a standalone built like the test, but the SAME ops pass inside the real teststdgpu.exe). So all standalone-vs-standalone B reasoning earlier today is UNRELIABLE, and the "thrust reduce + device printf deadlocks host-side" standalone (b3/b4) is most likely such an artifact, NOT the real bug. The earlier B conclusions in this file -- "stale occupancy read", "3rd-kernel launch-path stall", and "valid() transform_reduce host-side deadlock from device printf" -- are ALL SUPERSEDED/UNTRUSTWORTHY. (Class A, the contended ITS reconvergence hazard, used a RAW-HIP standalone with an internal differential -- T3-ii hangs while T1/T2/T3-iii pass -- and ISA analysis, so it is NOT undermined by this stdgpu-linked-standalone unreliability; A still stands.)
