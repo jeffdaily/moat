@@ -546,6 +546,43 @@ Verified sound (so the next agent need not recheck):
 
 Carry-forward note for the validator (post-fix): the device .cu sources and the HIP branches of reduce.h/atomicf.h are unchanged vs f6b642d5, and the gfx90a/gfx1100/gfx1201 .co bytes are bit-for-bit identical (porter cmp MATCH=64 DIFFER=0); gfx1100 and gfx1201 carry forward via .co byte-identity once the gfx90a HIP path validates at the new sha.
 
+## Validation 2026-06-08 (linux-gfx1100, additive-restructure carry-forward)
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+Revalidate trigger: head advanced from linux-gfx1100 validated_sha f6b642d5 to 4f3de0cf (additive dual-backend restructure + comment-only Makefile reword).
+
+Delta (f6b642d5 -> 4f3de0cf): 193 files -- additive dual-backend restructure (074bfdce) adds *_hip.go + *_wrapper_hip.go sidecars, restores upstream CUDA .go files with //go:build !hip, #ifdef-guards reduce.h + atomicf.h. No .cu sources changed, no HIPCCFLAGS changed. 4f3de0cf rewrites a Makefile comment only.
+
+Binary-equivalence check:
+- Built 64 gfx1100 .co files at f6b642d5 (validated sha) using `make wrappers CUDA_CC=gfx1100` in a git worktree -> saved to agent_space/3-gfx1100-revalidate2/co-old/.
+- Built 64 gfx1100 .co files at 4f3de0cf (HEAD) using `make wrappers BACKEND=hip CUDA_CC=gfx1100` -> saved to agent_space/3-gfx1100-revalidate2/co-head/.
+- cmp -s comparison: MATCH=64 DIFFER=0. All 64 gfx1100 code objects byte-identical.
+- Host-side build: `go build -tags hip ./cmd/mumax3` at HEAD compiles clean (deprecation warnings only, no errors).
+
+Commands:
+```
+# At f6b642d5 (worktree)
+cd agent_space/3-gfx1100-revalidate2/src-old/cuda
+export HIP_VISIBLE_DEVICES=0 PATH=/var/lib/jenkins/goroot/bin:/opt/rocm/bin:$PATH
+go build -o cuda2go cuda2go.go && make wrappers CUDA_CC=gfx1100
+cp *_gfx1100.co /var/lib/jenkins/moat/agent_space/3-gfx1100-revalidate2/co-old/
+
+# At 4f3de0cf (HEAD)
+cd /var/lib/jenkins/moat/projects/3/src/cuda
+go build -o cuda2go cuda2go.go && make wrappers BACKEND=hip CUDA_CC=gfx1100
+cp *_gfx1100.co /var/lib/jenkins/moat/agent_space/3-gfx1100-revalidate2/co-head/
+
+# Compare
+for f in co-old/*.co; do cmp -s "$f" "co-head/$(basename $f)" || echo "DIFFER: $(basename $f)"; done
+# MATCH=64 DIFFER=0
+
+# Host compile check
+cd /var/lib/jenkins/moat/projects/3/src
+go build -tags hip ./cmd/mumax3  # deprecation warnings only
+```
+
+Verdict: binary-equiv carry-forward. All 64 gfx1100 code objects byte-identical; device sources and HIPCCFLAGS unchanged; host-side -tags hip build compiles clean. State -> completed at 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc. No GPU re-run required.
+
 ## Validation 2026-06-08 (linux-gfx90a, additive-restructure carry-forward)
 
 Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
