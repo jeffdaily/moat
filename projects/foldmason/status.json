@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:16:31Z",
-  "updated_at": "2026-06-05T15:39:42Z",
-  "head_sha": "b58f888d8c7b7d45e75ee32e9ea3d1f4b5ca7b4e",
+  "updated_at": "2026-06-08T17:06:20Z",
+  "head_sha": "796bcfb64558ceee46e4746f2f94688d28a01914",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "e7f5b62d0ddcfc088ca20e25eda507458425bc10",
       "started_at": "2026-06-05T06:10:19Z",
       "completed_at": "2026-06-05T06:35:12Z",
-      "updated_at": "2026-06-05T06:35:12Z",
+      "updated_at": "2026-06-08T17:04:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b58f888d8c7b7d45e75ee32e9ea3d1f4b5ca7b4e",
       "started_at": null,
       "completed_at": "2026-06-05T15:39:42Z",
-      "updated_at": "2026-06-05T15:39:42Z",
+      "updated_at": "2026-06-08T17:04:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -80,13 +80,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "796bcfb64558ceee46e4746f2f94688d28a01914",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-05T06:35:12Z",
+      "completed_at": "2026-06-08T17:06:20Z",
+      "updated_at": "2026-06-08T17:06:20Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +99,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

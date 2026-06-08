@@ -27,3 +27,9 @@
 {"kind":"phase","ts":"2026-06-05T15:37:37Z","phase":"test","seconds":1.009,"exit":0,"cmd":"projects/foldmason/build-gfx1100/src/foldmason search projects/foldmason/build-gfx1100/test-workdir/exDB projects/foldmason/build-gfx1100/test-workdir/exDB_pad projects/foldmason/build-gfx1100/test-workdir/aln_gpu projects/foldmason/build-gfx1100/test-workdir/tmp_gpu --gpu 1 -e 10"}
 {"kind":"phase","ts":"2026-06-05T15:38:10Z","phase":"test","seconds":0.003,"exit":127,"cmd":"regression/run_regression.sh /var/lib/jenkins/moat/projects/foldmason/build-gfx1100/src/foldmason /var/lib/jenkins/moat/projects/foldmason/build-gfx1100/regression-tmp"}
 {"kind":"phase","ts":"2026-06-05T15:38:15Z","phase":"test","seconds":0.444,"exit":2,"cmd":"/var/lib/jenkins/moat/projects/foldmason/src/regression/run_regression.sh /var/lib/jenkins/moat/projects/foldmason/build-gfx1100/src/foldmason /var/lib/jenkins/moat/projects/foldmason/build-gfx1100/regression-tmp"}
+{"kind":"phase","ts":"2026-06-08T15:47:34Z","phase":"compile","seconds":2.928,"exit":1,"cmd":"cmake --build agent_space/foldmason_gfx1201_build --target foldmason -j24"}
+{"kind":"phase","ts":"2026-06-08T15:53:28Z","phase":"compile","seconds":7.172,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/foldmason_marv_only_build --target marv -j24"}
+{"kind":"phase","ts":"2026-06-08T15:55:58Z","phase":"compile","seconds":8.182,"exit":1,"cmd":"cmake --build /b/develop/moat/agent_space/foldmason_gfx1201_build --target foldmason -j24"}
+{"kind":"phase","ts":"2026-06-08T16:59:18Z","phase":"test","seconds":0.030,"exit":127,"cmd":"./foldmason_val_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-08T16:59:27Z","phase":"test","seconds":0.090,"exit":1,"cmd":"B:/develop/moat/agent_space/foldmason_val_gfx1201.exe"}
+{"kind":"phase","ts":"2026-06-08T17:01:30Z","phase":"test","seconds":0.504,"exit":0,"cmd":"B:/develop/moat/agent_space/foldmason_val_gfx1201.exe"}
