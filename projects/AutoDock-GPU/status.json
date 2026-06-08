@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-07T04:07:32Z",
-  "head_sha": "b623ccc",
+  "updated_at": "2026-06-08T22:17:37Z",
+  "head_sha": "43041f8debf0c716599986a80e92d5a79693066c",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b623ccc",
+      "validated_sha": "43041f8debf0c716599986a80e92d5a79693066c",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": "2026-06-05T19:32:44Z",
-      "updated_at": "2026-06-05T19:32:44Z",
+      "completed_at": "2026-06-08T22:16:17Z",
+      "updated_at": "2026-06-08T22:17:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "reviewer",
       "carry_forward": {
-        "to": "b623ccc",
-        "method": "binary-equiv",
-        "detail": "GPU code object, .text section, and exported symbols byte-for-byte identical; change guards processthreadsapi.h with !__HIP_DEVICE_COMPILE__ on Windows only, inert on Linux",
-        "at": "2026-06-05T19:32:44Z"
+        "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
+        "method": "source-class",
+        "detail": "Makefile.Hip comment + README doc only (verified comment-only: non-comment content byte-identical; doc-only); no compiled source changed, all platforms binaries unchanged",
+        "at": "2026-06-08T22:16:17Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b623ccc",
+      "validated_sha": "43041f8debf0c716599986a80e92d5a79693066c",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-06-05T19:50:30Z",
-      "updated_at": "2026-06-05T19:50:30Z",
+      "completed_at": "2026-06-08T22:16:17Z",
+      "updated_at": "2026-06-08T22:17:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,42 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "b623ccc",
-        "method": "binary-equiv",
-        "detail": "GPU code objects and exported symbols byte-for-byte identical; change guards processthreadsapi.h with !__HIP_DEVICE_COMPILE__ on Windows only, inert on Linux (confirmed via codeobj_diff.py)",
-        "at": "2026-06-05T19:50:30Z"
+        "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
+        "method": "source-class",
+        "detail": "Makefile.Hip comment + README doc only (verified comment-only: non-comment content byte-identical; doc-only); no compiled source changed, all platforms binaries unchanged",
+        "at": "2026-06-08T22:16:17Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b623ccc",
+      "validated_sha": "43041f8debf0c716599986a80e92d5a79693066c",
       "started_at": null,
-      "completed_at": "2026-06-05T19:08:29Z",
-      "updated_at": "2026-06-05T19:08:29Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1201": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "b623ccc",
-      "started_at": null,
-      "completed_at": "2026-06-07T04:07:27Z",
-      "updated_at": "2026-06-07T04:07:32Z",
+      "completed_at": "2026-06-08T22:16:17Z",
+      "updated_at": "2026-06-08T22:17:37Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,7 +89,41 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "carry_forward": {
+        "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
+        "method": "source-class",
+        "detail": "Makefile.Hip comment + README doc only (verified comment-only: non-comment content byte-identical; doc-only); no compiled source changed, all platforms binaries unchanged",
+        "at": "2026-06-08T22:16:17Z"
+      }
+    },
+    "windows-gfx1201": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "43041f8debf0c716599986a80e92d5a79693066c",
+      "started_at": null,
+      "completed_at": "2026-06-08T22:16:17Z",
+      "updated_at": "2026-06-08T22:17:37Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
+        "method": "source-class",
+        "detail": "Makefile.Hip comment + README doc only (verified comment-only: non-comment content byte-identical; doc-only); no compiled source changed, all platforms binaries unchanged",
+        "at": "2026-06-08T22:16:17Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",

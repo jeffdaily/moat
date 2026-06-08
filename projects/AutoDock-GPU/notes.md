@@ -381,3 +381,39 @@ Built at both commits (4a860c8 and b623ccc) with `make DEVICE=HIP NUMWI=64 HIP_A
 Only differences: embedded VERSION string and debug line-number metadata (expected, non-functional).
 
 VERDICT: Binary-equivalent on linux-gfx90a. Validation carried forward to b623ccc without GPU re-run.
+
+## PR-prep 2026-06-08 (lead) -- jargon scrub + docs + squash; carry-forward, no GPU re-run
+
+Pre-PR cleanup. Fork moat-port squashed to ONE commit on the upstream base (clean
+PR diff): 43041f8 [ROCm] Add native HIP backend for AMD GPUs, parent 28a6139
+(an ancestor of the current develop tip 6b150b3; the PR's merge-base diff is the
+port only). 10 files, +379/-24. base develop.
+
+NOTE on entry state: the local clone was STALE (4a860c8); the fork tip and
+status head_sha agreed at b623ccc (the validated commit). Synced local to b623ccc
+before prep. upstream.json had fork_url/base_sha null -- populated them.
+
+Edits (both behavior-preserving, no compiled source touched):
+- Makefile.Hip: reworded the HIP_ARCH default comment to drop the in-house "lead
+  arch" wording (verified comment-only: the file's non-comment content is
+  byte-identical across the change).
+- README.md: documented DEVICE=HIP alongside DEVICE=CUDA -- added HIP to the
+  <TYPE> table and an override note ("For AMD GPUs, use DEVICE=HIP with
+  HIP_ARCH=<gfx-target> ..."). House style (markdown table + prose).
+- Commit message scrub: dropped "the colmap model (Strategy A)" (cross-project
+  ref + in-house label) and unified the AI disclosure; title dropped "(gfx90a)".
+
+Carry-forward (NO GPU re-run): the classifier cannot tokenize Makefiles, so the
+delta classified `mixed`. But the change is provably comment-only (Makefile) +
+doc-only (README) touching no compiled source, so all FOUR platforms
+(linux-gfx90a, linux-gfx1100, windows-gfx1101, windows-gfx1201) were carried
+forward as source-class with that justification; squash-carry-forward then
+advanced them to 43041f8. gfx1151 kept blocked (retired). pr-ready=True.
+
+DID NOT add a Makefile classifier to changeclass.py (GNU make recipe-line `#`
+and escaping rules make a safe general tokenizer non-trivial; a wrong one risks a
+false carry-forward). The per-change manual comment-only verification is the safe
+path here.
+
+NEXT: upstream-PR gate (lead-only, jeff approval). No existing jeffdaily PR on
+ccsb-scripps/AutoDock-GPU. PR base = develop; scope out retired gfx1151.
