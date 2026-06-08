@@ -4,7 +4,7 @@
   "upstream_url": "https://github.com/ROCm/libhipcxx",
   "fork_url": "https://github.com/jeffdaily/libhipcxx",
   "fork_default_branch": "enable-semaphore",
-  "priority": 0.0,
+  "priority": 8.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-07T20:45:45Z",
   "updated_at": "2026-06-07T21:08:06Z",
