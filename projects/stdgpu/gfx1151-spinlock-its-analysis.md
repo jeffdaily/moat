@@ -134,3 +134,9 @@ single-thread `insert_while_full` family (Class B) is a separate, unrelated phen
 localized to `valid()`'s `values_reachable` check; see notes.md (its mechanism is not
 confidently isolated and it has no trustworthy standalone reproducer on this host). The
 stdgpu port is correct and validated on gfx90a and gfx1100; windows-gfx1151 is blocked.
+
+## Public gist
+
+An observational, neutral-tone version of this Class A analysis (CUDA->HIP portability note;
+reproducer + ISA + portable fix; no defect framing) is published at:
+https://gist.github.com/jeffdaily/f2763b46b4a1c45234901ef9b459f3d4
