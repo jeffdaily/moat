@@ -113,3 +113,74 @@ All GPU tests executed successfully on real hardware with no failures.
 **Total**: 66/66 tests PASSED
 
 All GPU tests executed successfully on real hardware with no failures. Note: Used system cmake (/usr/bin/cmake 3.28.3) instead of conda cmake to avoid googletest compatibility issues.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+**GPU**: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), HIP_VISIBLE_DEVICES=0
+**ROCm**: 7.14.0a20260604 (TheRock nightly)
+**Fork**: jeffdaily/ohm moat-port HEAD 80ea8a8 (09782e7 + Windows iomanip fix)
+
+### Windows-specific source fix (committed on top of port)
+
+Six test files used `std::setw`/`std::setfill` without `#include <iomanip>`. On Linux these were available transitively; MSVC-ABI clang++ on Windows requires the explicit include. Added `#include <iomanip>` to:
+- tests/gputiltest/KernelTest.cpp
+- tests/ohmtest/RayPatternTests.cpp
+- tests/ohmtest/VoxelMeanTests.cpp
+- tests/ohmtestgpu/GpuVoxelMeanTests.cpp
+- tests/ohmtestgpu/GpuLineKeysTests.cpp
+- tests/ohmtestgpu/GpuMapTest.cpp
+
+### Build
+
+```bash
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+ROCM_CORE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core
+VCPKG=B:/develop/moat/projects/alien/src/build/vcpkg_installed/x64-windows
+
+cmake -B agent_space/ohm_gfx1201_build -S projects/ohm/src \
+  -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/clang.exe" \
+  -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/clang++.exe" \
+  -DCMAKE_PREFIX_PATH="$ROCM;$ROCM_CORE;$VCPKG" \
+  -DOHM_FEATURE_HIP=ON -DOHM_FEATURE_CUDA=OFF -DOHM_FEATURE_OPENCL=OFF \
+  -DOHM_FEATURE_TEST=ON -DOHM_FEATURE_EIGEN=ON -DOHM_FEATURE_THREADS=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  "-DGLM_INCLUDE_DIRS=B:/develop/moat/agent_space/glm/glm" \
+  -Dglm_FOUND=TRUE \
+  -DOHM_SYSTEM_GTEST=ON \
+  "-DGTest_DIR=$VCPKG/share/gtest" \
+  "-DEigen3_DIR=B:/develop/agent_space/eigen_install/share/eigen3/cmake" \
+  -DCMAKE_CXX_FLAGS="-D_USE_MATH_DEFINES -DNOMINMAX -DWIN32" \
+  -DCMAKE_C_FLAGS="-D_USE_MATH_DEFINES"
+
+# Strip -fuse-ld=lld-link (CMake 4.3 injects it; amdclang++ device-link rejects it)
+sed -i 's/-fuse-ld=lld-link//g' agent_space/ohm_gfx1201_build/build.ninja
+
+cmake --build agent_space/ohm_gfx1201_build -j24
+```
+
+217/217 targets built cleanly. HIP compiler: amdclang++ 23.0.0 (gfx1201).
+
+Runtime DLLs copied to bin/: amdhip64_7.dll, amd_comgr.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, rocm_kpack.dll, gtest.dll, gtest_main.dll, zlib1.dll.
+
+### Test results
+
+```bash
+HIP_VISIBLE_DEVICES=0 ctest --test-dir agent_space/ohm_gfx1201_build -j1
+```
+
+```
+1/5: gputiltesthip ..... Passed  4.28 sec   (8/8 GPU tests)
+2/5: ohmtest ........... Passed 11.14 sec   (53/53 CPU tests)
+3/5: ohmtesthip ........ Passed 57.77 sec   (58/58 GPU tests)
+4/5: ohmtestheightmap .. Passed  3.65 sec
+5/5: slamiotest ........ Passed  0.09 sec
+100% tests passed, 0 tests failed out of 5
+```
+
+**GPU tests: 66/66 PASSED (8 gputiltesthip + 58 ohmtesthip)**
+**All tests: 5/5 executables PASSED**
+
+All occupancy-map population, ray integration, line query, NDT, traversal, and TSDF GPU tests pass on gfx1201 (RDNA4 wave32). Results match prior linux-gfx90a and linux-gfx1100 validations.

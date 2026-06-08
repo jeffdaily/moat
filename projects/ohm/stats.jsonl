@@ -28,3 +28,9 @@
 {"kind":"phase","ts":"2026-06-05T15:41:28Z","phase":"test","seconds":10.065,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/ohm/src/build_gfx1100/bin/gputiltesthip"}
 {"kind":"phase","ts":"2026-06-05T15:42:45Z","phase":"test","seconds":65.571,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/ohm/src/build_gfx1100/bin/ohmtesthip"}
 {"kind":"session","ts":"2026-06-05T15:43:04Z","epoch":1780674184.605686457,"event":"end","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-08T18:02:52Z","phase":"compile","seconds":10.270,"exit":1,"cmd":"cmake --build B:/develop/moat/agent_space/ohm_gfx1201_build -j24"}
+{"kind":"phase","ts":"2026-06-08T18:03:14Z","phase":"compile","seconds":2.746,"exit":1,"cmd":"cmake --build B:/develop/moat/agent_space/ohm_gfx1201_build -j24"}
+{"kind":"phase","ts":"2026-06-08T18:04:22Z","phase":"compile","seconds":2.605,"exit":1,"cmd":"cmake --build B:/develop/moat/agent_space/ohm_gfx1201_build -j24"}
+{"kind":"phase","ts":"2026-06-08T18:05:36Z","phase":"compile","seconds":13.044,"exit":0,"cmd":"cmake --build B:/develop/moat/agent_space/ohm_gfx1201_build -j24"}
+{"kind":"phase","ts":"2026-06-08T18:06:10Z","phase":"test","seconds":4.513,"exit":0,"cmd":"bash -c cd 'B:/develop/moat/agent_space/ohm_gfx1201_build' && HIP_VISIBLE_DEVICES=0 ctest --test-dir . -R 'gputiltesthip' --output-on-failure -j1 -V 2>&1"}
+{"kind":"phase","ts":"2026-06-08T18:07:22Z","phase":"test","seconds":58.181,"exit":0,"cmd":"bash -c cd 'B:/develop/moat/agent_space/ohm_gfx1201_build' && HIP_VISIBLE_DEVICES=0 ctest --test-dir . -R 'ohmtesthip' --output-on-failure -j1 2>&1"}
