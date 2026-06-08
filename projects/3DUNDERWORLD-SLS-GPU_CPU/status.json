@@ -7,8 +7,8 @@
   "priority": 5.001,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-08T15:48:54Z",
-  "head_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
+  "updated_at": "2026-06-08T18:15:33Z",
+  "head_sha": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
@@ -43,10 +43,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
+      "validated_sha": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
       "started_at": null,
-      "completed_at": "2026-06-08T15:38:45Z",
-      "updated_at": "2026-06-08T15:38:47Z",
+      "completed_at": "2026-06-08T18:15:33Z",
+      "updated_at": "2026-06-08T18:15:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "to": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
         "method": "source-class",
-        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
-        "at": "2026-06-08T15:38:45Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T18:15:33Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
+      "validated_sha": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
       "started_at": null,
-      "completed_at": "2026-06-08T15:38:46Z",
-      "updated_at": "2026-06-08T15:38:47Z",
+      "completed_at": "2026-06-08T18:15:33Z",
+      "updated_at": "2026-06-08T18:15:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -90,20 +90,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "to": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
         "method": "source-class",
-        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
-        "at": "2026-06-08T15:38:46Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T18:15:33Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "745c20cac684cd178a9ef21be5984fadd9aabcea",
+      "validated_sha": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
       "started_at": null,
-      "completed_at": "2026-06-08T15:38:46Z",
-      "updated_at": "2026-06-08T15:38:47Z",
+      "completed_at": "2026-06-08T18:15:33Z",
+      "updated_at": "2026-06-08T18:15:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -118,10 +118,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "3e297a488fab0665bfcb0c204d7ea400b88b1fa7",
+        "to": "44a2967c56d23cbb30d121d9bc764ace3f2b3edb",
         "method": "source-class",
-        "detail": "comment-only CMakeLists arch-default comment reword; arch-independent, device code unaffected",
-        "at": "2026-06-08T15:38:46Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T18:15:33Z"
       }
     },
     "windows-gfx1151": {
