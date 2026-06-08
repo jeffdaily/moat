@@ -15,3 +15,5 @@
 {"kind":"phase","ts":"2026-06-05T14:02:39Z","phase":"compile","seconds":38.309,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-05T14:02:50Z","phase":"test","seconds":6.714,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/FastGeodis/src && HIP_VISIBLE_DEVICES=0 python -m pytest tests/ -v"}
 {"kind": "tokens", "ts": "2026-06-05T14:03:55Z", "tokens": 47616, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T00:45:08Z","phase":"compile","seconds":0.481,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pip install -e . --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-08T00:51:43Z","phase":"test","seconds":0.329,"exit":4,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pytest tests/ -v --tb=short"}
