@@ -543,3 +543,117 @@ the correct follower state is `port-ready` (windowsgfx1151 gates on the
 gfx90a lead like every follower, not on gfx1100). Set windows-gfx1151 ->
 port-ready. (All 83 other projects use valid windows states; this was a
 one-off typo from the marian-dev port.)
+
+## Validation 2026-06-08 (windows-gfx1201, RX 9070 XT gfx1201, RDNA4) -- PASS
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro.
+HIP_VISIBLE_DEVICES=0 (only GPU on host). gcnArchName=gfx1201 (verified via
+TheRock hipInfo.exe). Compiler: TheRock all-clang ROCm 7.14.0a20260604.
+Fork jeffdaily/marian-dev @ moat-port, head 2387377 ([ROCm] Bypass hipBLASLt
+for Affine on Windows ROCm), one new commit on top of dc5cd4e.
+
+### The fix (porter)
+
+prod.cpp: on `_WIN32 && USE_HIP`, `affineTyped<T>` no longer drives the
+hipBLASLt fused GEMM+bias matmul-descriptor path; it computes the matmul with
+the plain GEMM (`ProdTyped<T,T>` -> hipblasGemmEx/hipblasSgemm) then adds the
+broadcast bias with the existing `BiasAdd` kernel (same optional ReLU
+epilogue). This is exactly the pre-CUDA-11 fallback already in the file, so the
+result is numerically identical. The post-call misalignment `BiasAdd` in
+`Affine()` is guarded off on Windows+ROCm (the new affineTyped already applies
+the bias). Linux/CUDA paths are byte-identical (every change is _WIN32 &&
+USE_HIP guarded).
+
+### IMPORTANT runtime requirement: ROCBLAS_USE_HIPBLASLT=0
+
+The code bypass is necessary but on this exact TheRock 7.14 build it is not
+sufficient on its own. On the current venv libraries, `rocblas_gemm_ex`
+(reached by hipblasGemmEx, i.e. ALL Prod/ProdBatched/dot/bdot GEMMs) internally
+delegates to `hipblaslt_ext::GemmInstance::algoGetHeuristic`, which hits the
+SAME `hipblaslt_f8::is_inf` Tensile FP8 crash. So even plain GEMM SIGSEGVs
+unless rocBLAS's hipBLASLt backend is disabled with `ROCBLAS_USE_HIPBLASLT=0`.
+With that env set, rocBLAS uses its own Tensile kernels and every GEMM works.
+
+Note this is a regression vs the 2026-06-07 run: that run reported the plain
+`dot product` (operator_tests.cpp:508) PASSING and only Affine crashing. The
+TheRock libraries in the venv have since been updated so the FP8 `is_inf` bug
+now also fires through rocblas_gemm_ex. Confirmed by rebuilding the UNMODIFIED
+dc5cd4e prod.cpp: the baseline also crashes at line 508 in
+hipblasGemmEx->rocblas_gemm_ex->algoGetHeuristic->is_inf. This is a TheRock
+runtime-library bug, not a marian/port defect; `ROCBLAS_USE_HIPBLASLT=0` is the
+runtime workaround and the code bypass is the port fix. Both are required on
+this host. (Not baked into marian source -- it is a TheRock library env knob.)
+
+### Build (incremental, only prod.cpp recompiled)
+
+```
+ROCM=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+HIP_VISIBLE_DEVICES=0 utils/timeit.sh marian-dev compile -- \
+  cmake --build agent_space/marian-build-gfx1201 -j24
+```
+(Initial configure as in the 2026-06-07 section.) Result: 23/23 targets, clean.
+
+### Runtime env (all test/train/decode runs)
+
+```
+SP=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+export HIP_VISIBLE_DEVICES=0
+export ROCBLAS_USE_HIPBLASLT=0                         # <-- the TheRock workaround
+export ROCBLAS_TENSILE_LIBPATH="$SP/_rocm_sdk_libraries/bin/rocblas/library"
+export HIPBLASLT_TENSILE_LIBPATH="$SP/_rocm_sdk_libraries/bin/hipblaslt/library"
+export PATH="<testdir>:$SP/_rocm_sdk_libraries/bin:$SP/_rocm_sdk_core/bin:$SP/_rocm_sdk_devel/bin:$PATH"
+```
+PATH must be colon-separated (Git Bash); rocm-openblas.dll lives in
+_rocm_sdk_core/bin and _rocm_sdk_devel/bin (needed or exit 127 "cannot open
+shared object file").
+
+### Test results (before vs after)
+
+The previously-crashing affine/attention/transformer GPU tests now PASS (no
+SIGSEGV); the previously-passing suites still pass.
+
+```
+run_operator_tests.exe "Expression graph supports basic math operations (gpu)"
+  -> 202 assertions, 200 passed, 2 failed
+  -> the "affine transformation" SECTION (618) PASSES (assertions 646-658),
+     was a FATAL SIGSEGV before
+  -> the dense "dot product" SECTION (508) PASSES, was SIGSEGV in the current
+     baseline (rocblas FP8 regression) before ROCBLAS_USE_HIPBLASLT=0
+  -> the 2 failures are csr-dot product (609/610), the documented deferred
+     cuSPARSE path (also fails on linux-gfx90a); does NOT gate
+
+run_attention_tests.exe "*Attention (gpu)"      -> 2/2 PASS (was SIGSEGV)
+run_transformer_tests.exe "...(gpu)"            -> 1/1 PASS (was SIGSEGV)
+
+run_graph_tests.exe    -> 10/10 PASS (unchanged)
+run_binary_tests.exe   ->  9/9  PASS (unchanged)
+run_utils_tests.exe    ->  8/8  PASS (unchanged)
+run_fastopt_tests.exe  -> 23/23 PASS (unchanged)
+```
+
+The `(gpu, fp16)` test cases still ABORT "Broken type float16" -- the
+pre-existing Windows float16 limitation (types.h stubs float16 under _MSC_VER;
+clang targeting x86_64-pc-windows-msvc defines _MSC_VER). Not a port bug, not
+introduced here, does not gate. Run only the float32 `(gpu)` cases.
+
+### End-to-end (Affine in practice)
+
+Trained a tiny Transformer (reverse-copy toy, 2000 sentences, 300u, FFN uses
+Affine in fwd+bwd) on gfx1201, then beam-search decoded (beam=6) twice:
+```
+marian.exe --type transformer -t train.src train.tgt -m model.npz \
+  --vocabs vocab.src.yml vocab.tgt.yml --dim-emb 64 --transformer-dim-ffn 128 \
+  --transformer-heads 2 --enc-depth 2 --dec-depth 2 --after 300u --devices 0 \
+  --shuffle-in-ram --tempdir <tmp>
+marian-decoder.exe -m model.npz -v vocab.src.yml vocab.tgt.yml -i test.src -b 6 --devices 0
+```
+Training converged (cost 2.03 -> 1.65). Decode produced sensible reverse-copy
+output and was bit-identical run-to-run (deterministic). No SIGSEGV, no NaN.
+(`--shuffle-in-ram --tempdir` needed: marian's default temp-file shuffle hits a
+Windows TemporaryFile::MakeTemp abort unrelated to GPU.)
+
+### Verdict: PASS -- windows-gfx1201 completed at 2387377
+
+The affine/attention/transformer SIGSEGVs are gone. Remaining non-gating
+failures (csr-dot cuSPARSE, fp16 Windows limitation) are pre-existing and
+documented. Requires runtime env ROCBLAS_USE_HIPBLASLT=0 on this TheRock build.
