@@ -420,3 +420,56 @@ Test breakdown:
 ### Outcome
 
 **VALIDATED** on windows-gfx1201 at commit 8a46c7ca. Real GPU validation on AMD Radeon RX 9070 XT (gfx1201, RDNA4) confirms both Multislice and PRISM STEM simulation algorithms execute correctly. The `importSMatrix` test tolerance overshoot is a minor RDNA4 FP characteristic (2-3x over a tight 1e-4 tolerance), not a correctness defect.
+
+## Validation 2026-06-08 (linux-gfx90a + linux-gfx1100 revalidate -- binary-equiv carry-forward)
+
+### Delta classified
+
+`moatlib.py classify prismatic 08b5d2e6 8a46c7ca` -> `class=mixed arch_independent=False`.
+
+Two files changed in the Windows-fix commit 8a46c7ca:
+- `src/PRISM01_calcPotential.cpp`: one-line imaginary-unit constructor change (`0.0+1.0i` -> `std::complex<PRISMATIC_FLOAT_PRECISION>(0, 1)`), semantically identical on all platforms.
+- `unittests/ioTests.cpp`: `_WIN32`-only POSIX fd wrappers (`<io.h>`, `_dup`/`_dup2`/`_close`), dead code on Linux.
+
+Both are expected to compile to identical device ISA on Linux. Proving it via binary-equivalence.
+
+### Build at both SHAs
+
+Built validated_sha (08b5d2e6) and head_sha (8a46c7ca) into separate directories for each arch:
+
+```
+# gfx90a -- worktree src-old at 08b5d2e6, src at 8a46c7ca
+cmake /var/lib/jenkins/moat/projects/prismatic/src[-old] -B build-[old|new] \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DPRISMATIC_ENABLE_GPU=ON -DPRISMATIC_ENABLE_CLI=ON -DPRISMATIC_TESTS=ON \
+    -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release \
+    -DHDF5_ROOT=/usr/lib/x86_64-linux-gnu/hdf5/serial -DHDF5_PREFER_PARALLEL=OFF
+cmake --build build-[old|new] -j16
+
+# gfx1100 -- same recipe with -DCMAKE_HIP_ARCHITECTURES=gfx1100, into build-[old|new]-gfx1100
+```
+
+All four builds succeeded. `prismatic` and `prismatic-tests` executables produced in each.
+
+### codeobj_diff results
+
+```
+# gfx90a
+python3 utils/codeobj_diff.py build-old/prismatic       build-new/prismatic
+verdict=identical  prismatic vs prismatic: identical (exported symbols + device ISA identical (30 exports))
+
+python3 utils/codeobj_diff.py build-old/prismatic-tests build-new/prismatic-tests
+verdict=identical  prismatic-tests vs prismatic-tests: identical (exported symbols + device ISA identical (45 exports))
+
+# gfx1100
+python3 utils/codeobj_diff.py build-old-gfx1100/prismatic       build-new-gfx1100/prismatic
+verdict=identical  prismatic vs prismatic: identical (exported symbols + device ISA identical (30 exports))
+
+python3 utils/codeobj_diff.py build-old-gfx1100/prismatic-tests build-new-gfx1100/prismatic-tests
+verdict=identical  prismatic-tests vs prismatic-tests: identical (exported symbols + device ISA identical (45 exports))
+```
+
+### Outcome
+
+Both linux-gfx90a and linux-gfx1100 carried forward to 8a46c7ca via binary-equiv. The Windows-only fix compiles to byte-identical device ISA on both Linux arches. No GPU re-run needed.

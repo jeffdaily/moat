@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:24:38Z",
-  "updated_at": "2026-06-08T19:13:38Z",
+  "updated_at": "2026-06-08T22:22:38Z",
   "head_sha": "8a46c7ca",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "08b5d2e6",
+      "validated_sha": "8a46c7ca0bfd2fcb27fd100e8e651dba58de52dd",
       "started_at": null,
-      "completed_at": "2026-06-05T15:43:47Z",
-      "updated_at": "2026-06-08T19:12:43Z",
+      "completed_at": "2026-06-08T22:22:38Z",
+      "updated_at": "2026-06-08T22:22:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,6 +31,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "8a46c7ca0bfd2fcb27fd100e8e651dba58de52dd",
+        "method": "binary-equiv",
+        "detail": "gfx1100: prismatic+prismatic-tests both identical (30/45 exports, device ISA) -- complex literal narrowing fix and _WIN32-only POSIX fd wrappers are Linux-inert",
+        "at": "2026-06-08T22:22:38Z"
       }
     },
     "windows-gfx1201": {
@@ -56,13 +62,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "08b5d2e6",
+      "validated_sha": "8a46c7ca0bfd2fcb27fd100e8e651dba58de52dd",
       "started_at": "2026-06-05T09:31:18Z",
-      "completed_at": "2026-06-05T10:13:56.374969+00:00",
-      "updated_at": "2026-06-08T19:12:43Z",
+      "completed_at": "2026-06-08T22:22:33Z",
+      "updated_at": "2026-06-08T22:22:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,7 +82,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "8a46c7ca0bfd2fcb27fd100e8e651dba58de52dd",
+        "method": "binary-equiv",
+        "detail": "gfx90a: prismatic+prismatic-tests both identical (30/45 exports, device ISA) -- complex literal narrowing fix and _WIN32-only POSIX fd wrappers are Linux-inert",
+        "at": "2026-06-08T22:22:33Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
