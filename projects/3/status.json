@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-07T22:54:41Z",
+  "updated_at": "2026-06-08T00:20:36Z",
   "head_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
+      "validated_sha": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
       "started_at": "2026-06-04T04:33:12Z",
-      "completed_at": "2026-06-04T17:55:07Z",
-      "updated_at": "2026-06-07T22:54:37Z",
+      "completed_at": "2026-06-08T00:20:36Z",
+      "updated_at": "2026-06-08T00:20:36Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,10 +34,10 @@
       },
       "last_agent": "reviewer",
       "carry_forward": {
-        "to": "7ef67aa4fdf6b4234849ef41729fb3a4eeb6e286",
+        "to": "f6b642d5ce5bc0f832d809953efe0ebfc01d7a83",
         "method": "binary-equiv",
-        "detail": "test-only delta (module_test.go + testdata/testmodule_gfx1100.co); all 65 gfx90a code objects byte-identical across 64cb1c7c->7ef67aa4",
-        "at": "2026-06-04T17:55:07Z"
+        "detail": "all 64 gfx90a .co files byte-identical (unchanged .cu+Makefile); curand_shim.h host-only change compiles clean on ROCm 7.2.1",
+        "at": "2026-06-08T00:20:36Z"
       }
     },
     "linux-gfx1100": {

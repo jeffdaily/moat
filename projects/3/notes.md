@@ -354,3 +354,20 @@ This commit regenerated the *_wrapper.go files with gfx1201 code objects (removi
 For future multi-arch builds (all platforms in one repo state): use `make wrappers CUDA_CC="gfx90a gfx1100 gfx1201"` so all arches are embedded simultaneously.
 
 Verdict: PASS. State -> completed. validated_sha = f6b642d5ce5bc0f832d809953efe0ebfc01d7a83.
+
+## Validation 2026-06-08 (linux-gfx90a, revalidate carry-forward)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a), ROCm 7.2.1.
+Revalidate trigger: head advanced from gfx90a validated_sha 7ef67aa4 to f6b642d5 (windows-gfx1201 delta).
+
+Delta (7ef67aa4 -> f6b642d5): 65 *_wrapper.go files regenerated with gfx1201 code objects; cuda/cu/testdata/testmodule_gfx1201.co (new); cuda/curand/curand_shim.h (new, Windows SDK compat shim); cuda/curand/generator.go + status.go (cgo preamble switches from typedef+hiprand.h to curand_shim.h). No .cu, .cuh, or Makefile changes.
+
+Binary-equivalence check:
+- Rebuilt gfx90a code objects at both shas using identical toolchain (ROCm 7.2.1, same Makefile/HIPCCFLAGS):
+  `make realclean && make wrappers CUDA_CC=gfx90a` at 7ef67aa4 -> 64 *_gfx90a.co files saved.
+  `make realclean && make wrappers CUDA_CC=gfx90a` at f6b642d5 -> 64 *_gfx90a.co files saved.
+- md5sum comparison: all 64 gfx90a .co files byte-identical across both shas (same .cu sources, same Makefile).
+- curand_shim.h host change: compiled successfully on Linux/ROCm 7.2.1 (`go build ./cmd/mumax3` -- no errors, deprecation warnings only, same as before).
+- Note: codeobj_diff.py not applicable to Go executables (looks for .so/.hsaco only); manual .co comparison used instead.
+
+Verdict: binary-equiv carry-forward. All 64 gfx90a code objects byte-identical; host-only curand_shim.h change compiles clean. State -> completed at f6b642d5ce5bc0f832d809953efe0ebfc01d7a83. No GPU re-run required.
