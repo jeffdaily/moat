@@ -7,17 +7,17 @@
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-07T21:43:22Z",
+  "updated_at": "2026-06-08T00:12:58Z",
   "head_sha": "90e3353",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "56cb37a6bcfa556ff88094d66ff6fc1362ddaf03",
+      "validated_sha": "90e3353",
       "started_at": "2026-06-01T00:55:34Z",
-      "completed_at": "2026-06-02T08:00:00Z",
-      "updated_at": "2026-06-07T21:43:18Z",
+      "completed_at": "2026-06-08T00:12:58Z",
+      "updated_at": "2026-06-08T00:12:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "90e3353",
+        "method": "binary-equiv",
+        "detail": "setup.py changes guarded by os.name=='nt'; Linux build inputs unchanged, device code objects identical",
+        "at": "2026-06-08T00:12:58Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
