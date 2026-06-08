@@ -21,3 +21,4 @@
 {"kind":"phase","ts":"2026-06-08T17:04:42Z","phase":"compile","seconds":0.002,"exit":0,"cmd":"echo old-build-done"}
 {"kind":"phase","ts":"2026-06-08T17:06:23Z","phase":"test","seconds":0.937,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/cuSZ/src/build-hip-new --output-on-failure -E histsp_hip -j1"}
 {"kind": "tokens", "ts": "2026-06-08T17:08:00Z", "tokens": 44219, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T15:32:37Z", "tokens": 48712, "source": "validator"}

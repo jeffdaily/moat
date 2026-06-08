@@ -40,3 +40,4 @@
 {"kind":"phase","ts":"2026-06-08T18:20:51Z","phase":"compile-new","seconds":113.059,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/dgSPARSE-Lib/src && rm -f dgsparse/*.so && pip install --no-build-isolation -e ."}
 {"kind":"phase","ts":"2026-06-08T18:21:27Z","phase":"test","seconds":3.279,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
 {"kind": "tokens", "ts": "2026-06-08T18:30:29Z", "tokens": 38478, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T17:48:17Z", "tokens": 60829, "source": "validator"}

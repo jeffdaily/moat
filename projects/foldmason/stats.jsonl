@@ -42,3 +42,4 @@
 {"kind":"phase","ts":"2026-06-08T18:22:18Z","phase":"compile","seconds":316.098,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/foldmason-gfx1100-gpu2/build-old --target foldmason -j16"}
 {"kind":"phase","ts":"2026-06-08T18:28:00Z","phase":"compile","seconds":306.065,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/foldmason-gfx1100-gpu2/build-new --target foldmason -j16"}
 {"kind": "tokens", "ts": "2026-06-08T18:30:32Z", "tokens": 32163, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T18:07:01Z", "tokens": 55180, "source": "validator"}

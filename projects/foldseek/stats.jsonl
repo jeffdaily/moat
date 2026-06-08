@@ -26,3 +26,4 @@
 {"kind":"phase","ts":"2026-06-08T18:23:31Z","phase":"test","seconds":0.019,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/build-new/src/foldseek search exDB exDB_pad aln_gpu tmp_gpu --gpu 1 -e 10"}
 {"kind":"phase","ts":"2026-06-08T18:23:41Z","phase":"test","seconds":0.995,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/build-new/src/foldseek search /var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/testdir/exDB /var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/testdir/exDB_pad /var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/testdir/aln_gpu /var/lib/jenkins/moat/agent_space/foldseek-gfx1100-gpu3/testdir/tmp_gpu --gpu 1 -e 10"}
 {"kind": "tokens", "ts": "2026-06-08T18:30:34Z", "tokens": 57161, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T17:45:56Z", "tokens": 64235, "source": "validator"}

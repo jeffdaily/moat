@@ -30,3 +30,4 @@
 {"kind":"phase","ts":"2026-06-08T19:05:59Z","phase":"compile","seconds":36.836,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/qrack_cmp_old -j16 --target unittest"}
 {"kind":"phase","ts":"2026-06-08T19:06:12Z","phase":"compile","seconds":3.413,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/qrack/src -B /var/lib/jenkins/moat/agent_space/qrack_cmp_new -DENABLE_CUDA=ON -DENABLE_OPENCL=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_PREFIX_PATH=/opt/rocm -DENABLE_TESTS=ON"}
 {"kind":"phase","ts":"2026-06-08T19:06:54Z","phase":"compile","seconds":36.660,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/qrack_cmp_new -j16 --target unittest"}
+{"kind": "tokens", "ts": "2026-06-08T19:09:53Z", "tokens": 46180, "source": "validator"}

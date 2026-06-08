@@ -38,3 +38,4 @@
 {"kind":"phase","ts":"2026-06-08T17:04:12Z","phase":"test","seconds":0.375,"exit":0,"cmd":"bash -c \n  cd /var/lib/jenkins/moat/agent_space/cuPDLPx-gfx1100-gpu2/build-test\n  HIP_VISIBLE_DEVICES=2 ./tests/test_interface 2>&1\n"}
 {"kind":"phase","ts":"2026-06-08T17:04:34Z","phase":"test-cli","seconds":0.568,"exit":0,"cmd":"bash -c \n  cd /var/lib/jenkins/moat/agent_space/cuPDLPx-gfx1100-gpu2/build-test\n  HIP_VISIBLE_DEVICES=2 ./cupdlpx /var/lib/jenkins/moat/projects/cuPDLPx/src/2club200v15p5scn.mps.gz . -v 2>&1\n"}
 {"kind": "tokens", "ts": "2026-06-08T17:07:58Z", "tokens": 41726, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T15:26:13Z", "tokens": 45945, "source": "validator"}
