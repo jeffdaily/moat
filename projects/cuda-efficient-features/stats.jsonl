@@ -37,3 +37,4 @@
 {"kind":"phase","ts":"2026-06-08T15:28:09Z","phase":"compile","seconds":16.603,"exit":0,"cmd":"cmake --build /tmp/cef-old-build -j8"}
 {"kind":"phase","ts":"2026-06-08T15:28:18Z","phase":"compile","seconds":3.716,"exit":0,"cmd":"cmake -S /var/lib/jenkins/moat/projects/cuda-efficient-features/src -B /tmp/cef-new-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF"}
 {"kind":"phase","ts":"2026-06-08T15:28:42Z","phase":"compile","seconds":16.648,"exit":0,"cmd":"cmake --build /tmp/cef-new-build -j8"}
+{"kind":"phase","ts":"2026-06-08T17:09:57Z","phase":"compile","seconds":2.323,"exit":1,"cmd":"bash -c cmake -S /tmp/cef-gfx1100-old -B /tmp/cef-gfx1100-old-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release 2>&1 && cmake --build /tmp/cef-gfx1100-old-build -j16 2>&1"}

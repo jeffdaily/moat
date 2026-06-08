@@ -223,3 +223,48 @@ verdict=identical
 ```
 
 Both builds identical on gfx90a. Carried forward to completed at ebf2595 with no GPU re-run required.
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+**Platform**: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, ROCm)
+**validated_sha**: 0611e58 -> **head_sha**: ebf2595
+**Classification**: carry-forward (binary-equiv)
+**GPU pinned**: HIP_VISIBLE_DEVICES=0
+
+### Delta 0611e58..ebf2595
+
+Single CMakeLists.txt change: wraps `target_compile_options($<COMPILE_LANGUAGE:HIP>:-fPIE>)` with `if(NOT WIN32)`. On Linux `NOT WIN32` is always true, so the flag still applies unchanged.
+
+`python3 utils/moatlib.py classify` returned `mixed` (token count differs), so binary-equivalence check was performed.
+
+### Build Commands
+
+```bash
+# Old SHA (0611e58)
+cd /var/lib/jenkins/moat/projects/cuda-efficient-features/src
+git worktree add /tmp/cef-gfx1100-old 0611e58
+cd /tmp/cef-gfx1100-old && git submodule update --init --recursive
+cmake -S /tmp/cef-gfx1100-old -B /tmp/cef-gfx1100-old-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/cef-gfx1100-old-build -j16
+
+# New SHA (ebf2595)
+git worktree add /tmp/cef-gfx1100-new ebf2595
+cd /tmp/cef-gfx1100-new && git submodule update --init --recursive
+cmake -S /tmp/cef-gfx1100-new -B /tmp/cef-gfx1100-new-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build /tmp/cef-gfx1100-new-build -j16
+```
+
+Both builds: 25/25 targets, exit 0.
+
+### codeobj_diff result
+
+```
+python3 utils/codeobj_diff.py \
+  /tmp/cef-gfx1100-old-build/modules/cuda_efficient_features/libcuda_efficient_features.a \
+  /tmp/cef-gfx1100-new-build/modules/cuda_efficient_features/libcuda_efficient_features.a
+
+verdict=identical
+  libcuda_efficient_features.a vs libcuda_efficient_features.a: identical (exported symbols + device ISA identical (0 exports))
+```
+
+Both builds identical on gfx1100. Carried forward to completed at ebf2595 with no GPU re-run required.
