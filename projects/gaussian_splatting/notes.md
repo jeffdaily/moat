@@ -259,3 +259,23 @@ verdict=identical
 Carry-forward: `python3 utils/moatlib.py carry-forward gaussian_splatting linux-gfx90a d7f2227cb2 binary-equiv "Windows-only setup.py guard (os.name=='nt') is dead on Linux; codeobj_diff: identical (230 exports, device ISA)"`.
 
 Decision: CARRY-FORWARD -> completed. validated_sha = d7f2227cb285966c290c36efaf7f8240f10379cb. No GPU re-run needed.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate carry-forward)
+
+Platform: linux-gfx1100 (GPU 3, HIP_VISIBLE_DEVICES=3). validated_sha a4d8b9aa30 -> head_sha d7f2227cb2.
+
+Delta: d7f2227 adds a Windows-only setup.py guard (`if os.name == 'nt' and torch.version.hip is not None`) that copies bindings.cpp to bindings_winhip.cu on Windows HIP builds only. Dead code on Linux (os.name == 'posix'). Also adds two lines to .gitignore for the generated bindings_winhip.cu.
+
+`python3 utils/moatlib.py classify gaussian_splatting a4d8b9aa30 d7f2227cb2` -> `class=mixed arch_independent=False` (classifier flagged setup.py token change -- not inert by classifier alone, so binary check required).
+
+Build at d7f2227 (Strategy B, gfx1100, MAX_JOBS=16, HIP_VISIBLE_DEVICES=3) via `bash utils/timeit.sh gaussian_splatting compile -- bash agent_space/gauss_splatting_build_gfx1100_gpu3.sh`. Build succeeded; .so size 799072 bytes (same as old).
+
+```
+python3 utils/codeobj_diff.py agent_space/gaussian_splatting-gfx1100-gpu3/old agent_space/gaussian_splatting-gfx1100-gpu3/new
+verdict=identical
+  splat_cuda.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (230 exports))
+```
+
+Carry-forward: `python3 utils/moatlib.py carry-forward gaussian_splatting linux-gfx1100 d7f2227cb2 binary-equiv "Windows-only setup.py guard (os.name=='nt') is dead on Linux; codeobj_diff gfx1100: identical (230 exports, device ISA)"`.
+
+Decision: CARRY-FORWARD -> completed. validated_sha = d7f2227cb285966c290c36efaf7f8240f10379cb. No GPU re-run needed.

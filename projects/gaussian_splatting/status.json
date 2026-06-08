@@ -7,7 +7,7 @@
   "priority": 3.571,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-08T00:14:21Z",
+  "updated_at": "2026-06-08T00:31:22Z",
   "head_sha": "d7f2227cb285966c290c36efaf7f8240f10379cb",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a4d8b9aa308b23ba46a10d9734817237fd2474fd",
+      "validated_sha": "d7f2227cb285966c290c36efaf7f8240f10379cb",
       "started_at": "2026-06-01T20:20:00Z",
-      "completed_at": "2026-06-01T20:35:00Z",
-      "updated_at": "2026-06-07T21:56:21Z",
+      "completed_at": "2026-06-08T00:31:22Z",
+      "updated_at": "2026-06-08T00:31:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-06-01T20:20:00Z",
         "last_session_at": "2026-06-01T20:35:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "d7f2227cb285966c290c36efaf7f8240f10379cb",
+        "method": "binary-equiv",
+        "detail": "Windows-only setup.py guard (os.name=='nt') is dead on Linux; codeobj_diff gfx1100: identical (230 exports, device ISA)",
+        "at": "2026-06-08T00:31:22Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

@@ -17,3 +17,4 @@
 {"kind":"phase","ts":"2026-06-07T21:53:40Z","phase":"test","seconds":68.916,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_test_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T21:54:53Z","phase":"test","seconds":67.566,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/gauss_test_gfx1201.py discover test -v"}
 {"kind":"phase","ts":"2026-06-08T00:14:05Z","phase":"compile","seconds":52.775,"exit":0,"cmd":"bash agent_space/gsplat_build.sh"}
+{"kind":"phase","ts":"2026-06-08T00:31:03Z","phase":"compile","seconds":41.331,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/gauss_splatting_build_gfx1100_gpu3.sh"}
