@@ -206,3 +206,80 @@ GPU validation:
 - Numerical results match gfx90a exactly
 
 Result: PASS - All LP instances converge to OPTIMAL with identical numerical results to gfx90a validation. GPU kernels execute correctly on RDNA3.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), Windows 11 Pro for Workstations
+GPU index: HIP_VISIBLE_DEVICES=0 (only GPU present after gfx1101 V710 went offline)
+Commit: 98ce76664d227a9c634e963ea928b340e189d749 (Windows build fixes on top of b114e2d)
+ROCm: 7.14.0a20260604 (TheRock nightly venv)
+
+### Windows-specific build fixes (committed as 98ce766 on moat-port)
+
+Two issues found and fixed:
+
+1. **mps_parser.c strtok_r error**: The CMake glob pulls `mps_parser.c` into the
+   static/shared library build. This file uses `strtok_r` (POSIX, absent from
+   Windows CRT). Since the CLI is already disabled on Windows (getopt.h missing),
+   `mps_parser.c` is dead code there. Fix: add `if(WIN32)` guard in CMakeLists.txt
+   to remove it from the C_SOURCES list on Windows.
+
+2. **test_interface.c stale API**: Four assignments of `matrix_desc_t.zero_tolerance`
+   which was removed from the struct in upstream commit 9709dfe. Caused compilation
+   errors. Also added Test 9 (presolve=false) to force GPU PDLP solver execution.
+
+### Build
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -S projects/cuPDLPx/src -B agent_space/cupdlpx_gfx1201_build -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/amdclang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_PREFIX_PATH="$ROCM;_rocm_sdk_core" \
+  -DCUPDLPX_BUILD_CLI=ON -DCUPDLPX_BUILD_TESTS=ON -DCUPDLPX_BUILD_PYTHON=OFF
+# Post-configure: strip -fuse-ld=lld-link from build.ninja (7 occurrences)
+sed -i 's/-fuse-ld=lld-link//g' agent_space/cupdlpx_gfx1201_build/build.ninja
+cmake --build agent_space/cupdlpx_gfx1201_build --target cupdlpx_core --target cupdlpx_shared --target test_interface -j24
+```
+
+Build result: SUCCESS (cupdlpx_core.lib, cupdlpx.dll, tests/test_interface.exe built)
+Note: CLI disabled on Windows (getopt.h unavailable); zlib example/minigzip skipped (internal zlib tests, irrelevant).
+Note: fuse-ld=lld-link stripped from build.ninja (CMake 4.3 Windows-Clang injects it; rejects in HIP device-link mode).
+
+### Runtime DLL setup
+
+Copied to tests/ dir (exe-dir search beats System32):
+- amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll (ROCm runtime)
+- hiprtc0714.dll, hiprtc-builtins0714.dll
+- hipblas.dll, hipsparse.dll, libhipblaslt.dll
+- rocblas.dll, rocsparse.dll, rocsolver.dll
+- PSLP.dll (from _deps/pslp-build/), zlib1.dll (from _deps/zlib-build/)
+- cupdlpx.dll (from build root)
+
+ROCBLAS_TENSILE_LIBPATH=_rocm_sdk_libraries/bin/rocblas/library set at runtime.
+
+### Test results
+
+```
+HIP_VISIBLE_DEVICES=0 ROCBLAS_TENSILE_LIBPATH=.../rocblas/library ./tests/test_interface.exe
+```
+
+9/9 PASS (RC=0, 0.37s):
+- Tests 1-4: LP solve via Dense/CSR/CSC/COO matrix formats -> OPTIMAL (primal obj=3, presolve reduces to 0 rows)
+- Tests 5-8: same with warm start -> OPTIMAL (presolve reduces; warm start silently ignored as documented)
+- Test 9: CSR with presolve=false -> GPU PDLP solver invoked:
+  - 400 iterations on GPU
+  - Primal objective: 3.000539009 (true optimum 3.0)
+  - Status: OPTIMAL, objective gap 7.338e-05 (< 1e-4 threshold)
+  - Primal infeas: 3.700e-05, dual infeas: 2.954e-05 (both < 1e-4)
+
+GPU execution confirmed:
+- AMD_LOG_LEVEL=3 shows hipGetDevice (device 0), hipMemcpy HostToDevice, hipMemcpyAsync HostToDevice
+- hipBLAS/hipSPARSE loaded from theRock nightly (gfx1201 kernels)
+
+Result: PASS - GPU PDLP solver runs correctly on AMD Radeon RX 9070 XT (gfx1201, RDNA4).
+All matrix format variants produce consistent OPTIMAL solutions. hipBLAS SpMV,
+BLAS-1 operations, and CUDA Graphs -> HIP Graphs work correctly on gfx1201.
