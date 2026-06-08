@@ -355,6 +355,47 @@ Full GPU test suite (HIP_VISIBLE_DEVICES=3, gfx90a wave64, ROCm 7.2.1):
 Total: 1521 passed, 383 skipped, 0 failed. Identical pass count to original validation.
 Verdict: PASS. Transitioning linux-gfx90a to completed (validated_sha d6d4561).
 
+## Re-key 2026-06-08 (linux-gfx90a, delta-ported at b346589)
+
+Re-keyed the at::cuda::getCurrentCUDAStream shim in rpu_base_tiles_cuda.cpp from a
+ROCm-version proxy to the correct axis: the torch hipify generation. This TU is never
+hipified by PyTorch source-hipify (aihwkit is scikit-build/CMake with its own USE_HIP),
+so it must hand-pick the c10 stream symbol. The real selector is the hipify version:
+- hipify v2 (masquerading, this Linux env: torch 2.13, hipify 2.0.0): c10::cuda::
+  getCurrentCUDAStream is the public API; c10::hip::getCurrentHIPStream is #ifdef
+  USE_ROCM and this build defines USE_HIP not USE_ROCM, so only c10::cuda works.
+- hipify v1 (rename, Windows TheRock torch 2.9.1): c10::cuda::getCurrentCUDAStream is
+  removed, so c10::hip::getCurrentHIPStream is required.
+
+The old d6d4561 gate (HIP_VERSION >= 7.14 -> c10::hip) worked only because in our fleet
+ROCm version anti-correlates with the hipify generation (ROCm 7.2 + new torch/v2 on
+Linux; ROCm 7.14 + old torch/v1 on Windows). Now CMake (cmake/dependencies_hip.cmake)
+probes the build's own torch via RPU_PYTHON_EXECUTABLE
+(`python -c "from torch.utils.hipify import __version__"`), defines TORCH_HIPIFY_V2 on
+the rpu_base target when >= 2.0.0, and the cpp keys on `#if defined(TORCH_HIPIFY_V2)`.
+The sense FLIPS vs the old gate (v2 now takes the c10::cuda branch). Detection failure
+leaves it undefined = v1 default. Removed the now-unused <hip/hip_version.h> include.
+
+CMake on this Linux env logged `-- torch hipify version: 2.0.0` and put -DTORCH_HIPIFY_V2
+on the rpu_base_tiles_cuda.cpp.o compile line (confirmed in build.ninja DEFINES).
+
+Behavior-preservation proof (the gate for this delta, no full GPU re-run required):
+codeobj_diff between a pristine d6d4561 build and the b346589 build of
+rpu_base.cpython-312-x86_64-linux-gnu.so (both 337135072 bytes, 29 gfx90a code objects):
+`verdict=identical -- exported symbols + device ISA identical (53320 exports)`. On Linux
+v2 the re-key selects the SAME c10::cuda::getCurrentCUDAStream the old gate's #else branch
+already selected (ROCm 7.2 < 7.14), so the device ISA is unchanged by construction; the
+diff confirms it.
+
+GPU smoke on MI250X (gfx90a wave64, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0): rpu_base loads,
+rpu_base.cuda.is_compiled()=True; tests/test_specific_tiles.py 18/18 PASS (the critical
+bit_line_maker pulsed-update warp-size path); tests/test_simulator_tiles.py -k Cuda 264
+passed 0 failed; tests/test_inference_tiles.py -k Cuda 32 passed 0 failed.
+
+Commit b346589 on top of d6d4561 (new commit, not amend). This makes aihwkit the
+reference example for the PORTING_GUIDE "key on hipify generation, not ROCm version"
+entry. Linux-gfx90a -> delta-ported.
+
 ## Revalidation 2026-06-08 (linux-gfx1100)
 
 State: revalidate (validated_sha 9b4f7be -> head_sha d6d4561).

@@ -36,3 +36,9 @@
 {"kind":"phase","ts":"2026-06-08T13:52:38Z","phase":"compile","seconds":135.868,"exit":0,"cmd":"conda run -n py_3.12 bash /var/lib/jenkins/moat/agent_space/aihwkit-gfx1100-gpu2/build_new.sh"}
 {"kind": "tokens", "ts": "2026-06-08T13:55:10Z", "tokens": 48496, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T04:43:29Z", "tokens": 98344, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T14:47:09Z","phase":"compile","seconds":135.970,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/build_new -j16"}
+{"kind":"phase","ts":"2026-06-08T14:50:42Z","phase":"compile","seconds":138.157,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/build_old -j16"}
+{"kind":"phase","ts":"2026-06-08T14:55:28Z","phase":"test","seconds":0.695,"exit":4,"cmd":"python -m pytest tests/test_specific_tiles.py -v"}
+{"kind":"phase","ts":"2026-06-08T14:55:48Z","phase":"test","seconds":7.943,"exit":0,"cmd":"python -m pytest /var/lib/jenkins/moat/projects/aihwkit/src/tests/test_specific_tiles.py -v"}
+{"kind":"phase","ts":"2026-06-08T14:56:59Z","phase":"test","seconds":60.952,"exit":0,"cmd":"python -m pytest /var/lib/jenkins/moat/projects/aihwkit/src/tests/test_simulator_tiles.py -v -k Cuda"}
+{"kind":"phase","ts":"2026-06-08T14:57:22Z","phase":"test","seconds":10.763,"exit":0,"cmd":"python -m pytest /var/lib/jenkins/moat/projects/aihwkit/src/tests/test_inference_tiles.py -k Cuda"}
