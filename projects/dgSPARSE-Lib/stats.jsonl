@@ -21,3 +21,10 @@
 {"kind":"phase","ts":"2026-06-05T15:16:14Z","phase":"test","seconds":2.902,"exit":1,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
 {"kind":"phase","ts":"2026-06-05T15:16:36Z","phase":"test","seconds":2.918,"exit":0,"cmd":"python3 /var/lib/jenkins/moat/agent_space/test_dgsparse_gfx1100.py"}
 {"kind": "tokens", "ts": "2026-06-05T15:17:49Z", "tokens": 60454, "source": "validator (gfx1100)"}
+{"kind":"phase","ts":"2026-06-08T15:01:14Z","phase":"compile","seconds":5.191,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T15:04:24Z","phase":"compile","seconds":5.256,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T15:07:46Z","phase":"compile","seconds":5.146,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T15:10:59Z","phase":"compile","seconds":18.121,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T15:18:31Z","phase":"compile","seconds":35.879,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/build_dgsparse_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T15:28:19Z","phase":"compile","seconds":0.016,"exit":0,"cmd":"echo build complete (already done)"}
+{"kind":"phase","ts":"2026-06-08T15:28:29Z","phase":"test","seconds":3.129,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/test_dgsparse_gfx1201.py"}
