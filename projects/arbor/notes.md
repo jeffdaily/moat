@@ -41,7 +41,7 @@ Updated default `ARB_HIP_ARCHITECTURES` from `gfx906 gfx900` (Vega-era) to `gfx9
 
 ### 6. CMake version (CMakeLists.txt)
 
-Lowered `cmake_minimum_required` from 4.0.0 to 3.19 for broader compatibility with existing ROCm toolchains.
+Lowered `cmake_minimum_required` from 4.0.0 to 3.19 for broader compatibility with existing ROCm toolchains. REVERTED before the upstream PR (#2512): the build env has cmake 4.0.3 (satisfies 4.0.0), so this was unnecessary and a gratuitous global change to the maintainer's floor; the port keeps 4.0.0.
 
 ## Build Instructions
 
@@ -417,7 +417,7 @@ All 1182 unit tests pass on gfx1100, including the 4 reduce_by_key tests that pr
 Arbor has extensive POSIX dependencies. The following source-level changes were needed to build on Windows with clang (all committed to moat-port in a second commit on top of the GPU port commit):
 
 - `arbor/include/CMakeLists.txt`: invoke `git-source-id` via bash (not executable on Windows without a shell); replace `COMMAND true` with `cmake -E echo` no-op
-- `CMakeLists.txt`: `BENCHMARK_ENABLE_WERROR OFF` for google/benchmark (clang 23 pedantic-errors triggers); explicit `amdhip64.lib` link on Windows (clang does not auto-add HIP runtime to shared libs)
+- `CMakeLists.txt`: explicit `amdhip64.lib` link on Windows (clang does not auto-add HIP runtime to shared libs). (`BENCHMARK_ENABLE_WERROR OFF` was added for clang 23 pedantic-errors on the google/benchmark dep, then REVERTED before the upstream PR: global, env-specific, unrelated to HIP, and the unit target does not build benchmark; pass it on the command line if needed.)
 - `arbor/backends/rand_impl.hpp`, `arbor/network.cpp`: define `R123_NO_SINCOS` before Random123 includes; HIP headers make `sincosf`/`sincos` device-only
 - `arbor/include/arbor/serdes.hpp`: add `long long` serialize/deserialize overloads; Windows `ptrdiff_t` is `long long` (not `long`), causing ambiguous overload resolution
 - `arbor/memory/allocator.hpp`, `arbor/util/padded_alloc.hpp`: replace `posix_memalign` with `_aligned_malloc`/`_aligned_free` on Windows
