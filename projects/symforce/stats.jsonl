@@ -37,3 +37,7 @@
 {"kind":"phase","ts":"2026-06-08T19:40:46Z","phase":"test","seconds":90.962,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T19:41:21Z","phase":"test","seconds":10.728,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T19:42:03Z","phase":"test","seconds":17.673,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:/develop/moat/agent_space/test_symforce_hip_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-08T22:07:57Z","phase":"compile","seconds":11.879,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_d99faf9b_gfx90a -j16"}
+{"kind":"phase","ts":"2026-06-08T22:08:21Z","phase":"compile","seconds":11.779,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_ba1b64db_gfx90a -j16"}
+{"kind":"phase","ts":"2026-06-08T22:09:38Z","phase":"compile","seconds":10.883,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_d99faf9b_gfx1100 -j16"}
+{"kind":"phase","ts":"2026-06-08T22:09:38Z","phase":"compile","seconds":11.212,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/symforce_build_ba1b64db_gfx1100 -j16"}

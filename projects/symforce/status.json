@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-04T23:25:55Z",
-  "updated_at": "2026-06-08T19:45:22Z",
+  "updated_at": "2026-06-08T22:09:58Z",
   "head_sha": "ba1b64db",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d99faf9b",
+      "validated_sha": "ba1b64dbcdf8fdaa1d570f7fa4cfc424762e9c38",
       "started_at": "2026-06-05T00:23:29Z",
-      "completed_at": "2026-06-05T01:08:10Z",
-      "updated_at": "2026-06-08T19:44:45Z",
+      "completed_at": "2026-06-08T22:09:09Z",
+      "updated_at": "2026-06-08T22:09:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "ba1b64dbcdf8fdaa1d570f7fa4cfc424762e9c38",
+        "method": "binary-equiv",
+        "detail": "all 3 HIP .cu.o device ISA identical; set(CMAKE_CXX_STANDARD 17) does not affect device codegen for gfx90a",
+        "at": "2026-06-08T22:09:09Z"
+      }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d99faf9b",
+      "validated_sha": "ba1b64dbcdf8fdaa1d570f7fa4cfc424762e9c38",
       "started_at": null,
-      "completed_at": "2026-06-05T01:59:14Z",
-      "updated_at": "2026-06-08T19:44:46Z",
+      "completed_at": "2026-06-08T22:09:58Z",
+      "updated_at": "2026-06-08T22:09:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "ba1b64dbcdf8fdaa1d570f7fa4cfc424762e9c38",
+        "method": "binary-equiv",
+        "detail": "all 3 HIP .cu.o device ISA identical for gfx1100; set(CMAKE_CXX_STANDARD 17) does not affect device codegen",
+        "at": "2026-06-08T22:09:58Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

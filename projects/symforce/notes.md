@@ -336,3 +336,28 @@ Three additional Windows build fixes were committed on top of the port:
 3. `symforce/caspar/source/templates/buildfiles/CMakeLists.txt.jinja`: Same C++17 fix in the generated library CMakeLists template.
 
 Fork updated to sha ba1b64db. All platforms (linux-gfx90a, linux-gfx1100) validated at d99faf9b; gfx1201 validated at ba1b64db (which is d99faf9b + the Windows build fixes). windows-gfx1101 should also validate at ba1b64db when that GPU is back online.
+
+## Revalidation linux-gfx90a + linux-gfx1100 2026-06-08
+
+Binary-equivalence carry-forward from d99faf9b -> ba1b64db for linux-gfx90a and linux-gfx1100.
+
+Delta: cmake/rerun_if_needed.py path-sep fix (no-op on Linux); set(CMAKE_CXX_STANDARD 17) in runtime/CMakeLists.txt and the CMakeLists.txt.jinja template. The C++17 setting COULD affect device codegen, so full binary comparison was performed (not assumed inert).
+
+Built the caspar runtime at both SHAs for each arch:
+```bash
+# gfx90a
+cmake symforce/caspar/source/runtime -B build_d99_gfx90a -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+cmake --build build_d99_gfx90a -j16
+cmake symforce/caspar/source/runtime -B build_ba1_gfx90a -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+cmake --build build_ba1_gfx90a -j16
+
+# gfx1100 (compile-only, no GPU on this host)
+cmake symforce/caspar/source/runtime -B build_d99_gfx1100 -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+cmake --build build_d99_gfx1100 -j16
+cmake symforce/caspar/source/runtime -B build_ba1_gfx1100 -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+cmake --build build_ba1_gfx1100 -j16
+```
+
+codeobj_diff verdict: identical for all 3 .cu.o device objects (shared_indices, solver_tools, sort_indices) on both gfx90a and gfx1100. The C++17 standard flag does not change device ISA for the caspar runtime sources. The path-sep fix in rerun_if_needed.py is host-Python only (no GPU code).
+
+Both platforms carried forward to ba1b64db via binary-equiv.
