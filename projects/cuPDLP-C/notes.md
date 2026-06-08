@@ -134,3 +134,81 @@ Result: ALL TESTS PASS
 - plc afiro.mps: LP solver converges to OPTIMAL solution with correct objective -464.75
 
 Wave32 reduction kernels work correctly on gfx1100 RDNA3. The arch-dependent warp-size macros successfully handle both wave64 (gfx90a) and wave32 (gfx1100) in a single codebase.
+
+## Validation 2026-06-08 (windows-gfx1201)
+
+### Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201, RDNA4, wave32)
+### ROCm: 7.14.0a20260604 (TheRock pip SDK)
+### GPU index: HIP_VISIBLE_DEVICES=0 (only GPU enumerated this session)
+
+Two Windows-specific build fixes were required and committed on top of the Linux port:
+
+1. commit ee2f874 `[ROCm] Fix Windows build: skip -lm on Windows`
+   - Changed `-lm` linker flag in 3 CMakeLists.txt files to `$<$<NOT:$<PLATFORM_ID:Windows>>:m>`
+   - On Windows there is no m.lib; math functions are in the C runtime
+
+2. commit 503569a `[ROCm] Fix Windows DLL export and HIP link for shared libraries`
+   - Added `WINDOWS_EXPORT_ALL_SYMBOLS ON` to cudalin, cupdlp, wrapper_lp, wrapper_highs targets
+   - Added explicit `target_link_libraries(wrapper_lp/wrapper_highs PRIVATE ${HIP_LIBRARY})` since mps_lp.c uses hipMalloc via the cuda_to_hip.h shim and cupdlp does not re-export those symbols on Windows
+
+Build (using amdclang++ toolchain via TheRock venv, all-clang, no MSVC):
+
+```powershell
+# Activate TheRock venv
+source B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/activate
+
+# Build HiGHS 1.6.0
+cd B:/develop/moat/projects/cuPDLP-C/HiGHS
+mkdir build && cd build
+cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_INSTALL_PREFIX=B:/develop/moat/projects/cuPDLP-C/HiGHS/install \
+  -DBUILD_SHARED_LIBS=ON \
+  -DFAST_BUILD=OFF -DBUILD_EXAMPLES=OFF \
+  -DCMAKE_C_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe
+ninja -j24 && ninja install
+
+# Build cuPDLP-C
+cd B:/develop/moat/projects/cuPDLP-C/src
+mkdir build && cd build
+ROCM_PATH="B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+cmake .. -G Ninja \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_HIP_FLAGS="--rocm-device-lib-path=${ROCM_PATH}/lib/llvm/amdgcn/bitcode" \
+  -DHIGHS_HOME=B:/develop/moat/projects/cuPDLP-C/HiGHS/install \
+  -DCMAKE_C_COMPILER=${ROCM_PATH}/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=${ROCM_PATH}/lib/llvm/bin/clang++.exe
+ninja -j24
+
+# Copy ROCm runtime DLLs into build/bin for DLL search
+# (from _rocm_sdk_core and _rocm_sdk_libraries)
+# Also create build/.kpack/blas_lib_gfx1201.kpack (rocsparse.dll resolves kpack at ../kpack relative to its DLL dir)
+mkdir -p build/.kpack
+cp _rocm_sdk_libraries/.kpack/blas_lib_gfx1201.kpack build/.kpack/
+```
+
+Tests (HIP_VISIBLE_DEVICES=0):
+```python
+# Run from build/bin with PATH including BINDIR + _rocm_sdk_core/bin + _rocm_sdk_libraries/bin
+# ROCBLAS_TENSILE_LIBPATH=_rocm_sdk_libraries/bin/rocblas/library
+
+testcudalin.exe
+# Output: 0.000000, 1.000000, 4.000000, 9.000000, 16.000000, 25.000000, 36.000000, 49.000000, 64.000000, 81.000000 (PASS)
+
+testcublas.exe
+# Output: 2-norm is :0.000000 (PASS)
+
+plc.exe -fname B:\...\example\afiro.mps -nIterLim 5000
+# GPU device: AMD Radeon RX 9070 XT (gfx1201, RDNA4)
+# Solving information: Optimal current solution
+# Primal objective: -4.64750896e+02 (PASS, matches reference -464.75)
+# Dual objective: -4.64831392e+02
+# 200 iterations in 0.141s
+```
+
+Key Windows runtime requirement: rocsparse.dll references `../.kpack/blas_lib_gfx1201.kpack` relative to its own directory. The build/bin/ rocsparse.dll requires build/.kpack/blas_lib_gfx1201.kpack to exist. Copy from `_rocm_sdk_libraries/.kpack/blas_lib_gfx1201.kpack`.
+
+Result: 3/3 PASS on AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32).
+validated_sha = 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750
