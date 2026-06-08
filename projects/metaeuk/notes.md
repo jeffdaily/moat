@@ -354,3 +354,17 @@ GPU confirmed active: "Use GPU 1" in each predictexons run.
 Fork head pushed: 2e4e953a40822e1fd717d641686be5a012c4bbaf
 GPU arch: gfx90a (MI250X, GCD3)
 Validation: PASSED
+
+## Revalidate check 2026-06-08 (windows-gfx1201)
+
+Delta: a1b8ad0e -> 2e4e953a (one commit: "[ROCm] Fix __syncwarp missing after HIP_DISABLE_WARP_SYNC_BUILTINS").
+
+Method: source-class inspection.
+
+Change: adds `__device__ inline void __syncwarp()` to lib/mmseqs/lib/libmarv/src/cuda_to_hip.h, guarded by `#ifndef __syncwarp`, using fence+wave_barrier+fence sequence.
+
+On Windows/TheRock 7.14 with HIP_DISABLE_WARP_SYNC_BUILTINS always set, `__syncwarp` is NOT defined by any TheRock 7.14 header (amd_warp_sync_functions.h puts it under `#if !defined(HIP_DISABLE_WARP_SYNC_BUILTINS)`). The `#ifndef __syncwarp` guard passes, and the new explicit definition is compiled into device code. `kernels.cuh` calls `__syncwarp()` unconditionally.
+
+This is a functional device-code change: the `__syncwarp()` intrinsic implementation changes (was potentially undefined/missing, now explicitly fence+wave_barrier+fence). Device ISA for gfx1201 is NOT identical.
+
+VERDICT: Cannot carry forward. Left as `revalidate`. A GPU test run is required to validate the __syncwarp fix on gfx1201 RDNA4.
