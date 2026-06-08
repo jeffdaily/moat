@@ -813,3 +813,81 @@ Raw output:
 All code changes in the delta are Windows-only. Linux gfx90a device ISA and exported symbols are unchanged. The `wet_C.so` ISA discrepancy is a build-environment drift artifact (June 1 vs today), not a code-change effect. Carry-forward is correct.
 
 State -> completed (carry-forward). validated_sha = 7528e8dbd94fca6e56c845f6b53b8dcce04ac29b.
+
+## Validation 2026-06-08 (linux-gfx1100 -- revalidate)
+
+Platform: 2x AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1 / HIP 7.2.53211, torch 2.13.0a0+gitb5e90ff. HIP_VISIBLE_DEVICES=0.
+
+Trigger: head_sha advanced 2890415 -> 7528e8d (Windows/gfx1201 HIPRT fixes). linux-gfx1100 state was `revalidate`.
+
+### Delta analysis (validated_sha 2890415 -> head_sha 7528e8d)
+
+Same delta as gfx90a revalidation (above). Superproject diff: two gitlink advances.
+
+diff-surfel-rasterizations (d7e9f1a -> 98f0c05): 3x setup.py -- adds `if os.name == 'nt' and torch.version.hip:` Windows ABI shim (copies ext.cpp -> ext_winhip.cu). False on Linux; no Linux source change.
+
+diff-surfel-tracing (5991683 -> 415f0a4): Windows HIPRT fixes: hiprt.cpp (`#ifdef _WIN32` oroInitialize DLL path build), hiprt_libpath.h (adds Windows .dll names to g_hiprtc_paths[]), hipew.cpp (adds Windows .dll names). Compiler.cpp: two changes -- (1) buildProgram uses filename not full path for hiprtcCreateProgram source name; (2) addCommonOpts adds `--offload-arch=<gcnArch>` to JIT compilation for AMD. Both are host-side (runtime JIT options, not embedded device code in the .so). hiprt_wrapper.cpp: Windows `#ifdef _WIN32` DLL-path guards.
+
+### Binary equivalence check
+
+Built at old SHA (2890415/d7e9f1a/5991683) using the existing built .so files from prior gfx1100 validation. Rebuilt at new SHA (7528e8d/98f0c05/415f0a4): rebuilt all 3 rasterizer variants (cleared stale hipify artifacts) and tracer extension (rebuilt libhiprt0300164.so from updated Compiler.cpp source, then rebuilt _C.so).
+
+```
+python3 utils/codeobj_diff.py \
+  agent_space/EnvGS-gfx1100-gpu0/old_build \
+  agent_space/EnvGS-gfx1100-gpu0/new_build
+```
+
+Results:
+- wet_C.so: identical (exported symbols + device ISA identical)
+- wetCH05_C.so: identical (exported symbols + device ISA identical, 253 exports)
+- wetCH07_C.so: identical (exported symbols + device ISA identical, 253 exports)
+- tracing_C.so: indeterminate (HIPRT JIT-only, no embedded device code). Manual symbol check: 1242 symbols both old and new, zero diff. Same size (581600 bytes). Functionally equivalent.
+
+The Compiler.cpp::addCommonOpts change adds `--offload-arch=gfx1100` at JIT runtime -- improves correctness but does not change the static .so. Full GPU revalidation performed to exercise the JIT with the new arch option.
+
+### Full GPU revalidation
+
+Rebuilt libhiprt0300164.so from updated Compiler.cpp and reinstalled tracer extension. Cleared hiprt_cache to force cold JIT recompile with new `--offload-arch=gfx1100` option.
+
+Commands:
+```bash
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs/validate_stage1.py
+
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs_stage2/validate_stage2.py
+
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS test -- \
+    python3 agent_space/envgs_stage2/validate_stage2.py
+
+HIP_VISIBLE_DEVICES=0 bash utils/timeit.sh EnvGS-stage2-geom test -- \
+    python3 agent_space/envgs_stage2/validate_geom_fd.py
+
+HIP_VISIBLE_DEVICES=0 python3 agent_space/envgs_stage2/validate_geom_fd.py
+```
+
+Stage 1 results (validate_stage1.py):
+- wet (NC=3): forward finite min=0.0000 max=0.8977 mean=0.2040, nonzero_frac=0.934, visible=1317/4000. FD opacity sign=1.00 slope=1.000. backward all 6 grads finite. determinism forward max_diff=0.0, backward grad_rel=1.25e-07. PASS.
+- ch05 (NC=5): forward finite, FD opacity sign=1.00 slope=1.000, all grads finite, backward grad_rel=8.63e-08. PASS.
+- ch07 (NC=7): forward finite, FD opacity sign=1.00 slope=1.000, all grads finite, backward grad_rel=1.38e-07. PASS.
+
+Stage 2 results (validate_stage2.py, runs 1 and 2 -- bit-identical):
+- Forward: rgb shape=(32,32,3) finite=True min=0.0000 max=0.7866 mean=0.1890; acc nonzero_frac=0.594 max=0.9999; dpt finite=True max=3.2852; hit_frac=0.594. PASS.
+- Backward: dmeans3D L1=2.302, dscales L1=6.496, drotations L1=3.154e-01, dopacities L1=1.872, dcolors L1=1.919. All finite. PASS.
+- FD colors: cosine=1.0000 slope=0.9977. PASS.
+- FD opacities: cosine=1.0000 slope=1.0015. PASS.
+- VERDICT: PASS.
+
+Cold-cache JIT: hiprt_cache cleared before run 1, repopulated (6 files: 3 kernel hashes x {.bin, .check}). Kernels JIT-compiled with `--offload-arch=gfx1100` (new Compiler.cpp), no JIT failure, no HSA fault.
+
+validate_geom_fd.py (runs 1 and 2 -- bit-identical):
+- Analytic grads: means3D finite=True, scales finite=True, rotations finite=True. No NaN.
+- FD means3D: cosine=0.9966 slope=1.0046. PASS.
+- FD scales: cosine=0.9978 slope=1.0610. PASS.
+- Rotations: all_finite=True (quaternion null-space noise CHECK per gfx90a precedent). PASS.
+- GEOMETRIC FD: PASS.
+
+Non-GPU regressions: all 3 Stage 1 rasterizer variants import with correct symbols; no Stage 1 regression.
+
+Result: ALL PASS (Stage 1 + Stage 2 HIPRT tracer with new --offload-arch=gfx1100 JIT option; cold JIT stable, bit-identical across runs, no HSA fault). State -> completed. validated_sha = 7528e8dbd94fca6e56c845f6b53b8dcce04ac29b.

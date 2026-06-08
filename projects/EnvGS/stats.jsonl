@@ -51,3 +51,11 @@
 {"kind":"phase","ts":"2026-06-07T20:59:17Z","phase":"test","seconds":5.058,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/envgs_stage2/validate_stage2.py"}
 {"kind":"phase","ts":"2026-06-08T00:18:41Z","phase":"compile","seconds":51.090,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch07 --no-build-isolation --no-deps -q"}
 {"kind":"phase","ts":"2026-06-08T00:19:26Z","phase":"compile","seconds":32.306,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-tracing --no-build-isolation --no-deps -q"}
+{"kind":"phase","ts":"2026-06-08T00:35:07Z","phase":"compile","seconds":37.925,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet --no-build-isolation --no-deps -q"}
+{"kind":"phase","ts":"2026-06-08T00:35:52Z","phase":"compile","seconds":37.929,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch05 --no-build-isolation --no-deps -q"}
+{"kind":"phase","ts":"2026-06-08T00:36:29Z","phase":"compile","seconds":37.793,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-rasterizations/diff-surfel-rasterization-wet-ch07 --no-build-isolation --no-deps -q"}
+{"kind":"phase","ts":"2026-06-08T00:37:37Z","phase":"compile","seconds":4.384,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/hiprt_build/build_gfx1100 --target hiprt03001 -j16"}
+{"kind":"phase","ts":"2026-06-08T00:38:14Z","phase":"compile","seconds":24.473,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/EnvGS/src/submodules/diff-surfel-tracing --no-build-isolation --no-deps -v"}
+{"kind":"phase","ts":"2026-06-08T00:39:34Z","phase":"test","seconds":2.870,"exit":0,"cmd":"python3 agent_space/envgs/validate_stage1.py"}
+{"kind":"phase","ts":"2026-06-08T00:39:55Z","phase":"test","seconds":9.357,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
+{"kind":"phase","ts":"2026-06-08T00:40:06Z","phase":"test","seconds":2.677,"exit":0,"cmd":"python3 agent_space/envgs_stage2/validate_stage2.py"}
