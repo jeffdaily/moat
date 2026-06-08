@@ -322,3 +322,44 @@ HIP_VISIBLE_DEVICES=3 ctest -LE gpu -R "p3m_fft|mmm1d|coulomb_mixed" --timeout 3
 ```
 
 coulomb_mixed_periodicity, mmm1d, p3m_fft: all PASS. No regressions vs gfx90a baseline.
+
+## Validation 2026-06-08 (windows-gfx1201 -- BLOCKED)
+
+State: port-ready -> blocked. GPU: gfx1201 confirmed present at HIP_VISIBLE_DEVICES=0
+(AMD Radeon RX 9070 XT, gcnArchName gfx1201, verified via hipInfo.exe).
+Fork cloned at 6d36cb6aaf5425c1710b756d79f67ec7fcb9a0ca; HEAD correct.
+
+ESPResSo requires MPI 3.0 (`find_package(MPI 3.0 REQUIRED)`) and `Boost::mpi` to
+build. On Windows the only viable MPI implementation is MS-MPI (Microsoft MPI).
+The MS-MPI installer (msmpisetup.exe) requires UAC/administrator elevation; the
+automated validation environment runs as a standard user and cannot install
+system-level packages.
+
+Attempted workarounds (all exhausted):
+- `winget install Microsoft.msmpi`: downloads correctly but its installer requires
+  elevation -> `WinError 740` (The requested operation requires elevation).
+- Extracting the MS-MPI SDK MSI manually: extracted mpi.h + msmpi.lib for building,
+  but the runtime msmpi.dll is inside a delta-compressed cabinet (XPRESS-delta
+  or MSZIP CM=13 variant, not standard DEFLATE) that cannot be decompressed without
+  the Windows Installer cabinet stack (expand.exe returns 0xca00a009
+  DELTA_E_ILLEGAL_DELTA_FORMAT; FDI API segfaults on the same cab).
+- pip install mpi4py: package installed but needs system msmpi.dll to load -> fails.
+- Alternative MPI (MPICH, OpenMPI for Windows): not available without admin install.
+- vcpkg mpi: no mpi port available.
+
+Without msmpi.dll:
+  - CMake configure would fail at `find_package(MPI 3.0 REQUIRED)`.
+  - Even if header-only MPI were accepted, linking msmpi.lib produces an executable
+    that tries to load msmpi.dll at startup, so espressomd module import fails.
+  - The Boost.MPI compiled library also requires msmpi.dll.
+  - The GPU tests (espressomd Python tests) all link transitively against msmpi.dll.
+
+This is a host infrastructure blocker (missing system dependency requiring admin
+install), NOT a port defect. The HIP port is correct as proven by linux-gfx90a
+and linux-gfx1100 validation.
+
+The linux-gfx1100 gfx1201 fat-binary path would apply equally to windows-gfx1201
+if MPI were available (gfx1201 is wave32, same as gfx1100, and the port has no
+warp-size assumptions). A future validation would succeed if MS-MPI is installed
+by an admin before the session, or if the project is rebuilt on Linux where MPI
+is available as a standard package.
