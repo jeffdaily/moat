@@ -336,3 +336,22 @@ Wave32 gate (gfx1201 native wave32): volatile DROID-SLAM block reduction is wave
 20x bit-exact determinism at every n straddling 32/64/256 boundaries. No reduction race.
 
 head_sha at validation: 07385a2 (includes Windows fixes on top of b2f86d46)
+
+## Revalidation 2026-06-08 (linux-gfx90a)
+
+State: revalidate -> completed at 07385a22 (carry-forward, binary-equiv).
+
+Delta b2f86d46..07385a22: one commit "[ROCm] Fix Windows LLP64 and c10-ABI link errors".
+- gn_kernels.cu, matching_kernels.cu: `long` -> `int64_t` in accessor<> template args and
+  local variable declarations. On Linux x86_64, `long` and `int64_t` are the same 64-bit
+  type; this is a typedef-equivalent spelling change with no effect on the compiled binary.
+- setup.py, curope/setup.py: `/ALTERNATENAME` MSVC linker directives added exclusively
+  under `if sys.platform == "win32"`, inert on Linux (extra_link_args stays empty).
+
+Binary-equivalence check: rebuilt both SHAs for gfx90a (PYTORCH_ROCM_ARCH=gfx90a) and
+ran `python3 utils/codeobj_diff.py old/ new/`:
+  verdict=identical
+  curope.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (66 exports))
+  mast3r_slam_backends.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (200 exports))
+
+No GPU re-run required. Carried forward to completed at 07385a22.

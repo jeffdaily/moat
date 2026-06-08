@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-04T03:56:07Z",
-  "updated_at": "2026-06-08T01:33:27Z",
+  "updated_at": "2026-06-08T04:05:25Z",
   "head_sha": "07385a228e2ff7701ffd8f136d257051fa6c0fda",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b2f86d46b91bc516b6813f1f5f189066cb5a243b",
+      "validated_sha": "07385a228e2ff7701ffd8f136d257051fa6c0fda",
       "started_at": "2026-06-04T04:05:48Z",
-      "completed_at": "2026-06-04T04:29:32Z",
-      "updated_at": "2026-06-08T01:32:52Z",
+      "completed_at": "2026-06-08T04:05:25Z",
+      "updated_at": "2026-06-08T04:05:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "07385a228e2ff7701ffd8f136d257051fa6c0fda",
+        "method": "binary-equiv",
+        "detail": "long->int64_t identical on x86_64 Linux; sys.platform=win32 linker flags Linux-inert; codeobj_diff verdict=identical (200+66 exports, device ISA)",
+        "at": "2026-06-08T04:05:25Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",

@@ -27,3 +27,6 @@
 {"kind":"phase","ts":"2026-06-08T01:28:59Z","phase":"test","seconds":2.272,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/mast3r_validate_win_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-08T01:33:41Z","phase":"compile","seconds":0.015,"exit":0,"cmd":"echo build already done"}
 {"kind":"phase","ts":"2026-06-08T01:33:41Z","phase":"test","seconds":0.013,"exit":0,"cmd":"echo test already done 16/16 PASS"}
+{"kind":"phase","ts":"2026-06-08T04:00:28Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T04:00:44Z","phase":"compile","seconds":9.622,"exit":1,"cmd":"python /var/lib/jenkins/moat/projects/MASt3R-SLAM/src/setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T04:00:50Z","phase":"compile","seconds":0.040,"exit":2,"cmd":"python setup.py build_ext --inplace"}
