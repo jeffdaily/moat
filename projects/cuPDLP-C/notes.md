@@ -244,3 +244,50 @@ Conclusion: libcudalin.so (sole GPU kernel library) is binary-identical on gfx90
 CPU-only shared libs have identical exported symbols. Delta is Windows-only; no GPU re-run needed.
 
 Carry-forward: completed at 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750 (binary-equiv)
+
+## Revalidation 2026-06-08 (linux-gfx1100)
+
+### Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100, RDNA3, wave32)
+### GPU index: HIP_VISIBLE_DEVICES=1
+### ROCm: 7.0.53211
+
+Delta f6105bf9..503569a5 (same two Windows-specific commits as above):
+- ee2f874: -lm -> $<$<NOT:$<PLATFORM_ID:Windows>>:m> in CMakeLists.txt (Linux still links -lm)
+- 503569a: WINDOWS_EXPORT_ALL_SYMBOLS ON (ignored on Linux) + explicit HIP_LIBRARY link for wrapper_lp/wrapper_highs
+
+codeobj_diff result (built both SHAs in agent_space/cuPDLP-C-gfx1100-gpu1/build-old|new):
+- lib/libcudalin.so: identical (exported symbols + device ISA identical, 74 exports)
+- lib/libcupdlp.so: indeterminate (no GPU code)
+- lib/libwrapper_highs.so: indeterminate (no GPU code)
+- lib/libwrapper_lp.so: indeterminate (no GPU code)
+
+Manual nm -D diff for indeterminate libs: libcupdlp.so is export-identical. wrapper_lp.so and wrapper_highs.so show hipMalloc/hipMemcpy/hipMemset/hipGetErrorString as `U hipMalloc@hip_4.2` in new vs `U hipMalloc` in old -- both undefined (imported), difference is only versioned symbol binding from explicit HIP_LIBRARY link. Same runtime function called; no behavioral change on Linux.
+
+Since codeobj_diff returns `indeterminate` (not `identical`), proceeded with full GPU revalidation per protocol.
+
+Build:
+```bash
+export HIGHS_HOME=/var/lib/jenkins/moat/projects/cuPDLP-C/HiGHS/install
+export HIP_VISIBLE_DEVICES=1
+cd /var/lib/jenkins/moat/agent_space/cuPDLP-C-gfx1100-gpu1/build-new
+cmake /var/lib/jenkins/moat/projects/cuPDLP-C/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DCMAKE_BUILD_TYPE=Release
+make -j$(nproc)
+```
+
+Tests:
+```bash
+export LD_LIBRARY_PATH=$HIGHS_HOME/lib:/var/lib/jenkins/moat/agent_space/cuPDLP-C-gfx1100-gpu1/build-new/lib:$LD_LIBRARY_PATH
+./bin/testcudalin
+# 0.000000, 1.000000, 4.000000, 9.000000, 16.000000, 25.000000, 36.000000, 49.000000, 64.000000, 81.000000 (PASS)
+
+./bin/testcublas
+# 2-norm is :0.000000 (PASS)
+
+./bin/plc -fname /var/lib/jenkins/moat/projects/cuPDLP-C/src/example/afiro.mps -nIterLim 5000
+# Solving information: Optimal current solution
+# Primal objective: -4.64750896e+02 (PASS, matches reference -464.75)
+# 200 iterations
+```
+
+Result: 3/3 PASS on AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32).
+validated_sha = 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750
