@@ -7,8 +7,8 @@
   "priority": 5.187,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-08T16:22:54Z",
-  "head_sha": "5ee4973c",
+  "updated_at": "2026-06-08T18:24:46Z",
+  "head_sha": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
@@ -43,10 +43,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5ee4973c",
+      "validated_sha": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
       "started_at": null,
-      "completed_at": "2026-06-03T23:05:07Z",
-      "updated_at": "2026-06-03T23:05:07Z",
+      "completed_at": "2026-06-08T18:24:46Z",
+      "updated_at": "2026-06-08T18:24:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,42 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "5ee4973c",
+        "to": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
         "method": "source-class",
-        "detail": "automated-review hardening (HIP-guarded): RootSift small-sum threshold + write_index init; behavior-preserving for all real descriptors (threshold only affects degenerate sum<1e-20; init is a dead sto",
-        "at": "2026-06-03T23:05:07Z"
+        "detail": "install.rst: document USE_HIP build in the Sphinx install guide (doc-only)",
+        "at": "2026-06-08T18:24:46Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5ee4973c",
+      "validated_sha": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
       "started_at": null,
-      "completed_at": "2026-06-05T17:53:39Z",
-      "updated_at": "2026-06-05T17:53:39Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1201": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "5ee4973c",
-      "started_at": null,
-      "completed_at": "2026-06-07T03:51:35Z",
-      "updated_at": "2026-06-07T03:51:35Z",
+      "completed_at": "2026-06-08T18:24:46Z",
+      "updated_at": "2026-06-08T18:24:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,16 +89,21 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "carry_forward": {
+        "to": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
+        "method": "source-class",
+        "detail": "install.rst: document USE_HIP build in the Sphinx install guide (doc-only)",
+        "at": "2026-06-08T18:24:46Z"
+      }
     },
-    "windows-gfx1151": {
+    "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5ee4973c",
+      "validated_sha": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
       "started_at": null,
-      "completed_at": "2026-06-03T23:05:07Z",
-      "updated_at": "2026-06-03T23:05:07Z",
+      "completed_at": "2026-06-08T18:24:46Z",
+      "updated_at": "2026-06-08T18:24:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -136,10 +119,39 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "5ee4973c",
+        "to": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
         "method": "source-class",
-        "detail": "automated-review hardening (HIP-guarded): RootSift small-sum threshold + write_index init; behavior-preserving for all real descriptors (threshold only affects degenerate sum<1e-20; init is a dead sto",
-        "at": "2026-06-03T23:05:07Z"
+        "detail": "install.rst: document USE_HIP build in the Sphinx install guide (doc-only)",
+        "at": "2026-06-08T18:24:46Z"
+      }
+    },
+    "windows-gfx1151": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
+      "started_at": null,
+      "completed_at": "2026-06-08T18:24:46Z",
+      "updated_at": "2026-06-08T18:24:46Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "87597edfa7ee7d5e63828a56763ba7a9f738dc4f",
+        "method": "source-class",
+        "detail": "install.rst: document USE_HIP build in the Sphinx install guide (doc-only)",
+        "at": "2026-06-08T18:24:46Z"
       }
     }
   },
