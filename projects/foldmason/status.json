@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:16:31Z",
-  "updated_at": "2026-06-08T18:06:14Z",
+  "updated_at": "2026-06-08T18:29:14Z",
   "head_sha": "796bcfb64558ceee46e4746f2f94688d28a01914",
   "depends_on": [],
   "platforms": {
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b58f888d8c7b7d45e75ee32e9ea3d1f4b5ca7b4e",
+      "validated_sha": "796bcfb64558ceee46e4746f2f94688d28a01914",
       "started_at": null,
-      "completed_at": "2026-06-05T15:39:42Z",
-      "updated_at": "2026-06-08T17:04:38Z",
+      "completed_at": "2026-06-08T18:29:14Z",
+      "updated_at": "2026-06-08T18:29:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +55,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "796bcfb64558ceee46e4746f2f94688d28a01914",
+        "method": "binary-equiv",
+        "detail": "libmarv.so device ISA identical (5655 exports) on gfx1100/ROCm 7.2.1; Windows-only guards in 796bcfb are inert on Linux",
+        "at": "2026-06-08T18:29:14Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

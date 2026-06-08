@@ -301,3 +301,49 @@ GPU/HIP regression.
 GPU search (libmarv ungappedprefilter on gfx90a) works correctly at 796bcfb6. The
 Windows-only guards in the head commit do not introduce any GPU regression on Linux.
 1 PASS (msa2lddt), 2 expected-variant (easymsa, structuremsa).
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate, RDNA3 gfx1100)
+
+**Verdict: PASS (carry-forward, binary-equiv)**
+
+Revalidated at commit 796bcfb64558ceee46e4746f2f94688d28a01914.
+
+Delta from prior validated_sha (b58f888): the head commit `796bcfb6` adds Windows-only
+build guards (tinyexpr -fPIC guard for WIN32, strtok_r->strtok_s under _WIN32, and a
+HIP_VERSION_MINOR < 4 guard for cooperative_groups).
+
+### Binary equivalence check
+
+Built both commits for gfx1100 (ROCm 7.2.1) and ran `codeobj_diff.py`:
+
+```bash
+export HIP_VISIBLE_DEVICES=2
+
+# Build old SHA (b58f888)
+cmake -S projects/foldmason/src -B agent_space/foldmason-gfx1100-gpu2/build-old \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+cmake --build agent_space/foldmason-gfx1100-gpu2/build-old --target foldmason -j16
+
+# Build new SHA (796bcfb6)
+cmake -S projects/foldmason/src -B agent_space/foldmason-gfx1100-gpu2/build-new \
+  -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+cmake --build agent_space/foldmason-gfx1100-gpu2/build-new --target foldmason -j16
+
+python3 utils/codeobj_diff.py \
+  agent_space/foldmason-gfx1100-gpu2/build-old \
+  agent_space/foldmason-gfx1100-gpu2/build-new
+```
+
+Result: `lib/foldseek/lib/mmseqs/lib/libmarv/src/libmarv.so: identical (exported symbols + device ISA identical (5655 exports))`
+
+### Why the delta is inert on gfx1100 / ROCm 7.2.1
+
+1. `cooperative_groups.h`: HIP_VERSION_MINOR=2 < 4, so the version guard evaluates TRUE -- the shim structs compile in, same as before.
+2. `marv.cu`: `#ifdef _WIN32` is not defined on Linux -- no code change.
+3. `tinyexpr/CMakeLists.txt`: `if(WIN32)` is false on Linux -- `-fPIC` path unchanged.
+
+All three changes compile to identical device ISA on gfx1100. Carry-forward applied; no GPU re-run needed.
