@@ -415,3 +415,53 @@ All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
 Cross-arch check: results (834 CPU hits, 38 GPU-only) match previous gfx90a and gfx1100 results exactly.
 
 State: linux-gfx90a -> completed, validated_sha = 1a507881a2d5086e2a29b6a98a374fb841ba7ffe.
+
+## Validation 2026-06-08 (linux-gfx1100 revalidate, HIP_VISIBLE_DEVICES=3)
+
+Platform: Linux, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32). ROCm 7.2.1.
+Fork head: 1a507881 (Windows fixes commit on top of e7471b4). GPU[3] used.
+
+Change class: classify reported mixed/arch_independent=False. codeobj_diff verdict=differ
+(libmarv.so device code objects differ between e7471b41 and 1a507881 builds for gfx1100:
+the unconditional __shfl_*_sync macro additions in cuda_to_hip.h changed device ISA).
+Full GPU revalidation required.
+
+Build: cmake configure + cmake --build --target foldseek -j16 for gfx1100 at 1a507881
+into agent_space/foldseek-gfx1100-gpu3/build-new/. Build succeeded.
+
+```
+cmake -S agent_space/foldseek-gfx1100-gpu3/src-new \
+      -B agent_space/foldseek-gfx1100-gpu3/build-new \
+      -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+      -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+      -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+      -DCMAKE_C_COMPILER=gcc -DCMAKE_CXX_COMPILER=g++
+HIP_VISIBLE_DEVICES=3 cmake --build agent_space/foldseek-gfx1100-gpu3/build-new \
+      --target foldseek -j16
+```
+
+GPU vs CPU validation (bundled example/, 28 SCOP structures):
+```
+FOLDSEEK=agent_space/foldseek-gfx1100-gpu3/build-new/src/foldseek
+TESTDIR=agent_space/foldseek-gfx1100-gpu3/testdir
+
+$FOLDSEEK createdb <example/> $TESTDIR/exDB
+$FOLDSEEK search $TESTDIR/exDB $TESTDIR/exDB $TESTDIR/aln_cpu $TESTDIR/tmp_cpu --gpu 0 -e 10
+$FOLDSEEK makepaddedseqdb $TESTDIR/exDB $TESTDIR/exDB_pad
+HIP_VISIBLE_DEVICES=3 $FOLDSEEK search $TESTDIR/exDB $TESTDIR/exDB_pad $TESTDIR/aln_gpu $TESTDIR/tmp_gpu --gpu 1 -e 10
+$FOLDSEEK convertalis $TESTDIR/exDB $TESTDIR/exDB $TESTDIR/aln_cpu $TESTDIR/cpu.m8
+$FOLDSEEK convertalis $TESTDIR/exDB $TESTDIR/exDB_pad $TESTDIR/aln_gpu $TESTDIR/gpu.m8
+```
+
+Results:
+- CPU hits: 834, GPU hits: 872
+- CPU-only pairs: 0 (all 834 CPU hits reproduced on GPU)
+- GPU-only pairs: 38 (borderline low-bitscore, expected ungapped-prefilter sensitivity difference)
+- Common pairs with identical fields: 834/834 (0 mismatches, byte-identical pident/alnlen/coords/evalue/bitscore)
+
+GPU search log confirmed `ungappedprefilter ... --gpu 1` (libmarv GPU prefilter on gfx1100) ran.
+All 834 CPU hits byte-identical on GPU. GPU result is strict superset. PASS.
+
+Cross-arch check: gfx1100 results (834 CPU hits, 38 GPU-only) match gfx90a and prior gfx1100 results exactly.
+
+State: linux-gfx1100 -> completed, validated_sha = 1a507881a2d5086e2a29b6a98a374fb841ba7ffe.
