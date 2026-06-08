@@ -7,17 +7,17 @@
   "priority": 3.968,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T03:26:35Z",
-  "updated_at": "2026-06-08T20:40:39Z",
+  "updated_at": "2026-06-08T21:58:17Z",
   "head_sha": "23873773a4e90c74935c8ead05af7f9a7f917ee7",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
+      "validated_sha": "23873773a4e90c74935c8ead05af7f9a7f917ee7",
       "started_at": "2026-06-02T01:50:34Z",
-      "completed_at": "2026-06-08T00:18:32Z",
-      "updated_at": "2026-06-08T20:39:41Z",
+      "completed_at": "2026-06-08T21:58:17Z",
+      "updated_at": "2026-06-08T21:58:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
+        "to": "23873773a4e90c74935c8ead05af7f9a7f917ee7",
         "method": "binary-equiv",
-        "detail": "Windows-only CMake fixes; gfx90a device ISA + exported symbols identical (marian 56, marian-decoder 55, run_operator_tests 34)",
-        "at": "2026-06-08T00:18:32Z"
+        "detail": "Only src/tensors/gpu/prod.cpp changed (dc5cd4e2->23873773); a host-only TU (hipBLAS dispatch, no device code -- llvm-objdump --offloading empty). Rebuilt prod.cpp at both shas: 472 symbols identical, ",
+        "at": "2026-06-08T21:58:17Z"
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
+      "validated_sha": "23873773a4e90c74935c8ead05af7f9a7f917ee7",
       "started_at": "2026-06-02T05:35:00Z",
-      "completed_at": "2026-06-08T00:25:52Z",
-      "updated_at": "2026-06-08T20:39:41Z",
+      "completed_at": "2026-06-08T21:58:17Z",
+      "updated_at": "2026-06-08T21:58:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "dc5cd4e23649546cebc4b7cba84cf2df38b1c82d",
+        "to": "23873773a4e90c74935c8ead05af7f9a7f917ee7",
         "method": "binary-equiv",
-        "detail": "Windows-only CMake fixes + Clang -march/warning flags; gfx1100 device ISA + exported symbols identical (marian 56, marian-decoder 55, run_operator_tests 34)",
-        "at": "2026-06-08T00:25:52Z"
+        "detail": "Only src/tensors/gpu/prod.cpp changed (dc5cd4e2->23873773); a host-only TU (hipBLAS dispatch, no device code -- llvm-objdump --offloading empty). Rebuilt prod.cpp at both shas: 472 symbols identical, ",
+        "at": "2026-06-08T21:58:17Z"
       }
     },
     "windows-gfx1101": {
