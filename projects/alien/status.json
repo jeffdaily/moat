@@ -7,17 +7,17 @@
   "priority": 6.361,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-08T17:54:40Z",
-  "head_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
+  "updated_at": "2026-06-08T17:57:03Z",
+  "head_sha": "4388973775382e8f157c40e36e05c583b465e03f",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
+      "validated_sha": "4388973775382e8f157c40e36e05c583b465e03f",
       "started_at": "2026-05-31T00:42:20Z",
-      "completed_at": "2026-06-08T17:54:38Z",
-      "updated_at": "2026-06-08T17:54:40Z",
+      "completed_at": "2026-06-08T17:57:01Z",
+      "updated_at": "2026-06-08T17:57:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "dd46b8703561347a63326967463a1cba7a52931f",
+        "to": "40d7e30388670354722261e1849721faa80b6987",
         "method": "source-class",
-        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
-        "at": "2026-06-08T17:54:38Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T17:57:01Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
+      "validated_sha": "4388973775382e8f157c40e36e05c583b465e03f",
       "started_at": null,
-      "completed_at": "2026-06-08T17:54:38Z",
-      "updated_at": "2026-06-08T17:54:40Z",
+      "completed_at": "2026-06-08T17:57:01Z",
+      "updated_at": "2026-06-08T17:57:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,20 +61,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "dd46b8703561347a63326967463a1cba7a52931f",
+        "to": "40d7e30388670354722261e1849721faa80b6987",
         "method": "source-class",
-        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
-        "at": "2026-06-08T17:54:38Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T17:57:01Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
+      "validated_sha": "4388973775382e8f157c40e36e05c583b465e03f",
       "started_at": null,
-      "completed_at": "2026-06-08T17:54:38Z",
-      "updated_at": "2026-06-08T17:54:40Z",
+      "completed_at": "2026-06-08T17:57:01Z",
+      "updated_at": "2026-06-08T17:57:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -89,20 +89,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "dd46b8703561347a63326967463a1cba7a52931f",
+        "to": "40d7e30388670354722261e1849721faa80b6987",
         "method": "source-class",
-        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
-        "at": "2026-06-08T17:54:38Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T17:57:01Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "15a62ec48fdde29c267239b7e324c2b0ade95ad8",
+      "validated_sha": "4388973775382e8f157c40e36e05c583b465e03f",
       "started_at": null,
-      "completed_at": "2026-06-08T17:54:38Z",
-      "updated_at": "2026-06-08T17:54:40Z",
+      "completed_at": "2026-06-08T17:57:01Z",
+      "updated_at": "2026-06-08T17:57:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -117,10 +117,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "dd46b8703561347a63326967463a1cba7a52931f",
+        "to": "40d7e30388670354722261e1849721faa80b6987",
         "method": "source-class",
-        "detail": "removed build_hip.sh (unreferenced convenience script, never compiled); build uses the documented CMake command; zero build/behavior change",
-        "at": "2026-06-08T17:54:38Z"
+        "detail": "README: document ROCm/HIP build (doc-only)",
+        "at": "2026-06-08T17:57:01Z"
       }
     },
     "windows-gfx1151": {
