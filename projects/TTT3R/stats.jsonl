@@ -15,3 +15,6 @@
 {"kind": "tokens", "ts": "2026-06-05T01:30:45Z", "tokens": 31853, "source": "validator (gfx1100)"}
 {"kind":"phase","ts":"2026-06-08T02:39:15Z","phase":"compile","seconds":26.585,"exit":0,"cmd":"bash -c B:/develop/moat/agent_space/build_ttt3r_timed.bat"}
 {"kind":"phase","ts":"2026-06-08T02:39:31Z","phase":"test","seconds":2.677,"exit":0,"cmd":"bash B:/develop/moat/agent_space/test_ttt3r_script.sh"}
+{"kind":"phase","ts":"2026-06-08T04:15:25Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T04:16:24Z","phase":"compile","seconds":45.814,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/TTT3R_old/src/croco/models/curope && HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx90a python setup.py build_ext --inplace"}
+{"kind":"phase","ts":"2026-06-08T04:17:15Z","phase":"compile","seconds":45.258,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/agent_space/TTT3R_new/src/croco/models/curope && HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx90a python setup.py build_ext --inplace"}
