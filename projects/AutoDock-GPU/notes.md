@@ -888,3 +888,42 @@ verdict=identical
 ```
 
 VERDICT: Binary-equivalent on linux-gfx90a. Validation carried forward to c2f2f6f without GPU re-run.
+
+## Revalidation 2026-06-09 (linux-gfx1100, binary-equivalence carry-forward)
+
+Platform: 4x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP 7.2.
+
+### Delta analysis: f01306b -> c2f2f6f
+
+Single commit (c2f2f6f): "[ROCm] Undefine windows.h min/max macros before rocWMMA include on Windows"
+
+Change: `cuda/kernels.cu` adds `#ifdef min / #undef min / #endif` and `#ifdef max / #undef max / #endif`
+guards immediately before `#include <rocwmma/rocwmma.hpp>`, inside the existing
+`#if defined(__HIP_PLATFORM_AMD__)` block.
+
+Impact on Linux/gfx1100: NONE. On Linux, `min` and `max` are NOT defined as macros; the `#ifdef min`
+and `#ifdef max` conditions are false and those lines are preprocessed away entirely.
+
+### Binary-equivalence verification (gfx1100)
+
+Built at both commits from clean git worktrees in agent_space/adgpu-cf-old (f01306b) and
+agent_space/adgpu-cf-new (c2f2f6f), for both TENSOR=OFF and TENSOR=ON, HIP_ARCH=gfx1100:
+
+```
+make -C agent_space/adgpu-cf-old DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100             # TENSOR=OFF
+make -C agent_space/adgpu-cf-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100             # TENSOR=OFF
+make -C agent_space/adgpu-cf-old DEVICE=HIP NUMWI=64 TENSOR=ON HIP_ARCH=gfx1100   # TENSOR=ON
+make -C agent_space/adgpu-cf-new DEVICE=HIP NUMWI=64 TENSOR=ON HIP_ARCH=gfx1100   # TENSOR=ON
+python3 utils/codeobj_diff.py agent_space/adgpu-cf-old/bin/autodock_gpu_64wi \
+                               agent_space/adgpu-cf-new/bin/autodock_gpu_64wi
+```
+
+Both TENSOR=OFF and TENSOR=ON:
+```
+verdict=identical
+  autodock_gpu_64wi vs autodock_gpu_64wi: identical (exported symbols + device ISA identical (14 exports))
+```
+
+VERDICT: Binary-equivalent on linux-gfx1100 for both default (TENSOR=OFF) and TENSOR=ON builds.
+Validation carried forward to c2f2f6f without GPU re-run. Full prior gfx1100 scope (TENSOR=OFF
+docking + TENSOR=ON bf16 rocWMMA RDNA path validated at f01306b) stands unchanged.
