@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-08T23:14:15Z",
+  "updated_at": "2026-06-09T16:03:54Z",
   "head_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "fe191f8c6dc1ae9028307c68a8e389a3cd4ea4a5",
       "started_at": "2026-06-05T04:49:54Z",
       "completed_at": "2026-06-08T15:19:08Z",
-      "updated_at": "2026-06-08T23:14:15Z",
+      "updated_at": "2026-06-09T16:03:54Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/A-New-BellHope/bellhopcuda/pull/65",
+  "pr_number": 65,
+  "pr_opened_at": "2026-06-09T16:03:54Z"
 }
