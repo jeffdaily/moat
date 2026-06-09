@@ -208,3 +208,43 @@ Non-GPU regressions: none -- nerfacc is GPU-centric; the pure-torch reference fu
 Fork working tree clean: only untracked nerfacc/hip/ + build/ (never committed; setup.py:36 strips *hip* and regenerates).
 
 validated_sha: 2298cb55073791bdcfaff496c273c0ba5758a08d
+
+## Validation 2026-06-09 (validator, linux-gfx1100) -- state: completed
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.1, torch 2.13.0a0+gitb5e90ff, hip 7.2.53211.
+Fork: jeffdaily/nerfacc @ moat-port, HEAD 2298cb55073791bdcfaff496c273c0ba5758a08d.
+
+Build: clean tree (rm -rf nerfacc/hip build), HIP_VISIBLE_DEVICES=0 pinned.
+
+    source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12
+    cd projects/nerfacc/src && rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 \
+        pip install -e . --no-build-isolation
+    # exit 0; editable install built csrc.so for gfx1100
+
+Verified post-build:
+- `is_cub_available()` returns True -- hipcub DeviceScan ByKey path active on gfx1100.
+- roc-obj-ls confirms 5 gfx1100 code objects in csrc.so (camera, grid, pdf, scan, scan_cub).
+
+GPU test suite (cwd /tmp, tests copied from projects/nerfacc/src/tests/):
+
+    HIP_VISIBLE_DEVICES=0 python -m pytest /tmp/nerfacc_tests_gfx1100/ -v -p no:cacheprovider
+
+Result: 23/23 PASS (~12.3s), 6 warnings (1x NumPy 1.x/2.x warning; 3x torch.jit.script deprecation; 2x "fVDB not installed" in test_vdb -- tests return early, still PASSED).
+
+All GPU tests pass:
+- test_scan (4/4): inclusive/exclusive sum+prod, all exercising hipcub ByKey path + .backward().
+- test_pdf (3/3): searchsorted, importance_sampling (philox RNG), pdf_loss.
+- test_rendering (6/6): render_visibility, weight_from_alpha, weight_from_density, accumulate_along_rays, grads, rendering.
+- test_grid (6/6): ray_aabb_intersect, traverse_grids, traverse_grids_test_mode, traverse_grids_with_near_far_planes, sampling_with_min_max_distances, mark_invisible_cells.
+- test_pack (1/1): pack_info.
+- test_camera (1/1): opencv_lens_undistortion.
+- test_vdb (2/2): skip-early on missing fVDB, PASSED.
+
+Follower notes (gfx1101/gfx1201): same build + test recipe with the arch env var changed. No source changes needed; fixes are wave-agnostic.
+
+Non-GPU regressions: none.
+
+Fork working tree clean: only untracked nerfacc/hip/ (never committed).
+
+validated_sha: 2298cb55073791bdcfaff496c273c0ba5758a08d
