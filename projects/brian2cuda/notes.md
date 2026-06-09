@@ -517,3 +517,88 @@ device code or the cuda_standalone codegen prefs device.py reads). Re-squashed t
 commits into ONE on the upstream base: e158646c, parent d7758060. 19 files, +1158/-58
 (smaller than before -- the dead ~130-line hip_standalone codegen duplicate is gone).
 pr-ready=True. NEXT: upstream-PR gate.
+
+## HIP cleanup: dedupe detection + symmetric prefs wiring 2026-06-09 (porter)
+
+New commit 580eda1 ON TOP of e158646c (NOT amended; e158646c stays a reachable
+ancestor so advance_head can classify the delta). 5 files, +86/-453.
+status.json platform states untouched and no PR opened (handled separately).
+
+### What changed
+
+1. Removed the dead file brian2cuda/utils/hipgputools.py (384 lines). Confirmed
+   zero references repo-wide; device.py reimplements HIP detection inline
+   (is_hip_backend, get_hipcc_path, get_hip_gpu_arch, select_hip_gpu -- all live).
+
+2. Consolidated the two divergent backend checks. device.py::is_hip_backend()
+   and cuda_generator.py::_is_hip_backend() were separate live implementations
+   with DIFFERENT logic (codegen vs build could disagree). Unified to ONE in a
+   new stdlib-only module brian2cuda/utils/hip_backend.py. Canonical logic =
+   device.py's (the more complete: USE_HIP env, then hipcc-and-not-nvcc, then a
+   ROCm-install-and-no-CUDA fallback; cuda_generator's copy lacked the ROCm
+   fallback). Import direction: device -> codeobject -> cuda_generator, so the
+   shared module depends on nothing in brian2cuda (only os/shutil) and both
+   modules import it at top level with no cycle. Removed cuda_generator's now-dead
+   `import os`. Verified at runtime device.is_hip_backend IS cuda_generator.is_hip_backend
+   IS the canonical object.
+
+3. Symmetric preferences wiring -- every registered hip_backend pref now read by
+   live code (end-state requirement met):
+   - rocm_path: WIRED. New get_rocm_path() (in hip_backend.py) resolves pref >
+     ROCM_PATH env > /opt/rocm, mirroring gputools.get_cuda_path(). Replaced all
+     4 hardcoded os.environ.get('ROCM_PATH','/opt/rocm'|''') sites (the deleted
+     is_hip_backend, get_hipcc_path, the Windows makefile dev-lib path, the
+     Windows run DLL-copy path).
+   - extra_compile_args_hipcc: WIRED into the HIP makefile flags (device.py
+     generate_makefile), mirroring extra_compile_args_nvcc. The mandatory
+     -D__HIP_PLATFORM_AMD__/-DUSE_HIP macros (required by cuda_to_hip.h) are still
+     appended unconditionally; only the tunable flags come from the pref.
+   - gpu_heap_size: WIRED. main.cu feeds it to hipDeviceSetLimit; generate_main_source
+     now reads the hip pref on the HIP path (was always reading the CUDA pref).
+   - gpu_id: WIRED into select_hip_gpu() (index within HIP_VISIBLE_DEVICES; default
+     None -> 0), mirroring cuda_backend.gpu_id consumed by select_gpu().
+   - detect_gpus, detect_hip: DROPPED. Their CUDA analogues gate nvidia-smi/
+     deviceQuery enumeration + path-validation machinery that has NO HIP-side
+     equivalent (HIP arch = rocminfo with graceful fallback; selection =
+     HIP_VISIBLE_DEVICES). No natural live consumer existed, only the deleted
+     hipgputools.py read them.
+   - gpu_arch: already wired (kept).
+
+### Re-validation: linux-gfx90a
+
+- GPU: AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3 (GCD 3
+  free; GCD 2 in use by the co-tenant session).
+- HEAD 580eda1; USE_HIP=1; set_device('cuda_standalone', build_on_run=False);
+  device.build(compile=True, run=True).
+- Script: agent_space/brian2cuda_cleanup_reval.py.
+
+```
+HIP_VISIBLE_DEVICES=3 USE_HIP=1 utils/timeit.sh brian2cuda test -- \
+    python3 agent_space/brian2cuda_cleanup_reval.py
+```
+
+3/3 PASSED:
+1. LIF NeuronGroup (100, 20ms): 64 spikes -- PASS
+2. LIF + Synapses 1ms delay (spike queue / wave64 spinlock): 985 synapses,
+   104 source spikes, 50/50 target neurons active -- PASS
+3. ~200-neuron recurrent net: 11995 synapses, 2878 spikes, no deadlock -- PASS
+
+### Prefs-now-take-effect confirmation (asserted on EVERY build above)
+
+Script set rocm_path=/opt/rocm, extra_compile_args_hipcc=[...,'-DBRIAN2CUDA_PREF_SENTINEL=42'],
+gpu_arch='gfx90a', then grepped the generated makefile:
+- HIPCCFLAGS contains the sentinel -DBRIAN2CUDA_PREF_SENTINEL=42 (extra_compile_args_hipcc reaches hipcc).
+- HIPCC = @/opt/rocm/bin/hipcc (rocm_path pref drove hipcc resolution).
+- --offload-arch=gfx90a present (gpu_arch pref reached the makefile).
+get_rocm_path() resolution order also unit-checked: pref > ROCM_PATH env > /opt/rocm.
+
+### Delta classification note (for the state machine)
+
+Behavior on Linux is preserved: defaults of the newly-read prefs reproduce the
+prior hardcoded values (rocm_path default /opt/rocm == old hardcode;
+extra_compile_args_hipcc default ['-w','-ffast-math'] == old hardcoded flags
+minus the still-unconditional HIP macros; gpu_heap_size default 128 == cuda
+default 128; gpu_id default None -> 0 == old hardcode). It is a Python
+refactor (no kernel template, brianlib header, or cuda_standalone codegen pref
+changed), so the generated/compiled device code is unchanged when prefs are at
+defaults -- analogous to the prior 8455518 carry-forward, modulo the new file.
