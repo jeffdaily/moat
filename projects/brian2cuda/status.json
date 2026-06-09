@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "codegen",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-09T16:31:43Z",
+  "updated_at": "2026-06-09T17:18:58Z",
   "head_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
       "started_at": "2026-06-05T08:30:52Z",
       "completed_at": "2026-06-09T16:31:20Z",
-      "updated_at": "2026-06-09T16:31:43Z",
+      "updated_at": "2026-06-09T17:18:58Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -136,5 +136,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/brian-team/brian2cuda/pull/327",
+  "pr_number": 327,
+  "pr_opened_at": "2026-06-09T17:18:58Z"
 }
