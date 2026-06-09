@@ -43,3 +43,15 @@
 {"kind":"phase","ts":"2026-06-08T18:28:00Z","phase":"compile","seconds":306.065,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/foldmason-gfx1100-gpu2/build-new --target foldmason -j16"}
 {"kind": "tokens", "ts": "2026-06-08T18:30:32Z", "tokens": 32163, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T18:07:01Z", "tokens": 55180, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T20:31:09Z","phase":"compile","seconds":13.864,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T20:32:13Z","phase":"compile","seconds":34.104,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T20:37:11Z","phase":"compile","seconds":222.706,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T20:37:44Z","phase":"compile","seconds":16.437,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T21:15:59Z","phase":"compile","seconds":830.578,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T22:17:32Z","phase":"compile","seconds":1116.880,"exit":0,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-08T22:20:10Z","phase":"test","seconds":3.522,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind":"phase","ts":"2026-06-08T22:20:31Z","phase":"test","seconds":3.647,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind":"phase","ts":"2026-06-08T22:37:51Z","phase":"test","seconds":857.204,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind":"phase","ts":"2026-06-08T23:59:03Z","phase":"compile","seconds":1181.139,"exit":0,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
+{"kind":"phase","ts":"2026-06-09T00:15:35Z","phase":"test","seconds":930.677,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind":"phase","ts":"2026-06-09T00:31:02Z","phase":"test","seconds":891.433,"exit":127,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}

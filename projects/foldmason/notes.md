@@ -245,6 +245,95 @@ The Windows build requires 3 minor fixes (tinyexpr -fPIC guard, strtok_r
 alias, cooperative_groups version guard); these are all Windows-only guards
 that do not affect Linux build behavior.
 
+## Validation 2026-06-08 (windows-gfx1151, AMD Radeon 8060S)
+
+**Verdict: BLOCKED -- GPU test could not run (see below)**
+
+Platform: Windows 11, AMD Radeon 8060S (gfx1151, RDNA3.5, wave32).
+ROCm 7.14 from venv-gsplat (ROCm 7.13 TheRock venv was used for other projects
+but its lld.exe crashes on gfx1151 device code under -fgpu-rdc;
+ROCm 7.14 venv-gsplat avoids this because this_cluster() is __forceinline__).
+
+### Build (SUCCEEDED)
+
+Toolchain adjustments from gfx1201:
+- clang.exe for C, clang++.exe for CXX/HIP (not clang-cl; libmarv is a
+  self-contained lib, not MSVC-oriented host code)
+- win_posix_compat stubs (unistd.h, sys/mman.h, sys/resource.h, sys/time.h,
+  strings.h, dirent.h) with win_compat_force.h force-include for C/CXX
+- MAP_POPULATE macro stub in sys/mman.h (Linux-only, needed for mapped_file.hpp)
+- off_t typedef guard in unistd.h (ucrt already defines via sys/types.h)
+- Rust on PATH for corrosion CMake find
+- System cmake 3.31 used (no CMake 4.3 lld-link injection issue)
+- ROCm 7.14 from agent_space/venv-gsplat (7.13 lld crashes in Post-RA pass
+  on gfx1151 when --allow-multiple-definition is active; 7.14 fixes
+  this_cluster() to __forceinline__ so no duplicate symbol at all)
+
+```
+ROCM=/d/develop/moat/agent_space/venv-gsplat/Lib/site-packages/_rocm_sdk_devel
+export HIP_DEVICE_LIB_PATH="$ROCM/lib/llvm/amdgcn/bitcode"
+
+cmake -S projects/foldmason/src -B agent_space/foldmason_gfx1151_build \
+  -G Ninja \
+  -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1151 \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -Dhip_DIR=$ROCM/lib/cmake/hip \
+  -DCMAKE_PREFIX_PATH=$ROCM \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-I.../win_posix_compat ... -include .../win_compat_force.h" \
+  -DCMAKE_CXX_FLAGS="-I.../win_posix_compat ... -include .../win_compat_force.h" \
+  -DCMAKE_HIP_FLAGS="-I.../win_posix_compat -D_USE_MATH_DEFINES -DNOMINMAX"
+
+cmake --build agent_space/foldmason_gfx1151_build --target marv -j6
+```
+
+Build succeeded: marv.dll (55 MB) with gfx1151 device code objects.
+
+### GPU test (BLOCKED)
+
+Two blockers prevented GPU test completion:
+
+**Blocker 1: Marv constructor hipMalloc(72GB) hang**
+The Marv::Marv() constructor calls cudasw4::CudaSW4 which sets
+maxGpuMem=ULLONG_MAX and then hipMalloc(free_mem - 256MB). On the APU with
+72 GB of shared system RAM reported as GPU memory, this attempts to
+hipMalloc ~72 GB. The process hangs in this allocation for >20 minutes.
+Fix needed: add maxGpuMem parameter to Marv() with default=0 (unlimited on
+discrete GPU, explicit cap needed for APU). The fix code was written but
+not committed pending GPU test pass.
+
+**Blocker 2: C++ exception in HIP fatbin registration**
+After fixing Blocker 1 (with 512MB cap in harness), the exe crashes with
+exception 0xE06D7363 (_CxxThrowException) before main() runs. The stack
+trace shows it crashes in the HIP __hip_module_ctor static initializer when
+registering the fatbin. This happens on the first launch with ROCm 7.14
+venv-gsplat DLLs (amdhip64_7.dll + amd_comgr.dll from same 7.14 build).
+The exact cause is unresolved -- could be a device code JIT failure for
+gfx1151 under ROCm 7.14, or a missing comgr component, or a version
+inconsistency between the 7.14 compiler that built the fat binary and the
+7.14 runtime DLLs. The DLLs deployed are from the same venv-gsplat 7.14
+SDK that built the exe.
+
+Note: while debugging Blocker 2, multiple hanging GPU processes accumulated
+on the host (Blocker 1 exe stuck in 72GB malloc, two egg.c test exes hanging
+waiting for GPU context). The host GPU context is locked by the Blocker 1
+process and requires manual intervention to clear.
+
+### What is needed to complete gfx1151 validation
+
+1. Kill the stuck foldmason_val_gfx1151.exe process (PID 6744 and others)
+   that are holding the GPU context.
+2. Diagnose the C++ exception in HIP fatbin registration (Blocker 2):
+   - Try with COMGR_LOG_LEVEL=4 or HSA_ENABLE_DEBUG_TRAP=1 env vars
+   - Try running with just the test_hipinit.exe DLL set (proven working)
+   - Check if the issue is the fat binary format (ROCm 7.14 ELF vs expected)
+   - OR bypass by rebuilding the harness differently (load kernels lazily)
+3. Alternatively: commit the maxGpuMem fix to the fork, rebuild, and retry.
+
+This validation was blocked at the GPU test gate. The build is correct.
+
 ## Validation 2026-06-08 (linux-gfx90a revalidate, MI250X gfx90a)
 
 **Verdict: PASS**
