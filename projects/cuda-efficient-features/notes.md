@@ -289,3 +289,86 @@ HIP-REQUIRED (wave64 deadlocks otherwise; it IS the wave64 port) and CUDA-correc
 (FULL_WARP_MASK=0xffffffff on CUDA; the original was UB for partial warps). Disclosed in
 the PR body. Unlike catboost's reverts, this is intrinsic to the HIP port, not a bundled
 unrelated fix. NEXT: upstream-PR gate.
+
+## Review 2026-06-09 (ungated CUDA-path audit -- CHANGES REQUESTED)
+
+Reviewer focused audit: find every UNGATED change to the CUDA path (compiled
+when USE_HIP=OFF, not behind #if defined(USE_HIP)/#ifdef USE_HIP) that differs
+from upstream base 761db2be. Goal: default CUDA build byte-identical to upstream.
+The porter notes claimed "ONE shared (unconditional) CUDA-path change" (the
+wave64 shuffle restructure); that undercounts. Six ungated changes found.
+
+UNGATED-BEHAVIORAL (changes CUDA behavior; gate under #if USE_HIP, CUDA keeps original):
+
+1. cuda_efficient_features.cpp:249,261 -- detect()/detectAndCompute() call
+   convertGpuMat(keypoints_, ...) instead of the upstream convert(...). Not
+   gated. (Known.) Result-identical but a different function; gate it. Fix:
+   #ifdef USE_HIP convertGpuMat(...) #else convert(...) #endif.
+
+2. cuda_efficient_features.cpp:111-115 -- getOutputMat() default: changed from
+   CV_Error(StsBadArg,"Unsupported") to dst.create(rows,cols,type)+break. The
+   default label is OUTSIDE the #ifndef USE_HIP that wraps only the CUDA_GPU_MAT
+   case, so on CUDA an unsupported InputArray kind now SILENTLY ALLOCATES instead
+   of throwing. Real CUDA behavior change. Fix: gate the new default body under
+   #ifdef USE_HIP; CUDA keeps CV_Error.
+
+3. cuda_efficient_features.cpp:90 (getInputMat default) and :384-385 (convert()
+   method else) -- getInputMat default message changed "Unsupported" ->
+   "Unsupported input kind for HIP build" (observable + wrong text on CUDA); the
+   convert() method gained an `else CV_Error(...)` that on CUDA now throws for
+   kinds that upstream let fall through (empty tmp). Both ungated. Fix: gate the
+   new text / new else under USE_HIP; CUDA keeps upstream wording / no else.
+
+4. cuda_macro.h:25-29 -- CUDA_CHECK macro rewritten to evaluate its argument once
+   (`cudaError_t _err = (err);` then test/print _err) instead of textually 3x.
+   Macro body is NOT gated, so the CUDA build's macro changed. Every call site
+   passes a side-effecting expr (cudaMalloc/cudaFree/cudaMemcpy*/cudaGetLastError),
+   so on the ERROR path upstream ran the call 3x and the port runs it 1x -- a real
+   CUDA behavior change (it is a latent-bug fix, but not byte-identical and not
+   result-identical on the error path). Fix: gate the single-eval form under
+   USE_HIP; CUDA keeps the upstream macro verbatim. (Or, if kept, disclose as an
+   incidental fix -- but that violates the byte-identical goal.)
+
+5. cuda_hash_sift.cu:461 -- computePatchSIFTKernel launch arg changed from
+   `keypoints` to an explicit PtrStepSz<KeyPoint>(rows,cols,
+   reinterpret_cast<KeyPoint*>(const_cast<uchar*>(data)),step). Not gated.
+   Provably result-identical on CUDA (matches OpenCV's
+   GpuMat::operator PtrStepSz<T>() = PtrStepSz<T>(rows,cols,(T*)data,step),
+   verified against /usr/include/opencv4/.../cuda.inl.hpp:235); the explicit
+   form is needed only because hip_compat GpuMat has no templated
+   operator PtrStepSz<T>(). Still byte-different source on CUDA. Fix:
+   #ifdef USE_HIP explicit-PtrStepSz #else keypoints #endif.
+
+6. device_buffer.h:23 (CUDA #else branch) -- adds #include <opencv2/core/cuda.hpp>
+   to the CUDA include set (base had only <opencv2/core.hpp>). Benign extra
+   include, but ungated and not byte-identical. Fix: drop it from the #else (base
+   already compiled without it) or accept as harmless -- low severity.
+
+BORDERLINE (provably CUDA-equivalent by design; called out, not blocking):
+
+7. cuda_hash_sift.cpp:44-160 -- cuBLAS->hipBLAS abstraction renames the shared
+   code's CUBLAS_CHECK->BLAS_CHECK, cublasHandle_t->blasHandle_t,
+   CUBLAS_OP_*->BLAS_OP_*, cublasSgemm_v2->blasSgemm in the post-#endif shared
+   region. On CUDA the #else branch aliases every blas* name back to the exact
+   original cublas symbol, so it is provably CUDA-identical (same pattern as
+   FULL_WARP_MASK). All cublas/CUBLAS tokens are confined to the #else block; the
+   CUDA build resolves cleanly. Byte-different source but standard dual-backend
+   indirection; leaving as-is is acceptable. Decide alongside the gating pass.
+
+PRE-VETTED KEEP (confirmed CUDA-equivalent; do NOT change):
+- cuda_bad.cu computeBADKernel: OOB-guarded keypoint load + shuffles hoisted out
+  of `if(kpIdx<nkeypoints)` + FULL_WARP_MASK. Block is 16x16 so a CUDA warp spans
+  2 kpIdx rows; the base's shuffle-inside-if was UB for partial warps. Hoist is
+  result-identical for valid lanes (xor offsets 4/2/1 stay within an 8-lane
+  byte-group inside one kpIdx row) and fixes the UB. KEEP.
+- cuda_hash_sift.cu normalizeDescriptors: same wave64 restructure. KEEP.
+- FULL_WARP_MASK (==0xffffffff on CUDA). KEEP.
+
+Jargon: NONE in added lines (grepped diff content). Commit msg clean: [ROCm],
+40 chars, names Claude, no noreply trailer, has Test Plan. CMake correctly gated
+(option USE_HIP OFF; CUDA branch keeps CUDA::cudart/CUDA::cublas/CUDA_ARCHITECTURES).
+
+Verdict: CHANGES REQUESTED. Gate items 1-6 under #if defined(USE_HIP) (CUDA keeps
+the upstream form) so USE_HIP=OFF is byte-identical to upstream; do all gating in
+one pass. Item 7 is the reviewer's call (acceptable as-is). The wave64 KEEP set is
+the only intended shared change and is correctly disclosed in the PR body.
