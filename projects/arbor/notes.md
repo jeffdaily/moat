@@ -700,3 +700,16 @@ Built the `unit` target at BOTH cf6a1102 (git worktree at the parent) and c5f27d
 - full `unit` suite: 1182/1182 PASS (14.4 s), matching the validated baseline exactly.
 
 This is behavior-preserving (codeobj_diff identical) -- per the regression guard it would carry validation forward on every passed platform once the head advances. status.json platform states left untouched here (lead pr-open; the maintainer/state-machine handles the PR reply and any state advance).
+
+## Review follow-up: warp-intrinsics moved to gpu api headers 2026-06-09
+
+Maintainer (thorstenhater) review on PR #2512 asked to move the per-backend warp-intrinsic
+#ifdefs out of reduce_by_key.hpp into the HIP/CUDA api headers. Done: added
+count_leading_zeros (__clzll/__clz) + find_first_set (__ffsll/__ffs) to hip_api.hpp +
+cuda_api.hpp; reduce_by_key.hpp now backend-agnostic (num_lanes = 8*sizeof(lane_mask_type)
+- count_leading_zeros(key_mask); width = find_first_set(...)). Commit c5f27d01 on top of
+cf6a1102 (NOT squashed -- a clear review-response commit the maintainer can see). Proven
+behavior-preserving: codeobj_diff IDENTICAL on gfx90a (unit ISA + exports) + 1182/1182 unit
+tests pass. gfx90a (pr-open lead) carried forward binary-equiv; gfx1100/gfx1201 set to
+revalidate for their hosts to confirm per-arch. CUDA path is a faithful 1:1 of the original
+intrinsics (maintainer is testing on CUDA).
