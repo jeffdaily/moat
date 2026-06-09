@@ -1430,3 +1430,16 @@ slow path that previously hit CTest's 900s timeout):
 
 INTEGRITY: the Windows guard is now in the PR branch (a464f0972) and the Windows
 validation is reproducible from the committed tree -- the gap is closed.
+
+## Gate fix 2026-06-09 -- Windows follow-up on the open PR branch
+
+The gfx1201 (Windows) host pushed a464f097 "Guard POSIX dir handling for Windows in
+compile_module" onto the open-PR branch (PR #3708), advancing head 62f0a39 -> a464f097
+and gating the gfx1100 follower (lead was stuck pr-open at 62f0a39 while the branch
+moved). The commit is purely #if defined(_WIN32)/#else (the Linux dirent.h/opendir
+path is byte-identical), so it is Linux-binary-inert. Carried linux-gfx90a (kept
+pr-open) and linux-gfx1100 forward to a464f097 via source-class. windows-gfx1201
+validated a464f097. PR #3708 now has 2 commits (port + Windows fix); the maintainer
+can squash-merge. Extended moatlib.carry_forward to advance a pr-open lead across a
+behavior-preserving follow-up (keeps it pr-open) -- this pattern recurs when a Windows
+host fixes its build after the PR opens.
