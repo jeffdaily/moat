@@ -675,3 +675,16 @@ Result: PASS (gfx1201 wave32).
 GPU: AMD Radeon RX 9070 XT (gfx1201, compute capability 12.0, HIP_VISIBLE_DEVICES=0).
 Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
 validated_sha: 09612d3c18f8a5d99283a8d3a54e7a7972c60140 -> completed.
+
+## PR-prep 2026-06-09 (reparent disjoint root + docs + scrub)
+
+The validated commit 09612d3c was a DISJOINT ROOT commit (0 parents); a PR from it
+would have diffed the entire tree. Reparented onto upstream base a691fb75 (an
+ancestor of catboost/master) -> diff is 85 files (84 port + 1 doc). Also fixed a
+stale local moat-port ref (was b7113fe9, an older divergent commit) -- reset to the
+validated 09612d3c authority before reparenting. Scrubbed "Strategy A" from the
+commit message. Added a house-style "HIP/ROCm support" section + -DHAVE_HIP option
+to catboost/docs/en/installation/build-native-artifacts.md (where the CUDA build is
+documented; README is a landing page that defers to the docs site). New single commit
+d93ad67f; diff(09612d3c->d93ad67f) is doc-only so all 5 platforms carried forward (no
+revalidation). base_sha recorded. pr-ready=True. NEXT: upstream-PR gate.
