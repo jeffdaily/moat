@@ -41,3 +41,5 @@
 {"kind":"phase","ts":"2026-06-09T18:56:42Z","phase":"compile","seconds":10.354,"exit":1,"cmd":"bash agent_space/build_autodock_gfx1201.sh"}
 {"kind":"phase","ts":"2026-06-09T18:57:34Z","phase":"compile","seconds":8.831,"exit":1,"cmd":"bash agent_space/build_autodock_gfx1201.sh"}
 {"kind":"phase","ts":"2026-06-09T19:06:52Z","phase":"test","seconds":3.902,"exit":0,"cmd":"bash agent_space/run_autodock_tests_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-09T19:45:31Z","phase":"compile","seconds":13.499,"exit":0,"cmd":"bash -c \nset -e\necho \"=== Building at f01306b (validated_sha) ===\"\nmake -C /var/lib/jenkins/moat/agent_space/adgpu-reval-old DEVICE=HIP NUMWI=64 HIP_ARCH=gfx90a -j$(nproc) 2>&1 | tail -5\necho \"Exit: $?\"\n"}
+{"kind":"phase","ts":"2026-06-09T19:45:50Z","phase":"compile","seconds":13.657,"exit":0,"cmd":"bash -c \nset -e\necho \"=== Building at c2f2f6f (head_sha) ===\"\nmake -C /var/lib/jenkins/moat/agent_space/adgpu-reval-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx90a -j$(nproc) 2>&1 | tail -5\necho \"Exit: $?\"\n"}

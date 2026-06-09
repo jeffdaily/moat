@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-09T19:08:29Z",
+  "updated_at": "2026-06-09T19:46:06Z",
   "head_sha": "c2f2f6f1c4e5da29374fe7c5f30879b5e9cde88b",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
+      "validated_sha": "c2f2f6f1c4e5da29374fe7c5f30879b5e9cde88b",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": "2026-06-09T15:30:46Z",
-      "updated_at": "2026-06-09T19:08:14Z",
+      "completed_at": "2026-06-09T19:46:06Z",
+      "updated_at": "2026-06-09T19:46:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,10 +33,10 @@
       },
       "last_agent": "porter",
       "carry_forward": {
-        "to": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
+        "to": "c2f2f6f1c4e5da29374fe7c5f30879b5e9cde88b",
         "method": "binary-equiv",
-        "detail": "CDNA __GFX9__ MFMA path byte-identical across 3d466a4->f01306b (codeobj_diff identical, 14 exports); RDNA bf16 path is gfx11-only, never compiled for gfx90a",
-        "at": "2026-06-09T15:30:46Z"
+        "detail": "Windows min/max undef guards inside #if __HIP_PLATFORM_AMD__ -- on Linux min/max are not macros so preprocessor strips those lines; codeobj_diff verified identical (device ISA + 14 exported symbols)",
+        "at": "2026-06-09T19:46:06Z"
       }
     },
     "linux-gfx1100": {
