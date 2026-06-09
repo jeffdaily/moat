@@ -213,6 +213,16 @@ def set_state(name, platform, new_state, agent=None, save=True):
         blk.pop("carry_forward", None)
         if platform == LEAD:
             _unblock_followers(obj)
+        # Integrity backstop: completing while the fork has uncommitted source/build
+        # edits means the validated content may not be in the branch. Warn loudly
+        # (the validator must commit it first); pr_ready hard-blocks on the same.
+        dirty = uncommitted_source_files(name)
+        if dirty:
+            sys.stderr.write(
+                f"WARNING {name}: marking {platform} completed but the fork has "
+                f"{len(dirty)} UNCOMMITTED source/build file(s) -- validated content "
+                f"may not be in the branch (integrity gap). Commit or discard: "
+                f"{', '.join(p for _, p in dirty[:6])}\n")
     obj["platforms"][platform] = blk
     if save:
         save_status(name, obj)
@@ -288,6 +298,59 @@ def _unblock_followers(obj):
 
 def _fork_repo(name):
     return PROJECTS / name / "src"
+
+
+# Tracked file kinds whose UNCOMMITTED modification in a fork is the integrity-gap
+# fingerprint: a validation built against local source/build edits that were never
+# committed, leaving the branch (and any PR off it) unbuildable. (Motivated by the
+# baspacho/arrayfire 2026-06 gaps, incl. an arrayfire vcpkg.json -- so build
+# MANIFESTS count, not just code.) Untracked files (build artifacts, scratch) do not.
+_INTEGRITY_SUFFIXES = (
+    ".c", ".cc", ".cpp", ".cxx", ".h", ".hh", ".hpp", ".hxx", ".cu", ".cuh", ".hip",
+    ".inl", ".inc", ".py", ".go", ".rs", ".jl", ".java", ".f", ".f90", ".f95",
+    ".cmake", ".toml", ".json", ".cfg", ".pri", ".pro",
+)
+_INTEGRITY_NAMES = (
+    "cmakelists.txt", "makefile", "setup.py", "setup.cfg", "pyproject.toml",
+    "meson.build", "conanfile.py", "conanfile.txt", "vcpkg.json", "package.json",
+    "cargo.toml", "build.gradle",
+)
+
+
+def uncommitted_source_files(name):
+    """Tracked source/build files modified-but-not-committed in a project's fork
+    clone -- the integrity-gap fingerprint (a validation that built against local
+    edits never committed, so the branch/PR will not build). Returns a list of
+    (status_code, path); untracked files (build artifacts, scratch) and ignored
+    files are excluded. Never raises: a missing clone or unavailable git yields []
+    (absence of a clone is not an integrity claim)."""
+    repo = _fork_repo(name)
+    if not Path(repo).is_dir():
+        return []
+    try:
+        r = subprocess.run(["git", "status", "--porcelain"], cwd=str(repo),
+                           capture_output=True, text=True, timeout=30)
+    except Exception:
+        return []
+    if r.returncode != 0:
+        return []
+    out = []
+    for line in r.stdout.splitlines():
+        if len(line) < 4:
+            continue
+        code, path = line[:2], line[3:]
+        if code.strip() in ("??", "!!"):  # untracked / ignored -> not an integrity gap
+            continue
+        # The fingerprint is validated CONTENT not committed: modified/added/renamed/
+        # copied. Pure deletions (a dirty checkout dropping dev/benchmark files) leave
+        # the branch buildable -- not an integrity gap.
+        if not any(c in code for c in ("M", "A", "R", "C")):
+            continue
+        p = path.split(" -> ")[-1].strip().strip('"')  # handle rename "old -> new"
+        base = p.rsplit("/", 1)[-1].lower()
+        if base in _INTEGRITY_NAMES or any(base.endswith(s) for s in _INTEGRITY_SUFFIXES):
+            out.append((code.strip(), p))
+    return out
 
 
 def _classify_safe(repo, old_sha, new_sha):
@@ -719,6 +782,15 @@ def pr_ready(name):
         else:
             nonviable.extend(p for p, _ in win)
 
+    # Integrity gate: the validated content must be COMMITTED. A fork with
+    # uncommitted tracked source/build edits means a validation built against local
+    # edits that are NOT in the branch -- the upstream PR would be unbuildable (the
+    # baspacho/arrayfire 2026-06 gaps). Block the PR until the working tree is clean.
+    dirty = uncommitted_source_files(name)
+    if dirty:
+        listed = ", ".join(p for _, p in dirty[:6]) + (" ..." if len(dirty) > 6 else "")
+        blocking.append(("fork-uncommitted", f"{len(dirty)} uncommitted source/build file(s): {listed}"))
+
     return (not blocking, blocking, nonviable)
 
 
@@ -817,6 +889,9 @@ def main(argv=None):
     s = sub.add_parser("pr-ready", help="check PR readiness: both Linux archs completed/non-viable AND any one Windows arch completed")
     s.add_argument("name")
 
+    s = sub.add_parser("audit-clean", help="report forks with uncommitted tracked source/build edits (integrity-gap fingerprint)")
+    s.add_argument("name", nargs="?", default=None, help="one project, or omit to scan every fork")
+
     s = sub.add_parser("set-pr-open", help="mark lead as pr-open and record PR metadata after creating upstream PR")
     s.add_argument("name")
     s.add_argument("pr_url")
@@ -893,10 +968,37 @@ def main(argv=None):
         ready, blocking, nonviable = pr_ready(args.name)
         print(f"{args.name}: PR-ready={ready}")
         if blocking:
-            print("  BLOCKING (Linux archs each required; Windows tier needs any ONE completed): " +
-                  ", ".join(f"{p}={s}" for p, s in blocking))
+            print("  BLOCKING (Linux archs each required; Windows tier needs any ONE completed; "
+                  "fork must be clean): " + ", ".join(f"{p}={s}" for p, s in blocking))
         if nonviable:
             print("  non-viable (does not block; scope the PR body): " + ", ".join(nonviable))
+    elif args.cmd == "audit-clean":
+        names = [args.name] if args.name else [d.name for d in sorted(PROJECTS.iterdir())
+                                               if (d / "status.json").exists()]
+        real_gap = False
+        for n in names:
+            files = uncommitted_source_files(n)
+            if not files:
+                continue
+            try:
+                states = {b.get("state") for b in load_status(n)["platforms"].values()}
+            except Exception:
+                states = set()
+            # A real integrity gap = uncommitted edits on a fork that already has a
+            # terminal (completed/pr) platform resting on them. Otherwise it is just
+            # uncommitted WIP on an unfinished port.
+            terminal = states & {"completed", "pr-open", "upstream-landed"}
+            tag = "INTEGRITY GAP (has completed/pr platform)" if terminal else "uncommitted WIP (no completed platform yet)"
+            if terminal:
+                real_gap = True
+            print(f"{n}: {len(files)} uncommitted source/build file(s) -- {tag}:")
+            for code, p in files:
+                print(f"    {code:3} {p}")
+        if real_gap:
+            sys.exit(1)
+        else:
+            print("OK: no fork with a completed/pr platform has uncommitted source edits" +
+                  (f" ({args.name})" if args.name else ""))
     elif args.cmd == "set-pr-open":
         set_pr_open(args.name, args.pr_url, args.pr_number)
         print(f"{args.name}: PR opened -> {args.pr_url}")

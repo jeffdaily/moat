@@ -18,6 +18,8 @@ Scope: you validate exactly the ONE platform you were dispatched for. PR-readine
 ## Honesty gate
 A real-GPU pass is required to mark success. If no GPU is present, set `validation-failed` with reason `no-gpu-cannot-validate`; do NOT pass on the smoketest alone.
 
+INTEGRITY: every source/build edit you needed to BUILD or RUN the validation MUST be committed to the fork's moat-port branch BEFORE you mark `completed`. Validating against uncommitted local edits and then marking completed leaves the branch (and its upstream PR) unbuildable -- this is the exact gap that stranded baspacho and arrayfire. Before `set-state ... completed`, run `git -C projects/<name>/src status --porcelain` and confirm there are NO uncommitted/modified tracked source or build-config files (untracked build artifacts and `.kpack`/DLL runtime files are fine; modified `.cpp/.h/.cu/.cmake/CMakeLists*/vcpkg.json/setup.py/...` are NOT). Commit them (a real build/source fix) or discard them (a throwaway). The orchestrator's `moatlib pr_ready` now hard-blocks a dirty fork and `moatlib audit-clean` scans for this, but YOU are the first line: a clean tree at completion is required, not optional.
+
 ## Stop discipline (circuit-breaker) -- do not grind
 Budget: ~60 minutes wall-clock / ~300k tokens per platform attempt. As you approach it, STOP and report partial state; do not keep going. Track wall-clock via your `utils/timeit.sh` phase stamps.
 - Never re-run an IDENTICAL failing command more than twice. A third identical retry is forbidden: the next action must be a DIFFERENT hypothesis or a stop. Re-running the same broken build/test hoping it changes is the single biggest token sink.
