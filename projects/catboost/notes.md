@@ -708,3 +708,80 @@ CLASSIFIER GAP (follow-up): changeclass.py treats CMakeLists.<platform>.txt and
 extensionless C/C++ headers as "unknown file type" -> mixed; teaching it CMakeLists.*.txt
 would auto-carry-forward comment-only CMake changes. Lesson saved to memory
 moat-scrub-jargon-in-diff-not-just-message.
+
+## PR-minimization: scope GPU fixes to HIP + fix CUDA build break (fork @ d4fa9e98, on top of ca6b84af)
+
+A 3-reviewer pass flagged that the squashed port (ca6b84af) bundled four
+pre-existing all-platform CUDA-correctness fixes into a HIP-support change, plus a
+latent CUDA build break and comment jargon. New commit d4fa9e98 (NOT amended/squashed
+-- jeff handles re-squash) narrows the NVIDIA path to byte-identical.
+
+KEY FINDING -- the four bundled fixes CANNOT be plain-reverted: catboost's OWN GPU test
+suite exercises every one of them. Verified on gfx90a (MI250X) by first reverting to
+upstream byte-for-byte and running the suite:
+- split.cu (one-hot split predicate ui32 overflow): gpu_data-ut BinBuilderTest
+  TreeBuilderTest4 + TreeBuilderTest32 FAIL (gpuBin 29 vs cpuBin 13; the extra +16 high
+  bit = the overflow).
+- exact_estimation (per-leaf binary-search bound by object-count not leaf-count + leading
+  empty-leaf guard): methods-ut TExactLeavesEstimationTest 5/15 -> 10 FAIL (GPU returns 0
+  vs CPU small nonzero, MAE/Quantile/MAPE).
+- greedy_subsets_searcher histogram grid-occupancy scale divide-by-zero when a grid dim is
+  0 before IsGridEmpty: methods-ut TPointwiseMultiStatHistogramTest SIGFPE core-dumped
+  (process exit 136).
+- segmented_sort temp-storage sizing (SortKeys vs SortPairs): faults rocPRIM at Run.
+
+RESOLUTION (per the STOP-and-REPORT directive: do not force a revert that breaks a test):
+gate each fix behind #if defined(USE_HIP) instead of reverting. CUDA path restored to the
+original arithmetic; HIP keeps the fix. Each gated file's CUDA path was verified
+byte-identical to base a691fb75 with `unifdef -UUSE_HIP` (split.cu, exact_estimation.cu,
+segmented_sort.cpp all chevron-normalized-identical; the hist launchers route through a
+forced-inline ScaleBlockCountToOccupancy whose CUDA branch is `numBlocks.x *=
+CeilDivide(targetBlocks, active)` -- identical codegen; the 4 hist_one_byte.cu sites are
+inside #define macro bodies so a per-site #if is impossible, hence the both-paths helper).
+split.cu .cuh/.h param signatures kept byte-identical to base (exact_estimation passes
+binCount vs objectsCount into the SAME kernel slot per #if, no signature churn). A4 (the
+WarpReduceN 0xFFFFFF mask) IS a plain revert -- it is dead code (only the CUDA #else branch
+of BlockReduceN calls it), so reverting it broke no test.
+
+CUDA BUILD BREAK FIX: CB_FULL_WARP_MASK was defined only in cuda_to_hip.h (force-included on
+HIP TUs only), but used on the CUDA-compiled path by kernel_helpers.cuh (x2),
+linear_solver.cu, dcg.cu -> undefined on nvcc/HAVE_CUDA. Moved the guarded definition to a
+new header library/cpp/cuda/wrappers/warp_mask.cuh, included by cuda_to_hip.h AND both
+kernel_helpers.cuh (linear_solver/dcg reach it transitively). Proven reachable on the CUDA
+path via the include chain: `clang++ -E` of a TU including
+catboost/cuda/cuda_util/kernel/kernel_helpers.cuh (no USE_HIP) yields CB_FULL_WARP_MASK =
+0xffffffffu (== the original literals); HIP yields 0xffffffffffffffffULL.
+
+JARGON: scrubbed the remaining in-house comment labels (MPPI/gpuRIR) in 5 files
+(wrappers/kernel_helpers.cuh x4, cuda_util kernel_helpers.cuh x2, cuda_to_hip.h x1,
+operators.cuh x1, cuda.cmake x1). HARD VERIFY gate (git diff a691fb75 HEAD | grep '^+' |
+grep -iE 'MPPI|gpuRIR|...') = EMPTY.
+
+RE-VALIDATION gfx90a (MI250X, ROCm 7.2.1, GCD 0): with the gates, catboost's suite is GREEN
+again -- cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20 (BinBuilderTest 3/3),
+methods-ut 29/30 (TExactLeavesEstimationTest 15/15, TPointwiseMultiStatHistogramTest 6/6;
+only TAddingLangevinNoiseTest fails = pre-existing not-AMD test-design, fails on all
+platforms incl NVIDIA), e2e GPU training AUC 0.9632583857 bit-identical x2 (matches the
+ca6b84af baseline exactly).
+
+FOR THE PR FOLLOW-UP -- each gated item is a generic all-platform CUDA/ROCm GPU-correctness
+bug worth a separate upstream issue (they affect the NVIDIA build too; catboost's CUDA CI
+presumably does not run these GPU uts or they would already be red):
+1. gpu_data/kernel/split.cu: one-hot split predicate computes value=binIdx<<Shift,
+   mask=Mask<<Shift and compares in shifted space; for a feature at a high Shift (1-bit
+   one-hot at Shift=31) with an out-of-range binIdx, binIdx<<Shift overflows ui32 -> == split
+   spuriously matches. Fix: extract (cidx>>Shift)&Mask and compare to binIdx (matches CPU).
+2. methods/kernel/exact_estimation.cu: ComputeWeightedQuantileWithBinarySearch (GPU optimal
+   leaf value for MAE/MAPE/Quantile) bounds the one-thread-per-leaf kernel by the object
+   count instead of the leaf (bin) count -> high-index leaves uncomputed when bins>objects
+   (read back 0), OOB when bins<objects; and the empty-leaf guard (right=end?:end-1 then
+   left>right) misses a leading run of empty leaves (begin==end==0) -> returns targets[0].
+   Fix: bound by binCount; test begin>=end -> 0.
+3. methods/greedy_subsets_searcher histogram launchers: numBlocks.x *= CeilDivide(target,
+   numBlocks.x*numBlocks.y*numBlocks.z) divides by zero (host SIGFPE) when a grid dim is 0
+   (partCount==0) because IsGridEmpty is checked only afterward. Fix: skip the scale when the
+   product is 0.
+4. cuda_util/segmented_sort.cpp + kernel/segmented_sort.cu: the CUB-DoubleBuffer segmented
+   radix sort path (temp-size query uses SortKeys sizing for a SortPairs Run; and the
+   full-range copy-back propagates undefined gap elements) -- rocPRIM-specific symptom but the
+   keys-vs-pairs sizing mismatch is a latent CUB-contract issue.
