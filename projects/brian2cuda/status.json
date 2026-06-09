@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "codegen",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-09T14:41:44Z",
-  "head_sha": "8685120a24355b640b974d9f4c9e09e86edda7e0",
+  "updated_at": "2026-06-09T15:25:52Z",
+  "head_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8685120a24355b640b974d9f4c9e09e86edda7e0",
+      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
       "started_at": "2026-06-05T08:30:52Z",
-      "completed_at": "2026-06-08T15:19:15Z",
-      "updated_at": "2026-06-09T14:41:44Z",
+      "completed_at": "2026-06-09T15:25:05Z",
+      "updated_at": "2026-06-09T15:25:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,24 +32,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "94a9869",
-        "to": "cf2c518459e9d3b892256679803a3a18ec784387",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T14:40:34Z"
-      }
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8685120a24355b640b974d9f4c9e09e86edda7e0",
+      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
       "started_at": null,
-      "completed_at": "2026-06-08T17:06:12Z",
-      "updated_at": "2026-06-09T14:41:44Z",
+      "completed_at": "2026-06-09T15:25:05Z",
+      "updated_at": "2026-06-09T15:25:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -65,12 +57,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "94a9869",
-        "to": "cf2c518459e9d3b892256679803a3a18ec784387",
+        "to": "8455518d49ef636512af6be457173eeb83a279c9",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T14:40:34Z"
+        "detail": "8455518 is a Python prefs-wiring fix (import hip_prefs + trim dead hip_standalone codegen prefs); generated/compiled device code and the cuda_standalone codegen prefs device.py reads are unchanged, so",
+        "at": "2026-06-09T15:25:05Z"
       }
     },
     "windows-gfx1101": {
@@ -99,10 +89,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8685120a24355b640b974d9f4c9e09e86edda7e0",
+      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
       "started_at": null,
-      "completed_at": "2026-06-08T13:52:53Z",
-      "updated_at": "2026-06-09T14:41:44Z",
+      "completed_at": "2026-06-09T15:25:05Z",
+      "updated_at": "2026-06-09T15:25:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -118,12 +108,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "94a9869",
-        "to": "cf2c518459e9d3b892256679803a3a18ec784387",
+        "to": "8455518d49ef636512af6be457173eeb83a279c9",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T14:40:34Z"
+        "detail": "8455518 is a Python prefs-wiring fix (import hip_prefs + trim dead hip_standalone codegen prefs); generated/compiled device code and the cuda_standalone codegen prefs device.py reads are unchanged, so",
+        "at": "2026-06-09T15:25:05Z"
       }
     },
     "windows-gfx1151": {

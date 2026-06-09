@@ -31,3 +31,4 @@
 {"kind": "tokens", "ts": "2026-06-08T15:20:10Z", "tokens": 52199, "source": "validator"}
 {"kind":"phase","ts":"2026-06-09T15:18:52Z","phase":"test","seconds":31.702,"exit":0,"cmd":"python3 agent_space/brian2cuda_reval_prefs_fix.py"}
 {"kind":"phase","ts":"2026-06-09T15:19:33Z","phase":"test","seconds":31.210,"exit":0,"cmd":"python3 agent_space/brian2cuda_reval_prefs_fix.py"}
+{"kind": "tokens", "ts": "2026-06-09T15:24:09Z", "tokens": 72051, "source": "porter (hip_prefs wiring fix + gfx90a re-validation: 3/3 sims, gpu_arch pref now honored)"}

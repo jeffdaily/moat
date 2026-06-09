@@ -505,3 +505,15 @@ NOTE: did NOT touch status.json platform states or open any PR (per task;
 state machine + PR re-prep handled separately). The validated_sha for
 already-passed platforms (8685120a) stays a reachable ancestor of 8455518,
 so advance_head can classify this delta.
+
+## hip_prefs fix integrated + re-squashed 2026-06-09
+
+The orphaned-hip_prefs fix (porter commit 8455518 on top of the squashed port) was
+folded in: advance_head classified it mixed (Python changes to __init__.py +
+hip_prefs.py); gfx90a marked completed (porter re-validated 3/3 sims, gpu_arch pref
+honored); linux-gfx1100 + windows-gfx1201 carried forward source-class (the fix is
+arch-independent Python prefs-wiring -- it does not change the generated/compiled
+device code or the cuda_standalone codegen prefs device.py reads). Re-squashed the 2
+commits into ONE on the upstream base: e158646c, parent d7758060. 19 files, +1158/-58
+(smaller than before -- the dead ~130-line hip_standalone codegen duplicate is gone).
+pr-ready=True. NEXT: upstream-PR gate.
