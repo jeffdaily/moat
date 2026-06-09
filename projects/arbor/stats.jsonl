@@ -57,3 +57,6 @@
 {"kind":"phase","ts":"2026-06-09T17:43:32Z","phase":"test","seconds":0.223,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build-refactor/bin/unit --gtest_filter=*reduce_by_key*:*reduce*:gpu_intrinsics.*"}
 {"kind":"phase","ts":"2026-06-09T17:44:04Z","phase":"test","seconds":14.455,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build-refactor/bin/unit"}
 {"kind": "tokens", "ts": "2026-06-09T17:49:05Z", "tokens": 85197, "source": "porter (move warp-intrinsic ifdefs into gpu api headers per review; codeobj_diff identical, 1182/1182 gfx90a)"}
+{"kind":"phase","ts":"2026-06-09T19:03:33Z","phase":"compile","seconds":0.126,"exit":2,"cmd":"cmake --build . --target unit -j64"}
+{"kind":"phase","ts":"2026-06-09T19:03:41Z","phase":"compile","seconds":0.123,"exit":2,"cmd":"cmake --build . --target unit-local -j64"}
+{"kind":"phase","ts":"2026-06-09T19:06:05Z","phase":"compile","seconds":0.004,"exit":2,"cmd":"make unit -j64"}

@@ -713,3 +713,33 @@ behavior-preserving: codeobj_diff IDENTICAL on gfx90a (unit ISA + exports) + 118
 tests pass. gfx90a (pr-open lead) carried forward binary-equiv; gfx1100/gfx1201 set to
 revalidate for their hosts to confirm per-arch. CUDA path is a faithful 1:1 of the original
 intrinsics (maintainer is testing on CUDA).
+
+## Validation 2026-06-09 (linux-gfx1100 revalidate carry-forward)
+
+**Platform**: linux-gfx1100 (RDNA3, wave32)
+**GPU**: AMD Radeon Pro W7800 48GB (gfx1100)
+**Validated sha**: c5f27d01d4eeaaa4dcc614388b5b5095c92c9e55
+**Trigger**: revalidate from cf6a1102 (gfx1100 validated_sha) to c5f27d01d4 (head)
+
+### Delta
+
+Single commit c5f27d01: moves warp-intrinsic #ifdefs (count_leading_zeros/find_first_set) from
+reduce_by_key.hpp into hip_api.hpp and cuda_api.hpp. Touches 3 files (+28/-13), all in arbor/include/arbor/gpu/.
+
+### Binary equivalence check
+
+Built both SHAs for gfx1100:
+- build-old: worktree at cf6a1102 configured `-DARB_HIP_ARCHITECTURES=gfx1100`
+- build (src/build): existing gfx1100 build updated to c5f27d01 HEAD
+
+```
+python3 utils/codeobj_diff.py build-old/bin/unit src/build/bin/unit
+verdict=identical
+  unit vs unit: identical (exported symbols + device ISA identical (43 exports))
+```
+
+Device code (43 exports, gfx1100 ISA) is byte-identical between cf6a1102 and c5f27d01d4. The refactor is a pure header reorganization -- no device codegen change on gfx1100.
+
+### Conclusion
+
+codeobj_diff IDENTICAL on gfx1100 -> carry forward (no GPU re-run needed). linux-gfx1100 -> completed at c5f27d01d4.
