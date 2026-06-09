@@ -24,3 +24,7 @@
 {"kind":"phase","ts":"2026-06-08T03:41:55Z","phase":"compile","seconds":0.105,"exit":0,"cmd":"cmake --build /b/develop/moat/projects/baspacho/build_gfx1201 -- -j24"}
 {"kind":"phase","ts":"2026-06-08T04:13:58Z","phase":"test","seconds":48.066,"exit":8,"cmd":"ctest --test-dir B:/develop/moat/projects/baspacho/build_gfx1201 -j1 --timeout 300 -C Release"}
 {"kind": "tokens", "ts": "2026-06-08T13:08:24Z", "tokens": 78743, "source": "validator"}
+{"kind":"phase","ts":"2026-06-09T14:14:17Z","phase":"compile","seconds":7.291,"exit":0,"cmd":"cmake -S projects/baspacho/src -B projects/baspacho/build-old -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
+{"kind":"phase","ts":"2026-06-09T14:15:13Z","phase":"compile","seconds":50.303,"exit":0,"cmd":"cmake --build projects/baspacho/build-old -- -j16"}
+{"kind":"phase","ts":"2026-06-09T14:15:28Z","phase":"compile","seconds":7.165,"exit":0,"cmd":"cmake -S projects/baspacho/src-new -B projects/baspacho/build-new -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
+{"kind":"phase","ts":"2026-06-09T14:16:23Z","phase":"compile","seconds":50.233,"exit":0,"cmd":"cmake --build projects/baspacho/build-new -- -j16"}

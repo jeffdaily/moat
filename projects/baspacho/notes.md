@@ -251,6 +251,24 @@ MERGED PR shows API state closed/merged=false; read the meta-codesync bot
 
 NEXT: upstream-PR gate (lead-only, jeff approval). base = main. No existing jeffdaily PR.
 
+## Revalidation 2026-06-09 (linux-gfx90a) -- binary-equivalence carry-forward
+
+**Verdict: PASS (completed, carry-forward). No GPU test run needed.**
+
+Trigger: windows-gfx1201 committed `[ROCm] Fix amdclang++/Windows build of baspacho` (5db6b5f6 on top of e2e66459), advancing head. advance_head flipped linux-gfx90a to `revalidate`.
+
+Delta: 7 files, all `#ifdef _WIN32` / `#ifndef _WIN32` guards and typedef-equivalent `uint` -> `unsigned int` / `size_t` casts. Expected Linux-binary-inert.
+
+Proof: built gfx90a at both e2e66459 and 5db6b5f6 in separate build dirs using the standard recipe (cmake + -j16). Ran `codeobj_diff.compare_binary` on all 5 GPU test executables:
+
+- CudaFactorTest: identical (exported symbols + device ISA identical, 18 exports)
+- CudaSolveTest: identical (exported symbols + device ISA identical, 16 exports)
+- BatchedCudaFactorTest: identical (exported symbols + device ISA identical, 16 exports)
+- BatchedCudaSolveTest: identical (exported symbols + device ISA identical, 16 exports)
+- CudaPartialTest: identical (exported symbols + device ISA identical, 16 exports)
+
+Overall: IDENTICAL. `#ifdef _WIN32` guards compile to zero bytes on Linux; typedef-equivalent `uint` / `unsigned int` / `size_t` casts produce identical codegen. Carried forward linux-gfx90a -> 5db6b5f6 (binary-equiv).
+
 ## HOLD 2026-06-08 -- Windows fixes stranded; PR gate pending gfx1201 host
 
 Linux prep is complete (squashed e2e66459 on upstream main, README docs added,
