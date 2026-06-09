@@ -7,17 +7,17 @@
   "priority": 5.432,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-08T19:14:40Z",
-  "head_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
+  "updated_at": "2026-06-09T16:10:47Z",
+  "head_sha": "d505eff",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
+      "validated_sha": "d505eff",
       "started_at": "2026-05-30T07:08:22Z",
       "completed_at": "2026-06-08T19:09:22Z",
-      "updated_at": "2026-06-08T19:14:40Z",
+      "updated_at": "2026-06-09T16:10:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "reviewer",
       "carry_forward": {
-        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "to": "d505eff",
         "method": "source-class",
-        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
-        "at": "2026-06-08T19:09:22Z"
+        "detail": "copyright/author attribution comments; __LINE__ shift in AMGCL_CALL_HIP affects only error-message text on untriggered failure path",
+        "at": "2026-06-09T16:10:47Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
+      "validated_sha": "d505eff",
       "started_at": "2026-05-30T08:00:00Z",
-      "completed_at": "2026-06-08T19:09:22Z",
-      "updated_at": "2026-06-08T19:09:24Z",
+      "completed_at": "2026-06-09T16:10:47Z",
+      "updated_at": "2026-06-09T16:10:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "to": "d505eff",
         "method": "source-class",
-        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
-        "at": "2026-06-08T19:09:22Z"
+        "detail": "copyright/author attribution comments; __LINE__ shift in AMGCL_CALL_HIP affects only error-message text on untriggered failure path",
+        "at": "2026-06-09T16:10:47Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
+      "validated_sha": "d505eff",
       "started_at": null,
-      "completed_at": "2026-06-08T19:09:22Z",
-      "updated_at": "2026-06-08T19:09:24Z",
+      "completed_at": "2026-06-09T16:10:47Z",
+      "updated_at": "2026-06-09T16:10:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -91,20 +91,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "to": "d505eff",
         "method": "source-class",
-        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
-        "at": "2026-06-08T19:09:22Z"
+        "detail": "copyright/author attribution comments; __LINE__ shift in AMGCL_CALL_HIP affects only error-message text on untriggered failure path",
+        "at": "2026-06-09T16:10:47Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "4d7ecd32473ddb16c2dbdd09ca07815722cddea7",
+      "validated_sha": "d505eff",
       "started_at": null,
-      "completed_at": "2026-06-08T19:09:22Z",
-      "updated_at": "2026-06-08T19:09:24Z",
+      "completed_at": "2026-06-09T16:10:47Z",
+      "updated_at": "2026-06-09T16:10:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -119,10 +119,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "f9cb9e99a34e38632b3d68eb9c1e40f76bb3da3b",
+        "to": "d505eff",
         "method": "source-class",
-        "detail": "jargon scrub (CMake comment) + document HIP backend in backends.rst (comment/doc-only)",
-        "at": "2026-06-08T19:09:22Z"
+        "detail": "copyright/author attribution comments; __LINE__ shift in AMGCL_CALL_HIP affects only error-message text on untriggered failure path",
+        "at": "2026-06-09T16:10:47Z"
       }
     },
     "windows-gfx1151": {
