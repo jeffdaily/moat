@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-09T14:17:18Z",
+  "updated_at": "2026-06-09T14:30:49Z",
   "head_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
   "depends_on": [],
   "platforms": {
@@ -63,13 +63,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e2e66459c3d01af32e3d364db9cf5e8f6ba71197",
+      "validated_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
       "started_at": null,
-      "completed_at": "2026-06-05T15:50:35Z",
-      "updated_at": "2026-06-08T22:56:05Z",
+      "completed_at": "2026-06-09T14:30:49Z",
+      "updated_at": "2026-06-09T14:30:49Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -84,12 +84,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "from": "69ab9137ab8c3663409598b7d521384e07c14c87",
-        "to": "0667803bf455f4218fb18a660d12bdb0775c65d5",
-        "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-08T22:55:21Z"
+        "to": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+        "method": "binary-equiv",
+        "detail": "all 5 GPU test binaries (CudaFactorTest, CudaSolveTest, BatchedCudaFactorTest, BatchedCudaSolveTest, CudaPartialTest) identical on gfx1100: exported symbols + device ISA match; WIN32-guard delta is Li",
+        "at": "2026-06-09T14:30:49Z"
       }
     },
     "windows-gfx1201": {

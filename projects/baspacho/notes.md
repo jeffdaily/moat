@@ -251,6 +251,34 @@ MERGED PR shows API state closed/merged=false; read the meta-codesync bot
 
 NEXT: upstream-PR gate (lead-only, jeff approval). base = main. No existing jeffdaily PR.
 
+## Revalidation 2026-06-09 (linux-gfx1100) -- binary-equivalence carry-forward
+
+**Verdict: PASS (completed, carry-forward). No GPU test run needed.**
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100)
+Validated SHA: e2e66459c3d01af32e3d364db9cf5e8f6ba71197 -> carried to 5db6b5f61190bb7d87293adb28bc3117d2d3a36b
+
+Trigger: windows-gfx1201 committed `[ROCm] Fix amdclang++/Windows build of baspacho` (5db6b5f6 on top of e2e66459), advancing head. advance_head flipped linux-gfx1100 to `revalidate`.
+
+Delta: 7 files, all `#ifdef _WIN32` / `#ifndef _WIN32` guards and typedef-equivalent `uint` -> `unsigned int` / `size_t` casts. Expected Linux-binary-inert.
+
+Build commands (at both SHAs, in git worktrees):
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake -S src-{old,new} -B build-{old,new} -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS
+cmake --build build-{old,new} -- -j$(nproc)
+```
+
+codeobj_diff results (all 5 GPU test executables):
+- CudaFactorTest: identical (exported symbols + device ISA identical, 18 exports)
+- CudaSolveTest: identical (exported symbols + device ISA identical, 16 exports)
+- BatchedCudaFactorTest: identical (exported symbols + device ISA identical, 16 exports)
+- BatchedCudaSolveTest: identical (exported symbols + device ISA identical, 16 exports)
+- CudaPartialTest: identical (exported symbols + device ISA identical, 16 exports)
+
+Overall: IDENTICAL. `#ifdef _WIN32` guards compile to zero bytes on Linux; typedef-equivalent `uint` / `unsigned int` / `size_t` casts produce identical codegen. Carried forward linux-gfx1100 -> 5db6b5f6 (binary-equiv).
+
 ## Revalidation 2026-06-09 (linux-gfx90a) -- binary-equivalence carry-forward
 
 **Verdict: PASS (completed, carry-forward). No GPU test run needed.**
