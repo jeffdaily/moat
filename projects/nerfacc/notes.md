@@ -139,3 +139,34 @@ build + same pytest suite per policy; no expected source change. cub-by-key uses
 hipcub's own portable wavefront handling. The Blelloch scan (utils_scan.cuh) is
 the only shared-mem collective and has an explicit __syncthreads() after every
 sweep -- wave64/wave32 safe (plan risk #2).
+
+## Review 2026-06-09 (reviewer, lead linux-gfx90a) -- state: review-passed
+
+Reviewed moat-port @ 2298cb5 (diff vs upstream master 57ccfa1) with /pr-review.
+3 files, 36 insertions, all USE_ROCM-guarded. No problems found; CUDA build is
+byte-identical (every edit sits behind `#if defined(USE_ROCM)` or
+`#if !defined(USE_ROCM)`, so the CUDA preprocessor sees zero change).
+
+Verified, not assumed:
+- helper_math ambiguity fix: the 6 same-type binary float2/3/4 operator* /
+  operator/ guarded out are exactly the 6 present (utils_math.cuh:753,824,901,
+  988,1013,1040); the `*=`/scalar/`+`/`-` forms are correctly left unguarded.
+  Scalar lerp guarded (1159); the vector lerps don't call it (use +/-/scalar*),
+  so removing it on ROCm is safe; std::lerp(float,float,float) covers the scalar.
+- CUB_SUPPORTS_SCAN_BY_KEY()==1 on ROCm (utils.cub.cuh:18-24): the CUDA branch is
+  untouched, only an additive USE_ROCM arm.
+- namespace cub = hipcub (scan_cub.cu:14-19) placed AFTER the hipified
+  <hipcub/hipcub.hpp> include and inside CUB_SUPPORTS_SCAN_BY_KEY(); the only
+  cub:: spellings are cub::DeviceScan and cub::Equality, both covered.
+- Real ROCm build evidence: csrc.so carries gfx90a code objects (roc-obj-ls).
+- Fault classes N/A and correctly untouched: no warpSize/32, no warp intrinsics,
+  no textures/rule-of-five, no OOB neighbor reads, no pitch, no library mis-swap.
+- Commit hygiene clean: [ROCm] title 47 chars, no noreply/co-authored/ghstack,
+  no MOAT jargon, ASCII-only, Claude named, Test Plan present, only public
+  jeff.daily@amd.com reference. Copyright: parallel AMD line + Jeff Daily author
+  on all 3 edited files in house style.
+- Working tree: only untracked nerfacc/hip/ + build/ artifacts (correctly NOT
+  committed; setup.py:36 strips *hip* and regenerates).
+
+Real-GPU validation is the validator's next gate (porter ran 23/23 locally).
+Verdict: Approve -> review-passed.

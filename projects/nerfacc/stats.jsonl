@@ -5,3 +5,4 @@
 {"kind":"phase","ts":"2026-06-09T19:21:27Z","phase":"test","seconds":6.738,"exit":0,"cmd":"bash -c cd /tmp && python -m pytest /tmp/nerfacc_tests/ -v --tb=short -p no:cacheprovider"}
 {"kind":"phase","ts":"2026-06-09T19:40:26Z","phase":"compile","seconds":264.133,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/nerfacc/src --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-09T19:40:41Z","phase":"test","seconds":5.729,"exit":0,"cmd":"bash -c cd /tmp && python -m pytest /tmp/nerfacc_tests/ -v --tb=short -p no:cacheprovider"}
+{"kind": "tokens", "ts": "2026-06-09T19:43:43Z", "tokens": 111200, "source": "porter"}
