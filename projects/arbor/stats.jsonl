@@ -50,3 +50,9 @@
 {"kind":"phase","ts":"2026-06-08T16:55:59Z","phase":"test","seconds":16.172,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build/bin/unit"}
 {"kind": "tokens", "ts": "2026-06-08T17:01:19Z", "tokens": 50119, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T15:30:04Z", "tokens": 60977, "source": "validator"}
+{"kind":"phase","ts":"2026-06-09T17:36:54Z","phase":"compile","seconds":16.329,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/wt-parent/build-parent --target unit -j64"}
+{"kind":"phase","ts":"2026-06-09T17:40:25Z","phase":"compile","seconds":115.380,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/wt-parent/build-parent --target unit -j64"}
+{"kind":"phase","ts":"2026-06-09T17:42:40Z","phase":"compile","seconds":115.599,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/arbor/src/build-refactor --target unit -j64"}
+{"kind":"phase","ts":"2026-06-09T17:43:25Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./build-refactor/bin/unit --gtest_filter=*reduce_by_key*:*reduce*:gpu_intrinsics.*"}
+{"kind":"phase","ts":"2026-06-09T17:43:32Z","phase":"test","seconds":0.223,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build-refactor/bin/unit --gtest_filter=*reduce_by_key*:*reduce*:gpu_intrinsics.*"}
+{"kind":"phase","ts":"2026-06-09T17:44:04Z","phase":"test","seconds":14.455,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/arbor/src/build-refactor/bin/unit"}

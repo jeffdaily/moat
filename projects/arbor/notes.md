@@ -669,3 +669,34 @@ All GPU tests pass, including:
 
 ### Conclusion
 Full GPU re-run required (codeobj_diff: differ -- R123_NO_SINCOS device code change). All 1182 tests pass on gfx90a including all GPU-specific tests. linux-gfx90a -> completed at sha 246575c.
+
+## Review feedback 2026-06-09 (PR #2512): move warp-intrinsic #ifdefs into the api headers
+
+**Maintainer request** (comments on reduce_by_key.hpp:37 and :56): "these CPP conditionals should be moved to the HIP/CUDA APIs". reduce_by_key.hpp had two `#ifdef ARB_HIP / #else` blocks inline in `key_set_pos` choosing 64-bit vs 32-bit bit intrinsics. The api headers already own the per-backend warp primitives (ballot/shfl/any), so the selection belongs there.
+
+**New commit**: c5f27d01d4eeaaa4dcc614388b5b5095c92c9e55, a NEW commit on top of the PR head cf6a1102 (NOT amended, NOT re-squashed -- the maintainer is testing cf6a1102 on CUDA; parent stays a reachable ancestor). Pushed to fork moat-port (cf6a1102..c5f27d01).
+
+### The change (3 files, +28/-13)
+
+- `hip_api.hpp`: added `count_leading_zeros(lane_mask_type)` -> `__clzll` and `find_first_set(lane_mask_type)` -> `__ffsll`, next to shfl_down (matches the existing primitive style: `__device__ __inline__`, takes lane_mask_type).
+- `cuda_api.hpp`: added `count_leading_zeros(lane_mask_type)` -> `__clz` and `find_first_set(lane_mask_type)` -> `__ffs`, inside the existing `#ifdef __CUDACC__` warp-primitives block (faithful 1:1 of the original CUDA intrinsics).
+- `reduce_by_key.hpp`: removed BOTH `#ifdef ARB_HIP` blocks.
+  - `num_lanes = 8*sizeof(lane_mask_type) - count_leading_zeros(key_mask);` -- on HIP `8*sizeof` = 64 (== old `64-__clzll`); on CUDA `8*sizeof` = 32 == `threads_per_warp()` on CUDA (== old `threads_per_warp()-__clz`). Exactly equivalent on both. Used `8*sizeof(lane_mask_type)` rather than a literal so the bit width tracks the typedef.
+  - `width = find_first_set(roots>>(lane_id+1));` -- HIP `__ffsll`, CUDA `__ffs`. `roots` is lane_mask_type so the shift width and the helper arg type match the original on each backend; no truncation.
+  - explanatory comments moved to/condensed at the call site and the helper definitions.
+
+### Equivalence proof (gfx90a, MI250X, ROCm 7.2.1)
+
+Built the `unit` target at BOTH cf6a1102 (git worktree at the parent) and c5f27d01 (src), same flags (`-DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx90a -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_CXX_COMPILER=hipcc -DCMAKE_C_COMPILER=clang`). NOTE: must use the default Makefile generator -- `-G Ninja` fails the `.cu` dependency scan with "hip/hip_runtime.h file not found" (Ninja's CMake dep-scan invokes the compiler without the HIP include path for .cu files; the validated recipe never used Ninja). Make works.
+
+`codeobj_diff.py` (both the unit binary and the full build tree, which holds dummy-catalogue.so):
+- `unit vs unit: identical (exported symbols + device ISA identical (43 exports))`
+- `dummy-catalogue.so: identical (... 135 exports)`
+- `verdict=identical` -- the refactor changes NO device codegen on gfx90a. Arbor links all GPU device code (reduce_by_key + generated mechanism kernels) statically into `unit`, so the identical unit-binary ISA covers the reduce_by_key path.
+
+### GPU tests (gfx90a, HIP_VISIBLE_DEVICES=0; GPU 2 was busy with another job)
+
+- targeted `*reduce_by_key*:gpu_intrinsics.*`: 8/8 PASS (reduce_by_key.{no_repetitions,single_repeated_index,scatter,scatter_twice}; gpu_intrinsics.{gpu_atomic_add,gpu_atomic_sub,minmax,exprelr}).
+- full `unit` suite: 1182/1182 PASS (14.4 s), matching the validated baseline exactly.
+
+This is behavior-preserving (codeobj_diff identical) -- per the regression guard it would carry validation forward on every passed platform once the head advances. status.json platform states left untouched here (lead pr-open; the maintainer/state-machine handles the PR reply and any state advance).
