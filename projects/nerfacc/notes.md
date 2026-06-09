@@ -248,3 +248,76 @@ Non-GPU regressions: none.
 Fork working tree clean: only untracked nerfacc/hip/ (never committed).
 
 validated_sha: 2298cb55073791bdcfaff496c273c0ba5758a08d
+
+## Validation 2026-06-09 (validator, windows-gfx1201) -- state: completed
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for Workstations.
+ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260604 (hip 7.14.60850-d34cbb64),
+torch 2.9.1+rocm7.14.0a20260604. Python 3.12.
+Fork tip validated: 3e88a726661743d5b00d420726081f69964c5e38 (new commit on top of 2298cb5).
+
+### Windows+HIP build fixes (new commit 3e88a72 on top of 2298cb5)
+
+Two Windows-specific build issues encountered and fixed in setup.py (both gated
+`sys.platform == "win32" and torch.version.hip`, so Linux/CUDA builds are byte-identical):
+
+1. ninja required on Windows+ROCm: the non-ninja MSVC compile path does not escape
+   spaces in -I paths before handing them to hipcc; include dirs under "Program Files
+   (x86)" are split on the space when hipcc forwards them to clang as separate
+   arguments. The ninja path escapes spaces (replaces with `\`). Fix: `use_ninja=True`
+   on Windows+ROCm only (was hardcoded `False`).
+
+2. Binding .cpp must compile via hipcc: torch routes .cpp -> MSVC cl.exe. MSVC cannot
+   parse the GCC `__attribute__` syntax in HIP runtime headers (amd_hip_vector_types.h)
+   pulled in through torch/extension.h. Fix: copy the binding nerfacc.cpp to a
+   nerfacc_winhip.cu shim at build time; the `.cu` extension makes torch's
+   `_is_cuda_file()` return True, routing it to hipcc (amdclang). The shim is
+   transient (gitignored, regenerated each build).
+
+Both fixes are the standard pattern for Windows+ROCm torch extensions (also used in
+gsplat). Also added nerfacc/hip/ and *_winhip.cu to .gitignore.
+
+### Build command (gfx1201, Windows)
+
+    VENV="B:/develop/TheRock/external-builds/pytorch/.venv"
+    ROCM_HOME="$VENV/Lib/site-packages/_rocm_sdk_devel"
+    MSVC_BIN="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64"
+    export PATH="$MSVC_BIN:$PATH"
+    export ROCM_HOME HIP_DEVICE_LIB_PATH="$ROCM_HOME/lib/llvm/amdgcn/bitcode"
+    export DISTUTILS_USE_SDK=1 HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1201 MAX_JOBS=64
+
+    cd projects/nerfacc/src && rm -rf nerfacc/hip build
+    pip install -e . --no-build-isolation
+    # exit 0, ~41s wall
+
+Verified post-build:
+- `is_cub_available()` returns True -- hipcub DeviceScan ByKey path active on gfx1201.
+- import nerfacc OK; torch.cuda.get_device_name(0) = "AMD Radeon RX 9070 XT".
+
+### GPU test suite
+
+    cp -r projects/nerfacc/src/tests /tmp/nerfacc_tests_gfx1201
+    HIP_VISIBLE_DEVICES=0 python -m pytest /tmp/nerfacc_tests_gfx1201/ -v -p no:cacheprovider
+
+Result: 23/23 PASS (~6.85s), 2 warnings (fVDB not installed in test_vdb -- tests return early, PASSED).
+
+All GPU tests pass:
+- test_scan (4/4): inclusive/exclusive sum+prod, hipcub ByKey path + .backward().
+- test_pdf (3/3): searchsorted, importance_sampling (philox RNG), pdf_loss.
+- test_rendering (6/6): render_visibility, weight_from_alpha, weight_from_density, accumulate_along_rays, grads, rendering.
+- test_grid (6/6): ray_aabb_intersect, traverse_grids, traverse_grids_test_mode, traverse_grids_with_near_far_planes, sampling_with_min_max_distances, mark_invisible_cells.
+- test_pack (1/1): pack_info.
+- test_camera (1/1): opencv_lens_undistortion.
+- test_vdb (2/2): skip-early on missing fVDB, PASSED.
+
+Non-GPU regressions: none -- nerfacc is GPU-centric; pure-torch reference functions unchanged.
+
+Fork working tree clean: .gitignore updated, only untracked nerfacc/hip/ and
+nerfacc/cuda/csrc/nerfacc_winhip.cu (both gitignored build artifacts, never committed).
+
+Note: linux-gfx90a and linux-gfx1100 flipped to revalidate because advance-head
+classified setup.py as mixed. The changes are gated `sys.platform=="win32" and
+torch.version.hip`, so the Linux builds are byte-identical. Linux validators can
+use codeobj_diff.py to carry forward without re-running GPU tests.
+
+validated_sha: 3e88a726661743d5b00d420726081f69964c5e38
