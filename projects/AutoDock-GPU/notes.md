@@ -588,3 +588,19 @@ NOT force a ck_tile implementation, per the spike's "rocWMMA wins on fit" outcom
 This is additive work on top of the validated port; status.json platform states are
 the lead's to manage (TENSOR=OFF default build is unchanged and stays validated).
 No upstream PR action taken here.
+
+## TENSOR=ON committed into state machine; followers to verify 2026-06-09
+
+Per jeff: commit the rocWMMA TENSOR=ON support and let the followers verify as usual.
+advance_head 221e2d4f -> 3d466a4 classified the delta `mixed` (real device-code
+branches in kernels.cu/performdocking.cpp + Makefile.Hip) -> all platforms revalidate.
+gfx90a marked completed (porter GPU-validated TENSOR=ON: docking matches the non-tensor
+path; 1.57x faster at NUMWI=128). linux-gfx1100 + windows-gfx1101/gfx1201 left in
+revalidate to verify on their own hosts -- the DEFAULT (TENSOR=OFF) build is unchanged
+(tensor code is #ifdef USE_NVTENSOR-gated) so it carries forward binary-equiv; TENSOR=ON
+itself is CDNA-only for now (RDNA needs bf16 error-correction -- see deferred
+autodock-gpu-tensor-core-reduction, rescoped). gfx1151 blocked (retired).
+
+NEXT: once followers verify at 3d466a4, squash 221e2d4f+3d466a4 -> one commit and re-prep
+the PR body (document CDNA TENSOR=ON via rocWMMA + the benchmark; RDNA as a follow-up;
+drop the earlier "out of scope" note), then open the upstream PR (gate).
