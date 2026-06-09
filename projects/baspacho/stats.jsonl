@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-09T14:15:13Z","phase":"compile","seconds":50.303,"exit":0,"cmd":"cmake --build projects/baspacho/build-old -- -j16"}
 {"kind":"phase","ts":"2026-06-09T14:15:28Z","phase":"compile","seconds":7.165,"exit":0,"cmd":"cmake -S projects/baspacho/src-new -B projects/baspacho/build-new -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DBASPACHO_USE_BLAS=ON -DBLA_VENDOR=OpenBLAS"}
 {"kind":"phase","ts":"2026-06-09T14:16:23Z","phase":"compile","seconds":50.233,"exit":0,"cmd":"cmake --build projects/baspacho/build-new -- -j16"}
+{"kind": "tokens", "ts": "2026-06-09T14:20:21Z", "tokens": 43079, "source": "validator (binary-equiv revalidation gfx90a vs Windows-fix merge)"}
