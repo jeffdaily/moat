@@ -2,7 +2,7 @@
   "full_name": "nerfstudio-project/nerfacc",
   "upstream_url": "https://github.com/nerfstudio-project/nerfacc",
   "default_branch": "master",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/nerfacc",
   "ext_type": "torch-extension",
   "base_sha": null
 }

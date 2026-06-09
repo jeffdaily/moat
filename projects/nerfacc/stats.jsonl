@@ -1,1 +1,7 @@
 {"kind": "tokens", "ts": "2026-06-08T03:46:52Z", "tokens": 128924, "source": "planner"}
+{"kind":"phase","ts":"2026-06-09T19:07:42Z","phase":"compile","seconds":0.427,"exit":1,"cmd":"pip install -e . --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-09T19:09:02Z","phase":"compile","seconds":72.205,"exit":1,"cmd":"pip install -e /var/lib/jenkins/moat/projects/nerfacc/src --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-09T19:20:38Z","phase":"compile","seconds":251.100,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/nerfacc/src --no-build-isolation -v"}
+{"kind":"phase","ts":"2026-06-09T19:21:27Z","phase":"test","seconds":6.738,"exit":0,"cmd":"bash -c cd /tmp && python -m pytest /tmp/nerfacc_tests/ -v --tb=short -p no:cacheprovider"}
+{"kind":"phase","ts":"2026-06-09T19:40:26Z","phase":"compile","seconds":264.133,"exit":0,"cmd":"pip install -e /var/lib/jenkins/moat/projects/nerfacc/src --no-build-isolation"}
+{"kind":"phase","ts":"2026-06-09T19:40:41Z","phase":"test","seconds":5.729,"exit":0,"cmd":"bash -c cd /tmp && python -m pytest /tmp/nerfacc_tests/ -v --tb=short -p no:cacheprovider"}

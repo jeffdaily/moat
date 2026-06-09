@@ -54,3 +54,88 @@ as a widely used library.
   7.2.53211, MI250X gfx90a, ROCM_HOME=/opt/rocm, CUDA_HOME empty. Build:
   HIP_VISIBLE_DEVICES=<ord> PYTORCH_ROCM_ARCH=gfx90a pip install -e . --no-build-isolation.
   Run pytest with cwd OUTSIDE /var/lib/jenkins/pytorch (it shadows installed torch).
+
+## Porter findings (2026-06-09, lead linux-gfx90a) -- state: ported
+
+Fork: https://github.com/jeffdaily/nerfacc, branch moat-port, HEAD
+2298cb55073791bdcfaff496c273c0ba5758a08d. Actions disabled on the fork.
+Built + GPU-validated on MI250X gfx90a. 3 source files edited (36 insertions),
+all USE_ROCM-guarded so the CUDA build is byte-identical. setup.py needed NO
+edit -- its existing torch.version.hip branch handled USE_ROCM + the half-conv
+undef. No GLM, no warp intrinsics, no textures, no fast-math; the gsplat fault
+classes did not apply.
+
+Three hipify gaps fixed (NONE were anticipated as build-blockers in plan.md;
+plan expected a near-clean Strategy B build):
+
+1. utils_math.cuh = NVIDIA helper_math.h. On HIP, float2/3/4 are HIP_vector_type,
+   which ALREADY provides component-wise operator* and operator/ (a non-template
+   `friend` operator* at amd_hip_vector_types.h:397 + free templates), so
+   helper_math's same-type `operator*(float2,float2)` / `operator/` are AMBIGUOUS
+   (not redundant-but-ignored -- a hard "use of overloaded operator is ambiguous"
+   error). Guard out the SIX same-type float2/3/4 operator*/operator/ on ROCm
+   (HIP's are component-wise identical). Note: only the same-type-vector `*` and
+   `/` conflict -- `+`/`-` don't (HIP provides them only as free templates, which
+   lose to helper_math's non-template exact match) and the vector-scalar forms
+   don't. ALSO: scalar `lerp(float,float,float)` conflicts with C++20 std::lerp
+   ("declaration conflicts with target of using declaration already in scope") --
+   guard it out too; std::lerp(a,b,t)=a+t*(b-a) is identical and the vector lerps
+   don't call the scalar one. GENERAL: any port that vendors NVIDIA helper_math.h
+   hits exactly this same-type-vector */÷ + scalar-lerp ambiguity on HIP.
+
+2. cub scan-by-key was silently disabled (plan risk #1, but the CUB_VERSION guard
+   detail differed). hipify rewrites the `#if defined(CUDA_VERSION) && CUDA_VERSION
+   >= 11000` guard around `<cub/version.cuh>` to TORCH_HIP_VERSION (a small value,
+   NOT >= 11000), so <cub/version.cuh> is never included and CUB_VERSION stays 0 ->
+   CUB_SUPPORTS_SCAN_BY_KEY()==0. So HIPCUB_VERSION is ALSO never defined (the plan
+   assumed it would be) -- gating on HIPCUB_VERSION does NOT work. Fix: on USE_ROCM
+   just `#define CUB_SUPPORTS_SCAN_BY_KEY() 1` (hipcub DeviceScan ByKey is present
+   across the supported ROCm range). This enables + validates the hipcub by-key
+   path instead of the slower hand-rolled fallback.
+
+3. With (2) enabled, scan_cub.cu fails to compile: hipify maps cub::DeviceScan ->
+   hipcub::DeviceScan but leaves `cub::Equality` UNTOUCHED (no mapping-table entry)
+   -> "use of undeclared identifier 'cub'". Fix: `namespace cub = hipcub;` under
+   USE_ROCM inside the cub block (after the hipified `#include <hipcub/hipcub.hpp>`).
+   hipcub::Equality exists (it is the DeviceScan default EqualityOpT).
+
+Copyright/attribution added (parallel AMD line + Jeff Daily author) to the 3
+substantially-edited files: utils_math.cuh, utils.cub.cuh, scan_cub.cu.
+
+GENERATED-FILE HYGIENE: building creates an untracked nerfacc/hip/ hipify mirror
+(+ build/, nerfacc/csrc.so). NONE belong in the commit -- setup.py:36 strips *hip*
+from the source glob and regenerates the mirror each build. Commit ONLY the 3
+nerfacc/cuda/csrc edits. After editing a .cu/.cuh you MUST `rm -rf nerfacc/hip`
+before rebuilding, else hipify skips it ("[skipped, already hipified]") and the
+stale mirror is recompiled. `python setup.py build_ext --inplace` writes the .so
+to build/lib.../ ; the editable install loads nerfacc/csrc.so -- re-run
+`pip install -e . --no-build-isolation` (or cp the built .so) to refresh it.
+
+### Build + test commands (lead gfx90a, GPU 0 free; GPU 1 had a sibling, GPU 2 busy)
+    source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12
+    cd projects/nerfacc/src && rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 \
+        pip install -e . --no-build-isolation
+    # verify AMD build + cub path active:
+    cd /tmp && HIP_VISIBLE_DEVICES=0 python -c \
+      "import torch; from nerfacc.cuda import is_cub_available; \
+       print(torch.version.hip, is_cub_available())"   # 7.2.53211 True
+    # GPU test suite (cwd /tmp, copy tests in):
+    cp -r projects/nerfacc/src/tests /tmp/nerfacc_tests
+    HIP_VISIBLE_DEVICES=0 python -m pytest /tmp/nerfacc_tests/ -v -p no:cacheprovider
+
+### Result: 23/23 pass on gfx90a (test_vdb no-ops without optional fVDB).
+cub_available True -- the hipcub DeviceScan ByKey path (with the custom Product
+functor) is compiled and exercised by test_scan inclusive/exclusive sum+prod incl.
+.backward(); the prior "indices without CUB available is slow" warnings are gone.
+test_scan + test_pdf run twice, deterministic. gfx90a code objects confirmed in
+csrc.so via roc-obj-ls. test_pdf importance_sampling (philox RNG) passes within
+tolerance -- no bit-exact-RNG issue (plan open question 1 resolved: not bit-exact).
+
+### Follower notes
+RDNA followers (gfx1100/gfx1101/gfx1201): the fixes are wave-agnostic (operator
+guards + cub enablement + namespace alias touch no lane math), so re-validate the
+build + same pytest suite per policy; no expected source change. cub-by-key uses
+hipcub's own portable wavefront handling. The Blelloch scan (utils_scan.cuh) is
+the only shared-mem collective and has an explicit __syncthreads() after every
+sweep -- wave64/wave32 safe (plan risk #2).
