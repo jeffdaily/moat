@@ -7,7 +7,7 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-09T19:46:06Z",
+  "updated_at": "2026-06-09T19:57:11Z",
   "head_sha": "c2f2f6f1c4e5da29374fe7c5f30879b5e9cde88b",
   "platforms": {
     "linux-gfx90a": {
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
+      "validated_sha": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-06-09T15:30:46Z",
-      "updated_at": "2026-06-09T19:08:14Z",
+      "completed_at": "2026-06-09T19:57:11Z",
+      "updated_at": "2026-06-09T19:57:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,7 +60,13 @@
         "first_session_at": "2026-05-30T07:18:00Z",
         "last_session_at": "2026-05-30T07:35:00Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
+        "method": "binary-equiv",
+        "detail": "Windows min/max undef guards inside #if defined(__HIP_PLATFORM_AMD__) -- on Linux min/max are not macros so preprocessor strips those lines; codeobj_diff verified identical for both TENSOR=OFF and TEN",
+        "at": "2026-06-09T19:57:11Z"
+      }
     },
     "windows-gfx1101": {
       "state": "revalidate",
