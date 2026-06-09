@@ -808,3 +808,15 @@ greedy_subsets histogram empty-grid div-by-zero; (4) segmented_sort SortPairs si
 
 GOTCHA: catboost clone has REVERSED remotes (origin=upstream catboost/catboost,
 jeffdaily=the fork). Push to 'jeffdaily', NOT 'origin' (origin push 403s on upstream).
+
+## Correction: followers must revalidate (HIP source changed) 2026-06-09
+
+jeff caught that the carry-forward of gfx1100/gfx1101/gfx1201/gfx1151 was unjustified.
+Verified with `unifdef -DUSE_HIP` (ca6b84af vs d4fa9e98): the HIP-ACTIVE source changed
+122 lines / 11 files. Most is inert (MPPI/gpuRIR comment scrubs, the warp_mask.cuh
+header move with identical value, the dead WarpReduceN 0xFFFFFF revert), BUT
+exact_estimation is a real HIP code change (the leaf-count fix moved from a kernel param
+to the caller). gfx90a was really re-validated by the porter (suite green, e2e AUC
+bit-identical) so it stays completed; the 4 followers are flipped to revalidate (re-run
+on their hosts: gfx1100 Linux, gfx1101/gfx1201/gfx1151 Windows). catboost is NOT pr-ready
+until gfx1100 + one Windows arch revalidate at 2439225f.
