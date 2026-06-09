@@ -170,3 +170,41 @@ Verified, not assumed:
 
 Real-GPU validation is the validator's next gate (porter ran 23/23 locally).
 Verdict: Approve -> review-passed.
+
+## Validation 2026-06-09 (validator, lead linux-gfx90a) -- state: completed
+
+Platform: linux-gfx90a, GPU: AMD Instinct MI250X (gfx90a), ROCm 7.2.1, torch 2.13.0a0+gitb5e90ff, hip 7.2.53211.
+Fork: jeffdaily/nerfacc @ moat-port, HEAD 2298cb55073791bdcfaff496c273c0ba5758a08d.
+
+Build: started from a clean tree (`rm -rf nerfacc/hip build`).
+
+    source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12
+    cd projects/nerfacc/src && rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 \
+        pip install -e . --no-build-isolation
+    # ~264s wall, exit 0
+
+Verified post-build:
+- `is_cub_available()` returns True -- hipcub DeviceScan ByKey path is compiled and active.
+- roc-obj-ls confirms 5 gfx90a code objects in csrc.so (one per .cu TU: camera, grid, pdf, scan, scan_cub).
+
+GPU test suite (cwd /tmp, tests copied from projects/nerfacc/src/tests/):
+
+    HIP_VISIBLE_DEVICES=0 python -m pytest /tmp/nerfacc_tests/ -v -p no:cacheprovider
+
+Result: 23/23 PASS (~5.7s), 5 warnings (3x torch.jit.script deprecation in test_camera; 2x "fVDB not installed" in test_vdb -- tests return early, still reported PASSED).
+
+All GPU tests pass:
+- test_scan (4/4): inclusive/exclusive sum+prod, all exercising hipcub ByKey path + .backward(). Run twice, deterministic.
+- test_pdf (3/3): searchsorted, importance_sampling (philox RNG), pdf_loss. Run twice, deterministic.
+- test_rendering (6/6): render_visibility, weight_from_alpha, weight_from_density, accumulate_along_rays, grads, rendering.
+- test_grid (5/5): ray_aabb_intersect, traverse_grids, traverse_grids_test_mode, traverse_grids_with_near_far_planes, sampling_with_min_max_distances, mark_invisible_cells. (6 tests total)
+- test_pack (1/1): pack_info.
+- test_camera (1/1): opencv_lens_undistortion.
+- test_vdb (2/2): skip-early on missing fVDB, PASSED.
+
+Non-GPU regressions: none -- nerfacc is GPU-centric; the pure-torch reference functions the tests invoke are unchanged.
+
+Fork working tree clean: only untracked nerfacc/hip/ + build/ (never committed; setup.py:36 strips *hip* and regenerates).
+
+validated_sha: 2298cb55073791bdcfaff496c273c0ba5758a08d

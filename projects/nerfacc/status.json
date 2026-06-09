@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-08T03:33:27Z",
-  "updated_at": "2026-06-09T19:49:28Z",
+  "updated_at": "2026-06-09T19:58:44Z",
   "head_sha": "2298cb55073791bdcfaff496c273c0ba5758a08d",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "review-passed",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": null,
+      "validated_sha": "2298cb55073791bdcfaff496c273c0ba5758a08d",
       "started_at": "2026-06-09T19:07:34Z",
-      "completed_at": null,
-      "updated_at": "2026-06-09T19:49:28Z",
+      "completed_at": "2026-06-09T19:58:44Z",
+      "updated_at": "2026-06-09T19:58:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T03:33:27Z",
+      "updated_at": "2026-06-09T19:58:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,13 +57,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T03:33:27Z",
+      "updated_at": "2026-06-09T19:58:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -79,13 +79,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T03:33:27Z",
+      "updated_at": "2026-06-09T19:58:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -101,13 +101,13 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked-needs-gfx90a",
+      "state": "port-ready",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T03:33:27Z",
+      "updated_at": "2026-06-09T19:58:44Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
