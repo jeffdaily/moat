@@ -415,13 +415,17 @@ def carry_forward(name, platform, new_sha, method, detail):
     arch-independent source classes itself. Records provenance for audit."""
     obj = load_status(name)
     blk = obj["platforms"][platform]
-    if blk["state"] not in ("completed", "revalidate"):
-        raise ValueError(f"{name}/{platform}: carry_forward needs completed/revalidate, not {blk['state']}")
+    if blk["state"] not in ("completed", "revalidate", "pr-open"):
+        raise ValueError(f"{name}/{platform}: carry_forward needs completed/revalidate/pr-open, not {blk['state']}")
     ts = now_iso()
-    blk["state"] = "completed"
+    # A pr-open lead stays pr-open (its upstream PR is still open at the advanced
+    # branch); a behavior-preserving follow-up commit just advances its
+    # validated_sha. completed/revalidate platforms transition to completed.
+    if blk["state"] != "pr-open":
+        blk["state"] = "completed"
+        blk["completed_at"] = ts
     blk["validated_sha"] = new_sha
     blk["updated_at"] = ts
-    blk["completed_at"] = ts
     blk["carry_forward"] = {"to": new_sha, "method": method, "detail": detail[:200], "at": ts}
     save_status(name, obj)
     return obj
