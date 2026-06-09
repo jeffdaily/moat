@@ -477,13 +477,14 @@
       "kind": "feature-port",
       "project": "AutoDock-GPU",
       "component": null,
-      "summary": "Port the optional TENSOR=ON path (USE_NVTENSOR): the NVIDIA tensor-core (WMMA) acceleration of the energy/gradient sum-reduction in cuda/calcMergeEneGra.cu, gated MIN_COMPUTE 8.0 (Ampere+). Off-by-default optimization; the HIP backend fail-fasts on TENSOR=ON and uses the standard reduction (identical results). An AMD port would map WMMA to rocWMMA / CDNA MFMA matrix cores.",
+      "summary": "CDNA matrix cores DONE: TENSOR=ON ported to rocWMMA (native fp32 MFMA), gfx90a-validated (matches non-tensor docking; 1.57x faster at NUMWI=128), commit 3d466a4. REMAINING (follow-up): RDNA (gfx1100/1101/1201) has no native f32 WMMA input, so TENSOR=ON there needs a bf16 error-correction path (the AMD analog of the NVIDIA tf32+EC tcec). Currently CDNA-only; the Makefile should guard TENSOR=ON to CDNA archs.",
       "refs": [
         "projects/AutoDock-GPU/notes.md"
       ],
       "status": "open",
       "upstream_issue": null,
-      "created_at": "2026-06-08T22:26:23Z"
+      "created_at": "2026-06-08T22:26:23Z",
+      "updated_at": "2026-06-09T00:00:00Z"
     }
   ]
 }
