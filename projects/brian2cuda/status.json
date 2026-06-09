@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "codegen",
   "adopted_at": "2026-06-05T04:44:12Z",
-  "updated_at": "2026-06-09T15:25:52Z",
-  "head_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
+  "updated_at": "2026-06-09T16:31:43Z",
+  "head_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
+      "validated_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
       "started_at": "2026-06-05T08:30:52Z",
-      "completed_at": "2026-06-09T15:25:05Z",
-      "updated_at": "2026-06-09T15:25:52Z",
+      "completed_at": "2026-06-09T16:31:20Z",
+      "updated_at": "2026-06-09T16:31:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -38,10 +38,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
+      "validated_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
       "started_at": null,
-      "completed_at": "2026-06-09T15:25:05Z",
-      "updated_at": "2026-06-09T15:25:52Z",
+      "completed_at": "2026-06-09T16:31:20Z",
+      "updated_at": "2026-06-09T16:31:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,10 +57,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "8455518d49ef636512af6be457173eeb83a279c9",
+        "to": "580eda121a753f96e31589a7859164bfb0a29b0d",
         "method": "source-class",
-        "detail": "8455518 is a Python prefs-wiring fix (import hip_prefs + trim dead hip_standalone codegen prefs); generated/compiled device code and the cuda_standalone codegen prefs device.py reads are unchanged, so",
-        "at": "2026-06-09T15:25:05Z"
+        "detail": "580eda1 is a Python refactor (remove dead hipgputools.py, consolidate is_hip_backend into utils/hip_backend.py, wire HIP prefs) + a template pref-source swap (gpu_heap_size); new prefs' defaults repro",
+        "at": "2026-06-09T16:31:20Z"
       }
     },
     "windows-gfx1101": {
@@ -89,10 +89,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "e158646caf66cf105c2a5da66ffd2da4c1edbdc5",
+      "validated_sha": "add2c0ebbd65445731a96f1cb624f7d72af068a1",
       "started_at": null,
-      "completed_at": "2026-06-09T15:25:05Z",
-      "updated_at": "2026-06-09T15:25:52Z",
+      "completed_at": "2026-06-09T16:31:20Z",
+      "updated_at": "2026-06-09T16:31:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -108,10 +108,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "8455518d49ef636512af6be457173eeb83a279c9",
+        "to": "580eda121a753f96e31589a7859164bfb0a29b0d",
         "method": "source-class",
-        "detail": "8455518 is a Python prefs-wiring fix (import hip_prefs + trim dead hip_standalone codegen prefs); generated/compiled device code and the cuda_standalone codegen prefs device.py reads are unchanged, so",
-        "at": "2026-06-09T15:25:05Z"
+        "detail": "580eda1 is a Python refactor (remove dead hipgputools.py, consolidate is_hip_backend into utils/hip_backend.py, wire HIP prefs) + a template pref-source swap (gpu_heap_size); new prefs' defaults repro",
+        "at": "2026-06-09T16:31:20Z"
       }
     },
     "windows-gfx1151": {

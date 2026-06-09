@@ -602,3 +602,18 @@ default 128; gpu_id default None -> 0 == old hardcode). It is a Python
 refactor (no kernel template, brianlib header, or cuda_standalone codegen pref
 changed), so the generated/compiled device code is unchanged when prefs are at
 defaults -- analogous to the prior 8455518 carry-forward, modulo the new file.
+
+## HIP dup cleanup + symmetric prefs 2026-06-09 (re-squashed)
+
+Removed the orphaned-mirror dead code uncovered in review: deleted hipgputools.py
+(384 lines, never imported); consolidated the two divergent is_hip_backend impls
+(device.py + cuda_generator._is_hip_backend) into utils/hip_backend.py (stdlib-only,
+no import cycle; device.py's 3-branch logic canonical); wired the HIP prefs
+symmetrically with cuda_backend (rocm_path replaces 4 ROCM_PATH hardcodes;
+extra_compile_args_hipcc, gpu_heap_size, gpu_id now read live; dropped detect_gpus/
+detect_hip which had no HIP consumer). End state: every registered hip_backend pref
+is read by live code. Porter commit 580eda1; gfx90a re-validated 3/3 + prefs confirmed
+to take effect (sentinel in HIPCCFLAGS, rocm_path drives hipcc, --offload-arch=gfx90a).
+gfx90a completed; gfx1100/gfx1201 carried forward source-class (defaults reproduce
+prior device code). Re-squashed to ONE commit add2c0eb on base d7758060 (19 files,
++792/-59 -- down from +1158, the dead code is gone). pr-ready=True.
