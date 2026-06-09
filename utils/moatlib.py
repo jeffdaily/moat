@@ -431,8 +431,17 @@ def carry_forward(name, platform, new_sha, method, detail):
     return obj
 
 
+# Lead states that count as "the lead has validated this port" for unblocking
+# followers and satisfying dependents: completed plus the post-completed PR states.
+# A pr-open / upstream-landed lead is strictly more done than completed, so a
+# follower revalidate (e.g. after a behavior-preserving follow-up commit landed on
+# an already-PR'd branch) must not be gated waiting for the lead to be exactly
+# "completed" -- it never will be again.
+LEAD_DONE_STATES = ("completed", "pr-open", "upstream-landed")
+
+
 def lead_done(obj):
-    return obj["platforms"][LEAD]["state"] == "completed"
+    return obj["platforms"][LEAD]["state"] in LEAD_DONE_STATES
 
 
 def project_lead_state(name):
@@ -445,9 +454,9 @@ def project_lead_state(name):
 
 def unmet_deps(obj):
     """MOAT-internal upstream projects this one depends_on whose LEAD is not yet
-    `completed` (or not adopted). A project is not portable until these are done:
-    its build links/uses the ported dependency. See DEPENDENCIES.md."""
-    return [d for d in obj.get("depends_on", []) if project_lead_state(d) != "completed"]
+    validated (completed or beyond), or not adopted. A project is not portable until
+    these are done: its build links/uses the ported dependency. See DEPENDENCIES.md."""
+    return [d for d in obj.get("depends_on", []) if project_lead_state(d) not in LEAD_DONE_STATES]
 
 
 def actionable(obj, platform):
