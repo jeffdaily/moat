@@ -268,3 +268,24 @@ verdict=identical
 ```
 
 Both builds identical on gfx1100. Carried forward to completed at ebf2595 with no GPU re-run required.
+
+## PR-prep 2026-06-09 (squash + docs + metadata)
+
+Clean port (0 jargon in the diff -- verified, applying the catboost lesson of grepping
+the diff content, not just the message). Backfilled upstream.json fork_url + base_sha
+(761db2be) and status fork_url (were null). Dual-backend: -DUSE_HIP gates the HIP path;
+the default CUDA build is unchanged. FULL_WARP_MASK is defined in cuda_to_hip.h with a
+CUDA fallback (0xffffffff) and that header is included UNCONDITIONALLY by both users, so
+the CUDA build sees it -- NO catboost-style build break (verified). README: added ROCm
+requirement, a -DUSE_HIP build example, and USE_HIP/CMAKE_HIP_ARCHITECTURES options.
+Squashed 4 commits (incl. a "WIP" commit) -> ONE clean commit c9b32fb2 on base 761db2be
+(no drift). 27 files +1235/-64. Carried gfx90a/gfx1100/gfx1201 forward (doc-only);
+gfx1101/gfx1151 port-ready (redundant Windows tier; gfx1201 satisfies it).
+
+ONE shared (unconditional) CUDA-path change: the wave64 descriptor-kernel shuffle
+restructure (cuda_bad.cu / cuda_hash_sift.cu) -- move shuffles outside the kpIdx-bounds
+conditional so all lanes participate, guard the OOB keypoint read/write, FULL_WARP_MASK.
+HIP-REQUIRED (wave64 deadlocks otherwise; it IS the wave64 port) and CUDA-correct
+(FULL_WARP_MASK=0xffffffff on CUDA; the original was UB for partial warps). Disclosed in
+the PR body. Unlike catboost's reverts, this is intrinsic to the HIP port, not a bundled
+unrelated fix. NEXT: upstream-PR gate.
