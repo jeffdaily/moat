@@ -1362,3 +1362,71 @@ jeffdaily PR on arrayfire/arrayfire. PR body must scope OUT windows-gfx1151
 
 ## INTEGRITY GAP (windows-gfx1201) -- 2026-06-08
 windows-gfx1201 was marked completed, but the `_WIN32`/`std::filesystem` guard in `src/backend/hip/compile_module.cpp` (replacing POSIX dirent.h/readdir for the clang-resource-version scan) was a LOCAL uncommitted edit and is NOT in the PR branch (origin/moat-port @ 62f0a39, which still has unguarded `#include <dirent.h>`). The OPEN upstream PR #3708 therefore does not build on Windows. Validated fix preserved at agent_space/baspacho-recovery/arrayfire-compile_module-winfix.patch. windows-gfx1201 de-rated to revalidate; the Windows claim is not reproducible from the PR branch until this guard is committed to it (upstream-visible -- needs Jeff's decision).
+
+## Validation 2026-06-09 (windows-gfx1201) -- INTEGRITY GAP CLOSED, COMPLETED (129/131)
+
+The compile_module.cpp Windows guard is now COMMITTED to the PR branch, so the
+2026-06-08 integrity gap above is CLOSED. Jeff approved the upstream push;
+committed and pushed to jeffdaily/arrayfire moat-port (fast-forward, updates the
+open upstream PR #3708).
+
+Fork commit: a464f0972796f8aa5f6dd66c58d8543aa1eb376f
+  [ROCm] Guard POSIX dir handling for Windows in compile_module
+  (parent 62f0a39 == prior PR head). Exactly one file changed:
+  src/backend/hip/compile_module.cpp (+18). The vcpkg.json change was
+  intentionally EXCLUDED (out of scope; touches the validated Linux dependency
+  surface).
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4, wave32), HIP_VISIBLE_DEVICES=0
+(device 0 per hipInfo gcnArchName=gfx1201). ROCm/TheRock 7.14 venv.
+
+CLEAN-TREE BUILD (integrity gate -- PASSED): from the committed branch with ZERO
+uncommitted edits (`git status --porcelain` empty). Build succeeded 563/563 with
+NO manual source edits. The earlier "cannot find ROCm device library" and
+device-math (powf/min/fmaf/sincos/sqrtf) errors were a TOOLCHAIN-ENV problem, not
+a source defect: an inherited `ROCM_PATH=_rocm_sdk_devel` (root) pointed clang at
+a dir lacking amdgcn/bitcode (it lives under lib/llvm), and overriding it to
+lib/llvm then broke clang's HIP math-header auto-resolution. Correct env: leave
+ROCM_PATH and HIP_PATH UNSET so clang auto-detects the SDK from its own
+lib/llvm/bin location; both the device bitcode and the HIP math wrappers then
+resolve. Build env (unset ROCM_PATH/HIP_PATH):
+```bash
+ROCM_DEVEL=".../_rocm_sdk_devel"
+unset ROCM_PATH HIP_PATH
+export PATH="${ROCM_DEVEL}/bin:${ROCM_DEVEL}/lib/llvm/bin:${PATH}"
+export HIP_VISIBLE_DEVICES=0
+cmake --build projects/arrayfire/src/build-gfx1201 -j24
+```
+(build dir already configured: gfx1201, all-clang clang.exe/clang++.exe,
+-DVCPKG_MANIFEST_INSTALL=OFF reusing existing vcpkg_installed, pre-cloned
+googletest v1.16.0 under extern/googletest-src.)
+
+Test env (note ROCBLAS_USE_HIPBLASLT=0 -- see below):
+```bash
+BUILD_BIN=".../build-gfx1201/bin"
+ROCM_LIBS=".../_rocm_sdk_libraries"
+export HIP_VISIBLE_DEVICES=0
+export ROCM_KPACK_PATH="${ROCM_LIBS}/.kpack/blas_lib_gfx1201.kpack"
+export ROCBLAS_TENSILE_LIBPATH="${ROCM_LIBS}/bin/rocblas/library"
+export ROCBLAS_USE_HIPBLASLT=0
+export PATH="${BUILD_BIN}:${ROCM_LIBS}/bin:${ROCM_DEVEL}/bin:${PATH}"
+ctest --test-dir projects/arrayfire/src/build-gfx1201 -R "cuda" -j1
+```
+RESULT: 129/131 PASS (98%). Total 573s.
+
+ROCBLAS_USE_HIPBLASLT=0 WAS needed: the TheRock 7.14 venv now has a hipBLASLt FP8
+GEMM regression (SIGSEGV in hipblaslt_f8::is_inf) introduced AFTER the original
+2026-06-07 128/131 run. arrayfire uses hipBLASLt/rocBLAS GEMM heavily; setting
+ROCBLAS_USE_HIPBLASLT=0 routes GEMM through rocBLAS Tensile and avoids the crash.
+With it set, all GEMM-heavy suites (blas, cholesky_dense, svd_dense, lu, solve,
+sparse_blas) PASS and the log shows NO hipblaslt_f8/is_inf strings.
+
+The 2 failures are the known non-port residuals (improvement over 128/131:
+test_threading_cuda now PASSES in 8.3s -- routing GEMM off hipBLASLt removed the
+slow path that previously hit CTest's 900s timeout):
+1. test_confidence_connected_cuda: AF_WITH_IMAGEIO=OFF (no FreeImage on Windows).
+2. test_sparse_arith_cuda (SEGFAULT): Windows rocsparse csrgeam2 crash; log stack
+   confirmed rocsparse_csrgeam_nnz -> hipsparseXcsrgeam2Nnz. NOT a port defect.
+
+INTEGRITY: the Windows guard is now in the PR branch (a464f0972) and the Windows
+validation is reproducible from the committed tree -- the gap is closed.
