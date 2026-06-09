@@ -749,3 +749,108 @@ utils/timeit.sh, to certify the commit that was actually pushed:
   -7.91 (0.73 A). All -8.3-class, all 10/10 runs in one cluster, no NaN/fault.
 
 Fork moat-port HEAD after push: f01306b.
+
+## Revalidation 2026-06-09 (windows-gfx1201, ROCm 7.14) -- f01306b -> c2f2f6f
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), ROCm 7.14 (TheRock PyTorch
+venv), Windows 11 Pro for Workstations 10.0.26200. HIP_VISIBLE_DEVICES=0. warpSize=32.
+
+### Delta from prior validated sha (221e2d4 -> f01306b)
+
+3 files changed: cuda/kernels.cu (+164 lines), Makefile.Hip (+13), host/src/performdocking.cpp (+8).
+The change adds: (1) the rocWMMA CDNA MFMA tensor reduction branch (3d466a4) and
+(2) the RDNA bf16 error correction tensor reduction branch for gfx11+/wave32 (f01306b).
+Both are #ifdef USE_NVTENSOR gated; the default TENSOR=OFF build is unaffected.
+
+### Windows source fix required for TENSOR=ON (committed as c2f2f6f)
+
+rocWMMA's `float8.hpp` defines `numeric_limits<hip_fp8_e4m3>::min()` and `::max()`
+static methods. On Windows, the HIP device compiler includes Windows SDK headers as
+part of startup (triggered by `-D_AMD64_`), which defines `min` and `max` as macros
+via `windows.h`. These macros break the `float8.hpp` method definitions with
+"too few arguments provided to function-like macro invocation" errors.
+
+Fix: add `#ifdef min / #undef min / #endif` and `#ifdef max / #undef max / #endif`
+guards immediately before the `<rocwmma/rocwmma.hpp>` include in kernels.cu. The
+undefs are inside `#if defined(__HIP_PLATFORM_AMD__)` (already gated) and are no-ops
+on Linux. Committed as c2f2f6f on top of f01306b; pushed to fork moat-port.
+
+The TENSOR=OFF default build is unaffected (the entire block is inside #ifdef USE_NVTENSOR).
+
+### Build commands (Windows, direct compiler invocation, gfx1201)
+
+```
+SITE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+HIPCC=$SITE/_rocm_sdk_devel/bin/hipcc.exe
+CXX=$SITE/_rocm_sdk_devel/lib/llvm/bin/clang++.exe
+ROCM_INC=$SITE/_rocm_sdk_devel/include
+ROCM_LIB=$SITE/_rocm_sdk_devel/lib
+SRC=B:/develop/moat/projects/AutoDock-GPU/src
+IFLAGS="-I$SRC/common -I$SRC/host/inc -I$SRC/cuda -I$ROCM_INC"
+HOST_DEFS="-DUSE_HIP -D__HIP_PLATFORM_AMD__ -D_AMD64_ -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS"
+VERSION=$(git -C "$SRC" rev-parse --short HEAD)
+VERSION_DEF="-DVERSION=\"$VERSION\""
+
+# Kernel TU (TENSOR=OFF)
+$HIPCC -DN64WI --offload-arch=gfx1201 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP $VERSION_DEF $IFLAGS \
+  -c $SRC/cuda/kernels.cu -o $SRC/kernels_64wi_off_gfx1201.obj
+
+# Kernel TU (TENSOR=ON) -- rocWMMA RDNA bf16 path
+$HIPCC -DN64WI --offload-arch=gfx1201 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP -DUSE_NVTENSOR $VERSION_DEF $IFLAGS \
+  -c $SRC/cuda/kernels.cu -o $SRC/kernels_64wi_on_gfx1201.obj
+# (repeat with -DN128WI for 128wi variants)
+
+# Host .cpp files
+for cpp in $SRC/host/src/*.cpp; do
+    base=$(basename $cpp .cpp)
+    $CXX -std=c++17 $IFLAGS $HOST_DEFS -O3 -DN64WI -DGPU_DEVICE $VERSION_DEF \
+        -c $cpp -o $SRC/${base}_gfx1201.obj
+done
+
+# Link
+$CXX $SRC/{calcenergy,getparameters,main,miscellaneous,performdocking,processgrid,processligand,processresult,setup}_gfx1201.obj \
+  $SRC/kernels_64wi_off_gfx1201.obj -L$ROCM_LIB -lamdhip64 \
+  -o $SRC/bin/autodock_gpu_64wi_gfx1201.exe
+```
+
+All 4 variants (64wi/128wi x TENSOR=OFF/ON) built cleanly at c2f2f6f (pre-existing
+warnings only: nodiscard on hipDeviceReset, strncpy/stricmp deprecation,
+INFINITY undefined-behavior under -ffast-math, amdgpu occupancy target).
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+TENSOR=OFF (default build):
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.39 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.32 kcal/mol      | 0.43 A                   | 1, 10/10 runs |
+
+TENSOR=ON (new RDNA bf16 error-correction path, rocWMMA WMMA v_wmma_f32_16x16x16_bf16):
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.29 kcal/mol      | 0.38 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.38 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.29 kcal/mol      | 0.39 A                   | 1, 10/10 runs |
+
+Reference (wave64, gfx90a lead):
+
+| build / seed     | best binding energy | best-pose reference RMSD |
+|------------------|---------------------|--------------------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.48 A                   |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.37 A                   |
+| 128wi / seed 42  | -8.33 kcal/mol      | 0.39 A                   |
+
+All 6 cases: all 10 runs converge to a single cluster; best energies match the
+gfx90a lead within 0.05 kcal/mol; best-pose reference RMSD sub-0.6 A in all cases.
+No NaN, no HIP fault, clean exit. TENSOR=ON and TENSOR=OFF results agree within
+0.01 kcal/mol (64wi) and 0.03 kcal/mol (128wi) -- the new RDNA bf16 path is
+numerically correct; it does not produce the ~+1e8 garbage that the broken CDNA-only
+path produced on RDNA before this fix.
+
+PASS: gfx1201 (RDNA4, wave32) TENSOR=OFF and TENSOR=ON both correct at c2f2f6f.
+Fork moat-port HEAD after push: c2f2f6f.

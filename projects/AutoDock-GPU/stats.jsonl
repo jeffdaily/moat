@@ -37,3 +37,7 @@
 {"kind":"phase","ts":"2026-06-09T15:25:42Z","phase":"compile","seconds":16.206,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-09T15:25:58Z","phase":"compile","seconds":16.143,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=128 HIP_ARCH=gfx1100"}
 {"kind": "tokens", "ts": "2026-06-09T15:30:11Z", "tokens": 92903, "source": "porter (RDNA TENSOR=ON bf16 emulation)"}
+{"kind": "tokens", "ts": "2026-06-07T04:08:28Z", "tokens": 62154, "source": "validator"}
+{"kind":"phase","ts":"2026-06-09T18:56:42Z","phase":"compile","seconds":10.354,"exit":1,"cmd":"bash agent_space/build_autodock_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-09T18:57:34Z","phase":"compile","seconds":8.831,"exit":1,"cmd":"bash agent_space/build_autodock_gfx1201.sh"}
+{"kind":"phase","ts":"2026-06-09T19:06:52Z","phase":"test","seconds":3.902,"exit":0,"cmd":"bash agent_space/run_autodock_tests_gfx1201.sh"}
