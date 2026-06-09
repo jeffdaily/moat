@@ -372,3 +372,16 @@ Verdict: CHANGES REQUESTED. Gate items 1-6 under #if defined(USE_HIP) (CUDA keep
 the upstream form) so USE_HIP=OFF is byte-identical to upstream; do all gating in
 one pass. Item 7 is the reviewer's call (acceptable as-is). The wave64 KEEP set is
 the only intended shared change and is correctly disclosed in the PR body.
+
+## Gating fix -- CUDA byte-identical 2026-06-09
+
+A review (after jeff caught convert->convertGpuMat) found SIX ungated CUDA-path changes,
+not the one claimed: (1) convert->convertGpuMat; (2) getOutputMat default silently
+allocates instead of CV_Error; (3) getInputMat/convert error-text + a new else CV_Error;
+(4) CUDA_CHECK rewritten single-eval vs upstream 3x-textual; (5) computePatchSIFT launch
+explicit PtrStepSz; (6) device_buffer stray <opencv2/core/cuda.hpp> include. All 6 gated
+under #if USE_HIP (CUDA #else restored to base byte-for-byte, unifdef-verified; HIP-active
+source unchanged). README: dropped "alternative to the CUDA Toolkit". gfx90a rebuilt +
+tested 44/44. Carried all 3 platforms forward (HIP-inert: HIP binaries unchanged).
+Re-squashed to ONE commit eacf58d0 on base 761db2be; CUDA build now byte-identical to
+upstream. pr-ready=True. NEXT: re-present PR at the gate.

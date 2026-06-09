@@ -40,3 +40,7 @@
 {"kind":"phase","ts":"2026-06-08T17:09:57Z","phase":"compile","seconds":2.323,"exit":1,"cmd":"bash -c cmake -S /tmp/cef-gfx1100-old -B /tmp/cef-gfx1100-old-build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -DBUILD_TESTS=ON -DBUILD_SAMPLES=OFF -DCMAKE_BUILD_TYPE=Release 2>&1 && cmake --build /tmp/cef-gfx1100-old-build -j16 2>&1"}
 {"kind": "tokens", "ts": "2026-06-08T17:12:31Z", "tokens": 29264, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T15:32:02Z", "tokens": 34046, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-09T21:50:52Z", "tokens": 89565, "source": "reviewer (ungated CUDA-path audit: found 6 ungated changes + 1 borderline; jargon clean)"}
+{"kind":"phase","ts":"2026-06-09T22:00:17Z","phase":"compile","seconds":16.741,"exit":0,"cmd":"cmake --build projects/cuda-efficient-features/src/build -j8"}
+{"kind":"phase","ts":"2026-06-09T22:00:52Z","phase":"test","seconds":26.256,"exit":0,"cmd":"./projects/cuda-efficient-features/src/build/tests/tests"}
+{"kind": "tokens", "ts": "2026-06-09T22:07:26Z", "tokens": 91677, "source": "porter (gate 6 ungated CUDA-path changes -> CUDA byte-identical to base; gfx90a 44/44)"}

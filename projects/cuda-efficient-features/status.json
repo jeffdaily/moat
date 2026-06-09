@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-09T21:07:23Z",
-  "head_sha": "c9b32fb2bb2fca9b70b275cb64484340dbf4527e",
+  "updated_at": "2026-06-09T22:07:27Z",
+  "head_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c9b32fb2bb2fca9b70b275cb64484340dbf4527e",
+      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
       "started_at": "2026-06-05T08:23:04Z",
-      "completed_at": "2026-06-08T15:29:05Z",
-      "updated_at": "2026-06-09T21:07:23Z",
+      "completed_at": "2026-06-09T22:07:26Z",
+      "updated_at": "2026-06-09T22:07:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,22 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "ebf2595",
-        "to": "e5efd5094ac708a3e51ada79d3cc64b5d3620000",
+        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T21:06:15Z"
+        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
+        "at": "2026-06-09T22:07:26Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c9b32fb2bb2fca9b70b275cb64484340dbf4527e",
+      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
       "started_at": null,
-      "completed_at": "2026-06-08T17:11:16Z",
-      "updated_at": "2026-06-09T21:07:23Z",
+      "completed_at": "2026-06-09T22:07:26Z",
+      "updated_at": "2026-06-09T22:07:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -65,12 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "ebf2595",
-        "to": "e5efd5094ac708a3e51ada79d3cc64b5d3620000",
+        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T21:06:15Z"
+        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
+        "at": "2026-06-09T22:07:26Z"
       }
     },
     "windows-gfx1101": {
@@ -99,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c9b32fb2bb2fca9b70b275cb64484340dbf4527e",
+      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
       "started_at": null,
-      "completed_at": "2026-06-08T14:54:15Z",
-      "updated_at": "2026-06-09T21:07:23Z",
+      "completed_at": "2026-06-09T22:07:26Z",
+      "updated_at": "2026-06-09T22:07:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -117,12 +113,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "from": "ebf2595",
-        "to": "e5efd5094ac708a3e51ada79d3cc64b5d3620000",
+        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
         "method": "source-class",
-        "class": "doc-only",
-        "detail": "no changes",
-        "at": "2026-06-09T21:06:15Z"
+        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
+        "at": "2026-06-09T22:07:26Z"
       }
     },
     "windows-gfx1151": {
