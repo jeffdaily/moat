@@ -385,3 +385,19 @@ source unchanged). README: dropped "alternative to the CUDA Toolkit". gfx90a reb
 tested 44/44. Carried all 3 platforms forward (HIP-inert: HIP binaries unchanged).
 Re-squashed to ONE commit eacf58d0 on base 761db2be; CUDA build now byte-identical to
 upstream. pr-ready=True. NEXT: re-present PR at the gate.
+
+## Include-path shadowing refactor 2026-06-09 (re-squashed)
+
+Per jeff: converted the ~18 #ifdef-guarded relative hip_compat includes to bare
+<opencv2/core/*.hpp> (resolved to the hip_compat shim via the already-present include
+path on HIP, real header on CUDA). 16 files, +14/-56. 6 #ifdef blocks fully removed
+(incl. the two PUBLIC headers -- fixes the ugly ../src/hip_compat path + post-install
+correctness). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (device ISA +
+exports): build-system-only (header resolution), HIP device code unchanged -> carried
+all 3 forward binary-equiv (VERIFIED via codeobj_diff, not assumed -- applying the
+catboost follower-revalidation lesson; here it's provably inert so carry-forward is
+correct). CUDA byte-identity STRICTLY BETTER: the refactor removed a spurious
+cuda_stream_accessor.hpp that the gating had added to cuda_bad.cu's CUDA branch.
+Re-squashed to ONE commit 1e857340 on base 761db2be (24 files +1215/-55). gfx90a 43/44
+on this host's current ROCm is a pre-existing hipBLAS precision drift (identical at the
+eacf58d0 baseline; not the refactor; historical 44/44 at ROCm 7.2.1). 0 jargon. pr-ready=True.

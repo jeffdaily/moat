@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-09T22:07:27Z",
-  "head_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
+  "updated_at": "2026-06-09T23:08:02Z",
+  "head_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
+      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
       "started_at": "2026-06-05T08:23:04Z",
-      "completed_at": "2026-06-09T22:07:26Z",
-      "updated_at": "2026-06-09T22:07:27Z",
+      "completed_at": "2026-06-09T23:07:35Z",
+      "updated_at": "2026-06-09T23:08:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
-        "method": "source-class",
-        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
-        "at": "2026-06-09T22:07:26Z"
+        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
+        "method": "binary-equiv",
+        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
+        "at": "2026-06-09T23:07:35Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
+      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
       "started_at": null,
-      "completed_at": "2026-06-09T22:07:26Z",
-      "updated_at": "2026-06-09T22:07:27Z",
+      "completed_at": "2026-06-09T23:07:35Z",
+      "updated_at": "2026-06-09T23:08:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
-        "method": "source-class",
-        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
-        "at": "2026-06-09T22:07:26Z"
+        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
+        "method": "binary-equiv",
+        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
+        "at": "2026-06-09T23:07:35Z"
       }
     },
     "windows-gfx1101": {
@@ -95,10 +95,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "eacf58d0e2f94ff5d4eefec1ef018399330913dc",
+      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
       "started_at": null,
-      "completed_at": "2026-06-09T22:07:26Z",
-      "updated_at": "2026-06-09T22:07:27Z",
+      "completed_at": "2026-06-09T23:07:35Z",
+      "updated_at": "2026-06-09T23:08:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -113,10 +113,10 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "12fa78b8c22285354c7342b8224bbc2ffb0aeb7a",
-        "method": "source-class",
-        "detail": "Gating: 6 ungated CUDA-path edits wrapped in #if USE_HIP (CUDA #else restored to base byte-for-byte; unifdef-verified) + README doc. HIP-inert: HIP-active source byte-identical pre/post; gfx90a rebuil",
-        "at": "2026-06-09T22:07:26Z"
+        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
+        "method": "binary-equiv",
+        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
+        "at": "2026-06-09T23:07:35Z"
       }
     },
     "windows-gfx1151": {
