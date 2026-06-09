@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-09T14:35:12Z",
-  "head_sha": "3d466a41a2e59ca0403544aa01df5491803e4562",
+  "updated_at": "2026-06-09T15:30:46Z",
+  "head_sha": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d466a41a2e59ca0403544aa01df5491803e4562",
+      "validated_sha": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": "2026-06-09T14:25:47Z",
-      "updated_at": "2026-06-09T14:25:47Z",
+      "completed_at": "2026-06-09T15:30:46Z",
+      "updated_at": "2026-06-09T15:30:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "porter",
+      "carry_forward": {
+        "to": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
+        "method": "binary-equiv",
+        "detail": "CDNA __GFX9__ MFMA path byte-identical across 3d466a4->f01306b (codeobj_diff identical, 14 exports); RDNA bf16 path is gfx11-only, never compiled for gfx90a",
+        "at": "2026-06-09T15:30:46Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d466a41a2e59ca0403544aa01df5491803e4562",
+      "validated_sha": "f01306ba8664d97e9ba3966c9cda75b6cf9637f4",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-06-09T14:35:12Z",
-      "updated_at": "2026-06-09T14:35:12Z",
+      "completed_at": "2026-06-09T15:30:46Z",
+      "updated_at": "2026-06-09T15:30:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,13 +60,7 @@
         "first_session_at": "2026-05-30T07:18:00Z",
         "last_session_at": "2026-05-30T07:35:00Z"
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "3d466a41a2e59ca0403544aa01df5491803e4562",
-        "method": "binary-equiv",
-        "detail": "TENSOR=ON code is #ifdef USE_NVTENSOR-gated; default TENSOR=OFF build for gfx1100 produces identical device ISA and exported symbols (codeobj_diff verdict=identical on 64wi binary; TENSOR=ON on RDNA d",
-        "at": "2026-06-09T14:35:12Z"
-      }
+      "last_agent": "validator"
     },
     "windows-gfx1101": {
       "state": "revalidate",

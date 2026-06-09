@@ -36,3 +36,4 @@
 {"kind":"phase","ts":"2026-06-09T15:25:26Z","phase":"compile","seconds":19.680,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=128 TENSOR=ON HIP_ARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-09T15:25:42Z","phase":"compile","seconds":16.206,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-09T15:25:58Z","phase":"compile","seconds":16.143,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=128 HIP_ARCH=gfx1100"}
+{"kind": "tokens", "ts": "2026-06-09T15:30:11Z", "tokens": 92903, "source": "porter (RDNA TENSOR=ON bf16 emulation)"}
