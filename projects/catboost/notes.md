@@ -785,3 +785,26 @@ presumably does not run these GPU uts or they would already be red):
    radix sort path (temp-size query uses SortKeys sizing for a SortPairs Run; and the
    full-range copy-back propagates undefined gap elements) -- rocPRIM-specific symptom but the
    keys-vs-pairs sizing mismatch is a latent CUB-contract issue.
+
+## Gated GPU-bug fixes (plain-revert broke catboost's own tests) 2026-06-09
+
+Tried to plain-revert the 4 bundled GPU-bug fixes per the minimal-port goal, but
+catboost's OWN GPU tests EXERCISE these bugs and FAILED on gfx90a (BinBuilderTest
+gpuBin!=cpuBin from the ui32 shift overflow; TExactLeavesEstimation 10/15 fail;
+TPointwiseMultiStatHistogram SIGFPE from the empty-grid div-by-zero). Plain-revert
+was therefore impossible (it broke the HIP build's own validation). Resolution: GATE
+each fix behind #if USE_HIP -- CUDA path byte-identical to base (unifdef-verified),
+HIP path keeps the validated fix. Fixed the CB_FULL_WARP_MASK CUDA-build break (moved
+the guarded def to new library/cpp/cuda/wrappers/warp_mask.cuh, included on both
+paths; clang++ -E proves CUDA gets 0xffffffffu = the original literal). Scrubbed
+MPPI/gpuRIR. Re-validated gfx90a: cuda_util 48/48, gpu_data 20/20, methods 29/30 (the
+1 = pre-existing all-platform TAddingLangevinNoiseTest), e2e AUC bit-identical to the
+baseline. Re-squashed to ONE commit 2439225f on base a691fb75 (84 files +1143/-181);
+all 5 platforms carried forward. CUDA byte-identical; my final jargon grep = 0. pr-ready=True.
+
+4 upstream-issue follow-ups (file AFTER the PR opens): (1) split.cu one-hot shift
+overflow; (2) exact_estimation quantile leaf-count bound + leading-empties; (3)
+greedy_subsets histogram empty-grid div-by-zero; (4) segmented_sort SortPairs sizing.
+
+GOTCHA: catboost clone has REVERSED remotes (origin=upstream catboost/catboost,
+jeffdaily=the fork). Push to 'jeffdaily', NOT 'origin' (origin push 403s on upstream).
