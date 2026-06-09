@@ -29,3 +29,4 @@
 {"kind":"phase","ts":"2026-06-09T14:34:19Z","phase":"compile","seconds":16.207,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/agent_space/AutoDock-GPU-gfx1100-gpu0/src-old DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-09T14:34:46Z","phase":"compile","seconds":16.234,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/agent_space/AutoDock-GPU-gfx1100-gpu0/src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
 {"kind": "tokens", "ts": "2026-06-09T14:36:21Z", "tokens": 45651, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-09T14:59:56Z", "tokens": 97447, "source": "validator (TENSOR=ON gfx1100 investigation)"}
