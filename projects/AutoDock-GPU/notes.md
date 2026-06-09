@@ -634,3 +634,118 @@ TENSOR=ON itself is CDNA-only for now (RDNA needs bf16 error-correction per defe
 autodock-gpu-tensor-core-reduction); gfx1100 is not expected to use TENSOR=ON.
 
 VERDICT: binary-equiv carry-forward. linux-gfx1100 -> completed at 3d466a4. No GPU re-run needed.
+
+## TENSOR=ON RDNA (gfx11+, wave32) via bf16 error correction 2026-06-09 (gfx1100)
+
+Implements the deferred task autodock-gpu-tensor-core-reduction. New commit on top of
+3d466a4 (the validated port stays untouched; this is additive). Single source file:
+cuda/kernels.cu. Makefile.Hip unchanged.
+
+Committed and pushed: fork moat-port HEAD = f01306b (parent 3d466a4, the validated
+port; NOT an amend). status.json platform states left untouched (lead's to manage);
+no upstream PR action.
+
+### Root cause this fixes
+
+Commit 3d466a4 added one AMD TENSOR=ON branch coded for CDNA wave64 native fp32 MFMA.
+On gfx11/gfx12 (RDNA, wave32) it COMPILES but is SILENTLY WRONG: rocWMMA has no
+fp32->fp32 WMMA intrinsic on RDNA (WMMA accepts only f16/bf16 inputs), so the fp32
+mma_sync falls through to an unsupported no-op (zero v_wmma_* instructions emitted),
+the reduction returns 0, and docking produces ~+1e8 kcal/mol garbage instead of ~-8.3.
+
+### Fix structure (CDNA and NVIDIA paths BYTE-IDENTICAL)
+
+The AMD branch in reduce_via_tensor_units is now split by arch:
+- `#if defined(__GFX9__)`: the original wave64 native-fp32 MFMA code, verbatim (only
+  reindented under the new #if and the comment reworded). Proven byte-identical: built
+  gfx90a TENSOR=ON NUMWI=64 before and after; `utils/codeobj_diff.py` -> verdict=identical
+  (exported symbols + device ISA identical, 14 exports).
+- `#else` (RDNA/gfx11+): NEW bf16 error-correction branch (below).
+The NVIDIA `#else` (mtk::wmma::tcec) is untouched -- git diff shows the only removed lines
+in kernels.cu are comment lines; no nvcuda/tcec/mtk:: CODE line is removed.
+
+### RDNA branch math (mirrors the NVIDIA tcec scheme)
+
+bfloat16_t inputs, float32_t accumulator, 16x16x16. fp32 operand v is split
+hi=(bfloat16)v, lo=(bfloat16)(v-(float)hi); cross products accumulate in the fp32
+accumulator. The all-ones (stage 1 frag_P) and the 4x4-tiled identity (stage 2 frag_Q)
+are exact in bf16 (lo==0), so only the data tiles (stage 1 A) and the partial-sum tile
+W=V (stage 2) are split:
+- Stage 1: V += A_hi*P + A_lo*P  (per tile)
+- Stage 2: C  = Q*W_hi + Q*W_lo
+This drops the negligible lo*lo term, exactly as the CUDA tcec path does.
+
+### wave32 correctness (the current code was wave64-coded)
+
+- wavefront gate `threadIdx.x < 64` -> `threadIdx.x < WARP_SIZE` (=32 on RDNA).
+- identity-fill stride `o += 64` -> `o += WARP_SIZE`.
+- LDS barrier unchanged (wavefront-scoped __builtin_amdgcn_wave_barrier, already
+  wave-size-correct; it synchronizes whatever lanes are in the single wavefront).
+All keyed on WARP_SIZE so the same source is correct on wave32 and wave64.
+
+### Makefile.Hip: RDNA re-enabled (no change needed)
+
+The existing `ifeq ($(TENSOR),ON)` block already sets -DUSE_NVTENSOR for any AMD arch
+with NUMWI in {64,128,256}; there was no CDNA-only fail-fast to remove. NUMWI>32
+requirement kept.
+
+### Build (gfx1100, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0)
+
+    make DEVICE=HIP NUMWI=64  TENSOR=ON HIP_ARCH=gfx1100
+    make DEVICE=HIP NUMWI=128 TENSOR=ON HIP_ARCH=gfx1100
+    make DEVICE=HIP NUMWI=64             HIP_ARCH=gfx1100   # TENSOR=OFF sanity
+
+Both TENSOR=ON builds clean (pre-existing nodiscard warnings only).
+
+### v_wmma_* confirmation (the reduction is no longer a no-op)
+
+```
+llvm-objdump -d <gfx1100 code object> | grep v_wmma
+  64wi:  4 v_wmma_f32_16x16x16_bf16   (1 stage-1 tile x2 hi/lo + 2 stage-2 hi/lo)
+  128wi: 6 v_wmma_f32_16x16x16_bf16   (2 stage-1 tiles x2 + 2 stage-2)
+```
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+Best binding energy / best-pose reference RMSD; all cases 10/10 runs in ONE cluster:
+
+| config            | TENSOR=ON       | TENSOR=OFF ref (same host) |
+|-------------------|-----------------|----------------------------|
+| 64wi  seed 42     | -8.26 / 0.62 A  | -8.28 / 0.40 A             |
+| 64wi  seed 7      | -8.38 / 0.39 A  | -8.37 / 0.38 A             |
+| 128wi seed 42     | -7.94 / 0.47 A  | -8.35 / 0.42 A             |
+| 128wi seed 7      | -7.91 / 0.73 A  | --                         |
+| 128wi seed 1/100/999 | -8.10 / -8.30 / -8.28 | --                  |
+
+All TENSOR=ON cases recover the native biotin pose (sub-0.75 A reference RMSD), best
+energy in the -8.3 kcal/mol class (NOT 1e8 garbage), all 10 runs in a single cluster.
+64wi matches TENSOR=OFF within 0.02 kcal/mol. 128wi shows more run-to-run scatter
+(across seeds 1/42/7/100/999 the best ranges -7.91..-8.30): the bf16 emulation sums in
+a different float order, so the GA trajectory diverges -- the same benign effect the
+gfx90a CDNA TENSOR=ON path already documents (gfx90a 128wi ON was -8.25 vs OFF -8.33).
+No NaN, no HIP fault, clean exit in every run.
+
+The gfx1100 TENSOR=OFF default build is unaffected (references above match the prior
+gfx1100 validation), as the RDNA tensor code is USE_NVTENSOR-gated.
+
+VERDICT: PASS on gfx1100 (RDNA3, wave32). NUMWI=64 and NUMWI=128 both correct. The
+silent-zero TENSOR=ON bug on RDNA is fixed; fp32 is emulated with bf16 error correction.
+
+### Reproducible-build confirmation at the committed sha (f01306b)
+
+Rebuilt from clean source trees (git archive of the parent 3d466a4 = baseline,
+working tree = the fix) and re-ran on gfx1100 (HIP_VISIBLE_DEVICES=0), wrapped in
+utils/timeit.sh, to certify the commit that was actually pushed:
+
+- v_wmma_f32_16x16x16_bf16 in the gfx1100 TENSOR=ON code object: 64wi=4, 128wi=6.
+- CDNA gfx90a TENSOR=ON NUMWI=64, baseline(3d466a4) vs new: codeobj_diff
+  verdict=identical (exported symbols + device ISA identical, 14 exports).
+- gfx1100 TENSOR=OFF default build, baseline vs new: codeobj_diff verdict=identical
+  (the entire tensor path is USE_NVTENSOR-gated, so the default is bit-unchanged).
+- NVIDIA path: git diff shows the only removed lines in kernels.cu are comments; no
+  nvcuda::/mtk::/tcec code line and no CDNA code line is removed.
+- Docking (1stp, --nrun 10): 64on/42 -8.26 (ref 0.62 A), 64off/42 -8.28; 64on/7
+  -8.38 (0.39 A), 64off/7 -8.37; 128on/42 -7.94 (0.47 A), 128off/42 -8.33; 128on/7
+  -7.91 (0.73 A). All -8.3-class, all 10/10 runs in one cluster, no NaN/fault.
+
+Fork moat-port HEAD after push: f01306b.

@@ -30,3 +30,9 @@
 {"kind":"phase","ts":"2026-06-09T14:34:46Z","phase":"compile","seconds":16.234,"exit":0,"cmd":"make -C /var/lib/jenkins/moat/agent_space/AutoDock-GPU-gfx1100-gpu0/src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
 {"kind": "tokens", "ts": "2026-06-09T14:36:21Z", "tokens": 45651, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-09T14:59:56Z", "tokens": 97447, "source": "validator (TENSOR=ON gfx1100 investigation)"}
+{"kind":"phase","ts":"2026-06-09T15:23:25Z","phase":"compile","seconds":19.691,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-baseline DEVICE=HIP NUMWI=64 TENSOR=ON HIP_ARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-09T15:23:50Z","phase":"compile","seconds":19.774,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=64 TENSOR=ON HIP_ARCH=gfx90a"}
+{"kind":"phase","ts":"2026-06-09T15:24:56Z","phase":"compile","seconds":19.740,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=64 TENSOR=ON HIP_ARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-09T15:25:26Z","phase":"compile","seconds":19.680,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=128 TENSOR=ON HIP_ARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-09T15:25:42Z","phase":"compile","seconds":16.206,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100"}
+{"kind":"phase","ts":"2026-06-09T15:25:58Z","phase":"compile","seconds":16.143,"exit":0,"cmd":"make -C agent_space/adgpu_tensor_rdna/src-new DEVICE=HIP NUMWI=128 HIP_ARCH=gfx1100"}
