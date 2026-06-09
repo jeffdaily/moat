@@ -55,3 +55,5 @@
 {"kind":"phase","ts":"2026-06-08T23:59:03Z","phase":"compile","seconds":1181.139,"exit":0,"cmd":"bash /d/develop/moat/agent_space/foldmason_gfx1151_build.sh"}
 {"kind":"phase","ts":"2026-06-09T00:15:35Z","phase":"test","seconds":930.677,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
 {"kind":"phase","ts":"2026-06-09T00:31:02Z","phase":"test","seconds":891.433,"exit":127,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind":"phase","ts":"2026-06-09T00:50:18Z","phase":"test","seconds":7924.895,"exit":1,"cmd":"bash /d/develop/moat/agent_space/foldmason_validate_gfx1151.sh"}
+{"kind": "tokens", "ts": "2026-06-09T00:50:48Z", "tokens": 235097, "source": "validator"}
