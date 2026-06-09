@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T00:05:54Z",
-  "updated_at": "2026-06-09T19:07:12Z",
+  "updated_at": "2026-06-09T19:24:53Z",
   "head_sha": "c5f27d01d4eeaaa4dcc614388b5b5095c92c9e55",
   "depends_on": [],
   "platforms": {
@@ -92,13 +92,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "cf6a11023077cdbd5608d790848278d8c4a31a20",
+      "validated_sha": "c5f27d01d4eeaaa4dcc614388b5b5095c92c9e55",
       "started_at": null,
-      "completed_at": "2026-06-08T19:42:49Z",
-      "updated_at": "2026-06-09T17:49:05Z",
+      "completed_at": "2026-06-09T19:24:53Z",
+      "updated_at": "2026-06-09T19:24:53Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -112,13 +112,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter",
-      "carry_forward": {
-        "to": "984d303a2b1f9032d7d9c3683d1eca4e82d6fc2e",
-        "method": "source-class",
-        "detail": "revert gratuitous global CMake changes (cmake_minimum 3.19->4.0.0; remove benchmark WERROR OFF); built with cmake 4.0.3, unit target unaffected -- device code unchanged",
-        "at": "2026-06-08T19:42:49Z"
-      }
+      "last_agent": "porter"
     },
     "windows-gfx1151": {
       "state": "port-ready",

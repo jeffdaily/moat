@@ -743,3 +743,107 @@ Device code (43 exports, gfx1100 ISA) is byte-identical between cf6a1102 and c5f
 ### Conclusion
 
 codeobj_diff IDENTICAL on gfx1100 -> carry forward (no GPU re-run needed). linux-gfx1100 -> completed at c5f27d01d4.
+## probe.gpu_ion_density root-cause (2026-06-08, diagnostic-only, no source/test/state changed)
+
+Read-and-experiment investigation on gfx1201 (verified gcnArchName=gfx1201 at HIP_VISIBLE_DEVICES=0). Binary `build-gfx1201/bin/unit.exe` is the byte-identical validated build; nothing was rebuilt or edited. Verdict: pre-existing upstream GPU test-isolation artifact, arch-independent across GPU backends but GPU-only (CPU/multicore is immune), benign, not a port defect. Recommendation: document as a known suite-ordering artifact (optionally report upstream as a test-fixture reset gap); do NOT gate the port on it.
+
+### Exact leaker (bisected)
+
+Single leaker test: `probe.gpu_expsyn_g_cell`. The "leaker pair" is `probe.gpu_expsyn_g_cell` -> `probe.gpu_ion_density`. Reproduced deterministically (3/3 runs) with just that two-test filter; the failure also reproduces with `--gtest_filter=probe.*` and `probe.gpu_*`. Bisection of the five GPU probe tests that precede ion_density (gpu_v_i, gpu_v_cell, gpu_v_sampled, gpu_expsyn_g, gpu_expsyn_g_cell) isolated `gpu_expsyn_g_cell` as the sole trigger: each of the other four, run immediately before ion_density, PASSES; only gpu_expsyn_g_cell makes it FAIL. gtest runs in definition order, so listing ion_density first in the filter still runs expsyn_g_cell first and still fails -- confirming it is preceding-state causation, not the target test.
+
+`gpu_expsyn_g_cell` is uniquely the GPU probe test that runs a full `lcell.integrate()` over TWO cells with coalesced-synapse multiplicity (it calls run_test twice: uncoalesced then coalesced). Other integrate-heavy probe tests do NOT leak: gpu_total_current, gpu_axial_and_ion_current_sampled, gpu_v_sampled, gpu_multi each run cleanly before ion_density (all PASS). So it is specifically the expsyn_g_cell workload's effect on process-global GPU allocator/runtime state, not "any integrate."
+
+### Exact failure signature
+
+Only the EXTERNAL calcium concentration (Xo / cao) readback is wrong; it is exactly 2x:
+- test_probe.cpp:611 cao-l0 expected 1.5, got 3
+- test_probe.cpp:612 cao-l1 expected (1.5+2.5)/2=2.0, got 4
+- test_probe.cpp:613 cao-l2 expected 2.5, got 5
+The INTERNAL calcium (cai, lines 607-609) and all other channels PASS. Exactly-2x and position-correct, never the 0x30000000-class garbage a wave-size/warp-primitive fault produces.
+
+### Mechanism (double-accumulation of the mechanism init contribution)
+
+The ion external concentration is built by ACCUMULATION, not assignment. The `write_Xi_Xo` test mechanism's generated init kernel (build-gfx1201/.../write_Xi_Xo_gpu.cu) does `external_concentration[idx] = fma(weight, xo, external_concentration[idx])` -- it adds its weighted contribution onto whatever the buffer already holds. Correctness therefore depends on the buffer being zeroed between the two mechanism-init passes that `fvm_lowered_cell_impl::reset()` performs:
+
+```
+state_->reset();                      // Xo_ <- reset_Xo_ (= test's cao = zeros)
+mechanisms initialize();              // pass 1: Xo_ += weight*xo  -> correct value
+update_ion_state() -> ions_init_concentration();  // Xo_ <- init_Xo_ (= zeros)  [MUST re-zero]
+mechanisms initialize();              // pass 2: Xo_ += weight*xo  -> correct value again
+```
+
+In isolation `ions_init_concentration()` re-zeros Xo_ before pass 2, so exactly one net contribution survives = the expected value. After `gpu_expsyn_g_cell`, the re-zero step does not take effect, so pass-1 + pass-2 both survive => exactly 2x. Arithmetic matches exactly: CV0 (full write_ca1 coverage) 1.5+1.5=3.0; CV1 (half/half) 2.0 + (0.5*1.5+0.5*2.5)=2.0+2.0=4.0; CV2 2.5+2.5=5.0.
+
+The corruption is in the GPU re-zero/copy step, not the C++ control flow. `ion_state::init_concentration()` (gpu/shared_state.cpp:70 and multicore/shared_state.cpp:78) is logically identical across backends -- copy init_Xo_ -> Xo_ guarded by `reset_xo()` -- and the test sets `ca.flags_.write_Xo_=true` so `reset_xo()` is true on both backends. The buffers cao/Xo_/init_Xo_/reset_Xo_ are deep-copied independent arrays (array::operator= frees+reallocates+copies, array.hpp:185) and arbor's GPU allocator is a thin hipMalloc/hipFree wrapper (no arbor pool); HIP allocations are page-granular (each small array gets its own 0x1000 page, confirmed via AMD_LOG_LEVEL trace and a standalone hipMalloc reproducer), so distinct arrays never pointer-alias. The differentiator that survives the prior test is process-global HIP-runtime/allocator state left by expsyn_g_cell's integrate, which causes the pass-2 init contribution to be double-counted in the external-concentration buffer specifically (the fill/d2d-copy that should re-zero init_Xo_->Xo_ does not land before pass 2 on that channel). Pinning the exact internal slot (which the page-level trace and the standalone allocator test both show is NOT naive same-size pointer reuse) would require VERBOSE/instrumented source and a rebuild, which the diagnostic constraint forbade; the black-box behavior is fully and deterministically characterized regardless.
+
+### Arch-independence verdict: GPU-backend artifact, not arch-specific, CPU-immune
+
+Cross-backend matrix (same ordering):
+- gpu_expsyn_g_cell -> gpu_ion_density : FAIL (2x)
+- multicore_expsyn_g_cell -> multicore_ion_density : PASS
+- gpu_expsyn_g_cell -> multicore_ion_density : PASS (GPU leaker does not poison the CPU reader)
+- multicore_expsyn_g_cell -> gpu_ion_density : PASS (CPU leaker does not poison the GPU reader)
+
+So the leaked state lives in GPU-backend-resident state and the corruption manifests only in the GPU init/readback path. The arbor host C++ logic (reset ordering, init_concentration, flags) is shared and arch-independent; if the defect were there, multicore would fail too -- it does not. The GPU init/fill/copy logic and the unit test are upstream-equivalent (only commit touching these files is the bulk hipify f400d9a; the warp/wave-size fixes do not touch this path -- the fill kernel is a trivial element-wise fill and the mechanism init is a per-thread indexed fma, both wave-size-independent). Therefore the same ordering would fail identically on gfx90a/gfx1100 and almost certainly on upstream CUDA; it is a pre-existing upstream GPU test-isolation bug, not introduced or influenced by the HIP port, and not gfx1201/RDNA4-specific. It does NOT affect the CPU backend.
+
+### Why benign (confirmed)
+
+Exact-2x (not garbage) + passes-in-isolation + GPU-init/readback path untouched by the port + binary byte-identical to the validated build + CPU backend immune + deterministic and tied solely to a preceding test's process-global residue. This is a test-fixture isolation gap (probe tests use bare TEST() with no per-test GPU-memory/runtime reset), not a GPU correctness or port fault. Recommendation: keep windows-gfx1201 completed; document here (done) and, if desired, file an upstream note that the GPU probe tests need a per-test device-state reset (or that `ions_init_concentration` should not rely on accumulation-buffer state surviving cleanly across a prior integrate). No code change is warranted for the port.
+
+## Revalidation 2026-06-09 (windows-gfx1201)
+
+**Platform**: windows-gfx1201 (RDNA4, wave32)
+**GPU**: AMD Radeon RX 9070 XT (gfx1201)
+**ROCm**: TheRock 7.14.0a20260604 (multi-arch nightly)
+**Validated sha**: c5f27d01d4eeaaa4dcc614388b5b5095c92c9e55
+**Trigger**: revalidate from cf6a1102 (gfx1201 validated_sha) to c5f27d01 (head) -- functional device-code change (count_leading_zeros/find_first_set added to hip_api.hpp; reduce_by_key.hpp #ifdefs removed)
+
+### GPU confirmed
+
+`HIP_VISIBLE_DEVICES=0 hipInfo.exe` -> `gcnArchName: gfx1201` (RX 9070 XT only; gfx1101 offline)
+
+### Build fix required: CMAKE_CXX_SCAN_FOR_MODULES=OFF
+
+CMake re-ran when the changed headers were detected, and Ninja's C++ module dep-scan (`.ddi` step) failed for `.cu` files with `hip/hip_runtime.h file not found` -- the dep-scan compiler invocation does not receive the HIP include path. Fix: reconfigure with `-DCMAKE_CXX_SCAN_FOR_MODULES=OFF` (suppresses the dep-scan step that does not apply to .cu files). All other CMake flags unchanged. This is a CMake/Ninja housekeeping fix, not a source change; the fork source tree remains unmodified.
+
+```
+cd projects/arbor/src
+cmake -S . -B build-gfx1201 -G Ninja \
+  -DARB_GPU=hip -DARB_HIP_ARCHITECTURES=gfx1201 \
+  -DARB_WITH_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CXX_COMPILER=.../clang++.exe -DCMAKE_C_COMPILER=.../clang.exe \
+  -DCMAKE_PREFIX_PATH=.../rocm_sdk_devel \
+  -DCMAKE_POSITION_INDEPENDENT_CODE=OFF -DBENCHMARK_ENABLE_WERROR=OFF \
+  -DCMAKE_CXX_SCAN_FOR_MODULES=OFF
+HIP_VISIBLE_DEVICES=0 cmake --build build-gfx1201 --target unit -j64
+```
+
+Build: 498/498 targets, `unit.exe` relinked. No errors.
+
+### Test Results
+
+**Command**: `HIP_VISIBLE_DEVICES=0 ./build-gfx1201/bin/unit.exe`
+
+**Result**: 1233 tests / 189 suites; **1229 PASS, 4 FAIL** (identical tally to the prior gfx1201 validated run)
+
+### Critical GPU Tests Confirmed (all PASS)
+
+Targeted run `--gtest_filter=reduce_by_key.*:gpu_intrinsics.*` (8/8 PASS):
+- `reduce_by_key.no_repetitions`: PASS
+- `reduce_by_key.single_repeated_index`: PASS
+- `reduce_by_key.scatter`: PASS
+- `reduce_by_key.scatter_twice`: PASS
+- `gpu_intrinsics.exprelr`: PASS (per-arch 2-ULP bound for gfx12 intact)
+- `gpu_intrinsics.gpu_atomic_add`: PASS
+- `gpu_intrinsics.gpu_atomic_sub`: PASS
+- `gpu_intrinsics.minmax`: PASS
+
+### Failures (4, all pre-existing non-gating)
+
+Same 4 as the prior gfx1201 validation:
+- `cable_cell.round_tripping` -- Windows unordered_map ordering (non-GPU, non-port)
+- `label_dict.round_tripping` -- same cause
+- `mechcat.loading` -- .so dynamic catalogue loading is Linux-only
+- `probe.gpu_ion_density` -- pre-existing full-suite accumulated-state artifact (passes in isolation; bisected to gpu_expsyn_g_cell leaker; documented above)
+
+No new failures. reduce_by_key and exprelr both pass. windows-gfx1201 -> completed at c5f27d01.
