@@ -854,3 +854,37 @@ path produced on RDNA before this fix.
 
 PASS: gfx1201 (RDNA4, wave32) TENSOR=OFF and TENSOR=ON both correct at c2f2f6f.
 Fork moat-port HEAD after push: c2f2f6f.
+
+## Revalidation 2026-06-09 (linux-gfx90a, binary-equivalence carry-forward)
+
+Platform: 4x AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP 7.2.
+
+### Delta analysis: f01306b -> c2f2f6f
+
+Single commit (c2f2f6f): "[ROCm] Undefine windows.h min/max macros before rocWMMA include on Windows"
+
+Change: `cuda/kernels.cu` adds `#ifdef min / #undef min / #endif` and `#ifdef max / #undef max / #endif`
+guards immediately before `#include <rocwmma/rocwmma.hpp>`, inside the existing
+`#if defined(__HIP_PLATFORM_AMD__)` block.
+
+Impact on Linux/gfx90a: NONE. On Linux, `min` and `max` are NOT defined as macros (they
+are std:: inline functions); the `#ifdef min` and `#ifdef max` conditions are false, so
+the undef lines are preprocessed away entirely. Compilation output is bit-identical.
+
+### Binary-equivalence verification
+
+Built at both commits with `make DEVICE=HIP NUMWI=64 HIP_ARCH=gfx90a` from clean git checkouts
+in agent_space/adgpu-reval-old (f01306b) and agent_space/adgpu-reval-new (c2f2f6f):
+
+```
+python3 utils/codeobj_diff.py \
+  agent_space/adgpu-reval-old/bin/autodock_gpu_64wi \
+  agent_space/adgpu-reval-new/bin/autodock_gpu_64wi
+```
+
+```
+verdict=identical
+  autodock_gpu_64wi vs autodock_gpu_64wi: identical (exported symbols + device ISA identical (14 exports))
+```
+
+VERDICT: Binary-equivalent on linux-gfx90a. Validation carried forward to c2f2f6f without GPU re-run.
