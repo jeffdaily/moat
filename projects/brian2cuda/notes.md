@@ -400,3 +400,28 @@ HIP_VISIBLE_DEVICES=0 USE_HIP=1 utils/timeit.sh brian2cuda test -- \
 ### Verdict
 
 **REVALIDATED** at 94a9869. Wave-serialized spinlock confirmed still functioning on gfx1100 wave32. Windows-only delta has no effect on Linux. No regression.
+
+## PR-prep 2026-06-09 (lead) -- metadata backfill + docs + squash; carry-forward
+
+Codegen port (cuda_to_hip.h compat header generated into the standalone project +
+HIP makefile generation + device.py HIP detection). Clean -- cuda_to_hip.h IS
+committed (brianlib/cuda_to_hip.h); no integrity gap; tree clean.
+
+Backfilled missing scaffolding metadata: created upstream.json (full_name
+brian-team/brian2cuda, default_branch master, base_sha d7758060), and set
+status.json fork_url=https://github.com/jeffdaily/brian2cuda +
+fork_default_branch=master (were None / "main"). The README status table will pick
+up the fork link on the next gen_readme.
+
+- README.md: brief AMD/ROCm note (description + an install note: ROCm instead of the
+  CUDA toolkit; HIP backend auto-detected when ROCm present and CUDA absent, or
+  USE_HIP=1). The README is a landing page deferring details to readthedocs, so a
+  brief descriptive note only (no build block).
+- Commit message: dropped "The port follows Strategy A:" (in-house label) when
+  squashing the 2 port commits + doc into one.
+
+Squashed to ONE commit on upstream master (no drift): 8685120a, parent d7758060.
+18 files, +1272/-58. Carried gfx90a/gfx1100/gfx1201 forward (doc-only).
+gfx1101/gfx1151 port-ready (redundant Windows tier; gfx1201 satisfies it). pr-ready=True.
+
+NEXT: upstream-PR gate (lead-only). base = master. No existing jeffdaily PR.
