@@ -40,3 +40,4 @@
 {"kind":"phase","ts":"2026-06-06T23:55:21Z","phase":"test","seconds":332.398,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut.exe --show-fails"}
 {"kind":"phase","ts":"2026-06-07T00:02:04Z","phase":"test","seconds":50.090,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/gpu_data/ut/catboost-cuda-gpu_data-ut.exe --show-fails"}
 {"kind":"phase","ts":"2026-06-07T00:26:21Z","phase":"test","seconds":1445.897,"exit":139,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/methods/ut/catboost-cuda-methods-ut.exe --show-fails"}
+{"kind": "tokens", "ts": "2026-06-09T20:02:33Z", "tokens": 69217, "source": "porter (scrub MOAT/gfx1151/Strategy jargon from 34 files' comments; verify-gate empty, comment-only)"}

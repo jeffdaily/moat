@@ -688,3 +688,23 @@ to catboost/docs/en/installation/build-native-artifacts.md (where the CUDA build
 documented; README is a landing page that defers to the docs site). New single commit
 d93ad67f; diff(09612d3c->d93ad67f) is doc-only so all 5 platforms carried forward (no
 revalidation). base_sha recorded. pr-ready=True. NEXT: upstream-PR gate.
+
+## Jargon scrub (in the diff) + chevron note 2026-06-09
+
+Jeff caught in-house jargon in the DIFF CONTENT (I had only scanned the commit message
++ PR body): 47 lines (MOAT / windows-gfx1151 / "Strategy A" / followers) across 34
+files' comments, incl. cmake/cuda.cmake. Porter scrubbed all (comment-only, 1:1 rewrites)
+-> commit 4d1e4175. advance_head flipped all 5 to revalidate because the classifier marks
+5 files "unknown file type" (3 CMakeLists.<platform>.txt + 2 extensionless libcxx headers
+memory_resource/type_traits). Verified by inspection that the ENTIRE d93ad67f->4d1e4175
+diff is comment-only (zero non-comment changed lines), carried all 5 forward source-class,
+re-squashed to ca6b84af. My own final jargon grep over a691fb75..ca6b84af = 0 hits.
+
+The `<< <` -> `<<<` kernel-launch normalization is NECESSARY (hipcc/clang rejects the
+spaced form with "expected expression"; nvcc accepts both) -- verified with a probe and
+noted in the PR body, not reverted.
+
+CLASSIFIER GAP (follow-up): changeclass.py treats CMakeLists.<platform>.txt and
+extensionless C/C++ headers as "unknown file type" -> mixed; teaching it CMakeLists.*.txt
+would auto-carry-forward comment-only CMake changes. Lesson saved to memory
+moat-scrub-jargon-in-diff-not-just-message.
