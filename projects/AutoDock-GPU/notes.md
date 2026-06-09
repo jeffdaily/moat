@@ -604,3 +604,33 @@ autodock-gpu-tensor-core-reduction, rescoped). gfx1151 blocked (retired).
 NEXT: once followers verify at 3d466a4, squash 221e2d4f+3d466a4 -> one commit and re-prep
 the PR body (document CDNA TENSOR=ON via rocWMMA + the benchmark; RDNA as a follow-up;
 drop the earlier "out of scope" note), then open the upstream PR (gate).
+
+## Revalidation 2026-06-09 (linux-gfx1100, binary-equivalence carry-forward)
+
+Platform: 4x AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32), ROCm 7.2.1, HIP 7.2.
+
+### Delta analysis: 221e2d4 -> 3d466a4
+
+Single commit (3d466a4): "[ROCm] Add rocWMMA tensor-core sum-reduction for TENSOR=ON on AMD"
+
+Change: cuda/kernels.cu, host/src/performdocking.cpp, Makefile.Hip all add #ifdef USE_NVTENSOR
+branches for the rocWMMA MFMA reduction. The DEFAULT build (TENSOR=OFF, no -DUSE_NVTENSOR) leaves
+those branches uncompiled.
+
+Impact on gfx1100 TENSOR=OFF build: NONE. Built both SHAs with identical flags:
+
+```
+make -C .../src-old DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100   # at 221e2d4
+make -C .../src-new DEVICE=HIP NUMWI=64 HIP_ARCH=gfx1100   # at 3d466a4
+python3 utils/codeobj_diff.py src-old/bin/autodock_gpu_64wi src-new/bin/autodock_gpu_64wi
+```
+
+```
+verdict=identical
+  autodock_gpu_64wi vs autodock_gpu_64wi: identical (exported symbols + device ISA identical (14 exports))
+```
+
+TENSOR=ON itself is CDNA-only for now (RDNA needs bf16 error-correction per deferred task
+autodock-gpu-tensor-core-reduction); gfx1100 is not expected to use TENSOR=ON.
+
+VERDICT: binary-equiv carry-forward. linux-gfx1100 -> completed at 3d466a4. No GPU re-run needed.

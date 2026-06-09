@@ -7,7 +7,7 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-09T14:25:47Z",
+  "updated_at": "2026-06-09T14:35:12Z",
   "head_sha": "3d466a41a2e59ca0403544aa01df5491803e4562",
   "platforms": {
     "linux-gfx90a": {
@@ -34,13 +34,13 @@
       "last_agent": "porter"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "221e2d4f2ecc90d6602e3ce68770e4f2193044eb",
+      "validated_sha": "3d466a41a2e59ca0403544aa01df5491803e4562",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-06-08T22:16:17Z",
-      "updated_at": "2026-06-09T14:23:53Z",
+      "completed_at": "2026-06-09T14:35:12Z",
+      "updated_at": "2026-06-09T14:35:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,10 +56,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
-        "method": "source-class",
-        "detail": "Makefile.Hip comment + README doc only (verified comment-only: non-comment content byte-identical; doc-only); no compiled source changed, all platforms binaries unchanged",
-        "at": "2026-06-08T22:16:17Z"
+        "to": "3d466a41a2e59ca0403544aa01df5491803e4562",
+        "method": "binary-equiv",
+        "detail": "TENSOR=ON code is #ifdef USE_NVTENSOR-gated; default TENSOR=OFF build for gfx1100 produces identical device ISA and exported symbols (codeobj_diff verdict=identical on 64wi binary; TENSOR=ON on RDNA d",
+        "at": "2026-06-09T14:35:12Z"
       }
     },
     "windows-gfx1101": {
