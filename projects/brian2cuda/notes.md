@@ -425,3 +425,83 @@ Squashed to ONE commit on upstream master (no drift): 8685120a, parent d7758060.
 gfx1101/gfx1151 port-ready (redundant Windows tier; gfx1201 satisfies it). pr-ready=True.
 
 NEXT: upstream-PR gate (lead-only). base = master. No existing jeffdaily PR.
+
+## Fix 2026-06-09 (porter) -- orphaned hip_prefs; HIP backend prefs now take effect
+
+New commit 8455518 ON TOP of 8685120a (not amended). Two files changed
+(+7/-121): brian2cuda/__init__.py, brian2cuda/hip_prefs.py.
+
+### Root cause
+
+hip_prefs.py was never imported -- __init__.py only did `from . import
+cuda_prefs`, so `devices.hip_standalone.hip_backend` was never registered.
+Every read of it in device.py get_hip_gpu_arch() and utils/hipgputools.py
+(rocm_path, detect_hip, gpu_id, gpu_arch, detect_gpus) sits in
+`try: ... except AttributeError: pass`, so the unregistered category made
+those reads silently fall back to rocminfo/env vars; the backend knobs had
+no effect. Separately, hip_prefs' first register_preferences block (~18
+codegen prefs under devices.hip_standalone) was a verbatim duplicate of
+cuda_prefs' devices.cuda_standalone block and was read nowhere (device.py
+reads codegen prefs from cuda_standalone for both backends).
+
+### Fix
+
+1. Added `from . import hip_prefs` to __init__.py next to cuda_prefs.
+2. Removed the dead first register_preferences block from hip_prefs.py
+   (and its now-orphaned imports: numpy, default_float_dtype_validator,
+   dtype_repr, and the validate_bundle_size_expression helper).
+3. Minimal parent registration WAS needed. Empirically confirmed
+   (brian2 2.10.1, brian2/core/preferences.py): registering ONLY the child
+   `devices.hip_standalone.hip_backend` makes `prefs.devices.hip_standalone`
+   raise AttributeError -- the read path requires the parent
+   `devices.hip_standalone` to be in pref_register. register_preferences /
+   __getattr__ resolve a child through its parent namespace. So
+   `devices.hip_standalone` is kept as an EMPTY-category registration (no
+   prefs), which establishes the namespace; the empty-parent + child
+   sequence reads, sets, and passes check_all_validated() cleanly. No
+   codegen duplicates re-introduced. CUDA/NVIDIA path untouched.
+
+### Pref-now-works confirmation
+
+- `python -c "import brian2cuda; from brian2 import prefs;
+  print(prefs.devices.hip_standalone.hip_backend.gpu_arch)"` -> `None`, no
+  AttributeError (previously the except clause swallowed it).
+- All 7 hip_backend prefs read; check_all_validated() OK; the
+  devices.hip_standalone category has 0 direct prefs (dead block gone).
+- Setting `prefs.devices.hip_standalone.hip_backend.gpu_arch='gfx90a'`
+  makes get_hip_gpu_arch() return 'gfx90a' with subprocess.run sabotaged to
+  raise on any call -- rocminfo is never invoked.
+
+### Re-validation: linux-gfx90a
+
+- GPU: AMD Instinct MI250X (gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3
+- HEAD: 8455518; USE_HIP=1; set_device('cuda_standalone', build_on_run=False)
+- Script: agent_space/brian2cuda_reval_prefs_fix.py; gpu_arch pref set to
+  'gfx90a' so the build path uses the now-functional pref.
+
+```
+HIP_VISIBLE_DEVICES=3 USE_HIP=1 utils/timeit.sh brian2cuda test -- \
+    python3 agent_space/brian2cuda_reval_prefs_fix.py
+# Phase: test, wall: ~31s, exit: 0
+```
+
+3/3 PASSED:
+1. LIF NeuronGroup (100, 20ms): PASS (spikes > 0)
+2. LIF + Synapses with 1ms delay (spike queue): 1010 synapses, 50/50 target
+   neurons active -- PASS (spikequeue.h wave64 spinlock exercised)
+3. Large recurrent net (200 neurons, 11990 synapses, 6963 spikes): PASS,
+   no deadlock
+
+Build log shows `Using GPU architecture from preference: gfx90a` on every
+build (device.py:107) -- proves the registered pref reaches the compile path
+and short-circuits rocminfo. The prefs change did not regress the sim.
+
+Pre-existing cosmetic noise (unrelated to this fix): the shared CUDA codegen
+path logs `-arch=sm_None`; the HIP makefile substitutes the real gfx90a
+arch, which is why it compiles and runs on AMD hardware. Present before this
+fix too.
+
+NOTE: did NOT touch status.json platform states or open any PR (per task;
+state machine + PR re-prep handled separately). The validated_sha for
+already-passed platforms (8685120a) stays a reachable ancestor of 8455518,
+so advance_head can classify this delta.
