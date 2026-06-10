@@ -1,0 +1,127 @@
+{
+  "schema_version": 1,
+  "name": "colmap",
+  "upstream_url": "https://github.com/colmap/colmap",
+  "fork_url": "https://github.com/jeffdaily/colmap",
+  "fork_default_branch": "main",
+  "priority": 0.0,
+  "ext_type": "unknown",
+  "adopted_at": "2026-06-10T13:58:57Z",
+  "updated_at": "2026-06-10T13:58:57Z",
+  "head_sha": null,
+  "depends_on": [],
+  "platforms": {
+    "linux-gfx90a": {
+      "state": "pr-open",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-10T13:58:57Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "linux-gfx1100": {
+      "state": "blocked",
+      "blocked": true,
+      "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-10T13:58:57Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1101": {
+      "state": "blocked",
+      "blocked": true,
+      "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-10T13:58:57Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1201": {
+      "state": "blocked",
+      "blocked": true,
+      "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-10T13:58:57Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1151": {
+      "state": "blocked",
+      "blocked": true,
+      "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-10T13:58:57Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    }
+  },
+  "pr_url": "https://github.com/colmap/colmap/pull/4420",
+  "pr_number": 4420
+}
