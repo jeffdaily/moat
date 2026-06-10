@@ -7,17 +7,17 @@
   "priority": 3.618,
   "ext_type": "torch-extension",
   "adopted_at": "2026-05-30T01:04:50Z",
-  "updated_at": "2026-06-08T18:13:43Z",
-  "head_sha": "18885b9d702d336149e849b81471eca4c1b06a82",
+  "updated_at": "2026-06-10T20:15:44Z",
+  "head_sha": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "eb3a8c14f743bd728b82b47759ee0056cd2691d3",
+      "validated_sha": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
       "started_at": "2026-06-01T00:55:34Z",
       "completed_at": "2026-06-08T15:06:54Z",
-      "updated_at": "2026-06-08T15:08:58Z",
+      "updated_at": "2026-06-10T20:15:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "198197071e7347799a810f20df466cfcd083baa9",
+        "to": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
         "method": "source-class",
-        "detail": "comment-only jargon scrub (.gitignore + hip_warp_compat.h comments); arch-independent, device code unaffected",
-        "at": "2026-06-08T15:06:54Z"
+        "detail": "count-safe index_map 6cb3a0b; USE_ROCM-guarded, CUDA byte-identical; validated gfx942 full-garden + gfx90a real-LM no-fault; inert for prior synthetic runs (reserved slots overwritten absent under-fil",
+        "at": "2026-06-10T20:15:25Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "18885b9d702d336149e849b81471eca4c1b06a82",
+      "validated_sha": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
       "started_at": "2026-06-02T01:00:00Z",
-      "completed_at": "2026-06-08T18:13:43Z",
-      "updated_at": "2026-06-08T18:13:43Z",
+      "completed_at": "2026-06-10T20:15:25Z",
+      "updated_at": "2026-06-10T20:15:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "18885b9d702d336149e849b81471eca4c1b06a82",
+        "to": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
         "method": "source-class",
-        "detail": "README: document ROCm/HIP build (doc-only)",
-        "at": "2026-06-08T18:13:43Z"
+        "detail": "count-safe index_map 6cb3a0b; USE_ROCM-guarded, CUDA byte-identical; validated gfx942 full-garden + gfx90a real-LM no-fault; inert for prior synthetic runs (reserved slots overwritten absent under-fil",
+        "at": "2026-06-10T20:15:25Z"
       }
     },
     "windows-gfx1101": {
@@ -94,10 +94,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "18885b9d702d336149e849b81471eca4c1b06a82",
+      "validated_sha": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
       "started_at": null,
-      "completed_at": "2026-06-08T18:13:43Z",
-      "updated_at": "2026-06-08T18:13:43Z",
+      "completed_at": "2026-06-10T20:15:25Z",
+      "updated_at": "2026-06-10T20:15:25Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -113,10 +113,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "18885b9d702d336149e849b81471eca4c1b06a82",
+        "to": "6cb3a0bbf83cb6d86eb12056ed1906cc753171d0",
         "method": "source-class",
-        "detail": "README: document ROCm/HIP build (doc-only)",
-        "at": "2026-06-08T18:13:43Z"
+        "detail": "count-safe index_map 6cb3a0b; USE_ROCM-guarded, CUDA byte-identical; validated gfx942 full-garden + gfx90a real-LM no-fault; inert for prior synthetic runs (reserved slots overwritten absent under-fil",
+        "at": "2026-06-10T20:15:25Z"
       }
     },
     "windows-gfx1151": {
