@@ -835,3 +835,84 @@ overflow, exact_estimation leaf-bound + leading-empties, histogram empty-grid di
 segmented-sort SortPairs sizing). The 3 rocPRIM findings are registered in deferred.py
 (rocprim-devicescan-unaligned-temp-corruption, -segmented-radix-sort-gap-elements,
 -sortpairs-tempsize-strictness) -> prepare findings/ reports, file to rocm-libraries with approval.
+
+## Validation 2026-06-10 (revalidate, linux-gfx1100) -- 4f42ad54 -> completed
+
+Platform: linux-gfx1100, AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32, compute capability 11.0), ROCm 7.2.1. HIP_VISIBLE_DEVICES=0. Fork HEAD verified: git checkout origin/moat-port at 4f42ad5415833cb4b371b697ef9a7cffb261db0c.
+
+### Delta analysis (ca6b84af -> 4f42ad54)
+
+The validated_sha ca6b84af is no longer in the fork history (force-push squash series). The substantive HIP-active changes between the last gfx1100 GPU run (09612d3c) and 4f42ad54 are: exact_estimation.cu leaf-count fix moved from kernel param to caller (real HIP code change); split.cu / hist*.cuh / segmented_sort.cpp GPU-bug fixes gated behind #if USE_HIP (non-trivial HIP diff, CUDA path restored); warp_mask.cuh new header (CB_FULL_WARP_MASK moved there); kernel_helpers.cuh and other comment-only jargon scrubs. codeobj_diff carry-forward is not applicable (old build at 09612d3c, verified-differ). Full GPU revalidation required and executed.
+
+### Build
+
+Source updated via `git checkout origin/moat-port` (4f42ad54). Incremental rebuild picks up changed sources:
+
+```
+source agent_space/catboost/env.sh && export HIP_VISIBLE_DEVICES=0 && export JAVA_HOME=/opt/conda/envs/py_3.12
+utils/timeit.sh catboost compile -- ninja -C /var/lib/jenkins/moat/projects/catboost/src/build_hip/cm -j16 \
+  catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut catboost/app/catboost
+# 297 targets (incremental), SUCCESS, no errors
+```
+
+Code objects: `hipv4-amdgcn-amd-amdhsa--gfx1100` confirmed. GPU at runtime: "AMD Radeon Pro W7800 48GB (compute capability 11.0)".
+
+### Test 1 -- cuda_util-ut (two back-to-back runs):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-cuda_util-ut --show-fails
+```
+
+Run 1: [DONE] ok: 48
+Run 2: [DONE] ok: 48
+Pass sets: IDENTICAL -- deterministic on wave32 (gfx1100).
+
+### Test 2 -- gpu_data-ut (bin-builder overflow fix):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-gpu_data-ut --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4 + TestCompressedSplitFloat + TreeBuilderTest32 PASS), TGridBuilderPerftest 1/1.
+
+### Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost-cuda-methods-ut --show-fails
+```
+
+[DONE] ok: 29, err: 1
+- TExactLeavesEstimationTest: 15/15 PASS (exact-leaves leaf-count fix confirmed at 4f42ad54)
+- TPairwiseHistogramTest: 4/4 PASS
+- TPointwiseHistogramTest: 4/4 PASS
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (WithoutOneHot1/2/17 + WithOneHot3/13 + FatSplitPropsTest all pass)
+- TAddingLangevinNoiseTest: 0/1 FAIL -- pre-existing upstream test-design issue, proven NOT a ROCm defect; not a blocker.
+
+Matches prior gfx1100@09612d3c and gfx90a@4f42ad54 bar: 29/30 effective pass (only Langevin fails on all platforms).
+
+### Test 4 -- e2e GPU training:
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- .../catboost/app/catboost fit --task-type GPU --devices 0 \
+  --learn-set agent_space/catboost/train.tsv \
+  --test-set agent_space/catboost/test.tsv \
+  --column-description agent_space/catboost/train.cd \
+  --iterations 200 --depth 6 --loss-function Logloss --eval-metric AUC --random-seed 42
+```
+
+GPU run 1 bestTest: 0.9762485623 (peak at iter 199)
+GPU run 2 bestTest: 0.9762485623 (peak at iter 199)
+test_error.tsv diff: BIT-IDENTICAL (same-seed determinism confirmed on wave32)
+CPU baseline peak AUC (prior gfx1100 session): 0.9761284044
+GPU-CPU diff: |0.9762485623 - 0.9761284044| = 0.0001201 (well within ~0.0025 GBDT GPU/CPU variance ceiling)
+
+FORK CLEAN: `git status --porcelain` shows no modified tracked files at 4f42ad54. No CI yaml changes.
+
+Result: PASS (gfx1100 wave32).
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, compute capability 11.0, HIP_VISIBLE_DEVICES=0).
+Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect), e2e AUC 0.9762485623 bit-identical x2.
+validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
