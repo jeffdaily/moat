@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-09T22:04:50Z",
+  "updated_at": "2026-06-10T23:39:03Z",
   "head_sha": null,
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "unclaimed",
-      "blocked": true,
-      "blocked_reason": "AMD-owned CV domain (RPP/rocCV/MIVisionX, like RAPIDS/ROCm-DS); multi-month 2-repo port (opencv core + opencv_contrib). Plan complete in plan.md; pending jeff proceed/defer decision (open-decision-1). 3 genuine feature losses documented (graphcut, NvidiaOpticalFlow HW, codec deltas).",
+      "state": "planned",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-09T22:04:50Z",
+      "updated_at": "2026-06-10T23:39:03Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "planner"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",
