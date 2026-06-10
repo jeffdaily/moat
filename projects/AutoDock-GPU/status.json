@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-10T03:57:38Z",
+  "updated_at": "2026-06-10T04:03:06Z",
   "head_sha": "bb2f0624b28563b119ce5424893bc1abb85420f0",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "bb2f0624b28563b119ce5424893bc1abb85420f0",
       "started_at": "2026-05-30T06:52:18Z",
       "completed_at": "2026-06-10T03:48:57Z",
-      "updated_at": "2026-06-10T03:57:38Z",
+      "updated_at": "2026-06-10T04:03:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/ccsb-scripps/AutoDock-GPU/pull/320",
+  "pr_number": 320,
+  "pr_opened_at": "2026-06-10T04:03:06Z"
 }
