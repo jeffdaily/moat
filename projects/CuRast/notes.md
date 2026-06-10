@@ -309,3 +309,102 @@ Result: `verdict=identical` -- CuRast vs CuRast: identical (exported symbols + d
 ### Outcome
 
 Carried forward: linux-gfx1100 validated_sha advanced to 3d42a7c via binary-equiv (Windows build fixes compile to identical gfx1100 device ISA).
+
+## 2026-06-10: prior validations were hollow; first REAL validation (gfx90a render + benchmark)
+
+IMPORTANT correction to everything above: the gfx90a/gfx1100/gfx1201 validations
+recorded earlier in this file only confirmed device detection, a trivial inline
+hiprtc test kernel, and symbol presence. The project's actual rasterizer kernels
+NEVER COMPILED under hiprtc (a cascade of nvrtc->hiprtc differences), so no
+kernel of the port had ever executed. Those "completed" states are not real
+validations.
+
+The port now genuinely works on gfx90a: full pipeline (clear -> 3-stage
+visbuffer -> resolve -> screenshot), correct rendered PNG of the bundled
+example_donaukanal_urania.glb, 966,461 triangles, visbuffer pipeline 0.34 ms
+best / ~0.39 ms steady at 1920x1080 on one MI250X GCD. All work is on the fork
+branch `bench` (jeffdaily/CuRast @ 6066645); a debug-stripped consolidation
+onto `moat-port` is pending (see "Fold status" below).
+
+### What was wrong (fix summary, all on `bench`)
+
+1. hiprtc environment: kernels' cuda_to_hip.h must skip host runtime includes
+   under __HIPCC_RTC__; hiprtc needs the clang resource-dir AND the ROCm
+   include root as absolute -isystem/-I; do NOT pass -fgpu-rdc (0-byte code
+   objects); hiprtcGetProgramLog buffer needs manual NUL-termination.
+2. Default device emulation: nvrtc's -default-device has no clang equivalent;
+   RTC-guarded `#pragma clang attribute push((device), apply_to=function)`
+   regions wrap the helper headers and inter-kernel regions (the pragma
+   conflicts with __global__, so regions, not whole files).
+3. Kernel source compat: ::min/::max -> fminf/fmaxf, isinf -> __builtin_isinf,
+   CUDA bit-cast intrinsics shimmed as macros, cg grid_group::thread_index()
+   replaced with blockIdx*blockDim+threadIdx, range-for over brace lists
+   rewritten (no std::initializer_list under hiprtc), HashMap __CUDA_ARCH__
+   guard extended to __HIPCC_RTC__, atomicCAS cast to unsigned long long*.
+4. ROOT CAUSE of blank renders: -ffast-math in the hiprtc options. clang
+   fast-math implies -ffinite-math-only and this renderer's architecture
+   depends on IEEE specials (Infinity depth sentinels, NaN-pattern clear
+   value, NaN depth-compare early-out in the resolve kernel). nvcc
+   --use_fast_math does not assume finite math, so CUDA is unaffected. The
+   clang warning "use of infinity is undefined behavior due to the currently
+   enabled floating-point options" is the fingerprint; treat it as fatal.
+5. UNRESOLVED ANOMALY (workaround in place): on gfx90a/ROCm 7.2.1, kernels
+   dispatched through HipModularProgram::launch()/launch2D intermittently
+   raise GPU memory faults while byte-identical dispatch sequences inlined at
+   the call site are reliable (exhaustively bisected: args, Timer, launch API,
+   module identity, order, sync timing, machine code verified -- all ruled
+   out; independent of fast-math, retested). The five hot call sites in
+   CuRast_render.h dispatch via INLINE_LAUNCH_1D/2D macros. Registered in
+   data/deferred.json as curast-launch-member-dispatch-fault.
+6. VMM: hipMemSetAccess on a sub-range at a non-zero offset of a reservation
+   returns hipErrorInvalidValue; CudaVirtualMemory::commit sets access over
+   the whole committed range from the base address.
+7. main.cpp uses the primary context on HIP (hipSetDevice; hipCtxCreate is
+   deprecated) with the loader's cuCtxSetCurrent calls null-guarded.
+
+### Headless benchmark mode (how to validate on any host)
+
+`--bench <file.glb> [width height frames]` renders without a window/Vulkan:
+loads the glb, frames the camera from its AABB, runs the full pipeline per
+frame, prints per-frame visbuffer-pipeline times, and writes ./bench_render.png.
+
+    ./CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30
+
+Validation = (a) no GPU fault, (b) bench_render.png shows the scene (the
+donaukanal scan on white background; a BLANK white image means the resolve
+produced nothing -- treat as FAIL), (c) plausible per-frame times.
+
+### gfx1201 (Windows) validation instructions + watch items
+
+Build: same as the earlier gfx1201 section above (amdclang++, TheRock SDK,
+-DCMAKE_HIP_ARCHITECTURES=gfx1201, Ninja). Additionally:
+
+- Set ROCM_PATH to the _rocm_sdk_devel directory. HipModularProgram's hiprtc
+  include discovery searches ROCM_PATH (both llvm/lib/clang and
+  lib/llvm/lib/clang layouts) for the clang resource headers and the HIP
+  include root; without it the runtime kernel compile fails with
+  "stddef.h not found" / "hip/hip_cooperative_groups.h not found".
+- HIP_VISIBLE_DEVICES=1 (one-GPU-per-process rule on that host; gfx1201 is
+  device 1).
+- Run the --bench command above from the repo root (kernel sources are read
+  at runtime from ./src/kernels/).
+- WAIT for the consolidated moat-port head before recording validation (see
+  Fold status); validating the bench sha would need re-doing at the new head.
+- Watch items: first wave32/RDNA execution of these kernels (the port uses
+  width-32 logical-warp ops which are arch-agnostic, but this run is the
+  proof); the launch()-dispatch anomaly (item 5) has only been observed on
+  gfx90a -- the inline-dispatch workaround is active regardless, but if a GPU
+  memory fault appears, capture it and compare against the deferred entry.
+
+### Fold status (pending)
+
+The `bench` branch carries debug scaffolding to strip before consolidating
+onto `moat-port` (the strip script is host-local on the gfx90a Linux host at
+agent_space/strip_debug.py; agent_space is gitignored). Procedure: strip,
+rebuild, verify one render (check the BUILD exit code before trusting the
+run), commit on bench, `git merge --squash bench` onto moat-port as one
+[ROCm] commit, push, `moatlib.py advance-head CuRast <newsha>` (functional
+delta correctly flips gfx1100/gfx1201 to revalidate), mark linux-gfx90a
+completed at the new sha (real validation: rendered frame + 30-frame bench),
+update this file. Until that lands, moat-port HEAD (3d42a7c) still carries
+the non-functional hiprtc path.
