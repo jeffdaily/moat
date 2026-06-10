@@ -29,20 +29,21 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [alien](https://github.com/chrxh/alien) ([fork](https://github.com/jeffdaily/alien/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | 🚫 | 🟢 [#710](https://github.com/chrxh/alien/pull/710) |
 | [amgcl](https://github.com/ddemidov/amgcl) ([fork](https://github.com/jeffdaily/amgcl/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | 🟢 [#315](https://github.com/ddemidov/amgcl/pull/315) |
 | [arbor](https://github.com/arbor-sim/arbor) ([fork](https://github.com/jeffdaily/arbor/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#2512](https://github.com/arbor-sim/arbor/pull/2512) |
-| [arrayfire](https://github.com/arrayfire/arrayfire) ([fork](https://github.com/jeffdaily/arrayfire/tree/moat-port)) | ✅ | ✅ | 🔧 | 🔄 | — | 🟢 [#3708](https://github.com/arrayfire/arrayfire/pull/3708) |
-| [AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) ([fork](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | — |
+| [arrayfire](https://github.com/arrayfire/arrayfire) ([fork](https://github.com/jeffdaily/arrayfire/tree/moat-port)) | ✅ | ✅ | 🔧 | ✅ | — | 🟢 [#3708](https://github.com/arrayfire/arrayfire/pull/3708) |
+| [AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) ([fork](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port)) | ✅ | ✅ | 🔄 | ✅ | — | 🟢 [#320](https://github.com/ccsb-scripps/AutoDock-GPU/pull/320) |
 | [bam](https://github.com/ZaidQureshi/bam) ([fork](https://github.com/jeffdaily/bam/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
-| [baspacho](https://github.com/facebookresearch/baspacho) ([fork](https://github.com/jeffdaily/baspacho/tree/moat-port)) | 🔄 | 🔄 | — | ✅ | — | — |
-| [bellhopcuda](https://github.com/A-New-BellHope/bellhopcuda) ([fork](https://github.com/jeffdaily/bellhopcuda/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
-| [brian2cuda](https://github.com/brian-team/brian2cuda) | ✅ | ✅ | — | ✅ | — | — |
-| [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | — |
+| [baspacho](https://github.com/facebookresearch/baspacho) ([fork](https://github.com/jeffdaily/baspacho/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#10](https://github.com/facebookresearch/baspacho/pull/10) |
+| [bellhopcuda](https://github.com/A-New-BellHope/bellhopcuda) ([fork](https://github.com/jeffdaily/bellhopcuda/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#65](https://github.com/A-New-BellHope/bellhopcuda/pull/65) |
+| [brian2cuda](https://github.com/brian-team/brian2cuda) ([fork](https://github.com/jeffdaily/brian2cuda/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#327](https://github.com/brian-team/brian2cuda/pull/327) |
+| [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | ✅ | ✅ | 🔄 | ✅ | 🔄 | 🟢 [#3111](https://github.com/catboost/catboost/pull/3111) |
+| [colmap](https://github.com/colmap/colmap) ([fork](https://github.com/jeffdaily/colmap/tree/moat-port)) | ✅ | 🚫 | 🚫 | 🚫 | — | 🟢 [#4420](https://github.com/colmap/colmap/pull/4420) |
 | [colvars](https://github.com/Colvars/colvars) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
 | [CPM.cu](https://github.com/OpenBMB/CPM.cu) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [CTranslate2](https://github.com/OpenNMT/CTranslate2) ([fork](https://github.com/jeffdaily/CTranslate2/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🔵 validated (5 arch) |
 | [CubbyFlow](https://github.com/utilForever/CubbyFlow) ([fork](https://github.com/jeffdaily/CubbyFlow/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [cucim](https://github.com/rapidsai/cucim) ([fork](https://github.com/jeffdaily/cucim/tree/moat-port)) | ✅ | ✅ | — | 🟡 | — | — |
 | [cuCollections](https://github.com/NVIDIA/cuCollections) ([fork](https://github.com/jeffdaily/cuCollections/tree/moat-port)) | ✅ | ✅ | — | 🟡 | — | — |
-| [cuda-efficient-features](https://github.com/fixstars/cuda-efficient-features) ([fork](https://github.com/jeffdaily/cuda-efficient-features/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
+| [cuda-efficient-features](https://github.com/fixstars/cuda-efficient-features) ([fork](https://github.com/jeffdaily/cuda-efficient-features/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#3](https://github.com/fixstars/cuda-efficient-features/pull/3) |
 | [CUDA-L2](https://github.com/deepreinforce-ai/CUDA-L2) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [CUDA-ScanMatcher-ICP](https://github.com/botforge/CUDA-ScanMatcher-ICP) ([fork](https://github.com/jeffdaily/CUDA-ScanMatcher-ICP/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [cudaKDTree](https://github.com/ingowald/cudaKDTree) ([fork](https://github.com/jeffdaily/cudaKDTree/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | — |
@@ -126,7 +127,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [MPPI-Generic](https://github.com/ACDSLab/MPPI-Generic) ([fork](https://github.com/jeffdaily/MPPI-Generic/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | — |
 | [mwa_hyperdrive](https://github.com/MWATelescope/mwa_hyperdrive) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [NATTEN](https://github.com/SHI-Labs/NATTEN) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
-| [nerfacc](https://github.com/nerfstudio-project/nerfacc) | 🔧 | ⬜ | ⬜ | ⬜ | ⬜ | — |
+| [nerfacc](https://github.com/nerfstudio-project/nerfacc) ([fork](https://github.com/jeffdaily/nerfacc/tree/moat-port)) | 🔄 | 🔄 | — | ✅ | — | — |
 | [ntransformer](https://github.com/xaskasdf/ntransformer) ([fork](https://github.com/jeffdaily/ntransformer/tree/moat-port)) | ✅ | ✅ | — | ✅ | ✅ | — |
 | [nvdiffrast](https://github.com/NVlabs/nvdiffrast) ([fork](https://github.com/jeffdaily/nvdiffrast/tree/moat-port)) | 🚫 | ✅ | — | 🟡 | — | — |
 | [OCTproZ](https://github.com/spectralcode/OCTproZ) ([fork](https://github.com/jeffdaily/OCTproZ/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
@@ -134,6 +135,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [oneflow](https://github.com/Oneflow-Inc/oneflow) ([fork](https://github.com/jeffdaily/oneflow/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | — | — |
 | [op43dgs](https://github.com/LetianHuang/op43dgs) ([fork](https://github.com/jeffdaily/op43dgs/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [Open3D](https://github.com/isl-org/Open3D) ([fork](https://github.com/jeffdaily/Open3D/tree/moat-port)) | ✅ | ✅ | 🚫 | ✅ | — | 🟢 [#7509](https://github.com/isl-org/Open3D/pull/7509) |
+| [opencv_contrib](https://github.com/opencv/opencv_contrib) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [PhoenixOS](https://github.com/SJTU-IPADS/PhoenixOS) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [plumed2](https://github.com/plumed/plumed2) ([fork](https://github.com/jeffdaily/plumed2/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | — | — |
 | [plvs](https://github.com/luigifreda/plvs) ([fork](https://github.com/jeffdaily/plvs/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
