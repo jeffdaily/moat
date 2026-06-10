@@ -551,6 +551,17 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-09T17:30:40Z"
+    },
+    {
+      "id": "curast-launch-member-dispatch-fault",
+      "kind": "rocm-bug-report",
+      "project": "CuRast",
+      "component": null,
+      "summary": "gfx90a ROCm 7.2.1: hipModuleLaunchKernel dispatches from inside HipModularProgram::launch()/launch2D memory-fault (addr nil, xnack-) while byte-identical inline sequences at the same call sites pass. Exhaustively bisected (args/Timer/launch API/module/order/sync/kernarg-lifetime/fast-math eliminated; machine code verified). Repro: CURAST_LADDER=1 on jeffdaily/CuRast branch bench. Workaround shipped: inline dispatch (INLINE_LAUNCH_1D/2D). Needs ROCm runtime-level debug (kernarg pool / queue state).",
+      "refs": [],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-10T21:51:35Z"
     }
   ]
 }
