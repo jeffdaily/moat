@@ -396,15 +396,17 @@ Build: same as the earlier gfx1201 section above (amdclang++, TheRock SDK,
   gfx90a -- the inline-dispatch workaround is active regardless, but if a GPU
   memory fault appears, capture it and compare against the deferred entry.
 
-### Fold status (pending)
+### Fold status: LANDED 2026-06-10
 
-The `bench` branch carries debug scaffolding to strip before consolidating
-onto `moat-port` (the strip script is host-local on the gfx90a Linux host at
-agent_space/strip_debug.py; agent_space is gitignored). Procedure: strip,
-rebuild, verify one render (check the BUILD exit code before trusting the
-run), commit on bench, `git merge --squash bench` onto moat-port as one
-[ROCm] commit, push, `moatlib.py advance-head CuRast <newsha>` (functional
-delta correctly flips gfx1100/gfx1201 to revalidate), mark linux-gfx90a
-completed at the new sha (real validation: rendered frame + 30-frame bench),
-update this file. Until that lands, moat-port HEAD (3d42a7c) still carries
-the non-functional hiprtc path.
+moat-port HEAD is now 91bacbf ("[ROCm] Fix runtime kernel compilation and
+rendering on AMD GPUs"), the debug-stripped squash of the bench work. The
+cleaned tree was re-verified on gfx90a immediately before the squash:
+BUILD_EXIT=0, 0 compile errors, 10 frames, visbuffer pipeline 0.330 ms best
+at 1920x1080, bench_render.png correct (264,744 bytes). linux-gfx90a is
+completed/validated at 91bacbf; gfx1100/gfx1201 flipped to revalidate (their
+prior validations were hollow -- see above); gfx1101/gfx1151 remain
+port-ready. The `bench` branch is kept for the launch-anomaly repro
+(CURAST_LADDER instrumentation lives in its history at aa3997b^).
+
+Follower validation = build at 91bacbf + the --bench run per the
+"Headless benchmark mode" section above (PNG must show the scene).
