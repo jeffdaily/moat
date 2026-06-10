@@ -23,11 +23,11 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [3dgrut](https://github.com/nv-tlabs/3dgrut) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [3DGS-LM](https://github.com/lukasHoel/3DGS-LM) ([fork](https://github.com/jeffdaily/3DGS-LM/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#15](https://github.com/lukasHoel/3DGS-LM/pull/15) |
 | [3DUNDERWORLD-SLS-GPU_CPU](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU) ([fork](https://github.com/jeffdaily/3DUNDERWORLD-SLS-GPU_CPU/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | 🟢 [#33](https://github.com/theICTlab/3DUNDERWORLD-SLS-GPU_CPU/pull/33) |
-| [3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) ([fork](https://github.com/jeffdaily/3P-ADMM-PC2/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🟢 [#10](https://github.com/Samarvivian/3P-ADMM-PC2/pull/10) |
+| [3P-ADMM-PC2](https://github.com/Samarvivian/3P-ADMM-PC2) ([fork](https://github.com/jeffdaily/3P-ADMM-PC2/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟣 [#10](https://github.com/Samarvivian/3P-ADMM-PC2/pull/10) |
 | [accelerated-scan](https://github.com/proger/accelerated-scan) ([fork](https://github.com/jeffdaily/accelerated-scan/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#17](https://github.com/proger/accelerated-scan/pull/17) |
 | [aihwkit](https://github.com/IBM/aihwkit) ([fork](https://github.com/jeffdaily/aihwkit/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#770](https://github.com/IBM/aihwkit/pull/770) |
 | [alien](https://github.com/chrxh/alien) ([fork](https://github.com/jeffdaily/alien/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | 🚫 | 🟢 [#710](https://github.com/chrxh/alien/pull/710) |
-| [amgcl](https://github.com/ddemidov/amgcl) ([fork](https://github.com/jeffdaily/amgcl/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | 🟢 [#315](https://github.com/ddemidov/amgcl/pull/315) |
+| [amgcl](https://github.com/ddemidov/amgcl) ([fork](https://github.com/jeffdaily/amgcl/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | — | 🟣 [#315](https://github.com/ddemidov/amgcl/pull/315) |
 | [arbor](https://github.com/arbor-sim/arbor) ([fork](https://github.com/jeffdaily/arbor/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#2512](https://github.com/arbor-sim/arbor/pull/2512) |
 | [arrayfire](https://github.com/arrayfire/arrayfire) ([fork](https://github.com/jeffdaily/arrayfire/tree/moat-port)) | ✅ | ✅ | 🔧 | ✅ | — | 🟢 [#3708](https://github.com/arrayfire/arrayfire/pull/3708) |
 | [AutoDock-GPU](https://github.com/ccsb-scripps/AutoDock-GPU) ([fork](https://github.com/jeffdaily/AutoDock-GPU/tree/moat-port)) | ✅ | ✅ | 🔄 | ✅ | — | 🟢 [#320](https://github.com/ccsb-scripps/AutoDock-GPU/pull/320) |
@@ -73,7 +73,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [evogp](https://github.com/EMI-Group/evogp) ([fork](https://github.com/jeffdaily/evogp/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | — | — |
 | [faiss](https://github.com/facebookresearch/faiss) ([fork](https://github.com/jeffdaily/faiss/tree/moat-port)) | ✅ | ✅ | — | ✅ | ✅ | — |
 | [FaithC](https://github.com/Luo-Yihao/FaithC) ([fork](https://github.com/jeffdaily/FaithC/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
-| [Fast-Poisson-Image-Editing](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing) ([fork](https://github.com/jeffdaily/Fast-Poisson-Image-Editing/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟢 [#25](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing/pull/25) |
+| [Fast-Poisson-Image-Editing](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing) ([fork](https://github.com/jeffdaily/Fast-Poisson-Image-Editing/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟣 [#25](https://github.com/Trinkle23897/Fast-Poisson-Image-Editing/pull/25) |
 | [faster-gaussian-splatting](https://github.com/nerficg-project/faster-gaussian-splatting) ([fork](https://github.com/jeffdaily/faster-gaussian-splatting/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [FastGeodis](https://github.com/masadcv/FastGeodis) ([fork](https://github.com/jeffdaily/FastGeodis/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [fdtd3d](https://github.com/zer011b/fdtd3d) ([fork](https://github.com/jeffdaily/fdtd3d/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
@@ -94,7 +94,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [gpu4pyscf](https://github.com/pyscf/gpu4pyscf) ([fork](https://github.com/jeffdaily/gpu4pyscf/tree/moat-port)) | ✅ | ✅ | 🚫 | 🚫 | — | — |
 | [GPU_IPC](https://github.com/KemengHuang/GPU_IPC) ([fork](https://github.com/jeffdaily/GPU_IPC/tree/moat-port)) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [Gpufit](https://github.com/gpufit/Gpufit) ([fork](https://github.com/jeffdaily/Gpufit/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | 🚫 | — |
-| [GPUMD](https://github.com/brucefan1983/GPUMD) ([fork](https://github.com/jeffdaily/GPUMD/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟢 [#1538](https://github.com/brucefan1983/GPUMD/pull/1538) |
+| [GPUMD](https://github.com/brucefan1983/GPUMD) ([fork](https://github.com/jeffdaily/GPUMD/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟣 [#1538](https://github.com/brucefan1983/GPUMD/pull/1538) |
 | [gpuRIR](https://github.com/DavidDiazGuerra/gpuRIR) ([fork](https://github.com/jeffdaily/gpuRIR/tree/moat-port)) | ✅ | ✅ | — | ✅ | ✅ | — |
 | [gRASPA](https://github.com/snurr-group/gRASPA) ([fork](https://github.com/jeffdaily/gRASPA/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [gsplat](https://github.com/nerfstudio-project/gsplat) ([fork](https://github.com/jeffdaily/gsplat/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🟢 [#970](https://github.com/nerfstudio-project/gsplat/pull/970) |
@@ -143,7 +143,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [popsift](https://github.com/alicevision/popsift) ([fork](https://github.com/jeffdaily/popsift/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🟢 [#186](https://github.com/alicevision/popsift/pull/186) |
 | [prismatic](https://github.com/prism-em/prismatic) ([fork](https://github.com/jeffdaily/prismatic/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | — |
 | [pyslam](https://github.com/luigifreda/pyslam) | 🚫 | ⬜ | ⬜ | ⬜ | ⬜ | — |
-| [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟢 [#2039](https://github.com/facebookresearch/pytorch3d/pull/2039) |
+| [pytorch3d](https://github.com/facebookresearch/pytorch3d) ([fork](https://github.com/facebookresearch/pytorch3d/tree/moat-port)) | ❓ | ✅ | ✅ | ✅ | ✅ | 🟣 [#2039](https://github.com/facebookresearch/pytorch3d/pull/2039) |
 | [pytorch_cluster](https://github.com/rusty1s/pytorch_cluster) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [pytorch_scatter](https://github.com/rusty1s/pytorch_scatter) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — |
 | [pytorch_sparse](https://github.com/rusty1s/pytorch_sparse) | ⬜ | ⬜ | ⬜ | ⬜ | ⬜ | — |

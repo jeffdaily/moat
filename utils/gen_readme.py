@@ -140,7 +140,18 @@ def outcome_cell(p):
       blocked    -- non-viable. ⛔
     No PR and no outcome yet -> pending (—)."""
     if p.get("pr_url"):
-        glyph = {"open": "🟢", "merged": "🟣", "closed": "🔴"}.get(p.get("pr_state") or "open", "🟢")
+        # The lead platform state is the source of truth for PR disposition
+        # (set-pr-open -> pr-open, set-pr-merged -> upstream-landed); pr_state is a
+        # loosely-maintained legacy field that is often absent, so deriving the
+        # glyph from it alone left merged PRs rendering as open. Prefer lead state;
+        # fall back to pr_state only for 'closed', which has no lead-state form.
+        lead_state = p.get("platforms", {}).get(moatlib.LEAD, {}).get("state")
+        if lead_state == "upstream-landed" or p.get("pr_state") == "merged":
+            glyph = "🟣"
+        elif p.get("pr_state") == "closed":
+            glyph = "🔴"
+        else:
+            glyph = "🟢"
         num = p.get("pr_number")
         if num is None:  # derive from the .../pull/<n> URL tail when not recorded
             tail = p["pr_url"].rstrip("/").rsplit("/", 1)[-1]
