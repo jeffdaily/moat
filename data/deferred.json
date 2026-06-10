@@ -537,6 +537,20 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-10T14:46:48Z"
+    },
+    {
+      "id": "hipblaslt-gfx1201-fp32-heuristic-segfault",
+      "kind": "rocm-bug-report",
+      "project": null,
+      "component": "hipBLASLt",
+      "summary": "gfx1201 SIGSEGV in hipblaslt_f8::is_inf via hipblasLtMatmulAlgoGetHeuristic for plain FP32 GEMM (FP8 type-check path runs unconditionally); 7.14.0a nightly regression 2026-06-07 -> 2026-06-08; workaround ROCBLAS_USE_HIPBLASLT=0. Filed upstream.",
+      "refs": [
+        "https://github.com/ROCm/rocm-libraries/issues/8242",
+        "https://gist.github.com/jeffdaily/72c0fe8edfb4c7a7200516322a90afb7"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-09T17:30:40Z"
     }
   ]
 }

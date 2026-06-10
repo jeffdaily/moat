@@ -13,3 +13,4 @@
 {"kind":"phase","ts":"2026-06-09T20:06:47Z","phase":"test","seconds":13.745,"exit":0,"cmd":"bash -c \nsource /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12\nexport HIP_VISIBLE_DEVICES=0\ncd /tmp\npython -m pytest /tmp/nerfacc_tests_gfx1100/ -v -p no:cacheprovider 2>&1\n"}
 {"kind": "tokens", "ts": "2026-06-09T20:08:23Z", "tokens": 48495, "source": "validator"}
 {"kind":"phase","ts":"2026-06-09T20:19:49Z","phase":"compile","seconds":0.501,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pip install -e . --no-build-isolation"}
+{"kind": "tokens", "ts": "2026-06-09T19:59:21Z", "tokens": 40306, "source": "validator"}

@@ -525,3 +525,45 @@ To re-run without the confounding env var:
 3. If OOM persists without PYTORCH_NO_HIP_MEMORY_CACHING=1: the garden diagnostic itself may not be viable on a 44GB card for this large a model. The off-by-one investigation should proceed via a smaller synthetic scene designed to trigger the boundary Gaussian condition.
 4. If CLEAN (no OOM, no HSA fault): the off-by-one is WAVE64-SPECIFIC.
 5. If HSA fault reappears: the off-by-one is UPSTREAM.
+## MI300 / MI350 GARDEN FULL-CONFIG VALIDATION REQUEST (2026-06-10, from linux-gfx90a)
+
+WHY: the real-scene LM fault is FIXED (fork branch `moat-realdata-fix`, commit 6cb3a0b: count-safe
+index_map -- see commit msg / [[3dgslm-garden-real-scene-lm-fault]]). On MI250X (gfx90a, 64GB GCD)
+the fix runs the garden LM for 42 min with NO memory access fault, but garden at the paper config
+(--image_subsample_size 25, ~6M gaussians, 25 cached forward passes) needs >64GB (~63GB held; the
+paper used an 80GB A100), so it OOMs on a 64GB GCD before finishing. MI300 (192GB) / MI350 (288GB)
+have the memory to COMPLETE it and produce the end-to-end PSNR.
+
+GOAL: confirm the fix lets a full garden "3DGS+Ours" fit reproduce the paper number, and capture
+the test PSNR/SSIM (+ ellipse_time) to compare against Tab.1/Tab.6 (garden, NVIDIA A100). This is
+the number upstream PR #15 (lukasHoel) asked for.
+
+STEPS (MI300/MI350, gfx942/gfx950, ROCm):
+1. Clone jeffdaily/3DGS-LM, checkout branch `moat-realdata-fix` (has the fix; NOT moat-port, so the
+   open PR is unaffected). Init the diff-gaussian-rasterization third_party/glm submodule (vendored).
+2. Build both extensions (Strategy B, torch build-time hipify) for the host arch via PyTorch ROCm.
+   Build-env gotcha: the hipified ext_hip.cpp host compile needs glm on the include path --
+   `export CPATH=<DGR>/third_party/glm` (the nvcc-only -Iglm is not applied to the .cpp). Set
+   PYTORCH_ROCM_ARCH=<arch>. Nuke stale hip_rasterizer/ mirror + build/ before rebuild.
+3. Get the garden scene WITHOUT the 12GB zip: `pip install remotezip`; RemoteZip(
+   "http://storage.googleapis.com/gresearch/refraw360/360_v2.zip").extract for
+   `garden/images_4/*` and `garden/sparse/0/{cameras,images,points3D}.bin` (~250MB).
+4. Python deps: numpy<2, plyfile, opencv-python-headless, scipy; stub torchvision/ffmpeg/imageio
+   (only the spherical-video path uses them). LPIPS needs an ABI-matched torchvision (likely absent)
+   -> PSNR + SSIM are the gettable metrics; LPIPS optional.
+5. Run the fit_all_scenes garden config from scratch (20k SGD then 5 LM):
+   `python train.py -s <garden> --root_out out --exp_name g --eval --images images_4 --resolution 1
+    --image_subsample_size 25 --image_subsample_n_iters 4 --image_subsample_frame_selection_mode strided
+    --num_sgd_iterations_before_gn 20000 --perc_images_in_line_search 0.3 --pcg_rtol 5e-2 --pcg_max_iter 8
+    --min_trust_region_radius 1e-4 --trust_region_radius 1e-3 --max_trust_region_radius 1e-2
+    --iterations 5 --test_iterations 5 --save_iterations 5`
+   Expect peak VRAM >64GB (fits MI300/MI350, not a 64GB GCD). On one-GPU-per-process hosts pin
+   HIP_VISIBLE_DEVICES to one device.
+6. CAPTURE: the "[ITER 5] Evaluating test: ... PSNR" line from train.py, and train_stats_5.json
+   (ellipse_time, num_GS). Compare PSNR to the paper's garden (3DGS+Ours) value (Tab.1 360-avg is
+   PSNR 27.39 / SSIM 0.813; per-scene garden is in Tab.6). Quality PARITY (not throughput) is the bar.
+   Write results back into this notes.md.
+
+EXPECTED: completes with no memory access fault (fix), test PSNR near the paper's garden number.
+If a memory access fault recurs on MI300, that would indicate a wave-size component beyond the
+count-safe fix (MI300=gfx942 wave64 like gfx90a; MI350=gfx950 wave64) -- note it.
