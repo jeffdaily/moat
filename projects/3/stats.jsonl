@@ -50,3 +50,10 @@
 {"kind":"phase","ts":"2026-06-10T20:10:06Z","phase":"test","seconds":8.231,"exit":0,"cmd":"bash -c cd projects/3/src && go test -tags hip -count=1 ./cuda/... ./cuda/cu/... 2>&1 | tail -40"}
 {"kind":"phase","ts":"2026-06-10T20:11:00Z","phase":"test","seconds":9.387,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/3/src && /var/lib/jenkins/go/bin/mumax3 -paranoid=false -cache /tmp -http \"\" test/standardproblem4.mx3 2>&1 | tail -30"}
 {"kind": "tokens", "ts": "2026-06-10T20:16:15Z", "tokens": 104571, "source": "porter (amdgcnspirv re-port)"}
+{"kind":"phase","ts":"2026-06-10T21:52:45Z","phase":"compile","seconds":0.035,"exit":0,"cmd":"go install -tags hip github.com/mumax/3/..."}
+{"kind":"phase","ts":"2026-06-10T21:54:26Z","phase":"compile","seconds":0.014,"exit":0,"cmd":"go install -tags hip github.com/mumax/3/..."}
+{"kind":"phase","ts":"2026-06-10T21:54:58Z","phase":"compile","seconds":0.011,"exit":1,"cmd":"go install -tags hip ./..."}
+{"kind":"phase","ts":"2026-06-10T21:55:09Z","phase":"compile","seconds":0.014,"exit":0,"cmd":"go install -tags hip github.com/mumax/3/..."}
+{"kind":"phase","ts":"2026-06-10T21:55:23Z","phase":"compile","seconds":0.009,"exit":1,"cmd":"go install -tags hip ./cmd/mumax3 ./cmd/mumax3-convert ./cmd/mumax3-httpfsd"}
+{"kind":"phase","ts":"2026-06-10T21:55:32Z","phase":"compile","seconds":0.224,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/3/src && go install -tags hip ./cmd/mumax3 ./cmd/mumax3-convert ./cmd/mumax3-httpfsd"}
+{"kind":"phase","ts":"2026-06-10T21:55:58Z","phase":"test","seconds":17.918,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/3/src\necho '=== cuda/ tests ===' && go test -v -tags hip -count=1 ./cuda/ 2>&1\necho '=== cuda/cu/ tests ===' && go test -v -tags hip -count=1 ./cuda/cu/ 2>&1\necho '=== cuda/cufft/ tests ===' && go test -v -tags hip -count=1 ./cuda/cufft/ 2>&1\necho '=== data/httpfs tests ===' && go test -tags hip -count=1 ./data/... ./httpfs/... 2>&1\n"}

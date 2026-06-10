@@ -741,3 +741,65 @@ This is comparable to the CUDA path's driver JIT of PTX and is not meaningful
 against a typical multi-second-to-minute simulation. (Code objects could be
 cached, but mumax already caches the demag kernel, not the device modules; left
 as-is to match upstream behavior.)
+
+## Validation 2026-06-10 (linux-gfx90a, amdgcnspirv revalidate)
+
+Platform: linux-gfx90a, AMD Instinct MI250X / MI250 (gfx90a:sramecc+:xnack-,
+wave64), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1.
+Fork sha: 76136004e9794cd0f89da83e0394d1631780c998 (amdgcnspirv re-port).
+Revalidate trigger: functional change to device-code generation/load path
+(per-gfx-arch .co -> single generic SPIR-V finalized by comgr at load time).
+Binary-equiv carry-forward does NOT apply; full GPU run required.
+
+Go 1.22.4 installed to /var/lib/jenkins/goroot (tarball; apt provides 1.22.2
+which go.mod rejects). GOPATH=/var/lib/jenkins/gopath.
+
+Build commands:
+```
+export GOROOT=/var/lib/jenkins/goroot
+export GOPATH=/var/lib/jenkins/gopath
+export PATH=/var/lib/jenkins/goroot/bin:/opt/rocm/bin:$PATH
+export CGO_ENABLED=1 GOFLAGS=-mod=mod HIP_VISIBLE_DEVICES=1
+cd projects/3/src
+go install -tags hip ./cmd/mumax3 ./cmd/mumax3-convert ./cmd/mumax3-httpfsd
+```
+
+Build result: PASS (18 MB binary; deprecated HIP ctx API warnings only).
+The *_wrapper_hip.go files and testmodule_amdgcnspirv.co are pre-committed;
+`make wrappers BACKEND=hip` is not needed for validation.
+
+Boot log (from standardproblem4.out/log.txt):
+"GPU info: AMD Instinct MI250X / MI250(65520MB), HIP Driver 7.2,
+arch=gfx90a:sramecc+:xnack-, using generic amdgcnspirv image"
+Confirmed: comgr finalized the generic SPIR-V for gfx90a at runtime; no
+arch-specific .co selection remains. ATTRIBUTE_WARP_SIZE=64 (wave64, gfx90a).
+
+Test results:
+- `go test -v -tags hip -count=1 ./cuda/`: 8/8 PASS (TestBuffer, TestReduceSum,
+  TestReduceDot, TestReduceMaxAbs, TestSlice, TestCpy, TestSliceFree,
+  TestSliceHost). reduce.h wave64 fix correct; atomicCAS fmaxabs correct.
+- `go test -v -tags hip -count=1 ./cuda/cu/`: 12/12 PASS (TestContext, TestDevice,
+  TestMalloc, TestMemAddressRange, TestMemGetInfo, TestMemsetAsync, TestMemset,
+  TestMemcpy, TestMemcpyAsync, TestMemcpyAsyncRegistered, TestModule, TestVersion).
+  TestModule PASS confirms the single testmodule_amdgcnspirv.co loads and
+  executes on gfx90a via hipModuleLoadData.
+- `go test -v -tags hip -count=1 ./cuda/cufft/`: TestExampleFFT1D PASS.
+- `go test -tags hip -count=1 ./data/... ./httpfs/...`: PASS (non-GPU regression).
+
+Headline gates:
+- standardproblem4 (M.Average within 1e-5):
+  computed (-0.9846118, 0.1260469, 0.0432689)
+  vs ref   (-0.9846124, 0.1260409, 0.0432712) -- PASS (max delta 6e-7).
+  Cross-arch comparison vs gfx1100 ref (-0.9846120, 0.1260455, 0.0432691):
+  delta at 7th decimal -- no wave64 reduction fault.
+- standardproblem5 (mx/my/mz within 1e-4):
+  mx=-0.2348835 (diff 5.5e-5 OK), my=-0.0945328 (diff 3.0e-6 OK),
+  mz=0.0229620 (diff 1.8e-6 OK) -- PASS.
+
+gfx90a-specific wave64 risk check: no mis-finalization. All reduce tests
+(TestReduceSum, TestReduceDot, TestReduceMaxAbs) PASS on wave64; the
+all-__syncthreads reduce.h path is arch-generic as required. The generic
+SPIR-V image does not carry compile-time wave width assumptions; comgr
+correctly targets gfx90a wave64.
+
+Verdict: PASS. State -> completed. validated_sha = 76136004e9794cd0f89da83e0394d1631780c998.

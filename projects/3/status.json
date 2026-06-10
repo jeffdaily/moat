@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-10T20:16:15Z",
+  "updated_at": "2026-06-10T21:57:10Z",
   "head_sha": "76136004e9794cd0f89da83e0394d1631780c998",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
+      "validated_sha": "76136004e9794cd0f89da83e0394d1631780c998",
       "started_at": "2026-06-04T04:33:12Z",
-      "completed_at": "2026-06-08T04:44:08Z",
-      "updated_at": "2026-06-10T20:16:15Z",
+      "completed_at": "2026-06-10T21:57:10Z",
+      "updated_at": "2026-06-10T21:57:10Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,13 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
-        "method": "binary-equiv",
-        "detail": "all 64 gfx90a .co byte-identical (f6b642d5->4f3de0cf); comment-only Makefile reword, no device source change",
-        "at": "2026-06-08T04:44:08Z"
-      }
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "completed",
