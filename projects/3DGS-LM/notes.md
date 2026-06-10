@@ -608,3 +608,44 @@ synthetic scenes but on a real Mip-NeRF360 capture.
 Artifacts (gitignored agent_space/, this host): 3dgslm_build.sh, 3dgslm_run_garden.sh,
 3dgslm_fetch_garden.py, 3dgslm_ssim.py, 3dgslm_stubs/torchvision (LPIPS/render stub),
 out/garden_d86de318-4/{train_stats_5.json, test/ours_5/{renders,gt}}.
+## MI350 GARDEN FULL-CONFIG VALIDATION RESULT (2026-06-10, gfx950)
+
+PASS. The full garden "3DGS+Ours" fit (20k SGD then 5 LM steps, paper config --image_subsample_size 25)
+ran end-to-end on an AMD Instinct MI350X (gfx950, wave64), ROCm 7.2.5 / PyTorch 2.13, fork branch
+`moat-realdata-fix` @ 6cb3a0b (count-safe index_map). NO memory access fault at any LM step -- the
+count-safe fix holds on gfx950 wave64, same as it did on gfx90a wave64.
+
+Results (test set, [ITER 5]):
+- Test PSNR 27.329, Test SSIM 0.8658 (L1 0.02751, L2 0.002234)
+- Train PSNR 29.769
+- num_GS 5,954,762 (~5.95M); peak mem 62.22 GB; ellipse_time (LM) 5392 s (~89.9 min)
+- SGD 20k in 10m13s (32.6 it/s); total wall ~90.7 min
+
+vs the paper (Tab.1 360-avg PSNR 27.39 / SSIM 0.813; per-scene garden in Tab.6): 27.33 PSNR is at
+parity with the paper's garden number, SSIM 0.866 is well above the 360-avg (garden is a
+high-SSIM scene). Quality PARITY achieved -- this is the end-to-end number upstream PR #15 asked for.
+
+The peak 62.22 GB confirms the earlier OOM diagnosis: garden at the paper config exceeds the 64GB
+MI250X GCD (held ~63GB then OOM) and the 48GB gfx1100, so only a >=64GB-usable card (MI300 192GB /
+MI350 288GB) can finish it. Throughput is not the bar; quality parity is.
+
+### HOST GOTCHA: do not pin HIP_VISIBLE_DEVICES=0 on this 8-GPU MI350X host (one wedged GPU)
+
+This host has 8 MI350X GCDs. HIP ordinal 0 maps to a GPU that is currently WEDGED: the first H2D
+copy / first kernel on it hangs forever (process spins at 100% CPU, never advances; no amdgpu ring
+timeout in dmesg, so it is a userspace/HSA-level hang, not a kernel GPU reset). The first garden
+launch pinned HIP_VISIBLE_DEVICES=0 and hung at the very first camera upload (scene/cameras.py:41
+`.to("cuda")`), 0/161 cameras for 38 min. An isolated `torch.rand(...).to('cuda')` probe reproduces:
+it hangs on HIP ordinal 0 but completes in 0.1s on HIP ordinal 4. Fix: pin HIP_VISIBLE_DEVICES to a
+verified-idle ordinal (used 4 here). NOTE HIP ordinals != rocm-smi indices: HIP ordinal 4 showed up
+as the busy GPU "7" in `rocm-smi` (100% util, 2200 MHz) during the run; the rocm-smi "-d 4" device
+looked idle the whole time. Verify the working GPU with a quick `.to('cuda')` smoke test before a
+long run rather than trusting the ordinal. GPUs 0-3 were also occupied by other jobs (shared host);
+4-7 were idle.
+
+### Repro (agent_space, gitignored)
+- build.sh (PYTORCH_ROCM_ARCH=gfx950, CPATH=<DGR>/third_party/glm, isolated --target site prefix)
+- launch_garden.py (stubs torchvision/ffmpeg/imageio/lpipsPyTorch; sets train.args; wraps
+  training_report to add the SSIM-over-test-cameras pass since upstream prints PSNR only; NO --quiet
+  -- safe_state(silent=True) swallows ALL stdout incl. the PSNR line)
+- run.sh (HIP_VISIBLE_DEVICES=4, timeit.sh test phase, tee garden_mi350.log)
