@@ -562,6 +562,19 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-10T21:51:35Z"
+    },
+    {
+      "id": "opencv-dnn-miopen-backend",
+      "kind": "feature-port",
+      "project": "opencv_contrib",
+      "component": null,
+      "summary": "opencv dnn module CUDA backend (cuda4dnn/cuDNN) -> MIOpen backend: separate sizable project, out of cv::cuda port scope per jeff 2026-06-10 decision (plan.md open-decision-5)",
+      "refs": [
+        "projects/opencv_contrib/plan.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-10T23:39:47Z"
     }
   ]
 }
