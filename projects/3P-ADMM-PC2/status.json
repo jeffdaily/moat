@@ -7,17 +7,17 @@
   "priority": 4.906,
   "ext_type": "nvcc-shared",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-08T18:11:05Z",
+  "updated_at": "2026-06-10T14:23:02Z",
   "head_sha": "2c1cafae0204fc8a728e046caae153e9ee1df834",
   "platforms": {
     "linux-gfx90a": {
-      "state": "pr-open",
+      "state": "upstream-landed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
       "started_at": "2026-06-02T06:08:10Z",
       "completed_at": "2026-06-07T15:15:22Z",
-      "updated_at": "2026-06-08T16:22:00Z",
+      "updated_at": "2026-06-10T14:23:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
+      "last_agent": "upstream-landed",
       "carry_forward": {
         "to": "096cc8f37bbd3cb974f159416579aae93cb3ea9a",
         "method": "source-class",
@@ -158,5 +158,6 @@
   "pr_url": "https://github.com/Samarvivian/3P-ADMM-PC2/pull/10",
   "pr_state": "open",
   "pr_number": 10,
-  "pr_opened_at": "2026-06-08T16:22:00Z"
+  "pr_opened_at": "2026-06-08T16:22:00Z",
+  "pr_merged_at": "2026-06-10T14:23:02Z"
 }
