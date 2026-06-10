@@ -652,3 +652,92 @@ Headline gates:
 Note: mumax3.exe used `HIP Library Path: C:\WINDOWS\SYSTEM32\amdhip64_7.dll` (AMD Adrenalin driver System32 copy) -- this works fine for standardproblem5.mx3 via the installed binary since that path ships with Adrenalin. The go test runs also used the System32 amdhip64 without issue.
 
 Verdict: PASS. State -> completed. validated_sha = 4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc.
+
+## amdgcnspirv re-port (2026-06-10, linux-gfx1100)
+
+### Rationale: PTX analog, not SASS analog
+Upstream mumax3 embeds PTX (a forward-compatible virtual ISA the CUDA driver
+JITs at load) keyed by compute capability. The original HIP port embedded
+per-gfx-arch code objects (reducesum_gfx1100.co, testmodule_gfx1201.co, ...)
+selected by a gcnArchName-keyed loader driven by a CUDA_CC gfx list -- that is
+the SASS/sm_XX analog, arch-pinned and needing a rebuild/relist for every new
+GPU. The correct PTX analog on AMD is amdgcnspirv: `--offload-arch=amdgcnspirv`
+emits ONE generic SPIR-V image that the ROCm runtime (comgr) finalizes for the
+present GPU at hipModuleLoadData time. One image per kernel, runs on any
+supported gfx arch, no per-arch matrix.
+
+Spike confirmation on this gfx1100: the bundle from
+`hipcc --genco --offload-arch=amdgcnspirv -include hip/hip_runtime.h ...`
+carries the SPIR-V magic (0x07230203) at offset 4096; amdgcnspirv defines BOTH
+__HIP_PLATFORM_AMD__ and __SPIRV__, so the existing `#ifdef __HIP_PLATFORM_AMD__`
+guards (reduce.h wave-agnostic branch, atomicf.h fmaxabs) resolve to the AMD
+branch under SPIR-V exactly as they did per-arch.
+
+### Build/embed/load changes (all under //go:build hip or BACKEND=hip)
+- cuda/Makefile (BACKEND=hip): the per-arch `for arch in $(CUDA_CC)` loop is
+  replaced by a single `hipcc --genco --offload-arch=amdgcnspirv` producing
+  `<name>.co`. CUDA_CC no longer drives the HIP build (it stays a CUDA/nvcc
+  concept). New HIP_OFFLOAD_ARCH=amdgcnspirv knob.
+- cuda/cuda2go.go (hip template): the `map[string][]byte` keyed by gfx arch plus
+  per-arch base64 consts collapse to a single `<name>_image = mustDecodeCodeobj(<name>_spirv)`
+  and one base64 const. Kernel.Code went from `[]codeobj{Arch,B64}` to a single
+  `string`; the .co discovery matches `<name>.co` exactly instead of `<name>_(.+).co`.
+- cuda/fatbin_hip.go: dropped determineArch / UseArch / gfxArchRe / archLoads
+  (the whole arch-detection + trial-load apparatus). fatbinLoad now takes a
+  single `[]byte` and does `cu.ModuleLoadData(image).GetFunction(fn)`. Kept
+  mustDecodeCodeobj.
+- cuda/init_hip.go: the early-load probe is `fatbinLoad(madd2_image, "madd2")`;
+  cudaDev comment "used to select the code-object arch" dropped.
+- cmd/mumax3/gpuinfo_hip.go: boot line no longer prints cuda.UseArch (gone); it
+  now reports "using generic amdgcnspirv image". GPUInfo still names the device
+  arch (arch=gfx1100).
+- cuda/cu/module_hip_test.go: dropped the ArchName()-keyed `testmodule_<arch>.co`
+  selection; loads the single `testdata/testmodule_amdgcnspirv.co`.
+- testdata: removed (git rm) testmodule_gfx90a.co / _gfx1100.co / _gfx1201.co;
+  added one testmodule_amdgcnspirv.co.
+- Regenerated all 65 cuda/*_wrapper_hip.go via `make wrappers BACKEND=hip`; each
+  embeds a valid SPIR-V blob (verified: base64-decode -> magic at offset 4096
+  for all 65).
+
+CUDA path is byte-identical: `git diff --name-only HEAD` touches zero
+`!hip`-tagged files -- no *_wrapper.go, no fatbin.go/init.go/module_test.go/
+gpuinfo.go/module.go. All changes are HIP-tagged.
+
+### All kernels lowered to SPIR-V
+All 64 generated .co (65 .cu; one .cu has no own .co on disk only because the
+`topologicalcharge.cu` recipe's `rm -f topologicalcharge*.co` glob deletes the
+already-embedded topologicalcharge-lattice.co as collateral -- harmless, its
+wrapper blob is correct and SPIR-V-bearing) carry the SPIR-V magic. No kernel
+needed an __SPIRV__ branch or a dynamic-warpSize fix: the device code was
+already arch-generic (no __GFX9__, no hardcoded warpSize literal; reduce.h uses
+an all-__syncthreads tree, atomicf.h guards on __HIP_PLATFORM_AMD__ which
+amdgcnspirv defines). Nothing assumed a compile-time wave width.
+
+### gfx1100 validation evidence (AMD Radeon Pro W7800 48GB, ROCm 7.2.1, HIP_VISIBLE_DEVICES=0)
+Build: `cd cuda && make wrappers BACKEND=hip` then
+`go install -tags hip github.com/mumax/3/...` -- exit 0 (deprecation warnings only).
+- `go test -tags hip -count=1 ./cuda/`: 8/8 PASS (TestBuffer, TestReduceSum,
+  TestReduceDot, TestReduceMaxAbs, TestSlice, TestCpy, TestSliceFree, TestSliceHost).
+- `go test -tags hip -count=1 ./cuda/cu/`: 12/12 PASS incl. TestModule (now on the
+  generic amdgcnspirv image) and TestVersion; cufft FFT1D PASS.
+- `go test -tags hip -count=1 ./data/... ./httpfs/...`: PASS (non-GPU regression).
+- standardproblem4.mx3: m=(-0.9846120, 0.1260455, 0.0432691) vs ref
+  (-0.9846124, 0.1260409, 0.0432712), all OK within 1e-5 (gate is 1e-3) -- PASS.
+- standardproblem5.mx3: mx=-0.2348835 (OK), my=-0.0945328 (OK), mz=0.0229620 (OK),
+  all within 1e-4 -- PASS.
+- Boot log confirms the single generic image:
+  "GPU info: AMD Radeon Pro W7800 48GB(46064MB), HIP Driver 7.2, arch=gfx1100,
+  using generic amdgcnspirv image" -- no gfx-specific .co selection remains.
+
+### First-load JIT/finalize latency
+comgr finalizes each generic SPIR-V image on first hipModuleLoadData. Measured
+on gfx1100 over a representative 11-module sample: most kernels finalize in
+~2.8-3.2ms; three heavier ones cost more (crossproduct 79ms, dotproduct 70ms,
+adddmibulk 113ms). Sample total 285ms (avg ~26ms). Across all ~65 modules the
+cumulative cold-finalize cost is roughly 1-2s, but mumax finalizes lazily on
+each kernel's first launch (the `if <name>_code == 0` guard in every wrapper),
+not in a single startup stall; only the Init-time madd2 probe (~3ms) is forced.
+This is comparable to the CUDA path's driver JIT of PTX and is not meaningful
+against a typical multi-second-to-minute simulation. (Code objects could be
+cached, but mumax already caches the demag kernel, not the device modules; left
+as-is to match upstream behavior.)
