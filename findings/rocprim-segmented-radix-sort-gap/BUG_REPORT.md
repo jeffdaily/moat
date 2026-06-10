@@ -33,3 +33,12 @@ Seed both DoubleBuffer halves with the input (snippet above). HIP-only; CUDA/CUB
 
 ## Severity
 Medium -- silent wrong data for the partial-coverage + full-range-copy-back pattern; possibly by-design but undocumented and divergent from CUB.
+
+## Verdict (verified 2026-06-10): NOT filing -- most likely within-contract
+
+`segmented_sort_gap.cpp` (in this dir) confirms the behavior: with int (ui32) keys, 2 segments leaving gaps, a DoubleBuffer with the alternate half pre-filled with a sentinel (999):
+- end_bit 4,8,20,24 -> odd radix-pass count -> `Current()` flips to the alternate buffer -> gaps read back 999 (the sentinel) = UNDEFINED.
+- end_bit 12,16,28,32 -> even passes -> `Current()` == input buffer -> gaps preserved.
+Segments themselves always sort correctly.
+
+This matches the catboost symptom, BUT segmented radix sort only defines behavior WITHIN segments; out-of-segment elements with a DoubleBuffer are plausibly unspecified in CUB as well (could not confirm a CUB *guarantee* of preservation without NVIDIA hardware). So this is most likely a portability gotcha (catboost relied on CUB incidentally preserving out-of-segment elements), not a rocPRIM defect. NOT filed. The catboost `segmented_sort.cu` gap-seed workaround (seed both DoubleBuffer halves) is correct defensive coding and stays.

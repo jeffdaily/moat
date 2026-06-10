@@ -27,3 +27,15 @@ Query the temp size through the SortPairs path (pass the real values pointer) wh
 
 ## Severity
 Low-Medium -- partly a caller CUB-contract mis-use, but rocPRIM converts it into a hard hipErrorInvalidValue where CUB silently tolerates it; confirm the contract / consider lenient sizing.
+
+## Verdict (verified 2026-06-10): NOT a bug -- could not reproduce
+
+`sortpairs_tempsize.cpp` (in this dir), with ui32/ui32 (catboost's exact instantiation, REGISTER_KERNEL_TEMPLATE_2 ... ui32, ui32), 4 segments, N=2^16:
+```
+SortKeys  temp_storage_bytes = 1328
+SortPairs temp_storage_bytes = 1328   (the SAME)
+SortPairs run with a SortKeys-sized temp: launch=no error sync=no error
+```
+rocPRIM does NOT need more temp for SortPairs than SortKeys for these types, and running SortPairs with a SortKeys-sized buffer does not fault -- directly contradicting the "SortPairs needs more temp -> hipErrorInvalidValue" premise. NOT a rocPRIM bug; NOT filed.
+
+SIDE NOTE (catboost port): the `segmented_sort.cpp` USE_HIP sizing workaround (size via `Values.Get()`) and its comment ("a pairs Run ... needs more temp") therefore appear unnecessary/misleading for sizing -- the real symptom catboost hit was the gap issue (`segmented_sort.cu`), conflated with sizing. Candidate cleanup: drop the sizing gate + fix the comment (the gap-seed gate in segmented_sort.cu stays).
