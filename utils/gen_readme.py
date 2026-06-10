@@ -152,7 +152,7 @@ def outcome_cell(p):
         return f"🔵 validated ({n} arch)" if n else "🔵 validated"
     if oc == "fork":
         fu = p.get("fork_url")
-        return f"🍴 [fork]({fu}/tree/{moatlib.PORT_BRANCH})" if fu else "🍴 fork"
+        return f"🍴 [fork]({fu}/tree/{p.get('fork_branch') or moatlib.PORT_BRANCH})" if fu else "🍴 fork"
     if oc == "superseded":
         return "⚪ superseded"
     if oc == "blocked":
@@ -173,7 +173,7 @@ def render_table(projects):
               "🍴 fork-only · ⚪ superseded · — pending. "
               "† The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) "
               "satisfies the Windows requirement for PR-readiness; the two Linux archs (gfx90a then gfx1100) are each required. "
-              "The project name links to upstream, (fork) to our `moat-port` branch.")
+              "The project name links to upstream, (fork) to the port branch on our fork.")
     headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Outcome"]
     aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
     lines = [legend, "",
@@ -183,7 +183,7 @@ def render_table(projects):
         name = p.get("name", "?")
         up = p.get("upstream_url")
         if p.get("fork_url"):
-            proj = f"[{name}]({up}) ([fork]({p['fork_url']}/tree/{moatlib.PORT_BRANCH}))"
+            proj = f"[{name}]({up}) ([fork]({p['fork_url']}/tree/{p.get('fork_branch') or moatlib.PORT_BRANCH}))"
         else:
             proj = f"[{name}]({up})"
         plats = p.get("platforms", {})

@@ -123,5 +123,6 @@
     }
   },
   "pr_url": "https://github.com/colmap/colmap/pull/4420",
-  "pr_number": 4420
+  "pr_number": 4420,
+  "fork_branch": "rocm-sift-gpu"
 }

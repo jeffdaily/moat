@@ -15,7 +15,7 @@ Projects we will not port (already ported, already supported, can't be ported, o
 ## Projects
 
 <!-- MOAT:TABLE:START -->
-Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done) · 🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked/failed · — n/a or pending. Outcome: 🟣 PR merged · 🟢 PR open · 🔴 PR closed · 🔵 validated (existing ROCm confirmed on N archs) · 🍴 fork-only · ⚪ superseded · — pending. † The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) satisfies the Windows requirement for PR-readiness; the two Linux archs (gfx90a then gfx1100) are each required. The project name links to upstream, (fork) to our `moat-port` branch.
+Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done) · 🔄 re-check (HEAD moved) · ⬜ todo/gated · 🚫 blocked/failed · — n/a or pending. Outcome: 🟣 PR merged · 🟢 PR open · 🔴 PR closed · 🔵 validated (existing ROCm confirmed on N archs) · 🍴 fork-only · ⚪ superseded · — pending. † The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) satisfies the Windows requirement for PR-readiness; the two Linux archs (gfx90a then gfx1100) are each required. The project name links to upstream, (fork) to the port branch on our fork.
 
 | Project | gfx90a<br>Linux | gfx1100<br>Linux | gfx1101 †<br>Windows | gfx1201 †<br>Windows | gfx1151 †<br>Windows | Outcome |
 | --- | :---: | :---: | :---: | :---: | :---: | --- |
@@ -36,7 +36,7 @@ Status: ✅ done · 🔧 in progress · 🟡 queued (gfx1201 follower; lead done
 | [bellhopcuda](https://github.com/A-New-BellHope/bellhopcuda) ([fork](https://github.com/jeffdaily/bellhopcuda/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#65](https://github.com/A-New-BellHope/bellhopcuda/pull/65) |
 | [brian2cuda](https://github.com/brian-team/brian2cuda) ([fork](https://github.com/jeffdaily/brian2cuda/tree/moat-port)) | ✅ | ✅ | — | ✅ | — | 🟢 [#327](https://github.com/brian-team/brian2cuda/pull/327) |
 | [catboost](https://github.com/catboost/catboost) ([fork](https://github.com/jeffdaily/catboost/tree/moat-port)) | ✅ | ✅ | 🔄 | ✅ | 🔄 | 🟢 [#3111](https://github.com/catboost/catboost/pull/3111) |
-| [colmap](https://github.com/colmap/colmap) ([fork](https://github.com/jeffdaily/colmap/tree/moat-port)) | ✅ | 🚫 | 🚫 | 🚫 | — | 🟢 [#4420](https://github.com/colmap/colmap/pull/4420) |
+| [colmap](https://github.com/colmap/colmap) ([fork](https://github.com/jeffdaily/colmap/tree/rocm-sift-gpu)) | ✅ | 🚫 | 🚫 | 🚫 | — | 🟢 [#4420](https://github.com/colmap/colmap/pull/4420) |
 | [colvars](https://github.com/Colvars/colvars) | 🚫 | 🚫 | 🚫 | 🚫 | — | — |
 | [CPM.cu](https://github.com/OpenBMB/CPM.cu) | 🚫 | ⬜ | ⬜ | ⬜ | — | — |
 | [CTranslate2](https://github.com/OpenNMT/CTranslate2) ([fork](https://github.com/jeffdaily/CTranslate2/tree/moat-port)) | ✅ | ✅ | ✅ | ✅ | ✅ | 🔵 validated (5 arch) |
