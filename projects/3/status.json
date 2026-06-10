@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "go-cgo-driver-api",
   "adopted_at": "2026-06-04T04:24:21Z",
-  "updated_at": "2026-06-10T19:50:57Z",
-  "head_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
+  "updated_at": "2026-06-10T20:16:15Z",
+  "head_sha": "76136004e9794cd0f89da83e0394d1631780c998",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
       "started_at": "2026-06-04T04:33:12Z",
       "completed_at": "2026-06-08T04:44:08Z",
-      "updated_at": "2026-06-10T19:50:57Z",
+      "updated_at": "2026-06-10T20:16:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -44,10 +44,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
+      "validated_sha": "76136004e9794cd0f89da83e0394d1631780c998",
       "started_at": "2026-06-04T06:40:10Z",
-      "completed_at": "2026-06-08T13:34:28Z",
-      "updated_at": "2026-06-10T19:50:57Z",
+      "completed_at": "2026-06-10T20:16:15Z",
+      "updated_at": "2026-06-10T20:16:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,13 +61,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "4f3de0cfcbc044ddfbb97451d65f0abf1b7d0fbc",
-        "method": "binary-equiv",
-        "detail": "all 64 gfx1100 .co files byte-identical (f6b642d5->4f3de0cf); additive dual-backend restructure changes no device source (.cu) and no HIPCCFLAGS; host-side -tags hip build compiles clean on ROCm 7.2.1",
-        "at": "2026-06-08T13:34:28Z"
-      }
+      "last_agent": "validator"
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -92,13 +86,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
       "started_at": null,
       "completed_at": "2026-06-08T21:21:54Z",
-      "updated_at": "2026-06-10T19:50:57Z",
+      "updated_at": "2026-06-10T20:16:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
