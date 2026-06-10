@@ -7,17 +7,17 @@
   "priority": 5.432,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-09T16:10:47Z",
+  "updated_at": "2026-06-10T14:23:02Z",
   "head_sha": "d505eff",
   "platforms": {
     "linux-gfx90a": {
-      "state": "pr-open",
+      "state": "upstream-landed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "d505eff",
       "started_at": "2026-05-30T07:08:22Z",
       "completed_at": "2026-06-08T19:09:22Z",
-      "updated_at": "2026-06-09T16:10:47Z",
+      "updated_at": "2026-06-10T14:23:02Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer",
+      "last_agent": "upstream-landed",
       "carry_forward": {
         "to": "d505eff",
         "method": "source-class",
@@ -150,5 +150,6 @@
   },
   "pr_url": "https://github.com/ddemidov/amgcl/pull/315",
   "pr_number": 315,
-  "pr_opened_at": "2026-06-08T19:14:40Z"
+  "pr_opened_at": "2026-06-08T19:14:40Z",
+  "pr_merged_at": "2026-06-10T14:23:02Z"
 }
