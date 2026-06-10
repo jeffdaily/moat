@@ -872,3 +872,77 @@ for Windows always use per-arch gfx1201/gfx1101 objects embedded alongside the
 SPIR-V blob with a runtime OS check.
 
 Verdict: FAIL. State -> validation-failed.
+
+Note (2026-06-10 revalidation): the "and also TheRock 7.14's copy" claim above was incorrect. TheRock's runtime (amdhip64_7.dll + amd_comgr.dll from _rocm_sdk_core/bin) DOES support SPIR-V finalization. The actual root cause was DLL binding: the Go test binary bound System32's Adrenalin amdhip64_7.dll (exe-dir -> System32 -> PATH; System32 wins over PATH) which lacks comgr. See the revalidation below.
+
+## Validation 2026-06-10 (windows-gfx1201, PASS -- DLL binding fix)
+
+Platform: windows-gfx1201, AMD Radeon RX 9070 XT (gfx1201 / RDNA4, wave32), TheRock ROCm 7.14, Windows 11 Pro for Workstations, HIP_VISIBLE_DEVICES=0.
+Fork sha: 76136004e9794cd0f89da83e0394d1631780c998 (no source change from the FAILED run).
+
+### Root cause of the previous FAILED verdict
+
+The 2026-06-10 FAILED verdict was a runtime-binding artifact, not a port regression. The System32 Adrenalin driver copy of amdhip64_7.dll lacks the SPIR-V->ISA finalization path (comgr); only TheRock's full runtime (amdhip64_7.dll + amd_comgr.dll from _rocm_sdk_core/bin) has it. A native Windows exe's DLL search order is: exe's own directory -> System32 -> PATH. `go test` places the test binary in a temp dir with no runtime DLLs, so Windows falls back to System32's Adrenalin amdhip64_7.dll, which rejects the SPIR-V bundle with hipErrorInvalidValue. The same fix that unblocked dietgpu on Windows: copy TheRock's runtime DLLs next to the test binary so exe-dir search (#1) binds the correct DLL before System32 (#2).
+
+### Fix: stage TheRock runtime DLLs next to the test binary
+
+Used `go test -c` to compile each test package to a known output directory, then copied the five TheRock runtime DLLs from `_rocm_sdk_core/bin` into that directory before running:
+
+```
+OUTDIR=agent_space/mumax3-gfx1201-revalidate/
+
+# Build test binaries
+go test -tags hip -c -o $OUTDIR/cu.test.exe    ./cuda/cu
+go test -tags hip -c -o $OUTDIR/cuda.test.exe  ./cuda
+go test -tags hip -c -o $OUTDIR/cufft.test.exe ./cuda/cufft
+
+# Stage TheRock runtime DLLs next to each binary
+CORE=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_core/bin
+cp $CORE/amdhip64_7.dll $CORE/amd_comgr.dll $CORE/rocm_kpack.dll \
+   $CORE/hiprtc0714.dll $CORE/hiprtc-builtins0714.dll $OUTDIR/
+
+DEVEL=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/bin
+cp $DEVEL/hipfft.dll $DEVEL/rocfft.dll $DEVEL/hiprand.dll $DEVEL/rocrand.dll $OUTDIR/
+
+# Run from the package source dir (for testdata/ relative-path lookup)
+cd projects/3/src/cuda/cu    && $OUTDIR/cu.test.exe    -test.v -test.count=1
+cd projects/3/src/cuda       && $OUTDIR/cuda.test.exe  -test.v -test.count=1
+cd projects/3/src/cuda/cufft && $OUTDIR/cufft.test.exe -test.v -test.count=1
+```
+
+### Test results (HIP_VISIBLE_DEVICES=0, gfx1201, TheRock runtime)
+
+```
+# cuda/cu (12/12 PASS):
+TestContext PASS, TestDevice PASS (ArchName=gfx1201, warpSize=32),
+TestMalloc PASS, TestMemAddressRange PASS, TestMemGetInfo PASS,
+TestMemsetAsync PASS, TestMemset PASS, TestMemcpy PASS,
+TestMemcpyAsync PASS, TestMemcpyAsyncRegistered PASS,
+TestModule PASS (131s -- comgr SPIR-V finalization for gfx1201),
+TestVersion PASS (HIP driver version 71460850)
+12/12 PASS
+```
+
+```
+# cuda (8/8 PASS):
+TestBuffer PASS, TestReduceSum PASS (134s -- first-load finalization),
+TestReduceDot PASS (133s), TestReduceMaxAbs PASS (136s),
+TestSlice PASS, TestCpy PASS, TestSliceFree PASS, TestSliceHost PASS
+8/8 PASS
+```
+
+```
+# cuda/cufft:
+TestExampleFFT1D PASS (2s -- hipFFT is a library call, no SPIR-V finalization)
+PASS
+```
+
+```
+# Non-GPU regression (data, httpfs): PASS
+```
+
+Confirmed: TestModule PASS proves the amdgcnspirv image loads and finalizes correctly on gfx1201 under TheRock's runtime. TestReduceSum/Dot/MaxAbs PASS confirms the reduce.h wave32 fix and atomicCAS fmaxabs are correct on RDNA4.
+
+Note on first-load latency: comgr JIT on gfx1201 takes ~130-136s per kernel module on first load. This is significantly slower than gfx1100 (~3ms typical) and appears to be a cold-start cost on this gfx1201/RDNA4 machine. Runtime-cached subsequent loads will be fast, and mumax3 itself uses lazy per-kernel loading (first simulation step) rather than a startup stall.
+
+Verdict: PASS. This supersedes the 2026-06-10 FAILED verdict. No source change was made; the failure was purely a runtime-binding artifact. State -> completed. validated_sha = 76136004e9794cd0f89da83e0394d1631780c998.

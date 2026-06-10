@@ -59,3 +59,4 @@
 {"kind":"phase","ts":"2026-06-10T21:55:58Z","phase":"test","seconds":17.918,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/3/src\necho '=== cuda/ tests ===' && go test -v -tags hip -count=1 ./cuda/ 2>&1\necho '=== cuda/cu/ tests ===' && go test -v -tags hip -count=1 ./cuda/cu/ 2>&1\necho '=== cuda/cufft/ tests ===' && go test -v -tags hip -count=1 ./cuda/cufft/ 2>&1\necho '=== data/httpfs tests ===' && go test -tags hip -count=1 ./data/... ./httpfs/... 2>&1\n"}
 {"kind": "tokens", "ts": "2026-06-10T21:58:38Z", "tokens": 69149, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T21:23:38Z", "tokens": 70101, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-10T21:54:01Z", "tokens": 101241, "source": "validator"}
