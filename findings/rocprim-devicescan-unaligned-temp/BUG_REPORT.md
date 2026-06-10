@@ -1,35 +1,43 @@
-# rocPRIM DeviceScan corrupts the scan non-deterministically when its temp storage is not 256-byte aligned (gfx90a)
+# rocPRIM DeviceScan returns non-deterministic wrong results when d_temp_storage is not 8-byte aligned (address mod 8 in {4,5,6}) on gfx90a
 
 ## Component
-rocPRIM `DeviceScan` (lookback tile-state), reached via hipCUB `cub::DeviceScan::InclusiveScan` / `ExclusiveScan`.
+rocPRIM `DeviceScan` (decoupled-lookback), reached via hipCUB `cub::DeviceScan::ExclusiveSum` / `InclusiveSum`.
 
 ## Summary
-On gfx90a (CDNA2, ROCm 7.2.1), `DeviceScan` produces **wrong, non-deterministic results at tile boundaries** when the caller hands it a `d_temp_storage` pointer that is not 256-byte aligned. The decoupled-lookback tile-state that rocPRIM places at the start of the temp buffer appears to assume a minimum alignment; at an unaligned base the tile-state reads/writes tear at tile boundaries and the scan output is corrupted differently from run to run. CUB on NVIDIA has no such requirement: the same caller-provided unaligned pointer scans correctly. The `temp_storage_bytes` query does not over-allocate to absorb a misaligned base, so a caller that sub-allocates the temp from a larger buffer at an arbitrary offset silently gets corruption rather than an error.
+On gfx90a (CDNA2, ROCm 7.2.1), `DeviceScan` produces **non-deterministic wrong output** when the caller-provided `d_temp_storage` pointer has certain sub-8-byte misalignments -- specifically when `((uintptr_t)d_temp_storage % 8)` is 4, 5, or 6. Roughly 10-60% of the output elements are wrong, clustered at tile boundaries, and both the count and the locations vary from run to run on identical input. CUB on NVIDIA has no such sensitivity: any `d_temp_storage` of at least `temp_storage_bytes` produces the correct result, which is the documented contract. rocPRIM's internal temp-storage layout (the lookback tile-state placed inside `d_temp_storage`) evidently assumes an alignment of the base pointer that CUB does not require, and `temp_storage_bytes` does not over-allocate to absorb a misaligned base, so a caller sub-allocating its scratch from a larger buffer at an arbitrary offset gets silent corruption rather than an error.
 
 ## Environment
 - AMD Instinct MI250X, gfx90a (CDNA2)
 - ROCm 7.2.1, hipCUB -> rocPRIM
 
-## Evidence (in the wild)
-catboost's GPU split-points kernel (`catboost/cuda/methods/greedy_subsets_searcher/kernel/split_points.cu`) shares a single scratch buffer between an int scan output region `[0, 4*part.Size)` and the `DeviceScan` working temp placed immediately after it, at byte offset `4*part.Size`. When `part.Size` makes that offset non-256-aligned, the scan corrupts and the resulting split indices are wrong, non-deterministically (catboost's `BinBuilderTest` / split tests fail intermittently). Forcing the temp to start at the next 256-aligned offset makes it correct and deterministic:
-```cpp
-// workaround in split_points.cu
-const ui64 scanTempOffset = (tempOffsetsSize + 255) & ~static_cast<ui64>(255);
-auto scanTmp = tempStorage ? (void*)(tempStorage + scanTempOffset) : nullptr;
+## Reproducer
+`devicescan_align.cpp` in this directory. Build/run:
 ```
+hipcc -O2 --offload-arch=gfx90a devicescan_align.cpp -o devicescan_align
+HIP_VISIBLE_DEVICES=0 ./devicescan_align
+```
+It runs `ExclusiveSum` of 2^20 ones (correct result is `out[i] == i`) with `d_temp_storage` placed at byte offset `off` past a (256-aligned) `hipMalloc` base.
 
-## Minimal reproducer (to build before filing)
-A standalone repro is straightforward and should be built/attached before filing:
-1. Allocate one device buffer; place the `DeviceScan` `d_temp_storage` at a deliberately non-256-aligned offset inside it (e.g. base + 4 bytes).
-2. `cub::DeviceScan::ExclusiveSum` over N ints spanning several tiles (N large enough for multiple lookback tiles, e.g. >= 1<<16).
-3. Compare against a host prefix-sum; expect mismatches clustered at tile boundaries, varying across runs.
-4. Repeat with a 256-aligned temp base; expect a correct, deterministic result.
+Observed (bad = count of wrong elements; firstbad = first wrong index):
+```
+off  0..3   -> bad=0            (mod 8 = 0,1,2,3 : correct)
+off  4      -> bad=252416 / 379136 (two runs; mod 8 = 4 : CORRUPT, non-deterministic)
+off  5      -> bad=363776 / 162560 (mod 8 = 5 : CORRUPT)
+off  6      -> bad=412160 / 333056 (mod 8 = 6 : CORRUPT)
+off  7,8..11,15,16,24,32,64,256 -> bad=0   (mod 8 = 7,0,1,2,3 : correct)
+off 12,13,14 -> CORRUPT          (mod 8 = 4,5,6)
+off 20,28,36,68,132,260 -> CORRUPT (all mod 8 = 4)
+```
+Pattern: **corrupt iff `(d_temp_storage % 8)` in {4,5,6}; correct for residues {0,1,2,3,7}.** An 8-byte-aligned `d_temp_storage` (residue 0) is always correct. The corruption is non-deterministic (race-like, at tile boundaries), consistent with torn accesses to the lookback tile-state.
+
+## Evidence (in the wild)
+catboost's GPU split-points kernel (`catboost/cuda/methods/greedy_subsets_searcher/kernel/split_points.cu`) sub-allocates the `DeviceScan` temp from a shared buffer at byte offset `4*part.Size`; when that offset lands on a {4,5,6}-mod-8 address the scan corrupts and split indices come out wrong, non-deterministically (its `BinBuilderTest` fails intermittently). Aligning the temp offset up fixed it.
 
 ## Expected behavior
-Either (a) `DeviceScan` works correctly for any caller-provided `d_temp_storage` (handle alignment internally), matching CUB, or (b) the alignment requirement is documented AND `temp_storage_bytes` is increased so the algorithm can self-align inside the returned size. Silent non-deterministic corruption is the worst outcome.
+`DeviceScan` should accept any `d_temp_storage` of at least `temp_storage_bytes` regardless of its alignment, matching CUB. Failing that, the alignment requirement must be documented and `temp_storage_bytes` increased so the algorithm can self-align within the returned size. Silent, non-deterministic corruption with no error is the worst outcome.
 
 ## Workaround
-256-byte-align the `d_temp_storage` base offset (see snippet above). HIP-only; the CUDA/CUB path needs no change.
+Align `d_temp_storage` to 8 bytes (round the sub-allocation offset up to a multiple of 8). catboost rounds up to 256, which also works (a superset). HIP-only; the CUDA/CUB path needs no change.
 
 ## Severity
-High -- silent, non-deterministic data corruption with no error returned.
+High -- silent, non-deterministic data corruption with no error returned, triggered by an alignment that CUB explicitly permits.
