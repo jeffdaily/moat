@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-10T13:46:07Z",
+  "updated_at": "2026-06-10T13:53:14Z",
   "head_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
       "started_at": "2026-06-05T08:17:27Z",
       "completed_at": "2026-06-09T14:17:18Z",
-      "updated_at": "2026-06-10T13:46:07Z",
+      "updated_at": "2026-06-10T13:53:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/facebookresearch/baspacho/pull/10",
+  "pr_number": 10,
+  "pr_opened_at": "2026-06-10T13:53:14Z"
 }
