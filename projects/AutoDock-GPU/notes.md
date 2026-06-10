@@ -927,3 +927,17 @@ verdict=identical
 VERDICT: Binary-equivalent on linux-gfx1100 for both default (TENSOR=OFF) and TENSOR=ON builds.
 Validation carried forward to c2f2f6f without GPU re-run. Full prior gfx1100 scope (TENSOR=OFF
 docking + TENSOR=ON bf16 rocWMMA RDNA path validated at f01306b) stands unchanged.
+
+## Re-prep: dropped TENSOR scope-out, re-squashed 2026-06-10
+
+Per jeff, re-prepped the PR with tensor support INCLUDED (the earlier scope-out is gone).
+Prep edits on top of the validated c2f2f6f: scrubbed the 1 jargon comment (Makefile.Hip
+"followers (gfx1100, gfx1151)" -> neutral), documented TENSOR=ON in README.md (matrix-core
+rocWMMA, NUMWI>=64), added AMD copyright lines to the 2 substantial port artifacts
+(cuda_to_hip.h new, kernels.cu +254). Re-squashed the 4 fork commits -> ONE clean commit
+d1b5e7b5 (full port, 10 files +569/-24). Delta vs c2f2f6f is doc/comment/copyright-only, so
+gfx90a/gfx1100/gfx1201 carried forward (classify false-positived "mixed" on Makefile.Hip
+unknown file type; verified inert by full diff). gfx1101 revalidate (not required; gfx1201
+satisfies the Windows tier), gfx1151 port-ready (host retired). pr-ready=True, 0 jargon.
+Commit message (autodock_pr_msg.txt): scope-out paragraph replaced with rocWMMA tensor
+support; Test Plan includes TENSOR=ON. AWAITING jeff's go to open the upstream PR.

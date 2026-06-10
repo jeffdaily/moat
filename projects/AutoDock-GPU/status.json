@@ -7,17 +7,17 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-09T20:00:49Z",
-  "head_sha": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
+  "updated_at": "2026-06-10T03:48:57Z",
+  "head_sha": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
+      "validated_sha": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
       "started_at": "2026-05-30T06:52:18Z",
-      "completed_at": "2026-06-09T19:46:06Z",
-      "updated_at": "2026-06-09T19:46:06Z",
+      "completed_at": "2026-06-10T03:48:57Z",
+      "updated_at": "2026-06-10T03:48:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "porter",
       "carry_forward": {
-        "to": "c2f2f6f1c4e5da29374fe7c5f30879b5e9cde88b",
-        "method": "binary-equiv",
-        "detail": "Windows min/max undef guards inside #if __HIP_PLATFORM_AMD__ -- on Linux min/max are not macros so preprocessor strips those lines; codeobj_diff verified identical (device ISA + 14 exported symbols)",
-        "at": "2026-06-09T19:46:06Z"
+        "to": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
+        "method": "source-class",
+        "detail": "Squash to one clean commit d1b5e7b5; delta vs the validated c2f2f6f is doc/comment/copyright-only (verified by full diff: Makefile.Hip comment jargon-scrub, README TENSOR=ON doc, AMD copyright lines i",
+        "at": "2026-06-10T03:48:57Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
+      "validated_sha": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
       "started_at": "2026-05-30T07:18:00Z",
-      "completed_at": "2026-06-09T19:57:11Z",
-      "updated_at": "2026-06-09T19:57:11Z",
+      "completed_at": "2026-06-10T03:48:57Z",
+      "updated_at": "2026-06-10T03:48:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
-        "method": "binary-equiv",
-        "detail": "Windows min/max undef guards inside #if defined(__HIP_PLATFORM_AMD__) -- on Linux min/max are not macros so preprocessor strips those lines; codeobj_diff verified identical for both TENSOR=OFF and TEN",
-        "at": "2026-06-09T19:57:11Z"
+        "to": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
+        "method": "source-class",
+        "detail": "Squash to one clean commit d1b5e7b5; delta vs the validated c2f2f6f is doc/comment/copyright-only (verified by full diff: Makefile.Hip comment jargon-scrub, README TENSOR=ON doc, AMD copyright lines i",
+        "at": "2026-06-10T03:48:57Z"
       }
     },
     "windows-gfx1101": {
@@ -100,10 +100,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c2f2f6fb873c13caa913a30b4294e354bc6cc602",
+      "validated_sha": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
       "started_at": null,
-      "completed_at": "2026-06-09T19:08:29Z",
-      "updated_at": "2026-06-09T19:08:29Z",
+      "completed_at": "2026-06-10T03:48:57Z",
+      "updated_at": "2026-06-10T03:48:57Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -117,7 +117,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "d1b5e7b5afdbc923030e2ee9185d5f96f6505414",
+        "method": "source-class",
+        "detail": "Squash to one clean commit d1b5e7b5; delta vs the validated c2f2f6f is doc/comment/copyright-only (verified by full diff: Makefile.Hip comment jargon-scrub, README TENSOR=ON doc, AMD copyright lines i",
+        "at": "2026-06-10T03:48:57Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
