@@ -916,3 +916,84 @@ Result: PASS (gfx1100 wave32).
 GPU: AMD Radeon Pro W7800 48GB (gfx1100, compute capability 11.0, HIP_VISIBLE_DEVICES=0).
 Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect), e2e AUC 0.9762485623 bit-identical x2.
 validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
+
+## Validation 2026-06-10 (revalidate, windows-gfx1201) -- 4f42ad54 -> completed
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32, compute capability 12.0), Windows 11 Pro for Workstations, TheRock ROCm 7.14 pip wheels, all-clang-cl build. HIP_VISIBLE_DEVICES=0 (only GPU present at validation time; gfx1101 not visible).
+
+### Delta analysis (ca6b84af -> 4f42ad54)
+
+ca6b84af is not in the fork history (squashed away). The gfx1201 was last GPU-validated at 09612d3c (2026-06-06). The substantive HIP-active changes between 09612d3c and 4f42ad54 are: exact_estimation.cu leaf-count fix moved from kernel param to caller (real HIP code change); split.cu / hist*.cuh / segmented_sort.cpp GPU-bug fixes gated behind #if USE_HIP (CUDA path restored, HIP path unchanged); warp_mask.cuh new header (CB_FULL_WARP_MASK moved from cuda_to_hip.h; same value); kernel_helpers.cuh, operators.cuh comment-only jargon scrubs; "filed upstream" comment fixes in split.cu/hist.cuh/exact_estimation.cu (comment-only, carried fwd). Full GPU revalidation required and executed.
+
+### Build
+
+Source updated to 4f42ad54 (git checkout origin/moat-port). CMake reconfigured for gfx1201. Incremental build:
+
+```
+ROCM="/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+export PATH="${ROCM}/bin:${ROCM}/lib/llvm/bin:/c/Program Files/CMake/bin:/c/Strawberry/c/bin:$PATH"
+export HIP_VISIBLE_DEVICES=0
+cmake -G Ninja -S src -B src/build_hip/cm -DHAVE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 [...]
+utils/timeit.sh catboost compile -- \
+  ninja -C src/build_hip/cm -j64 catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut
+# 1977/1977 targets SUCCESS (incremental rebuild of changed sources), no errors
+# compile wall: 240s
+```
+
+GPU confirmed at runtime: "AMD Radeon RX 9070 XT (compute capability 12.0)".
+
+### Test 1 -- cuda_util-ut (two back-to-back runs for determinism):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- catboost-cuda-cuda_util-ut.exe --show-fails
+```
+
+Run 1: [DONE] ok: 48 (exit 0, ~338s)
+Run 2: [DONE] ok: 48 (exit 0)
+Pass sets: IDENTICAL -- deterministic on wave32 (gfx1201).
+
+### Test 2 -- gpu_data-ut (bin-builder overflow fix):
+
+```
+export HIP_VISIBLE_DEVICES=0
+utils/timeit.sh catboost test -- catboost-cuda-gpu_data-ut.exe --show-fails
+```
+
+[DONE] ok: 20 -- BinarizationsTests 16/16, BinBuilderTest 3/3 (TreeBuilderTest4 + TestCompressedSplitFloat + TreeBuilderTest32 PASS -- bin-builder overflow fix confirmed on gfx1201 at 4f42ad54), TGridBuilderPerftest 1/1. (~49s)
+
+### Test 3 -- methods-ut (histogram/exact-leaves/multistat suites):
+
+Run from exe's own directory to isolate test-pool.txt generation:
+```
+export HIP_VISIBLE_DEVICES=0
+cd catboost/cuda/methods/ut && ./catboost-cuda-methods-ut.exe --show-fails
+```
+
+[DONE] ok: 29, err: 1 (~2353s)
+- TAddingLangevinNoiseTest: 0/1 FAIL -- pre-existing upstream test-design issue, proven NOT a ROCm defect (GPU NextNormal bit-identical to host; GPU std 0.6571826685 vs CPU-expected 0.4308123035, tolerance 0.1; Box-Muller vs StdNormalDistribution test-design fragility; identical on all platforms incl NVIDIA); not a blocker.
+- TExactLeavesEstimationTest: 15/15 PASS (leaf-count fix at caller in 4f42ad54 confirmed correct)
+- TPairwiseHistogramTest: 4/4 PASS (pairwise histogram kernels correct on wave32/gfx1201)
+- TPointwiseHistogramTest: 4/4 PASS (pointwise histogram kernels, with + without one-hot, correct on gfx1201)
+- TPointwiseMultiStatHistogramTest: 6/6 PASS (WithoutOneHot1/2/17 + WithOneHot3/13 + FatSplitPropsTest -- histogram grid div-by-zero fix + scan-alignment fix confirmed on gfx1201 at 4f42ad54)
+
+Matches all prior platforms (gfx90a, gfx1100, gfx1101, gfx1151) at 4f42ad54: same 29/30 effective pass.
+
+### Wave32 verdict (gfx1201 = RDNA4, same wave32 ISA family as gfx1100/gfx1101)
+
+- FastInBlockReduce/BlockReduceN/SharedReduce4/8: full __syncthreads tree, wave-agnostic. CORRECT on wave32.
+- CB_FULL_WARP_MASK 64-bit (now from warp_mask.cuh): same value 0xffffffffffffffffULL. Benign on wave32. CORRECT.
+- 32-lane histogram layout: native on wave32. CORRECT. CONFIRMED by TPairwiseHistogramTest 4/4 + TPointwiseHistogramTest 4/4 + TPointwiseMultiStatHistogramTest 6/6.
+- split_points.cu scan-alignment fix (256-align USE_HIP): wave-agnostic. CONFIRMED by TPointwiseMultiStatHistogramTest 6/6.
+- exact_estimation.cu leaf-count fix (caller passes binCount not objectsCount): wave-agnostic. CONFIRMED by TExactLeavesEstimationTest 15/15.
+- TTileReducer<64>: dead code, never instantiated. SAFE.
+- TBinSplitLoader #if USE_HIP extract/compare: wave-agnostic arithmetic. CONFIRMED by BinBuilderTest 3/3.
+- No HSA fault, no NaN, no hang observed.
+
+DETERMINISM: two back-to-back cuda_util-ut runs bit-identical. No residual wave32 race.
+FORK CLEAN: local modifications are catboost/CMakeLists.windows-x86_64-cuda.txt + library/CMakeLists.windows-x86_64-cuda.txt only (the documented local-only R/JVM/Python/Spark binding prunes; never committed). No GPU source or build-config changes needed.
+
+Result: PASS (gfx1201 wave32).
+GPU: AMD Radeon RX 9070 XT (gfx1201, compute capability 12.0, HIP_VISIBLE_DEVICES=0).
+Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
+validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
