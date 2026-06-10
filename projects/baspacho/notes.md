@@ -398,3 +398,13 @@ Epsilon::value2 4.9999999e-05 (1.22% overshoot) -- the identical float32 FMA
 rounding tolerance overshoot seen on gfx90a and gfx1100, non-gating. The clean
 COMMITTED branch reproduces the exact validated result. Integrity gap CLOSED;
 windows-gfx1201 re-marked completed at 5db6b5f.
+
+## PR-prep 2026-06-10: AMD copyright + README reword, re-squash
+
+Prep on top of validated 5db6b5f6: added AMD copyright to cuda_to_hip.h (parallel to the
+Meta MIT header), reworded the README to drop "alternative to the CUDA backend" (-> just
+"for AMD GPUs", per jeff's cuda-efficient-features preference). Re-squashed the 2 commits
+into ONE clean commit 2b87dd81 (HIP support + Windows/amdclang++ build fixes). Delta vs
+5db6b5f6 is comment/doc-only -> gfx90a/gfx1100/gfx1201 carried forward (124/125 each). 0
+jargon. pr-ready=True. Upstream is facebookresearch/baspacho (Meta repo -- needs the Meta
+CLA at merge; AMD copyright line added to the new cuda_to_hip.h). AWAITING jeff's go to open.

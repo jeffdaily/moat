@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-09T14:30:49Z",
-  "head_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+  "updated_at": "2026-06-10T13:46:07Z",
+  "head_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+      "validated_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
       "started_at": "2026-06-05T08:17:27Z",
       "completed_at": "2026-06-09T14:17:18Z",
-      "updated_at": "2026-06-09T14:17:18Z",
+      "updated_at": "2026-06-10T13:46:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,10 +34,12 @@
       },
       "last_agent": "reviewer",
       "carry_forward": {
-        "to": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
-        "method": "binary-equiv",
-        "detail": "all 5 GPU test binaries (CudaFactorTest, CudaSolveTest, BatchedCudaFactorTest, BatchedCudaSolveTest, CudaPartialTest) identical: exported symbols + device ISA match; WIN32-guard delta is Linux-inert o",
-        "at": "2026-06-09T14:17:18Z"
+        "from": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+        "to": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "baspacho/baspacho/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-10T13:46:07Z"
       }
     },
     "windows-gfx1151": {
@@ -66,10 +68,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+      "validated_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
       "started_at": null,
       "completed_at": "2026-06-09T14:30:49Z",
-      "updated_at": "2026-06-09T14:30:49Z",
+      "updated_at": "2026-06-10T13:46:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -84,20 +86,22 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
-        "method": "binary-equiv",
-        "detail": "all 5 GPU test binaries (CudaFactorTest, CudaSolveTest, BatchedCudaFactorTest, BatchedCudaSolveTest, CudaPartialTest) identical on gfx1100: exported symbols + device ISA match; WIN32-guard delta is Li",
-        "at": "2026-06-09T14:30:49Z"
+        "from": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+        "to": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "baspacho/baspacho/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-10T13:46:07Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+      "validated_sha": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
       "started_at": null,
       "completed_at": "2026-06-08T23:02:11Z",
-      "updated_at": "2026-06-08T23:02:11Z",
+      "updated_at": "2026-06-10T13:46:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,7 +115,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "integrity-check"
+      "last_agent": "integrity-check",
+      "carry_forward": {
+        "from": "5db6b5f61190bb7d87293adb28bc3117d2d3a36b",
+        "to": "2b87dd8121d7d53d89600ebf5c819b43be22adbb",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "baspacho/baspacho/cuda_to_hip.h: comment-only (comments/format only)",
+        "at": "2026-06-10T13:46:07Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
