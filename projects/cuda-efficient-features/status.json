@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T04:44:13Z",
-  "updated_at": "2026-06-09T23:08:02Z",
-  "head_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+  "updated_at": "2026-06-10T04:31:59Z",
+  "head_sha": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+      "validated_sha": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
       "started_at": "2026-06-05T08:23:04Z",
       "completed_at": "2026-06-09T23:07:35Z",
-      "updated_at": "2026-06-09T23:08:02Z",
+      "updated_at": "2026-06-10T04:31:59Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
-        "method": "binary-equiv",
-        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
-        "at": "2026-06-09T23:07:35Z"
+        "from": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+        "to": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "modules/cuda_efficient_features/src/cuda_to_hip.h: comment-only (comments/format only); modules/cuda_efficient_features/src/hip_kernels.cu: comment-only (comments/format only); modules/cuda_efficient_",
+        "at": "2026-06-10T04:29:56Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+      "validated_sha": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
       "started_at": null,
       "completed_at": "2026-06-09T23:07:35Z",
-      "updated_at": "2026-06-09T23:08:02Z",
+      "updated_at": "2026-06-10T04:29:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -63,10 +65,12 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
-        "method": "binary-equiv",
-        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
-        "at": "2026-06-09T23:07:35Z"
+        "from": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+        "to": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "modules/cuda_efficient_features/src/cuda_to_hip.h: comment-only (comments/format only); modules/cuda_efficient_features/src/hip_kernels.cu: comment-only (comments/format only); modules/cuda_efficient_",
+        "at": "2026-06-10T04:29:56Z"
       }
     },
     "windows-gfx1101": {
@@ -95,10 +99,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+      "validated_sha": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
       "started_at": null,
       "completed_at": "2026-06-09T23:07:35Z",
-      "updated_at": "2026-06-09T23:08:02Z",
+      "updated_at": "2026-06-10T04:29:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -113,10 +117,12 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "1f125b5116a267a719776af5be745b8f0f8759ac",
-        "method": "binary-equiv",
-        "detail": "Include-path-shadowing refactor: bare <opencv2/core/*.hpp> resolving to the same hip_compat shim via the include path (build-system-only). codeobj_diff baseline eacf58d0 vs refactored = IDENTICAL (dev",
-        "at": "2026-06-09T23:07:35Z"
+        "from": "1e857340f1e9a7e82a03298de08cfaac1cb8b55e",
+        "to": "96605a560a8b3056dee2e1fb1111abe61aca03a5",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "modules/cuda_efficient_features/src/cuda_to_hip.h: comment-only (comments/format only); modules/cuda_efficient_features/src/hip_kernels.cu: comment-only (comments/format only); modules/cuda_efficient_",
+        "at": "2026-06-10T04:29:56Z"
       }
     },
     "windows-gfx1151": {
@@ -141,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/fixstars/cuda-efficient-features/pull/3",
+  "pr_number": 3,
+  "pr_opened_at": "2026-06-10T04:31:59Z"
 }
