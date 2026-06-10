@@ -14,3 +14,10 @@
 {"kind":"phase","ts":"2026-06-08T00:31:30Z","phase":"compile","seconds":90.868,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3DGS-LM-gfx1100-gpu1/build_old.sh"}
 {"kind":"phase","ts":"2026-06-08T00:33:11Z","phase":"compile","seconds":86.339,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/3DGS-LM-gfx1100-gpu1/build_new.sh"}
 {"kind": "tokens", "ts": "2026-06-08T00:42:26Z", "tokens": 60680, "source": "validator"}
+{"kind":"phase","ts":"2026-06-09T20:48:23Z","phase":"compile","seconds":112.151,"exit":1,"cmd":"bash agent_space/3dgslm_build.sh"}
+{"kind":"phase","ts":"2026-06-09T21:23:45Z","phase":"test","seconds":5.184,"exit":1,"cmd":"bash agent_space/3dgslm_run_garden.sh"}
+{"kind":"phase","ts":"2026-06-09T22:07:44Z","phase":"test","seconds":2606.857,"exit":134,"cmd":"bash agent_space/3dgslm_run_garden.sh"}
+{"kind":"phase","ts":"2026-06-09T22:20:02Z","phase":"test","seconds":568.430,"exit":1,"cmd":"bash agent_space/3dgslm_run_garden_ckpt.sh"}
+{"kind":"phase","ts":"2026-06-09T22:23:44Z","phase":"test","seconds":164.779,"exit":1,"cmd":"bash agent_space/3dgslm_run_garden_es.sh"}
+{"kind":"phase","ts":"2026-06-09T23:21:32Z","phase":"test","seconds":2428.848,"exit":134,"cmd":"bash agent_space/3dgslm_run_garden_d3.sh"}
+{"kind":"phase","ts":"2026-06-10T13:41:27Z","phase":"test","seconds":65.120,"exit":134,"cmd":"bash agent_space/3dgslm_validate_fix.sh 3"}

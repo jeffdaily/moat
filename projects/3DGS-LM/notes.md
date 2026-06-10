@@ -403,3 +403,52 @@ verdict=identical
 `codeobj_diff verdict=identical` confirms the compiled program is unchanged on gfx1100. Validation carried forward without GPU re-run.
 
 ### Overall verdict: carry-forward via binary-equiv. linux-gfx1100 -> completed (validated_sha=90e3353).
+
+## gfx1100 DIAGNOSTIC REQUEST (2026-06-10, from linux-gfx90a) -- wave64 vs upstream?
+
+Real-scene garden fit FAULTS at the LM step on gfx90a (MI250X). Root-caused to an off-by-one
+between two render passes: the sparse-Jacobian EMIT kernel (gsgn.cu ~269-298, selects
+contributors via `inside && contributor < last_contributor && power<=0 && alpha>=GSGN_ALPHA_THRESH`)
+includes ~1 boundary Gaussian that forward.cu renderCUDA did NOT flag `is_gaussian_hit`
+(forward.cu marks hit only for `alpha>=thresh AND test_T=T*(1-alpha)>=0.0001`, excluding the
+transmittance terminator at forward.cu:366-369). That Gaussian gets `map_visible_gaussians=-1`,
+so apply_jt_kernel reads `geomBuffer[-1]` (gsgn.cu:1726/1734) -> HSA memory access fault on ROCm
+(benign in-chunk over-read on NVIDIA; NVIDIA also zero-fills torch::empty, ROCm does not).
+
+The emit kernel uses a wavefront WarpScan to count contributors, so the off-by-one MIGHT have a
+wave64 component. **gfx1100 (wave32) is needed to disambiguate** (gfx90a is wave64-only):
+
+NEEDED ON gfx1100: run a real garden fit and report whether it faults at the LM step.
+1. Build the fork (jeffdaily/3DGS-LM @ moat-port) for gfx1100 per the "Validation 2026-06-02 (gfx1100)"
+   recipe above (agent_space/3dgslm_build_gfx1100.sh, isolated site prefix).
+2. Fetch the Mip-NeRF360 garden scene WITHOUT the 12GB zip: `pip install remotezip`, then
+   `RemoteZip("http://storage.googleapis.com/gresearch/refraw360/360_v2.zip").extract(...)` for
+   `garden/images_4/*` and `garden/sparse/0/{cameras,images,points3D}.bin` (~250MB total).
+3. Deps: numpy<2, plyfile, opencv-python-headless, scipy; stub torchvision/ffmpeg/imageio
+   (only the spherical-video path uses them); LPIPS not runnable (no ABI-matched torchvision).
+4. Run the fit_all_scenes garden config:
+   `python train.py -s <garden> --root_out out --exp_name g --eval --images images_4 --resolution 1
+    --image_subsample_size 25 --image_subsample_n_iters 4 --image_subsample_frame_selection_mode strided
+    --num_sgd_iterations_before_gn 20000 --perc_images_in_line_search 0.3 --pcg_rtol 5e-2 --pcg_max_iter 8
+    --min_trust_region_radius 1e-4 --trust_region_radius 1e-3 --max_trust_region_radius 1e-2
+    --iterations 5 --test_iterations 5 --save_iterations 5`
+   (Use a GCD/GPU with full free VRAM; garden densifies to ~6M Gaussians, ~17GB peak in SGD.)
+5. OPTIONAL precise confirmation: apply this probe to train.py linear_solve_pcg_fused (right after
+   `ray_ids = m[half:]` in the per-image sort loop) and run with env MOAT_DBG=1:
+   ```python
+   if os.environ.get("MOAT_DBG"):
+       P = gaussians.get_xyz.shape[0]; nvis = data.num_visible_gaussians[i]
+       g_ok = (gaussian_ids>=0)&(gaussian_ids<P)
+       mv = data.map_visible_gaussians[i]; ug = torch.unique(gaussian_ids[g_ok].long()); vi = mv[ug]
+       nbad = int(((vi<0)|(vi>=nvis)).sum())
+       print(f"[MOAT_PY] img={i} P={P} n_vis={nvis} uniq_gid={ug.numel()} mapvis_min={int(vi.min())} bad={nbad} -> {'MAPVIS_OOB' if nbad else 'consistent'}", flush=True)
+   ```
+   Also helpful: `PYTORCH_NO_HIP_MEMORY_CACHING=1` (precise overflow detection; avoids the
+   freed-float-buffer red herring).
+
+DECISION CRITERION (write the answer back into this notes.md):
+- If gfx1100 ALSO faults (or [MOAT_PY] shows uniq_gid==n_vis+1 / MAPVIS_OOB on some LM iter):
+  the off-by-one is UPSTREAM (present on wave32) -> it is a 3DGS-LM bug to report to lukasHoel,
+  not a ROCm-port defect. ROCm just makes the latent over-read fatal.
+- If gfx1100 COMPLETES cleanly (LM converges, test PSNR printed, no MAPVIS_OOB): the off-by-one
+  is WAVE64-SPECIFIC (gfx90a emit/WarpScan) -> a port fix in the emit kernel's contributor counting.
