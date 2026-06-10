@@ -321,3 +321,37 @@ torch.version.hip`, so the Linux builds are byte-identical. Linux validators can
 use codeobj_diff.py to carry forward without re-running GPU tests.
 
 validated_sha: 3e88a726661743d5b00d420726081f69964c5e38
+
+## Revalidation 2026-06-10 (validator, linux-gfx90a) -- state: completed (carry-forward)
+
+Platform: linux-gfx90a, GPU: AMD Instinct MI250X (gfx90a), ROCm 7.2.1.
+Delta: 2298cb55073791bdcfaff496c273c0ba5758a08d -> 3e88a726661743d5b00d420726081f69964c5e38 (1 commit).
+
+Delta classification: setup.py + .gitignore only. All setup.py changes are gated
+`sys.platform == "win32" and torch.version.hip` (or `bool(torch.version.hip)`);
+on Linux, sys.platform == "linux", so these branches are dead code. .gitignore
+is metadata only. The Linux build is byte-identical to the previously validated build.
+
+Binary-equivalence check: built both SHAs for gfx90a into separate dirs, then ran
+utils/codeobj_diff.py:
+
+    # Build old SHA (2298cb5)
+    cd projects/nerfacc/src && git checkout 2298cb55073791bdcfaff496c273c0ba5758a08d
+    rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 pip install -e . --no-build-isolation
+    cp nerfacc/csrc.so agent_space/nerfacc_build_old/csrc.so
+
+    # Build new SHA (3e88a72)
+    git checkout moat-port
+    rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=16 pip install -e . --no-build-isolation
+    cp nerfacc/csrc.so agent_space/nerfacc_build_new/csrc.so
+
+    python3 utils/codeobj_diff.py agent_space/nerfacc_build_old agent_space/nerfacc_build_new
+    # verdict=identical
+    # csrc.so: identical (exported symbols + device ISA identical (370 exports))
+
+Conclusion: binary-equivalent on gfx90a. Carried forward via moatlib carry-forward
+(method: binary-equiv). No GPU re-run needed.
+
+validated_sha: 3e88a726661743d5b00d420726081f69964c5e38

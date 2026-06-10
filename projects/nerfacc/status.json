@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-08T03:33:27Z",
-  "updated_at": "2026-06-09T20:23:10Z",
+  "updated_at": "2026-06-10T19:50:07Z",
   "head_sha": "3e88a726661743d5b00d420726081f69964c5e38",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2298cb55073791bdcfaff496c273c0ba5758a08d",
+      "validated_sha": "3e88a726661743d5b00d420726081f69964c5e38",
       "started_at": "2026-06-09T19:07:34Z",
-      "completed_at": "2026-06-09T19:58:44Z",
-      "updated_at": "2026-06-09T20:23:06Z",
+      "completed_at": "2026-06-10T19:50:07Z",
+      "updated_at": "2026-06-10T19:50:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "3e88a726661743d5b00d420726081f69964c5e38",
+        "method": "binary-equiv",
+        "detail": "setup.py changes gated on sys.platform=='win32'; Linux builds are byte-identical (codeobj_diff verdict=identical, 370 exports)",
+        "at": "2026-06-10T19:50:07Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
