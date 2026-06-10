@@ -803,3 +803,72 @@ SPIR-V image does not carry compile-time wave width assumptions; comgr
 correctly targets gfx90a wave64.
 
 Verdict: PASS. State -> completed. validated_sha = 76136004e9794cd0f89da83e0394d1631780c998.
+## Validation 2026-06-10 (windows-gfx1201, amdgcnspirv -- FAILED)
+
+Platform: windows-gfx1201, AMD Radeon RX 9070 XT (gfx1201 / RDNA4, wave32), TheRock ROCm 7.14, Windows 11 Pro for Workstations, HIP_VISIBLE_DEVICES=0.
+Revalidate trigger: head advanced from f6b642d5/66126b23 (squashed) to 76136004 (amdgcnspirv implementation).
+Fork sha: 76136004e9794cd0f89da83e0394d1631780c998.
+
+### Classification
+
+Delta is functional (new device-code generation path: per-arch ELF code objects ->
+single amdgcnspirv SPIR-V image). Binary-equivalence carry-forward not applicable;
+full GPU revalidation required. `python3 utils/moatlib.py classify` returned
+`class=mixed arch_independent=False`.
+
+### Build
+
+Build: `go install -tags hip ./...` with TheRock 7.14 CGO flags -- exit 0,
+deprecation warnings only (no errors), same as before. Build time ~5s.
+
+### SPIR-V load failure on Windows
+
+The amdgcnspirv format does NOT work with `hipModuleLoadData` (or `hipModuleLoad`)
+on the Windows HIP runtime (Adrenalin `C:\WINDOWS\SYSTEM32\amdhip64_7.dll`).
+
+Verified: loaded Linux-compiled and Windows-compiled `testmodule_amdgcnspirv.co`
+bundles -- both return `hipErrorInvalidValue` (error 1). The per-arch
+`testmodule_gfx1201.co` (ELF `hipv4-amdgcn-amd-amdhsa--gfx1201` bundle) loads
+successfully via both `hipModuleLoadData` and `hipModuleLoad`.
+
+Test results (HIP_VISIBLE_DEVICES=0, gfx1201):
+
+```
+go test -tags hip -v -count=1 github.com/mumax/3/cuda/cu
+# TestContext, TestDevice, TestMalloc, TestMemAddressRange, TestMemGetInfo,
+# TestMemsetAsync, TestMemset, TestMemcpy, TestMemcpyAsync,
+# TestMemcpyAsyncRegistered, TestVersion: 10/11 PASS
+# TestModule: FAIL -- panic: hipErrorInvalidValue (hipModuleLoadData with SPIR-V)
+FAIL github.com/mumax/3/cuda/cu
+
+go test -tags hip -v -count=1 github.com/mumax/3/cuda
+# TestBuffer: PASS (no kernel load needed for allocation)
+# TestReduceSum and all remaining kernel tests: FAIL (SPIR-V load)
+FAIL github.com/mumax/3/cuda
+
+go test -tags hip github.com/mumax/3/data github.com/mumax/3/httpfs
+# Non-GPU tests: PASS
+```
+
+### Root cause
+
+The Windows AMD HIP runtime (`amdhip64_7.dll` from Adrenalin driver, and also
+TheRock 7.14's copy) does not support the `amdgcnspirv` / SPIR-V bundle format
+as input to `hipModuleLoadData`. The CLANG_OFFLOAD_BUNDLE `__clang_offload_bundle__`
+containing a `hip-spirv64-amd-amdhsa--amdgcnspirv` entry is rejected with
+`hipErrorInvalidValue` on Windows regardless of whether the .co was compiled on
+Linux or Windows. The per-arch ELF (`hipv4-amdgcn-amd-amdhsa--gfx1201`) format
+works fine.
+
+The previous port (per-arch gfx1201 code objects) DID work on Windows. The
+amdgcnspirv re-port regresses Windows support.
+
+### Fix needed
+
+The porter must detect Windows at runtime (or build-time) and fall back to
+per-arch code objects, OR build a bundle containing BOTH the SPIR-V section (for
+Linux) AND per-arch ELF sections (for Windows) keyed by platform. Alternatively,
+for Windows always use per-arch gfx1201/gfx1101 objects embedded alongside the
+SPIR-V blob with a runtime OS check.
+
+Verdict: FAIL. State -> validation-failed.

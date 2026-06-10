@@ -80,13 +80,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "validation-failed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "66126b23d065c2cdd298ffd1043b3cd1aba87397",
       "started_at": null,
       "completed_at": "2026-06-08T21:21:54Z",
-      "updated_at": "2026-06-10T20:16:15Z",
+      "updated_at": "2026-06-10T21:50:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
