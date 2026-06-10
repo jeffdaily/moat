@@ -39,13 +39,20 @@ PLATFORMS = ["linux-gfx90a", "linux-gfx1100",
 # can permanently lose an arch's GPU (gfx1101 on the current host), and requiring
 # every Windows arch would then wedge the PR on hardware that no longer exists. The
 # work pipeline is unchanged -- each arch still validates wherever its GPU is present.
-# Satisfying the tier does NOT close it: an un-validated Windows arch stays selectable
-# (`actionable` keeps returning True) even after a sibling satisfies the tier or the PR
-# opens, so a host that later gains that GPU can validate it to complete the set. That
-# is purely additive -- a validation changes no head_sha, so it disturbs neither the
+# Satisfying the tier does NOT close it: validating another Windows arch later is
+# purely additive -- a validation changes no head_sha, so it disturbs neither the
 # open PR nor the other platforms; it just enriches the coverage record.
 PR_REQUIRED_PLATFORMS = ["linux-gfx90a", "linux-gfx1100"]
 WINDOWS_TIER = ["windows-gfx1101", "windows-gfx1201", "windows-gfx1151"]
+# Optional targets (jeff, 2026-06-10): gfx1101 (GPU lost on the Windows host) and
+# gfx1151 (host retired). They are never scheduled (`actionable` returns False),
+# never block PR-readiness, and never count as pending work, so in practice the
+# Windows tier's pending work is gfx1201's. A `completed` record on an optional
+# arch still satisfies the tier, and a documented `blocked` determination on one
+# is kept as a record. Their per-platform states (revalidate, port-ready, ...)
+# remain accurate resume points in case hardware reappears -- do not flip them to
+# a fake state just to silence reports.
+OPTIONAL_PLATFORMS = {"windows-gfx1101", "windows-gfx1151"}
 PORT_BRANCH = "moat-port"  # the topic branch that holds the port on each fork
 
 # Per-platform pipeline. blocked-needs-gfx90a is the follower start state; the
@@ -288,6 +295,8 @@ def _unblock_followers(obj):
     for plat in PLATFORMS:
         if plat == LEAD:
             continue
+        if plat in OPTIONAL_PLATFORMS:  # optional target: no work queued, state stays a record
+            continue
         blk = obj["platforms"][plat]
         if blk.get("blocked"):  # retired/non-viable platform: never schedule it
             continue
@@ -461,6 +470,8 @@ def unmet_deps(obj):
 
 def actionable(obj, platform):
     """Is this platform pickable by an agent on this host right now?"""
+    if platform in OPTIONAL_PLATFORMS:  # optional targets are never scheduled
+        return False
     blk = obj["platforms"][platform]
     if blk["blocked"]:
         return False
@@ -686,9 +697,10 @@ def squash_carry_forward(name, new_sha, repo=None):
       - each `completed` platform: validated_sha advanced to new_sha, stays completed;
       - each `blocked` (non-viable, e.g. Windows-unportable) platform: left UNTOUCHED
         -- never flipped from non-viable to passing;
-      - a redundant Windows-tier arch left un-validated because a sibling Windows arch
-        already satisfied the one-of tier (see pr_ready): reported as `optional`, not
-        a problem -- it is not required for the PR;
+      - a Windows-tier arch left un-validated because it is an OPTIONAL_PLATFORMS
+        member or because a sibling Windows arch already satisfied the one-of tier
+        (see pr_ready): reported as `optional`, not a problem -- not required for
+        the PR;
       - any other (actionable) state: left as-is (you should not be squashing yet).
     REFUSES if new_sha's tree differs from the current head's tree (then the squash
     introduced unvalidated content; validate it first / use advance_head). The
@@ -723,8 +735,8 @@ def squash_carry_forward(name, new_sha, repo=None):
             blk["validated_sha"] = new_sha
             blk["updated_at"] = now_iso()
             carried.append(plat)
-        elif plat in WINDOWS_TIER and win_satisfied:
-            optional.append((plat, blk.get("state")))  # redundant Windows arch; tier already satisfied
+        elif plat in OPTIONAL_PLATFORMS or (plat in WINDOWS_TIER and win_satisfied):
+            optional.append((plat, blk.get("state")))  # optional arch, or tier already satisfied
         else:
             skipped.append((plat, blk.get("state")))
     save_status(name, obj)
@@ -743,9 +755,12 @@ def pr_ready(name):
         tier: only ONE of them must be `completed` to unlock the PR. They are
         interchangeable proofs that the port builds and runs on Windows ROCm, so a
         single passing arch satisfies the tier; the rest may stay queued or blocked
-        without gating it. If NONE has passed yet, the tier blocks (the still-
-        actionable Windows archs are the blockers -- completing any one clears it);
-        if every Windows arch is non-viable, the tier is non-viable and the PR
+        without gating it. gfx1101 and gfx1151 are OPTIONAL_PLATFORMS: a
+        `completed` on them satisfies the tier, but in a pending state they
+        neither block nor count as non-viable (they appear in neither list). If
+        NONE has passed yet, the tier blocks (the still-actionable non-optional
+        Windows archs are the blockers -- completing any one clears it); if no
+        non-optional Windows arch is viable, the tier is non-viable and the PR
         scopes its claim to Linux.
 
     A REQUIRED platform in any actionable state (port-ready, revalidate, porting,
@@ -789,11 +804,14 @@ def pr_ready(name):
         nonviable.extend(p for p, b in win
                          if b.get("state") != "completed" and b.get("blocked"))
     else:
-        actionable_win = [(p, b.get("state")) for p, b in win if not b.get("blocked")]
+        actionable_win = [(p, b.get("state")) for p, b in win
+                          if not b.get("blocked") and p not in OPTIONAL_PLATFORMS]
         if actionable_win:
             blocking.extend(actionable_win)  # completing any ONE clears the tier
         else:
-            nonviable.extend(p for p, _ in win)
+            # Only documented non-viable archs are reported; an optional arch in a
+            # merely-pending state appears in neither list (it is not a problem).
+            nonviable.extend(p for p, b in win if b.get("blocked"))
 
     # Integrity gate: the validated content must be COMMITTED. A fork with
     # uncommitted tracked source/build edits means a validation built against local

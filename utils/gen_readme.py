@@ -83,12 +83,6 @@ def load_projects():
     return out
 
 
-# Windows archs whose 'port-ready' (lead done, not yet validated here) reads as
-# pending (—) rather than the 🟡 'queued' glyph. For now gfx1201 is the only
-# active Windows validation target, so 🟡 'queued' appears there alone; gfx1101
-# and gfx1151 are queued-but-not-active and show pending to keep the table honest.
-PENDING_WINDOWS = {"windows-gfx1101", "windows-gfx1151"}
-
 # gfx1151 is a retired/optional tier that never gates PR-readiness, so a blocked
 # gfx1151 cell reads as n/a (—) -- EXCEPT the handful where we actually ran
 # validation on the APU and it genuinely failed on the arch (wrong numerics,
@@ -97,19 +91,28 @@ PENDING_WINDOWS = {"windows-gfx1101", "windows-gfx1151"}
 # that this replaces was applied inconsistently).
 GFX1151_ATTEMPTED_FAIL = {"Gpufit", "alien", "lc0", "stdgpu"}
 
+# States on an OPTIONAL platform (moatlib.OPTIONAL_PLATFORMS: gfx1101, gfx1151)
+# that still show their real glyph: validated results. Anything else on an
+# optional arch is n/a (—) -- optional targets carry no pending work.
+OPTIONAL_RESULT_STATES = {"completed", "validated", "pr-open", "upstream-landed"}
+
 
 def cell(block, key, project_name):
-    """Status glyph for one platform cell. Blocked platforms show 🚫, except the
-    retired gfx1151 tier which shows n/a (—) unless it is a curated genuine
-    attempt-and-fail. Windows 'port-ready' shows 🟡 only on gfx1201; gfx1101 and
-    gfx1151 show pending (—)."""
+    """Status glyph for one platform cell. Optional archs (gfx1101/gfx1151) show
+    only real results: validated states keep their glyph, a genuine documented
+    attempt-and-fail keeps 🚫, everything else is n/a (—) since optional targets
+    carry no pending work. Non-optional blocked platforms show 🚫."""
     state = block.get("state")
-    if block.get("blocked"):
-        if key == "windows-gfx1151":
-            return "🚫" if project_name in GFX1151_ATTEMPTED_FAIL else "—"
-        return "🚫"
-    if state == "port-ready" and key in PENDING_WINDOWS:
+    if key in moatlib.OPTIONAL_PLATFORMS:
+        if state in OPTIONAL_RESULT_STATES:
+            return EMOJI.get(state, "✅")
+        if block.get("blocked"):
+            if key == "windows-gfx1151":
+                return "🚫" if project_name in GFX1151_ATTEMPTED_FAIL else "—"
+            return "🚫"
         return "—"
+    if block.get("blocked"):
+        return "🚫"
     return EMOJI.get(state, "❓")
 
 
@@ -184,6 +187,7 @@ def render_table(projects):
               "🍴 fork-only · ⚪ superseded · — pending. "
               "† The Windows archs (gfx1101 / gfx1201 / gfx1151) are a redundant tier -- any ONE completed (✅) "
               "satisfies the Windows requirement for PR-readiness; the two Linux archs (gfx90a then gfx1100) are each required. "
+              "gfx1101 and gfx1151 are optional targets (validated results are recorded, but they are never scheduled and never gate anything). "
               "The project name links to upstream, (fork) to the port branch on our fork.")
     headers = ["Project"] + [plat_header(k) for k in moatlib.PLATFORMS] + ["Outcome"]
     aligns = ["---"] + [":---:"] * len(moatlib.PLATFORMS) + ["---"]
