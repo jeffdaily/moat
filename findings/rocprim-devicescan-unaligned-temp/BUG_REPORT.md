@@ -1,5 +1,7 @@
 # rocPRIM DeviceScan returns non-deterministic wrong results when d_temp_storage is not 8-byte aligned (address mod 8 in {4,5,6}) on gfx90a
 
+**Filed:** https://github.com/ROCm/rocm-libraries/issues/8263 (2026-06-10)
+
 ## Component
 rocPRIM `DeviceScan` (decoupled-lookback), reached via hipCUB `cub::DeviceScan::ExclusiveSum` / `InclusiveSum`.
 
