@@ -997,3 +997,16 @@ Result: PASS (gfx1201 wave32).
 GPU: AMD Radeon RX 9070 XT (gfx1201, compute capability 12.0, HIP_VISIBLE_DEVICES=0).
 Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
 validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
+
+## Upstream issues filed 2026-06-10 (after PR #3111 opened)
+
+Filed the 3 genuine CatBoost GPU algorithm bugs (architecture-independent, affect the
+CUDA build too; gated to HIP in PR #3111 for CUDA byte-identity):
+- catboost#3112 -- split.cu one-hot shift overflow (ui32 in shifted space).
+- catboost#3113 -- exact_estimation leaf-count bound + leading-empties guard gap.
+- catboost#3114 -- histogram empty-grid div-by-zero (host SIGFPE).
+
+NOT filed (the "4th" was a false item): the segmented_sort SortPairs sizing is a non-issue
+(rocPRIM sizes SortKeys == SortPairs, verified by reproducer); the gap-element behavior is the
+rocPRIM finding rocprim-segmented-radix-sort-gap (verdict: by-design, not filed). The rocPRIM
+DeviceScan unaligned-temp bug is filed separately as rocm-libraries#8263.
