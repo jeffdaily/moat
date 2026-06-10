@@ -495,8 +495,8 @@
       "refs": [
         "projects/catboost/src/catboost/cuda/methods/greedy_subsets_searcher/kernel/split_points.cu"
       ],
-      "status": "open",
-      "upstream_issue": null,
+      "status": "filed",
+      "upstream_issue": "https://github.com/ROCm/rocm-libraries/issues/8263",
       "created_at": "2026-06-10T01:54:17Z"
     },
     {
@@ -508,7 +508,7 @@
       "refs": [
         "projects/catboost/src/catboost/cuda/cuda_util/kernel/segmented_sort.cu"
       ],
-      "status": "open",
+      "status": "done",
       "upstream_issue": null,
       "created_at": "2026-06-10T01:54:17Z"
     },
@@ -521,7 +521,7 @@
       "refs": [
         "projects/catboost/src/catboost/cuda/cuda_util/segmented_sort.cpp"
       ],
-      "status": "open",
+      "status": "done",
       "upstream_issue": null,
       "created_at": "2026-06-10T01:54:17Z"
     }
