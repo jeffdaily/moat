@@ -452,3 +452,76 @@ DECISION CRITERION (write the answer back into this notes.md):
   not a ROCm-port defect. ROCm just makes the latent over-read fatal.
 - If gfx1100 COMPLETES cleanly (LM converges, test PSNR printed, no MAPVIS_OOB): the off-by-one
   is WAVE64-SPECIFIC (gfx90a emit/WarpScan) -> a port fix in the emit kernel's contributor counting.
+
+## gfx1100 DIAGNOSTIC RESULT (2026-06-10)
+
+### Run environment
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100 (RDNA3, wave32), ROCm 7.2.1. HIP_VISIBLE_DEVICES=0.
+Fork HEAD: 90e3353 (same as gfx1100 validated_sha). Build: agent_space/3dgslm_site_gfx1100 (isolated prefix, gfx1100 code objects confirmed).
+Python: /opt/conda/envs/py_3.12, numpy 1.26.4, MOAT_DBG=1, PYTORCH_NO_HIP_MEMORY_CACHING=1.
+
+### Command
+
+```
+MOAT_DBG=1 PYTORCH_NO_HIP_MEMORY_CACHING=1 HIP_VISIBLE_DEVICES=0 \
+  bash utils/timeit.sh 3DGS-LM test -- \
+  /opt/conda/envs/py_3.12/bin/python \
+  agent_space/3dgslm-garden-gfx1100/launch_diag.py \
+  -s agent_space/3dgslm-garden-gfx1100/scene/garden \
+  --root_out agent_space/3dgslm-garden-gfx1100/out \
+  --exp_name g \
+  --eval --images images_4 --resolution 1 \
+  --image_subsample_size 25 --image_subsample_n_iters 4 \
+  --image_subsample_frame_selection_mode strided \
+  --num_sgd_iterations_before_gn 20000 \
+  --perc_images_in_line_search 0.3 \
+  --pcg_rtol 5e-2 --pcg_max_iter 8 \
+  --min_trust_region_radius 1e-4 \
+  --trust_region_radius 1e-3 \
+  --max_trust_region_radius 1e-2 \
+  --iterations 5 \
+  --test_iterations 5 \
+  --save_iterations 5 \
+  --quiet \
+  2>&1 | tee agent_space/3dgslm-garden-gfx1100/garden_diag.log
+```
+
+SGD phase: 20000/20000 in 46m45s (~6.25 it/s). Completed normally.
+
+### Outcome
+
+FAIL: `torch.AcceleratorError: CUDA error: out of memory` (hipErrorOutOfMemory) at the first LM step.
+
+```
+Traceback (most recent call last):
+  ...
+  File ".../train_probe.py", line 98, in linear_solve_pcg_fused
+    b, sparse_jacobians, index_maps, per_gaussian_caches, data = eval_jtf_and_get_sparse_jacobian(
+  File ".../diff_gaussian_rasterization/__init__.py", line 585, in eval_jtf_and_get_sparse_jacobian
+    r, sparse_jacobians, index_maps, per_gaussian_caches = safe_call_fn(_C.eval_jtf_and_get_sparse_jacobian, [data], ...)
+  ...
+torch.AcceleratorError: CUDA error: out of memory
+Search for `hipErrorOutOfMemory'...
+```
+
+### [MOAT_PY] probe result
+
+NO [MOAT_PY] lines appeared. The OOM occurred inside `_C.eval_jtf_and_get_sparse_jacobian` (C++/HIP kernel), which is called BEFORE the Python-level probe at line 117. The probe was never reached.
+
+### Verdict: INCONCLUSIVE (new failure class: OOM, not HSA fault)
+
+The gfx1100 run did NOT produce an HSA memory access fault (which is the gfx90a failure signature for the off-by-one). Instead it hit OOM at the exact same function (`eval_jtf_and_get_sparse_jacobian`). The [MOAT_PY] probe never fired, so the wave64 vs upstream question remains unanswered.
+
+The OOM has two plausible causes:
+1. CAPACITY: garden after 20000 SGD iterations densifies to millions of Gaussians. The LM sparse Jacobian buffers (25 subsampled images x n_gaussians x per-Gaussian cache) may exceed available VRAM once SGD optimizer state (Adam moment tensors for all parameters) is still resident. The GPU has 44GB VRAM; 48GB is the spec, ~44GB is usable. Notes say garden peaks ~17GB during SGD; if the post-SGD model state + LM buffers together exceed ~44GB, OOM is expected.
+2. DIAGNOSTIC ARTIFACT: `PYTORCH_NO_HIP_MEMORY_CACHING=1` disables PyTorch's memory cache (every malloc/free goes directly to hipMalloc/hipFree). If the SGD-phase caching allocator normally recycles freed tensors for the LM step, disabling it prevents reuse and forces hipMalloc calls that may fail. This env var was added for "precise overflow detection" but may itself cause OOM on the real-scene garden.
+
+### Next steps
+
+To re-run without the confounding env var:
+1. Remove `PYTORCH_NO_HIP_MEMORY_CACHING=1` from the run command.
+2. Optionally: use `--num_sgd_iterations_before_gn 20000 --image_subsample_size 10` (fewer subsample images to reduce LM peak VRAM).
+3. If OOM persists without PYTORCH_NO_HIP_MEMORY_CACHING=1: the garden diagnostic itself may not be viable on a 44GB card for this large a model. The off-by-one investigation should proceed via a smaller synthetic scene designed to trigger the boundary Gaussian condition.
+4. If CLEAN (no OOM, no HSA fault): the off-by-one is WAVE64-SPECIFIC.
+5. If HSA fault reappears: the off-by-one is UPSTREAM.
