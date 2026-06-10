@@ -820,3 +820,18 @@ to the caller). gfx90a was really re-validated by the porter (suite green, e2e A
 bit-identical) so it stays completed; the 4 followers are flipped to revalidate (re-run
 on their hosts: gfx1100 Linux, gfx1101/gfx1201/gfx1151 Windows). catboost is NOT pr-ready
 until gfx1100 + one Windows arch revalidate at 2439225f.
+
+## Comment fix (drop false "filed upstream") + reconcile 2026-06-10
+
+jeff: the 3 "(filed upstream)" comments were false (nothing filed yet). Reworded them
+(dropped the claim, kept the technical rationale) in split.cu, hist.cuh, exact_estimation.cu.
+Re-squashed to 4f42ad54 (comment-only delta vs 2439225f); gfx90a carried forward
+(comment-only). RECONCILED: status head = fork tip = 4f42ad54. gfx1100/gfx1101/gfx1201/
+gfx1151 stay revalidate (the gating HIP-source change needs their re-run) -> they can now
+pick up "revalidate catboost @ 4f42ad54" on their hosts.
+
+TODO after the catboost PR opens: file the 4 catboost-upstream bug reports (split shift-
+overflow, exact_estimation leaf-bound + leading-empties, histogram empty-grid div-by-zero,
+segmented-sort SortPairs sizing). The 3 rocPRIM findings are registered in deferred.py
+(rocprim-devicescan-unaligned-temp-corruption, -segmented-radix-sort-gap-elements,
+-sortpairs-tempsize-strictness) -> prepare findings/ reports, file to rocm-libraries with approval.

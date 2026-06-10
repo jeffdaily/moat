@@ -7,17 +7,17 @@
   "priority": 7.008,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-09T22:54:52Z",
-  "head_sha": "2439225fbd8a00cf93a73e8f4ede6d405fc45034",
+  "updated_at": "2026-06-10T02:01:33Z",
+  "head_sha": "4f42ad5415833cb4b371b697ef9a7cffb261db0c",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "2439225fbd8a00cf93a73e8f4ede6d405fc45034",
+      "validated_sha": "4f42ad5415833cb4b371b697ef9a7cffb261db0c",
       "started_at": "2026-05-31T00:31:43Z",
       "completed_at": "2026-06-09T22:53:39Z",
-      "updated_at": "2026-06-09T22:54:52Z",
+      "updated_at": "2026-06-10T02:01:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,7 +31,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "porter",
+      "carry_forward": {
+        "from": "2439225fbd8a00cf93a73e8f4ede6d405fc45034",
+        "to": "4f42ad5415833cb4b371b697ef9a7cffb261db0c",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "catboost/cuda/gpu_data/kernel/split.cu: comment-only (comments/format only); catboost/cuda/methods/greedy_subsets_searcher/kernel/hist.cuh: comment-only (comments/format only); catboost/cuda/methods/k",
+        "at": "2026-06-10T02:01:33Z"
+      }
     },
     "linux-gfx1100": {
       "state": "revalidate",
