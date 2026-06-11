@@ -368,3 +368,53 @@ GPUs, proving both code objects are embedded.
 
 State: windows-gfx1101 + windows-gfx1201 port-ready -> completed (validated_sha d2ca74b,
 fork unchanged). All five platforms terminal -> PR-ready.
+
+## PR-prep 2026-06-11
+
+Prepared the fork for the upstream PR and drafted it (NOT opened). Squashed fork
+sha: **93a838d776f5ffc1b4069291c7906129689ed1be** (tree-identical to validated head
+d2ca74b + the prep edits below; squash-carry-forward carried all five platforms
+forward, no revalidation).
+
+### Jargon scrub (whole diff base 0e174fe..HEAD + commit message)
+- Source/CMake/comments: CLEAN. No MOAT vocabulary in any changed source file. The
+  `gfx90a/CDNA2` mentions in spatial-kdtree.h and CMakeLists comments are legitimate
+  hardware-bug rationale (where the integer-atomic drop and the radix-sort begin_bit
+  issue were observed) and the `gfx90a` CMake default arch is a sensible default --
+  kept as technical content, not in-house labels. No spaced `<< <`/`>> >` launch
+  syntax (this project has no <<<>>> launches; rocThrust/hipCUB do the dispatch).
+- Commit message ONLY had jargon ("Strategy A", "colmap model"). Fixed by the squash:
+  new title `[ROCm] Add AMD GPU support via HIP` (34 chars), body rewritten with no
+  MOAT vocabulary; describes the compat header in plain terms.
+
+### Docs added
+- README.md: a brief AMD/ROCm support paragraph in the "What is this Repo/Codebase?"
+  section, matching the README's descriptive first-person house style. The README is
+  a header-only usage guide with NO build-command/CMake section anywhere, so per
+  house style NO build-command block was imposed; the note states USE_HIP +
+  CMAKE_HIP_ARCHITECTURES (gfx90a/gfx1100/gfx1201 examples) and that rocThrust/hipCUB
+  back Thrust/CUB.
+
+### Attribution added
+House style is a copyright-only header block (no \author tags, no AUTHORS file).
+- cukd/cuda_to_hip.h (new file): parallel `Copyright (c) 2026 Advanced Micro Devices,
+  Inc.` line + `Author: Jeff Daily <jeff.daily@amd.com>` below Ingo Wald's copyright.
+- cukd/spatial-kdtree.h (substantially extended: ~70 lines of HIP atomicCAS helpers
+  + radix-sort workaround): parallel AMD copyright line added.
+- All other changed files are include-swap / one-line guard edits -- trivial, no
+  attribution needed.
+
+### Validation smoke (gfx90a, HIP_VISIBLE_DEVICES=0, GPU 2 was busy with another session)
+Clean reconfigure+build of the prep tree (build-prep/): cmake OK, 0 errors, gfx90a
+code object confirmed (`roc-obj-ls` -> hipv4-amdgcn-amd-amdhsa--gfx90a, no other arch).
+- Regular-tree `-v` brute-force verifier: FCP {float3 stackBased/cct, float8 stackFree,
+  float2-xd} and kNN {float3 stackBased, float4 cct-xd} all "verification succeeded";
+  clustered float3-knn + float4-fcp PASS.
+- Spatial tree: float3 fcp-spatial-{stackBased,cct} CHECKSUM 1.30905e+08 == regular
+  cct (A/B/C atomicCAS workarounds still correct); spatial-knn completes (5.60516e+08).
+- CTest: 14/15 (timeit-wrapped). The 1 failure is the documented pre-existing
+  cukdTestBuildersSameResult host-vs-device tie-break -- unchanged, not a regression.
+
+### PR draft
+projects/cudaKDTree/pr-draft.md. Base = ingowald/cudaKDTree:master (upstream default).
+NOT opened -- awaiting jeff's approval.
