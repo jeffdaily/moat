@@ -851,3 +851,78 @@ cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cu
 - CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
 
 No unexpected failures. All 10 other suites are 100%. Port fully validated on real gfx1100. Results are identical to the gfx90a lead -- wave32 gfx1100 passes every test the wave64 gfx90a did, confirming the warp-layer design (logical WARP_SIZE=32, width-32 shuffles inside the 32-lane wavefront) is arch-independent as designed. gfx1100 is RDNA3 (wave32 native), so no wave64 correctness concerns arise here.
+## Parity pass: cudaimgproc NPP gaps closed (2026-06-11, gfx90a lead)
+
+jeff required absolute feature parity with the CUDA build. The four cudaimgproc
+entry points that previously threw StsNotImplemented on the HIP path are now
+implemented with direct HIP kernels and validated on real gfx90a. Fork HEAD:
+contrib `6dbfed74777e17c7d170a46f5e22cefef4441396` (was 3851d56); core unchanged
+(`d30273d`). head_sha advanced to the contrib sha (functional change). Deferral
+`opencv-cudaimgproc-npp-color-hist` is fully RESOLVED (set-status done) -- all of
+alphaComp + 16U/16S histEven + 4ch histEven + histRange(+4ch) now land.
+
+### New kernels (HIP-guarded; CUDA NPP path byte-identical)
+- cuda/histogram_npp_hip.cu: one range-histogram kernel. Half-open bins
+  [levels[i], levels[i+1]) located by binary search IN THE LEVEL TYPE (32S for
+  integer depths, 32F for CV_32F); the last boundary is exclusive. histEven is
+  expressed as a range histogram over the integer even-level boundaries NPP's
+  evenLevels lays out (cvRound layout, matching cv::cuda::evenLevels /
+  nppiEvenLevelsHost_32s), so histEven and histRange share ONE bin-edge
+  definition. Covers histRange_c1 (8U/16U/16S/32F) and histRange_c4.
+- cuda/alpha_comp_hip.cu: nppiAlphaComp_*_AC4R Porter-Duff algebra. Per pixel
+  as=a1/maxv, ad=a2/maxv; coverage factors (Fa,Fb) per operator (OVER/IN/OUT/
+  ATOP/XOR/PLUS, their *_PREMUL twins, and ALPHA_PREMUL). Straight-alpha ops
+  weight each source colour by its own alpha (w=a*F); the *_PREMUL ops treat
+  colours as pre-multiplied (w=F). Out alpha = saturate(maxv*(as*Fa+ad*Fb)).
+  maxv = 255/65535/INT_MAX/1.0 for 8U/16U/32S/32F (NPP's float convention is
+  alpha in [0,1]).
+
+### Per-feature test names + pass counts (opencv_test_cudaimgproc, gfx90a)
+Added accuracy tests (run on BOTH CUDA and HIP), gold = a CPU reference of the
+same NPP semantics (independent host implementation, not the kernel's own code):
+- CUDA_ImgProc/HistEven16.Accuracy (16U,16S): 2/2 PASS
+- CUDA_ImgProc/HistEven4.Accuracy (8U,16U,16S): 3/3 PASS
+- CUDA_ImgProc/HistRange.Accuracy (8U,16U,16S,32F): 4/4 PASS
+- CUDA_ImgProc/HistRange4.Accuracy (8U,16U,16S,32F): 4/4 PASS
+- CUDA_ImgProc/AlphaComp.Accuracy (4 types x 13 ops x sizes): 104/104 PASS
+Full suite: opencv_test_cudaimgproc 3788/3788 (was 3671; +117 new), deterministic
+across repeated runs.
+
+### NPP-semantic subtleties pinned down
+- histEven bin edges are the INTEGER even-level boundaries, not float edges. The
+  8U HistEven upstream test passes against cv::calcHist only because its params
+  (width 5/68) make float and integer edges coincide; a generic cv::calcHist gold
+  is WRONG for 16U/16S (off by ~9 counts at a boundary bin). The faithful gold is
+  a range histogram over evenLevels32s -- that is what NPP computes.
+- alphaComp 8U/16U are bit-exact to the documented algebra; 32S (near-INT_MAX
+  scaling) and 32F differ from a pure host-double reference by a few ULP, so the
+  test eps is 1.0/4.0/1e-3 for 8U-16U / 32S / 32F. There is no captured NPP binary
+  on this host, so the reference is the documented nppiAlphaComp / Porter-Duff
+  math; this is stated plainly (not "validated against NPP output").
+
+### NEW FAULT CLASS: pageable async H2D copy races a local host buffer free
+First implementation uploaded the even-levels from a function-local cv::Mat via
+GpuMat::upload(host, stream). On the Null stream OpenCV still issues a
+cudaMemcpyAsync from PAGEABLE host memory; the driver may stage it through a
+pinned bounce buffer asynchronously, so destroying the local Mat at function
+return corrupts the in-flight copy. Symptom was textbook: an ENTIRE histogram bin
+intermittently read 0, different bin/channel each run, passing in isolation and
+failing in-suite (same whole-vs-isolated tell as the allocator-reuse class). Fix:
+synchronous upload (GpuMat::upload(host) with no stream). GENERAL LESSON: never
+issue an async H2D copy from a stack/temporary host buffer that dies before the
+copy is guaranteed complete; use a synchronous upload or keep the host buffer
+alive (pinned + explicit sync).
+
+### Regression (same MI250X gfx90a, only cudaimgproc source changed)
+cudev 402, cudaarithm 11417, cudafilters 16028, cudawarping 4535, cudastereo 128,
+cudalegacy 14, cudafeatures2d 256, cudaobjdetect 18, cudacodec 240; cudaoptflow
+41/47 (the documented NvOF+TVL1.Async set, unchanged). No regression. Only
+modules/cudaimgproc/{src/color.cpp,src/histogram.cpp,src/cuda/alpha_comp_hip.cu,
+src/cuda/histogram_npp_hip.cu,test/test_color.cpp,test/test_histogram.cpp}
+changed; src-core untouched.
+
+### Remaining documented feature losses (unchanged by this pass)
+graphcut (no ROCm maxflow), NvidiaOpticalFlow_1_0/2_0 (no AMD HW OF engine),
+cudacodec rocDecode decode + native encode (deferred to RDNA followers / FFmpeg
+AMF), dnn cuDNN->MIOpen (out of cv::cuda scope). cudaimgproc now has NO
+StsNotImplemented runtime-refusal surface remaining.

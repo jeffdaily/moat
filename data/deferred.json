@@ -596,7 +596,7 @@
       "component": "opencv_contrib",
       "summary": "cudaimgproc NPP-only color/histogram ops not ported (untested upstream): alphaComp 13 Porter-Duff ops, 4ch histEven/histRange, 16U/16S histEven; gated StsNotImplemented on ROCm",
       "refs": [],
-      "status": "open",
+      "status": "done",
       "upstream_issue": null,
       "created_at": "2026-06-11T02:26:05Z"
     },

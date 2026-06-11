@@ -105,3 +105,6 @@
 {"kind": "tokens", "ts": "2026-06-11T03:31:28Z", "tokens": 81448, "source": "porter pr-prep docs"}
 {"kind": "tokens", "ts": "2026-06-11T03:12:07Z", "tokens": 149247, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-11T06:01:25Z", "tokens": 64709, "source": "validator"}
+{"kind":"phase","ts":"2026-06-11T06:00:08Z","phase":"compile","seconds":26.538,"exit":0,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T06:03:41Z","phase":"test","seconds":22.325,"exit":1,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
+{"kind":"phase","ts":"2026-06-11T06:07:11Z","phase":"test","seconds":22.396,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
