@@ -474,3 +474,55 @@ Results:
 linux-gfx1100: revalidate -> completed, validated_sha=48cd01b
 head_sha advanced to 48cd01b (adds gfx1100 fixes on top of 91bacbf)
 linux-gfx90a flipped to revalidate (functional change to stage2 device code)
+
+## Validation 2026-06-11 (linux-gfx90a revalidate -> completed)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, 104 CUs (wave64), HIP_VISIBLE_DEVICES=3, ROCm 7.2.1
+Starting state: revalidate (validated_sha=91bacbf, head_sha=48cd01b)
+
+### Delta analysis
+
+Commit 48cd01b adds three fixes for gfx1100 cooperative kernel issues:
+1. textureTools.cu: hipDeviceSynchronize() after each cooperative mipmap launch
+2. HipModularProgram.h: hipDeviceSynchronize() before hipModuleLoadData (drains default stream)
+3. triangles_visbuffer.cu + CuRast_render.h: removed redundant grid.sync() from stage2, changed
+   from launchCooperative to launchOccupancyBased (non-cooperative, occupancy-sized grid)
+
+`classify` result: mixed/arch_independent=False -- the kernel code change (grid.sync removal)
+affects device ISA on all arches, including gfx90a. Full GPU revalidation required.
+
+### Build
+
+```bash
+HIP_VISIBLE_DEVICES=3 cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build
+cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build -j$(nproc)
+```
+
+Build: exit 0, no errors (warnings: fread return, deprecated hipCtxSynchronize, nodiscard hipError_t).
+Dependencies installed: libturbojpeg0-dev, libvulkan-dev, libglfw3-dev, libxkbcommon-dev, libxinerama-dev, libxi-dev, libxrandr-dev.
+
+### GPU Test
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+HIP_VISIBLE_DEVICES=3 ROCM_PATH=/opt/rocm \
+    /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build/CuRast \
+    --bench ./example_donaukanal_urania.glb 1920 1080 10
+```
+
+Results:
+- 10 frames, 966,461 triangles visible per frame (all frames correct)
+- Best visbuffer-pipeline time: 0.279 ms @ 1920x1080 (reference: 0.330 ms at 91bacbf, consistent)
+- bench_render.png: PASS (264,744 bytes, identical size to reference, shows Donaukanal scene)
+- No GPU faults during benchmark frames
+- Post-bench segfault: in cleanup after bench_render.png is written (pre-existing, HipModularProgram
+  lacks destructor -- same as at 91bacbf, not caused by 48cd01b)
+
+Hiprtc compile errors in JPEG/rocrand paths are pre-existing (unrelated to 48cd01b changes).
+Visbuffer rasterization pipeline (the subject of the port) works correctly.
+
+### State transition
+
+linux-gfx90a: revalidate -> completed, validated_sha=48cd01b
