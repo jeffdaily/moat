@@ -244,3 +244,76 @@ setup.py correctly detects ROCm via `torch.version.hip`, sets appropriate flags 
 
 ### Verdict
 **Approve with note**: The unconditional change to `getLo`/`getHi`/`combineLoHi` is a minor footprint issue, but it is semantically correct and unlikely to cause observable differences on CUDA builds. The portable implementations will compile to equivalent code. This does not rise to the level of changes-requested, but should be fixed in a future cleanup if an upstream PR is planned.
+
+---
+
+## 2026-06-11: gfx90a (wave64) ENABLED -- cudaraster wave-collective rewrite
+
+### GPU: AMD Instinct MI250X (gfx90a, CDNA2, wave64), ROCm 7.2.1, PyTorch 2.13 (HIP 7.2)
+### Commit: fe88d6c (on top of validated cbf2e7f), new head_sha = fe88d6c
+
+The earlier "blocked: requires fundamental rewrite" determination was too
+pessimistic. The wave64 enablement is a contained, single-strategy change to the
+HIP path only (under USE_ROCM / __HIP_PLATFORM_AMD__), and it is behavior-
+preserving on wave32.
+
+### Root cause (confirmed)
+Every cudaraster kernel launches with dim3(32, N): threadIdx.x is the lane,
+threadIdx.y selects a logical 32-thread warp. On wave64 two consecutive
+threadIdx.y rows pack into ONE 64-lane wavefront. The original HIP compat used
+__lane_id() (0..63) for lane masks and __ballot() (64-bit) for ballots, both
+spanning two rows, and the divergent __syncwarp mapped to
+__builtin_amdgcn_wave_barrier() which waits for the sibling row that never
+enters the divergent block -> hang / OOB write in binRasterKernel.
+
+### Fix (all in the existing USE_ROCM guard; CUDA path untouched)
+1. Row-local collectives keyed on threadIdx.x, NOT __lane_id():
+   - getLaneMaskLt/Le/Gt/Ge = (1<<threadIdx.x)-1 style (32-bit, row-local).
+   - crRowBallot(pred) = (__ballot(pred) >> (32*(__lane_id()>>5))) & 0xffffffff
+     -- extracts THIS row's 32-lane half of the wavefront. On wave32 shift is 0
+     (identical to before); on wave64 each row gets its own 32 bits.
+   - __ballot_sync/__any_sync/__all_sync/__match_any_sync built on crRowBallot
+     and width-32 __shfl, honoring the caller's 32-bit mask.
+2. LDS + __syncwarp prefix scans -> width-32 __shfl scans (crScanInclusiveAdd/
+   Max/Min) that stay within the 32-lane row on BOTH widths and need no barrier.
+   Sites: BinRaster per-warp subtri sum; CoarseRaster stream-min, AABB OR-scan,
+   tile-emit scan-32, the two scan-8s; FineRaster scan32_value + updateTileZMax.
+3. __syncwarp -> no-op on HIP: a wavefront has no independent thread scheduling,
+   so the 32 lockstep row lanes already observe each other's volatile-LDS writes
+   (the original pre-Volta warp-synchronous assumption). Mapping it to a wave
+   barrier is what deadlocked wave64. executeROP's LDS winner-election relies on
+   this lockstep + volatile/atomic ordering and is correct unchanged.
+
+### Why wave32 (gfx1100) is NOT regressed
+On wave32 each row is its own wavefront: __lane_id()&31 == threadIdx.x, the
+crRowBallot shift is 0, and the width-32 shuffle scans compute the identical
+inclusive scan the LDS version did. So the result is behavior-equivalent. BUT
+this IS a functional edit to shared (USE_ROCM) code, so advance_head correctly
+flipped gfx1100 completed -> revalidate (validated_sha cbf2e7f stays a reachable
+ancestor). gfx1100 must re-confirm on its own GPU (or via codeobj binary-equiv);
+I could not run it on this gfx90a-only host. Fat binary build emits BOTH gfx90a
+and gfx1100 code objects (llvm-objdump --offloading), so it compiles for wave32.
+
+### Build (gfx90a, this host has 128 cores; MI250X at HIP_VISIBLE_DEVICES=0)
+```bash
+cd projects/nvdiffrast/src
+PYTORCH_ROCM_ARCH=gfx90a pip install --no-build-isolation -e .
+# multi-arch / regression check:
+PYTORCH_ROCM_ARCH="gfx90a;gfx1100" pip install --no-build-isolation -e .
+```
+Note: nvdiffrast is a torch CUDAExtension (ext_modules), compiled at install
+time (NOT runtime JIT). The .inl files are #included into the .cu/.hip TUs;
+setup.py copies them into the hipify-generated hipraster/ dir.
+
+### GPU validation (gfx90a) -- all PASS, deterministic
+- agent_space/test_nvdiffrast.py: rasterize/interpolate/texture/antialias fwd +
+  backward grads; covered 20808/65536; determinism OK.
+- agent_space/test_depth.py: two overlapping tris, near wins over far in overlap
+  (exercises executeROP + updateTileZMax + earlyZCull). PASS.
+- agent_space/test_stress.py: 20000 tris @ 512x512 (binning/coarse scans under
+  load, overflow/multi-segment paths); 262109/262144 covered; deterministic x3.
+- samples/torch/triangle.py: renders correctly (20706 non-black px).
+- samples/torch/earth.py --max-iter 100: psnr 11.28 -> 12.16 (matches the
+  gfx1100 validation's psnr=11.30 @ iter10).
+
+### State set: linux-gfx90a -> ported (unblocked). gfx1100 -> revalidate.

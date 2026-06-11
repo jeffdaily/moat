@@ -7,8 +7,8 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-04T23:59:20Z",
-  "updated_at": "2026-06-05T16:55:50Z",
-  "head_sha": "cbf2e7f1c15ddb64cc257e697140c42c8272fc1c",
+  "updated_at": "2026-06-11T23:27:06Z",
+  "head_sha": "fe88d6c",
   "depends_on": [],
   "platforms": {
     "windows-gfx1101": {
@@ -78,13 +78,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "Wave64 requires rewriting LDS-based warp scans to shuffle-based; the cudaraster algorithm uses divergent __syncwarp which waits for all 64 lanes on CDNA, causing hangs. Substantial algorithmic change needed.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-05T00:30:24Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T14:09:46Z",
+      "updated_at": "2026-06-11T23:27:06Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,16 +98,16 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "cbf2e7f1c15ddb64cc257e697140c42c8272fc1c",
       "started_at": "2026-06-05T14:10:19Z",
       "completed_at": "2026-06-05T16:55:50Z",
-      "updated_at": "2026-06-05T16:55:50Z",
+      "updated_at": "2026-06-11T23:26:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
