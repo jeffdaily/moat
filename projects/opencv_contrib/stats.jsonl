@@ -134,3 +134,4 @@
 {"kind":"phase","ts":"2026-06-11T07:15:28Z","phase":"test","seconds":0.326,"exit":0,"cmd":"bash -c \n  HIP_VISIBLE_DEVICES=0   OPENCV_TEST_DATA_PATH=/var/lib/jenkins/moat/projects/opencv_contrib/opencv_extra/testdata   /var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudacodec 2>&1\n"}
 {"kind":"phase","ts":"2026-06-11T07:15:39Z","phase":"test","seconds":1.196,"exit":0,"cmd":"bash -c \n  HIP_VISIBLE_DEVICES=0   OPENCV_TEST_DATA_PATH=/var/lib/jenkins/moat/projects/opencv_contrib/opencv_extra/testdata   /var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudev 2>&1 | tail -5\n"}
 {"kind":"session","ts":"2026-06-11T07:18:32Z","epoch":1781162312.449362959,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-11T07:19:08Z", "tokens": 86076, "source": "validator gfx90a tip 8a5b0a2"}
