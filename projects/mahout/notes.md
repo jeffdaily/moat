@@ -1050,3 +1050,73 @@ branch is dead code on Linux. A binary-equivalence check should confirm identica
 Linux device code objects for a carry-forward.)
 
 Transition: revalidate -> completed (validated_sha = 90b60069da9ee5bcd0f9be3c5fbd95ca2b6efcab).
+
+## Porter fix 2026-06-11 (windows-gfx1201) -- ROOT CAUSE: default-stream ordering, not coherency
+
+The previous "stream coherency" delta (90b60069) was a misdiagnosis. The real
+bug is a missing ordering between default-stream (NULL) buffer setup and a kernel
+launched on a non-blocking forked stream that consumes it. CUDA's legacy default
+stream is synchronizing, so the encoders' setup-on-NULL-then-launch-on-fork
+pattern is implicitly ordered on NVIDIA; HIP's default stream is NOT synchronizing
+relative to a hipStreamNonBlocking stream, so the kernel raced the setup and read
+the zero-initialized buffer -> wrong norm (came back 0).
+
+### How it was proven (agent_space/stream_repro/)
+- stream_test.cpp (single kernel): non-blocking stream + hipStreamSynchronize(S) +
+  null-stream dtoh -> CORRECT on both System32 Adrenalin and TheRock ROCm runtimes.
+  Only the NO-sync race case fails. So the runtime is NOT buggy (no coherency gap).
+- The failing Rust test was instrumented: fork_default_stream made stream 0x...,
+  wait_for synced that SAME stream (hipStreamSynchronize -> 0 success), yet readback
+  was still 0. Adding hipDeviceSynchronize() in wait_for ALSO did not help. So it is
+  NOT a readback-sync problem -- syncing harder does nothing.
+- stream_test3/4/5.cpp replicated the EXACT encoder ordering in pure C++:
+  blocking null-stream H2D + alloc_zeros(memset) -> hipMemsetAsync(out,S) ->
+  accum(atomicAdd)<<<S>>> -> finalize<<<S>>> -> streamSync(S) -> null dtoh.
+  Variant matrix nailed it: with NO ordering between the null-stream setup and the
+  forked-stream work -> FAIL (got {0,0}); adding ANY of hipStreamSynchronize(NULL),
+  hipDeviceSynchronize(), or an event recorded on NULL + hipStreamWaitEvent(S,ev)
+  before the forked-stream work -> PASS (got {0.316,1}). The hazard is setup-side,
+  not readback-side.
+
+### The fix (fork @ d97db73ad, on top of 90b60069)
+qdp-kernels/src/device.rs:
+- Reverted fork_default_stream to HIP_STREAM_NON_BLOCKING on BOTH Linux and Windows
+  (removed the cfg split + the false coherency comment + the unused hipStreamCreate
+  extern). Pipeline overlap restored on Windows.
+- Added sync_default_stream() = hipStreamSynchronize(NULL) at the tail of the
+  blocking alloc_zeros and htod_sync_copy_into (covers htod_sync_copy/htod_copy too),
+  restoring CUDA's synchronizing-default-stream ordering before any forked stream
+  consumes those buffers. Does NOT touch the async pipeline (which uses
+  cuda_ffi hipMemcpyAsync on explicit streams, not these blocking paths).
+qdp-core/src/gpu/encodings/{amplitude,phase}.rs:
+- Closed the symmetric readback-side gaps still missing a sync (kernel on caller
+  stream -> NULL-stream dtoh): amplitude.rs f64 batch (~418) and f32 batch (~652)
+  norm-validation copies, and phase.rs batch finiteness-probe copy (~357) now call
+  sync_cuda_stream(stream, ...) before dtoh_sync_copy, matching the idiom the other
+  encoders already use (amplitude 989/1172, etc.). The amplitude single/batch
+  _with_stream standalone paths (935/1143) already synced and were unchanged.
+
+Arch-unified: correct on wave32 (gfx1100/gfx1151/gfx1201) and wave64 (gfx90a). On
+Linux the default stream is already synchronizing so sync_default_stream is a
+harmless no-op-cost ordering point. NOTE: this is a FUNCTIONAL change to shared
+(non-arch-guarded) qdp-kernels code, so advance_head correctly flipped the other
+completed platforms (linux-gfx1100, windows-gfx1101/gfx1151) to revalidate;
+linux-gfx90a stays pr-open (lead). The fork's default stream is non-blocking on
+every platform now, so the per-platform behavior split is gone.
+
+### Build + test (gfx1201, RX 9070 XT, TheRock ROCm 7.14, HIP_VISIBLE_DEVICES=0)
+Env: agent_space/mahout_gfx1201_env.sh (TheRock _rocm_sdk_devel, MSVC 14.44,
+QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1201, Windows-style LIB via cygpath -w).
+```
+cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip
+cargo test  -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+Both exit 0. Full suite GREEN, 0 failures: qdp-core lib 77, gpu_angle 12,
+gpu_api_workflow 8, gpu_basis 7, gpu_dlpack 9, gpu_fidelity 17, gpu_iqp 22,
+gpu_memory_safety 4, gpu_norm_f32 2, gpu_ptr_encoding 68 (all 10 _with_stream
+variants pass), gpu_validation 8; non-GPU arrow 5, null 6, numpy 4, parquet 8+7,
+preprocessing 14, reader 3, tensorflow 9, torch 3, types 6; qdp-kernels amplitude
+21, angle 10. 4 ignored (unchanged). The three previously-regressed stream tests
+all pass with the non-blocking stream restored.
+
+Transition: revalidate -> completed (validated_sha = d97db73ad592...).
