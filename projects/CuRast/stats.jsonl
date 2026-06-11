@@ -75,3 +75,4 @@
 {"kind":"phase","ts":"2026-06-11T18:08:22Z","phase":"cuda-compile","seconds":14.099,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
 {"kind":"phase","ts":"2026-06-11T18:10:02Z","phase":"cuda-compile","seconds":6.323,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
 {"kind":"phase","ts":"2026-06-11T18:15:28Z","phase":"compile","seconds":18.236,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build --target CuRast -j128"}
+{"kind": "tokens", "ts": "2026-06-11T18:19:06Z", "tokens": 143232, "source": "porter"}
