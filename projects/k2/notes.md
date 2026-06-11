@@ -938,3 +938,10 @@ pre-existing artifacts (same categories as prior gfx1201 validation plus 1
 known flake). Transition: revalidate -> completed. validated_sha = e44acdd.
 Delta-port: Windows torch-link fix committed to fork as e44acdd (CMake 4.x
 imported-target expansion change in HIP Ninja linker rules).
+
+## Gemini bot review on PR #1353 -- declined, none blocking 2026-06-11
+gemini-code-assist[bot] (AI reviewer, being sunset Jul 2026; no human review yet) left 3 comments. All declined for this enablement PR, replies posted (r3399477355/481/563 + issuecomment-4685532998):
+- segmented_sort (HIGH): host SegmentsToHost sync + per-segment thrust::stable_sort_by_key loop is correct+validated; global stable_sort_by_key w/ composite (row_id,key) comparator is the right optimization but a non-trivial rewrite -> deferred (deferred.py: k2-segmented-sort-global), benchmark separately.
+- transform_scan reduction_out null check (MED): k2 always passes output+count (non-null); guard purely defensive, no caller exercises null. Declined.
+- PairOutputIterator operator-(size_t) (MED): compiles fine without it (hipCUB never instantiates size_t subtraction on this iterator); symmetry-only. Declined.
+No code change, validated branch untouched (no re-validation).
