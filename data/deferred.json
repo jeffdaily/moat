@@ -640,17 +640,43 @@
       "created_at": "2026-06-11T03:01:49Z"
     },
     {
-      "id": "llm-awq-mma-gemm-w8a8-attention",
+      "id": "llm-awq-mfma-w4a16-gemm",
       "kind": "feature-port",
       "project": "llm-awq",
       "component": null,
-      "summary": "Three perf/coverage paths scoped out of the W4A16 ROCm port and guarded with throwing stubs: (1) tensor-core W4A16 GEMM (mma.sync MMA path) needs an MFMA/rocWMMA rewrite -- a portable SIMT GEMM (gemm_simt.cuh) is shipped instead; (2) W8A8 int8 GEMM (cvt/dp4a path) not ported; (3) FasterTransformer masked multi-head attention (single_query_attention) bound as a throwing stub. The validated path (gemv/gemm_forward_cuda_new via WQLinear/qmodule.py) is unaffected.",
+      "summary": "AMD-native MFMA/rocWMMA W4A16 GEMM to replace the correctness-first SIMT GEMM",
       "refs": [
         "projects/llm-awq/notes.md"
       ],
       "status": "open",
       "upstream_issue": null,
-      "created_at": "2026-06-11T04:01:02Z"
+      "created_at": "2026-06-11T04:23:04Z"
+    },
+    {
+      "id": "llm-awq-w8a8-mfma-gemm",
+      "kind": "feature-port",
+      "project": "llm-awq",
+      "component": null,
+      "summary": "int8 MFMA W8A8 GEMM (w8a8_gemm_*), currently build-only on ROCm",
+      "refs": [
+        "projects/llm-awq/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T04:23:04Z"
+    },
+    {
+      "id": "llm-awq-ft-attention-hip",
+      "kind": "feature-port",
+      "project": "llm-awq",
+      "component": null,
+      "summary": "FasterTransformer single-query masked-MHA HIP rewrite (currently excluded from ROCm build)",
+      "refs": [
+        "projects/llm-awq/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T04:23:04Z"
     }
   ]
 }
