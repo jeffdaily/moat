@@ -49,3 +49,8 @@
 {"kind":"phase","ts":"2026-06-11T16:14:24Z","phase":"compile","seconds":8.818,"exit":101,"cmd":"cargo clippy --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml --all-targets --all-features"}
 {"kind": "tokens", "ts": "2026-06-11T16:18:46Z", "tokens": 51748, "source": "porter precommit build.rs fix"}
 {"kind": "tokens", "ts": "2026-06-11T16:44:49Z", "tokens": 28279, "source": "porter ryankert01 small fixes"}
+{"kind":"phase","ts":"2026-06-11T17:02:03Z","phase":"test","seconds":0.088,"exit":1,"cmd":"cargo fmt --manifest-path qdp/Cargo.toml --all -- --check"}
+{"kind":"phase","ts":"2026-06-11T17:02:23Z","phase":"test","seconds":0.307,"exit":0,"cmd":"cargo fmt --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml --all -- --check"}
+{"kind":"phase","ts":"2026-06-11T17:02:32Z","phase":"compile","seconds":3.700,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mahout/src/qdp && QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-11T17:02:38Z","phase":"compile","seconds":0.712,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mahout/src/qdp && QDP_NO_CUDA=1 cargo check -p qdp-core -p qdp-kernels"}
+{"kind": "tokens", "ts": "2026-06-11T17:04:02Z", "tokens": 48190, "source": "porter ASF header removal + NOTICE"}
