@@ -1120,3 +1120,6 @@ preprocessing 14, reader 3, tensorflow 9, torch 3, types 6; qdp-kernels amplitud
 all pass with the non-blocking stream restored.
 
 Transition: revalidate -> completed (validated_sha = d97db73ad592...).
+
+## gfx1201 stream-ordering fix d97db73 (root cause) 2026-06-11
+gfx1201 pushed d97db73: reverts the Windows blocking-stream workaround (90b6006), restores non-blocking stream on all platforms, fixes the REAL bug -- missing ordering between default-stream htod/alloc_zeros setup and the forked non-blocking-stream kernel (CUDA legacy default stream synchronizes; HIP's does not). Adds sync_default_stream after the blocking setup copies. No-op on Linux (gfx90a default stream already synchronizing). VERIFIED on gfx90a: precommit clean (fmt+full clippy via torch venv), gpu_ptr_encoding 68/68 incl. all *_with_stream_* tests. Head reconciled to d97db73. All CI green on the prior head (90b6006); will reconfirm on d97db73. Precommit reply still held for jeff's go.
