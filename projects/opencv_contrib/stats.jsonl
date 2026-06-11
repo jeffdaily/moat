@@ -97,3 +97,4 @@
 {"kind":"phase","ts":"2026-06-11T02:57:59Z","phase":"compile","seconds":386.261,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T03:04:09Z","phase":"compile","seconds":235.310,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T03:04:25Z","phase":"test","seconds":9.404,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudaoptflow"}
+{"kind": "tokens", "ts": "2026-06-11T03:17:26Z", "tokens": 167938, "source": "reviewer final"}
