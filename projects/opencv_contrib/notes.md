@@ -1468,3 +1468,15 @@ Both are `/* #undef */` in cvconfig.h (no Video Codec SDK or Optical Flow SDK in
 
 ### Summary
 Every HIP guard (`#ifdef __HIP_PLATFORM_AMD__` / `HAVE_HIP` / `NOT HAVE_HIP` in cmake) correctly resolves to the CUDA/original branch under nvcc. No type alias, namespace define, or removed code introduced a CUDA regression. The port's additive guard structure is verified at the nvcc compile level.
+
+## Follow-up commit 615f246 (cosmetic, post-PR) 2026-06-11
+
+Per jeff review of the open contrib PR (#4147): (1) trimmed the rocDecode-unavailable
+VideoReader error message (dropped the gfx90a/MI200 VCN detail -- too much for an error
+string); (2) dejargoned the cvtFromYuv border-zero comment to spell out the allocator
+behavior plainly, matching cudastereo/src/cuda/stereosgm.cu. Comment + one string literal
+in the `#ifndef HAVE_CUDACODEC_DECODER` stub; no behavior change. Pushed as a follow-up
+commit on the PR branch (not a rewrite). gfx1100/gfx1201 carried forward (source-class):
+the string sits in a block compiled out on rocDecode-enabled builds, so their binaries are
+byte-identical. Lead gfx90a stays pr-open at ad105bb (device code unchanged; the trimmed
+string is an untested host stub path, no GPU re-run warranted).

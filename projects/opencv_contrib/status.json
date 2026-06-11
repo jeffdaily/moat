@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T14:11:52Z",
-  "head_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
+  "updated_at": "2026-06-11T15:15:55Z",
+  "head_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
+      "validated_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
       "started_at": null,
-      "completed_at": "2026-06-11T07:04:47Z",
-      "updated_at": "2026-06-11T14:08:19Z",
+      "completed_at": "2026-06-11T15:15:55Z",
+      "updated_at": "2026-06-11T15:15:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,22 +33,20 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "from": "a6612f09515191da1bf157b22a2938ab7b020b96",
-        "to": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+        "to": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "modules/cudacodec/src/video_decoder.cpp: comment-only (comments/format only); modules/cudacodec/src/video_decoder.hpp: comment-only (comments/format only); modules/cudacodec/src/video_parser.cpp: comm",
-        "at": "2026-06-11T07:07:56Z"
+        "detail": "comment reword + a string literal inside #ifndef HAVE_CUDACODEC_DECODER, compiled out on rocDecode-enabled builds (this arch builds WITH rocDecode); compiled output byte-identical, no device code chan",
+        "at": "2026-06-11T15:15:55Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
+      "validated_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
       "started_at": null,
-      "completed_at": "2026-06-11T07:25:38Z",
-      "updated_at": "2026-06-11T14:08:19Z",
+      "completed_at": "2026-06-11T15:15:55Z",
+      "updated_at": "2026-06-11T15:15:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,6 +59,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+        "method": "source-class",
+        "detail": "comment reword + a string literal inside #ifndef HAVE_CUDACODEC_DECODER, compiled out on rocDecode-enabled builds (this arch builds WITH rocDecode); compiled output byte-identical, no device code chan",
+        "at": "2026-06-11T15:15:55Z"
       }
     },
     "windows-gfx1101": {
