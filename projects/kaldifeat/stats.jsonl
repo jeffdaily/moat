@@ -10,3 +10,4 @@
 {"kind":"phase","ts":"2026-06-11T16:17:31Z","phase":"compile","seconds":61.759,"exit":0,"cmd":"bash -c cmake -S /var/lib/jenkins/moat/projects/kaldifeat/src -B /var/lib/jenkins/moat/projects/kaldifeat/src/build -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python -Dkaldifeat_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release && cmake --build /var/lib/jenkins/moat/projects/kaldifeat/src/build -j"}
 {"kind":"phase","ts":"2026-06-11T16:18:16Z","phase":"test","seconds":44.310,"exit":0,"cmd":"ctest --test-dir projects/kaldifeat/src/build"}
 {"kind":"session","ts":"2026-06-11T16:19:57Z","epoch":1781194797.812248540,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-11T16:21:25Z", "tokens": 101087, "source": "porter"}
