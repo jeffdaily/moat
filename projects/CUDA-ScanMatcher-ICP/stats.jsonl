@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-11T21:38:25Z","phase":"compile","seconds":13.783,"exit":0,"cmd":"bash -c cmake -S /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src -B /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build -j"}
 {"kind":"phase","ts":"2026-06-11T21:38:33Z","phase":"test","seconds":0.006,"exit":127,"cmd":"timeout 120 ./bin/cis565_ScanMatching"}
 {"kind":"phase","ts":"2026-06-11T21:38:38Z","phase":"test","seconds":0.239,"exit":0,"cmd":"timeout 120 /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build/bin/cis565_ScanMatching"}
+{"kind": "tokens", "ts": "2026-06-11T21:42:00Z", "tokens": 52472, "source": "porter PR-prep"}
