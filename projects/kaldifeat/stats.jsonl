@@ -1,1 +1,12 @@
 {"kind": "tokens", "ts": "2026-06-11T15:56:12Z", "tokens": 73757, "source": "planner"}
+{"kind":"session","ts":"2026-06-11T15:57:48Z","epoch":1781193468.814354508,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T15:58:16Z","phase":"compile","seconds":21.267,"exit":0,"cmd":"cmake -S projects/kaldifeat/src -B projects/kaldifeat/src/build -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python -Dkaldifeat_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release"}
+{"kind":"phase","ts":"2026-06-11T15:59:06Z","phase":"compile","seconds":42.470,"exit":2,"cmd":"cmake --build projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-11T16:01:04Z","phase":"compile","seconds":10.966,"exit":0,"cmd":"cmake --build projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-11T16:01:53Z","phase":"test","seconds":36.571,"exit":8,"cmd":"ctest --test-dir projects/kaldifeat/src/build --output-on-failure"}
+{"kind":"phase","ts":"2026-06-11T16:11:04Z","phase":"compile","seconds":42.748,"exit":2,"cmd":"cmake --build projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-11T16:13:10Z","phase":"test","seconds":45.825,"exit":0,"cmd":"ctest --test-dir projects/kaldifeat/src/build --output-on-failure"}
+{"kind":"phase","ts":"2026-06-11T16:14:54Z","phase":"compile","seconds":77.174,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/kaldifeat/src && KALDIFEAT_MAKE_ARGS='-j' /opt/conda/envs/py_3.12/bin/python setup.py install --prefix /tmp/kf_install"}
+{"kind":"phase","ts":"2026-06-11T16:17:31Z","phase":"compile","seconds":61.759,"exit":0,"cmd":"bash -c cmake -S /var/lib/jenkins/moat/projects/kaldifeat/src -B /var/lib/jenkins/moat/projects/kaldifeat/src/build -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python -Dkaldifeat_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release && cmake --build /var/lib/jenkins/moat/projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-11T16:18:16Z","phase":"test","seconds":44.310,"exit":0,"cmd":"ctest --test-dir projects/kaldifeat/src/build"}
+{"kind":"session","ts":"2026-06-11T16:19:57Z","epoch":1781194797.812248540,"event":"end","platform":"linux-gfx90a"}
