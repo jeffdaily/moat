@@ -575,6 +575,19 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-10T23:39:47Z"
+    },
+    {
+      "id": "opencv-cudalegacy-graphcut",
+      "kind": "feature-port",
+      "project": "opencv_contrib",
+      "component": null,
+      "summary": "cudalegacy graphcut/graphcut8 (NPP maxflow) has no ROCm analog; HIP takes the same stub path a modern CUDART>=8000 CUDA build does (NPP removed graphcut at 8.0). A GPU push-relabel/maxflow kernel could restore it later.",
+      "refs": [
+        "projects/opencv_contrib/plan.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T00:58:29Z"
     }
   ]
 }
