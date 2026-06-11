@@ -209,3 +209,103 @@ This narrows the bug to one of:
 3. **Trace the RNS NTT path in detail**: The failing keygen uses the RNS API. Test the exact same call pattern with known-good tables to isolate whether it's the tables or the RNS kernel.
 
 4. **Check primitive root finding**: `find_minimal_primitive_root` in util.cu may have an issue. Verify it finds the correct psi for each coefficient modulus.
+
+## Porter Debug Attempt 3 (2026-06-11)
+
+### IMPORTANT: prior submodule HIP-port work was LOST (never pushed)
+
+The local clone `projects/HEonGPU/src` had been deleted between attempt 2 and
+attempt 3. Re-cloning the jeffdaily/HEonGPU fork's `moat-port` branch revealed
+that the branch pins three submodule commits that exist NOWHERE:
+
+- thirdparty/GPU-FFT  -> ac4b587 (not in upstream, no jeffdaily/GPU-FFT fork)
+- thirdparty/GPU-NTT  -> 99cb3cc (not in upstream, no jeffdaily/GPU-NTT fork)
+- thirdparty/RNGonGPU -> 50558fe (not in upstream, no jeffdaily/RNGonGPU fork)
+
+`.gitmodules` still points at the upstream Alisah-Ozcan URLs, and no jeffdaily
+forks of these submodules were ever created. So the entire submodule HIP port
+(the PTX->intrinsic edits, the CMake HIP gating, the curand->hiprand swap) was
+only ever committed in the now-deleted local clone and is unrecoverable from
+git. The main HEonGPU repo's port (cuda_to_hip.h, hip_compat/, rmm_hip_stub/,
+CMake) IS preserved on the fork at b91755d.
+
+### Build reconstruction (done this attempt)
+
+I reconstructed the submodule HIP support from scratch (saved as patches in
+agent_space/HEonGPU-attempt3/{GPU-NTT,GPU-FFT,RNGonGPU,parent}.patch, gitignored
+-- reapply on attempt 4, and create the jeffdaily submodule forks so this is
+never lost again). The tree now builds cleanly for gfx90a (library + all 15
+test executables). Changes:
+- GPU-NTT/GPU-FFT/RNGonGPU CMakeLists: option(USE_HIP), project(... HIP ...),
+  set_source_files_properties(... LANGUAGE HIP), CUDA::cudart->hip::host,
+  CUDA::curand->hip::hiprand, hip_compat on the include path, HIP_ARCHITECTURES.
+- modular_arith.cuh: PTX mul.lo/mul.hi -> a*b + __umul64hi(a,b); PTX sub.cc/subc
+  -> manual borrow subtraction. Lo/hi mapping verified correct (value.x=lo,
+  value.y=hi). This was a clean reconstruction; it is NOT the crypto bug.
+- nttparameters.cu: clang rejects chained comparisons `0 < logn <= 25` as an
+  error (-Wparentheses); rewrote to `0 < logn && logn <= 25` (10 sites).
+- hip_compat/cuda_runtime.h: define CUDART_VERSION=10000 so base_rng.cu selects
+  the hipPointerAttribute_t `.type` path (HIP has no `.memoryType`).
+- hip_compat/curand_mtgp32_host.h + curand_mtgp32dc_p_11213.h shims (the
+  RNGonGPU cuda_rng path includes them but never uses MTGP; hipRAND has the
+  _host header, no dc_p header -> empty shim).
+- thirdparty/build.sh: no longer force `git submodule update --init` (it would
+  discard the local submodule HIP edits and fails on the missing pinned SHAs).
+- Build deps installed: libssl-dev, libgmp-dev, libntl-dev.
+
+### ROOT-CAUSE BISECTION -- first divergence pinpointed
+
+Built a probe (agent_space/HEonGPU-attempt3/moat_probe.cpp) that links the real
+library, generates a BFV context (N=4096, coeff {36,36},{37}), and exercises the
+RNS NTT path with HEonGPU's OWN generated tables via temporary public accessors
+on HEContextData. Findings, in order:
+
+1. NTT tables are CORRECT. For modulus 0, psi = ntt_table[brev(1)] satisfies
+   psi^N == q-1 and psi^(2N) == 1; ntt_table[brev(2)] == psi^2; the inverse
+   table satisfies intt_table[brev(1)] == psi^-1 and psi*psi^-1 == 1; the stored
+   n_inverse == N^-1 mod q. So context.cu table/primitive-root generation is
+   NOT the bug (this overturns the attempt-2 hypothesis).
+
+2. FORWARD NTT is CORRECT. GPU forward NTT output matches an independent O(n^2)
+   CPU negacyclic reference EXACTLY when compared in bit-reversed order
+   (0 mismatches / 4096; the GPU emits bit-reversed order, which is normal for
+   the merge-NTT). Barrett mult, GentlemanSande/CooleyTukey units all fine.
+
+3. INVERSE NTT is BROKEN on gfx90a. INTT(NTT(x)) != x for every coefficient:
+   4096/4096 mismatches in BOTH natural and bit-reversed orderings, with the
+   recovered values large and unrelated to the input by any constant factor
+   (genuine corruption, not a scale/order offset). Single-modulus (batch=1) and
+   multi-modulus (batch=3) both fail identically. Forward alone is correct;
+   only the inverse miscomputes.
+
+FIRST DIVERGENCE: the GPU-NTT inverse merge kernel (gpuntt::InverseCore /
+GentlemanSande path, thirdparty/GPU-NTT/src/lib/ntt_merge/ntt.cu, e.g. line
+1089) produces wrong results on ROCm/gfx90a, while the forward kernel in the
+same file is correct. Tables, n_inverse, and Barrett arithmetic are all verified
+correct, so the fault is inside the inverse kernel's execution on HIP, not in
+table generation or modular arithmetic. The logn=12 inverse kernel-param table
+(ntt.cuh CreateInverseNTTKernel) uses two kernels with blockdims 256 and 64x4,
+512*sizeof(T) shared -- all within HIP limits and wave-agnostic by inspection,
+so the param table is not obviously the cause. Note the build emitted
+"loop not unrolled [-Wpass-failed]" warnings ONLY on the inverse kernels
+(InverseCoreModulusOrdered / InverseCorePolyOrdered) -- worth checking whether
+an inverse-specific #pragma unroll over a runtime-bounded loop miscompiles, or
+whether the non-last inverse kernel's in-place write-back / global addressing
+breaks under the amdclang code generation.
+
+### Next Steps (for attempt 4) -- start from the inverse kernel
+
+1. FIRST: create jeffdaily forks of GPU-NTT, GPU-FFT, RNGonGPU, reapply the
+   agent_space patches, commit+push there, and re-point .gitmodules + the
+   moat-port gitlinks so the build is never lost again.
+2. Bisect the inverse kernel: test InverseCore at small N that uses a SINGLE
+   inverse kernel (no multi-kernel split) vs N=4096 (two kernels). If single
+   works and multi fails, the bug is the multi-kernel inverse decomposition /
+   in-place buffering on HIP.
+3. Inspect the inverse `#pragma unroll for (lp < loops)` (loops = runtime
+   outer_iteration_count) -- the loop-not-unrolled warning is inverse-only.
+   Try removing the unroll pragma on the inverse path and re-test.
+4. Diff the SASS/ISA or run with -O0 on the inverse kernel to see if it is an
+   optimizer miscompile (amdclang) rather than a logic port bug.
+5. The probe in agent_space reproduces the failure in seconds without running
+   the full gtest -- use it as the inner loop.
