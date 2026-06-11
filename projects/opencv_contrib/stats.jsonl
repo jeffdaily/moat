@@ -109,3 +109,10 @@
 {"kind":"phase","ts":"2026-06-11T06:03:41Z","phase":"test","seconds":22.325,"exit":1,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
 {"kind":"phase","ts":"2026-06-11T06:07:11Z","phase":"test","seconds":22.396,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
 {"kind": "tokens", "ts": "2026-06-11T06:13:18Z", "tokens": 188546, "source": "porter parity cudaimgproc npp gaps"}
+{"kind":"phase","ts":"2026-06-11T06:31:57Z","phase":"compile","seconds":6.309,"exit":0,"cmd":"cmake --build projects/opencv_contrib/build_cudacodec --target opencv_test_cudacodec -j64"}
+{"kind":"phase","ts":"2026-06-11T06:33:25Z","phase":"compile","seconds":9.304,"exit":0,"cmd":"cmake --build projects/opencv_contrib/build_cudacodec --target opencv_test_cudacodec -j64"}
+{"kind":"phase","ts":"2026-06-11T06:33:33Z","phase":"test","seconds":0.205,"exit":1,"cmd":"./projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec --gtest_filter=*Video.Reader*:*ColorConversion*:*DisplayResolution*"}
+{"kind":"phase","ts":"2026-06-11T06:34:10Z","phase":"compile","seconds":1.027,"exit":1,"cmd":"cmake --build projects/opencv_contrib/build_cudacodec --target opencv_test_cudacodec -j64"}
+{"kind":"phase","ts":"2026-06-11T06:35:43Z","phase":"compile","seconds":0.451,"exit":0,"cmd":"cmake --build projects/opencv_contrib/build_cudacodec --target opencv_test_cudacodec -j64"}
+{"kind":"phase","ts":"2026-06-11T06:40:24Z","phase":"test","seconds":2.307,"exit":1,"cmd":"./projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec"}
+{"kind":"phase","ts":"2026-06-11T06:43:15Z","phase":"test","seconds":2.512,"exit":1,"cmd":"./projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec"}

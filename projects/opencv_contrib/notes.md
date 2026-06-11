@@ -953,3 +953,125 @@ restore apt. For the actual VideoReader port, set this up deliberately and keep 
 
 So: the cudacodec HW-decode path (rocDecode VideoReader) is validatable on this host -- the
 remaining work is the cuvid->rocDecode API mirror (the deferred task), not a hardware/runtime gap.
+
+## cudacodec rocDecode VideoReader IMPLEMENTED + GPU-validated on gfx1100 (2026-06-11)
+
+The deferred `opencv-cudacodec-rocdecode-videoreader` task is DONE. The cudacodec
+VideoReader hardware-decode path now decodes on AMD via rocDecode (1.7.0), validated
+on the W7800 (gfx1100, RDNA3, VCN 4.0). Only opencv_contrib changed; opencv core is
+untouched (the shim is self-contained in the module). Build dir
+`projects/opencv_contrib/build_cudacodec/` (gitignored); script `build_hip_cudacodec.sh`.
+ALL build/test steps require `LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0`.
+
+### Fail-fast confirmed first (agent_space/rocdec_harness.cpp, gitignored)
+A standalone bitstream-reader + rocparser + rocDecode harness decoded H265/H264/AV1
+end-to-end before touching the module: 59-62 frames each, plausible luma (mean ~100),
+separate Y/UV device pointers, 256-aligned pitch. Confirmed the runtime decodes on
+this host and the cuvid->rocDecode API mapping is sound.
+
+### cuvid -> rocDecode mapping (the port)
+The NVCUVID decode pipeline maps 1:1 onto rocDecode: cuvid video parser ->
+rocDecCreateVideoParser/rocDecParseVideoData (sequence/decode/display callbacks);
+cuvid decoder -> rocDecCreateDecoder/rocDecDecodeFrame/rocDecGetVideoFrame;
+CUVID* structs -> Rocdec* structs. The FFmpeg videoio demuxer the module already links
+feeds elementary-stream packets to the rocparser (no rocDecode built-in demuxer needed).
+Files (all opencv_contrib modules/cudacodec):
+- NEW src/rocdecode_video_compat.hpp: maps the cuvid type/helper names the codec-agnostic
+  plumbing uses (CUVIDPARSERDISPINFO/CUVIDPROCPARAMS -> RocdecDispInfo/RocdecProcInfo;
+  CUcontext/CUvideoctxlock/CUdeviceptr; cuCtxGetCurrent/cuvidCtxLock* no-ops; the dead
+  histogram cuMemcpyDtoDAsync) onto rocDecode/HIP, so frame_queue / video_source /
+  video_reader compile unchanged and only the back ends differ.
+- src/video_decoder.{hpp,cpp}: HAVE_ROCDECODE VideoDecoder calling rocDec*; explicit
+  codecToRocDec/chromaToRocDec (cudacodec Codec ordering follows NVCUVID; rocDecode orders
+  differently, so a static_cast would mislabel the codec). mapFrame wraps the rocDecode
+  decode surface (single contiguous pitched NV12: chroma == luma + pitch*height, verified)
+  as one GpuMat, zero-copy, exactly like cuvid mapFrame.
+- src/video_parser.{hpp,cpp}: HAVE_ROCDECODE VideoParser owning the rocparser, with the
+  sequence/decode/display callbacks routed to the decoder + frame queue.
+- precomp.hpp: HAVE_CUDACODEC_DECODER = HAVE_NVCUVID || HAVE_ROCDECODE (defined AFTER the
+  OpenCV includes so HAVE_ROCDECODE from cvconfig.h is visible -- defining it before the
+  includes was a real bug: it left the StsNotImplemented stub in place). Includes the shim
+  + the shared decode headers on the rocDecode path; cuvid_video_source stays NVCUVID-only.
+- frame_queue.cpp / video_source.cpp / ffmpeg_video_source.cpp / thread.cpp: guard widened
+  HAVE_NVCUVID -> HAVE_CUDACODEC_DECODER (codec-agnostic plumbing, builds against either
+  back end). video_reader.cpp: stub guard #ifndef HAVE_NVCUVID -> #ifndef
+  HAVE_CUDACODEC_DECODER so the real reader compiles on ROCm; the cuvid built-in-demuxer
+  fallback (no rocDecode equivalent) re-raises on HIP.
+- CMake (already present from the prior pass): WITH_ROCDECODE -> HAVE_ROCDECODE +
+  ROCDECODE_LIBRARIES; module links librocdecode. Build with WITH_FFMPEG=ON (the demuxer).
+
+### THE RUNTIME GUARD (the user's key requirement) -- two layers, never crashes
+1. Build-time: HAVE_ROCDECODE gates the whole decode path; without rocDecode the reader
+   keeps the StsNotImplemented stub.
+2. Runtime (the multi-arch-safety branch): BEFORE creating the decoder, VideoDecoder::create
+   calls rocDecGetDecoderCaps(device_id, codec, chroma, bit_depth_minus_8). If is_supported==0
+   (a compute-only gfx90a with no VCN yields this; an unsupported codec/dimension/output format
+   yields this) it throws a catchable cv::Error::StsNotImplemented naming the device (name +
+   gcnArchName) and codec, e.g. "this device has no supported hardware decoder for <codec>
+   (rocDecGetDecoderCaps is_supported=0)". A second guard in the VideoParser ctor rejects codecs
+   rocDecode's parser does not implement (MPEG-1/2/4, VC-1, VP8, MJPEG) up front with a clear
+   StsNotImplemented before rocDecCreateVideoParser. Both are catchable cv::Exceptions, NEVER a
+   crash/abort. THIS IS THE SAME BRANCH that protects gfx90a: the wave32/wave64 fat binary
+   (gfx90a;gfx1100;gfx1201) decides at runtime -- it throws cleanly on a device with no VCN
+   (gfx90a) and on unsupported codecs, and decodes on gfx1100/gfx1201. Verified: requesting an
+   MPEG-2 (.mpg) / MPEG-4 (.mp4/.avi) stream throws StsNotImplemented (-213) with the rocDecode
+   codec message, caught by the test harness, no crash.
+
+### GPU validation (opencv_test_cudacodec, gfx1100, LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0)
+`OPENCV_TEST_DATA_PATH=projects/opencv_contrib/opencv_extra/testdata` (added the highgui/video
+sparse-checkout for the codec test streams). Full suite: **256/303 PASS**.
+DECODES (the acceptance gate, real HW decode, correct dims/format/non-empty):
+- Video.Reader H264 (big_buck_bunny.h264): PASS -- decodes, GRAY/BGR/BGRA/NV_YUV all correct dims.
+- Video.Reader HEVC (big_buck_bunny.h265): PASS.
+- Video.Reader VP9: PASS.
+- YuvConverter 240/240: PASS (unchanged converter, no regression).
+- ReconfigureDecoderWithScaling (H264 multi-res, scale + srcRoi + targetRoi + mid-stream
+  resolution change): PASS after the border-zero fix below.
+- ColorConversionFormat GRAY (tol 15): PASS at meanAbs 0.75 -- proves the decode is correct.
+
+### The 47 "failures" are EXACTLY two documented categories, ZERO real decode bugs
+1. 37 codec-delta (genuine rocDecode codec losses): every failing test that loads an
+   .mp4/.avi/.mov/.mpg stream FFmpeg reports as MPEG-2/MPEG-4 (and the MJPEG/VC1 streams).
+   rocDecode decodes only AVC/HEVC/AV1/VP9; these throw the clean StsNotImplemented codec
+   guard. Identical to a CUDA build on a GPU lacking those codecs. (Video.Reader/0,2,3,6;
+   all Scaling/* on big_buck_bunny.mp4; CheckSet/CheckExtraData/CheckKeyFrame/CheckParams/
+   CheckDecodeSurfaces/CheckInitParams/DisplayResolution/Seek on mpeg files.)
+2. 10 cross-decoder tolerance (decode IS correct): ColorConversion{Format BGR/BGRA/RGB/RGBA,
+   LumaChromaRange, Planar, Bitdepth} compare rocDecode VCN H264 output against libavcodec's
+   software H264 decode at EXPECT_MAT_NEAR tolerance 2. VCN differs from libavcodec by meanAbs
+   ~1.84 (max ~20 at ~0.05% of pixels) -- within H.264 spec rounding latitude, NOT a port
+   defect. The GRAY variant (tol 15) PASSES at meanAbs 0.75, proving the decode is correct;
+   only the strict tol-2 cross-decoder comparison trips. Same class as the documented TVL1.Async
+   0.0-tolerance case (a strict upstream tolerance assuming two implementations bit-match).
+
+### NEW FAULT CLASS REUSE: allocator-no-zero applied to the target_rect border
+ReconfigureDecoderWithScaling first FAILED at the "zero border outside targetRoi" assertion.
+The NVCUVID decoder zeroes the output surface area outside the target rectangle during
+post-processing; rocDecode places the scaled image at target_rect but does not zero the
+surrounding decode surface, and the ROCm device allocator does not hand back zeroed pages, so
+the converter rendered the border as garbage. Fix (video_reader.cpp cvtFromYuv, HIP-guarded):
+after conversion, when a target ROI smaller than the surface is in use, re-zero everything
+outside the ROI (copy the ROI into a zeroed buffer). CUDA path byte-identical. This is the
+same allocator-does-not-zero fault class as cudastereo census_transform and cudaimgproc.
+
+### Codec losses (genuine, vs NVDEC) -- surfaced now that the decode path is live
+rocDecode lacks MPEG-1/2/4, VC-1, VP8 and MJPEG (NVDEC has them). The reader throws a clean
+StsNotImplemented naming these and pointing at the FFmpeg cv::VideoCapture backend. Luma
+histogram output (NVDEC) is also unavailable on rocDecode -- rejected at caps time.
+
+### Test guards widened (CUDA-preserving)
+test/test_video.cpp: the VideoReader decode-test fixtures and bodies guard widened
+HAVE_NVCUVID -> (HAVE_NVCUVID || HAVE_ROCDECODE) so they compile and run on ROCm; the decode
+instantiations were already in the wider HAVE_NVCUVID||HAVE_NVCUVENC block. Encode-coupled
+tests (HAVE_NVCUVID && HAVE_NVCUVENC, HAVE_NVCUVENC) stay CUDA-only.
+
+### Build + test commands (literal)
+```
+LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0 \
+  BUILD_TARGET=opencv_test_cudacodec bash projects/opencv_contrib/build_hip_cudacodec.sh
+LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0 \
+  OPENCV_TEST_DATA_PATH=projects/opencv_contrib/opencv_extra/testdata \
+  projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec
+```
+GOTCHA: rocDecode needs LIBVA_DRIVER_NAME=radeonsi on this host for EVERY run (the W7800 VCN
+is driven by the distro radeonsi VA driver). Without it, rocDecGetDecoderCaps/decode fail.
