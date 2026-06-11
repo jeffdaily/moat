@@ -671,3 +671,57 @@ Results:
 ### State transition
 
 linux-gfx90a: revalidate -> completed, validated_sha=c4e543e
+
+## Validation 2026-06-11 (linux-gfx1100 revalidate -> completed at c4e543e)
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, 35 CUs (wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.x
+Starting state: revalidate (validated_sha=48cd01b, head_sha=c4e543e)
+
+### Delta analysis
+
+Commit c4e543e adds changes on top of 48cd01b:
+1. HipModularProgram.h: Windows-only `#ifdef _WIN32` block adding cmath suppression and std::
+   math aliases in the hiprtc preamble. No effect on Linux/GCC builds.
+2. jpeg/jpeg.cu: guards `hiprand_kernel.h` with `#if !defined(__HIPCC_RTC__)`. Affects
+   hiprtc RTC compilation path on all platforms.
+3. CuRast_render.h: stage1 `launchCooperative` -> `launchOccupancyBased` + CPU-side
+   cuMemsetD8Async counter zeroing; stage3 `launchCooperative` -> `launchOccupancyBased`.
+4. triangles_visbuffer.cu: removed `auto grid = cg::this_grid()` from stage1, removed
+   counter-zeroing from thread_rank()==0 block, changed `grid.sync()` -> `block.sync()`,
+   removed `auto grid = cg::this_grid()` from stage3.
+
+moatlib classify verdict: mixed arch_independent=False -- full GPU revalidation required.
+
+### Build
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build
+cmake --build /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build -j$(nproc)
+```
+
+Build: exit 0, no errors (warnings: fread return, nodiscard hipError_t, unused attribute in pragma clang regions).
+Binary: CuRast (3.4MB).
+
+### GPU Test
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+export HIP_VISIBLE_DEVICES=0 ROCM_PATH=/opt/rocm
+/var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build/CuRast \
+    --bench ./example_donaukanal_urania.glb 1920 1080 30
+```
+
+Results:
+- 30 frames, 966,461 of 966,461 triangles visible per frame (all frames correct)
+- Best visbuffer-pipeline time: 0.160 ms @ 1920x1080 (reference at 48cd01b: 0.153 ms, consistent)
+- bench_render.png: PASS (259K, 1920x1080 PNG, shows Donaukanal scene with correct 3D geometry)
+- No GPU faults
+- hiprtc compile warnings (unused `#pragma clang attribute` regions, `__HIP_PLATFORM_AMD__` redefined): pre-existing
+- jpeg/rocrand hiprtc path: pre-existing (same as prior runs, unrelated to this delta)
+
+### State transition
+
+linux-gfx1100: revalidate -> completed, validated_sha=c4e543e
