@@ -1,6 +1,10 @@
 # CTranslate2 notes
 
-## PR-prep 2026-06-11 (porter, lead linux-gfx90a) -- DONE, single clean commit, pr-ready
+## FINAL DECISION 2026-06-11: outcome=validated, NO upstream PR (jeff)
+
+Resolved. CTranslate2 is delivered as a VALIDATION record, not an upstream contribution. Upstream already ships a mature HIP backend; our only delta is a 2-line arch-list add (prepend gfx90a) plus one doc line, which jeff judged too trivial to warrant a PR. `upstream.json` carries `outcome: validated` (README shows "validated (5 arch)"); all 5 platforms stay `completed` at 7bedc886 as the validation record. Do NOT open a PR and do NOT re-surface this in "next PR to prep" scans -- any such scan must skip projects whose upstream.json has a terminal `outcome` (validated/fork/superseded/blocked) or a pr_url. The 2026-06-04 "small-delta PR is warranted" note below and the PR-prep "ready for PR-open" note are SUPERSEDED by this decision; the PR-prep edits (doc + squash to 7bedc886) are kept as harmless fork content, no PR.
+
+## PR-prep 2026-06-11 (porter, lead linux-gfx90a) -- SUPERSEDED (no PR; see FINAL DECISION above)
 
 All 5 platforms were completed at dfa0d30 (gfx90a/gfx1100/gfx1101/gfx1201/gfx1151). Ran the PR-prep sequence per CLAUDE.md; no upstream PR opened (gated on user approval).
 
@@ -519,7 +523,9 @@ Verification trail (all load-bearing claims independently re-derived from the fo
 - GPU run not re-executed at review (validator's stage, per PORTING_GUIDE 2026-05-30); porter recorded
   CUDA/* 164/167 +3 skip, full 350/351 +1 skip, determinism bit-identical. Not a blocker for review.
 
-## Upstream-PR disposition: SMALL DELTA PR is warranted (corrected 2026-06-04)
+## Upstream-PR disposition: SMALL DELTA PR is warranted (corrected 2026-06-04) -- SUPERSEDED 2026-06-11
+
+SUPERSEDED by the FINAL DECISION at the top of this file: jeff judged the delta too trivial to PR, so outcome=validated and NO PR is opened. The analysis below is retained only for the technical wave64/arch-list facts; its "PR is warranted" conclusion no longer holds.
 
 An earlier README-sweep note here said "DO NOT open a duplicate PR -- upstream already supports ROCm." That was WRONG and is retracted. Upstream has a mature HIP backend (the planner knew this: disposition was verify/modernize, not fresh port), but our port genuinely EXTENDS it, and the delta is contributable:
 
