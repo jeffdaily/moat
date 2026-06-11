@@ -885,3 +885,6 @@ encode_batch_from_gpu_ptr_f32_with_stream is NOT hip-gated (it is under
 codegen -- another behavior-identical-but-not-byte-identical CUDA delta.
 Suggested wording for the reply: the CUDA path is behavior-preserving (no
 functional change), not literally byte/SASS-identical.
+
+## Review replies posted (apache/mahout#1399) 2026-06-11
+PR body reworded "byte-for-byte identical" -> "behavior-preserving (no functional change)" (reviewer rich7420's nit; the CUDA path has behavior-identical-but-SASS-changing deltas: metrics.rs driver->runtime memcpy, kernel >>5->/warpSize, and the new fix-4 stream sync). Posted the overall reply (issuecomment-4682322151) + 4 threaded inline replies (discussion_r3397247837/8095/8302/8492) -- all four review points fixed in 0b5042e. Awaiting rich7420's response / re-review; on merge run set-pr-merged.
