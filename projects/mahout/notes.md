@@ -1123,3 +1123,50 @@ Transition: revalidate -> completed (validated_sha = d97db73ad592...).
 
 ## gfx1201 stream-ordering fix d97db73 (root cause) 2026-06-11
 gfx1201 pushed d97db73: reverts the Windows blocking-stream workaround (90b6006), restores non-blocking stream on all platforms, fixes the REAL bug -- missing ordering between default-stream htod/alloc_zeros setup and the forked non-blocking-stream kernel (CUDA legacy default stream synchronizes; HIP's does not). Adds sync_default_stream after the blocking setup copies. No-op on Linux (gfx90a default stream already synchronizing). VERIFIED on gfx90a: precommit clean (fmt+full clippy via torch venv), gpu_ptr_encoding 68/68 incl. all *_with_stream_* tests. Head reconciled to d97db73. All CI green on the prior head (90b6006); will reconfirm on d97db73. Precommit reply still held for jeff's go.
+
+## Validation 2026-06-11 (gfx1100, revalidate -> completed at d97db73) -- FULL GPU PASS
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32),
+HIP_VISIBLE_DEVICES=0 (Rust tests), all 4 GPUs visible (Python parity),
+ROCm 7.2.1, Rust 1.96.0.
+Fork: jeffdaily/mahout @ moat-port HEAD d97db73adeac70b377c22e17fde6af7ff4ff3057.
+
+Delta ebb71af44..d97db73 (3 commits):
+- 9856724c3: build.rs license header + HIP clippy cast lint suppression (cfg_attr, inert on GPU path).
+- 90b60069d: Windows gfx1201 delta -- #[cfg(target_os="linux")] -> #[cfg(qdp_gpu_platform)] renames in encoding files + transient Windows blocking-stream workaround (later reverted).
+- d97db73: Stream ordering fix -- sync_default_stream() after alloc_zeros/htod in device.rs; sync_cuda_stream() before dtoh in amplitude.rs (batch f64+f32) and phase.rs (batch). Restores non-blocking fork_default_stream on all platforms. This is a functional HIP change; binary-equivalence carry-forward was NOT used; full GPU revalidation performed.
+
+Build:
+```
+source "$HOME/.cargo/env"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1100 ROCM_PATH=/opt/rocm HIP_VISIBLE_DEVICES=0
+bash utils/timeit.sh mahout compile -- cargo build \
+  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+```
+Exit 0. Only pre-existing upstream warnings (phase.cu unused variable, iqp.cu unused parameter).
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1):
+```
+bash utils/timeit.sh mahout test -- cargo test \
+  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+- qdp-core lib: 77/77.
+- gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 68/68, gpu_validation 8/8.
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet_f32 7/7, parquet_io 8/8,
+  preprocessing 14/14, reader 3/3, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- 0 failures total. test_l2_norm_batch_kernel_stream passes with non-blocking stream + sync_default_stream ordering fix.
+- Async-pipeline tests pass: test_amplitude_encoding_async_pipeline, test_angle_encoding_async_pipeline (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path (gpu_angle_encoding).
+
+Python parity (all 4 GPUs visible, testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+Rebuilt wheel at d97db73 (maturin build --features hip --profile dev --compatibility linux), pip installed --no-deps.
+- 305 passed, 10 skipped, 0 failed. Matches prior gfx1100 baseline exactly.
+- Skips: 1 tensorflow-absent, 1 loader path-timing, 5 torch_ref sm_-arch check, 2 AmdQdpEngine-not-built, 1 NVIDIA-ref-absent -- all pre-existing/legit.
+
+No changes pushed to the fork (validation as-is). Open PR apache/mahout#1399 unaffected.
+
+Transition: revalidate -> completed (validated_sha = d97db73adeac70b377c22e17fde6af7ff4ff3057).

@@ -7,7 +7,7 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-11T18:58:50Z",
+  "updated_at": "2026-06-11T20:01:27Z",
   "head_sha": "d97db73adeac70b377c22e17fde6af7ff4ff3057",
   "platforms": {
     "linux-gfx90a": {
@@ -92,13 +92,13 @@
       "last_agent": "porter"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb",
+      "validated_sha": "d97db73adeac70b377c22e17fde6af7ff4ff3057",
       "started_at": null,
-      "completed_at": "2026-06-11T17:31:30Z",
-      "updated_at": "2026-06-11T18:39:49Z",
+      "completed_at": "2026-06-11T20:01:27Z",
+      "updated_at": "2026-06-11T20:01:27Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
