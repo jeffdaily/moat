@@ -5,3 +5,9 @@
 {"kind":"session","ts":"2026-06-11T03:54:48Z","epoch":1781150088.325615125,"event":"end","platform":"linux-gfx90a"}
 {"kind": "tokens", "ts": "2026-06-11T03:55:45Z", "tokens": 276468, "source": "porter"}
 {"kind": "tokens", "ts": "2026-06-11T04:00:49Z", "tokens": 99373, "source": "reviewer"}
+{"kind":"session","ts":"2026-06-11T04:19:11Z","epoch":1781151551.443980383,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T04:19:32Z","phase":"compile","seconds":0.042,"exit":2,"cmd":"bash -c PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=32 python setup.py build_ext --inplace 2>&1"}
+{"kind":"phase","ts":"2026-06-11T04:20:21Z","phase":"compile","seconds":44.171,"exit":0,"cmd":"sh -c cd /var/lib/jenkins/moat/projects/llm-awq/src/awq/kernels && PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=32 python setup.py build_ext --inplace 2>&1"}
+{"kind":"phase","ts":"2026-06-11T04:21:49Z","phase":"test","seconds":3.065,"exit":0,"cmd":"sh -c python3 /var/lib/jenkins/moat/agent_space/awq_kernel_test.py 2>&1"}
+{"kind":"phase","ts":"2026-06-11T04:22:32Z","phase":"test","seconds":26.992,"exit":0,"cmd":"sh -c python3 /var/lib/jenkins/moat/agent_space/awq_model_test.py 2>&1"}
+{"kind":"session","ts":"2026-06-11T04:23:45Z","epoch":1781151825.564348930,"event":"end","platform":"linux-gfx90a"}
