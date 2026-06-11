@@ -66,3 +66,4 @@
 {"kind":"phase","ts":"2026-06-11T05:50:03Z","phase":"compile","seconds":18.197,"exit":0,"cmd":"bash -c cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -B /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build && cmake --build /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build -j64"}
 {"kind":"phase","ts":"2026-06-11T05:50:23Z","phase":"test","seconds":4.131,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuRast/src && /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30"}
 {"kind": "tokens", "ts": "2026-06-11T06:01:25Z", "tokens": 57969, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-11T17:37:42Z", "tokens": 87014, "source": "porter"}
