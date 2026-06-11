@@ -101,6 +101,58 @@ House style / upstreamability: AMD copyright + `\author Jeff Daily` on both subs
 
 Forward-looking note (NOT a defect this phase, already captured at notes.md "RESUME POINT"): the CORE deprecated warp headers (modules/core/include/opencv2/core/cuda/{warp.hpp, warp_shuffle.hpp, emulation.hpp, scan.hpp, detail/reduce.hpp}) still carry unported NVIDIA PTX -- `asm("mov.u32 %0,%%laneid")` in warp.hpp:64, the 32-bit-mask `__shfl*_sync(0xFFFFFFFFU,...)` redefines in warp_shuffle.hpp (guarded by `__CUDACC_VER_MAJOR__>=9`, so dormant under HIP), and the __CUDA_ARCH__>=300 shfl bodies. These are UNREACHABLE from the Phase 0+1 build (cudev pulls only core/cuda/cuda_compat.hpp from core's cuda headers; gpu_mat.cu/gpu_mat_nd.cu include no warp header), so they are correctly left dormant and did not need porting here. But the shim's __CUDA_ARCH__=350 WILL activate their `>=300` PTX paths the moment a Phase 2+ module includes them, and `mov %%laneid` does not hipify -- Phase 2 must apply the same laneId/shfl-mask/ballot fixes (as already noted at the resume point) to these core headers before those modules build.
 
+## Phase 2 progress (2026-06-11, gfx90a lead) -- pure-custom modules
+
+Fork HEADs after the cudalegacy commit: contrib `911fca397e59f13c7b38ab631eeaa111610f99e1`, core `0e402ed`.
+Test data: partial sparse clone of opencv_extra at `projects/opencv_contrib/opencv_extra/`
+(`git clone --filter=blob:none --sparse`, `sparse-checkout set testdata/gpu testdata/cv`;
+44M gpu + 328M cv). Set `OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata`. GPU: run on
+`HIP_VISIBLE_DEVICES=0` (device 2 is the other session's). build_hip.sh now takes
+`BUILD_LIST` and `BUILD_TARGET` from the environment.
+
+### STEP 1 done -- core deprecated warp headers (commit core 5319c3d)
+- warp.hpp laneId(): HIP derives logical lane = linearized-tid & (WARP_SIZE-1) (no %%laneid PTX), keyed to logical WARP_SIZE=32. HIP-guarded.
+- warp_shuffle.hpp: default shuffle width pinned to logical 32 on HIP (`OPENCV_CUDA_SHFL_WIDTH`); builtin warpSize=64 on wave64 would cross the per-32 partition. CUDA keeps warpSize(==32). The `__CUDACC_VER_MAJOR__>=9` sync-mask redefines stay dormant on HIP; the non-sync `__shfl`/`__shfl_up`/`__shfl_down` HIP builtins honor width.
+- detail/reduce.hpp GenericOptimized32: `loopShfl(...,warpSize)` -> `loopShfl(...,32)` under HIP guard (same per-32 reason). reduce_key_val.hpp's identical line is under `#if 0`, untouched.
+- scan.hpp / emulation.hpp: NO change needed. scan uses literal `OPENCV_CUDA_WARP_SIZE`(=1<<5, already 32) and the laneId&31-gated default-width shfl_up (wave64-correct, established pattern). emulation's `__CUDA_ARCH__=350` routes syncthreadsOr/smem::atomicMin to HIP builtins; `Emulation::Ballot` (the one 64-bit-ballot-truncation risk) is UNUSED by any Phase 2 module so left alone for CUDA byte-identity.
+
+### Shim additions (cuda_to_hip.h, commits core 5319c3d + 0e402ed)
+- cudaFuncSetCacheConfig -> typed helper `cv::cuda::detail::hipFuncSetCacheConfigT` (a function-like macro can't wrap it: template kernel ids carry commas; hipFuncSetCacheConfig wants const void* and a __global__ template id doesn't implicitly convert). cudaFuncCachePreferShared added.
+- constant memory: cudaMemcpyToSymbol{,Async}, cudaMemcpyFromSymbol{,Async}, cudaGetSymbolAddress. cudaMemset{,Async}, cudaMallocHost.
+- texture: cudaFilterModeLinear, cudaReadModeNormalizedFloat, cudaAddressModeWrap/Mirror/Border.
+- OpenCVModule.cmake: per-module accuracy-TEST executables now link hip::host when HAVE_HIP (NCV.hpp pulls hip/hip_runtime.h; test .cpp are plain g++ and need the ROCm include path).
+
+### Modules ported + GPU test results (literal: `HIP_VISIBLE_DEVICES=0 OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata ./bin/opencv_test_<m>`)
+- cudabgsegm (contrib 264d339): builds + links. MOG/MOG2 accuracy tests are gated behind `HAVE_VIDEO_INPUT`, a macro this OpenCV 4.14-pre tree NEVER defines (confirmed: absent from core, contrib, samples, apps) -> 0 tests run on CUDA too. Not a port gap; kernels compile for gfx90a. Fix: HIP-guard mog2.hpp's `typedef ... cudaStream_t` forward-decl (collides with the shim's hipStream_t mapping).
+- cudastereo (contrib 264d339): **128/128 PASS**. Fixes: drop gratuitous `<cuda.h>` under HIP; software `__vminu2/__vmaxu2/__vcmpgtu2` + byte-wise `*4` (NVIDIA SIMD-in-a-word, absent on HIP) for StereoSGM's median sort; **census-transform border-zero** (NEW FAULT CLASS, see below). StereoSGM shuffle helpers already use logical cudev::WARP_SIZE=32 widths + non-sync __shfl on HIP -> wave64-correct.
+- cudalegacy (contrib 911fca3): **14/14 PASS** (NPPST staging: Integral/SquaredIntegral/RectStdDev/Resize/VectorOperations/Transpose; NCV: VectorOperations/HaarCascadeLoader/HaarCascadeApplication/HypothesesFiltration/Visualization; Calib3D: TransformPoints/ProjectPoints/SolvePnPRansac). Fixes: widen `#ifdef __CUDACC__` -> `|| __HIPCC__` in NCV.hpp/NCVHaarObjectDetection.hpp/fgd.hpp; cuda_runtime.h -> hip/hip_runtime.h + shim in NCV.hpp/NPP_staging.cu/NCVPyramid.cu/NCVTest.hpp; graphcuts.cpp `#if ...||__HIP_PLATFORM_AMD__` so HIP takes the modern-CUDART(>=8000) throw_no_cuda stub (graphcut + connectivityMask + labelComponents all stubbed, same as modern CUDA); solvePnPRansac's `cuda::minMaxLoc` (cudaarithm, optional dep) gets a host argmax fallback over the 1xN scores row when cudaarithm absent. The NCV Haar cascade working here is what cudaobjdetect needs.
+- graphcut DEFERRED: `python3 utils/deferred.py list` id=opencv-cudalegacy-graphcut.
+
+### NEW FAULT CLASS: ROCm allocator does not zero-init device memory
+cudastereo census_transform: the kernel writes only interior pixels and leaves the
+half-window border untouched, relying on the destination GpuMat already being 0.
+CUDA's device allocator happens to hand back zeroed pages so the border stays 0 and
+the zero-tolerance accuracy test passes; the ROCm allocator returns REUSED (non-zero)
+memory, so the border is garbage and the test fails -- but only after a prior test has
+dirtied a similarly-sized buffer (passes in isolation, fails in-suite; a classic
+allocator-reuse tell). Fix: `dest.setTo(Scalar::all(0), stream)` before the launch,
+HIP-guarded to keep CUDA byte-identical. This is a latent UPSTREAM bug (kernel relies
+on implicit zero-init); worth an upstream note. GENERAL LESSON: never assume fresh
+device memory is zero on ROCm; any kernel that writes a sub-region and leaves a border
+must explicitly zero it.
+
+### RESUME POINT -> cudafeatures2d + cudaobjdetect (remaining Phase 2)
+Both have HARD (non-OPTIONAL) module deps on Phase 3/4 NPP modules:
+- cudafeatures2d: `ocv_add_module(... opencv_features2d opencv_cudafilters opencv_cudawarping)`.
+- cudaobjdetect: `ocv_define_module(... opencv_objdetect opencv_cudaarithm opencv_cudawarping OPTIONAL opencv_cudalegacy)`.
+So building them requires cudawarping (Phase 3, NPP-light: 5 kernels/2 NPP libs) and
+for cudaobjdetect also cudaarithm (Phase 4, heaviest). cudaobjdetect's NCV/Haar half is
+already proven via cudalegacy. Next porter action: either (a) pull cudawarping forward
+(it is the lightest NPP module and unblocks cudafeatures2d) then port cudafeatures2d
+(Thrust->rocThrust in orb.cu/bf_*), or (b) treat cudafeatures2d/cudaobjdetect as
+crossing into Phase 3/4 and sequence them with those modules. The 3 truly-pure modules
+(no NPP dep at all) are DONE and passing.
+
 ## Orchestrator state note 2026-06-11
 
 Phase 0+1 foundation: ported -> review-passed (clean, see "Review findings (phase 0+1)").
