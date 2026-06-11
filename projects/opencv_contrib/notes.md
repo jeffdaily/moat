@@ -435,16 +435,59 @@ work.
 - DEFERRED: alphaComp (13 Porter-Duff alpha-composite ops, NPP-only, untested) +
   16U/16S/4ch histEven/histRange -> `deferred.py` id=opencv-cudaimgproc-npp-color-hist.
 
-### RESUME POINT -> cudafeatures2d then cudaobjdetect (both deps now present)
-cudafilters + cudaimgproc DONE this dispatch. Next:
-3. cudafeatures2d: deps cudafilters (ORB Gaussian) + cudawarping (ORB resize) NOW EXIST.
-   ORB/FAST/BFMatcher; Thrust->rocThrust in orb.cu/bf_*. Heavy warp-cooperative reductions
-   (the wave64 gate -- BFMatcher reductions, FAST corner score). Test data:
-   opencv_extra/testdata/gpu/features2d (already in the sparse checkout).
-4. cudaobjdetect: deps cudawarping + cudaarithm (integral) NOW EXIST; NCV/Haar device half
-   already proven via cudalegacy 14/14. HOG block-histogram reductions are warp-cooperative.
-   For the cudalegacy regression rerun, include objdetect in BUILD_LIST (HypothesesFiltration
-   needs groupRectangles).
-Regression after Phase 4b (cheap, after the core cuda_to_hip.h shim edit -- it only ADDED
-two macros, no existing path changed): rerun cudev/cudastereo/cudalegacy/cudawarping/
-cudaarithm at end of the FULL dispatch.
+### cudafeatures2d (contrib c85b44b, core 20268c3): 256/256 PASS
+Literal: `BUILD_LIST="core,cudev,cudaarithm,cudafilters,cudawarping,cudafeatures2d,imgproc,ts"
+BUILD_TARGET=opencv_test_cudafeatures2d bash build_hip.sh` then
+`./bin/opencv_test_cudafeatures2d` -> 256/256 (32 ORB + FAST + 224 BruteForceMatcher; the
+module genuinely has only 3 test cases). NO NPP (earlier grep matched comments). The warp-
+cooperative reductions (Harris responses in orb.cu, the matcher distance reductions in
+bf_*.cu) already pass an EXPLICIT width 32 to the core reduce/reduceKeyVal helpers -> wave64-
+correct unchanged. `__popc` in fast.cu is on a 16-bit FAST corner mask (not a warp ballot),
+fine on HIP. ORB exercises the Phase 4b cudafilters Gaussian + the Phase 3 cudawarping resize
++ Thrust sort -- all pass, so this is the integration proof for the prior modules too.
+- Thrust: orb.cu's `thrust::cuda::par` + cuda execution-policy header -> OPENCV_THRUST_PAR
+  (thrust::hip::par + hip header). Same pattern as cudaimgproc.
+- test_features2d.cpp pulled `cuda_runtime_api.h` + called `cudaDeviceSynchronize` -> hip
+  equivalents on HIP (`__HIP_PLATFORM_AMD__` reaches the test .cpp via global add_definitions).
+NEW FAULT CLASS (core utility.hpp, commit 20268c3): MaskCollection's copy constructor was
+`__device__`-only. The brute-force matcher kernels take a MaskCollection BY VALUE; nvcc
+synthesises the host-side copy to marshal the kernel argument, but amdclang requires the copy
+constructor to be HOST-callable. Added `__host__` to it (forwards two members, valid on host;
+device codegen unchanged, CUDA still compiles). LESSON: any struct passed BY VALUE to a HIP
+kernel must have a host-callable copy constructor; a device-only one compiles on nvcc but not
+amdclang.
+
+### cudaobjdetect (validated at contrib c85b44b -- NO source change): 18/18 PASS
+Literal: `BUILD_LIST="core,cudev,cudaarithm,cudawarping,cudalegacy,cudaobjdetect,imgproc,
+objdetect,ts" BUILD_TARGET=opencv_test_cudaobjdetect bash build_hip.sh` then
+`./bin/opencv_test_cudaobjdetect` -> 18/18 (HOG: CalTech detect, Hog_var, Hog_var_cell; LBP
+cascade: Read_classifier, classify). cudaobjdetect needed ZERO source edits: hog.cu/lbp.cu are
+clean HIP (no warp intrinsics, no NPP, no Thrust), and its only NPP dependency
+(nppiStIntegralGetSize_8u32u for the integral buffer size, behind HAVE_OPENCV_CUDALEGACY) comes
+from the already-ported cudalegacy NCV staging. Its hard deps (cudawarping resize, cudaarithm
+integral) are ported. The HOG block-histogram reductions (the warp-cooperative path) pass on
+wave64. So head_sha stays at c85b44b (cudafeatures2d); cudaobjdetect is a validated-no-delta
+module.
+
+### Regression after Phase 4b (same MI250X gfx90a), after the 2 core edits
+The core edits (cuda_to_hip.h: ADDED cudaFuncSetAttribute helper; utility.hpp: ADDED __host__
+to MaskCollection copy ctor) are both additive/behavior-preserving. Rebuilt + reran:
+cudev 402/402, cudastereo 128/128, cudalegacy 14/14, cudawarping 4535/4535,
+cudaarithm 11417/11417. All PASS, no regression.
+
+### RESUME POINT -> Phase 5 (the SDK-gated modules)
+ALL of Phase 4b DONE + GPU-validated: cudafilters 16028, cudaimgproc 3671, cudafeatures2d 256,
+cudaobjdetect 18. Remaining cuda* modules:
+- cudabgsegm: DONE in Phase 2 (builds; MOG/MOG2 tests gated behind HAVE_VIDEO_INPUT which this
+  tree never defines).
+- cudaoptflow: SOFTWARE flows (BroxOpticalFlow, PyrLK, Farneback, DIS) port like the other
+  custom modules; the HARDWARE NvidiaOpticalFlow_1_0/2_0 has NO AMD HW OF engine -> gate off +
+  it is already in deferred.json (genuine feature loss, see notes top). Deps:
+  cudaarithm/cudawarping/cudaimgproc/cudalegacy all DONE.
+- cudacodec: rocDecode for decode (lacks MPEG/VC1/VP8/MJPEG -- codec deltas are genuine
+  losses); native HW encode gated off, delegate to FFmpeg AMF via videoio (per Decisions
+  2026-06-10). The heaviest remaining module; needs rocDecode + FFmpeg-AMF availability check
+  on the host first.
+PR-readiness: NOT yet. cudaoptflow (software flows) and cudacodec are the last functional
+modules; after them the lead is a candidate for the reviewer -> validator -> completed gate,
+then PR-prep (jargon scrub, CMake arch auto-detect already present, docs).

@@ -75,3 +75,8 @@
 {"kind":"phase","ts":"2026-06-11T02:17:49Z","phase":"compile","seconds":34.848,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T02:21:52Z","phase":"compile","seconds":25.112,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T02:25:08Z","phase":"test","seconds":27.314,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
+{"kind":"phase","ts":"2026-06-11T02:30:15Z","phase":"compile","seconds":98.297,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T02:32:20Z","phase":"test","seconds":1.419,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudafeatures2d"}
+{"kind":"phase","ts":"2026-06-11T02:34:20Z","phase":"compile","seconds":27.998,"exit":0,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T02:34:36Z","phase":"test","seconds":0.640,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaobjdetect"}
+{"kind":"phase","ts":"2026-06-11T02:35:55Z","phase":"compile","seconds":46.391,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake -DBUILD_LIST=\"core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,cudafeatures2d,cudastereo,cudalegacy,cudaobjdetect,imgproc,objdetect,calib3d,ts\" . >/dev/null 2>&1 && ninja opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy opencv_test_cudawarping opencv_test_cudaarithm -j$(nproc)"}
