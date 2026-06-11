@@ -7,17 +7,17 @@
   "priority": 4.879,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-11T22:16:26Z",
-  "head_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+  "updated_at": "2026-06-11T22:28:13Z",
+  "head_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+      "validated_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
       "started_at": "2026-06-03T23:18:01Z",
       "completed_at": "2026-06-04T15:17:18Z",
-      "updated_at": "2026-06-11T22:16:26Z",
+      "updated_at": "2026-06-11T22:28:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,22 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0",
-        "to": "32d2c7b76d8b93b4b07b8836155f22fad9fc3be5",
+        "from": "d6764a58bec91b9884a10bf47903e911b6846c06",
+        "to": "116409e79e29d60b681bfe8b16bb2edc1a4e52be",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "ucm/shared/vendor/hip_compat/cuda.h: comment-only (comments/format only); ucm/shared/vendor/hip_compat/cuda_runtime.h: comment-only (comments/format only)",
-        "at": "2026-06-11T22:13:53Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T22:27:41Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+      "validated_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
       "started_at": null,
       "completed_at": "2026-06-04T15:17:37Z",
-      "updated_at": "2026-06-11T22:16:26Z",
+      "updated_at": "2026-06-11T22:28:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -64,22 +64,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0",
-        "to": "32d2c7b76d8b93b4b07b8836155f22fad9fc3be5",
+        "from": "d6764a58bec91b9884a10bf47903e911b6846c06",
+        "to": "116409e79e29d60b681bfe8b16bb2edc1a4e52be",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "ucm/shared/vendor/hip_compat/cuda.h: comment-only (comments/format only); ucm/shared/vendor/hip_compat/cuda_runtime.h: comment-only (comments/format only)",
-        "at": "2026-06-11T22:13:53Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T22:27:41Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+      "validated_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
       "started_at": null,
       "completed_at": "2026-06-05T19:16:46Z",
-      "updated_at": "2026-06-11T22:16:26Z",
+      "updated_at": "2026-06-11T22:28:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -95,22 +95,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0",
-        "to": "32d2c7b76d8b93b4b07b8836155f22fad9fc3be5",
+        "from": "d6764a58bec91b9884a10bf47903e911b6846c06",
+        "to": "116409e79e29d60b681bfe8b16bb2edc1a4e52be",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "ucm/shared/vendor/hip_compat/cuda.h: comment-only (comments/format only); ucm/shared/vendor/hip_compat/cuda_runtime.h: comment-only (comments/format only)",
-        "at": "2026-06-11T22:13:53Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T22:27:41Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+      "validated_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
       "started_at": null,
       "completed_at": "2026-06-07T04:11:51Z",
-      "updated_at": "2026-06-11T22:16:26Z",
+      "updated_at": "2026-06-11T22:28:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -126,22 +126,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0",
-        "to": "32d2c7b76d8b93b4b07b8836155f22fad9fc3be5",
+        "from": "d6764a58bec91b9884a10bf47903e911b6846c06",
+        "to": "116409e79e29d60b681bfe8b16bb2edc1a4e52be",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "ucm/shared/vendor/hip_compat/cuda.h: comment-only (comments/format only); ucm/shared/vendor/hip_compat/cuda_runtime.h: comment-only (comments/format only)",
-        "at": "2026-06-11T22:13:54Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T22:27:41Z"
       }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d6764a58bec91b9884a10bf47903e911b6846c06",
+      "validated_sha": "ab1b5a5842ad14638f71d8fa28d585b62c6d6908",
       "started_at": null,
       "completed_at": "2026-06-04T15:16:13Z",
-      "updated_at": "2026-06-11T22:16:26Z",
+      "updated_at": "2026-06-11T22:28:13Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -156,12 +156,12 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "from": "3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0",
-        "to": "32d2c7b76d8b93b4b07b8836155f22fad9fc3be5",
+        "from": "d6764a58bec91b9884a10bf47903e911b6846c06",
+        "to": "116409e79e29d60b681bfe8b16bb2edc1a4e52be",
         "method": "source-class",
-        "class": "comment-only",
-        "detail": "ucm/shared/vendor/hip_compat/cuda.h: comment-only (comments/format only); ucm/shared/vendor/hip_compat/cuda_runtime.h: comment-only (comments/format only)",
-        "at": "2026-06-11T22:13:54Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T22:27:41Z"
       }
     }
   }
