@@ -20,3 +20,4 @@
 {"kind":"session","ts":"2026-06-10T19:50:36Z","epoch":1781121036.039380396,"event":"end","platform":"linux-gfx90a"}
 {"kind":"phase","ts":"2026-06-11T01:19:07Z","phase":"compile","seconds":197.209,"exit":0,"cmd":"bash -c source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12 && cd /var/lib/jenkins/moat/projects/nerfacc/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-11T01:22:42Z","phase":"compile","seconds":196.186,"exit":0,"cmd":"bash -c source /opt/conda/etc/profile.d/conda.sh && conda activate py_3.12 && cd /var/lib/jenkins/moat/projects/nerfacc/src && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e . --no-build-isolation"}
+{"kind": "tokens", "ts": "2026-06-11T01:24:28Z", "tokens": 41322, "source": "validator"}
