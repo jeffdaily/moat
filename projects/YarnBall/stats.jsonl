@@ -1,1 +1,7 @@
 {"kind": "tokens", "ts": "2026-06-05T07:29:43Z", "tokens": 133892, "source": "planner"}
+{"kind":"phase","ts":"2026-06-11T23:17:23Z","phase":"compile","seconds":28.917,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind":"phase","ts":"2026-06-11T23:19:03Z","phase":"compile","seconds":28.393,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind":"phase","ts":"2026-06-11T23:20:00Z","phase":"compile","seconds":26.702,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind":"phase","ts":"2026-06-11T23:22:57Z","phase":"compile","seconds":25.914,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind":"phase","ts":"2026-06-11T23:23:38Z","phase":"compile","seconds":2.773,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind":"phase","ts":"2026-06-11T23:24:36Z","phase":"compile","seconds":26.012,"exit":0,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}

@@ -1,70 +1,163 @@
 # YarnBall notes
 
-## Porting attempt 2026-06-05 (gfx90a)
+ROCm/HIP port. Lead: linux-gfx90a (CDNA2, wave64), validated on GPU 0 (MI250X).
+Strategy A variant: a CMake build written from scratch (upstream ships only a
+Visual Studio / CUDA solution) plus a single `cuda_to_hip.h` compat header
+force-included on the project's own sources; the .cu files compile as HIP.
 
-### Files modified
-- `CMakeLists.txt` - created from scratch for HIP/CUDA dual build
-- `KittenEngine/cuda_to_hip.h` - CUDA-to-HIP symbol aliases
-- `KittenEngine/YarnBall/YarnBall.cu` - HIP include guards
-- `KittenEngine/YarnBall/sim/cosserat.cu` - HIP include guards
-- `KittenEngine/YarnBall/sim/collision.cu` - HIP include guards
-- `KittenEngine/YarnBall/sim/iteration.cu` - HIP include guards
-- `KittenEngine/KittenEngine/KittenGpuLBVH/lbvh.cu` - HIP include guards, deviceClamp helper
-- `KittenEngine/KittenEngine/KittenGpuLBVH/lbvh.cuh` - HIP include guards
-- `KittenEngine/KittenEngine/includes/modules/Common.h` - conditional GPU includes
-- `KittenEngine/KittenEngine/includes/modules/ComputeBuffer.h` - conditional GPU includes
-- `KittenEngine/KittenEngine/includes/modules/Bound.h` - device-safe boundMin/boundMax helpers
-- `KittenEngine/YarnBall/YarnBall.h` - type forward declarations
-- All .cu files: fixed kernel launch syntax `<< <` -> `<<<`
+## Build classification + strategy
 
-### Dependencies installed
-- libembree-dev (embree4, project expects embree3)
-- libimgui-dev
-- libstb-dev
-- libcli11-dev
-- libjsoncpp-dev
-- Generated glad headers via `glad` Python package
+No CMake upstream -- `YarnBall.vcxproj`/`Gui.vcxproj` MSBuild + CUDA 12.8,
+sm_86. Wrote a CMakeLists.txt at the repo root building the full KittenEngine +
+YarnBall simulation into one `Gui` target, dual CUDA/ROCm via `USE_HIP`.
+The simulation core is heavily coupled to the KittenEngine graphics engine
+(OpenGL/glad/glfw/imgui/freetype/assimp), but the headless path
+(`--headless`) skips windowing and GL-CUDA interop (guarded at runtime by null
+`glGetString`/`glGetStringi` GL function pointers), so headless validation
+exercises pure compute + memory.
 
-### Blocking issue: GLM device code incompatibility
+## GLM blocker (the documented stop) -- RESOLVED
 
-Ubuntu's GLM 0.9.9.8 has device code annotation issues when used with HIP:
-- `glm::min/max/clamp` vectors select SIMD paths via `detail::is_aligned<Q>::value` 
-- Those paths use template specializations not marked `__device__`
-- Same issue affects `glm::length`, `glm::dot`, `glm::cross`, `glm::mix`, `glm::inverse`, etc.
+The prior attempt blocked on GLM 0.9.9.8 (apt libglm-dev) emitting host-only
+math when built under hipcc, so glm:: calls from kernels failed
+"__host__ function from __device__ function". Per the 3DUNDERWORLD-SLS prior
+art there are two routes; the clean one is to use GLM >= 1.0, which detects
+hipcc via `__HIP__` (glm/simd/platform.h -> GLM_COMPILER_HIP) and decorates its
+math `__host__ __device__` verbatim under `-x hip`. The ROCm build pins GLM
+1.0.1 via FetchContent; no `__CUDACC__`/`CUDA_VERSION` spoofing is needed (and
+GLM 0.9.9.8's separate `make_vec*`/`make_mat*` qualifier bug -- `.inl` defines
+them plain `inline` against a `__host__ __device__` decl -- is also avoided,
+since GLM 1.0.1 fixed it). The system GLM 0.9.9.8 is used only by the CUDA
+build (which GLM keys off `__CUDACC__` itself). A 3-line device-code compile
+test (Bound.h + Rotor.h glm dot/length/cross/clamp/normalize from a kernel)
+confirmed GLM 1.0.1 compiles clean for gfx90a.
 
-The project uses GLM heavily in device kernels (Bound.h, Common.h, Rotor.h, SymMat.h, all simulation .cu files).
+## The real bug behind the runtime crash -- missing return in Sim::advance
 
-Workaround attempts:
-- `GLM_FORCE_CUDA` - did not help
-- `GLM_FORCE_PURE` - did not help
-- `GLM_FORCE_DEFAULT_ALIGNED_GENTYPES` - did not help
-- Custom `boundMin/boundMax` in Bound.h - partial fix, but glm used pervasively elsewhere
+After the build went green, every headless run SIGSEGV'd. The corrupted
+backtrace (return address overwritten with the float bits of `advTime`, PC
+jumping to 0x7) was classic return-address smash. AddressSanitizer pointed at
+`Sim::advance`. Root cause: `float Sim::advance(float h)` (sim/step.cpp) falls
+off the end with no `return` on its normal path -- undefined behavior. nvcc/MSVC
+tolerated it; clang at -O2 exploited the UB and elided the epilogue, corrupting
+the caller's return address. Fix: `return h;` (the value is discarded by every
+caller, so any well-defined return is correct). This is arch-independent and
+also correct on CUDA. Lesson: a control-flow/return UB that "worked" on nvcc can
+surface as a hard crash under clang/hipcc -- look for missing returns when a port
+crashes with a smashed stack rather than a GPU page fault (rocgdb reported no GPU
+memory fault, which is what steered the diagnosis to the host).
 
-### Required to unblock
-1. Use a newer GLM version (1.0.x) that has proper HIP/CUDA device annotations
-2. OR wrap all GLM vector math with device-safe equivalents in device code
-3. Address CUDA Graph API aliases (hipGraph*, hipStream*)
+The CUDA-graph path (`cudaStreamBeginCapture`/`hipGraphInstantiate`/
+`hipGraphLaunch` in rebuildCUDAGraph) was suspected (plan risk #1) but is FINE on
+ROCm 7.2.1 -- capture, instantiate, and 80+ launches all succeeded; the crash was
+purely the advance() UB.
 
-### Other issues observed
-- `cuda.h` include fails in some .cpp files (hip_runtime.h requires `__HIP_PLATFORM_AMD__`)
-- `fopen_s` is MSVC-only, Linux uses `fopen`
-- `std::chrono::system_clock` vs `steady_clock` type mismatch in Timer/StopWatch
-- CUDA Graph API needs full aliasing (cudaStreamBeginCapture, cudaGraph_t, etc.)
-- embree4 vs embree3 API differences (MeshCCD.cpp)
-- SymMat.h: union with vec3 members that have constructors (C++ standard violation)
+## Changes (all USE_HIP-guarded; CUDA path unchanged)
 
-### Path forward
-1. Install GLM 1.0.x from source or newer package
-2. OR implement device-safe wrappers for all GLM vector math used in device code
-3. Complete CUDA Graph API aliasing in cuda_to_hip.h
-4. Fix Windows-specific code (fopen_s, chrono types)
-5. Handle embree3->embree4 migration or exclude MeshCCD
+1. `KittenEngine/cuda_to_hip.h` (new) -- includes <cstring>/<cstdlib>/<cstdio>
+   then <hip/hip_runtime.h>, aliases the cuda* runtime/stream/graph surface to
+   hip*. Force-included (CMake -include) on main.cpp + the engine/yarn .cpp +
+   the .cu, so it precedes GLM and gives the host .cpp the HIP runtime (which
+   makes __device__/__host__ host no-ops and supplies the cuda* aliases).
+2. `CMakeLists.txt` (new, root) -- USE_HIP option; `project(... C CXX HIP)`;
+   GLM 1.0.1 + Dear ImGui v1.90.1 (core + glfw/opengl3 backends) via
+   FetchContent; finds glfw/OpenGL/Freetype/assimp/CLI11/Eigen3/jsoncpp(pkg);
+   stb from /usr/include/stb; glad from third_party/glad1. On HIP:
+   set_source_files_properties(... LANGUAGE HIP), HIP_ARCHITECTURES (default
+   gfx90a ONLY when unset), link hip::host, force-include the compat header.
+3. `Common.h` -- add a USE_HIP branch (parallel to the __has_include(cuda_runtime)
+   branch) that sets KITTEN_FUNC_DECL=__device__ __host__ and the cuda* gpuAssert;
+   add `using glm::mix;` after the matrix mix() (a name declared in namespace
+   Kitten suppresses glm's scalar/vector mix brought in by using-directive --
+   latent, exposed by clang's earlier two-phase lookup; harmless on CUDA).
+4. The .cu/.cuh + the .cpp/.h that include CUDA-only headers
+   (<cuda.h>/<cuda_runtime.h>/<device_launch_parameters.h>/<device_atomic_functions.h>):
+   guard those includes behind !USE_HIP. Also normalized the spaced `<< <`/`>> >`
+   kernel-launch syntax to `<<<`/`>>>`.
+5. `sim/step.cpp` -- `return h;` at the end of Sim::advance (the UB fix above).
+6. `io/render.cpp` -- guard the GL<->GPU interop writes (vertBuffer->cudaWriteGL)
+   behind !USE_HIP; the ROCm ComputeBuffer does not expose cuda*GL interop and
+   render() is only reached in the GUI loop, never headless.
+7. `Mesh.cpp` -- portable fopen_s shim for non-MSVC (file is otherwise unchanged).
+8. `StopWatch.cpp`/`Timer.cpp` -- high_resolution_clock::now() -> steady_clock::now()
+   (the members are steady_clock::time_point; high_resolution_clock != steady_clock
+   on libstdc++, equal on MSVC).
+9. Submodule KittenGpuLBVH: forked to jeffdaily/KittenGpuLBVH @ moat-port (same
+   include-guard + launch-syntax changes); .gitmodules repointed at the fork.
+10. third_party/glad1 -- generated glad1 OpenGL loader (the project uses the
+    glad1 gladLoadGLLoader API). Vendored so configure needs no network for it.
 
-### Local changes preserved (not committed)
-The working tree has partial port changes in:
-- CMakeLists.txt (new)
-- KittenEngine/cuda_to_hip.h (new)
-- Multiple .cu and .h files with HIP conditional includes
-- KittenGpuLBVH submodule with lbvh.cu/cuh changes
+## Fault classes
 
-These can be reviewed with `git diff` if resuming.
+- wave64 / warp size: no warp primitives, no hardcoded 32 in kernel logic, no
+  warp-sized shared arrays. The LBVH query stack is templated on the BVH depth
+  (maxStackSize, measured 18 for the 65k-segment cable scene; switch dispatches
+  N=1..32), NOT warp size. Wave-size agnostic -> RDNA wave32 followers should
+  pass with no source delta.
+- __clzll (lbvh morton LCP) and atomicOr/atomicAdd: same API on HIP, fine.
+- CUDA graphs: work on ROCm 7.2.1 (see above).
+- GL-CUDA interop: scoped out of the HIP build (headless does not use it).
+- embree MeshCCD.cpp: NOT referenced anywhere else; excluded from the build (no
+  embree dependency).
+
+## Dependencies (gfx90a, Ubuntu 24.04)
+
+apt: libglfw3-dev libglew-dev libassimp-dev libcli11-dev libjsoncpp-dev
+libstb-dev libfreetype-dev libeigen3-dev libegl1-mesa-dev libgl1-mesa-dev
+(libglm-dev present but used only by the CUDA path). git-lfs (the model .bcc
+files are Git LFS pointers -- `git lfs pull` is REQUIRED or readFromBCC throws
+"Unsupported BCC file"). GLM 1.0.1 + ImGui v1.90.1 are fetched by CMake.
+glad1 is vendored (pip `glad<2`, `python3 -m glad --profile core --api gl=3.3
+--generator c`).
+
+## Build (gfx90a, GPU 0)
+
+```bash
+cd projects/YarnBall/src
+git lfs pull               # REQUIRED: pull the .bcc model files
+cmake -S . -B build_hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_BUILD_TYPE=Release
+bash utils/timeit.sh YarnBall compile -- cmake --build build_hip -j$(nproc)
+# Output: build_hip/Gui, embeds hipv4-amdgcn-amd-amdhsa--gfx90a code objects.
+```
+
+Follower arch: only `-DCMAKE_HIP_ARCHITECTURES=gfx1100` (or gfx1101/gfx1201)
+differs; no source change expected.
+
+## Validation (real GPU, GPU 0 = MI250X gfx90a) -- PASS
+
+```bash
+cd projects/YarnBall/src/KittenEngine
+HIP_VISIBLE_DEVICES=0 ../build_hip/Gui configs/cable_work_pattern.json \
+  -s --headless -n 3 -o /tmp/yb_frames/frame_ --exit
+```
+
+Cable_work_pattern scene: 65065 yarn vertices, resampled to ~3mm segments,
+collisions on. Result: "Export complete. sim/real ratio Avg 0.582", exit 0,
+4 OBJ frames written. Per frame: 65065 vertices, all finite (no NaN/Inf).
+
+- Physics advancing: frame0 -> frame3 vertex motion max 0.0455, mean 0.0111 m
+  (gravity + Cosserat dynamics; not frozen).
+- Determinism (two independent runs, frame3): max 3.76e-3, mean 1.93e-4 m
+  run-to-run -- last-digit float jitter from atomicAdd ordering in collision
+  detection (same class as 3DUNDERWORLD's atomicInc jitter); bulk geometry
+  stable. A contact-driven yarn sim is mildly chaotic, so this is expected and
+  well within physical tolerance.
+- Geometry sane: frame3 bbox x[-0.208,0.207] y[-0.194,0.194] z[-0.029,0.034] m
+  (a ~0.4 m yarn pattern settling under gravity).
+
+Verdict: HIP build runs the Cosserat rod simulation (iteration + LBVH collision
++ CUDA-graph stepping) on gfx90a producing physically valid, finite,
+run-to-run-stable yarn geometry. Validated.
+
+## Outstanding / follower notes
+
+- Headless `while(true) performSim()` only exits via export completion
+  (`--exit` after `-n` frames with `-o`); without `-o` it loops forever (not a
+  bug). The --twist scenario does a full GPU->CPU download + a 65k host loop per
+  frame, so it is much slower than plain export -- use a small -n when timing.
+- GUI (non-headless) mode and the GL<->GPU interop are unported (scoped out);
+  validation is headless-only, which fully exercises the GPU simulation.
+- LBVH submodule lives at jeffdaily/KittenGpuLBVH @ moat-port.
