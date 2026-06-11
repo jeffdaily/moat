@@ -68,3 +68,10 @@
 {"kind":"phase","ts":"2026-06-11T01:48:37Z","phase":"test","seconds":6.262,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudalegacy"}
 {"kind":"phase","ts":"2026-06-11T01:49:01Z","phase":"test","seconds":24.656,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudawarping"}
 {"kind": "tokens", "ts": "2026-06-11T01:53:49Z", "tokens": 282990, "source": "porter phase4a cudaarithm"}
+{"kind":"session","ts":"2026-06-11T01:58:20Z","epoch":1781143100.627346372,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T02:07:11Z","phase":"compile","seconds":62.853,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T02:09:20Z","phase":"test","seconds":14.927,"exit":141,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudafilters"}
+{"kind":"phase","ts":"2026-06-11T02:15:24Z","phase":"test","seconds":14.765,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudafilters"}
+{"kind":"phase","ts":"2026-06-11T02:17:49Z","phase":"compile","seconds":34.848,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T02:21:52Z","phase":"compile","seconds":25.112,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T02:25:08Z","phase":"test","seconds":27.314,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}

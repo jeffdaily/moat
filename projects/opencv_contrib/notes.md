@@ -361,3 +361,90 @@ hard-dep exists). Recommended Phase 4b order, all hard deps now present:
    NCV/Haar device half already proven via cudalegacy.
 WHEN BUILDING cudaarithm or anything that pulls it: link needs roc::hipblas + hip::hipfft
 (present at /opt/rocm). For cudalegacy regression, include objdetect in BUILD_LIST.
+
+## Phase 4b progress (2026-06-11, gfx90a lead) -- cudafilters + cudaimgproc
+
+Fork HEADs after the cudaimgproc commit: contrib `dd280aaf3f23f640568a034c9001f0dc7f3c7752`,
+core `5a1a9d0fa804e9cc1b318d7dbd44b489a00f8a55`. head_sha advanced to the contrib sha.
+Both modules built with
+`BUILD_LIST="core,cudev,cudaarithm,cudafilters,cudaimgproc,imgproc,ts"` and tested on
+real gfx90a (ROCm 7.2.1, MI250X), `HIP_VISIBLE_DEVICES=0`,
+`OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata`.
+
+### cudafilters (contrib e92fa23, core 5a1a9d0): 16028/16028 PASS
+Literal: `./bin/opencv_test_cudafilters` -> 16028/16028.
+NPP replacement per family (HIP-guarded, CUDA byte-identical):
+- box filter (Blur test): routed to the EXISTING separable averaging filter
+  (createSeparableLinearFilter with 1/k row+col kernels). A normalised box = separable
+  mean. Strategy (a). Verified.
+- erode/dilate + MorphEx (Erode/Dilate/MorphEx tests): NEW morph_rank_sum_hip.cu morph
+  kernel (erode=min, dilate=max over an arbitrary 8U structuring element), reads the
+  already-bordered srcRoi the call site builds via copyMakeBorder. Strategy (b). Verified.
+- box max/min rank (createBoxMax/MinFilter) + row/column sliding-window sums
+  (createRow/ColumnSumFilter): NEW direct kernels in morph_rank_sum_hip.cu. NO upstream
+  accuracy test for these -- builds + dispatches, NOT suite-verified (caveat for reviewer).
+- median (Median + Median_HDR tests, 92 cases incl. 8U/16U/32F C1/C3/C4): the CUDA
+  wavelet matrix (src/cuda/wavelet_matrix_*.cuh) is hard-wired to a 32-lane warp
+  (static_assert WARP_SIZE==32; __activemask-as-ballot + __popc(e_nbit<<(32-tid.x)) rank +
+  cub::WarpScan<16>/WarpReduce default-width). On wave64 two logical warps share one
+  physical wavefront and the ballot/rank do not account for it (first attempt: median
+  produced 255 where 12 expected, C3 faulted). Rather than rework that data structure,
+  the HIP median is a DIRECT counting-rank selection kernel (median_filter.cu, namespace
+  median_hip; BORDER_REPLICATE, exact for all depths/channels; windows <=15x15). The
+  wavelet path stays CUDA-only (feature_support_checks.h now excludes __HIP_PLATFORM_AMD__).
+  Strategy (b). Verified 92/92.
+NEW FAULT CLASS / shim addition (core 5a1a9d0): cudaFuncSetAttribute +
+cudaFuncAttributeMaxDynamicSharedMemorySize were missing from cuda_to_hip.h. Added a typed
+helper hipFuncSetAttributeT (mirroring hipFuncSetCacheConfigT) since a __global__ template
+id does not implicitly convert to const void*. (This was the LAST compile blocker before
+the wavelet path was disabled; it is still needed because the CUDA wavelet code is what
+forced the discovery, but the helper is generally useful.)
+GENERAL LESSON (cudafilters median): a deeply warp-cooperative CUDA data structure built
+on a fixed 32-lane warp (CUB WarpScan/WarpReduce + activemask-ballot + popc-rank) is often
+NOT worth porting bit-exactly to wave64 when a simple direct kernel covers the SAME test
+matrix. Counting-rank selection over a small window is wave-agnostic and exact. The C4
+"pass real pixel cols, index channels via CN" detail bit me first (multiplying cols by cn
+overreads on tight/whole-matrix layouts but happens to survive padded sub-matrix layouts --
+the same whole-vs-sub tell as the allocator-reuse class). GpuMat::cols is ALWAYS the pixel
+column count regardless of channels.
+
+### cudaimgproc (contrib dd280aa): 3671/3671 PASS, 29/29 test cases
+Literal: `./bin/opencv_test_cudaimgproc` -> 3671/3671 (CvtColor, Demosaicing, SwapChannels,
+Canny, Hough{Lines,LinesProbabilistic,Circles}, GeneralizedHough, CornerHarris/MinEigen,
+GoodFeaturesToTrack, HistEven, CalcHist{,WithMask}, EqualizeHist{,Extreme}, CLAHE,
+MatchTemplate{8U,32F,...}, MeanShift{,Segmentation}, Moments, BilateralFilter, Blend,
+ConnectedComponents). The big custom surface is cudev kernels; only third-party deps needed
+work.
+- Thrust -> rocThrust: gftt.cu / hough_lines.cu used `thrust::cuda::par` +
+  `<thrust/system/cuda/execution_policy.h>` (NVIDIA-only). rocThrust uses `thrust::hip::par`
+  + `<thrust/system/hip/execution_policy.h>`. New per-file `OPENCV_THRUST_PAR` macro selects
+  by platform. generalized_hough.cu's `thrust::transform` is policy-free (no change).
+  NEW FAULT CLASS: NVIDIA Thrust's cuda execution-policy header transitively pulls
+  `cub/detail/detect_cuda_runtime.cuh` which is ABSENT on ROCm; include the hip policy
+  header instead, never the cuda one, on HIP.
+- NPP color (color.cpp): swapChannels (SwapChannels test, CV_8UC4), gammaCorrection (sRGB
+  fwd/inv), alphaPremul/RGBA_to_mBGRA -> NEW direct HIP kernels in cuda/color_npp_hip.cu.
+  swapChannels VERIFIED by the SwapChannels test; gamma + alphaPremul are UNTESTED upstream
+  in cudaimgproc (build + dispatch only -- caveat for reviewer). The main cvtColor (the big
+  CvtColor test) is all cudev kernels, zero NPP -- verified 2000+ cases.
+- NPP histogram (histogram.cpp): evenLevels reimplemented directly (uniform integer level
+  layout). histEven 8U (the only tested histogram-even path) ALREADY routes to a custom
+  kernel (hist::histEven8u) and is verified. The NPP-only fallbacks (16U/16S histEven,
+  4-channel histEven, histRange x2) have NO cudaimgproc accuracy test -> gated
+  StsNotImplemented on ROCm.
+- DEFERRED: alphaComp (13 Porter-Duff alpha-composite ops, NPP-only, untested) +
+  16U/16S/4ch histEven/histRange -> `deferred.py` id=opencv-cudaimgproc-npp-color-hist.
+
+### RESUME POINT -> cudafeatures2d then cudaobjdetect (both deps now present)
+cudafilters + cudaimgproc DONE this dispatch. Next:
+3. cudafeatures2d: deps cudafilters (ORB Gaussian) + cudawarping (ORB resize) NOW EXIST.
+   ORB/FAST/BFMatcher; Thrust->rocThrust in orb.cu/bf_*. Heavy warp-cooperative reductions
+   (the wave64 gate -- BFMatcher reductions, FAST corner score). Test data:
+   opencv_extra/testdata/gpu/features2d (already in the sparse checkout).
+4. cudaobjdetect: deps cudawarping + cudaarithm (integral) NOW EXIST; NCV/Haar device half
+   already proven via cudalegacy 14/14. HOG block-histogram reductions are warp-cooperative.
+   For the cudalegacy regression rerun, include objdetect in BUILD_LIST (HypothesesFiltration
+   needs groupRectangles).
+Regression after Phase 4b (cheap, after the core cuda_to_hip.h shim edit -- it only ADDED
+two macros, no existing path changed): rerun cudev/cudastereo/cudalegacy/cudawarping/
+cudaarithm at end of the FULL dispatch.
