@@ -1,2 +1,6 @@
 {"kind": "tokens", "ts": "2026-06-04T23:31:09Z", "tokens": 98971, "source": "planner"}
 {"kind":"phase","ts":"2026-06-05T00:18:57Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make -j8"}
+{"kind":"session","ts":"2026-06-11T23:06:23Z","epoch":1781219183.823992197,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T23:11:44Z","phase":"opencv-dep-compile","seconds":168.235,"exit":0,"cmd":"bash _deps/opencv-hip/build_install.sh"}
+{"kind":"phase","ts":"2026-06-11T23:21:20Z","phase":"compile","seconds":13.136,"exit":0,"cmd":"bash /tmp/plvs_gpu_compile.sh"}
+{"kind":"session","ts":"2026-06-11T23:24:46Z","epoch":1781220286.956835773,"event":"end","platform":"linux-gfx90a"}

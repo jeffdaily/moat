@@ -7,18 +7,20 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-04T23:25:55Z",
-  "updated_at": "2026-06-05T00:22:36Z",
-  "head_sha": "e59fd77ed73733f71b42b6f6fd2c65186509415d",
-  "depends_on": [],
+  "updated_at": "2026-06-11T23:24:16Z",
+  "head_sha": "f932ab5a72a496e2eb3e168a03278079371c8467",
+  "depends_on": [
+    "opencv_contrib"
+  ],
   "platforms": {
     "linux-gfx90a": {
       "state": "porting",
       "blocked": true,
-      "blocked_reason": "Missing required dependencies: OpenCV 4.x with HIP support not installed. Third-party libraries (Pangolin, DBoW2, g2o, PCL, etc.) need to be built. Port structure is complete and core CUDA file (Cuda.cu) compiles with HIP. Resume after installing OpenCV with HIP support.",
+      "blocked_reason": "GPU port surface compiles for gfx90a against the MOAT OpenCV-with-HIP fork (all 4 src/cuda kernels + libelas-gpu + libsgm.a build; OpenCV-with-HIP installed from jeffdaily/opencv@040473366 + jeffdaily/opencv_contrib@1c3b2fd into _deps/opencv-hip). BLOCKED on: (1) OpenCV core PR #29285 + opencv_contrib PR #4147 are pr-open, not upstream-landed, so cv::cuda on ROCm is not yet a consumable released dependency (plvs consumes it only via the local fork build); (2) full GPU validation needs the whole non-GPU SLAM stack (PCL, Pangolin, bundled DBoW2/g2o/voxblox/chisel) plus stereo datasets, and libsgm wave64 disparity correctness (WARP_SIZE=64 reductions) is unverified until a stereo run. depends_on=opencv_contrib. Resume when the OpenCV PRs land. See notes.md.",
       "validated_sha": null,
       "started_at": "2026-06-05T00:11:54Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T00:22:36Z",
+      "updated_at": "2026-06-11T23:24:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
