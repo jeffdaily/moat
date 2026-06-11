@@ -3,6 +3,9 @@
 # any scratch. The actual port lives in each project's jeffdaily fork.
 
 projects/*/src/
+projects/*/src-core/
+projects/*/opencv_extra/
+projects/*/build_hip.sh
 projects/*/build/
 projects/*/build-*/
 projects/*/build_*/

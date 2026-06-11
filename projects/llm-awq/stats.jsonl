@@ -4,3 +4,4 @@
 {"kind":"phase","ts":"2026-06-11T03:51:25Z","phase":"test","seconds":34.667,"exit":0,"cmd":"python3 agent_space/awq_model_test.py"}
 {"kind":"session","ts":"2026-06-11T03:54:48Z","epoch":1781150088.325615125,"event":"end","platform":"linux-gfx90a"}
 {"kind": "tokens", "ts": "2026-06-11T03:55:45Z", "tokens": 276468, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-11T04:00:49Z", "tokens": 99373, "source": "reviewer"}
