@@ -7,7 +7,7 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-11T17:25:49Z",
+  "updated_at": "2026-06-11T17:27:05Z",
   "head_sha": "efb407d8338c626f54386c730fc5cba817a3b3de",
   "platforms": {
     "windows-gfx1201": {
@@ -73,13 +73,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "efb407d8338c626f54386c730fc5cba817a3b3de",
       "started_at": "2026-05-31T02:39:49Z",
       "completed_at": "2026-06-11T16:05:09Z",
-      "updated_at": "2026-06-11T17:25:49Z",
+      "updated_at": "2026-06-11T17:27:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -156,5 +156,8 @@
         "at": "2026-06-11T17:25:17Z"
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/k2-fsa/k2/pull/1353",
+  "pr_number": 1353,
+  "pr_opened_at": "2026-06-11T17:27:05Z"
 }
