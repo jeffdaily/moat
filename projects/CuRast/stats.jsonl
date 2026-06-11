@@ -99,3 +99,4 @@
 {"kind":"phase","ts":"2026-06-11T21:34:37Z","phase":"test","seconds":1.114,"exit":139,"cmd":"/var/lib/jenkins/moat/agent_space/CuRast-gfx90a-pragma-new/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30"}
 {"kind":"phase","ts":"2026-06-11T21:36:50Z","phase":"cuda-compile","seconds":14.052,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
 {"kind":"session","ts":"2026-06-11T21:40:37Z","epoch":1781214037.463138344,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-11T21:41:36Z", "tokens": 108520, "source": "porter"}
