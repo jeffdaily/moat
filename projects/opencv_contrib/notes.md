@@ -1399,3 +1399,15 @@ correct on wave64 gfx90a. Port fully validated on real gfx90a at tip 8a5b0a2.
 No unexpected failures. All 10 other suites are 100%. Results identical to gfx1100 (same
 failure set, same pass counts). gfx1201 is RDNA4 (wave32, same as RDNA3), so wave32 path
 is confirmed. No delta-port needed.
+
+## Upstream PRs OPENED 2026-06-11
+
+Both forks squashed to one clean [ROCm] commit each (tree-identical to the validated tips; squash-carry-forward carried all completed platforms forward, no re-run):
+- contrib jeffdaily/opencv_contrib moat-port: ad105bb5914a256335dad33abdd66b360dd91634 (was 8a5b0a2) = project head_sha
+- core    jeffdaily/opencv        moat-port: adcd50caa527cec03fcf7832593df2581334aa73 (was d30273d)
+
+PRs (two-repo change; contrib depends on core, cross-linked in both bodies):
+- core:    https://github.com/opencv/opencv/pull/29285        ([ROCm] Add AMD GPU support for cv::cuda via HIP (core))
+- contrib: https://github.com/opencv/opencv_contrib/pull/4147 ([ROCm] Port the cv::cuda modules to AMD GPUs via HIP)  <- canonical for set-pr-open
+
+Validated before open on gfx90a (CDNA2/wave64), gfx1100 (RDNA3/wave32), gfx1201 (RDNA4/wave32). PR bodies corrected from the stale drafts: removed the alphaComp/16-bit/4-channel-histogram "not implemented" claim (parity pass shipped them, cudaimgproc 3788/3788), added the 3-arch validation + rocDecode decode on the RDNA parts. Optional windows-gfx1101/gfx1151 stay port-ready (do not block; additive if a host validates them later). Next: respond to upstream review; on merge run set-pr-merged.

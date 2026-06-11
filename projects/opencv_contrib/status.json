@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T13:55:03Z",
-  "head_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+  "updated_at": "2026-06-11T14:11:52Z",
+  "head_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+      "validated_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
       "started_at": null,
       "completed_at": "2026-06-11T07:04:47Z",
-      "updated_at": "2026-06-11T07:07:56Z",
+      "updated_at": "2026-06-11T14:08:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -45,10 +45,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+      "validated_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
       "started_at": null,
       "completed_at": "2026-06-11T07:25:38Z",
-      "updated_at": "2026-06-11T07:25:38Z",
+      "updated_at": "2026-06-11T14:08:19Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -86,13 +86,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+      "validated_sha": "ad105bb5914a256335dad33abdd66b360dd91634",
       "started_at": "2026-06-10T23:48:26Z",
       "completed_at": "2026-06-11T13:55:03Z",
-      "updated_at": "2026-06-11T13:55:03Z",
+      "updated_at": "2026-06-11T14:11:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -130,5 +130,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/opencv/opencv_contrib/pull/4147",
+  "pr_number": 4147,
+  "pr_opened_at": "2026-06-11T14:11:52Z"
 }
