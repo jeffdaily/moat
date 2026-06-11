@@ -1,5 +1,18 @@
 # CTranslate2 notes
 
+## PR-prep 2026-06-11 (porter, lead linux-gfx90a) -- DONE, single clean commit, pr-ready
+
+All 5 platforms were completed at dfa0d30 (gfx90a/gfx1100/gfx1101/gfx1201/gfx1151). Ran the PR-prep sequence per CLAUDE.md; no upstream PR opened (gated on user approval).
+
+- JARGON SCRUB: the existing dfa0d30 commit message and the 2-line diff were already clean -- no MOAT in-house vocabulary (no lead/follower, Strategy A/B, head_sha, validated_sha, revalidate, curated/moat-port as jargon). The diff adds no code comments. Nothing to rewrite.
+- DOCUMENTATION (the prep edit): `docs/hardware_support.md` "## GPU" section listed only NVIDIA GPUs despite upstream shipping ROCm wheels. Added an AMD GPU bullet naming the supported ROCm arches (gfx90a/CDNA2 MI250X + the RDNA set) in the page's house style (parallel to the NVIDIA bullet; MyST markdown). `docs/installation.md` already documents `-DWITH_HIP=ON` + the ROCm-libraries requirement (build-step location, complete -- arch is set via CMAKE_HIP_ARCHITECTURES / the prepare scripts, not a user-doc arch list, so nothing imposed there). README.md line 61 already notes AMD ROCm wheels. Doc edit is behavior-preserving.
+- CMAKE ARCH AUTO-DETECT: N/A. CTranslate2 sets the ROCm arch via -DCMAKE_HIP_ARCHITECTURES (read from cache) + the docker ARG HIP_ARCHITECTURES default + the prepare_build_environment_*_rocm.sh PYTORCH_ROCM_ARCH export. There is no CMake auto-detect hook for the HIP path (the CUDA path's CUDA_ARCH_LIST=Auto is NVIDIA-only/upstream). Inventing one is out of scope and would change build behavior; not added.
+- COPYRIGHT/AUTHORSHIP: N/A. The port created no new source file and did not substantially extend one; the whole delta is a 2-line build-config arch-list add plus a doc edit (trivial config/build-flag per CLAUDE.md). No AMD copyright line or \author tag applies.
+
+Prep commit (doc-only): e83988fb18bac4eb5cccb6e941601995bc0dcbb4 -- classified arch-independent by advance-head; all 5 platforms carried forward to e83988fb without GPU re-run.
+
+SQUASH: collapsed moat-port to one commit 7bedc88617d18ce8222309faae7eba883f161003 (tree-identical to e83988fb -- arch-list 2-line change + doc edit), upstream-quality message (no MOAT jargon, explains gfx90a enablement + first-GPU-validation, Test Plan with the literal gtest commands). Force-pushed-with-lease. squash-carry-forward carried all 5 completed platforms to 7bedc886 (no refusal). pr-ready=True. Ready for user's PR-open decision against OpenNMT/CTranslate2 (out of porter scope).
+
 ## Validation 2026-06-06 (windows-gfx1201, RX 9070 XT, TheRock ROCm 7.14.0a) -- PASS
 
 Fork: jeffdaily/CTranslate2 @ moat-port, HEAD dfa0d30dd18c4e65863e091f4ac99d7b936a02f1 (no source change needed)
