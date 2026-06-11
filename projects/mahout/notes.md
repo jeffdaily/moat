@@ -895,3 +895,17 @@ Missed two general PR comments on #1399 (only fetched the review + inline commen
 - ryankert01 (issuecomment-4682218305, MEMBER): asked whether complex optimizations port "this easy", citing #1390. #1390 (implicit Hadamard Ozaki engine) uses nvcuda::wmma + raw `mma.sync` int8 PTX -> NOT mechanically hipifiable; needs a rocWMMA/MFMA rewrite. Reply drafted, pending jeff approval.
 
 NOTE: this clone has TWO remotes -- origin=apache/mahout (upstream, no push), fork=jeffdaily/mahout (push here). Push to `fork`, not `origin`.
+
+## Precommit build.rs fix 2026-06-11 (new sha cc3859b)
+The Pre-commit clippy hook (`cargo clippy --manifest-path qdp/Cargo.toml --all-targets --all-features`, runner has no ROCm) failed on qdp-kernels/build.rs because `--all-features` turns the `hip` feature ON without QDP_USE_HIP, and my recently-added check_hip_consistency() panicked on that (the second panic, build.rs:201). Two fixes in build.rs:
+1. Removed the second panic (feature_hip && !env_hip). It was wrong: hip_requested() already builds kernels for HIP when the feature is on, so host+kernels agree -- no mismatch. KEPT the first panic (env_hip && !feature_hip) -- the real mismatch rich7420 (review comment #3) asked us to catch (QDP_USE_HIP=1 + hip off -> hipcc kernels vs cudarc host).
+2. build_hip() now probes for a runnable hipcc (`Command::new(hipcc).arg("--version").output().is_ok()`, honors QDP_HIPCC override) and, when absent, degrades exactly like the no-nvcc CUDA branch: emit `cargo:rustc-cfg=qdp_no_cuda` + warnings, return (no panic, no build failure). With hipcc present, behavior unchanged (real kernels compiled).
+
+Validation (all three scenarios):
+- A REAL HIP build on gfx90a: `QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip` -> built, real gfx90a kernels compiled. GPU tests on idle HIP_VISIBLE_DEVICES=0: gpu_ptr_encoding 64 passed, gpu_fidelity 17 passed.
+- B TOOLCHAIN-LESS CI: `QDP_HIPCC=/nonexistent-hipcc cargo clippy --manifest-path qdp/Cargo.toml -p qdp-kernels -p qdp-core --all-targets --features hip` (hip feature on, QDP_USE_HIP unset, hipcc absent) -> EXIT 0, NO panic, succeeds via qdp_no_cuda stub path. `cargo fmt ... --check` clean. (Full `--all-features` clippy on this host fails only on torch-sys: my host PyTorch is 2.13 vs the tch crate's 2.9 ABI -- an env artifact, not our code; CI has a matching libtorch venv. Our qdp-kernels build.rs got past compile cleanly.)
+- C REVIEWER GUARD: `QDP_USE_HIP=1 cargo build -p qdp-kernels` (default features, hip off) -> still panics at build.rs:197 with "QDP_USE_HIP is set but the `hip` Cargo feature is off...". Guard intact.
+
+Pre-existing clippy lints noted (NOT introduced here, NOT errors): `unnecessary_cast` on `stream.stream as *mut c_void` in gpu_ptr_encoding.rs test code.
+
+Wheel Build failure on #1399 confirmed UNRELATED to our code: it is the NVIDIA CUDA rhel8 yum repo 404 (upstream CI infra fetching cuda-rhel8 packages), no workflow files were changed by this PR.
