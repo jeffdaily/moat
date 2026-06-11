@@ -703,6 +703,19 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-11T15:50:21Z"
+    },
+    {
+      "id": "k2-segmented-sort-global",
+      "kind": "feature-port",
+      "project": "k2",
+      "component": null,
+      "summary": "k2 moderngpu_shim segmented_sort: replace host-side SegmentsToHost sync + per-segment thrust::stable_sort_by_key loop with a single global stable_sort_by_key using a composite (row_id, key) comparator via ComputeRowIds (gemini bot #1353 review). Perf optimization; current impl is correct+validated. Do as a benchmarked follow-up, not in the enablement PR.",
+      "refs": [
+        "https://github.com/k2-fsa/k2/pull/1353"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T22:07:24Z"
     }
   ]
 }
