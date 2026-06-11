@@ -46,3 +46,14 @@
 {"kind":"phase","ts":"2026-06-11T02:46:06Z","phase":"compile","seconds":0.003,"exit":0,"cmd":"echo compile-done"}
 {"kind":"phase","ts":"2026-06-11T02:46:12Z","phase":"test","seconds":1.083,"exit":0,"cmd":"bash -c /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 10; exit 0"}
 {"kind":"session","ts":"2026-06-11T02:46:49Z","epoch":1781146009.252920784,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-07T23:31:00Z", "tokens": 87509, "source": "validator"}
+{"kind":"phase","ts":"2026-06-11T02:15:31Z","phase":"compile","seconds":16.404,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/CuRast/build -j64"}
+{"kind":"phase","ts":"2026-06-11T02:15:54Z","phase":"test","seconds":0.175,"exit":127,"cmd":"B:/develop/moat/projects/CuRast/build/CuRast.exe --bench ./example_donaukanal_urania.glb 1920 1080 30"}
+{"kind":"phase","ts":"2026-06-11T02:16:06Z","phase":"test","seconds":0.037,"exit":127,"cmd":"B:/develop/moat/projects/CuRast/build/CuRast.exe --bench ./example_donaukanal_urania.glb 1920 1080 30"}
+{"kind":"phase","ts":"2026-06-11T02:18:18Z","phase":"test","seconds":0.034,"exit":127,"cmd":"B:/develop/moat/projects/CuRast/build/CuRast.exe --bench ./example_donaukanal_urania.glb 1920 1080 30"}
+{"kind":"phase","ts":"2026-06-11T02:31:04Z","phase":"compile","seconds":15.700,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/CuRast/build -j64"}
+{"kind":"phase","ts":"2026-06-11T02:32:21Z","phase":"compile","seconds":15.604,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/CuRast/build -j64"}
+{"kind":"phase","ts":"2026-06-11T02:34:42Z","phase":"compile","seconds":15.656,"exit":0,"cmd":"cmake --build B:/develop/moat/projects/CuRast/build -j64"}
+{"kind":"phase","ts":"2026-06-11T02:43:57Z","phase":"compile","seconds":0.031,"exit":0,"cmd":"cmd /c cd /d B:\\develop\\moat\\projects\\CuRast\\build && cmake --build . --config Release --target CuRast -j 8"}
+{"kind":"phase","ts":"2026-06-11T02:48:44Z","phase":"compile","seconds":0.016,"exit":0,"cmd":"echo build_already_done"}
+{"kind":"phase","ts":"2026-06-11T02:48:52Z","phase":"test","seconds":1.989,"exit":0,"cmd":"python3 agent_space/run_curast_v3.py"}

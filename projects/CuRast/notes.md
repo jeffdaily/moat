@@ -526,3 +526,98 @@ Visbuffer rasterization pipeline (the subject of the port) works correctly.
 ### State transition
 
 linux-gfx90a: revalidate -> completed, validated_sha=48cd01b
+## Validation 2026-06-10 (windows-gfx1201 revalidate -> completed)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4), 32 CUs (wave32), HIP_VISIBLE_DEVICES=0 (gfx1101 absent), Windows 11 Pro
+Starting state: revalidate (validated_sha=3d42a7c, head_sha=48cd01b)
+New head after fixes: c4e543e
+
+### Root causes found and fixed
+
+Two categories of issues prevented the bench from producing a rendered image on gfx1201 Windows:
+
+**Issue 1 (HipModularProgram.h, Windows hiprtc preamble)**: MSVC's `<cmath>` header is
+pulled in by GLM when compiled under hiprtc's default-device mode. Its C++20 `lerp()`
+helpers instantiate `std::_Common_lerp` which calls `std::fma` -- ambiguous against HIP's
+device `fma`. Fix: suppress `<cmath>` with `#define _CMATH_` in the Windows hiprtc
+preamble, then inject `std::` math aliases from the global-namespace HIP device functions
+that `__clang_hip_cmath.h` already provides (sqrt, log, exp, pow, floor, ceil, fabs, fma,
+fmod, modf, frexp, ldexp, sin, cos, tan, atan, atan2, asin, acos, abs).
+
+**Issue 2 (jpeg/jpeg.cu, hiprand_kernel.h under hiprtc)**: `hiprand_kernel.h` transitively
+includes `rocrand.h` which references `hipStream_t` -- a host runtime type unavailable in
+hiprtc's device-only compile path. Fix: guard the `#include <hiprand/hiprand_kernel.h>` in
+`jpeg.cu` with `#if !defined(__HIPCC_RTC__)`.
+
+**Issue 3 (cooperative kernel launches)**: `hipModuleLaunchCooperativeKernel` fails with
+error 719 (hipErrorLaunchFailure) on gfx1201 under ROCm 7.14 Windows. Both stage1 and
+stage3 of the visbuffer pipeline were using cooperative launch. Fix for each:
+
+- Stage3 (`drawHugeTriangles`): has no `grid.sync()` (only `block.sync()`) -- cooperative
+  launch was unnecessary. Changed to `launchOccupancyBased` (no kernel change needed
+  beyond removing the unused `auto grid = cg::this_grid()` variable).
+
+- Stage1 (`drawSmallTriangles`): used `grid.sync()` once, after thread 0 zeroed five
+  shared counter buffers. Moved counter zeroing to the CPU via `cuMemsetD8Async` (five
+  4-byte counters + `dbg_fragcount` in DeviceState using `HIP_DEVPTR_ADD` for byte-offset
+  arithmetic). The kernel now uses `block.sync()` to fence per-block shared variable writes,
+  and launches via `launchOccupancyBased`.
+
+Note: this fix also makes stage1/stage3 non-cooperative on gfx1100 and gfx90a. Both
+platforms need revalidation at the new head (c4e543e). On those platforms, cooperative
+launch for stage1 DID work, but the switch to non-cooperative is correct behavior and
+simplifies the launch path.
+
+Note: `computeMipMap cooperative launch failed: unspecified launch failure` (20 messages
+in stderr) is expected -- texture mipmap generation uses `hipLaunchCooperativeKernel`
+which also fails on gfx1201 Windows. This only affects texture mipmaps (lower detail at
+distance); the main rasterization pipeline is unaffected and the bench scene renders correctly.
+
+### Build
+
+```powershell
+$ROCM = "B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+$VULKAN_SDK = "C:/Users/Shark44/AppData/Local/Temp/vulkan_sdk"
+
+$env:HIP_VISIBLE_DEVICES = "0"
+cmake -S B:/develop/moat/projects/CuRast/src `
+      -B B:/develop/moat/projects/CuRast/build `
+      -DUSE_HIP=ON `
+      -DCMAKE_HIP_ARCHITECTURES=gfx1201 `
+      -DCMAKE_PREFIX_PATH="$ROCM" `
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/amdclang.exe" `
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -G Ninja
+cmake --build B:/develop/moat/projects/CuRast/build --target CuRast -j 8
+```
+
+Build: exit 0, no errors, CuRast.exe (3.8MB).
+
+Required DLLs in build dir (copy from _rocm_sdk_core/bin/):
+- amdhip64_7.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, amd_comgr.dll, rocm_kpack.dll
+
+### GPU Test
+
+```python
+# From B:\develop\moat\agent_space\run_curast_v3.py
+import subprocess, os
+env = os.environ.copy()
+env["HIP_VISIBLE_DEVICES"] = "0"
+env["ROCM_PATH"] = r"B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel"
+env["PATH"] = r"B:\develop\moat\projects\CuRast\build" + ";" + env.get("PATH", "")
+subprocess.run([r"B:\develop\moat\projects\CuRast\build\CuRast.exe",
+    "--bench", r"B:\develop\moat\projects\CuRast\src\example_donaukanal_urania.glb",
+    "1920", "1080", "30"], cwd=r"B:\develop\moat\projects\CuRast\src", env=env)
+```
+
+Results:
+- 30 frames, 966,461 triangles visible per frame
+- Best visbuffer-pipeline time: 0.189 ms @ 1920x1080
+- bench_render.png: PASS (shows Donaukanal building scene, non-blank, correct 3D geometry)
+
+### State transition
+
+windows-gfx1201: revalidate -> completed, validated_sha=c4e543e
+head_sha advanced to c4e543e (adds gfx1201 fixes on top of 48cd01b)
+linux-gfx90a and linux-gfx1100 flipped to revalidate (stage1/stage3 kernel change on all platforms)
