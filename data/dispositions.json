@@ -1168,6 +1168,13 @@
     "note": "Intel oneAPI, not CUDA",
     "reason": "not-a-target"
   },
+  "open-mmlab/mmcv": {
+    "decided": "2026-06-11T04:03:22Z",
+    "disposition": "skip",
+    "full_name": "open-mmlab/mmcv",
+    "note": "mmcv already has mature, upstream-merged ROCm/HIP support: MMCV_WITH_HIP guards across all 58 CUDA kernels (warp size 64, __shfl_down vs __shfl_down_sync, etc.), setup.py detects ROCm PyTorch via torch.version.hip and builds the CUDAExtension path with -DMMCV_WITH_HIP (torch hipifies at build time), and docs/en/get_started/build.md documents the AMD ROCm build. PR1206 refactored mmcv/ops/csrc explicitly to support AMD GPUs. is_rocm_pytorch helpers in Python ops. No port needed; would duplicate AMD/upstream work.",
+    "reason": "already-supported"
+  },
   "openbmb/infllmv2_cuda_impl": {
     "decided": "2026-06-05T04:43:34Z",
     "disposition": "skip",
