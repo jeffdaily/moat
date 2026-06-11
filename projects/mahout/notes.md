@@ -909,3 +909,7 @@ Validation (all three scenarios):
 Pre-existing clippy lints noted (NOT introduced here, NOT errors): `unnecessary_cast` on `stream.stream as *mut c_void` in gpu_ptr_encoding.rs test code.
 
 Wheel Build failure on #1399 confirmed UNRELATED to our code: it is the NVIDIA CUDA rhel8 yum repo 404 (upstream CI infra fetching cuda-rhel8 packages), no workflow files were changed by this PR.
+
+## Loop pass 2026-06-11 (ryankert01 review)
+Branch was REBASED onto upstream main (post #1393 merge) by jeff/another session OUTSIDE moat commit-project; all shas changed (f3f7db33->5b1dbee, 0b5042e->206aa0c, 6d2de29->bc6206b, cc3859b->4d54e9c) -- my content preserved. status.json validated_shas are now orphaned (rebase); head_sha reconciled to fork tip. Lead pr-open; followers revalidate (pre-rebase). Full validation reconciliation across the rebase still owed (content is rebase-equivalent; GPU code unchanged vs upstream #1393 which is ParquetReader, non-GPU).
+ryankert01 (MEMBER) reviewed on RTX 3090 Ti: 316 passed/0 failed, clippy --all-targets clean (CUDA path vendor-verified). 5 inline comments. Fixed #2 (ROCm>=6.0 doc), #3 (neither-feature compile_error), #4 (cuda/hip mutual-exclusivity note) in dbee1e1. HELD #1 (ASF source-header policy: drop per-file AMD copyright+Author lines, use NOTICE) -- conflicts with MOAT CLAUDE.md convention, needs jeff decision. #5 (no-AMD-CI maintenance risk) = acknowledge. Precommit fix is in 4d54e9c (build.rs graceful hipcc-absence); CI re-running to confirm. Reply drafts pending jeff approval (nothing posted upstream this pass).
