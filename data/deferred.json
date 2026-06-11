@@ -599,6 +599,45 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-11T02:26:05Z"
+    },
+    {
+      "id": "opencv-cudaoptflow-nvof",
+      "kind": "feature-port",
+      "project": "opencv_contrib",
+      "component": null,
+      "summary": "cudaoptflow NvidiaOpticalFlow_1_0/2_0 hardware optical-flow classes gated off on ROCm (StsNotImplemented): AMD GPUs have no dedicated HW optical-flow engine and AMF exposes no optical-flow API. Public symbols kept; the software flows (Brox/SparsePyrLK/DensePyrLK/Farneback/TVL1) are the substitute and are ported+validated. Genuine HW feature loss.",
+      "refs": [
+        "projects/opencv_contrib/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T03:01:37Z"
+    },
+    {
+      "id": "opencv-cudacodec-native-encode",
+      "kind": "feature-port",
+      "project": "opencv_contrib",
+      "component": null,
+      "summary": "cudacodec VideoWriter native hardware encode gated off on ROCm (StsNotImplemented): no ROCm-native encoder exists; AMF is a Vulkan/DX stack outside ROCm needing HIP<->Vulkan external-memory interop. Users are directed to the FFmpeg videoio backend (CAP_FFMPEG) with the AMF encoders h264_amf/hevc_amf/av1_amf. A native in-tree AMF encoder bridge is the deferred follow-up.",
+      "refs": [
+        "projects/opencv_contrib/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T03:01:49Z"
+    },
+    {
+      "id": "opencv-cudacodec-rocdecode-videoreader",
+      "kind": "feature-port",
+      "project": "opencv_contrib",
+      "component": null,
+      "summary": "cudacodec VideoReader rocDecode decode implementation deferred to the RDNA followers. The WITH_ROCDECODE/HAVE_ROCDECODE CMake gates, FFmpeg-only demuxer wiring, and graceful decode-off runtime errors are in place and the module build-validates on gfx90a with decode off. The full cuvid->rocDec API mirror (video_decoder/parser/reader, CUVID struct translation, ColorSpace NV12->RGB pipeline activation) is NOT written/validated because gfx90a (MI250X, CDNA2) has no VCN video-decode engine and the ROCm-repo mesa-amdgpu-va-drivers needed by the rocDecode runtime is uninstallable on this headless node, so neither compile-against-runtime nor GPU validation is possible here. Implement + validate on gfx1100/gfx1201 (which carry VCN). rocDecode lacks MPEG-1/2, VC-1, VP8, MJPEG vs NVDEC: those are genuine codec losses to skip/StsUnsupported cleanly.",
+      "refs": [
+        "projects/opencv_contrib/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T03:01:49Z"
     }
   ]
 }
