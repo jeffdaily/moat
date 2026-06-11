@@ -2,7 +2,7 @@
   "full_name": "m-schuetz/CuRast",
   "upstream_url": "https://github.com/m-schuetz/CuRast",
   "default_branch": "main",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/CuRast",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "037df01609a5034d2bab546a61a056ad21345fc6"
 }

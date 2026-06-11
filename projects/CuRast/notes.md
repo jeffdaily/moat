@@ -725,3 +725,77 @@ Results:
 ### State transition
 
 linux-gfx1100: revalidate -> completed, validated_sha=c4e543e
+
+## PR-prep 2026-06-11 (linux-gfx90a porter)
+
+Prepared the validated port (head c4e543e) for the single upstream PR.
+
+### Upstream base resolved
+
+upstream m-schuetz/CuRast main merge-base = 037df01609a5034d2bab546a61a056ad21345fc6.
+Written into upstream.json base_sha (was null). Port = 5 commits on top
+(d58f80b, 3d42a7c, 91bacbf, 48cd01b, c4e543e) before the squash.
+
+### Jargon / wording scrub
+
+No MOAT in-house vocab (lead/follower, Strategy A/B, head_sha, validated_sha,
+revalidate, curated commit) in any moat-port commit message or in added code
+comments. No "byte-for-byte"/"byte-identical" claim about the CUDA build
+anywhere. No .github/workflows/*.yml added by the port. One README Known-Issue
+line I drafted initially read "byte-identical dispatch sequences"; softened to
+"the same dispatch sequence" before commit (per memory cuda-unchanged-phrasing).
+
+### Attribution
+
+Added `Copyright (c) 2026 Advanced Micro Devices, Inc.` + `Author: Jeff Daily
+<jeff.daily@amd.com>` (comment-header style; CuRast's own src/ files carry no
+per-file header, license is centralized in LICENSE.md) to the three NEW files
+the port introduces:
+- src/cuda_to_hip.h
+- src/HipModularProgram.h
+- src/compat_print.h
+Trivial-skips (existing upstream files extended with guarded HIP code, no new
+authorship header imposed): CMakeLists.txt, cmake/common.cmake, the .cu/.cuh
+kernels, CuRast_render.h, CURuntime.h, Timer.h, the Vulkan-interop headers,
+MappedFile.h, unsuck_platform_specific.cpp, main.cpp, etc.
+
+### Documentation
+
+README.md "## Installing": filled the Linux "TODO" with the implemented mmap +
+O_DIRECT paths; added an "### AMD GPUs (ROCm/HIP)" subsection in the project's
+per-platform house style (USE_HIP, ROCm 7.2 prereq, CMAKE_HIP_ARCHITECTURES,
+the --bench command). Recorded the two scoped-out limitations under "#### Known
+Issues": HIP-Vulkan texture interop unavailable (missing
+hipExternalMemoryGetMappedMipmappedArray in ROCm 7.2) and the inline-launch
+workaround for the apparent ROCm runtime fault on gfx90a (plus the mipmap
+cooperative-launch fallback note). Also added bench_render.png to .gitignore.
+
+### CMake arch auto-detect determination
+
+No fix needed. CMakeLists.txt sets CMAKE_HIP_ARCHITECTURES=gfx90a ONLY when it
+is undefined/empty; any -DCMAKE_HIP_ARCHITECTURES=... overrides it. Default-
+with-override, no hardcoded arch forcing the user's choice.
+
+### Commits
+
+- Prep commit 51a9145 ("[ROCm] Document the ROCm/HIP build and add file
+  attribution"): README docs + 3 attribution headers + .gitignore. Verified
+  line-by-line to be comment/doc only (zero executable code change). moatlib
+  classify = comment-only, inert=True. advance-head conservatively flipped the
+  3 completed platforms to revalidate (header line-shift hazard under RTC);
+  manually carried each forward via `carry-forward ... source-class`.
+- Squash e766660abc4b2cc13340337220084fec98452b67 ("[ROCm] Add AMD GPU support
+  via HIP"): tree-identical collapse of the validated+prepped content, parented
+  directly on base 037df01. Title 34 chars, no jargon, no byte-for-byte,
+  softened CUDA-unchanged wording, both limitations documented, Test Plan with
+  the 3 validated arches (gfx90a, gfx1100, gfx1201). Force-pushed with lease.
+  `squash-carry-forward` carried all 3 completed platforms forward (did NOT
+  refuse); optional gfx1101/gfx1151 unchanged at port-ready.
+
+### Final state
+
+head_sha = e766660a. linux-gfx90a / linux-gfx1100 / windows-gfx1201 = completed
+@ e766660a. windows-gfx1101 / windows-gfx1151 = port-ready (optional, scoped out
+of the PR claim). pr-ready = True. Ready for the user's PR-open decision; the
+upstream PR was NOT opened (gated on explicit approval). PR claim should scope
+to gfx90a, gfx1100, gfx1201 only.
