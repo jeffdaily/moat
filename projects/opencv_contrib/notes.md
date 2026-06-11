@@ -1411,3 +1411,60 @@ PRs (two-repo change; contrib depends on core, cross-linked in both bodies):
 - contrib: https://github.com/opencv/opencv_contrib/pull/4147 ([ROCm] Port the cv::cuda modules to AMD GPUs via HIP)  <- canonical for set-pr-open
 
 Validated before open on gfx90a (CDNA2/wave64), gfx1100 (RDNA3/wave32), gfx1201 (RDNA4/wave32). PR bodies corrected from the stale drafts: removed the alphaComp/16-bit/4-channel-histogram "not implemented" claim (parity pass shipped them, cudaimgproc 3788/3788), added the 3-arch validation + rocDecode decode on the RDNA parts. Optional windows-gfx1101/gfx1151 stay port-ready (do not block; additive if a host validates them later). Next: respond to upstream review; on merge run set-pr-merged.
+
+## CUDA no-regression compile gate 2026-06-11
+
+**Verdict: CUDA-compile-clean.** The ported trees (core adcd50c, contrib ad105bb) compile cleanly under nvcc with no errors and no port-introduced warnings. The PR claim that "the CUDA build is byte-for-byte unchanged" is supported at the compile level.
+
+### Environment
+- Toolkit: conda env cuda-12.8, `/opt/conda/envs/cuda-12.8/bin/nvcc` version 12.8.93 (Cuda compilation tools, release 12.8, V12.8.93)
+- Arch pin: `-DCMAKE_CUDA_ARCHITECTURES=80` (sm_80, A100-class); `-DCUDA_ARCH_BIN=8.0 -DCUDA_ARCH_PTX=""`
+- libcuda.so stub: `/opt/conda/envs/cuda-12.8/targets/x86_64-linux/lib/stubs/libcuda.so` (no NVIDIA GPU or driver on this host; compile-only gate)
+- Host gcc: 13 (system)
+- WITH_CUDA=ON, WITH_HIP=OFF (verified in cvconfig.h: `#define HAVE_CUDA`; `HAVE_HIP` absent)
+- ENABLE_CUDA_FIRST_CLASS_LANGUAGE=ON (required: cmake 4.0 sets CMP0146=OLD which uses legacy FindCUDA / cudafe++ that is absent in the toolkit metapackage; first-class language support uses nvcc directly)
+- Build dir: `projects/opencv_contrib/build-cuda` (separate from the HIP build dir)
+
+### Configure command
+```
+cd projects/opencv_contrib/build-cuda
+PATH=/opt/conda/envs/cuda-12.8/bin:$PATH \
+cmake -G Ninja ../src-core \
+  -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc \
+  -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DWITH_CUDA=ON -DWITH_HIP=OFF \
+  -DENABLE_CUDA_FIRST_CLASS_LANGUAGE=ON \
+  -DOPENCV_EXTRA_MODULES_PATH=../src/modules \
+  -DBUILD_LIST="core,cudev,cudaarithm,cudafilters,cudaimgproc,cudawarping,cudastereo,cudafeatures2d,cudaobjdetect,cudalegacy,cudaoptflow,cudacodec,cudabgsegm,imgproc,video,optflow,objdetect,calib3d,ts" \
+  -DBUILD_TESTS=ON -DWITH_OPENCL=OFF -DWITH_PYTHON=OFF \
+  -DCUDA_ARCH_BIN="8.0" -DCUDA_ARCH_PTX="" \
+  -DCUDA_CUDA_LIBRARY=/opt/conda/envs/cuda-12.8/targets/x86_64-linux/lib/stubs/libcuda.so
+```
+Configure output: `NVIDIA CUDA: YES (ver 12.8.93, CUFFT CUBLAS)`, `NVIDIA GPU arch: 80`. `WITH_HIP: OFF`. `HAVE_CUDA` defined in cvconfig.h; `HAVE_HIP` absent.
+
+### Build command (wrapped in timeit.sh)
+```
+bash utils/timeit.sh opencv_contrib cuda-compile -- \
+  cmake --build projects/opencv_contrib/build-cuda \
+    --target opencv_cudev opencv_cudaarithm opencv_cudafilters opencv_cudaimgproc \
+      opencv_cudawarping opencv_cudastereo opencv_cudafeatures2d opencv_cudaobjdetect \
+      opencv_cudalegacy opencv_cudaoptflow opencv_cudacodec opencv_cudabgsegm \
+      opencv_test_cudev opencv_test_cudaarithm opencv_test_cudafilters \
+      opencv_test_cudaimgproc opencv_test_cudawarping opencv_test_cudastereo \
+      opencv_test_cudafeatures2d opencv_test_cudaobjdetect opencv_test_cudalegacy \
+      opencv_test_cudaoptflow opencv_test_cudacodec \
+    -j$(nproc)
+```
+Result: 865/865 targets, exit code 0, ~341 seconds. All 11 test executables built:
+opencv_test_cudev, opencv_test_cudaarithm, opencv_test_cudafilters, opencv_test_cudaimgproc,
+opencv_test_cudawarping, opencv_test_cudastereo, opencv_test_cudafeatures2d,
+opencv_test_cudaobjdetect, opencv_test_cudalegacy, opencv_test_cudaoptflow, opencv_test_cudacodec.
+
+### Warnings (4 total, ALL pre-existing upstream)
+`-Wmissing-declarations` on 4 functions in `modules/cudacodec/src/cuda/ColorSpace.cu` lines 308/316/324/332 (Y8ToGray8/Y8ToGray16/Y16ToGray8/Y16ToGray16). These exist verbatim at the same line numbers in the upstream base sha `2a5154a4479e841aa1282ef83d139c4870d17b8f` -- confirmed by `git show 2a5154a:.../ColorSpace.cu`. Not introduced by the port.
+
+### HAVE_NVCUVID / HAVE_NVIDIA_OPTFLOW
+Both are `/* #undef */` in cvconfig.h (no Video Codec SDK or Optical Flow SDK in the conda toolkit), so cudacodec and cudaoptflow compile their stub/graceful-error paths -- this is the expected and correct behavior for a CUDA build without those SDKs installed. Identical to any upstream CUDA build without those optional SDKs.
+
+### Summary
+Every HIP guard (`#ifdef __HIP_PLATFORM_AMD__` / `HAVE_HIP` / `NOT HAVE_HIP` in cmake) correctly resolves to the CUDA/original branch under nvcc. No type alias, namespace define, or removed code introduced a CUDA regression. The port's additive guard structure is verified at the nvcc compile level.
