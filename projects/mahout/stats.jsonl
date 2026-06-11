@@ -54,3 +54,8 @@
 {"kind":"phase","ts":"2026-06-11T17:02:32Z","phase":"compile","seconds":3.700,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mahout/src/qdp && QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm cargo build -p qdp-core -p qdp-kernels --no-default-features --features hip"}
 {"kind":"phase","ts":"2026-06-11T17:02:38Z","phase":"compile","seconds":0.712,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mahout/src/qdp && QDP_NO_CUDA=1 cargo check -p qdp-core -p qdp-kernels"}
 {"kind": "tokens", "ts": "2026-06-11T17:04:02Z", "tokens": 48190, "source": "porter ASF header removal + NOTICE"}
+{"kind":"phase","ts":"2026-06-11T17:25:20Z","phase":"compile","seconds":0.026,"exit":101,"cmd":"cargo build --manifest-path qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16"}
+{"kind":"phase","ts":"2026-06-11T17:25:34Z","phase":"compile","seconds":3.375,"exit":0,"cmd":"cargo build --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16"}
+{"kind":"phase","ts":"2026-06-11T17:25:53Z","phase":"test","seconds":11.881,"exit":0,"cmd":"cargo test --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-11T17:27:07Z","phase":"test","seconds":1.359,"exit":4,"cmd":"conda run -n py_3.12 python -m pytest testing/qdp testing/qdp_python qdp/qdp-python/tests -q --tb=short"}
+{"kind":"phase","ts":"2026-06-11T17:27:15Z","phase":"test-python","seconds":1.356,"exit":4,"cmd":"conda run -n py_3.12 python -m pytest testing/qdp testing/qdp_python qdp/qdp-python/tests -q --tb=short"}

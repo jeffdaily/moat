@@ -916,3 +916,52 @@ ryankert01 (MEMBER) reviewed on RTX 3090 Ti: 316 passed/0 failed, clippy --all-t
 
 ## ASF headers resolved + replies posted 2026-06-11
 Per jeff: dropped per-file AMD copyright + Author lines from all 10 files, moved attribution to NOTICE (088041c, head reconciled). Validated (fmt + hip build + cuda check). Posted all 6 replies: ASF (r3397736468), ROCm-floor (r3397736666), compile_error (r3397736790), features (r3397737008), maintenance (r3397737189), overall thanks (issuecomment-4683015613). HELD the precommit reply until CI confirms green. Next: compile-only ROCm hipcc CI job as a SEPARATE follow-up PR (post-#1399, since it needs the hip path #1399 adds) -- jeff approved starting it; it is explicitly NOT in #1399 (keeps the validated head stable; MOAT's no-fork-CI rule is about churn, this is an upstream-maintenance job in its own PR).
+
+## Validation 2026-06-11 (gfx1100, revalidate -> completed) -- FULL GPU PASS + port fix
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3 wave32), HIP_VISIBLE_DEVICES=0 (Rust tests), all 4 GPUs visible (Python multi-GPU tests), ROCm 7.2.1.
+Fork: jeffdaily/mahout @ moat-port HEAD ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb.
+
+Delta from validated_sha (f3f7db33, pre-rebase squash) to ebb71af44:
+- Functional HIP changes in the review-fix commit (206aa0c0d / 0b5042e before rebase): CudaSlice::drop re-binds device, explicit hipMemoryType mapping, build.rs consistency check, fork_default_stream non-blocking + amplitude stream sync.
+- fmt, doc, ASF header changes (behavior-preserving).
+- This fix: testing/qdp/test_bindings.py test_dlpack_device_id_non_zero made arch-aware.
+
+Because the delta includes functional HIP changes, binary-equivalence check was NOT used; full GPU revalidation was performed.
+
+Port bug found and fixed: test_dlpack_device_id_non_zero (multi-GPU DLPack test) had the device_type hardcoded to 2 (kDLCUDA). This was missed in the original port because gfx90a ran with HIP_VISIBLE_DEVICES=N (single GPU visible, so torch.cuda.device_count()==1 and the test skipped). On gfx1100 with 4 GPUs visible, the test runs and failed (reported (10,1) kDLROCM, not (2,1) kDLCUDA). Fix matches test_dlpack_device exactly: use getattr(torch.version, "hip", None) to select expected_device_type. Committed as ebb71af44, pushed to fork.
+
+Build commands:
+```
+source "$HOME/.cargo/env"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1100 ROCM_PATH=/opt/rocm HIP_VISIBLE_DEVICES=0
+bash utils/timeit.sh mahout compile -- cargo build \
+  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16
+```
+Exit 0. Only pre-existing upstream warnings (phase.cu unused variable, iqp.cu unused parameter).
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1):
+```
+bash utils/timeit.sh mahout test -- cargo test \
+  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+- qdp-core lib: 77/77.
+- gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 68/68 (4 new tests vs old 64; all pass), gpu_validation 8/8.
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet_f32 7/7, parquet_io 8/8,
+  preprocessing 14/14, reader 3/3, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- 0 failures total.
+- Async-pipeline tests pass: test_amplitude_encoding_async_pipeline, test_angle_encoding_async_pipeline (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path (gpu_angle_encoding).
+
+Python parity (all 4 GPUs visible, testing/qdp + testing/qdp_python + qdp/qdp-python/tests):
+- 305 passed, 10 skipped, 0 failed.
+- Multi-GPU tests run and pass (test_dlpack_device_id_non_zero PASSES with arch-aware fix; test_encode_cuda_tensor_device_mismatch PASSES).
+- Skips: 1 tensorflow-absent, 1 loader path-timing, 5 torch_ref sm_-arch check, 2 AmdQdpEngine-not-built, 1 NVIDIA-ref-absent -- all pre-existing/legit.
+
+Wave32 verdict: All L2-norm/amplitude tests pass on gfx1100 wave32, identical to prior gfx1100 validation.
+
+Transition: revalidate -> completed (validated_sha = ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb).
