@@ -7,17 +7,17 @@
   "priority": 4.876,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-11T22:54:34Z",
+  "updated_at": "2026-06-11T23:15:09Z",
   "head_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
       "started_at": "2026-05-31T22:47:06Z",
       "completed_at": "2026-06-05T21:49:19.280902+00:00",
-      "updated_at": "2026-06-11T22:54:34Z",
+      "updated_at": "2026-06-11T23:15:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -156,5 +156,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/koide3/gtsam_points/pull/99",
+  "pr_number": 99,
+  "pr_opened_at": "2026-06-11T23:15:09Z"
 }
