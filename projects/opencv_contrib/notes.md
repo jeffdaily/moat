@@ -1268,3 +1268,72 @@ video_parser.{cpp,hpp}, matching the sibling rocdecode_video_compat.hpp style.
 66 chars and `[ROCm]`-prefixed, body names Claude/Anthropic, ASCII-only, no noreply
 trailer, no MOAT jargon, no AMD-internal account refs. Prior pass's other
 conclusions (parity kernels + rocDecode back end) stand. State -> review-passed.
+
+## Validation (lead, gfx90a) at tip 8a5b0a2 -- 2026-06-11
+
+**State: completed** -- validated_sha = 8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0 (contrib head_sha)
+GPU: AMD Instinct MI250X / MI250, gfx90a, HIP_VISIBLE_DEVICES=0
+ROCm: 7.2.1
+OPENCV_TEST_DATA_PATH: projects/opencv_contrib/opencv_extra/testdata
+
+### Integrity check
+- contrib HEAD 8a5b0a2 == remote fork tip (FETCH_HEAD): MATCH
+- `git status --porcelain` in projects/opencv_contrib/src: clean (no uncommitted tracked source)
+- `python3 utils/moatlib.py audit-clean`: no opencv_contrib integrity gap
+
+### Build (incremental from projects/opencv_contrib/build)
+```
+# Reconfigured with full BUILD_LIST (was partial, only cudaarithm+cudafilters+cudaimgproc)
+cmake . -DBUILD_LIST="core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,cudastereo,\
+  cudafeatures2d,cudaobjdetect,cudalegacy,cudabgsegm,cudaoptflow,cudacodec,imgproc,imgcodecs,\
+  videoio,highgui,video,optflow,objdetect,calib3d,ts"
+cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy \
+  opencv_test_cudawarping opencv_test_cudaarithm opencv_test_cudafilters \
+  opencv_test_cudaimgproc opencv_test_cudafeatures2d opencv_test_cudaobjdetect \
+  opencv_test_cudaoptflow opencv_test_cudacodec -j$(nproc)
+# 791 targets built; warnings only (nodiscard hipGetLastError), no errors
+```
+
+### 5 required parity suites (CUDA_ImgProc, 6dbfed7 kernels, gfx90a)
+All 5 named suites EXECUTED and PASSED (confirmed by grep of run output; zero FAILED lines):
+- CUDA_ImgProc/HistEven16.Accuracy: 2/2 PASS
+- CUDA_ImgProc/HistEven4.Accuracy: 3/3 PASS
+- CUDA_ImgProc/HistRange.Accuracy: 4/4 PASS
+- CUDA_ImgProc/HistRange4.Accuracy: 4/4 PASS
+- CUDA_ImgProc/AlphaComp.Accuracy: 104/104 PASS
+Full suite: opencv_test_cudaimgproc 3788/3788 (+117 vs prior gfx90a validation at f7a8b32).
+
+### cudacodec gfx90a behavior (a6612f0 rocDecode delta)
+gfx90a has no VCN engine; WITH_ROCDECODE=ON but rocDecode VA driver not installable; HAVE_ROCDECODE
+is OFF in this build, so the rocDecode path compiles out. VideoReader takes the StsNotImplemented
+stub (unchanged). Only the NVCUVID-independent YuvConverter suite runs: 240/240 PASS. The rocDecode
+changes (a6612f0) do not perturb the gfx90a (no-rocDecode) build. The comment-only 8a5b0a2 has
+no effect on any binary.
+
+### Full regression (HIP_VISIBLE_DEVICES=0, OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata)
+| Suite | Passed | Total | Notes |
+|---|---|---|---|
+| opencv_test_cudev | 402 | 402 | PASS (no change) |
+| opencv_test_cudastereo | 128 | 128 | PASS |
+| opencv_test_cudalegacy | 14 | 14 | PASS (1 disabled) |
+| opencv_test_cudawarping | 4535 | 4535 | PASS |
+| opencv_test_cudaarithm | 11417 | 11417 | PASS |
+| opencv_test_cudafilters | 16028 | 16028 | PASS |
+| opencv_test_cudaimgproc | 3788 | 3788 | PASS (+117 new parity cases) |
+| opencv_test_cudafeatures2d | 256 | 256 | PASS |
+| opencv_test_cudaobjdetect | 18 | 18 | PASS |
+| opencv_test_cudaoptflow | 41 | 47 | 6 failures: EXACTLY the documented set (see below) |
+| opencv_test_cudacodec | 240 | 240 | PASS (YuvConverter only; decode/encode gated off on gfx90a) |
+
+**cudaoptflow 6 expected failures (unchanged from prior validations):**
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/0 -- float atomicAdd reduction ordering (not a port defect)
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/1 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.Regression/0 -- no AMD HW OF engine
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.OpticalFlowNan/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.Regression/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
+
+No unexpected failures in any suite. All regression suites match prior baselines exactly. The
+two functional deltas (6dbfed7 parity kernels, a6612f0 rocDecode) introduced no regressions
+on gfx90a. cudaimgproc 3788/3788 confirms the new histEven/histRange/alphaComp kernels are
+correct on wave64 gfx90a. Port fully validated on real gfx90a at tip 8a5b0a2.
