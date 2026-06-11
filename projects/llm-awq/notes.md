@@ -190,6 +190,52 @@ hipcc on ROCm; building the CUDA path requires an unmodified upstream checkout
 with nvcc. The port does not modify any CUDA-compiled source file that is not
 guarded; CUDA regression is architecturally impossible for this design.
 
+## Revalidation 2026-06-11 (linux-gfx90a, HEAD f843012)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, ROCm 7.2.1). Fork HEAD f843012.
+
+State was `revalidate` because fork head advanced from 7a4c596 (gfx90a validated)
+to 5d2d6f4 (Windows delta-port), then to f843012 (C++20 fix).
+
+The C++20 fix was a necessary build correction: the Windows delta (5d2d6f4)
+switched the build backend to use_ninja=False on Linux, which caused the
+distutils path to keep -std=c++17 (torch 2.13's append_std17_if_no_std_present).
+torch 2.13 headers (c10/core/TensorImpl.h, commit b5e90ff) use C++20 `requires`
+constraints, breaking the build. Fix: -std=c++17 -> -std=c++20 in both nvcc_args
+(ROCm section) and cxx_args in awq/kernels/setup.py (committed to fork as f843012).
+
+Build:
+```
+cd projects/llm-awq/src/awq/kernels
+find csrc \( -name '*.hip' -o -name '*_hip.*' \) ! -name 'cuda_to_hip*' -delete
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=32 python setup.py build_ext --inplace
+pip install -e . --no-build-isolation
+```
+Exit 0; produced awq_inference_engine.cpython-312-x86_64-linux-gnu.so (~12MB).
+
+GPU tests (HIP_VISIBLE_DEVICES=0):
+
+1. agent_space/awq_kernel_test.py (GEMM-vs-GEMV self-consistency, 256->128):
+   - GEMM-vs-GEMV max_abs_diff=0.0000 mean_abs_diff=0.00000 max_rel=0.0000
+   - RESULT: PASS
+
+2. agent_space/awq_model_test.py (WQLinear at realistic transformer dims):
+   - small (256->128): max_abs_diff=0.0000 [PASS]
+   - opt-125m-attn-qkv (768->768): max_abs_diff=0.0000 [PASS]
+   - opt-125m-ffn-up (768->3072): max_abs_diff=0.0000 [PASS]
+   - opt-125m-ffn-down (3072->768): max_abs_diff=0.0000 [PASS]
+   - 4/4 tests passed -- RESULT: PASS
+
+Binary-diff note: codeobj_diff carry-forward was not applicable here because
+the C++20 fix is a build regression fix, not cosmetic. The GPU test confirms
+kernel correctness is preserved.
+
+CUDA no-regression gate: not re-run (follower revalidate path; lead CUDA gate
+already recorded in Validation 2026-06-11 above).
+
+Verdict: PASS. State set to completed at f843012.
+
 ## Validation 2026-06-10 (windows-gfx1201)
 
 Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for
