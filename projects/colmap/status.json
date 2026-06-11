@@ -34,7 +34,7 @@
       }
     },
     "linux-gfx1100": {
-      "state": "blocked",
+      "state": "port-ready",
       "blocked": true,
       "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
       "validated_sha": null,
@@ -56,7 +56,7 @@
       }
     },
     "windows-gfx1101": {
-      "state": "blocked",
+      "state": "port-ready",
       "blocked": true,
       "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
       "validated_sha": null,
@@ -78,7 +78,7 @@
       }
     },
     "windows-gfx1201": {
-      "state": "blocked",
+      "state": "port-ready",
       "blocked": true,
       "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
       "validated_sha": null,
@@ -100,7 +100,7 @@
       }
     },
     "windows-gfx1151": {
-      "state": "blocked",
+      "state": "port-ready",
       "blocked": true,
       "blocked_reason": "External community port: colmap ROCm support is upstream PR #4420 (author iShengnan; jeff contributed, not author). Tracked for reference (the 'colmap model' / Strategy A); one upstream PR covers ROCm, not separately validated per-arch in MOAT. Follow-up jeffdaily/colmap:rocm-sift-gpu adds SIFT GPU.",
       "validated_sha": null,
