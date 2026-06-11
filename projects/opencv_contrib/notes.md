@@ -648,3 +648,18 @@ and regressed nothing.
 3. Two upstream PRs (core->opencv, modules->opencv_contrib). Both forks have Actions
    disabled. PR-prep (jargon scrub, arch auto-detect already present, ROCm build docs in
    the project's house style) is the remaining pre-PR step, not done in this phase.
+
+### Independent re-validation of Phase 5 (porter, gfx90a, 2026-06-11T03)
+A second porter dispatch (stale control-plane state showed `porting`/c85b44b) independently
+rebuilt and ran cudaoptflow on the same MI250X while Phase 5 was concurrently landed by
+another session. Result corroborates exactly: opencv_test_cudaoptflow 41/47 PASS; the 4
+NvidiaOpticalFlow cases throw (no AMD HW OF engine); the 2 OpticalFlowDual_TVL1.Async cases
+fail at 0.0 tolerance. Root cause independently confirmed via a standalone probe: TVL1 on the
+Null stream yields flow(387,342)=(2.4500287,-0.0310162) bit-identically across runs, while an
+explicit stream yields (2.4500573,-0.0310128) bit-identically -- each stream context is
+internally deterministic but the two differ by ~3e-5, which the float atomicAdd ordering in
+cuda::calcSum (cudev grid reduce, non-associative, schedule-dependent) feeds into the
+convergence early-exit. Not a port defect (the upstream 0.0-tolerance cross-stream assumption
+is unsound for a float-atomic reduction). No additional source changes were needed; this
+session's redundant local commits were discarded and the clones reset to the authoritative
+fork HEADs (contrib f7a8b32e, core 934c316930).
