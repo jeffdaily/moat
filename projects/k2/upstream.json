@@ -4,5 +4,5 @@
   "default_branch": "master",
   "fork_url": "https://github.com/jeffdaily/k2",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "e625cb971dbe945c6a0a67426bb2c1db0b8320d1"
 }

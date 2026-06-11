@@ -693,3 +693,53 @@ No new failures vs gfx1101. GPU confirmed: AMD Radeon RX 9070 XT (gfx1201, RDNA4
 ### Verdict
 
 PASS. 30/30 C++ gtests. Python slice 227/234 passed; 7 failures are all pre-existing artifacts (same categories as gfx1101). RDNA4 (wave32) matches RDNA3 at identical pass counts. Transition: port-ready -> completed. validated_sha = 44e7563a.
+
+## PR-prep 2026-06-11 (linux-gfx90a)
+
+Pre-submission cleanup on top of the validated port (44e7563). Behavior-preserving
+only (comments/docs/copyright); no device or host code change. No build/GPU re-run
+needed (classifier confirmed comment-only/source-class carry-forward).
+
+Resolved upstream base: merge-base(moat-port, upstream/master) =
+e625cb971dbe945c6a0a67426bb2c1db0b8320d1 ("Support building with torch 2.12.0",
+#1352). Recorded into upstream.json base_sha.
+
+Jargon scrub: rewrote two CMake comments that used internal porting shorthand
+(CMakeLists.txt "Never hardcode the lead arch ... churning the curated commit";
+k2/CMakeLists.txt "deferred for the ROCm lead bring-up") into upstream-neutral
+wording. Commit-message jargon ("Strategy A model", "lead target", "via the MOAT
+porting framework") was dropped by the squash. No .github/workflows CI was ever
+added by the port (nothing to remove). No other in-house vocabulary in the tree.
+
+Copyright/authorship (k2 house style = file-header copyright line with
+"(authors: ...)"): added "Copyright (c) 2026 Advanced Micro Devices, Inc.
+(authors: Jeff Daily <jeff.daily@amd.com>)" to the 4 new files (cuda_to_hip.h,
+moderngpu_shim.h, moderngpu_allocator_hip.cu, cudpp/cudpp_hip.cu -- these had a
+mis-stamped "Xiaomi ... by Claude" line, replaced) and as a parallel line below
+the upstream Mobvoi copyright on the substantively-extended pytorch_context.cu.
+Trivial-skips (modest guarded additions or pure build wiring, no attribution):
+CMakeLists.txt, k2/csrc/CMakeLists.txt, k2/python/csrc/CMakeLists.txt,
+cmake/torch.cmake, array_ops_inl.h (+24, guarded operator-), macros.h (+15,
+K2_DEVICE_CODE), utils.h (+12, dispatch swaps), log.h (+14), cub.h (+11).
+
+Documentation: added a "Building with ROCm (AMD GPUs)" section to
+docs/source/installation/from_source.rst (the Sphinx page where k2 documents the
+from-source CUDA build), in house style -- CMAKE_HIP_ARCHITECTURES arch select,
+hipCUB/rocThrust/libhipcxx prereqs, the K2_CMAKE_ARGS install path, serial GPU
+test note; updated the platform-support hint to list ROCm. Added a brief
+descriptive AMD-backend note + docs link to README.md (a landing-page README that
+defers build steps to the doc site, so no build block imposed there).
+
+Arch auto-detect determination: VERIFIED in place. CMakeLists.txt sets
+CMAKE_HIP_ARCHITECTURES only when unset (if(NOT DEFINED ...) -> default gfx90a);
+every per-target HIP_ARCHITECTURES reads ${CMAKE_HIP_ARCHITECTURES} from cache.
+No hardcoded arch overrides the user's -D value. No prep change required.
+
+Prep commit cf884de2 (advance-head: comment-only source-class, carried all 4
+completed platforms forward, gfx1151 kept blocked). Then squashed moat-port to a
+single tree-identical commit 7d0e8936 ("[ROCm] Add a ROCm/HIP build of k2 for AMD
+GPUs"); squash-carry-forward carried linux-gfx90a/linux-gfx1100/windows-gfx1101/
+windows-gfx1201 forward to 7d0e8936, kept windows-gfx1151 blocked. pr-ready=True.
+The squashed message scopes out k2/torch+kaldifeat and the moderngpu fast-path as
+known limitations and lists the validated arches (gfx90a, gfx1100, gfx1101,
+gfx1201). Ready for the user's PR-open decision (PR not opened by this agent).

@@ -7,40 +7,17 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-07T03:22:34Z",
-  "head_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
+  "updated_at": "2026-06-11T13:50:29Z",
+  "head_sha": "7d0e893695a92ab8471ca0da4dc370e2c475ddec",
   "platforms": {
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
+      "validated_sha": "7d0e893695a92ab8471ca0da4dc370e2c475ddec",
       "started_at": null,
       "completed_at": "2026-06-07T03:22:34Z",
-      "updated_at": "2026-06-07T03:22:34Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator"
-    },
-    "windows-gfx1101": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
-      "started_at": null,
-      "completed_at": "2026-06-05T18:00:41Z",
-      "updated_at": "2026-06-05T18:00:41Z",
+      "updated_at": "2026-06-11T13:50:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,20 +33,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "44e7563a1119833c18e875bda55162425d2d5f09",
-        "method": "binary-equiv",
-        "detail": "pytorch_context.cu change guards c10::hip paths with _WIN32; on Windows _WIN32 is always defined, so the preprocessed source and device ISA are byte-for-byte identical to the validated build at 7531e5",
-        "at": "2026-06-05T18:00:41Z"
+        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
+        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
+        "at": "2026-06-11T13:49:12Z"
       }
     },
-    "linux-gfx90a": {
+    "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
-      "started_at": "2026-05-31T02:39:49Z",
-      "completed_at": "2026-06-05T17:52:44Z",
-      "updated_at": "2026-06-05T17:52:44Z",
+      "validated_sha": "7d0e893695a92ab8471ca0da4dc370e2c475ddec",
+      "started_at": null,
+      "completed_at": "2026-06-05T18:00:41Z",
+      "updated_at": "2026-06-11T13:50:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -83,7 +62,46 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
+        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
+        "at": "2026-06-11T13:49:12Z"
+      }
+    },
+    "linux-gfx90a": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "7d0e893695a92ab8471ca0da4dc370e2c475ddec",
+      "started_at": "2026-05-31T02:39:49Z",
+      "completed_at": "2026-06-05T17:52:44Z",
+      "updated_at": "2026-06-11T13:50:29Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
+        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
+        "at": "2026-06-11T13:49:12Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
@@ -111,10 +129,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "44e7563a1119833c18e875bda55162425d2d5f09",
+      "validated_sha": "7d0e893695a92ab8471ca0da4dc370e2c475ddec",
       "started_at": "2026-05-31T08:47:00Z",
       "completed_at": "2026-06-05T18:32:27.202928Z",
-      "updated_at": "2026-06-05T18:32:27.202928Z",
+      "updated_at": "2026-06-11T13:50:29Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -128,7 +146,15 @@
         "first_session_at": "2026-05-31T08:47:00Z",
         "last_session_at": "2026-05-31T08:52:30Z"
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
+        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
+        "at": "2026-06-11T13:49:12Z"
+      }
     }
   }
 }
