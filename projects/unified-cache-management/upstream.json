@@ -4,5 +4,5 @@
   "default_branch": "develop",
   "fork_url": "https://github.com/jeffdaily/unified-cache-management",
   "ext_type": "cmake",
-  "base_sha": null
+  "base_sha": "70c3cb38efc11022ff5096d4312ff81df6498197"
 }

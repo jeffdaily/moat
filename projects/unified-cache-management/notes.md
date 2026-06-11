@@ -438,3 +438,89 @@ Total: 29/34 PASS (5 logger TearDown-only failures, pre-existing Windows file-lo
 GPU trans gate: 3/3 PASS.
 
 Result: windows-gfx1201 COMPLETED at 3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7.
+
+## PR-prep 2026-06-11 (porter, linux-gfx90a)
+
+### Recorded-sha reconciliation
+status.json/notes carried head_sha and all validated_shas as
+`3ff186f6d2e9d3af88e6a3af8e96e0cebbcf49e7`, but the actual fork moat-port HEAD
+(the validated Windows-delta commit) is `3ff186f1c3b1528aa40b4e256a3e98a9b7d806a0`
+-- they share the 7-char short prefix `3ff186f`, so the drift was invisible until
+the full sha was checked. `3ff186f6...` is not a real git object anywhere on the
+fork; `3ff186f1...`'s tree IS the validated content (it is the
+"[ROCm] Add Windows/clang-cl build compatibility for gfx1151" commit with the exact
+file list these notes describe). Corrected all 8 occurrences in status.json to
+`3ff186f1...` before any advance/squash so the regression guard and squash
+tree-check operate on a real object.
+
+### Base sha (upstream merge-base)
+`git merge-base moat-port upstream/develop` = `70c3cb38efc11022ff5096d4312ff81df6498197`
+("Add layerwise & pipeline store metrics to monitor performance (#960)"). Written
+into upstream.json base_sha.
+
+### Additive-claim confirmation (cuda backend untouched)
+Full diff base..moat-port is additive. Every edit to an EXISTING cuda/shared
+source file is guard-only, so the CUDA compile is unchanged:
+- ucm/shared/trans/cuda/cuda_sm_kernel.cu, ucm/store/nfsstore/device/cuda/cuda_device.cu:
+  original inline PTX wrapped in `#if defined(__CUDA_ARCH__)`; HIP uint4 copy in `#else`.
+- ucm/sparse/.../ham_dist/operator.h: original `<ATen/cuda/CUDAContext.h>`+`<cuda.h>`
+  moved into the `#else` of a `#ifdef USE_ROCM`; CUDA branch unchanged.
+- ucm/sparse/.../paged_ham_dist_mla.cu: `<cuda.h>` guarded `#ifndef USE_ROCM`.
+- CMake/setup wiring (setup.py, the three backend-selecting CMakeLists): purely
+  additive `rocm` arms; the `cuda` arms are untouched.
+- The only shared non-WIN32-guarded build change is infra OBJECT->INTERFACE for three
+  header-only sub-libraries (correct form, affects all platforms equally, already
+  validated on Linux). The CMakeLists.txt flag split, metrics export, test exclude,
+  and infra are otherwise WIN32-guarded.
+The new rocm/ files (compat shim, three rocm CMakeLists, the reference test) are new
+files; the CUDA path never includes the hip_compat shim (it is only put on the include
+path for the rocm build).
+
+### CUDA no-regression gate (compile-only, nvcc 12.8, arch sm_80)
+```
+nvcc -arch=sm_80 -std=c++17 -c ucm/shared/trans/cuda/cuda_sm_kernel.cu \
+  -I ucm/shared/trans/cuda -o cuda_sm_kernel.o     # EXIT 0
+nvcc -arch=sm_80 -std=c++17 -ptx ucm/shared/trans/cuda/cuda_sm_kernel.cu ... # PTX
+grep -cE "ld.global.cs|st.volatile.global" cuda_sm_kernel.ptx   # = 12
+```
+Compiles clean and emits the ORIGINAL streaming PTX (12 ld.global.cs / st.volatile.global
+ops), proving the `__CUDA_ARCH__` guard selects the unchanged NVIDIA branch and the
+port introduced zero CUDA-side codegen change. (No NVIDIA GPU on this host, so this is
+a compile-only gate; the additive-by-guard structure above is the primary proof.)
+No claim that the NVIDIA build is "byte-for-byte" identical -- the defensible statement
+is that the CUDA path compiles the same code because every change is behind a guard the
+CUDA build does not take, and the compat shim is never on the CUDA include path.
+
+### Prep edits (all behavior-preserving, carried forward all 5 platforms)
+Commit 32d2c7b76d8b93b4b07b8836155f22fad9fc3be5 on top of 3ff186f1 (classified
+comment-only / arch-independent by the regression guard; all 5 platforms carried
+forward to it, still completed, no GPU re-run):
+- Attribution: AMD copyright line + `Author: Jeff Daily <jeff.daily@amd.com>` added
+  below the existing Huawei MIT copyright in ucm/shared/vendor/hip_compat/cuda.h and
+  cuda_runtime.h (UCM house style is corporate MIT headers with no `\author` tag and
+  no AUTHORS file; the two new compat headers are the substantive new C++ source).
+  Trivial-skips (no attribution): the three rocm/CMakeLists.txt (build wiring) and
+  ucm/sparse/test/gsa/test_hamming_rocm_ref.py (UCM's sibling test scripts in that dir
+  carry NO license header at all, so a header would be off-style).
+- Docs: support_matrix.md adds a `ROCm | AMD | MI250X (gfx90a), Radeon Pro W7800
+  (gfx1100)` row to the Supported Compute Platforms table; quickstart_vllm.md and
+  quickstart_sglang.md add a `> **Note:**` that `PLATFORM=rocm` selects the ROCm
+  backend, beside the existing `PLATFORM=cuda` build-from-source block, with ROCm/HIP
+  prerequisites and CMAKE_HIP_ARCHITECTURES. README left untouched (landing page that
+  defers build steps to the doc site; no vendor enumeration to parallel).
+
+### Arch handling
+Each rocm CMakeLists arm sets `gfx90a` only as a default when CMAKE_HIP_ARCHITECTURES
+is unset (`if(NOT DEFINED ... OR ... STREQUAL "")`); a user `-DCMAKE_HIP_ARCHITECTURES`
+is never overridden. Env/cache-driven, correct.
+
+### Squash
+After all 5 platforms terminal at the prep head (32d2c7b), moat-port squashed to
+ONE tree-identical commit `d6764a58bec91b9884a10bf47903e911b6846c06` (tree
+60a6bff matches 32d2c7b's tree). Force-pushed-with-lease.
+`squash-carry-forward unified-cache-management d6764a58` did NOT refuse; carried
+all 5 platforms forward (linux-gfx90a, linux-gfx1100, windows-gfx1101,
+windows-gfx1201, windows-gfx1151), all completed. `pr-ready` = True.
+
+Base for the single upstream PR: moat-port (d6764a58) -> upstream develop, merge-base
+70c3cb38. Ready for the user's PR-open decision (NOT opened here).
