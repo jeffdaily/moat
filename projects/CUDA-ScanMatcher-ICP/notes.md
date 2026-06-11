@@ -184,3 +184,36 @@ bin\cis565_ScanMatching.exe
 - NN timing: 3688us (first, JIT compile overhead), then stable ~578-588us per iteration
 - No crashes, no errors, no NaN values
 - GPU computation works correctly on gfx1201
+
+## PR-prep 2026-06-11
+
+Prep edits committed on top of validated head 52e8006, then squashed.
+
+Jargon scrub (whole base..HEAD diff): only one leak found and fixed --
+CMakeLists.txt comment said "followers override via -DCMAKE_HIP_ARCHITECTURES";
+reworded to spell out the per-architecture override (gfx90a default, gfx1100
+RDNA3, gfx1201 RDNA4) with no MOAT vocabulary. Source-file diffs were clean.
+W.cu has spaced `<< <` launches but is upstream-untouched and not in the build
+(not in cuda_sources), so it was left alone.
+
+Attribution: added `Copyright (c) 2026 Advanced Micro Devices, Inc.` and
+`@author Jeff Daily <jeff.daily@amd.com>` (Doxygen house style) to the two
+substantially-new headers src/cuda_to_hip.h and src/glm_device.h.
+
+Docs: added an "AMD GPUs (ROCm/HIP)" subsection under README "Build
+Instructions", parallel to the existing Windows and Linux CUDA subsections,
+in the project's descriptive course-README style (USE_HIP, CMAKE_HIP_ARCHITECTURES).
+
+CMake: left the existing arch handling (default gfx90a + override) -- it is
+already reasonable house style; only reworded its comment.
+
+Validation smoke (gfx90a, GCD 0, MI250X): rebuilt clean with USE_HIP=ON
+gfx90a; headless run completed 10 ICP iterations, NN timing ~440us per step,
+no errors. Behavior-preserving prep confirmed.
+
+advance-head 2822242 classified inert (doc/comment only): carried
+linux-gfx90a, linux-gfx1100, windows-gfx1201 forward. Squashed to one
+tree-identical commit ce20c461b35aaa5781724cc0fd2742f8604c4b89, force-pushed
+to moat-port; squash-carry-forward carried all three required platforms.
+pr-ready=True. Upstream default branch = master. PR draft at pr-draft.md
+(not opened -- awaiting approval).

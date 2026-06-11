@@ -16,3 +16,7 @@
 {"kind":"phase","ts":"2026-06-07T22:47:02Z","phase":"compile","seconds":1.735,"exit":1,"cmd":"python3 /b/develop/moat/agent_space/build_scanmatcher_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T22:47:24Z","phase":"compile","seconds":10.177,"exit":0,"cmd":"python3 /b/develop/moat/agent_space/build_scanmatcher_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T22:48:08Z","phase":"test","seconds":0.340,"exit":0,"cmd":"python3 /b/develop/moat/agent_space/run_scanmatcher_gfx1201.py"}
+{"kind":"phase","ts":"2026-06-11T21:38:04Z","phase":"compile","seconds":0.148,"exit":1,"cmd":"bash -c cmake .. -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build . -j"}
+{"kind":"phase","ts":"2026-06-11T21:38:25Z","phase":"compile","seconds":13.783,"exit":0,"cmd":"bash -c cmake -S /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src -B /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_PREFIX_PATH=/opt/rocm -DCMAKE_BUILD_TYPE=Release && cmake --build /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build -j"}
+{"kind":"phase","ts":"2026-06-11T21:38:33Z","phase":"test","seconds":0.006,"exit":127,"cmd":"timeout 120 ./bin/cis565_ScanMatching"}
+{"kind":"phase","ts":"2026-06-11T21:38:38Z","phase":"test","seconds":0.239,"exit":0,"cmd":"timeout 120 /var/lib/jenkins/moat/projects/CUDA-ScanMatcher-ICP/src/build/bin/cis565_ScanMatching"}
