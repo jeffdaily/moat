@@ -355,3 +355,37 @@ Conclusion: binary-equivalent on gfx90a. Carried forward via moatlib carry-forwa
 (method: binary-equiv). No GPU re-run needed.
 
 validated_sha: 3e88a726661743d5b00d420726081f69964c5e38
+
+## Revalidation 2026-06-11 (validator, linux-gfx1100) -- state: completed (carry-forward)
+
+Platform: linux-gfx1100, GPU: AMD Radeon Pro W7800 48GB (gfx1100), ROCm 7.2.1, torch 2.13.0a0+gitb5e90ff, hip 7.2.53211.
+Delta: 2298cb55073791bdcfaff496c273c0ba5758a08d -> 3e88a726661743d5b00d420726081f69964c5e38 (1 commit).
+
+Delta classification: setup.py + .gitignore only. All setup.py changes are gated
+`sys.platform == "win32" and bool(torch.version.hip)` (or `sys.platform == "win32" and torch.version.hip`);
+on Linux, sys.platform == "linux", so these branches are dead code. .gitignore is metadata only.
+The Linux gfx1100 build is byte-identical to the previously validated build.
+
+Binary-equivalence check: built both SHAs for gfx1100 into separate dirs, then ran
+utils/codeobj_diff.py:
+
+    # Build old SHA (2298cb5)
+    git -C projects/nerfacc/src checkout 2298cb55073791bdcfaff496c273c0ba5758a08d
+    rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e . --no-build-isolation
+    cp nerfacc/csrc.so agent_space/nerfacc-gfx1100-gpu0/old/csrc.so
+
+    # Build new SHA (3e88a72)
+    git -C projects/nerfacc/src checkout origin/moat-port
+    rm -rf nerfacc/hip build
+    HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=16 pip install -e . --no-build-isolation
+    cp nerfacc/csrc.so agent_space/nerfacc-gfx1100-gpu0/new/csrc.so
+
+    python3 utils/codeobj_diff.py agent_space/nerfacc-gfx1100-gpu0/old agent_space/nerfacc-gfx1100-gpu0/new
+    # verdict=identical
+    # csrc.so: identical (exported symbols + device ISA identical (370 exports))
+
+Conclusion: binary-equivalent on gfx1100. Carried forward via moatlib carry-forward
+(method: binary-equiv). No GPU re-run needed.
+
+validated_sha: 3e88a726661743d5b00d420726081f69964c5e38
