@@ -100,3 +100,18 @@ Build system: WITH_HIP defaults OFF; add_definitions(-D__HIP_PLATFORM_AMD__) is 
 House style / upstreamability: AMD copyright + `\author Jeff Daily` on both substantially-new files (cmake/OpenCVDetectHIP.cmake, cuda_to_hip.h). Both commits are single, `[ROCm]`-prefixed, titles <= 72 chars, mention Claude, carry a Test Plan, no noreply trailer. Whole-diff grep: no MOAT jargon (moat/follower/Strategy/head_sha/validated_sha/revalidate/gfx1151), ASCII-only, no em-dash.
 
 Forward-looking note (NOT a defect this phase, already captured at notes.md "RESUME POINT"): the CORE deprecated warp headers (modules/core/include/opencv2/core/cuda/{warp.hpp, warp_shuffle.hpp, emulation.hpp, scan.hpp, detail/reduce.hpp}) still carry unported NVIDIA PTX -- `asm("mov.u32 %0,%%laneid")` in warp.hpp:64, the 32-bit-mask `__shfl*_sync(0xFFFFFFFFU,...)` redefines in warp_shuffle.hpp (guarded by `__CUDACC_VER_MAJOR__>=9`, so dormant under HIP), and the __CUDA_ARCH__>=300 shfl bodies. These are UNREACHABLE from the Phase 0+1 build (cudev pulls only core/cuda/cuda_compat.hpp from core's cuda headers; gpu_mat.cu/gpu_mat_nd.cu include no warp header), so they are correctly left dormant and did not need porting here. But the shim's __CUDA_ARCH__=350 WILL activate their `>=300` PTX paths the moment a Phase 2+ module includes them, and `mov %%laneid` does not hipify -- Phase 2 must apply the same laneId/shfl-mask/ballot fixes (as already noted at the resume point) to these core headers before those modules build.
+
+## Orchestrator state note 2026-06-11
+
+Phase 0+1 foundation: ported -> review-passed (clean, see "Review findings (phase 0+1)").
+State then walked back review-passed -> porting by the ORCHESTRATOR (deliberate
+override of the transition table): this is a phased multi-month port and the table
+has no review-passed -> porting edge. Going through completed would prematurely
+unblock followers onto a 2-of-6-phase port; recording validation-failed would be
+false. Lead stays in the porting loop (porter -> reviewer per phase) until all
+phases land; the full reviewer -> validator -> completed gate runs at the END.
+Reviewer's forward-looking note for Phase 2: the CORE deprecated warp headers
+(core/cuda/warp.hpp PTX laneid, warp_shuffle.hpp 32-bit masks, emulation.hpp /
+scan.hpp / detail/reduce.hpp PTX bodies) are dormant in Phase 0+1 but ACTIVATE
+when Phase 2 modules include them (shim defines __CUDA_ARCH__=350); they need the
+same laneId/shfl-mask/ballot fixes as cudev got.
