@@ -50,3 +50,4 @@
 {"kind":"phase","ts":"2026-06-11T14:35:11Z","phase":"compile","seconds":569.794,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
 {"kind":"phase","ts":"2026-06-11T14:40:45Z","phase":"test","seconds":80.578,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx90a.sh"}
 {"kind":"phase","ts":"2026-06-11T14:43:30Z","phase":"test","seconds":101.924,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx90a.sh"}
+{"kind": "tokens", "ts": "2026-06-11T15:25:15Z", "tokens": 145130, "source": "porter"}
