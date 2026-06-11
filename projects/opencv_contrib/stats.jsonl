@@ -116,3 +116,4 @@
 {"kind":"phase","ts":"2026-06-11T06:35:43Z","phase":"compile","seconds":0.451,"exit":0,"cmd":"cmake --build projects/opencv_contrib/build_cudacodec --target opencv_test_cudacodec -j64"}
 {"kind":"phase","ts":"2026-06-11T06:40:24Z","phase":"test","seconds":2.307,"exit":1,"cmd":"./projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec"}
 {"kind":"phase","ts":"2026-06-11T06:43:15Z","phase":"test","seconds":2.512,"exit":1,"cmd":"./projects/opencv_contrib/build_cudacodec/bin/opencv_test_cudacodec"}
+{"kind": "tokens", "ts": "2026-06-11T06:47:53Z", "tokens": 334415, "source": "porter (cudacodec rocDecode VideoReader)"}
