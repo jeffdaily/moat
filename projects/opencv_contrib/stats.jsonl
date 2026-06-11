@@ -108,3 +108,4 @@
 {"kind":"phase","ts":"2026-06-11T06:00:08Z","phase":"compile","seconds":26.538,"exit":0,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T06:03:41Z","phase":"test","seconds":22.325,"exit":1,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
 {"kind":"phase","ts":"2026-06-11T06:07:11Z","phase":"test","seconds":22.396,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaimgproc"}
+{"kind": "tokens", "ts": "2026-06-11T06:13:18Z", "tokens": 188546, "source": "porter parity cudaimgproc npp gaps"}
