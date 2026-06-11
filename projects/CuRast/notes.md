@@ -1173,3 +1173,83 @@ linux-gfx90a / linux-gfx1100 / windows-gfx1201 to revalidate.
 NOT re-squashed: gfx1201 is in revalidate, so the two commits (d59f05bd port +
 ecdf587 refactor) are held until the Windows host reconfirms. Re-squash +
 squash-carry-forward after gfx1201 is terminal at ecdf587.
+
+## Validation 2026-06-11 (windows-gfx1201 revalidate -> completed at ecdf587)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4), 32 CUs (wave32), HIP_VISIBLE_DEVICES=1 (gfx1101 PRO V710 present at device 0; gfx1201 is device 1), Windows 11 Pro
+Starting state: revalidate (validated_sha=d59f05bd, head_sha=ecdf587)
+
+### Delta analysis
+
+Commit ecdf587 is a host-only compat-header refactor on top of d59f05bd.
+No .cu kernel files were modified (diff shows only header/host files). The
+Linux gfx1100 validator already confirmed device ISA identity via codeobj_diff.
+However moatlib classify returns mixed/arch_independent=False, so full GPU
+revalidation was performed on the real gfx1201 GPU.
+
+### Build environment note
+
+The SDK was updated from 7.02 to 7.14 since the previous validation; amdclang++
+now requires `--rocm-device-lib-path` to be passed via CMAKE_HIP_FLAGS because the
+device bitcode is at `_rocm_sdk_devel/lib/llvm/amdgcn/bitcode` and the compiler
+can no longer auto-locate it without ROCM_PATH being honored during CMake
+configure. This is an environment/toolchain issue, not a port issue.
+
+### Build
+
+```python
+import subprocess, os, shutil
+
+ROCM = 'B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel'
+VULKAN_SDK = 'C:/Users/Shark44/AppData/Local/Temp/vulkan_sdk'
+BUILD = 'B:/develop/moat/projects/CuRast/build'
+SRC = 'B:/develop/moat/projects/CuRast/src'
+
+env['HIP_VISIBLE_DEVICES'] = '1'
+env['VULKAN_SDK'] = VULKAN_SDK
+env['ROCM_PATH'] = ROCM
+
+cmake -S SRC -B BUILD \
+    -DUSE_HIP=ON \
+    -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+    -DCMAKE_PREFIX_PATH=ROCM \
+    -DCMAKE_C_COMPILER=ROCM/lib/llvm/bin/amdclang.exe \
+    -DCMAKE_CXX_COMPILER=ROCM/lib/llvm/bin/amdclang++.exe \
+    -DCMAKE_HIP_COMPILER=ROCM/lib/llvm/bin/amdclang++.exe \
+    "-DCMAKE_HIP_FLAGS=--rocm-device-lib-path=ROCM/lib/llvm/amdgcn/bitcode" \
+    -G Ninja
+cmake --build BUILD --target CuRast -j 8
+```
+
+Build: exit 0, no errors. CuRast.exe (3.8MB).
+Warnings: nodiscard hipError_t (pre-existing). All pre-existing.
+
+Required DLLs copied from `_rocm_sdk_core/bin/` to build dir:
+amdhip64_7.dll, hiprtc0714.dll, hiprtc-builtins0714.dll, amd_comgr.dll, rocm_kpack.dll
+
+### GPU Test
+
+```python
+import subprocess, os
+env["HIP_VISIBLE_DEVICES"] = "1"
+env["ROCM_PATH"] = r"B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel"
+env["PATH"] = r"B:\develop\moat\projects\CuRast\build" + ";" + env.get("PATH", "")
+subprocess.run([r"B:\develop\moat\projects\CuRast\build\CuRast.exe",
+    "--bench", r"B:\develop\moat\projects\CuRast\src\example_donaukanal_urania.glb",
+    "1920", "1080", "30"], cwd=r"B:\develop\moat\projects\CuRast\src", env=env)
+```
+
+Results:
+- 30 frames, 966,461 of 966,461 triangles visible per frame (all correct)
+- Best visbuffer-pipeline time: 0.220 ms @ 1920x1080 (reference at d59f05bd: 0.184 ms, consistent)
+- bench_render.png: PASS (264,619 bytes, 1920x1080 RGBA PNG, shows Donaukanal building scene with correct 3D geometry and textures)
+- Exit code: 0, no GPU faults
+- Zero cooperative launch failures (per-level mipmap loop active as before)
+- jpeg/rocrand hiprtc compile errors: pre-existing (same as prior runs, unrelated to this delta)
+
+No delta-port required. The ecdf587 refactor built and ran correctly on gfx1201 without modification.
+
+### State transition
+
+windows-gfx1201: revalidate -> completed, validated_sha=ecdf587
+PR-ready=True (all three required platforms completed at ecdf587)

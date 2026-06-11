@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:23:49Z",
-  "updated_at": "2026-06-11T20:40:21Z",
+  "updated_at": "2026-06-11T20:45:51Z",
   "head_sha": "ecdf587cd6bfd2349b9cf7637dca17f2c2fc7c08",
   "depends_on": [],
   "platforms": {
@@ -86,13 +86,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "d59f05bd29d1a1fd4c436db4824391eb43e53ebe",
+      "validated_sha": "ecdf587cd6bfd2349b9cf7637dca17f2c2fc7c08",
       "started_at": null,
-      "completed_at": "2026-06-11T19:29:30Z",
-      "updated_at": "2026-06-11T20:38:29Z",
+      "completed_at": "2026-06-11T20:45:51Z",
+      "updated_at": "2026-06-11T20:45:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -106,13 +106,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "51a914515d6bfed316cb767eb5bb09c5dafad5dc",
-        "method": "source-class",
-        "detail": "comment-only attribution headers + README docs + .gitignore; classify=comment-only inert=True; zero executable code change verified line-by-line (only // copyright/author lines added)",
-        "at": "2026-06-11T17:34:51Z"
-      }
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",
