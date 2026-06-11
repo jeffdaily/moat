@@ -926,3 +926,30 @@ graphcut (no ROCm maxflow), NvidiaOpticalFlow_1_0/2_0 (no AMD HW OF engine),
 cudacodec rocDecode decode + native encode (deferred to RDNA followers / FFmpeg
 AMF), dnn cuDNN->MIOpen (out of cv::cuda scope). cudaimgproc now has NO
 StsNotImplemented runtime-refusal surface remaining.
+
+## rocDecode HW-decode feasibility on linux-gfx1100 (W7800) -- 2026-06-11
+Confirms the deferred `opencv-cudacodec-rocdecode-videoreader` task is unblocked on this RDNA host.
+
+HARDWARE: this host's GPUs are Radeon Pro W7800 (gfx1100, RDNA3, navi31) with a working VCN 4.0
+decode engine -- unlike the gfx90a MI250X lead (pure compute, no VCN). vainfo (radeonsi/distro
+mesa-va-drivers 25.2.8) shows 9 VLD (hardware decode) profiles: H264 CBP/Main/High, HEVC
+Main/Main10, JPEG, VP9 P0/P2, AV1 P0 (+ H264/HEVC/AV1 encode).
+
+rocDecode WORKS against the distro radeonsi VA driver -- it does NOT functionally need ROCm's
+`mesa-amdgpu-va-drivers` (that is only an apt packaging hard-dep with no candidate in current
+sources). Verified with rocDecode 1.7.0: a `rocDecGetDecoderCaps` probe run with
+`LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0` returned:
+  AVC/H264  supported=1  max 4096x4096   num_decoders=2  out=NV12
+  HEVC      supported=1  max 8192x4352   num_decoders=2  out=NV12   (10-bit capable)
+
+INSTALL RECIPE (does not disturb the distro mesa stack; restore apt after if needed):
+  apt-get download rocdecode rocdecode-dev
+  sudo dpkg -i --ignore-depends=mesa-amdgpu-va-drivers ./rocdecode*.deb   # or add a Provides shim for the dep
+  # rocdecode-dev also wants libva-dev; or just link against /opt/rocm/lib/librocdecode.so directly
+  # run all rocDecode code with LIBVA_DRIVER_NAME=radeonsi
+NOTE: a force-install puts apt in a broken-dep state (rocdecode -> mesa-amdgpu-va-drivers /
+rocdecode-dev -> libva-dev); satisfy with an equivs/Provides shim, or remove the packages to
+restore apt. For the actual VideoReader port, set this up deliberately and keep the shim.
+
+So: the cudacodec HW-decode path (rocDecode VideoReader) is validatable on this host -- the
+remaining work is the cuvid->rocDecode API mirror (the deferred task), not a hardware/runtime gap.
