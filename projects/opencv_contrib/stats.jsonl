@@ -80,3 +80,5 @@
 {"kind":"phase","ts":"2026-06-11T02:34:20Z","phase":"compile","seconds":27.998,"exit":0,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T02:34:36Z","phase":"test","seconds":0.640,"exit":0,"cmd":"./projects/opencv_contrib/build/bin/opencv_test_cudaobjdetect"}
 {"kind":"phase","ts":"2026-06-11T02:35:55Z","phase":"compile","seconds":46.391,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake -DBUILD_LIST=\"core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,cudafeatures2d,cudastereo,cudalegacy,cudaobjdetect,imgproc,objdetect,calib3d,ts\" . >/dev/null 2>&1 && ninja opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy opencv_test_cudawarping opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"session","ts":"2026-06-11T02:38:09Z","epoch":1781145489.778807477,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-11T02:39:09Z", "tokens": 316418, "source": "porter phase4b filters+imgproc+features2d+objdetect"}
