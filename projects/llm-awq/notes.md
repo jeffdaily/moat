@@ -97,3 +97,46 @@ pyproject.toml -- those would clobber the ROCm torch; install the engine with
 - int8 MFMA W8A8 GEMM (`w8a8_gemm_*`), currently build-only.
 - FasterTransformer single-query masked-MHA HIP rewrite (attention excluded
   from the ROCm build).
+
+## Review 2026-06-11
+Verdict: review-passed (linux-gfx90a). Port is sound; two non-blocking findings
+for follow-up. /pr-review skill, local-branch mode, diff d6e797a..7a4c596.
+
+Fact-checked and confirmed correct (no action needed): dequant lop3 immLut-0xea
+-> (a&b)|c bit math (matches the original arg order a=i4s/top_i4s, b=MASK,
+c=MAGIC; byte-identity holds); the bf16 sub path was already __hsub2 upstream,
+not PTX. Width-32 logical-warp shuffles (gemv x2, layernorm, w8a8 reduction +
+quantization) are arch-correct on wave32 and wave64 -- offsets <32 stay inside
+each aligned 32-lane subgroup; the 3-arg __shfl_xor/__shfl_down width form
+exists in ROCm headers and sidesteps the 64-bit-mask compile error. The
+quantization/gemv launch is num_threads(32,4) so warp_reduce_sum's width-32 is
+exact per y-row on wave64. gemm_simt.cuh mirrors gemv_kernel's decoder/store
+exactly (blk_row_offset, thd_row_offset, act_k_offset, lane==0/2/4/6 store,
+out_smem[j] over BlockSize/32 subgroups), clamps the M tail (rows), and has no
+divergent __syncthreads (M, rows, m0 all uniform). Deferred/stubbed paths
+(legacy MMA gemm_forward_cuda, w8a8_gemm_*, single_query_attention) are guarded
+with throwing TORCH_CHECK/abort stubs whose signatures match the headers; the
+CUDA path is preserved verbatim under #if !defined(__HIP_PLATFORM_AMD__). w8a8
+quantization.cu/act.cu/layernorm.cu still compile on HIP (shuffle fixed).
+qmodule.py (the validated W4A16 path) calls only gemv/gemm_forward_cuda_new.
+Commit hygiene clean: [ROCm] title 54 chars, Claude credited, Test Plan, no
+noreply trailer, no em-dash, no AMD-internal account, no MOAT jargon.
+
+Findings (non-blocking; address before or during PR-prep):
+1. Deferred work not registered. notes.md "Deferred" lists three scoped-out
+   items (MFMA/rocWMMA W4A16 GEMM, int8 W8A8 GEMM, FT masked-MHA attention) but
+   `utils/deferred.py list` has no llm-awq entries. CLAUDE.md requires
+   registering scoped-out sub-features so they are not lost. Add three
+   `deferred.py add` entries (kind feature-port, ref projects/llm-awq/notes.md).
+2. Kernel microtest is self-consistency only. agent_space/awq_kernel_test.py
+   cross-checks GEMM vs GEMV row-for-row (max_abs_diff 0.0000) but its
+   reference_dense() raises NotImplementedError and is unused, so a shared bug
+   in the common dequant decoder (the highest-stated risk: a wrong INT4->FP16
+   LUT) would pass both kernels. The independent signal is the end-to-end
+   awq_model_test.py ppl gate (AWQ4 ppl < FP16*3+5), which would catch a
+   corrupted dequant -- acceptable coverage, but the plan's step-1 isolated
+   dequant-vs-CPU-reference microtest was not authored. Optional: add a small
+   packed-int4 -> CPU-reference dequant assert so the byte-identity claim has a
+   direct gate independent of the GEMM/GEMV pair.
+
+Neither finding blocks validation; the validator runs the real-GPU suite next.
