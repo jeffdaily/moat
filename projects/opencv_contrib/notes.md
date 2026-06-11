@@ -259,3 +259,105 @@ cudafilters (unblocked), THEN cudaimgproc, THEN fold in cudafeatures2d + cudaobj
 test changes are new since Phase 2. Regression re-run at end of THIS dispatch (cheap
 insurance after the core filters.hpp edit): cudev 402/402, cudastereo 128/128,
 cudalegacy 14/14, cudawarping 4535/4535 -- all PASS on gfx90a, no regression.
+
+## Phase 4a progress (2026-06-11, gfx90a lead) -- cudaarithm (the NPP/BLAS/FFT gate)
+
+Fork HEADs after the cudaarithm commit: contrib `7f219f7b0a6b207f3b6e8762f4d5a76b4104e33d`,
+core `bd792d70e4efbb5f837a37a68f08dad3dc0304b0`. head_sha advanced to the contrib sha.
+
+### cudaarithm: 11417/11417 PASS on gfx90a
+Literal: `HIP_VISIBLE_DEVICES=0 OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata ./bin/opencv_test_cudaarithm`
+-> 11417/11417 (ROCm 7.2.1, wave64). Build list to drag cudaarithm + its DAG:
+`BUILD_LIST="core,cudev,cudaarithm,imgproc,ts" BUILD_TARGET=opencv_test_cudaarithm bash build_hip.sh`.
+The GEMM/Dft/MulSpectrums/Convolve cases (151) only INSTANTIATE when HAVE_CUBLAS is
+defined in cvconfig.h (see hipBLAS/hipFFT note below); the first full run was 11266
+because those were compiled out, the final run is 11417 with them active.
+
+### NEW FAULT CLASS (core): cudev simd_functions.hpp PTX + non-saturating emulation
+Two bugs in `cudev/util/simd_functions.hpp`, both latent until a module instantiates
+the v2/v4 SIMD-in-a-word ops (cudaarithm's add/sub/cmp/absdiff/min/max _mat paths are
+the first). The header force-sets CV_CUDEV_ARCH=0 on HIP so the `#else` SOFTWARE
+branches are taken -- but those branches were not actually HIP-clean:
+1. **PTX `not.b32` crashes amdgcn.** The software branches of vsetle/vcmple/vsetlt/
+   vsetge/vsetgt/vsetne (2 and 4) still spell the 32-bit complement as
+   `asm("not.b32 %0,%0")`. amdclang's backend dies with "illegal VGPR to SGPR copy" /
+   "Unsupported instruction" (a frontend exit-70 crash, NOT a normal error). This is
+   the absdiff_mat/cmp_mat/minmax_mat COMPILE failure. Fix: `CV_CUDEV_NOT_B32(x)` macro
+   = `((x)=~(x))` on HIP, original asm on CUDA. (16 sites.)
+2. **Wrapping vs saturating add/sub.** vadd2/vadd4/vsub2/vsub4's `#else` software
+   branches WRAP (modular), but addMat_v4/subMat_v4 rely on `vadd4` SATURATING (the
+   NVIDIA `vadd4.u32.u32.u32.sat` PTX). On HIP the wrap produced 255+x -> 0 (RUNTIME
+   accuracy failure on "whole matrix" C1-C4 8u/16u, sub-matrix passes because the v4
+   vectorized path needs cols%4==0/contiguous). Fix: add an `#elif
+   defined(__HIP_DEVICE_COMPILE__)` saturating per-element implementation
+   (min(a+b,0xff) / max(a-b,0) per lane) before the legacy `#else`. CUDA byte-identical
+   (always takes the >=300 PTX). GENERAL LESSON: cudev's CV_CUDEV_ARCH=0 software
+   fallbacks were written for sm_1x and are (a) not asm-free and (b) non-saturating;
+   any HIP module that hits a NEW v2/v4 op must re-audit its `#else` branch for both.
+
+### NEW FAULT CLASS (core): CUDART_VERSION undefined on HIP gates out modern paths
+`Stream::enqueueHostCallback` (core cuda_stream.cpp) is gated `#if CUDART_VERSION >=
+5000`; on HIP CUDART_VERSION is undefined (==0) so it threw StsNotImplemented and the
+4 CUDA_Stream/Async tests failed (the stream then left in a bad state -> cascading
+transform.hpp "invalid argument"). Fix: define CUDART_VERSION=12000 and a no-op
+CUDART_CB in private.cuda.hpp's HIP branch so the host CUDA sources take a modern-CUDA
+branch. Also added cudaEventCreate to the shim (test_event.cpp uses the no-flags form).
+Other CUDART_VERSION gates in core (reduce_key_val.hpp <12040, common.hpp >=12000) now
+resolve consistently too. LESSON: mirror __CUDA_ARCH__=350 with a host CUDART_VERSION
+on HIP; host CUDA code keys on the runtime version the same way device code keys on arch.
+
+### NPP-replacement decisions per family (cudaarithm)
+NPP has no ROCm analog; each NPP entry point is HIP-guarded (CUDA path byte-identical)
+and either routed to an existing own-kernel (strategy a) or reimplemented as a direct
+HIP kernel faithful to NPP semantics (strategy b). All verified by the suite unless noted.
+- transpose 8u (a): route to cudev `gridTranspose<uchar>` (4/8-byte already used it).
+- threshold CV_32F THRESH_TRUNC (a): the generic `thresh_trunc_func` kernel is identical
+  to nppiThreshold_32f NPP_CMP_GREATER; skip the NPP fast path on HIP.
+- magnitude / magnitudeSqr single-input interleaved (a): cudev already has
+  `magnitude_interleaved_func`/`magnitude_sqr_interleaved_func`; new shift.cu detail
+  entries gridTransformUnary them. (The two-input magnitude in polar_cart.cu is own-kernel.)
+- bitwise AndC/OrC/XorC C3/C4 (b): new HipBitwiseC kernel in bitwise_scalar.cu applies
+  the per-channel constant op; the C1/8u-C4 cases keep their existing BitScalar/BitScalar4
+  own-kernels. Verified by Bitwise_Scalar tests.
+- flip / Mirror (b): NEW flip.cu, one kernel templated on PIXEL SIZE in bytes (1/2/3/4/6/
+  8/12/16) covers every depth*cn; in-place routed through a BufferPool scratch (the
+  out-of-place kernel would race a same-buffer mirror). Verified (Flip 576).
+- lshift / rshift (b): NEW shift.cu, per-channel constant shift kernel; right shift keys
+  on signedness (arithmetic for schar/short/int via the signed template T). Verified
+  (LShift 72, RShift 120).
+- meanStdDev (a): computed in host code from the already-ported `cuda::sum`/`cuda::sqrSum`
+  (+`countNonZero` for the masked variant): stddev=sqrt(E[x^2]-E[x]^2), population. eps
+  1e-5 vs cv::meanStdDev. Verified (MeanStdDev 16, incl. masked).
+- rectStdDev (b): NEW rect_std_dev.cu, integral-image box std-dev per the NPP formula.
+  NOTE: cudaarithm has NO rectStdDev accuracy test upstream -- builds + dispatches but is
+  NOT suite-verified (same caveat class as cudawarping rotate). Flag for reviewer.
+
+### gemm -> hipBLAS, dft/convolution -> hipFFT (the cuBLAS/cuFFT analogues)
+arithm.cpp's cuBLAS/cuFFT calls are standard v2-API and map ~1:1. New host shim
+`core/cuda/cublas_cufft_to_hip.h` (included from precomp.hpp on HIP) aliases the
+spellings (cublasCgemm_v2->hipblasCgemm; hipBLAS drops _v2; cuComplex->hipComplex via
+hip_complex.h; cufftExecC2C->hipfftExecC2C; CUFFT_INVERSE->HIPFFT_BACKWARD). HAVE_CUBLAS/
+HAVE_CUFFT MUST be set in OpenCVDetectHIP.cmake (parent scope, before cvconfig.h is
+generated) -- not just in the module CMake -- or the gated GEMM/Dft tests never compile
+in (the test .cpp are plain g++ and read cvconfig.h). Module CMake links roc::hipblas +
+hip::hipfft under HAVE_HIP. Verified: GEMM/Dft/MulSpectrums/Convolve 151/151.
+
+### Regression (after the core simd/CUDART + cudev edits), same MI250X gfx90a
+cudev 402/402, cudastereo 128/128, cudalegacy 14/14 (needs objdetect in BUILD_LIST for
+NCV HypothesesFiltration's groupRectangles -- a missing-module config artifact, NOT a
+regression), cudawarping 4535/4535. All PASS, no regression.
+
+### RESUME POINT -> Phase 4b: cudafilters -> cudaimgproc -> cudafeatures2d + cudaobjdetect
+cudaarithm (the build-DAG gate) is DONE. cudafilters is now UNBLOCKED (its cudaarithm
+hard-dep exists). Recommended Phase 4b order, all hard deps now present:
+1. cudafilters: NPP families per the Phase 3 notes (NPPBoxFilter -> route to separable
+   row+col; Erode/Dilate/FilterMax/Min -> direct HIP rank/morph kernels with border+anchor
+   parity; SumWindowRow/Col -> sliding-window sum kernel; median is wavelet_matrix_2d, audit
+   for PTX/warp/ballot). Calls cuda::subtract (now ported).
+2. cudaimgproc: NPP color/alpha/gamma/histogram + Thrust->rocThrust.
+3. cudafeatures2d: ORB needs cuda::resize (cudawarping, done) + cuda::Filter Gaussian
+   (cudafilters, 4b-1); Thrust->rocThrust in orb.cu/bf_*.
+4. cudaobjdetect: cascadeclassifier needs cuda::resize + cuda::integral (cudaarithm, done);
+   NCV/Haar device half already proven via cudalegacy.
+WHEN BUILDING cudaarithm or anything that pulls it: link needs roc::hipblas + hip::hipfft
+(present at /opt/rocm). For cudalegacy regression, include objdetect in BUILD_LIST.

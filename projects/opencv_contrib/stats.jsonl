@@ -48,3 +48,22 @@
 {"kind":"phase","ts":"2026-06-11T01:11:45Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build/bin/opencv_test_cudawarping"}
 {"kind":"phase","ts":"2026-06-11T01:12:15Z","phase":"test","seconds":24.656,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudawarping"}
 {"kind": "tokens", "ts": "2026-06-11T01:20:03Z", "tokens": 140929, "source": "porter phase3 cudawarping"}
+{"kind":"phase","ts":"2026-06-11T01:38:19Z","phase":"compile","seconds":26.150,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:39:05Z","phase":"compile","seconds":6.659,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:39:30Z","phase":"test","seconds":9.715,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudaarithm"}
+{"kind":"phase","ts":"2026-06-11T01:41:52Z","phase":"compile","seconds":25.331,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:42:01Z","phase":"test","seconds":1.210,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudaarithm --gtest_filter=*Add_Array*:*Subtract_Array*"}
+{"kind":"phase","ts":"2026-06-11T01:43:17Z","phase":"compile","seconds":26.306,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:43:41Z","phase":"test","seconds":9.492,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudaarithm"}
+{"kind":"phase","ts":"2026-06-11T01:45:56Z","phase":"compile","seconds":0.214,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:46:06Z","phase":"compile","seconds":0.552,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/opencv_contrib/build && cmake --build . --target opencv_test_cudaarithm -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:46:54Z","phase":"test","seconds":14.009,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudaarithm"}
+{"kind":"phase","ts":"2026-06-11T01:48:11Z","phase":"compile","seconds":19.396,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy opencv_test_cudawarping -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T01:48:19Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build/bin/opencv_test_cudev"}
+{"kind":"phase","ts":"2026-06-11T01:48:19Z","phase":"test","seconds":0.004,"exit":127,"cmd":"./build/bin/opencv_test_cudastereo"}
+{"kind":"phase","ts":"2026-06-11T01:48:19Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build/bin/opencv_test_cudalegacy"}
+{"kind":"phase","ts":"2026-06-11T01:48:19Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build/bin/opencv_test_cudawarping"}
+{"kind":"phase","ts":"2026-06-11T01:48:27Z","phase":"test","seconds":1.279,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudev"}
+{"kind":"phase","ts":"2026-06-11T01:48:30Z","phase":"test","seconds":3.121,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudastereo"}
+{"kind":"phase","ts":"2026-06-11T01:48:37Z","phase":"test","seconds":6.262,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudalegacy"}
+{"kind":"phase","ts":"2026-06-11T01:49:01Z","phase":"test","seconds":24.656,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudawarping"}
