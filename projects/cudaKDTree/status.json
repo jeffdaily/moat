@@ -7,17 +7,17 @@
   "priority": 3.907,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-11T22:19:49Z",
+  "updated_at": "2026-06-11T22:35:11Z",
   "head_sha": "93a838d776f5ffc1b4069291c7906129689ed1be",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "93a838d776f5ffc1b4069291c7906129689ed1be",
       "started_at": "2026-05-30T05:52:44Z",
       "completed_at": "2026-05-30T06:56:59Z",
-      "updated_at": "2026-06-11T22:19:49Z",
+      "updated_at": "2026-06-11T22:35:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -165,5 +165,8 @@
         "at": "2026-06-11T22:18:52Z"
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/ingowald/cudaKDTree/pull/40",
+  "pr_number": 40,
+  "pr_opened_at": "2026-06-11T22:35:11Z"
 }
