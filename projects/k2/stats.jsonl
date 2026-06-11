@@ -47,3 +47,6 @@
 {"kind":"phase","ts":"2026-06-07T03:20:38Z","phase":"test","seconds":20.462,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T03:21:22Z","phase":"test","seconds":37.535,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1201.py"}
 {"kind": "tokens", "ts": "2026-06-11T13:52:40Z", "tokens": 99581, "source": "porter"}
+{"kind":"phase","ts":"2026-06-11T14:35:11Z","phase":"compile","seconds":569.794,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/k2/src/build -j 16"}
+{"kind":"phase","ts":"2026-06-11T14:40:45Z","phase":"test","seconds":80.578,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_gtest_gfx90a.sh"}
+{"kind":"phase","ts":"2026-06-11T14:43:30Z","phase":"test","seconds":101.924,"exit":0,"cmd":"bash /var/lib/jenkins/moat/agent_space/k2_pytest_gfx90a.sh"}

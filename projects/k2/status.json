@@ -7,17 +7,17 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-11T14:12:12Z",
-  "head_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
+  "updated_at": "2026-06-11T15:23:00Z",
+  "head_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
   "platforms": {
     "windows-gfx1201": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
       "started_at": null,
       "completed_at": "2026-06-07T03:22:34Z",
-      "updated_at": "2026-06-11T14:12:12Z",
+      "updated_at": "2026-06-11T14:44:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -42,13 +42,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
       "started_at": null,
       "completed_at": "2026-06-05T18:00:41Z",
-      "updated_at": "2026-06-11T14:12:12Z",
+      "updated_at": "2026-06-11T14:44:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -76,10 +76,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
+      "validated_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
       "started_at": "2026-05-31T02:39:49Z",
-      "completed_at": "2026-06-05T17:52:44Z",
-      "updated_at": "2026-06-11T14:12:12Z",
+      "completed_at": "2026-06-11T14:45:22Z",
+      "updated_at": "2026-06-11T15:23:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -93,15 +93,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
-        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
-        "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
-        "at": "2026-06-11T13:49:12Z"
-      }
+      "last_agent": "porter"
     },
     "windows-gfx1151": {
       "state": "port-ready",
@@ -129,10 +121,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
+      "validated_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
       "started_at": "2026-05-31T08:47:00Z",
-      "completed_at": "2026-06-05T18:32:27.202928Z",
-      "updated_at": "2026-06-11T14:12:12Z",
+      "completed_at": "2026-06-11T15:21:30Z",
+      "updated_at": "2026-06-11T15:23:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -148,12 +140,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
-        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
-        "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
-        "at": "2026-06-11T13:49:12Z"
+        "to": "4f03863d605c525481bf6a5d6670ce356e1164bb",
+        "method": "binary-equiv",
+        "detail": "gfx1100 cross-build: _k2 and libk2context device ISA + exported symbols identical between b2c09629 and 4f03863d (built at identical source path; codeobj_diff verdict identical, 1902/3490 exports). The",
+        "at": "2026-06-11T15:21:30Z"
       }
     }
   }

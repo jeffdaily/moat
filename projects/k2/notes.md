@@ -743,3 +743,93 @@ windows-gfx1201 forward to 7d0e8936, kept windows-gfx1151 blocked. pr-ready=True
 The squashed message scopes out k2/torch+kaldifeat and the moderngpu fast-path as
 known limitations and lists the validated arches (gfx90a, gfx1100, gfx1101,
 gfx1201). Ready for the user's PR-open decision (PR not opened by this agent).
+
+## c10-namespace re-key 2026-06-11 (linux-gfx90a porter)
+
+Fixed a real port bug found in review: the c10 device-namespace selection
+(c10::hip rename vs c10::cuda masquerading) was keyed on the OS (_WIN32), not on
+the torch source-hipify generation -- the proxy antipattern PORTING_GUIDE lines
+194-198 warn against (the exact class aihwkit hit). In this fleet OS only
+correlates with the hipify generation by accident (Windows TheRock = older torch
+= hipify v1 rename; Linux = newer torch = hipify v2 masquerading), so the _WIN32
+key silently breaks the moment a platform pairs with the other generation (e.g.
+Linux + an older torch / hipify v1).
+
+### The fix (commit 4f03863d, squashed into 30aca57d)
+
+- cmake/torch.cmake: under K2_WITH_HIP, probe the hipify generation
+  (`Version(torch.utils.hipify.__version__) >= 2.0.0`, robust to a missing
+  attribute; defaults to v1 on probe failure) into CMake var K2_TORCH_HIPIFY_V2.
+- k2/csrc/CMakeLists.txt: when K2_TORCH_HIPIFY_V2, add a NEUTRAL
+  `target_compile_definitions(context PUBLIC TORCH_HIPIFY_V2)`. PUBLIC so the
+  gtest suite (links context via test_utils) and the _k2 module (mutual_information
+  TU) inherit it. Verified -DTORCH_HIPIFY_V2 lands on context, _k2, and the test
+  compile lines (compile_commands.json).
+- Every c10 selection site re-keyed `defined(K2_WITH_HIP) && defined(_WIN32)` ->
+  `defined(K2_WITH_HIP) && !defined(TORCH_HIPIFY_V2)` -> c10::hip (v1 rename),
+  else c10::cuda (v2 masquerading or pure CUDA):
+  - k2/csrc/pytorch_context.cu: set_device (line ~159), HIPCachingAllocator::get
+    (~179), getCurrentHIPStream/getCurrentCUDAStream (~198), current_device (~289).
+  - k2/csrc/pytorch_context_test.cu: added a `c10_device` namespace alias on the
+    hipify axis; the 5 device-fn usages now go through it. NOTE this file is NOT
+    in the cuda_test_srcs list, so it is never compiled by k2's CMake -- the edit
+    is for consistency should it ever be enabled (behavior-neutral).
+  - k2/python/csrc/torch/mutual_information_cuda.cu: the c10/hip/HIPStream.h
+    include is correct on both generations (no c10:: symbol is directly used
+    here); only its comment was de-OS-ified.
+  The c10/hip/* headers are included on every generation because c10/cuda/* pulls
+  a generated c10/cuda/impl/cuda_cmake_macros.h that only exists as the hip
+  variant on a ROCm torch (confirmed absent here), so c10/cuda/* does not compile.
+  Why _WIN32 was wrong: it is a PROXY for the hipify generation; the real axis is
+  torch.utils.hipify.__version__.
+
+### Behavior-preserving on every validated config
+
+Linux torch 2.13 detects hipify v2 -> TORCH_HIPIFY_V2 -> c10::cuda (UNCHANGED).
+Windows TheRock torch 2.9 is hipify v1 -> undefined -> c10::hip (UNCHANGED).
+Pure CUDA -> c10::cuda. Same source branch compiles as before on each.
+
+### Revalidation (linux-gfx90a, real GPU; ROCm 7.2.1, MI250X)
+
+Build (fresh, gfx90a): `cmake -DK2_WITH_HIP=ON -DK2_WITH_CUDA=OFF
+-DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_CXX_STANDARD=20 -DK2_ENABLE_TESTS=ON
+-DK2_LIBHIPCXX_INCLUDE_DIR=/var/lib/jenkins/moat/_deps/libhipcxx/include ..` then
+`cmake --build . -j 16`. Configure logged "torch hipify generation v2
+(masquerading c10::cuda): 1". Runners regenerated in agent_space/
+(k2_gtest_gfx90a.sh, k2_pytest_gfx90a.sh); libhipcxx re-cloned to
+_deps/libhipcxx (amd-develop) since _deps is gitignored and was absent.
+
+- C++ gtests (GCD 0, serial): 30/30 executables, 298/298 individual tests pass.
+- Python pytest (k2/python/tests): 231 passed, 4 failed -- all 4 are the
+  documented pre-existing artifacts (test_pickle_ragged, test_setstate_2axes,
+  test_setstate_3axes = torch 2.6+ weights_only=True pickle; and
+  test_normalize_scores_use_log_non_zero_stride float32 catastrophic-cancellation).
+  Matches the prior gfx90a validation counts exactly.
+
+### Follower carry-forward (binary-equivalence)
+
+linux-gfx1100: cross-built both the pre-fix (b2c09629) and fixed (4f03863d) trees
+for gfx1100 AT THE IDENTICAL SOURCE PATH and ran utils/codeobj_diff.py: _k2 and
+libk2context device ISA + exported symbols IDENTICAL (1902 / 3490 exports). Carried
+forward via binary-equiv. GOTCHA: building the two shas at DIFFERENT absolute
+paths gives a false `differ` verdict -- the only delta is the `__hip_cuid_*`
+compilation-unit hash (derived from the source path), 266 bytes in a string/reloc
+region, ISA otherwise identical. Always build both sides at the same path for a
+codeobj_diff carry-forward.
+
+windows-gfx1101 / windows-gfx1201: left in `revalidate` for their own Windows
+host (cannot build the TheRock/clang/Ninja toolchain here). Their c10::hip v1
+branch is unchanged by this fix, so their host will binary-equiv carry-forward
+trivially. Not faked here.
+
+windows-gfx1151: stays blocked (host retired).
+
+### Squash + state
+
+Squashed moat-port to a single tree-identical commit 30aca57d (title 46 chars;
+hipify-generation wording in the c10 paragraph; softened NVIDIA-build phrasing
+preserved -- "We have made every effort to leave the NVIDIA build unchanged";
+k2/torch+kaldifeat and moderngpu fast-path scoped out; full Test Plan).
+squash-carry-forward carried linux-gfx90a + linux-gfx1100 forward to 30aca57d,
+kept gfx1151 blocked, left gfx1101/gfx1201 in revalidate. pr-ready=False, blocked
+only on windows-gfx1201 revalidating at 30aca57d on its own host. PR NOT opened.
