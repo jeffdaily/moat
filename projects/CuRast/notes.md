@@ -976,3 +976,69 @@ Results:
 ### State transition
 
 linux-gfx1100: revalidate -> completed, validated_sha=08da182
+
+## Validation 2026-06-11 (windows-gfx1201 revalidate -> completed at 08da182)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4), 32 CUs (wave32), HIP_VISIBLE_DEVICES=0 (gfx1101 absent), Windows 11 Pro
+Starting state: revalidate (validated_sha=e766660abc, head_sha=08da182)
+
+### Delta analysis
+
+Commit 08da182 adds on top of e766660 (the squash):
+1. README.md: removed the "distant textures fall back to lower detail" Known Issues entry (now fixed). Doc-only.
+2. src/CuRast_render.h: INLINE_LAUNCH_1D/2D macros guarded under `#if defined(USE_HIP)` with CUDA fallback; launchOccupancyBased block guarded under `#if defined(USE_HIP)` with upstream launchCooperative CUDA fallback.
+3. src/CudaVirtualMemory.h: HIP_DEVPTR_ADD CUDA fallback added.
+4. src/kernels/textureTools.cu: new `kernel_computeMipMapLevel` kernel (USE_HIP only) for per-level non-cooperative mipmap generation; host `computeMipMap()` switched from `hipLaunchCooperativeKernel` to a loop of `hipLaunchKernelGGL` calls one per level. CUDA path keeps upstream cooperative kernel unchanged.
+5. src/kernels/triangles_visbuffer.cu: stage1/stage2/stage3 guarded under `#if defined(USE_HIP)` vs `#else` (CUDA restores upstream grid/grid.sync() cooperative code).
+
+moatlib classify: mixed arch_independent=False -- full GPU revalidation required. This is the key mipmap fix that was the correctness gap on gfx1201.
+
+### Build
+
+```powershell
+$ROCM = "B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+$VULKAN_SDK = "C:/Users/Shark44/AppData/Local/Temp/vulkan_sdk"
+
+$env:HIP_VISIBLE_DEVICES = "0"
+cmake -S B:/develop/moat/projects/CuRast/src `
+      -B B:/develop/moat/projects/CuRast/build `
+      -DUSE_HIP=ON `
+      -DCMAKE_HIP_ARCHITECTURES=gfx1201 `
+      -DCMAKE_PREFIX_PATH="$ROCM" `
+      -DCMAKE_C_COMPILER="$ROCM/lib/llvm/bin/amdclang.exe" `
+      -DCMAKE_CXX_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -DCMAKE_HIP_COMPILER="$ROCM/lib/llvm/bin/amdclang++.exe" `
+      -G Ninja
+cmake --build B:/develop/moat/projects/CuRast/build --target CuRast -j 8
+```
+
+Build: exit 0, no errors. CuRast.exe (previously built; ninja confirmed no-work-to-do on rebuild).
+Warnings: unused `#pragma clang attribute` device regions (pre-existing), deprecated codecvt (pre-existing). All pre-existing.
+
+### GPU Test
+
+```python
+# B:\develop\moat\agent_space\run_curast_reval.py
+import subprocess, os
+env = os.environ.copy()
+env["HIP_VISIBLE_DEVICES"] = "0"
+env["ROCM_PATH"] = r"B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel"
+env["PATH"] = r"B:\develop\moat\projects\CuRast\build" + ";" + env.get("PATH", "")
+subprocess.run([r"B:\develop\moat\projects\CuRast\build\CuRast.exe",
+    "--bench", r"B:\develop\moat\projects\CuRast\src\example_donaukanal_urania.glb",
+    "1920", "1080", "30"], cwd=r"B:\develop\moat\projects\CuRast\src", env=env)
+```
+
+Results:
+- 30 frames, 966,461 of 966,461 triangles visible per frame (all frames correct)
+- Best visbuffer-pipeline time: 0.184 ms @ 1920x1080 (reference at c4e543e: 0.189 ms, consistent)
+- bench_render.png: PASS (264619 bytes, 1920x1080 RGBA PNG, shows Donaukanal building scene with correct 3D geometry and textures)
+- Exit code: 0, no GPU faults
+- Zero cooperative launch failures (per-level mipmap loop fully replaces the cooperative path)
+- hiprtc compile warnings (unused pragma clang attribute device regions): pre-existing
+
+No delta-port required. The 08da182 changes built and ran correctly on gfx1201 without modification.
+
+### State transition
+
+windows-gfx1201: revalidate -> completed, validated_sha=08da182
