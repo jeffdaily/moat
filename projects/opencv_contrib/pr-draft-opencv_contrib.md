@@ -29,7 +29,7 @@ Built with ROCm 7.2.1 and exercised on an AMD Instinct MI250X (gfx90a, wave64). 
 | cudev | 402/402 |
 | cudaarithm | 11417/11417 |
 | cudafilters | 16028/16028 |
-| cudaimgproc | 3671/3671 |
+| cudaimgproc | 3788/3788 |
 | cudawarping | 4535/4535 |
 | cudastereo | 128/128 |
 | cudafeatures2d | 256/256 |
@@ -39,15 +39,14 @@ Built with ROCm 7.2.1 and exercised on an AMD Instinct MI250X (gfx90a, wave64). 
 | cudabgsegm | builds (MOG/MOG2 accuracy tests are gated behind HAVE_VIDEO_INPUT, undefined in this tree on CUDA as well) |
 | cudaoptflow | 41/47 (the 6 remaining are the scoped-out cases below) |
 
-Additional AMD architectures are being brought up and will be added as they are validated.
+The same suites were also validated on two RDNA (wave32) architectures, exercising the warp layer on a different wave size than gfx90a: gfx1100 (Radeon Pro W7800, RDNA3) and gfx1201 (Radeon RX 9070 XT, RDNA4). Those parts carry a video engine, so on them the rocDecode VideoReader hardware-decode path (H.264/H.265/AV1) is exercised by opencv_test_cudacodec; the MPEG-1/2, VC-1, VP8, and MJPEG streams in that suite are outside rocDecode's codec coverage and report not-implemented (see Scope and limitations).
 
 ### Scope and limitations
 
 The following NVIDIA-proprietary facilities have no ROCm analog; on the HIP build they report `cv::Error::StsNotImplemented` rather than silently misbehaving, and the corresponding software algorithms remain available:
 
 - NVIDIA hardware optical flow (NvidiaOpticalFlow_1_0/2_0): no AMD hardware optical-flow engine. The PyrLK, Brox, Farneback, and TV-L1 software flows are unaffected and pass. The 4 NvidiaOpticalFlow test cases instantiate the unavailable hardware class and therefore raise the not-implemented error, the same outcome as a CUDA build configured without the NVIDIA Optical Flow SDK.
-- cudalegacy graph-cut stereo: no ROCm maxflow library (NPP dropped graphcut at CUDA 8.0).
-- A few NPP-only entry points: cudaimgproc alphaComp and the 16-bit/4-channel histogram-even and histogram-range variants.
+- cudalegacy graph-cut stereo: no ROCm maxflow library (NPP dropped graphcut at CUDA 8.0, so this entry point is already a no-op on a current CUDA build).
 - Hardware video decode/encode in cudacodec: rocDecode covers H.264/H.265/AV1 decode but not MPEG-1/2, VC-1, VP8, or MJPEG; there is no ROCm-native hardware encoder, so encode is delegated to the FFmpeg AMF encoders via the videoio backend. On compute-only parts without a video engine (such as gfx90a/MI250X) hardware decode is reported as not implemented; the portable YUV-to-RGB surface converter is still available and validated.
 
 Two cudaoptflow cases (OpticalFlowDual_TVL1.Async) compare a default-stream result against multi-stream results at exact (0.0) tolerance. The TV-L1 convergence loop exits on a sum computed by a floating-point atomic reduction, whose accumulation order depends on block-completion order and therefore differs between the default-stream and explicit-stream schedulers; the resulting last-ULP difference shifts the iteration count by one and produces a small flow delta at a single pixel. The flow is correct (the TV-L1 accuracy test passes at its normal tolerance), and each stream context is internally deterministic; the exact-tolerance cross-stream comparison is unsound for a non-associative atomic reduction independently of this change.
@@ -63,7 +62,7 @@ This work was authored with the assistance of Claude, an AI assistant by Anthrop
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudev          # 402/402
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudaarithm     # 11417/11417
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudafilters    # 16028/16028
-OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudaimgproc    # 3671/3671
+OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudaimgproc    # 3788/3788
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudawarping    # 4535/4535
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudastereo     # 128/128
 OPENCV_TEST_DATA_PATH=<opencv_extra>/testdata ./bin/opencv_test_cudafeatures2d # 256/256
