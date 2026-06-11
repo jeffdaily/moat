@@ -141,17 +141,29 @@ on implicit zero-init); worth an upstream note. GENERAL LESSON: never assume fre
 device memory is zero on ROCm; any kernel that writes a sub-region and leaves a border
 must explicitly zero it.
 
-### RESUME POINT -> cudafeatures2d + cudaobjdetect (remaining Phase 2)
-Both have HARD (non-OPTIONAL) module deps on Phase 3/4 NPP modules:
-- cudafeatures2d: `ocv_add_module(... opencv_features2d opencv_cudafilters opencv_cudawarping)`.
-- cudaobjdetect: `ocv_define_module(... opencv_objdetect opencv_cudaarithm opencv_cudawarping OPTIONAL opencv_cudalegacy)`.
-So building them requires cudawarping (Phase 3, NPP-light: 5 kernels/2 NPP libs) and
-for cudaobjdetect also cudaarithm (Phase 4, heaviest). cudaobjdetect's NCV/Haar half is
-already proven via cudalegacy. Next porter action: either (a) pull cudawarping forward
-(it is the lightest NPP module and unblocks cudafeatures2d) then port cudafeatures2d
-(Thrust->rocThrust in orb.cu/bf_*), or (b) treat cudafeatures2d/cudaobjdetect as
-crossing into Phase 3/4 and sequence them with those modules. The 3 truly-pure modules
-(no NPP dep at all) are DONE and passing.
+### RESUME POINT -> cudafeatures2d + cudaobjdetect must wait for Phase 3/4
+DONE + passing this dispatch: cudabgsegm (builds; tests gated upstream), cudastereo
+(128/128), cudalegacy (14/14). These are the 3 modules with NO NPP-module dependency.
+
+cudafeatures2d and cudaobjdetect are NOT pure-custom in practice: they have HARD
+(non-OPTIONAL) CMake deps AND real algorithmic runtime calls into the Phase 3/4 NPP
+modules, so they cannot build or be validated until those land:
+- cudafeatures2d `ocv_add_module(... opencv_cudafilters opencv_cudawarping)`; ORB
+  (orb.cpp) calls `cuda::resize` (cudawarping) for the image pyramid and holds a
+  `cuda::Filter` Gaussian blur (cudafilters). Stubbing them makes ORB produce wrong
+  keypoints -> tests fail. Also Thrust->rocThrust still needed in orb.cu/bf_*.
+- cudaobjdetect `ocv_define_module(... opencv_cudaarithm opencv_cudawarping ...)`;
+  cascadeclassifier.cpp calls `cuda::resize` (cudawarping) + `cuda::integral`
+  (cudaarithm) per pyramid level. Its NCV/Haar device half is ALREADY proven via
+  cudalegacy's HaarCascadeApplication 14/14, but the host cascade driver needs
+  resize+integral to run.
+
+cudawarping NPP surface is confined to warp.cpp (rotate/warpAffine/warpPerspective,
+gated by USE_NPP_STREAM_CTX; the remap/resize/pyr*/warp.cu kernels are custom HIP).
+cudaarithm is the heaviest NPP module. So the next dispatch should be Phase 3
+(cudawarping -> cudafilters) and Phase 4 (cudaimgproc -> cudaarithm), and fold
+cudafeatures2d + cudaobjdetect in once cudawarping/cudafilters/cudaarithm exist.
+This is a phase-sequencing boundary, not a blocker.
 
 ## Orchestrator state note 2026-06-11
 

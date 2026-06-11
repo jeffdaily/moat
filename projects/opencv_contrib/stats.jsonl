@@ -40,3 +40,4 @@
 {"kind":"phase","ts":"2026-06-11T00:57:01Z","phase":"compile","seconds":4.311,"exit":1,"cmd":"bash /var/lib/jenkins/moat/projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T00:57:27Z","phase":"compile","seconds":7.385,"exit":0,"cmd":"bash /var/lib/jenkins/moat/projects/opencv_contrib/build_hip.sh"}
 {"kind":"phase","ts":"2026-06-11T00:57:46Z","phase":"test","seconds":6.393,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudalegacy"}
+{"kind":"phase","ts":"2026-06-11T01:01:04Z","phase":"test","seconds":1.244,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudev"}
