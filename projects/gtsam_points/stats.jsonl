@@ -48,3 +48,4 @@
 {"kind":"phase","ts":"2026-06-07T04:27:15Z","phase":"test","seconds":23.327,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/gtsam_points/src/build_hip_gfx1201 --output-on-failure -j1"}
 {"kind":"phase","ts":"2026-06-11T22:52:27Z","phase":"cuda-compile","seconds":30.670,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_cuda gtsam_points_cuda"}
 {"kind":"phase","ts":"2026-06-11T22:53:12Z","phase":"cuda-compile","seconds":35.990,"exit":0,"cmd":"ninja -C /var/lib/jenkins/moat/projects/gtsam_points/src/build_cuda gtsam_points"}
+{"kind": "tokens", "ts": "2026-06-11T22:56:21Z", "tokens": 111455, "source": "porter"}
