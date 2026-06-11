@@ -1125,3 +1125,134 @@ cmake --build . --target opencv_test_cudaimgproc opencv_test_cudacodec -j$(nproc
 - 10 tol-2 cross-decoder: ColorConversionFormat BGR/BGRA/RGB/RGBA, LumaChromaRange x2, Planar, Bitdepth x3 -- decode is correct (GRAY tol-15 PASSES at meanAbs 0.75), strict tol-2 cross-decoder comparison trips (VCN vs libavcodec rounding latitude, not a port defect)
 
 No unexpected failures in any suite. cudaimgproc 3788/3788 confirms the new 6dbfed7 kernels (histEven/histRange/alphaComp) are correct on gfx1100. cudacodec 256/303 reconfirms a6612f0 rocDecode VideoReader on gfx1100 (H264/H265/VP9 decode, YuvConverter 240/240, codec guard verified). No regression across all 9 fully-passing suites.
+## Review 2026-06-11 (reviewer, linux-gfx90a): two functional deltas (parity + rocDecode)
+
+Incremental /pr-review of the two functional commits added after the last full
+review/validation: DELTA 1 `6dbfed7` (cudaimgproc histEven/histRange/alphaComp
+parity) and DELTA 2 `a6612f0` (cudacodec rocDecode VideoReader). Reviewed
+`git diff 3851d56 6dbfed7` and `git diff 6dbfed7 a6612f0`. Whole-port body was
+already review-passed at f7a8b32; this pass only covers the two deltas plus
+cross-cutting upstreamability. GPU revalidation is the validator's next stage
+(gfx90a is `ported`, gfx1100 `revalidate`); not run here by design.
+
+VERDICT: changes-requested. The functional code is clean -- no code-correctness,
+fault-class, CUDA-path, wave64, or upstreamability defect in either delta. The
+ONE blocking item is the missing AMD copyright + author attribution on the four
+substantially-extended cudacodec files (finding 1), a mandatory CLAUDE.md rule.
+It is comment-only/behavior-preserving: the porter adds the four headers and the
+regression guard carries every completed platform forward (no GPU re-run). Once
+those headers land, this is otherwise ready to advance to the validator.
+
+### Review findings (parity + rocDecode deltas)
+
+1. ATTRIBUTION GAP (required before squash/PR; comment-only). DELTA 2
+   substantially extended four existing files with a whole new rocDecode back
+   end but did NOT add the parallel `Copyright (c) 2026 Advanced Micro Devices,
+   Inc.` line or a `\author Jeff Daily <jeff.daily@amd.com>` tag that CLAUDE.md
+   requires for substantially-extended port files:
+   - modules/cudacodec/src/video_decoder.cpp (+224 lines, new VideoDecoder)
+   - modules/cudacodec/src/video_decoder.hpp (+89 lines, new class)
+   - modules/cudacodec/src/video_parser.cpp (+161 lines, new VideoParser)
+   - modules/cudacodec/src/video_parser.hpp (+55 lines, new class)
+   The sibling new file rocdecode_video_compat.hpp:111-153 correctly carries
+   both, and DELTA 1's two new .cu files carry both. Fix: add the parallel AMD
+   copyright line (below the existing OpenCV/Intel/Willow lines, do not replace
+   them) and an author tag to these four headers in the prep phase. This is a
+   pure header-comment change -- commit on top, advance_head classifies it inert
+   and carries every completed platform forward, no revalidation.
+
+### Verified clean (the scrutiny list; judged by reading code, not GPU)
+
+DELTA 1 (parity):
+- Wave64: both new kernels (alpha_comp_hip.cu, histogram_npp_hip.cu) are pure
+  per-pixel/per-element 2D-grid kernels. Grep confirms NO shfl/ballot/activemask/
+  warp-reduce/__popc/hardcoded-warpSize; histogram uses only block dynamic-shared
+  atomicAdd + global atomicAdd (wave-agnostic). block(32,8) is a block dim, not a
+  warp assumption. Correct on wave64 gfx90a and wave32 followers.
+- CUDA path byte-identical: every changed line in color.cpp and histogram.cpp is
+  inside `#ifdef __HIP_PLATFORM_AMD__`; the NPP `#else` branches are untouched.
+- Channel indexing correct: GpuMat->PtrStepSz uses cols = pixel cols (cuda.inl.hpp
+  :257, no channel multiply); alphaComp x*4 + bound `x>=img1.cols` and the
+  histogram `row[x*CN+channel]` + `x<cols` both index channels correctly. No
+  whole-vs-submat overread.
+- alphaComp in-place safe: each thread reads p1/p2 and writes d at its own pixel
+  only (no neighbor reads), so dst aliasing img1/img2 cannot corrupt.
+- histEven/histRange NPP fidelity: findBin implements the half-open
+  [levels[i],levels[i+1]) with last boundary exclusive and v<levels[0] /
+  v>=levels[last] excluded; the pixel is promoted to the level type L so 8U values
+  vs a 256 boundary compare correctly. histEven materialises the integer
+  cvRound even-level layout (histogram.cpp uploadEvenLevels32s) matching
+  cv::cuda::evenLevels/nppiEvenLevelsHost_32s, so even and range share one
+  bin-edge definition.
+- Tests are a genuine gate, not a tautology: the golds (alphaCompGold,
+  rangeHistGold) are independent host implementations (host-double Porter-Duff;
+  plain linear scan with the same NPP-defined half-open bins) -- not the kernel's
+  own code -- and they run on BOTH CUDA and HIP (`#endif // HAVE_CUDA`). The
+  evenLevels gold is the correct NPP reference (the notes correctly observe a
+  generic cv::calcHist gold would be WRONG for 16U/16S). eps rationale sound
+  (8U/16U exact at 0.0; 32S=4.0 and 32F=1e-3 for float-scale ULP).
+- Async-upload fault class fixed correctly: uploadEvenLevels32s uses a
+  synchronous GpuMat::upload(host) (no stream), so the local Mat cannot be
+  destroyed under an in-flight pageable async H2D copy. The pattern appears only
+  here on the new path; alphaComp uploads no host buffer.
+
+DELTA 2 (rocDecode):
+- gfx90a UNAFFECTED (the platform under review): on a no-rocDecode build
+  HAVE_NVCUVID/NVCUVENC/ROCDECODE are all undefined, so HAVE_CUDACODEC_DECODER is
+  undefined; video_reader.cpp takes the `#ifndef HAVE_CUDACODEC_DECODER`
+  StsNotImplemented stub (same as the old `#ifndef HAVE_NVCUVID`), the
+  `#ifdef HAVE_ROCDECODE` border-zero block compiles out, and the four
+  guard-widened plumbing files (frame_queue/thread/video_source/
+  ffmpeg_video_source) compile their bodies out. Zero behavior change for the
+  gfx90a revalidation.
+- CUDA path byte-identical: HAVE_NVCUVID->HAVE_CUDACODEC_DECODER reduces to
+  HAVE_NVCUVID on any CUDA build (HAVE_CUDACODEC_DECODER = NVCUVID||ROCDECODE).
+  precomp.hpp preserves the cuvid_video_source.hpp include exactly (now under a
+  redundant `#if defined(HAVE_NVCUVID)` inside the already-NVCUVID block); the
+  NVENC-only path is unchanged. video_decoder/parser .cpp put the new rocDecode
+  code in `#ifdef HAVE_ROCDECODE` BEFORE the unchanged `#ifdef HAVE_NVCUVID`
+  block; the .hpp uses `#if HAVE_ROCDECODE #else //NVCUVID #endif` so CUDA gets
+  the original class verbatim. createVideoReader's cuvid-demuxer fallback is now
+  `#ifdef HAVE_NVCUVID ... #else throw; #endif` -- identical to the original
+  unconditional CuvidVideoSource on a CUDA build. test_video.cpp only ADDs
+  `|| HAVE_ROCDECODE` to two guards (byte-identical preprocessor result on CUDA)
+  and the VideoReader test block uses only public cv::cudacodec API (back-end
+  neutral, no rocDecode symbols).
+- compat shim isolation: rocdecode_video_compat.hpp's `#define cuCtxGetCurrent`
+  etc. and `typedef int CUcontext` are reached only via precomp.hpp's
+  HAVE_ROCDECODE branch, so they never leak into or collide with a CUDA build's
+  real cuvid/driver symbols.
+- Border-zero fix correct + HIP-guarded (allocator-no-zero fault class reused):
+  cvtFromYuv re-zeroes outside targetRoi only when `!targetRoi.empty() &&
+  targetRoi.size() != outFrame.size()` (a no-op when the image fills the surface),
+  via a zeroed scratch + ROI copy. targetRoi is decoder-clamped to the surface so
+  the sub-view cannot exceed bounds. gfx1100 ReconfigureDecoderWithScaling passes
+  with this fix. Guarded `#ifdef HAVE_ROCDECODE` so CUDA is byte-identical.
+- Honest runtime refusal: VideoDecoder::create queries rocDecGetDecoderCaps and
+  throws a catchable StsNotImplemented naming the device (name+gcnArchName) and
+  codec on is_supported==0 (compute-only gfx90a) or unsupported codec/dim/format;
+  a second VideoParser guard rejects the codecs rocDecode's parser lacks
+  (MPEG-1/2/4, VC-1, VP8, MJPEG) up front. Never crashes/aborts. mapFrame wraps
+  the contiguous NV12 surface (luma + pitch*height) as one GpuMat via the
+  external-data ctor (rows=h*3/2, cols=targetWidth, step=pitch) with no copy.
+- Codec-delta and cross-decoder dispositions are sound (same class as the
+  accepted TVL1.Async 0.0-tolerance case): the 37 codec-delta failures are
+  genuine rocDecode codec losses surfaced as the clean codec guard (a CUDA build
+  on a GPU lacking those codecs fails identically); the 10 cross-decoder cases are
+  VCN-vs-libavcodec H.264 rounding within spec latitude (the looser GRAY tol-15
+  comparison passes at meanAbs 0.75, proving the decode is correct). Neither is a
+  port defect.
+- Minor follower-only note (NOT a gfx90a or CUDA-path issue, does not block):
+  rocDecode HandleVideoSequence drops the cuvid AV1-seqhdr max-width/height
+  special-case (sets ulMaxWidth/Height = coded dims), since RocdecVideoFormat does
+  not expose it; only affects AV1 mid-stream upscaling reconfigure on the RDNA
+  followers, which gfx1100 already exercised at 256/303. Acceptable.
+
+### Cross-cutting (both deltas)
+Whole-diff sweep clean: no MOAT jargon (moat/lead/follower/strategy a|b/head_sha/
+validated_sha/revalidate/gfx1151/curated), ASCII-only on added lines, no em-dash.
+Both commit titles `[ROCm]`-prefixed and <=72 chars (56 and 51); both bodies name
+Claude/Anthropic, carry a Test Plan with literal commands, no Co-Authored-By
+noreply trailer. No AMD-internal account references. New .cu files (DELTA 1) and
+rocdecode_video_compat.hpp (DELTA 2) carry AMD copyright + author; the four
+extended cudacodec files do not (finding 1).
