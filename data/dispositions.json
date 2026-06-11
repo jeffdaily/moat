@@ -1371,6 +1371,13 @@
     "note": "Upstream already merged ROCm build support: PR #149 'Enable ROCm build' (MERGED 2022-10-17) added the torch.version.hip->USE_ROCM + build-time hipify path (setup.py L19,80-84,125-126; csrc/version.cpp), present in tree today. The .cu kernels carry ZERO fault classes (no warpSize/__shfl/__ballot -- only __syncthreads tree reductions; no cub/thrust/cuBLAS/cuFFT; no textures/PTX; only device-API cuRAND in rw_cuda.cu which torch hipify maps cleanly to hipRAND/rocRAND), so no source delta exists to contribute -- the kernels build/run unmodified via torch hipify, which is why #149 changed no .cu. Maintained community ROCm wheels exist (Looong01/pyg-rocm-build, torch-cluster-rocm on PyPI; track ROCm 7.2.2/PyTorch 2.11, Apr 2026) building the unmodified source. Repo is deprecated in favor of pyg-lib (#271) and AMD states PyG is not on its ROCm roadmap (ROCm/ROCm #3655). An upstream PR would be a no-op into a deprecated repo.",
     "reason": "already-supported"
   },
+  "rusty1s/pytorch_scatter": {
+    "decided": "2026-06-11T04:10:52Z",
+    "disposition": "skip",
+    "full_name": "rusty1s/pytorch_scatter",
+    "note": "Mature AUTHORITATIVE merged upstream ROCm support. setup.py L19/L78-82 has the torch.version.hip build-time hipify path + USE_ROCM define + __HIP_NO_HALF_CONVERSIONS__ undef. csrc/cuda/utils.cuh is a USE_ROCM-guarded warp-shuffle shim (maskless __shfl_up/__shfl_down + at::Half overloads + warp_mask_t 64-bit). atomics.cuh + version.cpp ROCm-guarded. Merged PRs: #325 (ROCm org, enable_rocm, 2022-09) foundational; #411 (ashwinma/AMD, 2024-01) at::Half shfl; #498 (Looong01, 2025-08) ROCm 6.4.3+. Our own jeffdaily PR #493 was CLOSED (superseded). Maintained ROCm wheels: Looong01/pyg-rocm-build, latest 2026-04-21, ROCm up to 7.2.2, torch 2.11, py3.10-3.14. segment_coo/segment_csr warp reductions are wave-relative (TB<=32, contiguity-guarded, atomic flush) and wave64-correct as shipped. No unported fault class. Same posture as sibling mmcv + pytorch_cluster skips.",
+    "reason": "already-supported"
+  },
   "sahibzada-allahyar/obsidian-memory-transformer": {
     "decided": "2026-06-05T04:43:54Z",
     "disposition": "skip",
