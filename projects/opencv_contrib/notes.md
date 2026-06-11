@@ -179,3 +179,83 @@ Reviewer's forward-looking note for Phase 2: the CORE deprecated warp headers
 scan.hpp / detail/reduce.hpp PTX bodies) are dormant in Phase 0+1 but ACTIVATE
 when Phase 2 modules include them (shim defines __CUDA_ARCH__=350); they need the
 same laneId/shfl-mask/ballot fixes as cudev got.
+
+## Phase 3 progress (2026-06-11, gfx90a lead) -- NPP-light, sequencing correction
+
+Fork HEADs after the cudawarping commit: contrib `913502bbb21c83c116a8f6fa4d60dfa47f791059`, core `62d686ef44c46e517cfac8782f2243007349c4ed`.
+head_sha advanced to the contrib sha.
+
+### cudawarping (contrib 913502b, core 62d686e): 4535/4535 PASS
+Literal: `HIP_VISIBLE_DEVICES=0 OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata ./bin/opencv_test_cudawarping` -> 4535/4535 on gfx90a (ROCm 7.2.1, wave64).
+NPP surface is confined to warp.cpp (warpAffine/warpPerspective/rotate). remap/resize/pyr*/warp.cu kernels are pure custom HIP and needed no change beyond the core header fix below.
+
+NPP-replacement decisions per call site (warp.cpp):
+- warpAffine + warpPerspective: NPP is a runtime-selected perf specialization that
+  ALREADY coexists with a complete hand-written kernel path (the `else` branch, also
+  used on CUDA for float and ROI-offset inputs). On HIP force `useNpp=false` (guarded
+  `#ifdef __HIP_PLATFORM_AMD__`) and compile out the NppWarp structs + dispatch tables
+  with `#ifndef __HIP_PLATFORM_AMD__`. The kernel path covers the same depths/channels/
+  interpolation/border modes. The module's OWN NPP-path tests (WarpAffineNPP,
+  WarpPerspectiveNPP, EXPECT_MAT_SIMILAR 2e-2 vs CPU gold) PASS served by the kernel
+  path -- strategy (a).
+- rotate: NPP-only, NO kernel fallback upstream. Rotation-about-origin + shift IS an
+  affine, so dispatch to the existing `warpAffine_gpu<T>` device kernels with the
+  inverse (dst->src) affine built from (angle, xShift, yShift), matching NPP forward
+  map dst=R*src+shift, R=[[cos,-sin],[sin,cos]] (angle in degrees). New host helper
+  `hipRotateAffine<T>` in the `#else // __HIP_PLATFORM_AMD__` block; INTER_CUBIC falls
+  back to INTER_LINEAR (NPP cubic kernel not reproduced). CAVEAT: cudawarping has NO
+  rotate accuracy test upstream (only BuildWarpAffineMaps, WarpAffine, WarpAffineNPP,
+  WarpPerspective*, Remap*, Resize*, PyrDown/Up). The rotate replacement builds and
+  dispatches but is NOT GPU-verified by the suite -- strategy (b), unverified. Flag for
+  the reviewer; a perf/accuracy test for rotate would close this.
+
+Core repo fix (62d686e): `core/cuda/filters.hpp` includes `nppdefs.h` solely for
+`NPP_MIN_32S`/`NPP_MAX_32S` (signed-32 saturation bounds in the LinearFilter clamp).
+NPP is absent on ROCm, so under `__HIP_PLATFORM_AMD__` define those two constants
+directly. This header is pulled by every module's border/interpolation readers
+(cudawarping/cudaoptflow/xfeatures2d), so it is a shared core fix.
+Contrib test fix: `cudawarping/test/test_remap.cpp` pulls `nppdefs.h` for
+`NPP_MAX_32S`/`NPP_MAXABS_32F` random-map bounds; define directly on the HIP path
+(`__HIP_PLATFORM_AMD__` reaches test .cpp via the global add_definitions).
+
+### BLOCKING SEQUENCING FINDING: cudafilters + cudafeatures2d need cudaarithm first
+cudafilters CANNOT be built or validated in Phase 3. It HARD-depends on cudaarithm:
+`ocv_add_module(cudafilters opencv_imgproc opencv_cudaarithm WRAP python)` (NOT
+OPTIONAL) and `precomp.hpp` `#include "opencv2/cudaarithm.hpp"`. filtering.cpp calls
+`cuda::subtract` (cudaarithm) for the Laplacian path. Proof: a BUILD_LIST of
+`core,cudev,cudafilters,imgproc,ts` auto-expands the module DAG to
+`To be built: core cudaarithm cudafilters cudev ...` -- cudaarithm is dragged in
+transitively and must link. cudafeatures2d in turn needs cudafilters (ORB's Gaussian
+blur) + cudawarping (now done), so it is blocked behind cudafilters behind cudaarithm.
+
+So the dispatch's Phase 3 (cudawarping+cudafilters+cudafeatures2d) / Phase 4
+(cudaimgproc->cudaarithm) split is INCONSISTENT with the build DAG. cudaarithm is the
+GATING module: it must be ported BEFORE cudafilters and cudafeatures2d. This mirrors
+the Phase 2 finding (notes "RESUME POINT -> cudafeatures2d + cudaobjdetect must wait").
+
+cudafilters NPP families (filtering.cpp), for when cudaarithm is ready:
+- NPPBoxFilter (nppiFilterBox_8u/32f): OpenCV ALSO ships a separable box via
+  row+column filters -- route to those (strategy a). Box = normalized rowSum*colSum.
+- morphology Erode/Dilate (nppiErode/nppiDilate_8u/32f, arbitrary SE): NO own-kernel;
+  needs a direct HIP rank/morph kernel (strategy b). Border + anchor parity required.
+- NPPRankFilter FilterMax/FilterMin (nppiFilterMax/Min): direct HIP rank kernel (b).
+- SumWindow Row/Column (nppiSumWindowRow/Column): direct HIP sliding-window sum (b).
+- median: NOT CUB -- this tree uses a wavelet_matrix_2d implementation
+  (src/cuda/wavelet_matrix_*.cuh, a newer upstream median); audit it for PTX/warp/
+  __ballot before assuming it hipifies cleanly. (The old plan said CUB; superseded.)
+
+cudaarithm NPP surface (14 families: AndC/OrC/XorC scalar bitwise in bitwise_scalar.cu,
+LShiftC/RShiftC, Magnitude(+Sqr), MeanStdDev, Mirror=flip, Sum, Transpose, Threshold)
++ cuBLAS gemm + cuFFT dft/mulSpectrums. Bulk (add/sub/mul/div/compare/split/merge/
+minmax/reduce/lut/integral) are OWN kernels -- only the families above touch NPP. It is
+a full phase of its own.
+
+### RESUME POINT -> Phase 4 must lead with cudaarithm
+Recommended re-sequence: port cudaarithm NEXT (gemm->hipBLAS, dft/mulSpectrums->hipFFT,
+the 14 NPP families per the AlphaComp/rank/flip/bitwise-scalar/LShift/RShift/MeanStdDev/
+Sum/Mirror/Transpose/Threshold plan in plan.md "NPP -> RPP + custom HIP kernels"), THEN
+cudafilters (unblocked), THEN cudaimgproc, THEN fold in cudafeatures2d + cudaobjdetect
+(both now have all hard deps). cudawarping is DONE this dispatch; only its core header +
+test changes are new since Phase 2. Regression re-run at end of THIS dispatch (cheap
+insurance after the core filters.hpp edit): cudev 402/402, cudastereo 128/128,
+cudalegacy 14/14, cudawarping 4535/4535 -- all PASS on gfx90a, no regression.

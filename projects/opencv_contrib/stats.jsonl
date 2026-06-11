@@ -42,3 +42,8 @@
 {"kind":"phase","ts":"2026-06-11T00:57:46Z","phase":"test","seconds":6.393,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudalegacy"}
 {"kind":"phase","ts":"2026-06-11T01:01:04Z","phase":"test","seconds":1.244,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudev"}
 {"kind": "tokens", "ts": "2026-06-11T01:02:15Z", "tokens": 210560, "source": "porter phase2 pure-custom"}
+{"kind":"phase","ts":"2026-06-11T01:09:06Z","phase":"compile","seconds":22.002,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T01:10:53Z","phase":"compile","seconds":77.962,"exit":1,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T01:11:26Z","phase":"compile","seconds":7.782,"exit":0,"cmd":"bash projects/opencv_contrib/build_hip.sh"}
+{"kind":"phase","ts":"2026-06-11T01:11:45Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build/bin/opencv_test_cudawarping"}
+{"kind":"phase","ts":"2026-06-11T01:12:15Z","phase":"test","seconds":24.656,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudawarping"}

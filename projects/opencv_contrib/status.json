@@ -7,8 +7,8 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T00:59:13Z",
-  "head_sha": "911fca397e59f13c7b38ab631eeaa111610f99e1",
+  "updated_at": "2026-06-11T01:13:33Z",
+  "head_sha": "913502bbb21c83c116a8f6fa4d60dfa47f791059",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
