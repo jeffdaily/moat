@@ -242,3 +242,76 @@ No violations found:
 The port structure is correct. The compat header, CMake changes, and vector type handling follow Strategy A properly. The reflection test failures are a validation-stage concern: the porter has documented the issue and root-cause investigation belongs in validation with full GPU access. Setting review-passed allows the validator to run the full test suite and investigate the reflection divergence.
 
 The missing `-ffast-math` flag is a minor parity gap but does not explain the reflection failures and can be addressed during validation if needed.
+
+## Reflection bug ROOT CAUSE FOUND + FIXED 2026-06-11 (linux-gfx90a)
+
+RESOLVED. cube60b now absorbs 27.26% (was 18.46%); all reflection/boundary/
+source tests pass. Fork HEAD 0803c7c, state ported.
+
+### Root cause: AMDGPU backend miscompiles branch-selected in-place float negate
+
+The reflection branch in mcx_main_loop (mcx_core.cu ~line 2807) flips the one
+velocity component normal to the struck face, selected at runtime by flipdir[3]:
+
+    (flipdir[3]==0)?(v.x=-v.x):((flipdir[3]==1)?(v.y=-v.y):(v.z=-v.z));
+
+The ROCm clang AMDGPU backend MISCOMPILES this at -O1/-O2/-O3 (correct only at
+-O0): the generated control flow stores the UNMODIFIED component and drops the
+negation. So a reflected photon kept its outward velocity and escaped on the
+next step instead of bouncing back in -- reflection added almost no absorption.
+
+This is NOT UB and NOT aliasing: -fno-strict-aliasing does not help; a minimal
+standalone reproducer (a plain {float x,y,z,nscat} __align__(16) struct, one
+__global__, one runtime branch arg) reproduces it with zero aliasing/uninit.
+It reproduces for the ternary, if/else, temp-variable, and *=-1 spellings --
+ANY form where the negated component is chosen INSIDE a runtime branch. An
+UNCONDITIONAL whole-vector negate (v.z=-v.z with no enclosing branch) compiles
+correctly, as does a BRANCHLESS per-component sign multiply.
+
+Minimal repro (gfx90a, ROCm 7.2.1, hipcc -O3): k = {if(fd==0)v.x=-v.x; else
+if(fd==1)v.y=-v.y; else v.z=-v.z;} returns the input z unchanged for fd==2.
+
+### Fix (mcx_core.cu, branchless, arch-unified, CUDA-bit-identical)
+
+    v.x *= (flipdir[3]==0)?-1.f:1.f;
+    v.y *= (flipdir[3]==1)?-1.f:1.f;
+    v.z *= (flipdir[3]==2)?-1.f:1.f;
+
+All three multiplies execute unconditionally; each picks its own sign. Verified
+correct for fd=0,1,2 in isolation and in the full sim. Arithmetically identical
+to the original on CUDA, so the shared code path is safe on both backends.
+
+### Diagnostic method (how it was localized)
+
+Instrumented atomic counters showed reflections DID happen (~1.79M/1M photons)
+but step count barely rose (198M no-reflect -> 208M with-reflect, only ~5 extra
+steps per reflection). A single-photon pre/post printf showed v.z IDENTICAL
+before and after the flip statement -> isolated to the negation -> minimal
+standalone repro -> assembly (-S) confirmed the backend emits a store of the
+unmodified component for the fd==2 path.
+
+### Validation 2026-06-11 (AMD Instinct MI250X, gfx90a, ROCm 7.2.1)
+
+Physics benchmarks (all match expected):
+- cube60 (no reflect): 17.72% (~17%)
+- cube60b (reflect):    27.26% (~27%)  [was 18.46%]
+- cube60 -b 1:          27.26% (~27%)
+- cube60planar:         25.52% (~25%)
+- spherebox:            10.98% (~11%)
+- skinvessel:           39.80% (~39%)
+- Determinism: same seed -> identical 27.39688% across two runs
+
+Test suite (test/testmcx.sh): 36/40 pass (was 29/40). ALL reflection/boundary/
+source tests now pass. The 4 remaining failures are HOST-side/test-staleness,
+NOT port or GPU bugs:
+1. "dump json input with volume": test greps an EXACT zlib base64 string
+   (eAHs3YuCo7iSBNC); our zlib emits a valid but different header (eJzs...).
+   Host zmat/zlib compression artifact, arch-independent.
+2. "saving photon seeds": greps for "after encoding: 13x.x%"; we get 129.1%.
+   Same host-zlib compression-ratio brittleness.
+3+4. "photon replay -E" / "photon replay": the test invokes
+   replaytest_detp.JDAT but the fork's own upstream commit 6d7a81a renamed the
+   output to .JDT, so the file is replaytest_detp.jdt. Run with the correct
+   .jdt extension, replay is CORRECT: simulated==detected (3002==3002),
+   absorbed 35.63% (in the expected 30-38% band). A stale upstream test, not a
+   port issue. Left testmcx.sh unmodified (it is upstream's).
