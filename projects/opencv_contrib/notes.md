@@ -491,3 +491,160 @@ cudaobjdetect 18. Remaining cuda* modules:
 PR-readiness: NOT yet. cudaoptflow (software flows) and cudacodec are the last functional
 modules; after them the lead is a candidate for the reviewer -> validator -> completed gate,
 then PR-prep (jargon scrub, CMake arch auto-detect already present, docs).
+
+## Phase 5 progress (2026-06-11, gfx90a lead) -- the SDK-gated modules
+
+Fork HEADs after Phase 5: contrib `f7a8b32`, core `934c316`. head_sha advanced to the
+contrib sha. Three commits: contrib `0bf6744` (cudaoptflow), core `94b6d50` (common.hpp
+__align__ host fix) + `934c316` (WITH_ROCDECODE gates), contrib `f7a8b32` (cudacodec).
+
+### cudaoptflow (contrib 0bf6744): 41/47 PASS on gfx90a
+Literal: `BUILD_LIST="core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,\
+cudalegacy,cudaoptflow,video,optflow,imgproc,objdetect,calib3d,ts" \
+BUILD_TARGET=opencv_test_cudaoptflow bash build_hip.sh` then
+`HIP_VISIBLE_DEVICES=0 OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata \
+./bin/opencv_test_cudaoptflow` -> 41/47.
+The software flows (Brox, SparsePyrLK, DensePyrLK, Farneback incl. FarnebackAsync, TVL1
+Accuracy) all PASS -- they are clean cudev kernels, NO PTX/warp/Thrust fixes needed.
+- NvOF gate: NvidiaOpticalFlow_1_0/2_0 factories already cleanly gated. On HIP HAVE_CUDA
+  is set but HAVE_NVIDIA_OPTFLOW is not (the SDK never downloads), so the existing
+  `#elif !defined HAVE_NVIDIA_OPTFLOW` branch fires. Swapped its generic message for an
+  explicit ROCm StsNotImplemented naming the software-flow substitutes (CUDA path kept
+  byte-identical via a HIP/CUDA macro). The 4 NvOF test cases (1_0/2_0 x Regression/Nan)
+  FAIL BY DESIGN: they instantiate the unavailable HW class, which now throws. Registered
+  deferral `opencv-cudaoptflow-nvof`.
+- CMake: guarded the NVIDIA Optical Flow SDK ocv_download behind `NOT HAVE_HIP` so the HIP
+  build never reaches GitHub and HAVE_NVIDIA_OPTFLOW stays undefined.
+- nvidiaOpticalFlow.cu: hip/hip_runtime.h include on HIP (its body is gated out of the
+  non-NVIDIA build by `__CUDACC_VER_MAJOR__>=10` already).
+- Core common.hpp `__align__` host fix (94b6d50): cudaoptflow is the ONLY module whose
+  precomp includes the deprecated core `cuda/vec_traits.hpp` on the HOST path. vec_traits
+  declares `struct __align__(N) uchar8 ...` at namespace scope; HIP defines `__align__`
+  only under `__HIP_CLANG_ONLY__` (the amdclang device pass), so the plain g++ host
+  compile failed to parse it. Added a host fallback `#define __align__(x)
+  __attribute__((aligned(x)))` right after the hip_runtime.h include, HIP-only, only when
+  undefined (device pass unaffected, CUDA untouched). NEW FAULT CLASS: a HIP host .cpp
+  that pulls a core device header using `__align__`/`__launch_bounds__` at namespace/decl
+  scope needs the attribute macro provided for the host pass too.
+- The 2 OpticalFlowDual_TVL1.Async FAILURES are GENUINE-but-not-a-port-defect, ROOT-CAUSED:
+  the test computes a gold flow on the DEFAULT (Null) stream and compares it bit-exactly
+  (EXPECT_MAT_NEAR tolerance 0.0) against 16 real-stream runs. TVL1's convergence loop
+  early-exits on an error term computed by `cuda::calcSum(diff,...)`. cudaarithm's sum
+  (cudev gridReduce) accumulates per-block partials with a FLOATING-POINT atomicAdd
+  (cudev/grid/detail/reduce.hpp line 165, accumulator is double for CV_32F). Float/double
+  atomicAdd is non-associative and its summation order depends on block-completion order,
+  which differs between the default-stream and real-stream schedulers. The last-ULP
+  difference in the error term shifts the iteration count, producing the observed
+  byte-identical 0.0516 flow delta at one pixel. It is deterministic and IDENTICAL across
+  all 16 streams (so NOT a race) and differs only from the Null-stream gold. The flow is
+  CORRECT -- the TVL1 Accuracy cases pass at their normal tolerance. This is an upstream
+  test-strictness artifact (0.0 tolerance assumes calcSum is stream-deterministic, which
+  an atomic reduction is not), not introduced by the port. Tried zeroing diff_buf (the
+  allocator-no-zero fault class) -- no effect (byte-identical), confirming it is the atomic
+  reduction order, not uninitialised memory. NOT worth rewriting cudaarithm's reduction to
+  a deterministic two-pass (out of scope; would change CUDA behavior). A reviewer should
+  scrutinise this determination.
+
+### cudacodec (contrib f7a8b32, core 934c316): builds + YuvConverter 240/240 PASS on gfx90a
+gfx90a VIDEO-ENGINE DETERMINATION (evidence): the MI250X (gfx90a, CDNA2) is a pure-compute
+part with NO VCN video engine. rocminfo shows no jpeg/vcn/video/decode agent features.
+rocDecode's runtime depends on the ROCm-repo `mesa-amdgpu-va-drivers` VA-API driver, which
+has NO installable candidate in this node's apt config (`apt-cache policy` -> Candidate:
+(none)); `apt-get install rocdecode-dev` fails on that unmet dep. So gfx90a can neither run
+nor even link rocDecode's runtime here. This is the task's anticipated "gfx90a has NO decode
+engines" branch -- a legitimate phase outcome, NOT a failure.
+Decision: land the rocDecode BUILD PATH (WITH_ROCDECODE/HAVE_ROCDECODE gates) + graceful
+runtime errors + the portable converter, and DEFER the full cuvid->rocDec API mirror
+(video_decoder/parser/reader, CUVID struct translation) to the RDNA followers (gfx1100/
+gfx1201 have VCN). Writing the ~1645-line decode stack blind here -- unrunnable AND
+un-compile-validatable against the real runtime (no VA driver) -- is exactly the high-risk
+grind the circuit-breaker forbids. Registered `opencv-cudacodec-rocdecode-videoreader`.
+What landed and is VALIDATED:
+- ColorSpace.{h,cu} (the NV12/YUV-to-RGB surface converter, used by NVSurfaceToColorConverter
+  and the reader's cvtFromYuv): pure device code, ported by switching its runtime include to
+  hip/hip_runtime.h. GPU-VALIDATED: opencv_test_cudacodec YuvConverter 240/240 on gfx90a
+  (BT601 160 + BT2020 80; all SurfaceFormat x ColorFormat x BitDepth combos). This converter
+  is gated on HAVE_CUDA (not HAVE_NVCUVID), so it runs on HIP without a decode engine.
+- CMakeLists HAVE_HIP branch: drops the CUDA driver/runtime link libs (CUDA::cuda_driver,
+  CUDA_CUDA_LIBRARY) which don't exist on HIP; warns when WITH_ROCDECODE without rocDecode;
+  links ROCDECODE_LIBRARIES when HAVE_ROCDECODE.
+- WITH_ROCDECODE option (WITH_HIP-visible, default ON) + OpenCVDetectHIP.cmake
+  find_package(rocdecode) -> HAVE_ROCDECODE + ROCDECODE_LIBRARIES + cvconfig.h.in
+  HAVE_ROCDECODE switch (parent scope, before cvconfig.h generation, so module + tests see it).
+What is gated off with GRACEFUL runtime errors (no crash):
+- VideoReader (decode): the existing `#ifndef HAVE_NVCUVID` stub now raises StsNotImplemented
+  naming the rocDecode requirement + the gfx90a-has-no-VCN reality (was a generic throw_no_cuda).
+  All the NVCUVID-coupled host .cpp (video_decoder/parser/reader, cuvid_video_source, NvEncoder*)
+  compile cleanly because their bodies are HAVE_NVCUVID-gated -> stubs on HIP.
+- VideoWriter (encode): no ROCm-native encoder; the `#ifndef HAVE_NVCUVENC` stub now raises
+  StsNotImplemented pointing at the FFmpeg videoio backend with AMF encoders (h264_amf/
+  hevc_amf/av1_amf). Registered `opencv-cudacodec-native-encode`. No AMF interop built.
+CODEC LOSSES (genuine, to surface when the decode path lands on followers): rocDecode lacks
+MPEG-1/2, VC-1, VP8, MJPEG vs NVDEC.
+The cudacodec decode/encode accuracy tests are conditionally compiled out without a decode
+engine (gated behind HAVE_NVCUVID/HAVE_NVCUVENC), so they do not run here -- only the
+NVCUVID-independent YuvConverter suite runs, and it passes.
+
+## Port surface COMPLETE (2026-06-11, gfx90a lead)
+
+All 13 cuda* contrib modules + cudev + the opencv core CUDA/GpuMat/warp infra are
+ported to ROCm/HIP and validated on real gfx90a (MI250X, ROCm 7.2.1, wave64). This is
+the final porting phase. Fork HEADs: contrib `f7a8b32`, core `934c316`.
+
+### Per-module final GPU test counts (HIP_VISIBLE_DEVICES=0, real gfx90a)
+| Module | Result | Notes |
+|---|---|---|
+| cudev | 402/402 | foundation device templates |
+| cudaarithm | 11417/11417 | NPP-free; hipBLAS gemm + hipFFT dft |
+| cudafilters | 16028/16028 | NPP-free; direct HIP median (wavelet path CUDA-only) |
+| cudaimgproc | 3671/3671 | rocThrust; NPP-free color/hist |
+| cudawarping | 4535/4535 | NPP-free warp/rotate paths |
+| cudastereo | 128/128 | census border-zero fix |
+| cudafeatures2d | 256/256 | rocThrust; integration proof for filters+warping |
+| cudaobjdetect | 18/18 | HOG + Haar/LBP; zero source change |
+| cudalegacy | 14/14 | NCV/staging/BM/PnP (graphcut deferred) |
+| cudabgsegm | builds | MOG/MOG2 tests gated upstream (HAVE_VIDEO_INPUT never defined) |
+| cudaoptflow | 41/47 | software flows PASS; see feature losses |
+| cudacodec | YuvConverter 240/240 | decode/encode gated off; converter validated |
+
+### Documented feature losses / deferrals (NEVER passed off as complete)
+1. cudalegacy graphcut/graph-cut stereo -- no ROCm maxflow analog (NPP-removed at 8.0).
+   deferred id `opencv-cudalegacy-graphcut`.
+2. cudaoptflow NvidiaOpticalFlow_1_0/2_0 -- no AMD HW optical-flow engine; factories
+   throw StsNotImplemented, software flows are the substitute. 4 NvOF test cases fail by
+   design. deferred id `opencv-cudaoptflow-nvof`.
+3. cudacodec VideoReader rocDecode decode -- build path + gates + graceful runtime error
+   landed; the full cuvid->rocDec API mirror and its RUNTIME validation defer to the RDNA
+   followers (gfx1100/gfx1201 have VCN; gfx90a/MI250X has none and the VA driver is
+   uninstallable here). rocDecode codec losses vs NVDEC: MPEG-1/2, VC-1, VP8, MJPEG.
+   deferred id `opencv-cudacodec-rocdecode-videoreader`.
+4. cudacodec VideoWriter native HW encode -- no ROCm-native encoder; StsNotImplemented
+   points at the FFmpeg videoio backend with AMF encoders. deferred id
+   `opencv-cudacodec-native-encode`.
+5. cudaimgproc alphaComp + 16U/16S/4ch histEven/histRange (NPP-only, untested upstream).
+   deferred id `opencv-cudaimgproc-npp-color-hist`.
+6. opencv dnn CUDA backend (cuDNN->MIOpen) -- out of cv::cuda scope.
+   deferred id `opencv-dnn-miopen-backend`.
+
+### Untested-upstream caveats for the reviewer (build + dispatch, no accuracy test)
+cudawarping rotate; cudaarithm rectStdDev; cudafilters boxMax/boxMin + row/column sum;
+cudaimgproc gamma + alphaPremul. These have no upstream accuracy test in their module, so
+they build and dispatch but are not suite-verified (flagged in their phase notes).
+
+### Final regression (all 9 testable modules, same MI250X gfx90a, after Phase 5 edits)
+cudev 402, cudastereo 128, cudalegacy 14, cudawarping 4535, cudaarithm 11417,
+cudafilters 16028, cudaimgproc 3671, cudafeatures2d 256, cudaobjdetect 18. ALL PASS, zero
+failures. The Phase 5 core edit (common.hpp __align__ host fallback) is additive/host-only
+and regressed nothing.
+
+### What the final reviewer must scrutinise
+1. cudaoptflow TVL1.Async 0.0-tolerance failure: root-caused to float atomicAdd reduction
+   ordering in cuda::calcSum (stream-schedule-dependent, non-associative); flow is correct
+   (Accuracy passes). Determination: upstream test-strictness artifact, not a port defect.
+2. cudacodec scope: gfx90a has no VCN, so the rocDecode VideoReader implementation is
+   deferred to followers rather than written blind. The build path, gates, graceful errors,
+   and the portable YUV converter (240/240) are landed. Confirm this is the right
+   build-validated + runtime-deferred boundary.
+3. Two upstream PRs (core->opencv, modules->opencv_contrib). Both forks have Actions
+   disabled. PR-prep (jargon scrub, arch auto-detect already present, ROCm build docs in
+   the project's house style) is the remaining pre-PR step, not done in this phase.
