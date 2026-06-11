@@ -785,3 +785,18 @@ em-dash. Both forks confirmed Actions disabled (gh api actions/permissions -> en
 Both state the validation matrix neutrally (per-module suite counts on gfx90a; more platforms
 as followers complete), scope the limitations per the ledger, and phrase the 2 TVL1.Async
 cases as a non-associative float-atomic-reduction determinism artifact (no "fails here").
+
+## Audit reconciliation 2026-06-11 (post-completion verification)
+
+Deep audit against source resolved two inaccuracies in interim reports:
+- cv::cuda::rotate WORKS on HIP (warp.cpp:628, routes hipRotateAffine -> warpAffine_gpu kernels). An audit pass misread the nested `#else __HIP_PLATFORM_AMD__` as compiled-out. Real caveats only: no upstream accuracy test; INTER_CUBIC falls back to INTER_LINEAR.
+- graphcut/connectivityMask/labelComponents are NOT a HIP loss: the upstream BASE already stubs them under `CUDART_VERSION >= 8000` (graphcuts.cpp). Dead on every modern CUDA build for years (NPP removed graphcut at 8.0). Port adds `|| __HIP_PLATFORM_AMD__` to make existing behavior explicit. Parity with modern CUDA; nothing downstream uses them.
+
+Complete HIP runtime-refusal surface (the entire gap), verified by sweeping both repos:
+- cudaimgproc: alphaComp; histEven 16U/16S; histEven 4ch; histRange (all + 4ch) -- NPP-only, reimplementable, deferred (opencv-cudaimgproc-npp-color-hist). 8-bit histEven works.
+- cudaoptflow: NvidiaOpticalFlow_1_0/2_0 -- no AMD HW OF engine; software flows are the substitute and pass.
+- cudacodec: VideoReader (needs rocDecode + VCN; gfx90a has none; build gates landed, impl deferred to RDNA followers); VideoWriter (no native ROCm encoder; FFmpeg AMF outside the module).
+
+NvOF 4 tests FAIL not SKIP because the test catch filters StsBadFunc/StsBadArg/StsNullPtr only; SDK-less CUDA throws HeaderIsNull there and fails identically -> pre-existing upstream behavior, not a port regression.
+
+TVL1.Async (2): verified root cause -- loop early-exits on cuda::calcSum convergence error (tvl1flow.cpp:359,366); calcSum's final cross-block accumulation is a double atomicAdd (cudev grid/detail/reduce.hpp:165); block-completion order differs by scheduler -> ULP-level error delta -> iteration-count shift. Deterministic (16 streams byte-identical to each other), not a race. Flow correct (normal-tolerance Accuracy passes). Disposition: document-and-ship.
