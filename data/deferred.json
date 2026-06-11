@@ -716,6 +716,20 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-11T22:07:24Z"
+    },
+    {
+      "id": "plvs-blocked-on-opencv-rocm",
+      "kind": "feature-port",
+      "project": "plvs",
+      "component": null,
+      "summary": "plvs GPU port (ORB/FAST feature kernels + libelas-gpu + libsgm stereo) compiles for gfx90a against the MOAT OpenCV-with-HIP fork but is blocked on: (1) OpenCV core PR #29285 + opencv_contrib PR #4147 landing upstream so cv::cuda-on-ROCm is a consumable released dep; (2) building the full non-GPU SLAM stack (PCL/Pangolin/DBoW2/g2o/voxblox/chisel) + stereo datasets to validate on GPU, including verifying libsgm wave64 disparity correctness (WARP_SIZE=64 reductions, may need logical-32 rework per the OpenCV cudastereo conclusion). Resume when OpenCV PRs land. Fork moat-port HEAD f932ab5.",
+      "refs": [
+        "projects/plvs/notes.md",
+        "jeffdaily/plvs@f932ab5"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T23:24:39Z"
     }
   ]
 }
