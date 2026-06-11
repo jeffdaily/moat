@@ -1364,6 +1364,13 @@
     "note": "Rust GPU codegen toolchain, not a CUDA app",
     "reason": "not-a-target"
   },
+  "rusty1s/pytorch_cluster": {
+    "decided": "2026-06-11T04:07:26Z",
+    "disposition": "skip",
+    "full_name": "rusty1s/pytorch_cluster",
+    "note": "Upstream already merged ROCm build support: PR #149 'Enable ROCm build' (MERGED 2022-10-17) added the torch.version.hip->USE_ROCM + build-time hipify path (setup.py L19,80-84,125-126; csrc/version.cpp), present in tree today. The .cu kernels carry ZERO fault classes (no warpSize/__shfl/__ballot -- only __syncthreads tree reductions; no cub/thrust/cuBLAS/cuFFT; no textures/PTX; only device-API cuRAND in rw_cuda.cu which torch hipify maps cleanly to hipRAND/rocRAND), so no source delta exists to contribute -- the kernels build/run unmodified via torch hipify, which is why #149 changed no .cu. Maintained community ROCm wheels exist (Looong01/pyg-rocm-build, torch-cluster-rocm on PyPI; track ROCm 7.2.2/PyTorch 2.11, Apr 2026) building the unmodified source. Repo is deprecated in favor of pyg-lib (#271) and AMD states PyG is not on its ROCm roadmap (ROCm/ROCm #3655). An upstream PR would be a no-op into a deprecated repo.",
+    "reason": "already-supported"
+  },
   "sahibzada-allahyar/obsidian-memory-transformer": {
     "decided": "2026-06-05T04:43:54Z",
     "disposition": "skip",
