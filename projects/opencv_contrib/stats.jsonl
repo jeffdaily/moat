@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-11T00:16:04Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./bin/opencv_test_cudev"}
 {"kind":"phase","ts":"2026-06-11T00:16:12Z","phase":"test","seconds":1.234,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && ./bin/opencv_test_cudev"}
 {"kind":"session","ts":"2026-06-11T00:20:09Z","epoch":1781137209.108129895,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-11T00:21:18Z", "tokens": 301631, "source": "porter phase0+1 core+cudev"}
