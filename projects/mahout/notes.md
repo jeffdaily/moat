@@ -767,3 +767,121 @@ Squashed (tree-identical collapse, force-with-lease pushed to moat-port):
 f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5. `squash-carry-forward` carried all 5
 platforms (did not refuse -> tree-identical confirmed). pr-ready=True.
 Ready for the user's upstream-PR decision (apache/mahout, moat-port -> main).
+
+## Review fixes (apache/mahout#1399) 2026-06-11 (porter, linux-gfx90a)
+
+Maintainer left 4 inline review comments on the open PR. Fixed as ONE follow-up
+commit on top of the validated squash (f3f7db33), NOT an amend. Functional HIP
+changes, so `advance-head` flipped the 4 follower AMD platforms to revalidate
+(correct); the lead linux-gfx90a was re-validated on real gfx90a GPU at the new
+head and stays pr-open.
+
+New fork HEAD: 0b5042e705eff3809fa7c40c1383aa6c3adcc602 (force-with-lease pushed
+to jeffdaily/mahout @ moat-port; this updates PR #1399).
+
+### Fix 1 (MERGE-BLOCKER): CudaSlice::drop re-binds the owning device
+qdp-kernels/src/device.rs, hip mod, `impl Drop for CudaSlice`.
+- Before: `drop` called `hipFree(self.raw_ptr())` with no device bind. hipFree
+  frees on the calling thread's CURRENT device, so dropping a slice while a
+  different device is current (multi-GPU) freed against the wrong device.
+- After: `let _ = self._device.bind();` (best-effort -- Drop cannot return an
+  error) before `hipFree`, matching the alloc path (`self.bind()?`) and cudarc.
+  The CudaSlice already held `_device: Arc<CudaDevice>`; `bind()` was already a
+  private method on CudaDevice. No new FFI needed.
+
+### Fix 2: explicit hipMemoryType mapping (no magic 2)
+qdp-core/src/gpu/cuda_ffi.rs, hip_rt::cudaPointerGetAttributes (~line 189).
+- Before: reinterpreted the CudaPointerAttributes destination directly as a
+  hipPointerAttribute_t and let lib.rs:91 compare memory_type against the CUDA
+  constant 2. hipMemoryType enum values are NOT guaranteed equal to CUDA's
+  across ROCm releases (hip_runtime_api.h note; older HIP had Host=0/Device=1).
+- After: reads a real `HipPointerAttributes` (#[repr(C)] mirror of
+  hipPointerAttribute_t), compares its `type` against the named
+  HIP_MEMORY_TYPE_DEVICE (hipMemoryTypeDevice) / HIP_MEMORY_TYPE_MANAGED
+  (hipMemoryTypeManaged) constants, and translates to the CUDA convention
+  (CUDA_MEMORY_TYPE_DEVICE/MANAGED) the caller checks. Other values pass through
+  verbatim so the "not device memory" branch still fires. CUDA path unchanged.
+
+### Fix 3: build.rs fails loudly on QDP_USE_HIP vs `hip` feature mismatch
+qdp-kernels/build.rs: new `check_hip_consistency()` called early in `main()`.
+- Before: `hip_requested()` returned true if EITHER the `hip` feature OR
+  QDP_USE_HIP was set, so a default `cargo build` (cuda feature) with
+  QDP_USE_HIP=1 built AMD kernels (hipcc) against the cudarc host = silent
+  mismatch.
+- After: if `qdp_use_hip_env()` and `CARGO_FEATURE_HIP` disagree (either
+  direction), the build `panic!`s with a clear message. Verified: with
+  QDP_USE_HIP=1 and the hip feature off, `cargo build -p qdp-kernels` aborts
+  ("QDP_USE_HIP is set but the `hip` Cargo feature is off ..."). A clean CUDA
+  build (neither set) and the HIP build (both set) are unaffected.
+
+### Fix 4: fork_default_stream uses a non-blocking stream
+qdp-kernels/src/device.rs, hip mod (~line 392) + FFI.
+- Before: `hipStreamCreate(&mut stream)` -- a BLOCKING stream that implicitly
+  serializes against the NULL/default stream, defeating copy/compute overlap.
+- After: `hipStreamCreateWithFlags(&mut stream, HIP_STREAM_NON_BLOCKING)` (flag
+  const = 1), matching cudarc. Swapped the `hipStreamCreate` extern decl for
+  `hipStreamCreateWithFlags(*mut *mut c_void, u32)` and added the
+  HIP_STREAM_NON_BLOCKING const.
+- This EXPOSED a pre-existing latent ordering bug (shared with the CUDA path):
+  AmplitudeEncoder::encode_batch_from_gpu_ptr_f32_with_stream
+  (qdp-core/src/gpu/encodings/amplitude.rs ~line 877) launched the batch-f32
+  norm kernel on the CALLER's stream, then read the result back with a
+  default-stream `dtoh_sync_copy` WITHOUT first synchronizing the caller's
+  stream. The blocking stream masked it; the non-blocking stream let the
+  readback race the zero-initialized norm buffer -> "One or more float32 samples
+  have zero or invalid norm" (deterministic). Every other batch path launches
+  the norm kernel on the NULL stream, and the single-sample stream path already
+  calls `sync_cuda_stream(stream, ...)` before the readback. Fix: added the same
+  `sync_cuda_stream(stream, "Norm stream synchronize failed (batch f32)")?`
+  before the readback. Arch-unified (correct on wave32 + wave64), and correct on
+  the CUDA path too (a non-blocking CUDA stream has the identical hazard). This
+  is the ONLY change that touches shared (non-hip-gated) code; it is
+  behavior-identical for the common blocking-stream case.
+
+### Validation (gfx90a, MI250X, ROCm 7.2.1, HIP_VISIBLE_DEVICES=3)
+```
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx90a ROCM_PATH=/opt/rocm HIP_VISIBLE_DEVICES=3
+cargo build --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16   # exit 0
+cargo test  --manifest-path projects/mahout/src/qdp/Cargo.toml \
+  -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+All Rust tests PASS, 0 failures, matching the prior baseline exactly:
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- qdp-core lib 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack
+  9/9, gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32
+  2/2, gpu_ptr_encoding 64/64, gpu_validation 8/8.
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- gpu_ptr_encoding::test_encode_batch_from_gpu_ptr_f32_with_stream_success: the
+  test that failed on the bare fix-4 stream change (before the sync was added)
+  now passes 64/64.
+
+Overlap test (fix 4 specifically), QDP_ENABLE_OVERLAP_TRACKING=1:
+- test_amplitude_encoding_async_pipeline, test_angle_encoding_async_pipeline
+  (gpu_api_workflow), test_angle_batch_f32_async_pipeline_path
+  (gpu_angle_encoding) -- all pass. Non-blocking stream preserves the
+  copy/compute overlap.
+
+Mismatch guard (fix 3) sanity check: `QDP_USE_HIP=1 cargo build -p qdp-kernels`
+(default cuda feature, hip off) panics with the mismatch message; throwaway
+target dir, reverted. Default CUDA path still type-checks:
+`cargo check -p qdp-core -p qdp-kernels` (default features, QDP_NO_CUDA=1, no
+QDP_USE_HIP) exit 0.
+
+### Byte-for-byte-claim finding (report only, for the PR reply)
+The phrase "the NVIDIA build is byte-for-byte identical" appears in BOTH
+upstream-visible places:
+- PR #1399 body, first paragraph.
+- The squashed commit message (f3f7db33) first paragraph: "so the NVIDIA build
+  is byte-for-byte identical".
+The reviewer is right that it is not strictly true. Pre-existing reasons:
+metrics.rs swapped cudarc driver `cuMemcpyDtoH_v2` -> runtime `cudaMemcpy`, and
+amplitude.cu `>>5` -> `/warpSize` -- both change the CUDA SASS though behavior is
+identical. NEW with this follow-up: the fix-4 `sync_cuda_stream` in
+encode_batch_from_gpu_ptr_f32_with_stream is NOT hip-gated (it is under
+`#[cfg(qdp_gpu_platform)]`), so it also adds a stream-sync to the CUDA build's
+codegen -- another behavior-identical-but-not-byte-identical CUDA delta.
+Suggested wording for the reply: the CUDA path is behavior-preserving (no
+functional change), not literally byte/SASS-identical.
