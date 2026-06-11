@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:23:49Z",
-  "updated_at": "2026-06-11T21:10:27Z",
-  "head_sha": "35693e60e9d190cbf46c93b98956cee0d8dee149",
+  "updated_at": "2026-06-11T21:39:34Z",
+  "head_sha": "ae95035bd588af913ca988a748deef78d24b7a76",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "35693e60e9d190cbf46c93b98956cee0d8dee149",
+      "validated_sha": "ae95035bd588af913ca988a748deef78d24b7a76",
       "started_at": "2026-06-05T10:02:41Z",
-      "completed_at": "2026-06-11T20:38:54Z",
-      "updated_at": "2026-06-11T21:10:27Z",
+      "completed_at": "2026-06-11T21:38:21Z",
+      "updated_at": "2026-06-11T21:38:21Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "porter",
+      "carry_forward": {
+        "to": "ae95035bd588af913ca988a748deef78d24b7a76",
+        "method": "binary-equiv",
+        "detail": "empty clang-attribute pragma removal; gfx90a real bench (966461 tris, PNG 264744B, no faults) + codeobj_diff vs 35693e60 verdict=identical (device ISA + 35 exports)",
+        "at": "2026-06-11T21:38:21Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "35693e60e9d190cbf46c93b98956cee0d8dee149",
+      "validated_sha": "ae95035bd588af913ca988a748deef78d24b7a76",
       "started_at": "2026-06-05T14:00:17Z",
-      "completed_at": "2026-06-11T20:40:21Z",
-      "updated_at": "2026-06-11T21:10:27Z",
+      "completed_at": "2026-06-11T21:39:34Z",
+      "updated_at": "2026-06-11T21:39:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -57,10 +63,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "ecdf587cd6bfd2349b9cf7637dca17f2c2fc7c08",
+        "to": "ae95035bd588af913ca988a748deef78d24b7a76",
         "method": "binary-equiv",
-        "detail": "host-only compat-header refactor; gfx1100 codeobj_diff vs d59f05bd verdict=identical (device ISA + 35 exports identical)",
-        "at": "2026-06-11T20:40:21Z"
+        "detail": "empty clang-attribute pragma removal; cross-built gfx1100 codeobj here at ae95035 vs 35693e60 -> verdict=identical (device ISA + 35 exports)",
+        "at": "2026-06-11T21:39:34Z"
       }
     },
     "windows-gfx1101": {
@@ -86,13 +92,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "35693e60e9d190cbf46c93b98956cee0d8dee149",
       "started_at": null,
       "completed_at": "2026-06-11T20:45:51Z",
-      "updated_at": "2026-06-11T21:10:27Z",
+      "updated_at": "2026-06-11T21:38:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

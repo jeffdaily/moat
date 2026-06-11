@@ -1253,3 +1253,105 @@ No delta-port required. The ecdf587 refactor built and ran correctly on gfx1201 
 
 windows-gfx1201: revalidate -> completed, validated_sha=ecdf587
 PR-ready=True (all three required platforms completed at ecdf587)
+
+## Empty clang-attribute pragma cleanup 2026-06-11 (linux-gfx90a porter) -- head ae95035
+
+Footprint cleanup on top of the 35693e60 squash (NEW commit ae95035, never
+amended; upstream base 037df01). Removed the redundant empty
+`#pragma clang attribute push (... device ...)` / `pop` pairs in the kernel
+.cu files. These regions give device helper functions `__device__` under
+hiprtc (no nvrtc `-default-device` equivalent); the `extern "C" __global__`
+kernel entry points are excluded by a pop-before / push-after. Where two
+kernels were consecutive with no device code between them, the push after
+kernel N was immediately followed by the pop before kernel N+1, wrapping
+nothing -- pure no-op noise.
+
+### Per-file outcome
+
+- src/kernels/triangles_visbuffer.cu: 15 pairs -> 1. KEPT the one pair
+  (push line 44 / pop line 868 pre-edit) that wraps the rasterize + stage1/2/3
+  device helper block. REMOVED the 14 empty inter-kernel pairs (between the
+  consecutive `kernel_stage*` entry points at the bottom) plus the trailing
+  empty pair at EOF.
+- src/kernels/resolve.cu: 10 pairs -> 3. KEPT the THREE real device-helper
+  blocks: getVertex/getUV/sampleColor_* (push 43), getEdlShadingFactor
+  (push 257), and the JPEG sampleJpeg_*/getTexels block (push 1438).
+  REMOVED 7 empty inter-kernel pairs (kernel_dummy<->clearFramebuffer,
+  enlarge<->ssaoOcclusion, ssaoOcclusion<->ssaoBlur, ssaoBlur<->resolve2D,
+  two more between resolve kernels, and the trailing EOF pair).
+- Single-pair files LEFT ALONE (each genuinely wraps the whole file's device
+  functions): jpeg/HashMap.cuh, jpeg/JptInterface.cuh,
+  kernels/rasterization_helpers.cuh, kernels/utils.cuh.
+- Scanned every .cu/.cuh under src/kernels and src/jpeg: no stray empty pair
+  remains.
+
+Balance preserved: triangles_visbuffer.cu has 1 push / 1 pop, resolve.cu has
+3 push / 3 pop, each remaining push is immediately followed by a device helper
+function (never by its pop), and every `extern "C" __global__` kernel sits
+OUTSIDE the device regions. Diff is deletion-only: 161 deletions, 0 content
+insertions (resolve.cu -69, triangles_visbuffer.cu -92).
+
+### Validation A -- AMD GPU gfx90a (real run)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, wave64, HIP_VISIBLE_DEVICES=3, ROCm 7.2.1.
+
+    cmake <src> -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -B build
+    cmake --build build --target CuRast -j$(nproc)
+    ./CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30
+
+Build exit 0 (only pre-existing fread warnings). 30 frames, 966461 of 966461
+tris visible per frame, best visbuffer-pipeline 0.271 ms @ 1920x1080,
+bench_render.png 264744 bytes (all 2073600 pixels non-zero, Donaukanal scene),
+process rc=0, no GPU faults, zero cooperative-launch errors. (The post-bench
+cleanup segfault under buffered output is the pre-existing missing-destructor
+exit; the direct run returns rc=0.)
+
+### Validation B -- device-code-identical proof (the key check)
+
+Built gfx90a code objects at ae95035 and at the prior head 35693e60, then:
+
+    python3 utils/codeobj_diff.py <old>/CuRast <new>/CuRast
+    -> verdict=identical (device ISA + 35 exported symbols identical)
+
+Proves the pragma cleanup changed no compiled kernel. The visbuffer/resolve
+kernels are runtime-compiled (hiprtc) and are additionally exercised by the
+gfx90a bench in Validation A (identical 966461 tris + identical PNG size).
+
+### Validation C -- CUDA compile no-regression gate
+
+nvcc /opt/conda/envs/cuda-12.8/bin/nvcc, host gcc 13.3, pinned sm_80.
+Throwaway gate-only patches (reverted before commit, NOT in ae95035):
+CMAKE_CUDA_ARCHITECTURES 75 86 89 90 -> 80; CUDAToolkit 13.1 -> 12.8.
+
+    cmake <src> -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 \
+      -DCMAKE_CUDA_COMPILER=.../nvcc \
+      -DCMAKE_CUDA_FLAGS="-I.../include" -B cudabuild
+    cmake --build cudabuild --target CuRast -j$(nproc)
+
+GATE PASS. ZERO errors from the edited files (the pragmas are RTC-guarded, so
+inactive on the nvcc path anyway). The only remaining CUDA errors are the
+pre-existing upstream requirement of CUDA 13.1 + a <print>-capable C++23 stdlib:
+lines.cu atomicMin(uint64_t*), CURuntime.h:73 println(FILE*), main.cpp:66
+cuCtxCreate 4-arg form. Built the upstream base 037df01 with the identical
+toolchain/arch: it hits the SAME wall harder (fatal error: print: No such file
+or directory, since the base lacks compat_print.h). Pre-existing upstream; the
+cleanup adds no new CUDA break.
+
+### State transition + carry-forward
+
+advance-head ae95035 (classify=mixed, token count differs) flipped
+linux-gfx90a / linux-gfx1100 / windows-gfx1201 to revalidate.
+- linux-gfx90a: revalidate -> completed via the real gfx90a bench + codeobj_diff
+  identical (binary-equiv).
+- linux-gfx1100: cross-built the gfx1100 codeobj here at ae95035 vs 35693e60;
+  codeobj_diff verdict=identical (device ISA + 35 exports) -> binary-equiv
+  carry-forward. No GPU run needed (device code provably unchanged).
+- windows-gfx1201: cannot build amdclang++ objects on this Linux host. Device
+  code is provably unchanged (gfx90a + gfx1100 codeobj_diff identical), but the
+  classifier returns mixed/arch_independent=False, so the regression guard does
+  NOT support an inert auto-carry. LEFT at revalidate for its Windows host (a
+  fast binary-equiv check: build at ae95035 vs 35693e60, codeobj_diff). NOT faked.
+
+NOT re-squashed: windows-gfx1201 is at revalidate, so the two commits
+(35693e60 port + ae95035 cleanup) are held until the Windows host reconfirms.
+Re-squash + squash-carry-forward only after gfx1201 is terminal at ae95035.
