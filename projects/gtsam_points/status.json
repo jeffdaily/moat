@@ -7,17 +7,17 @@
   "priority": 4.876,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T00:36:13Z",
-  "updated_at": "2026-06-07T04:29:03Z",
-  "head_sha": "3d706db0a455461494d06425fe3010531458eed9",
+  "updated_at": "2026-06-11T22:54:34Z",
+  "head_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d706db0a455461494d06425fe3010531458eed9",
+      "validated_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
       "started_at": "2026-05-31T22:47:06Z",
       "completed_at": "2026-06-05T21:49:19.280902+00:00",
-      "updated_at": "2026-06-05T21:49:19.280910+00:00",
+      "updated_at": "2026-06-11T22:54:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3d706db0a455461494d06425fe3010531458eed9",
+        "to": "1cc3332c2268e9c402c4d11de930f82a69aeb91f",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "hip_compat/cub/device/device_reduce.cuh: comment-only (comments/format only); hip_compat/cub/device/device_select.cuh: comment-only (comments/format only); hip_compat/cuda.h: comment-only (comments/fo",
+        "at": "2026-06-11T22:53:23Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d706db0a455461494d06425fe3010531458eed9",
+      "validated_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
       "started_at": "2026-06-01T00:45:00Z",
       "completed_at": "2026-06-05T22:04:16Z",
-      "updated_at": "2026-06-05T22:04:16Z",
+      "updated_at": "2026-06-11T22:54:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -56,20 +64,22 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "3d706db0a455461494d06425fe3010531458eed9",
-        "method": "binary-equiv",
-        "detail": "libgtsam_points_cuda.so device code + 680 exported symbols identical on gfx1100; Windows-specific IO/build changes are no-op on Linux",
-        "at": "2026-06-05T22:04:16Z"
+        "from": "3d706db0a455461494d06425fe3010531458eed9",
+        "to": "1cc3332c2268e9c402c4d11de930f82a69aeb91f",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "hip_compat/cub/device/device_reduce.cuh: comment-only (comments/format only); hip_compat/cub/device/device_select.cuh: comment-only (comments/format only); hip_compat/cuda.h: comment-only (comments/fo",
+        "at": "2026-06-11T22:53:23Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d706db0a455461494d06425fe3010531458eed9",
+      "validated_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
       "started_at": null,
       "completed_at": "2026-06-05T21:04:58.798296Z",
-      "updated_at": "2026-06-05T21:04:58.798296Z",
+      "updated_at": "2026-06-11T22:54:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -83,16 +93,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3d706db0a455461494d06425fe3010531458eed9",
+        "to": "1cc3332c2268e9c402c4d11de930f82a69aeb91f",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "hip_compat/cub/device/device_reduce.cuh: comment-only (comments/format only); hip_compat/cub/device/device_select.cuh: comment-only (comments/format only); hip_compat/cuda.h: comment-only (comments/fo",
+        "at": "2026-06-11T22:53:23Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d706db0a455461494d06425fe3010531458eed9",
+      "validated_sha": "30c71553bcdca53bb1f5fea0423ed77d4ea809b6",
       "started_at": null,
       "completed_at": "2026-06-07T04:29:03.513170+00:00",
-      "updated_at": "2026-06-07T04:29:03.513170+00:00",
+      "updated_at": "2026-06-11T22:54:34Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -106,7 +124,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "3d706db0a455461494d06425fe3010531458eed9",
+        "to": "1cc3332c2268e9c402c4d11de930f82a69aeb91f",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "hip_compat/cub/device/device_reduce.cuh: comment-only (comments/format only); hip_compat/cub/device/device_select.cuh: comment-only (comments/format only); hip_compat/cuda.h: comment-only (comments/fo",
+        "at": "2026-06-11T22:53:23Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",

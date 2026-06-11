@@ -416,3 +416,35 @@ Non-GPU suite: test_alignment, test_bundle_adjustment, test_colored_gicp, test_c
 Determinism: both runs 87/87, timing within 2%.
 
 State: windows-gfx1201 -> completed (validated_sha: 3d706db0a455461494d06425fe3010531458eed9).
+
+## PR-prep 2026-06-11 (porter, linux-gfx90a)
+
+PR-prep on top of the four-arch-validated 3d706db. Squashed to ONE clean commit at the end. Final squashed sha: 30c71553bcdca53bb1f5fea0423ed77d4ea809b6.
+
+Sequence: prep commit 1cc3332 (doc + attribution + comments) on top of 3d706db, advance-head carried the four completed platforms forward (arch-independent delta), then squash to 30c71553 (tree-identical collapse of base 85d0f4c..1cc3332), squash-carry-forward carried gfx90a/gfx1100/gfx1101/gfx1201 forward, gfx1151 kept blocked.
+
+Jargon/wording scrub: the original two moat-port commit messages (09346fd, 3d706db) each claimed the CUDA build configures/compiles "byte-for-byte" -- removed in the squashed message, replaced with the softened mechanism-based form ("We have made every effort to leave the NVIDIA build unchanged; every addition is gated on BUILD_WITH_HIP and the compat header is never on the CUDA include path"). No MOAT in-house vocabulary in the final message. No .github/workflows/*.yml were ever added by the port (nothing to remove).
+
+CUDA-path audit (the compat-header-into-shared-.cu family, CuRast-class): clean. Every HIP-specific change is confined to the two new compat headers (cuda_to_hip.h, cuda_to_hip_types.h, both fully `#if defined(USE_HIP)` gated with an `#else #include <cuda_runtime.h>` arm) and the CMake `if(BUILD_WITH_HIP)` arms. grep across all src/ + include/ .cu/.cpp/.cuh/.hpp (excluding the compat headers) for USE_HIP / BUILD_WITH_HIP / __HIP / hipcub / hip:: / thrust::hip and for bare hip* runtime calls returned EMPTY -- zero HIP-only symbol leaks into the unguarded/CUDA path. No per-call-site `#if BUILD_WITH_HIP/#else` anti-pattern anywhere; all 12 thrust::cuda::par sites keep their CUDA spelling and resolve via the compat header's `namespace cuda = hip` alias. The shared .cu/.cpp edits (cudaStreamSynchronize, std::ios::binary, generic_string(), <numeric>) are platform-portable CUDA-spelling / standard-C++ changes valid on both build paths. No guard fix was needed (so the prep delta is behavior-preserving, not functional).
+
+CUDA no-regression gate (MANDATORY, validator.md step 3): PASS. Rebuilt GTSAM 4.3a0 from source into _deps/gtsam/install (apt libeigen3-dev + libboost-all-dev were missing on this host; installed via apt, then GTSAM source build per the dependency section). Configured + compiled the CUDA build with nvcc 12.8:
+```
+export PATH=/opt/conda/envs/cuda-12.8/bin:$PATH
+cmake -S . -B build_cuda -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+  -DBUILD_WITH_CUDA=ON -DBUILD_WITH_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc \
+  -DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/gtsam/install \
+  -DBUILD_WITH_OPENMP=ON -DBUILD_WITH_TBB=OFF -DBUILD_TESTS=ON \
+  -DBUILD_DEMO=OFF -DBUILD_EXAMPLE=OFF -DBUILD_TOOLS=OFF
+utils/timeit.sh gtsam_points cuda-compile -- ninja -C build_cuda gtsam_points_cuda
+utils/timeit.sh gtsam_points cuda-compile -- ninja -C build_cuda gtsam_points
+```
+All 26 gtsam_points_cuda TUs (every shared .cu the compat header touches: gaussian_voxelmap_gpu.cu, point_cloud{,_gpu}.cu, integrated_vgicp_derivatives*.cu, check_error*.cu, cuda_graph{,_exec}.cu, etc.) compiled with nvcc and libgtsam_points_cuda.so.1.2.1 linked against CUDA::cudart; the main gtsam_points lib (52 TUs, includes the CUstream_st* public headers) also compiled + linked. No pre-existing wall hit, so no base 85d0f4c comparison was needed. Compile-only (no NVIDIA GPU on this host); this is the no-regression gate, not a CUDA correctness run.
+
+CMAKE_HIP_ARCHITECTURES: confirmed env/cache-driven -- defaulted to gfx90a only when unset/empty (cache var, FORCE), never a hardcoded literal overriding -DCMAKE_HIP_ARCHITECTURES; the gtsam_points_cuda target reads ${CMAKE_HIP_ARCHITECTURES}.
+
+Attribution: AMD copyright line `Copyright (c) 2026  Advanced Micro Devices, Inc. (Jeff Daily <jeff.daily@amd.com>)` added (parallel, below any upstream Koide copyright, matching the project's SPDX+copyright-line house style; no \author tags in this project's sources) to the ten NEW files: include/gtsam_points/cuda/cuda_to_hip.h, cuda_to_hip_types.h, and the eight hip_compat/ shims (cuda.h, cuda_runtime.h, cuda_runtime_api.h, device_atomic_functions.h, curand.h, cusparse.h, cub/device/device_reduce.cuh, cub/device/device_select.cuh). Trivial-skip (no attribution): CMakeLists.txt and cmake/gtsam_points-config.cmake.in (build-flag edits), and the small portability tweaks to existing files (point_cloud_cpu.hpp/.cpp, gaussian_voxelmap_cpu.cpp/_funcs.cpp, gaussian_voxelmap_gpu.cu) which retain their upstream copyright.
+
+Documentation: README.md is the only doc location referencing the CUDA build (no docs/ dir; index.md absent). Documented the ROCm/HIP build in the house style at all three CUDA mentions: the IntegratedVGICPFactorGPU enable note (`-DBUILD_WITH_HIP=ON` (AMD ROCm) alongside `-DBUILD_WITH_CUDA=ON`), the optional cmake-arguments comment block (added `-DBUILD_WITH_HIP=OFF` and `-DCMAKE_HIP_ARCHITECTURES=gfx90a` lines next to the CUDA ones), and the optional-dependencies list (CUDA or ROCm for AMD GPU support).
+
+Per-platform carry-forward outcome: linux-gfx90a, linux-gfx1100, windows-gfx1101, windows-gfx1201 all completed at 30c71553 (carried forward, no GPU re-run -- the prep delta is doc/comment/attribution only, arch-independent). windows-gfx1151 kept port-ready/blocked (optional, scoped out of the PR claim). pr-ready=True. Squashed; holding for the upstream-PR user gate.
