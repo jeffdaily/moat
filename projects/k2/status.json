@@ -7,17 +7,17 @@
   "priority": 5.757,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-11T15:23:00Z",
-  "head_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
+  "updated_at": "2026-06-11T16:05:14Z",
+  "head_sha": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
   "platforms": {
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "b2c0962912b217cbe6d28e7685d364fb61cb6671",
+      "validated_sha": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
       "started_at": null,
-      "completed_at": "2026-06-07T03:22:34Z",
-      "updated_at": "2026-06-11T14:44:17Z",
+      "completed_at": "2026-06-11T16:04:01Z",
+      "updated_at": "2026-06-11T16:04:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,15 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "from": "44e7563a1119833c18e875bda55162425d2d5f09",
-        "to": "cf884de24a7bf130fa4b707dc36fabb4503165db",
-        "method": "source-class",
-        "class": "comment-only",
-        "detail": "CMakeLists.txt: comment-only (comments/format only); k2/CMakeLists.txt: comment-only (comments/format only); k2/csrc/cuda_to_hip.h: comment-only (comments/format only); k2/csrc/cudpp/cudpp_hip.cu: com",
-        "at": "2026-06-11T13:49:12Z"
-      }
+      "last_agent": "validator"
     },
     "windows-gfx1101": {
       "state": "revalidate",
@@ -76,10 +68,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
+      "validated_sha": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
       "started_at": "2026-05-31T02:39:49Z",
-      "completed_at": "2026-06-11T14:45:22Z",
-      "updated_at": "2026-06-11T15:23:00Z",
+      "completed_at": "2026-06-11T16:05:09Z",
+      "updated_at": "2026-06-11T16:05:09Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -93,7 +85,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "porter",
+      "carry_forward": {
+        "to": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
+        "method": "binary-equiv",
+        "detail": "k2/csrc/CMakeLists.txt WIN32 torch-link fix: the else branch (file GLOB) was already the Linux path (NOT WIN32 = true); the condition change evaluates identically on Linux (NOT FALSE = TRUE in both ca",
+        "at": "2026-06-11T16:05:09Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
@@ -121,10 +119,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "30aca57d13659ab1e47398bba1750595a3b68f6e",
+      "validated_sha": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
       "started_at": "2026-05-31T08:47:00Z",
-      "completed_at": "2026-06-11T15:21:30Z",
-      "updated_at": "2026-06-11T15:23:00Z",
+      "completed_at": "2026-06-11T16:05:14Z",
+      "updated_at": "2026-06-11T16:05:14Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -140,10 +138,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "4f03863d605c525481bf6a5d6670ce356e1164bb",
+        "to": "e44acdda70eba591e0af9ca8a4cbd0eaf3c9078c",
         "method": "binary-equiv",
-        "detail": "gfx1100 cross-build: _k2 and libk2context device ISA + exported symbols identical between b2c09629 and 4f03863d (built at identical source path; codeobj_diff verdict identical, 1902/3490 exports). The",
-        "at": "2026-06-11T15:21:30Z"
+        "detail": "k2/csrc/CMakeLists.txt WIN32 torch-link fix: the else branch (file GLOB) was already the Linux path (NOT WIN32 = true); the condition change evaluates identically on Linux (NOT FALSE = TRUE in both ca",
+        "at": "2026-06-11T16:05:14Z"
       }
     }
   }

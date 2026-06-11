@@ -833,3 +833,108 @@ k2/torch+kaldifeat and moderngpu fast-path scoped out; full Test Plan).
 squash-carry-forward carried linux-gfx90a + linux-gfx1100 forward to 30aca57d,
 kept gfx1151 blocked, left gfx1101/gfx1201 in revalidate. pr-ready=False, blocked
 only on windows-gfx1201 revalidating at 30aca57d on its own host. PR NOT opened.
+
+## Validation 2026-06-11 (windows-gfx1201 revalidation)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201 / RDNA4, wave32). Revalidation.
+Fork: jeffdaily/k2 @ moat-port, HEAD e44acdd (30aca57d + Windows torch-link fix).
+GPU: HIP_VISIBLE_DEVICES=0 (RX 9070 XT, gfx1201 -- sole GPU on host).
+
+### Delta since last validated_sha (b2c09629 -> 30aca57d)
+
+The delta is the squash of: [gfx90a port] + [Windows fix 7531e5b] + [Linux build
+fix 44e7563] + [PR-prep cf884de2] + [c10-rekey 4f03863d]. On Windows, the c10
+namespace selection was re-keyed from `_WIN32` to `!TORCH_HIPIFY_V2` (probe of
+torch.utils.hipify.__version__). On Windows TheRock torch 2.9 (hipify v1), the
+probe returns 0, so `TORCH_HIPIFY_V2` is not defined -> `!TORCH_HIPIFY_V2` is
+true -> c10::hip (unchanged behavior). Behavior-preserving on Windows.
+
+### Windows build issue encountered and fixed (CMake 4.x + Ninja + HIP)
+
+CMake upgraded to 4.3.1 on this host since the prior gfx1201 validation.
+CMake 4.x stopped expanding SHARED imported targets (torch, torch_library) to
+their .lib import-lib paths in the HIP_SHARED_LIBRARY_LINKER Ninja rule.
+The WIN32+HIP path previously used `${TORCH_LIBRARIES}` (cmake targets), which
+no longer worked: lld-link reported undefined symbols for caffe2::detail and
+c10:: (c10.lib, torch.lib, torch_cpu.lib, torch_hip.lib all absent from the
+link command).
+
+Fix (commit e44acdd on moat-port): k2/csrc/CMakeLists.txt changed the torch
+linking condition from `if(NOT WIN32 OR K2_WITH_HIP)` to `if(NOT WIN32)`, so
+ALL Windows builds use the existing file(GLOB _torch_libs "${TORCH_DIR}/lib/*.lib")
+approach. This was already the MSVC+CUDA path; extending it to clang+HIP avoids
+the cmake-target expansion issue. Linux (NOT WIN32) is unchanged. Pushed to fork
+as e44acdd.
+
+### Build command
+
+```
+cmake -B build -G Ninja \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DK2_WITH_HIP=ON \
+  -DCMAKE_C_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DHIP_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DK2_COMPILER_SUPPORTS_CXX20=1 \
+  "-DCMAKE_PREFIX_PATH=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/torch/share/cmake;B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/cmake" \
+  -DK2_LIBHIPCXX_INCLUDE_DIR=B:/develop/moat/_deps/libhipcxx/include \
+  -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DK2_USE_PYTORCH=ON \
+  -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF \
+  -DPYTHON_EXECUTABLE=B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe
+cmake --build build --config Release -- -j64
+```
+(timeit.sh wraps the cmake --build step)
+
+### Test commands
+
+```
+# C++ gtests (DLL path setup via Python subprocess runner):
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_gtest_gfx1201.py
+
+# Python GPU tests (in-process pytest with os.add_dll_directory):
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_pytest_gfx1201.py
+```
+
+### C++ gtest results
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0.
+Individual test counts:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (24),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+
+### Python GPU test results
+
+226 passed, 8 failed (234 total). All 8 failures are pre-existing artifacts:
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6+ weights_only=True refuses
+  _k2.ragged.RaggedTensor. Device-independent; not a port bug.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same
+  torch 2.6 pickle artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32
+  only) -- ~1e-6 catastrophic-cancellation divergence from hipCUB summation
+  order; float64 passes exactly. Non-associative float32 reduction; benign.
+- rnnt_loss_test.py: test_rnnt_loss_basic, test_rnnt_loss_gradient,
+  test_rnnt_loss_random -- torchaudio::rnnt_loss has no CUDA backend on this
+  Windows ROCm torchaudio build (NotImplementedError). k2's own rnnt functions
+  all pass on GPU.
+- numerical_gradient_check_test.py: test_get_tot_scores_multiple_fsas -- known
+  flake (non-deterministic float gradient check; also flaked on gfx90a
+  revalidation Run 1). Not a port bug; CPU-side numerical instability.
+
+GPU confirmed: AMD Radeon RX 9070 XT (gfx1201, RDNA4). CUDA available: True.
+
+### Verdict
+
+PASS. 30/30 C++ gtests. Python slice 226/234 passed; 8 failures are all
+pre-existing artifacts (same categories as prior gfx1201 validation plus 1
+known flake). Transition: revalidate -> completed. validated_sha = e44acdd.
+Delta-port: Windows torch-link fix committed to fork as e44acdd (CMake 4.x
+imported-target expansion change in HIP Ninja linker rules).
