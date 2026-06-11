@@ -7,8 +7,8 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-11T15:31:48Z",
-  "head_sha": "0b5042e705eff3809fa7c40c1383aa6c3adcc602",
+  "updated_at": "2026-06-11T15:51:32Z",
+  "head_sha": "6d2de2982d17c4f062c4595aa411495ca8a8ccf1",
   "platforms": {
     "linux-gfx90a": {
       "state": "pr-open",

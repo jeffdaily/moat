@@ -888,3 +888,10 @@ functional change), not literally byte/SASS-identical.
 
 ## Review replies posted (apache/mahout#1399) 2026-06-11
 PR body reworded "byte-for-byte identical" -> "behavior-preserving (no functional change)" (reviewer rich7420's nit; the CUDA path has behavior-identical-but-SASS-changing deltas: metrics.rs driver->runtime memcpy, kernel >>5->/warpSize, and the new fix-4 stream sync). Posted the overall reply (issuecomment-4682322151) + 4 threaded inline replies (discussion_r3397247837/8095/8302/8492) -- all four review points fixed in 0b5042e. Awaiting rich7420's response / re-review; on merge run set-pr-merged.
+
+## Precommit fix + missed comments 2026-06-11
+Missed two general PR comments on #1399 (only fetched the review + inline comments initially):
+- rich7420 (issuecomment-4678743699): "check the precommit errors" -- the Pre-commit GHA (cargo fmt hook) failed. Cause: rustfmt diffs in the HIP-path files (import order + line wrap, incl. the fix-2 hipPointerGetAttributes line). FIXED: ran `cargo fmt --manifest-path qdp/Cargo.toml --all`, 7 files (all ours), pushed as 6d2de29 to fork moat-port. clippy is clean on our Rust; the only compiler warning is a pre-existing upstream `iqp.cu:342 unused parameter` (not ours). CI Pre-commit is action_required (Apache fork-PR gating), so it won't auto-run until a maintainer approves.
+- ryankert01 (issuecomment-4682218305, MEMBER): asked whether complex optimizations port "this easy", citing #1390. #1390 (implicit Hadamard Ozaki engine) uses nvcuda::wmma + raw `mma.sync` int8 PTX -> NOT mechanically hipifiable; needs a rocWMMA/MFMA rewrite. Reply drafted, pending jeff approval.
+
+NOTE: this clone has TWO remotes -- origin=apache/mahout (upstream, no push), fork=jeffdaily/mahout (push here). Push to `fork`, not `origin`.
