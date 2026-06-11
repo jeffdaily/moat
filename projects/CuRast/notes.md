@@ -1355,3 +1355,61 @@ linux-gfx90a / linux-gfx1100 / windows-gfx1201 to revalidate.
 NOT re-squashed: windows-gfx1201 is at revalidate, so the two commits
 (35693e60 port + ae95035 cleanup) are held until the Windows host reconfirms.
 Re-squash + squash-carry-forward only after gfx1201 is terminal at ae95035.
+
+## Validation 2026-06-11 (windows-gfx1201 revalidate -> completed at ae95035, binary-equiv)
+
+GPU: AMD Radeon RX 9070 XT, gfx1201 (RDNA4), 32 CUs (wave32), HIP_VISIBLE_DEVICES=1 (gfx1101 PRO V710 at device 0), Windows 11 Pro
+Starting state: revalidate (validated_sha=35693e60, head_sha=ae95035)
+
+### Delta analysis
+
+Commit ae95035 adds empty clang-attribute pragma cleanup on top of 35693e60:
+- resolve.cu: 10 pairs -> 3 (removed 7 empty inter-kernel pairs), -69 lines
+- triangles_visbuffer.cu: 15 pairs -> 1 (removed 14 empty inter-kernel pairs), -92 lines
+- Changes are deletion-only (0 content insertions); pragma regions are hiprtc-only
+  (guarded `#ifndef __HIPCC_RTC__` / similar), so device ISA is provably unchanged.
+
+Linux hosts already confirmed gfx90a + gfx1100 codeobj_diff=identical.
+
+### Build
+
+```powershell
+$ROCM = "B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+$VULKAN_SDK = "C:/Users/Shark44/AppData/Local/Temp/vulkan_sdk"
+cmake -S B:/develop/moat/projects/CuRast/src \
+      -B B:/develop/moat/agent_space/CuRast-ae95035-gfx1201-build \
+      -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+      -DCMAKE_PREFIX_PATH=$ROCM \
+      -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/amdclang.exe \
+      -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+      -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/amdclang++.exe \
+      "-DCMAKE_HIP_FLAGS=--rocm-device-lib-path=$ROCM/lib/llvm/amdgcn/bitcode" \
+      -G Ninja
+cmake --build B:/develop/moat/agent_space/CuRast-ae95035-gfx1201-build --target CuRast -j 8
+```
+
+Build: exit 0, no errors. CuRast.exe (3,879,424 bytes).
+Warnings: nodiscard hipError_t, format-security (pre-existing). All pre-existing.
+
+### Binary-equivalence check
+
+Compared ae95035 build vs prior validated build (35693e60/ecdf587, tree-identical squash)
+using llvm-objcopy to extract PE sections:
+
+- `.hip_fat` section: both 74,488 bytes, sha256=c1f1eed39cfb371ebae50c9b (identical)
+- `.hipFatB` section: both 48 bytes, sha256=681b133ff2ec616e40d5f773 (identical)
+- File sizes: both 3,879,424 bytes (identical)
+- PE exports (llvm-nm): both 0 defined symbols (executable, not DLL)
+
+verdict=identical: gfx1201 device code objects byte-identical; carry-forward safe.
+
+Note: codeobj_diff.py uses llvm-nm -D (ELF dynamic symbols) and roc-obj-ls (not
+available in this SDK version), so the standard tool was not usable on Windows PE
+binaries. Used direct section extraction via llvm-objcopy --dump-section which is
+equivalent for PE fat binaries (the .hip_fat section IS the bundled code objects).
+
+### State transition
+
+windows-gfx1201: revalidate -> completed, validated_sha=ae95035 (binary-equiv carry-forward)
+All three required platforms (linux-gfx90a, linux-gfx1100, windows-gfx1201) are
+now completed at ae95035. pr-ready=True. Ready for re-squash + squash-carry-forward.
