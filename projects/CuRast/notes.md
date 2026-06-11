@@ -928,3 +928,51 @@ mipmap fix genuinely needs re-running there (gfx1201 is where the fallback gap
 mattered). windows-gfx1101 / windows-gfx1151 unchanged (optional, port-ready).
 Did NOT re-squash and did NOT mark pr-ready; PR stays held until gfx1100 and
 gfx1201 revalidate 08da182 on their hosts.
+
+## Validation 2026-06-11 (linux-gfx1100 revalidate -> completed at 08da182)
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, 35 CUs (wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.x
+Starting state: revalidate (validated_sha=e766660abc, head_sha=08da182)
+
+### Delta analysis
+
+`moatlib classify` verdict: mixed arch_independent=False inert=False.
+Files changed: README.md (doc only), src/CuRast_render.h (INLINE_LAUNCH macro guards),
+src/CudaVirtualMemory.h (HIP_DEVPTR_ADD CUDA fallback), src/kernels/textureTools.cu
+(mipmap per-level loop; new kernel kernel_computeMipMapLevel), src/kernels/triangles_visbuffer.cu
+(stage1 counter-init/grid.sync guards, stage2 grid guard restored). Full GPU revalidation required.
+
+### Build
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build
+cmake --build /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build -j$(nproc)
+```
+
+Build: exit 0, ~18 seconds, no errors (warnings: fread return, nodiscard hipError_t, unused pragma clang attribute, __HIP_PLATFORM_AMD__ redefined -- all pre-existing).
+Binary: CuRast (3.4MB).
+
+### GPU Test
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+export HIP_VISIBLE_DEVICES=0 ROCM_PATH=/opt/rocm
+/var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build/CuRast \
+    --bench ./example_donaukanal_urania.glb 1920 1080 30
+```
+
+Results:
+- 30 frames, 966,461 of 966,461 triangles visible per frame (all frames correct)
+- Best visbuffer-pipeline time: 0.160 ms @ 1920x1080 (reference at c4e543e: 0.160 ms, identical)
+- bench_render.png: PASS (259K, 1920x1080 RGBA PNG, all 2,073,600 pixels non-zero, 21,495 unique colors)
+- Zero "cooperative launch failed" / "computeMipMap" errors (mipmap per-level fix works)
+- No GPU faults during benchmark
+- hiprtc compile warnings (unused pragma clang attribute, __HIP_PLATFORM_AMD__ redefined): pre-existing
+- Post-bench cleanup segfault: pre-existing (HipModularProgram lacks destructor, same as all prior runs)
+
+### State transition
+
+linux-gfx1100: revalidate -> completed, validated_sha=08da182

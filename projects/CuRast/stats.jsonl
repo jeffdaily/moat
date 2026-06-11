@@ -76,3 +76,5 @@
 {"kind":"phase","ts":"2026-06-11T18:10:02Z","phase":"cuda-compile","seconds":6.323,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
 {"kind":"phase","ts":"2026-06-11T18:15:28Z","phase":"compile","seconds":18.236,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build --target CuRast -j128"}
 {"kind": "tokens", "ts": "2026-06-11T18:19:06Z", "tokens": 143232, "source": "porter"}
+{"kind":"phase","ts":"2026-06-11T18:45:10Z","phase":"compile","seconds":18.284,"exit":0,"cmd":"bash -c cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 -B /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build && cmake --build /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build -j64"}
+{"kind":"phase","ts":"2026-06-11T18:45:26Z","phase":"test","seconds":0.349,"exit":139,"cmd":"/var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30"}
