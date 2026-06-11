@@ -800,3 +800,54 @@ Complete HIP runtime-refusal surface (the entire gap), verified by sweeping both
 NvOF 4 tests FAIL not SKIP because the test catch filters StsBadFunc/StsBadArg/StsNullPtr only; SDK-less CUDA throws HeaderIsNull there and fails identically -> pre-existing upstream behavior, not a port regression.
 
 TVL1.Async (2): verified root cause -- loop early-exits on cuda::calcSum convergence error (tvl1flow.cpp:359,366); calcSum's final cross-block accumulation is a double atomicAdd (cudev grid/detail/reduce.hpp:165); block-completion order differs by scheduler -> ULP-level error delta -> iteration-count shift. Deterministic (16 streams byte-identical to each other), not a race. Flow correct (normal-tolerance Accuracy passes). Disposition: document-and-ship.
+
+## Validation (linux-gfx1100) 2026-06-11
+
+**State: completed** -- validated_sha = 3851d5653603f43d7781986196f404d34a482d0c (contrib head_sha)
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, HIP_VISIBLE_DEVICES=2
+ROCm: 7.2.1
+OPENCV_TEST_DATA_PATH: projects/opencv_contrib/opencv_extra/testdata
+
+Both repos cloned fresh from fork at head_sha. Built for gfx1100 (CMAKE_HIP_ARCHITECTURES=gfx1100) with the full BUILD_LIST covering all 11 test suites.
+
+### Build
+```
+cmake -G Ninja ../src-core \
+  -DWITH_HIP=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/amdclang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DOPENCV_EXTRA_MODULES_PATH=../src/modules \
+  -DBUILD_LIST="core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,cudastereo,cudafeatures2d,cudaobjdetect,cudalegacy,cudabgsegm,cudaoptflow,cudacodec,imgproc,imgcodecs,videoio,highgui,video,optflow,objdetect,calib3d,ts" \
+  -DBUILD_TESTS=ON -DWITH_CUDA=OFF -DWITH_OPENCL=OFF -DWITH_PYTHON=OFF
+cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy \
+  opencv_test_cudawarping opencv_test_cudaarithm opencv_test_cudafilters \
+  opencv_test_cudaimgproc opencv_test_cudafeatures2d opencv_test_cudaobjdetect \
+  opencv_test_cudaoptflow opencv_test_cudacodec -j$(nproc)
+# 857/857 targets, warnings only (nodiscard hipGetLastError), no errors
+```
+
+### GPU test results (HIP_VISIBLE_DEVICES=2, OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata)
+
+| Suite | Passed | Total | Notes |
+|---|---|---|---|
+| opencv_test_cudev | 402 | 402 | PASS |
+| opencv_test_cudastereo | 128 | 128 | PASS |
+| opencv_test_cudalegacy | 14 | 14 | PASS (1 disabled) |
+| opencv_test_cudawarping | 4535 | 4535 | PASS |
+| opencv_test_cudaarithm | 11417 | 11417 | PASS |
+| opencv_test_cudafilters | 16028 | 16028 | PASS |
+| opencv_test_cudaimgproc | 3671 | 3671 | PASS |
+| opencv_test_cudafeatures2d | 256 | 256 | PASS |
+| opencv_test_cudaobjdetect | 18 | 18 | PASS |
+| opencv_test_cudaoptflow | 41 | 47 | 6 failures: EXACTLY the documented set (see below) |
+| opencv_test_cudacodec | 240 | 240 | PASS (YuvConverter only; decode/encode gated off) |
+
+**cudaoptflow 6 expected failures (identical to gfx90a):**
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/0 -- float atomicAdd reduction ordering (not a port defect)
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/1 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.Regression/0 -- no AMD HW OF engine
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.OpticalFlowNan/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.Regression/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
+
+No unexpected failures. All 10 other suites are 100%. Port fully validated on real gfx1100. Results are identical to the gfx90a lead -- wave32 gfx1100 passes every test the wave64 gfx90a did, confirming the warp-layer design (logical WARP_SIZE=32, width-32 shuffles inside the 32-lane wavefront) is arch-independent as designed. gfx1100 is RDNA3 (wave32 native), so no wave64 correctness concerns arise here.
