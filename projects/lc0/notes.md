@@ -590,3 +590,29 @@ Built both shas at gfx1100 with identical meson config. Binary equivalence verif
 - Exported symbols (nm -gD, T/W/D): identical
 
 Verdict: The compiled program is unchanged on linux-gfx1100. Carried forward validation to c757400 without GPU re-run.
+
+## PR-prep 2026-06-11 (porter, linux-gfx90a) -- jargon scrub, attribution, docs, squash
+
+Linux-scoped PR prep on top of the validated c757400. No functional code touched.
+
+### Jargon scrub
+- Scanned both moat-port commit messages (1a6c3e3, c757400) and every added diff line. Both messages were already upstream-quality (no lead/follower/Strategy/head_sha/validated_sha). One leak in code: meson.build:640 comment said "no source edit for followers" -> reworded to "no source edit" / "any AMD GPU architecture". No em-dash, no non-ASCII in added lines.
+
+### Copyright / authorship
+- ATTRIBUTED (new file, AMD copyright line below the LCZero GPLv3 line + Author tag): src/neural/backends/cuda/hip_compat.h. Also added `Jeff Daily` to AUTHORS (lc0's house authorship convention -- file-header copyright + AUTHORS list; no Doxygen \author tags in this tree).
+- JUDGED TRIVIAL (surgical USE_HIP-guarded edits / build-flag lines to large pre-existing files, not substantial new authorship -> no attribution): meson.build (+80, build branch), meson_options.txt (+5, option), cuda_common.h (+5), fp16_kernels.cu (+3), inputs_outputs.h (+6), layers.h (+2), network_cuda.cc (+25, guards+register), winograd_helper.inc (+32), common_kernels.cu (+16).
+
+### Documentation (README.md, lc0 house style = per-backend ### sections + overview)
+- README.md:42 overview line: added "HIP/ROCm for AMD GPUs" to the GPU backend list.
+- README.md:54 Linux install-backend step: AMD now points at ROCm + HIP backend (SYCL kept as alt).
+- README.md: new "### HIP (ROCm)" section after "### SYCL": documents -Dhip, hip/hip-fp16/hip-auto backends, ROCm prereqs (hipcc, hipBLAS), -Damd_gfx arch selection + rocm_agent_enumerator autodetect, -Db_lto=false, a typical meson+ninja session, and that it is validated on Linux gfx90a + gfx1100. No Windows claim. FLAGS.md needs no edit (describes --backend generically, no per-backend list).
+
+### Arch handling determination
+- meson `amd_gfx` is an explicit option; explicit -Damd_gfx wins, else rocm_agent_enumerator autodetect, else default gfx90a. No hardcoded arch overriding the user's choice. PR-correct as-is; no auto-detect over-engineering added.
+
+### Carry-forward
+- Prep commit d4fdeca (doc/comment/attribution only): advance-head conservatively flipped both Linux platforms to revalidate (classifier reports meson.build as "unknown file type"; hip_compat.h "comment-only"). Manually verified every changed line: AUTHORS/README.md non-compiled; hip_compat.h delta = AMD copyright/author comment lines inside the existing header block; meson.build delta = a single comment-line reword. Zero functional code -> carried both Linux platforms forward via the source-class path. Both ended completed.
+
+### Squash
+- Squashed moat-port to ONE commit d83b6d1 (tree-identical to the pre-squash tree 2d79b632), Linux-scoped upstream-quality message (new hip/hip-fp16/hip-auto backends, hip_compat.h approach, NVIDIA path byte-identical behind USE_HIP/-Dhip, the three wave64 fixes, cuDNN/CUTLASS out-of-scope, Test Plan with the literal meson/backendbench/meson-test commands and the exact validated arches gfx90a + gfx1100). Title 53 chars. Force-pushed-with-lease. squash-carry-forward did NOT refuse: carried linux-gfx90a + linux-gfx1100 forward to d83b6d1, kept the 3 Windows blocked.
+- Final: head_sha d83b6d1, 2 Linux completed, 3 Windows blocked, pr-ready=True. Ready for the user's PR-open decision (PR is LINUX-SCOPED; Windows scoped out as non-viable under TheRock ROCm 7.14).

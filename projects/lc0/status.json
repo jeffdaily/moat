@@ -7,17 +7,17 @@
   "priority": 6.245,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-05T13:35:22Z",
-  "head_sha": "c757400",
+  "updated_at": "2026-06-11T07:04:43Z",
+  "head_sha": "d83b6d171eda425ef79092849185830ba5f15623",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c7574009edf3f73cb5679a4855b0d9aada90e617",
+      "validated_sha": "d83b6d171eda425ef79092849185830ba5f15623",
       "started_at": "2026-05-31T01:38:05Z",
-      "completed_at": "2026-06-05T12:38:05Z",
-      "updated_at": "2026-06-05T12:38:05Z",
+      "completed_at": "2026-06-11T07:03:11Z",
+      "updated_at": "2026-06-11T07:04:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "c7574009edf3f73cb5679a4855b0d9aada90e617",
-        "method": "binary-equiv",
-        "detail": "Device code objects and exported symbols identical (Windows-only -fPIC fix does not affect Linux builds)",
-        "at": "2026-06-05T12:38:05Z"
+        "to": "d4fdecacbe2760029246c2a28ec1e14c10131ce5",
+        "method": "source-class",
+        "detail": "PR-prep doc/comment/attribution only: README.md and AUTHORS are non-compiled; hip_compat.h delta is the AMD copyright/author comment lines inside the existing header block; meson.build delta is a sing",
+        "at": "2026-06-11T07:03:11Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "c7574009edf3f73cb5679a4855b0d9aada90e617",
+      "validated_sha": "d83b6d171eda425ef79092849185830ba5f15623",
       "started_at": "2026-05-31T05:46:00Z",
-      "completed_at": "2026-06-05T13:35:22Z",
-      "updated_at": "2026-06-05T13:35:22Z",
+      "completed_at": "2026-06-11T07:03:11Z",
+      "updated_at": "2026-06-11T07:04:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,10 +62,10 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "c7574009edf3f73cb5679a4855b0d9aada90e617",
-        "method": "binary-equiv",
-        "detail": "Device code objects and exported symbols identical (Windows-only -fPIC fix does not affect Linux builds)",
-        "at": "2026-06-05T13:35:22Z"
+        "to": "d4fdecacbe2760029246c2a28ec1e14c10131ce5",
+        "method": "source-class",
+        "detail": "PR-prep doc/comment/attribution only: README.md and AUTHORS are non-compiled; hip_compat.h delta is the AMD copyright/author comment lines inside the existing header block; meson.build delta is a sing",
+        "at": "2026-06-11T07:03:11Z"
       }
     },
     "windows-gfx1101": {
