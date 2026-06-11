@@ -67,3 +67,4 @@
 {"kind":"phase","ts":"2026-06-11T01:48:30Z","phase":"test","seconds":3.121,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudastereo"}
 {"kind":"phase","ts":"2026-06-11T01:48:37Z","phase":"test","seconds":6.262,"exit":1,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudalegacy"}
 {"kind":"phase","ts":"2026-06-11T01:49:01Z","phase":"test","seconds":24.656,"exit":0,"cmd":"/var/lib/jenkins/moat/projects/opencv_contrib/build/bin/opencv_test_cudawarping"}
+{"kind": "tokens", "ts": "2026-06-11T01:53:49Z", "tokens": 282990, "source": "porter phase4a cudaarithm"}
