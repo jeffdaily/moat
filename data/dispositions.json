@@ -1602,6 +1602,13 @@
     "note": "real/current HIP backend (research-confirmed; cubecl-hip crate, ROCm 7.1.1 bindings)",
     "reason": "already-supported"
   },
+  "traveller59/spconv": {
+    "decided": "2026-06-11T04:14:50Z",
+    "disposition": "skip",
+    "full_name": "traveller59/spconv",
+    "note": "GPU kernels are not static .cu but generated at build time by cumm (FindDefinition/cumm), a CUTLASS-derived pccm/Python codegen GEMM+implicit-conv engine. Build is PCCMExtension, not torch CUDAExtension, so hipify has nothing to translate. Porting spconv == porting cumm's entire CUTLASS/CuTe-style tensor-core (Volta/Turing/Ampere mma.sync + inline-PTX) codegen backend to ROCm; PORTING_GUIDE: CUTLASS does not port, must be reimplemented vs Composable Kernel. Unbounded out-of-scope effort; no authoritative AMD/ROCm spconv port exists upstream.",
+    "reason": "cant-port"
+  },
   "uccl-project/mkernel": {
     "decided": "2026-06-05T01:18:36Z",
     "disposition": "skip",

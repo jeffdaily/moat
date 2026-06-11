@@ -3,6 +3,6 @@
   "upstream_url": "https://github.com/traveller59/spconv",
   "default_branch": "master",
   "fork_url": null,
-  "ext_type": "torch-extension",
+  "ext_type": "pccm-codegen",
   "base_sha": null
 }
