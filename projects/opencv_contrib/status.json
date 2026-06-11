@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T15:15:55Z",
-  "head_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+  "updated_at": "2026-06-11T15:19:22Z",
+  "head_sha": "1c3b2fd42859e3acf26600f87c5f1f66237268e0",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+      "validated_sha": "1c3b2fd42859e3acf26600f87c5f1f66237268e0",
       "started_at": null,
       "completed_at": "2026-06-11T15:15:55Z",
-      "updated_at": "2026-06-11T15:15:55Z",
+      "updated_at": "2026-06-11T15:19:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,22 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+        "from": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+        "to": "1c3b2fd42859e3acf26600f87c5f1f66237268e0",
         "method": "source-class",
-        "detail": "comment reword + a string literal inside #ifndef HAVE_CUDACODEC_DECODER, compiled out on rocDecode-enabled builds (this arch builds WITH rocDecode); compiled output byte-identical, no device code chan",
-        "at": "2026-06-11T15:15:55Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T15:19:22Z"
       }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+      "validated_sha": "1c3b2fd42859e3acf26600f87c5f1f66237268e0",
       "started_at": null,
       "completed_at": "2026-06-11T15:15:55Z",
-      "updated_at": "2026-06-11T15:15:55Z",
+      "updated_at": "2026-06-11T15:19:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -61,10 +63,12 @@
         "last_session_at": null
       },
       "carry_forward": {
-        "to": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+        "from": "615f246cb0a5d1ca9f21304324a6aa992f7bd0b6",
+        "to": "1c3b2fd42859e3acf26600f87c5f1f66237268e0",
         "method": "source-class",
-        "detail": "comment reword + a string literal inside #ifndef HAVE_CUDACODEC_DECODER, compiled out on rocDecode-enabled builds (this arch builds WITH rocDecode); compiled output byte-identical, no device code chan",
-        "at": "2026-06-11T15:15:55Z"
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T15:19:22Z"
       }
     },
     "windows-gfx1101": {

@@ -1480,3 +1480,11 @@ commit on the PR branch (not a rewrite). gfx1100/gfx1201 carried forward (source
 the string sits in a block compiled out on rocDecode-enabled builds, so their binaries are
 byte-identical. Lead gfx90a stays pr-open at ad105bb (device code unchanged; the trimmed
 string is an untested host stub path, no GPU re-run warranted).
+
+## Doc fix (post-PR follow-up) 2026-06-11
+Corrected the stale not-implemented claim in both docs: config_reference.markdown (core)
+and README.md (contrib) listed alphaComp + the 16-bit/4-channel histogram variants as
+StsNotImplemented, but the parity pass implemented them. Now only NVIDIA HW optical flow
+and graph-cut stereo are listed. Doc-only -> carried forward, no revalidation.
+Follow-up commits on both PR branches: contrib #4147 615f246->1c3b2fd, core #29285
+adcd50c->0404733. Reviewer comment left as-is per jeff.
