@@ -1042,3 +1042,134 @@ No delta-port required. The 08da182 changes built and ran correctly on gfx1201 w
 ### State transition
 
 windows-gfx1201: revalidate -> completed, validated_sha=08da182
+
+## Compat-header refactor 2026-06-11 (linux-gfx90a porter) -- head ecdf587
+
+Footprint cleanup on top of the d59f05bd squash (NEW commit ecdf587, never
+amended). Collapsed the redundant per-call-site `#if defined(USE_HIP)` host
+branches whose two sides differed ONLY by symbol name -- cuda_to_hip.h already
+maps those, so the branch was redundant. Touches NO .cu kernel; device code
+provably unchanged. Opening USE_HIP guards 48 -> 28 (20 collapsed); net
+src diff 26 insertions / 154 deletions.
+
+### Per-file decisions
+
+Collapsed to the CUDA spelling (header maps it on HIP, no-op on CUDA):
+- Timer.h: all 5 blocks. The include -> `#include "cuda_to_hip.h"`; the
+  member type CUevent; cuEventCreate(.., CU_EVENT_DEFAULT) (the header bridges
+  the flags-arg signature to hipEventCreateWithFlags, behavior-identical to the
+  old flagless hipEventCreate); cuEventRecord; the resolve() ctx-sync +
+  elapsed-time pair. NOTE: the current code had NO extra hipCtxSynchronize that
+  the CUDA path lacked (upstream resolve() already has exactly one
+  cuCtxSynchronize); both branches were name-only, so block 5 collapsed too.
+- VKRenderer.cpp: the leading `#include <hip/hip_runtime.h>` block ->
+  `#include "cuda_to_hip.h"`; the pickPhysicalDevice UUID block (added CUuuid,
+  cuDeviceGetUuid aliases to the header).
+- CudaVirtualMemory.h: the big local API-mapping block (a near-duplicate of
+  cuda_to_hip.h) -> `#include "cuda_to_hip.h"`; added the one missing constant
+  CU_MEM_ALLOCATION_COMP_GENERIC and cuMemsetD8/D32 (used by other TUs too) to
+  the header; dropped the two unused cuMemsetD8/D32 local aliases.
+- CudaVulkanSharedMemory.h, VulkanCudaSharedMemory.h: the
+  `#if USE_HIP include cuda_to_hip.h #else include cuda.h` (redundant since
+  cuda_to_hip.h itself `#else`-includes cuda.h) and the now-dead
+  `#ifndef HIP_DEVPTR_ADD` local fallback -> single `#include "cuda_to_hip.h"`.
+- MemoryManager.h, scene/SceneNode.h, VKRenderer.h: the runtime-header select
+  (and VKRenderer.h's local CUexternalMemory/CUmipmappedArray/CUsurfObject
+  `using` aliases, already in the header) -> `#include "cuda_to_hip.h"`.
+- CURuntime.h: the runtime-header select, the CUdevice member, and the
+  getNumSMs() block (cuCtxGetDevice/cuDeviceGetAttribute/
+  CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, all header-mapped).
+- LargeGlbLoader.h: removed the dead `#ifndef HIP_DEVPTR_ADD` local fallback
+  (header defines it on both backends now).
+- CuRast.h, main.cpp, JpegTextures.h: trimmed the redundant runtime-header
+  include lines from the module-program-select blocks (kept the select).
+
+Aliases ADDED to cuda_to_hip.h: CUuuid->hipUUID, cuDeviceGetUuid->
+hipDeviceGetUuid, cuMemsetD8->hipMemsetD8, cuMemsetD32->hipMemsetD32,
+CU_MEM_ALLOCATION_COMP_GENERIC->0.
+
+Kept guarded (genuine divergence, brief comment added where non-obvious):
+- VKTexture::destroyCuda (HIP frees the mip array with the runtime
+  hipFreeMipmappedArray, not the driver-API hipMipmappedArrayDestroy that
+  cuMipmappedArrayDestroy maps to -- not behavior-preserving to collapse).
+- VKTexture::importToCuda (stubbed on HIP: hipExternalMemoryGetMappedMipmapped
+  Array is not exported by libamdhip64 -- a link gap).
+- CURuntime::assertCudaSuccess (HIP hipGetErrorName/String return the string;
+  CUDA cuGetErrorName/String use an out-param -- unbridged signature; messages
+  differ).
+- main.cpp initCuda (HIP uses the primary context via hipSetDevice; CUDA uses
+  the 4-arg cuCtxCreate -- behavioral).
+- CuRast_render.h stage1/2/3 launchOccupancyBased + host counter zeroing,
+  textureTools.cu per-level mipmap, triangles_visbuffer.cu stage kernels --
+  deliberate behavioral differences (kept untouched).
+- Module-program class select (HipModularProgram vs CudaModularProgram) in
+  CuRast.h/PlyLoader.h/LargeGlbLoader.h/JpegTextures.h/main.cpp -- picks a
+  different TYPE, not a renamed symbol.
+- Benchmarking.h GCC-13/HIP scenario workaround; utils.cuh cooperative-groups
+  header select and nanotime intrinsic; lines.cu __shared__ raw storage;
+  jpeg.cu hiprand RTC guard -- all genuine, untouched.
+
+### Validation A -- AMD GPU gfx90a (real run)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, wave64, HIP_VISIBLE_DEVICES=3, ROCm 7.2.1.
+
+```bash
+cmake <src> -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -B <build>
+cmake --build <build> --target CuRast -j$(nproc)
+./CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30
+```
+
+Build exit 0 (only pre-existing fread/deprecated-hipCtxSynchronize warnings).
+3 clean runs: rc=0, 30 frames, 966461 of 966461 tris visible per frame, best
+visbuffer-pipeline 0.269-0.284 ms @ 1920x1080, bench_render.png 264744 bytes
+(all 2073600 pixels non-zero, 21503 colors, Donaukanal scene), no GPU faults.
+The intermittent early fault / post-bench cleanup segfault is the pre-existing
+gfx90a/ROCm 7.2.1 anomaly (deferred: curast-launch-member-dispatch-fault) and
+the missing-destructor exit segfault -- not introduced by this refactor; clean
+runs match the d59f05bd reference (0.278 ms) exactly. jpeg/BitReaderGPU.cuh
+hiprtc printf errors are pre-existing (JPEG module only, not the visbuffer
+pipeline).
+
+### Validation B -- CUDA compile no-regression gate
+
+nvcc /opt/conda/envs/cuda-12.8/bin/nvcc, host gcc 13.3, pinned sm_80.
+Throwaway gate-only patches (reverted before commit, NOT in ecdf587):
+CMAKE_CUDA_ARCHITECTURES 75 86 89 90 -> 80; CUDAToolkit 13.1 -> 12.8.
+
+```bash
+cmake <src> -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 \
+  -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc \
+  -DCMAKE_CUDA_FLAGS="-I/opt/conda/envs/cuda-12.8/targets/x86_64-linux/include" -B <cudabuild>
+cmake --build <cudabuild> --target CuRast -j$(nproc)
+```
+
+GATE PASS. The refactored host TUs compile with ZERO error from any collapsed
+call site (no undefined cuMemsetD8/CUuuid/HIP_DEVPTR_ADD/etc.). The only
+remaining CUDA errors are the pre-existing upstream requirement of CUDA 13.1 +
+a <print>-capable C++23 stdlib, all in the KEPT CUDA branches:
+- CURuntime.h:73 println(FILE*, ...) -- the upstream CUDA error path.
+- lines.cu atomicMin(uint64_t*) -- needs CUDA 13.1.
+- main.cpp cuCtxCreate 4-arg CUctxCreateParams form -- CUDA 13.1.
+Base comparison: built upstream base 037df01 with the identical toolchain/arch;
+it hits the SAME wall harder (fatal error: print: No such file or directory on
+the first TU, since the base lacks the port's compat_print.h polyfill). So the
+<print>/CUDA-13.1 wall is pre-existing upstream; the refactor adds no new CUDA
+break.
+
+### State transition + carry-forward
+
+advance-head ecdf587 (classify=mixed, not arch-independent) flipped
+linux-gfx90a / linux-gfx1100 / windows-gfx1201 to revalidate.
+- linux-gfx90a: revalidate -> completed via the real gfx90a bench above.
+- linux-gfx1100: cross-built the gfx1100 codeobj here at ecdf587 vs d59f05bd;
+  codeobj_diff verdict=identical (device ISA + 35 exports identical) ->
+  binary-equiv carry-forward to ecdf587. No GPU run needed (host-only change).
+- windows-gfx1201: cannot build on this Linux host. Device code is provably
+  unchanged (no .cu touched; gfx1100 codeobj_diff identical), but the gfx1201
+  amdclang++ host code objects must be confirmed on the Windows host. LEFT at
+  revalidate -- the Windows host should build at ecdf587 vs d59f05bd and
+  binary-equiv carry forward (a fast check, no GPU re-run expected). NOT faked.
+
+NOT re-squashed: gfx1201 is in revalidate, so the two commits (d59f05bd port +
+ecdf587 refactor) are held until the Windows host reconfirms. Re-squash +
+squash-carry-forward after gfx1201 is terminal at ecdf587.
