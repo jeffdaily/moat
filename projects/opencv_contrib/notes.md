@@ -739,3 +739,49 @@ cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cu
 - CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
 
 No unexpected failures. All 10 other suites are 100%. Port is fully validated on real gfx90a.
+
+## PR-prep: documentation pass 2026-06-11 (porter, doc-only carry-forward)
+
+Strictly documentation. No code, no CMake behavior. Two commits on TOP of the validated
+heads (validated shas stay reachable ancestors; never amended).
+
+Fork HEADs after the doc pass: contrib `3851d56` (was f7a8b32), core `d30273d` (was 934c316).
+advance-head opencv_contrib 3851d56 classified the delta doc-only and CARRIED gfx90a forward:
+linux-gfx90a stays `completed`, validated_sha advanced 934c316/f7a8b32 -> 3851d56, no GPU
+re-run. Followers (gfx1100, gfx1201) remain port-ready, unaffected.
+
+### Doc locations surveyed (both repos)
+opencv core:
+- doc/tutorials/introduction/config_reference/config_reference.markdown: THE build-options
+  reference. Added a parallel "### ROCm/HIP support" subsection right after "### CUDA support"
+  (before "### OpenCL support"), documenting WITH_HIP, CMAKE_HIP_ARCHITECTURES (auto-detect),
+  WITH_HIP/WITH_CUDA mutual exclusion, hipBLAS/hipFFT (cudaarithm), WITH_ROCDECODE + FFmpeg/AMF
+  fallback, and the StsNotImplemented facilities (HW optical flow, graphcut stereo, NPP-only
+  alphaComp/16-bit+4ch histogram). Cross-refs the existing func_hetero anchor.
+- doc/tutorials/introduction/windows_install/windows_install.markdown: the prereq prose list
+  carries a "CUDA Toolkit" descriptive line. Added a matching ROCm-toolkit line in the same
+  style, pointing at WITH_HIP / func_hetero.
+- doc/tutorials/introduction/building_tegra_cuda/...: NVIDIA-Jetson-specific cross-compile,
+  NOT a general build doc -> intentionally NOT touched (no ROCm parallel makes sense there).
+- CMake option help strings already done in the port commits.
+
+opencv_contrib:
+- README.md: the canonical "How to build OpenCV with extra modules" section. Added a concise
+  ROCm/HIP note in the surrounding style (WITH_HIP instead of WITH_CUDA, CMAKE_HIP_ARCHITECTURES,
+  same cv::cuda API, the StsNotImplemented facilities), linking the core config reference. This
+  is the only CUDA-relevant doc location in contrib (modules/README.md and modules/cudev have no
+  CUDA build text; cudev has no README).
+
+### Upstreamability sweep (final, both full diffs base..HEAD)
+Clean: zero MOAT jargon (moat/follower/head_sha/validated_sha/revalidate/gfx1151/strategy a|b/
+curated), zero jeffdaily/abs-path/HIP_VISIBLE_DEVICES leaks, zero non-ASCII on added lines, no
+em-dash. Both forks confirmed Actions disabled (gh api actions/permissions -> enabled:false).
+
+### PR drafts written (NOT opened)
+- projects/opencv_contrib/pr-draft-opencv.md (core PR; title "[ROCm] Add AMD GPU support for
+  cv::cuda via HIP (core)", 54 chars).
+- projects/opencv_contrib/pr-draft-opencv_contrib.md (modules PR; title "[ROCm] Port the
+  cv::cuda modules to AMD GPUs via HIP", 52 chars). Cross-references the core PR as a hard dep.
+Both state the validation matrix neutrally (per-module suite counts on gfx90a; more platforms
+as followers complete), scope the limitations per the ledger, and phrase the 2 TVL1.Async
+cases as a non-associative float-atomic-reduction determinism artifact (no "fails here").

@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T03:23:46Z",
-  "head_sha": "f7a8b32e1a99e8a456fcb3377d731d29200321ad",
+  "updated_at": "2026-06-11T03:30:08Z",
+  "head_sha": "3851d5653603f43d7781986196f404d34a482d0c",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "f7a8b32e1a99e8a456fcb3377d731d29200321ad",
+      "validated_sha": "3851d5653603f43d7781986196f404d34a482d0c",
       "started_at": "2026-06-10T23:48:26Z",
       "completed_at": "2026-06-11T03:23:46Z",
-      "updated_at": "2026-06-11T03:23:46Z",
+      "updated_at": "2026-06-11T03:30:08Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "f7a8b32e1a99e8a456fcb3377d731d29200321ad",
+        "to": "3851d5653603f43d7781986196f404d34a482d0c",
+        "method": "source-class",
+        "class": "doc-only",
+        "detail": "no changes",
+        "at": "2026-06-11T03:30:08Z"
+      }
     },
     "linux-gfx1100": {
       "state": "port-ready",
