@@ -1075,3 +1075,53 @@ LIBVA_DRIVER_NAME=radeonsi HIP_VISIBLE_DEVICES=0 \
 ```
 GOTCHA: rocDecode needs LIBVA_DRIVER_NAME=radeonsi on this host for EVERY run (the W7800 VCN
 is driven by the distro radeonsi VA driver). Without it, rocDecGetDecoderCaps/decode fail.
+
+## Revalidation (linux-gfx1100) 2026-06-11
+
+**State: completed** -- validated_sha = a6612f09515191da1bf157b22a2938ab7b020b96 (contrib head_sha)
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, HIP_VISIBLE_DEVICES=0
+ROCm: 7.2.1
+OPENCV_TEST_DATA_PATH: projects/opencv_contrib/opencv_extra/testdata
+
+Delta from prior validated_sha (3851d56) consists of two functional commits:
+- 6dbfed7: new cudaimgproc kernels (histEven/histRange/alphaComp)
+- a6612f0: cudacodec rocDecode VideoReader (already porter-validated on gfx1100, reconfirmed here)
+
+### Build (incremental from existing build dir, WITH_ROCDECODE=ON, gfx1100)
+```
+# Re-ran cmake . to pick up new source files (histogram_npp_hip.cu, alpha_comp_hip.cu)
+cd projects/opencv_contrib/build
+cmake .
+cmake --build . --target opencv_test_cudaimgproc opencv_test_cudacodec -j$(nproc)
+# Then built remaining targets: all 857 targets, warnings only (nodiscard hipGetLastError)
+```
+
+### GPU test results (HIP_VISIBLE_DEVICES=0, OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata)
+
+| Suite | Passed | Total | Notes |
+|---|---|---|---|
+| opencv_test_cudev | 402 | 402 | PASS (no change, no regression) |
+| opencv_test_cudastereo | 128 | 128 | PASS |
+| opencv_test_cudalegacy | 14 | 14 | PASS (1 disabled) |
+| opencv_test_cudawarping | 4535 | 4535 | PASS |
+| opencv_test_cudaarithm | 11417 | 11417 | PASS |
+| opencv_test_cudafilters | 16028 | 16028 | PASS |
+| opencv_test_cudaimgproc | 3788 | 3788 | PASS (+117 new tests: HistEven16 2, HistEven4 3, HistRange 4, HistRange4 4, AlphaComp 104) |
+| opencv_test_cudafeatures2d | 256 | 256 | PASS |
+| opencv_test_cudaobjdetect | 18 | 18 | PASS |
+| opencv_test_cudaoptflow | 41 | 47 | 6 failures: EXACTLY the documented set (see below) |
+| opencv_test_cudacodec | 256 | 303 | 47 failures: EXACTLY the documented set (see below) |
+
+**cudaoptflow 6 expected failures (identical to prior gfx1100 validation):**
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/0 -- float atomicAdd reduction ordering (not a port defect)
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/1 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.Regression/0 -- no AMD HW OF engine
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.OpticalFlowNan/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.Regression/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
+
+**cudacodec 47 non-passes (identical to porter validation on gfx1100, documented class):**
+- 37 codec-delta: tests using .mp4/.avi/.mov/.mpg/.mjpg (MPEG-2/MPEG-4/MJPEG -- not supported by rocDecode; clean StsNotImplemented codec guard fires)
+- 10 tol-2 cross-decoder: ColorConversionFormat BGR/BGRA/RGB/RGBA, LumaChromaRange x2, Planar, Bitdepth x3 -- decode is correct (GRAY tol-15 PASSES at meanAbs 0.75), strict tol-2 cross-decoder comparison trips (VCN vs libavcodec rounding latitude, not a port defect)
+
+No unexpected failures in any suite. cudaimgproc 3788/3788 confirms the new 6dbfed7 kernels (histEven/histRange/alphaComp) are correct on gfx1100. cudacodec 256/303 reconfirms a6612f0 rocDecode VideoReader on gfx1100 (H264/H265/VP9 decode, YuvConverter 240/240, codec guard verified). No regression across all 9 fully-passing suites.
