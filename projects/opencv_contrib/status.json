@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-11T07:05:21Z",
-  "head_sha": "a6612f09515191da1bf157b22a2938ab7b020b96",
+  "updated_at": "2026-06-11T07:10:11Z",
+  "head_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
   "depends_on": [],
   "platforms": {
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "a6612f09515191da1bf157b22a2938ab7b020b96",
+      "validated_sha": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
       "started_at": null,
       "completed_at": "2026-06-11T07:04:47Z",
-      "updated_at": "2026-06-11T07:04:47Z",
+      "updated_at": "2026-06-11T07:07:56Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,6 +31,14 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "from": "a6612f09515191da1bf157b22a2938ab7b020b96",
+        "to": "8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "modules/cudacodec/src/video_decoder.cpp: comment-only (comments/format only); modules/cudacodec/src/video_decoder.hpp: comment-only (comments/format only); modules/cudacodec/src/video_parser.cpp: comm",
+        "at": "2026-06-11T07:07:56Z"
       }
     },
     "windows-gfx1201": {
@@ -78,13 +86,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "changes-requested",
+      "state": "review-passed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "3851d5653603f43d7781986196f404d34a482d0c",
       "started_at": "2026-06-10T23:48:26Z",
       "completed_at": "2026-06-11T03:23:46Z",
-      "updated_at": "2026-06-11T07:05:21Z",
+      "updated_at": "2026-06-11T07:10:11Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,7 +106,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "porter"
+      "last_agent": "reviewer"
     },
     "windows-gfx1151": {
       "state": "port-ready",

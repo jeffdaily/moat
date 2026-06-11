@@ -1256,3 +1256,15 @@ Claude/Anthropic, carry a Test Plan with literal commands, no Co-Authored-By
 noreply trailer. No AMD-internal account references. New .cu files (DELTA 1) and
 rocdecode_video_compat.hpp (DELTA 2) carry AMD copyright + author; the four
 extended cudacodec files do not (finding 1).
+
+### Re-review 2026-06-11 (reviewer, linux-gfx90a): finding 1 RESOLVED -> review-passed
+Commit `8a5b0a2` ([ROCm] Add AMD copyright and author attribution to rocDecode files)
+adds the parallel `Copyright (c) 2026 Advanced Micro Devices, Inc.` line and a
+`\author Jeff Daily <jeff.daily@amd.com>` tag (below, not replacing, the existing
+Intel/Willow/OpenCV lines) to all four files: video_decoder.{cpp,hpp} and
+video_parser.{cpp,hpp}, matching the sibling rocdecode_video_compat.hpp style.
+`git show --stat`: only those four files, 3 insertions each, every added line a
+`//` comment -> comment-only, carries followers forward with no GPU re-run. Title
+66 chars and `[ROCm]`-prefixed, body names Claude/Anthropic, ASCII-only, no noreply
+trailer, no MOAT jargon, no AMD-internal account refs. Prior pass's other
+conclusions (parity kernels + rocDecode back end) stand. State -> review-passed.
