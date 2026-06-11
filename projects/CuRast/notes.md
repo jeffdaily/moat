@@ -410,3 +410,67 @@ port-ready. The `bench` branch is kept for the launch-anomaly repro
 
 Follower validation = build at 91bacbf + the --bench run per the
 "Headless benchmark mode" section above (PNG must show the scene).
+
+## Validation 2026-06-11 (linux-gfx1100 revalidate -> completed)
+
+GPU: AMD Radeon Pro W7800 48GB, gfx1100, 35 CUs (wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.x
+Starting state: revalidate (validated_sha=3d42a7c, head_sha=91bacbf)
+New head after fixes: 48cd01b
+
+### Root causes found and fixed
+
+Three issues caused the bench to hang on gfx1100:
+
+**Issue 1 (textureTools.cu)**: 20 concurrent cooperative `kernel_computeMipMap` launches
+from the texture-loading thread pool were issued without draining the GPU between them.
+On gfx1100, `hipModuleLoadData` for the triangles_visbuffer module hung indefinitely
+because all 20 cooperative kernels were still occupying the CUs. Fix: added
+`hipDeviceSynchronize()` after each `hipLaunchCooperativeKernel` call so each mipmap
+generation completes before the next.
+
+**Issue 2 (HipModularProgram.h, compileAndLink)**: `hipModuleLoadData` can block when
+a kernel (e.g. `kernel_clearFramebuffer`) is still in-flight on the default stream.
+Fix: added `hipDeviceSynchronize()` before `hipModuleLoadData` to drain the default
+stream before loading the JIT module.
+
+**Issue 3 (triangles_visbuffer.cu, stage2)**: `grid.sync()` at the start of
+`stage2_drawMediumTriangles` deadlocked on gfx1100 at full cooperative occupancy
+(16 blocks/SM x 35 SMs = 560 blocks). The ROCm driver cannot schedule all 560 blocks
+simultaneously despite `hipModuleOccupancyMaxActiveBlocksPerMultiprocessor` reporting 16.
+The `grid.sync()` is redundant: stage2 is a separate kernel launched after stage1
+completes (with `hipDeviceSynchronize` between them), so all of stage1's global-memory
+writes are already visible. Fix: removed `grid.sync()` from stage2 and changed it from
+a cooperative launch (`hipModuleLaunchCooperativeKernel`) to an occupancy-based regular
+launch (`hipModuleLaunchKernel`) via the new `launchOccupancyBased` method.
+
+### Build
+
+```bash
+export HIP_VISIBLE_DEVICES=0
+cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu0/build
+cd /var/lib/jenkins/moat/agent_space/CuRast-gfx1100-gpu0/build
+cmake --build . --target CuRast -j$(nproc)
+```
+
+Build: exit 0, no errors (warnings: fread return, deprecated hipCtxSynchronize).
+
+### GPU Test
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+export HIP_VISIBLE_DEVICES=0 ROCM_PATH=/opt/rocm
+./agent_space/CuRast-gfx1100-gpu0/build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30
+```
+
+Results:
+- 30 frames, 966,461 triangles visible per frame
+- Best visbuffer-pipeline time: 0.153 ms @ 1920x1080
+- bench_render.png: PASS (shows Donaukanal building scene, non-blank, correct geometry)
+
+### State transition
+
+linux-gfx1100: revalidate -> completed, validated_sha=48cd01b
+head_sha advanced to 48cd01b (adds gfx1100 fixes on top of 91bacbf)
+linux-gfx90a flipped to revalidate (functional change to stage2 device code)

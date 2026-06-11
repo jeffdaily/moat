@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:23:49Z",
-  "updated_at": "2026-06-10T23:18:05Z",
-  "head_sha": "91bacbf7496801455f3c968eb09ad00f04d22d96",
+  "updated_at": "2026-06-11T01:12:05Z",
+  "head_sha": "48cd01b15ab77155500b722b4969273e58775455",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "91bacbf7496801455f3c968eb09ad00f04d22d96",
       "started_at": "2026-06-05T10:02:41Z",
       "completed_at": "2026-06-10T23:18:05Z",
-      "updated_at": "2026-06-10T23:18:05Z",
+      "updated_at": "2026-06-11T01:12:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -35,13 +35,13 @@
       "last_agent": "validator"
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "3d42a7c",
+      "validated_sha": "48cd01b15ab77155500b722b4969273e58775455",
       "started_at": "2026-06-05T14:00:17Z",
-      "completed_at": "2026-06-08T00:32:03Z",
-      "updated_at": "2026-06-10T23:17:12Z",
+      "completed_at": "2026-06-11T01:12:05Z",
+      "updated_at": "2026-06-11T01:12:05Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,13 +55,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "3d42a7c",
-        "method": "binary-equiv",
-        "detail": "Windows build fixes compile to identical gfx1100 device ISA (34 exports, codeobj_diff=identical)",
-        "at": "2026-06-08T00:32:03Z"
-      }
+      "last_agent": "validator"
     },
     "windows-gfx1101": {
       "state": "port-ready",
