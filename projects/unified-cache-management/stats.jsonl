@@ -46,3 +46,4 @@
 {"kind":"phase","ts":"2026-06-07T04:10:40Z","phase":"compile","seconds":0.256,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/unified-cache-management/build_win_gfx1201 -j64"}
 {"kind":"phase","ts":"2026-06-07T04:11:35Z","phase":"test","seconds":2.160,"exit":8,"cmd":"bash -c cd B:/develop/moat/projects/unified-cache-management/build_win_gfx1201 &&   HIP_VISIBLE_DEVICES=0 ctest -j1 --output-on-failure --test-dir . 2>&1"}
 {"kind":"phase","ts":"2026-06-11T22:14:36Z","phase":"cuda-compile","seconds":0.921,"exit":0,"cmd":"/opt/conda/envs/cuda-12.8/bin/nvcc -arch=sm_80 -std=c++17 -c /var/lib/jenkins/moat/projects/unified-cache-management/src/ucm/shared/trans/cuda/cuda_sm_kernel.cu -I/var/lib/jenkins/moat/projects/unified-cache-management/src/ucm/shared/trans/cuda -o /var/lib/jenkins/moat/agent_space/cuda_sm_kernel.o"}
+{"kind": "tokens", "ts": "2026-06-11T22:17:55Z", "tokens": 106649, "source": "porter"}
