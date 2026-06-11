@@ -498,3 +498,51 @@ HIP_VISIBLE_DEVICES=0 ./build-hip/test_homography.exe
 PASS/FAIL: PASS (29/29 checks across three binaries, all exit 0). GPU identified as AMD Radeon RX 9070 XT (Compute Capability 12.0, 16304 MB). No GPU fault, no safeCall abort, no crash. Feature/match counts EXACT vs gfx90a/gfx1100/gfx1101 reference; RANSAC/self-match variation within expected run-to-run bounds.
 
 State: port-ready -> completed (validated_sha 0523b54, fork unchanged).
+
+## PR-prep 2026-06-11 (gfx90a)
+
+Prep edits as a commit on top of the validated head 0523b54, then squashed.
+
+Jargon scrub (whole diff base..HEAD, not just message):
+- Removed `.github/workflows/rocm-build-smoketest.yml` entirely (contained
+  "MOAT pipeline" + "moat-port" branch refs; fork policy = no GHA workflows).
+- `cuda_to_hip.h` banner: dropped "Minimal-footprint port (Strategy A)" wording.
+- `CMakeLists.txt:153`: dropped "(Strategy A, minimal footprint)" comment.
+- No spaced `<< <` / `>> >` launches present. The `gfx90a` in CMakeLists.txt is
+  the legitimate CMAKE_HIP_ARCHITECTURES default fallback (kept). No hardcoded
+  /opt/rocm paths or HIP_VISIBLE_DEVICES pins in the tree. No env leaks.
+
+Attribution (new files): added `Copyright (c) 2026 Advanced Micro Devices, Inc.`
++ `Author: Jeff Daily <jeff.daily@amd.com>` to the cuda_to_hip.h banner; added
+the AMD copyright line to hip_compat/cuda.h and hip_compat/cuda_runtime.h.
+CudaSift has no per-file `\author` tags (files carry a name banner), so the
+banner line matches house style.
+
+Docs (README.md, house style): added an AMD/ROCm prerequisite line, a
+"Build for AMD GPUs (ROCm/HIP)" subsection alongside the existing CUDA build
+blocks (USE_HIP + CMAKE_HIP_ARCHITECTURES, gfx90a default), and a `USE_HIP`
+row in the CMake Options table. No docs/ dir exists; README is the only doc.
+
+Prep build + run (gfx90a, GPU 3 free; GPU 2 busy with another session):
+```
+cmake -S projects/CudaSift/src -B build-hip -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ -DCMAKE_BUILD_TYPE=Release
+cmake --build build-hip -j
+HIP_VISIBLE_DEVICES=3 ./build-hip/test_extract      # 10 passed, 0 failed
+HIP_VISIBLE_DEVICES=3 ./build-hip/test_match        # 11 passed, 0 failed
+HIP_VISIBLE_DEVICES=3 ./build-hip/test_homography   #  8 passed, 0 failed
+```
+29/29 checks pass. 1910 kpts, scaleUp 3104, self-match 1910x1910, homography
+PGM L1451/R2082, 753 RANSAC / 681 inliers. Code objects embed gfx90a (verified
+via llvm-objdump --offloading). Behavior-preserving: prep edits are
+doc/comment/attribution + CI removal only.
+
+Regression guard: `advance-head CudaSift d348161` carried all 5 platforms
+forward (inert delta), no follower revalidation. Then squashed to a single
+tree-identical commit `3e4df2b` (verified `git diff d348161 3e4df2b` empty,
+trees equal), force-pushed to fork moat-port, and `squash-carry-forward
+CudaSift 3e4df2b` carried all 5 completed platforms forward. `pr-ready`=True.
+
+PR draft written to projects/CudaSift/pr-draft.md (base=AdaLovelace). NOT
+opened -- awaiting jeff's approval.

@@ -7,17 +7,17 @@
   "priority": 5.346,
   "ext_type": "unknown",
   "adopted_at": "2026-05-29T23:57:04Z",
-  "updated_at": "2026-06-07T03:40:05Z",
-  "head_sha": "0523b54",
+  "updated_at": "2026-06-11T22:42:12Z",
+  "head_sha": "3e4df2b",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0523b54",
+      "validated_sha": "3e4df2b",
       "started_at": "2026-05-30T00:15:15Z",
       "completed_at": "2026-05-30T06:04:28Z",
-      "updated_at": "2026-05-30T06:04:28Z",
+      "updated_at": "2026-06-11T22:42:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "0523b54",
+        "to": "d348161",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": ".github/workflows/rocm-build-smoketest.yml: D doc-only; CMakeLists.txt: comment-only (comments/format only); cuda_to_hip.h: comment-only (comments/format only); hip_compat/cuda.h: comment-only (commen",
+        "at": "2026-06-11T22:41:21Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0523b54",
+      "validated_sha": "3e4df2b",
       "started_at": null,
       "completed_at": "2026-05-30T05:35:00Z",
-      "updated_at": "2026-05-30T05:35:00Z",
+      "updated_at": "2026-06-11T22:42:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,16 +62,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "0523b54",
+        "to": "d348161",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": ".github/workflows/rocm-build-smoketest.yml: D doc-only; CMakeLists.txt: comment-only (comments/format only); cuda_to_hip.h: comment-only (comments/format only); hip_compat/cuda.h: comment-only (commen",
+        "at": "2026-06-11T22:41:21Z"
+      }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0523b54",
+      "validated_sha": "3e4df2b",
       "started_at": null,
       "completed_at": "2026-06-05T17:07:26Z",
-      "updated_at": "2026-06-05T17:07:26Z",
+      "updated_at": "2026-06-11T22:42:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -77,16 +93,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "0523b54",
+        "to": "d348161",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": ".github/workflows/rocm-build-smoketest.yml: D doc-only; CMakeLists.txt: comment-only (comments/format only); cuda_to_hip.h: comment-only (comments/format only); hip_compat/cuda.h: comment-only (commen",
+        "at": "2026-06-11T22:41:21Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0523b54",
+      "validated_sha": "3e4df2b",
       "started_at": null,
       "completed_at": "2026-06-07T03:40:05Z",
-      "updated_at": "2026-06-07T03:40:05Z",
+      "updated_at": "2026-06-11T22:42:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,16 +124,24 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "0523b54",
+        "to": "d348161",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": ".github/workflows/rocm-build-smoketest.yml: D doc-only; CMakeLists.txt: comment-only (comments/format only); cuda_to_hip.h: comment-only (comments/format only); hip_compat/cuda.h: comment-only (commen",
+        "at": "2026-06-11T22:41:21Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0523b54",
+      "validated_sha": "3e4df2b",
       "started_at": null,
       "completed_at": "2026-05-30T23:28:26Z",
-      "updated_at": "2026-05-30T23:28:26Z",
+      "updated_at": "2026-06-11T22:42:12Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -123,7 +155,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "0523b54",
+        "to": "d348161",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": ".github/workflows/rocm-build-smoketest.yml: D doc-only; CMakeLists.txt: comment-only (comments/format only); cuda_to_hip.h: comment-only (comments/format only); hip_compat/cuda.h: comment-only (commen",
+        "at": "2026-06-11T22:41:21Z"
+      }
     }
   }
 }
