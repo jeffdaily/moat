@@ -7,17 +7,17 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-11T06:31:28Z",
+  "updated_at": "2026-06-11T06:53:55Z",
   "head_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": "2026-05-31T01:00:42Z",
       "completed_at": "2026-06-11T06:30:24Z",
-      "updated_at": "2026-06-11T06:31:28Z",
+      "updated_at": "2026-06-11T06:53:55Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -154,5 +154,8 @@
         "at": "2026-06-11T06:30:24Z"
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/apache/mahout/pull/1399",
+  "pr_number": 1399,
+  "pr_opened_at": "2026-06-11T06:53:55Z"
 }
