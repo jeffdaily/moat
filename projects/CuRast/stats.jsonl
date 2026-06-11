@@ -67,3 +67,11 @@
 {"kind":"phase","ts":"2026-06-11T05:50:23Z","phase":"test","seconds":4.131,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/CuRast/src && /var/lib/jenkins/moat/agent_space/CuRast-reval-gpu0/build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30"}
 {"kind": "tokens", "ts": "2026-06-11T06:01:25Z", "tokens": 57969, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-11T17:37:42Z", "tokens": 87014, "source": "porter"}
+{"kind":"phase","ts":"2026-06-11T18:05:44Z","phase":"compile","seconds":4.149,"exit":0,"cmd":"cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -B /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build"}
+{"kind":"phase","ts":"2026-06-11T18:06:08Z","phase":"compile","seconds":19.895,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build --target CuRast -j128"}
+{"kind":"phase","ts":"2026-06-11T18:06:21Z","phase":"test","seconds":1.127,"exit":139,"cmd":"/var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build/CuRast --bench ./example_donaukanal_urania.glb 1920 1080 30"}
+{"kind":"phase","ts":"2026-06-11T18:07:23Z","phase":"cuda-compile","seconds":2.695,"exit":1,"cmd":"cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc -B /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate"}
+{"kind":"phase","ts":"2026-06-11T18:07:57Z","phase":"cuda-compile","seconds":4.359,"exit":0,"cmd":"cmake /var/lib/jenkins/moat/projects/CuRast/src -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc -DCMAKE_CUDA_FLAGS=-I/opt/conda/envs/cuda-12.8/targets/x86_64-linux/include -B /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate"}
+{"kind":"phase","ts":"2026-06-11T18:08:22Z","phase":"cuda-compile","seconds":14.099,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
+{"kind":"phase","ts":"2026-06-11T18:10:02Z","phase":"cuda-compile","seconds":6.323,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-cuda-gate --target CuRast -j128"}
+{"kind":"phase","ts":"2026-06-11T18:15:28Z","phase":"compile","seconds":18.236,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build --target CuRast -j128"}

@@ -799,3 +799,132 @@ head_sha = e766660a. linux-gfx90a / linux-gfx1100 / windows-gfx1201 = completed
 of the PR claim). pr-ready = True. Ready for the user's PR-open decision; the
 upstream PR was NOT opened (gated on explicit approval). PR claim should scope
 to gfx90a, gfx1100, gfx1201 only.
+
+## Two review fixes 2026-06-11 (linux-gfx90a porter) -- head 08da182
+
+Two real defects found in review, both from AMD-specific changes leaking into
+the shared/CUDA code path. PR is HELD pending these (not opened). New commit
+08da182 on top of the e766660 squash (never amended). CUDA build kept identical
+to upstream.
+
+### Fix 1: mipmap generation had no fallback (correctness gap on gfx1201)
+
+textureTools.cu kernel_computeMipMap built the texture mip pyramid in a single
+cooperative kernel using cg::this_grid()/grid.sync() to sync the grid between
+levels. computeMipMap() launched it via hipLaunchCooperativeKernel; on
+cooperative-launch failure (gfx1201/ROCm 7.14/Windows return an error) it only
+printed to stderr and continued, so the mip levels were NEVER generated and the
+resolve sampler read uninitialized data (incorrect minified textures), not a
+graceful lower-detail fallback.
+
+Fix: on `#if defined(USE_HIP)` the build now splits the pyramid build into one
+ordinary (non-cooperative) launch PER MIP LEVEL in a host loop. New per-level
+kernel kernel_computeMipMapLevel(data, level, src_w, src_h, src_offset) computes
+one level from the previous; the kernel boundary is the grid-wide barrier that
+replaced grid.sync(). The host loop walks src->target dimensions per level. The
+`#else` (CUDA) path keeps upstream's single cudaLaunchCooperativeKernel plus the
+original internal-loop kernel_computeMipMap with cg::this_grid()/grid.sync()
+UNCHANGED (guarded so the CUDA kernel keeps its internal loop). README Known
+Issues: removed the now-incorrect "distant textures fall back to lower detail"
+mipmap entry; kept the HIP-Vulkan-interop and inline-launch entries.
+
+### Fix 2: unguarded launch restructuring broke the CUDA build
+
+CuRast_render.h:172-191 replaced upstream's three prog->launchCooperative
+(stage1/2/3) UNGUARDED with host-side cuMemsetD8Async zeroing + three
+prog->launchOccupancyBased(...). launchOccupancyBased exists ONLY on
+HipModularProgram; on the CUDA build prog is CudaModularProgram (launchCooperative
+only), so the CUDA build did not compile. The matching stage1/stage2 kernel
+changes in triangles_visbuffer.cu (in-kernel counter init removed, grid.sync()
+removed) were also unguarded.
+
+Fix: guarded the host code under `#if defined(USE_HIP)` (HIP keeps current
+host-zeroing + launchOccupancyBased; `#else` restores upstream's three
+launchCooperative with no host zeroing). Guarded the kernel-side changes in
+triangles_visbuffer.cu: stage1 `#else` restores upstream's grid + grid-wide
+counter init + grid.sync()/args.state->dbg_fragcount=0 + plain __shared__ CMesh;
+stage2 `#else` restores grid + grid.sync(); stage3 `#else` restores the unused
+upstream `auto grid = cg::this_grid()`. The `#else` blocks were copied verbatim
+from git show 037df01:src/kernels/triangles_visbuffer.cu and
+037df01:src/CuRast_render.h. HIP path is unchanged (binary-unchanged by Fix 2).
+
+### Fix 3 (found during the CUDA gate, same fault class): two more unguarded leaks
+
+The CUDA compile gate surfaced two further pre-existing unguarded HIP-only leaks
+beyond the two scoped fixes; fixed them so the CUDA path is a pure passthrough:
+- CuRast_render.h INLINE_LAUNCH_1D/2D macros hardcoded hipFunction_t /
+  hipModuleLaunchKernel / hipStreamSynchronize unguarded. Guarded: `#else`
+  expands to prog->launch(name, args, count) / prog->launch2D(name, args, w, h),
+  the upstream dispatch path. HIP branch unchanged.
+- CudaVirtualMemory.h HIP_DEVPTR_ADD was only #defined inside its HIP block, so
+  the CUDA build had it undefined at cuMemMap/cuMemSetAccess/cuMemcpyHtoD. Added
+  the CUDA `#else` definition ((CUdeviceptr)(ptr) + (uint64_t)(off)) matching the
+  one already in cuda_to_hip.h, equivalent to upstream's integer arithmetic.
+
+### Validation A -- AMD GPU, gfx90a (real run)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, 104 CUs (wave64), HIP_VISIBLE_DEVICES=3,
+ROCm 7.2.1.
+
+```bash
+HIP_VISIBLE_DEVICES=3 cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -B /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-fix-build
+HIP_VISIBLE_DEVICES=3 cmake --build <build> --target CuRast -j$(nproc)
+cd /var/lib/jenkins/moat/projects/CuRast/src
+HIP_VISIBLE_DEVICES=3 ROCM_PATH=/opt/rocm <build>/CuRast \
+    --bench ./example_donaukanal_urania.glb 1920 1080 30
+```
+
+Results: build exit 0 (only warnings). 30 frames, 966461 of 966461 triangles
+visible per frame, best visbuffer-pipeline 0.278 ms @ 1920x1080. bench_render.png
+264744 bytes, all 2073600 pixels non-zero (Donaukanal scene, 21503 unique colors,
+not blank). EXIT=0, no GPU faults.
+MIPMAP-NOW-GENERATES EVIDENCE: stderr contains ZERO "cooperative launch failed" /
+"computeMipMap" messages (previously this path printed ~20 such messages and left
+mips ungenerated). The per-level non-cooperative mip launches run to completion.
+
+### Validation B -- CUDA compile no-regression gate (validator.md step 3)
+
+nvcc /opt/conda/envs/cuda-12.8/bin/nvcc, host gcc 13.3, pinned sm_80.
+
+```bash
+cmake <src> -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 \
+    -DCMAKE_CUDA_COMPILER=/opt/conda/envs/cuda-12.8/bin/nvcc \
+    -DCMAKE_CUDA_FLAGS="-I/opt/conda/envs/cuda-12.8/targets/x86_64-linux/include" -B <cudabuild>
+cmake --build <cudabuild> --target CuRast -j$(nproc)
+```
+
+Throwaway local patches for the gate (reverted before commit; not in 08da182):
+CMakeLists.txt CMAKE_CUDA_ARCHITECTURES 75 86 89 90 -> 80 (the -D does not reach
+the hardcoded set()), and common.cmake find_package(CUDAToolkit 13.1 -> 12.8) so
+configure passes with the 12.8 conda toolkit.
+
+GATE RESULT: the host TUs that hold these fixes compile. With the missing-<print>
+env wall worked around (throwaway FILE* println overload in compat_print.h, also
+reverted), CuRast.cpp (which includes CuRast_render.h with the launch guards) and
+textureTools.cu (the mipmap split) both BUILD with no error. The launchOccupancyBased,
+INLINE_LAUNCH, and HIP_DEVPTR_ADD CUDA breaks are all resolved.
+
+The only remaining CUDA errors are ENVIRONMENTAL and present IDENTICALLY in the
+upstream base 037df01 (built with the identical toolchain + arch for comparison):
+- println(stderr, ...) in CURuntime.h: upstream uses C++23 <print> directly; GCC
+  13.3 libstdc++ lacks <print>. compat_print's polyfill lacks the FILE* overload.
+- lines.cu atomicMin(uint64_t*): needs the CUDA 13.1 toolkit; same line in upstream.
+- main.cpp cuCtxCreate(&ctx, &params, 0, dev): the 4-arg CUctxCreateParams form is
+  CUDA 13.1; CUDA 12.8 has cuCtxCreate_v2 3-arg. Identical line in upstream.
+The upstream base 037df01 also fails to compile under this toolchain (fatal error:
+print: No such file or directory; lines.cu uint64_t redecl), so these are
+pre-existing upstream requirements (CUDA 13.1 + a <print>-capable C++23 stdlib),
+NOT regressions from 08da182. The port adds no new CUDA-path break.
+
+### State transition
+
+advance-head 08da182 flipped linux-gfx90a / linux-gfx1100 / windows-gfx1201 from
+completed to revalidate (Fix 1 changes AMD device code: mipmap). linux-gfx90a
+carried to completed via the real gfx90a bench above (validated_sha=08da182).
+linux-gfx1100 and windows-gfx1201 left at revalidate for their own hosts -- the
+mipmap fix genuinely needs re-running there (gfx1201 is where the fallback gap
+mattered). windows-gfx1101 / windows-gfx1151 unchanged (optional, port-ready).
+Did NOT re-squash and did NOT mark pr-ready; PR stays held until gfx1100 and
+gfx1201 revalidate 08da182 on their hosts.
