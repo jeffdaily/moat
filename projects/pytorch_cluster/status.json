@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-08T13:34:12Z",
-  "updated_at": "2026-06-08T13:34:12Z",
+  "updated_at": "2026-06-11T05:35:16Z",
   "head_sha": null,
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "unclaimed",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "already-supported: merged upstream PR #149 enables ROCm build; zero fault classes; maintained ROCm wheels. No port needed; see dispositions.json + notes.md.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-08T13:34:12Z",
+      "updated_at": "2026-06-11T05:35:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
