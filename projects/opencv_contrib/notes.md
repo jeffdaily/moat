@@ -690,3 +690,52 @@ Scrutiny-list verification (all judged by reading code, not re-running GPU):
 8. Upstreamability sweep (whole diff, both repos) -- CLEAN. No MOAT jargon (grep moat/follower/head_sha/validated_sha/revalidate/gfx1151/"strategy a|b"/curated over both full diffs: zero hits). ASCII-only (no non-ASCII on added lines), no em-dash. All 10 contrib + 9 core commit titles are `[ROCm]`-prefixed and <= 72 chars; bodies name Claude/Anthropic, carry a Test Plan, no Co-Authored-By noreply trailer. All 5 substantially-new HIP kernel files carry `Copyright (c) 2026 Advanced Micro Devices, Inc.` + `\author Jeff Daily <jeff.daily@amd.com>`. No debug prints/TODO/FIXME/commented-out code in the new files. All forks under jeffdaily.
 
 Non-blocking note for PR-prep (NOT a code change): item-1 wording (the 2 TVL1.Async cases) and the documented unverified-upstream kernels (rotate, rectStdDev, box max/min, row/col sums, gamma, alphaPremul) must be described neutrally in the PR body and the feature-loss/deferral list must be surfaced per the ledger (graphcut, NvOF, rocDecode decode, native encode, alphaComp/16U-16S-4ch hist, dnn-MIOpen). These are PR-prep tasks already tracked in notes; they do not gate this review.
+
+## Validation (lead, gfx90a) 2026-06-11
+
+**State: completed** -- validated_sha = f7a8b32e1a99e8a456fcb3377d731d29200321ad (contrib), 934c3169303b718104b02e775db8eb3cd60a8203 (core)
+GPU: AMD Instinct MI250X / MI250, gfx90a, HIP_VISIBLE_DEVICES=0
+ROCm: 7.2.1
+OPENCV_TEST_DATA_PATH: projects/opencv_contrib/opencv_extra/testdata
+
+### Integrity check
+- contrib HEAD f7a8b32 == remote fork tip (FETCH_HEAD): MATCH
+- core HEAD 934c316 == remote fork tip (FETCH_HEAD): MATCH
+- `python3 utils/moatlib.py audit-clean opencv_contrib`: OK, no uncommitted source edits
+- `git status --porcelain` in both repos: clean
+
+### Build (incremental, no work to do)
+```
+cd projects/opencv_contrib/build
+cmake --build . --target opencv_test_cudev opencv_test_cudastereo opencv_test_cudalegacy \
+  opencv_test_cudawarping opencv_test_cudaarithm opencv_test_cudafilters \
+  opencv_test_cudaimgproc opencv_test_cudafeatures2d opencv_test_cudaobjdetect \
+  opencv_test_cudaoptflow opencv_test_cudacodec -j$(nproc)
+# ninja: no work to do.
+```
+
+### GPU test results (HIP_VISIBLE_DEVICES=0, OPENCV_TEST_DATA_PATH=.../opencv_extra/testdata)
+
+| Suite | Passed | Total | Notes |
+|---|---|---|---|
+| opencv_test_cudev | 402 | 402 | PASS |
+| opencv_test_cudastereo | 128 | 128 | PASS |
+| opencv_test_cudalegacy | 14 | 14 | PASS (1 disabled) |
+| opencv_test_cudawarping | 4535 | 4535 | PASS |
+| opencv_test_cudaarithm | 11417 | 11417 | PASS |
+| opencv_test_cudafilters | 16028 | 16028 | PASS |
+| opencv_test_cudaimgproc | 3671 | 3671 | PASS |
+| opencv_test_cudafeatures2d | 256 | 256 | PASS |
+| opencv_test_cudaobjdetect | 18 | 18 | PASS |
+| opencv_test_cudaoptflow | 41 | 47 | 6 failures: EXACTLY the documented set (see below) |
+| opencv_test_cudacodec | 240 | 240 | PASS (YuvConverter only; decode/encode gated off) |
+
+**cudaoptflow 6 expected failures (verified exact set):**
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/0 -- float atomicAdd reduction ordering (root-caused, not a port defect)
+- CUDA_OptFlow/OpticalFlowDual_TVL1.Async/1 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.Regression/0 -- no AMD HW OF engine (HAVE_NVIDIA_OPTFLOW not defined)
+- CUDA_OptFlow/NvidiaOpticalFlow_1_0.OpticalFlowNan/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.Regression/0 -- same
+- CUDA_OptFlow/NvidiaOpticalFlow_2_0.OpticalFlowNan/0 -- same
+
+No unexpected failures. All 10 other suites are 100%. Port is fully validated on real gfx90a.
