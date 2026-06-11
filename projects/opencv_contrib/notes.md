@@ -1314,6 +1314,58 @@ no effect on any binary.
 | Suite | Passed | Total | Notes |
 |---|---|---|---|
 | opencv_test_cudev | 402 | 402 | PASS (no change) |
+## Validation (windows-gfx1201) 2026-06-11
+
+**State: completed** -- validated_sha = 8a5b0a222545f1ff9ab93e95afbf92cc7dc9daa0 (contrib head_sha)
+GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), HIP_VISIBLE_DEVICES=0
+ROCm: TheRock 7.14.0a20260604 (pip SDK _rocm_sdk_devel)
+OPENCV_TEST_DATA_PATH: projects/opencv_contrib/opencv_extra/testdata
+Fork head confirmed: contrib 8a5b0a2, core d30273d (both clean, no uncommitted changes)
+
+### Windows-specific build notes
+Build dir: `projects/opencv_contrib/build_gfx1201` (gitignored). Two-repo layout
+(src/ = contrib, src-core/ = opencv core fork), both cloned fresh from fork at head_sha.
+No rocDecode available on Windows (not in TheRock pip SDK); cudacodec builds with
+WITH_ROCDECODE=OFF (YuvConverter only, same as gfx90a). No FFmpeg on this host; WITH_FFMPEG=OFF.
+
+Build recipe:
+```
+ROCM=.../pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -G Ninja src-core \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_PREFIX_PATH=$ROCM \
+  -DWITH_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DOPENCV_EXTRA_MODULES_PATH=src/modules \
+  -DBUILD_LIST="core,cudev,cudaarithm,cudafilters,cudawarping,cudaimgproc,cudastereo,
+    cudafeatures2d,cudaobjdetect,cudalegacy,cudabgsegm,cudaoptflow,cudacodec,
+    imgproc,imgcodecs,videoio,highgui,video,optflow,objdetect,calib3d,ts" \
+  -DBUILD_TESTS=ON -DWITH_CUDA=OFF -DWITH_OPENCL=OFF -DWITH_PYTHON=OFF \
+  -DWITH_FFMPEG=OFF -DWITH_ROCDECODE=OFF -DWITH_GSTREAMER=OFF \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_FLAGS="-march=x86-64-v3" -DCMAKE_CXX_FLAGS="-march=x86-64-v3"
+cmake --build . --target opencv_test_cudev ... -j64
+# 508/508 targets, warnings only
+```
+
+GOTCHA: 3rdparty/libwebp SSE4.1 sources require `-march=x86-64-v3` (enables SSSE3+SSE4.1)
+when compiling with clang on Windows; without it, clang rejects the always_inline SSE4.1
+builtins. This is a host C compiler issue (libwebp, not the HIP port); CUDA path unaffected.
+
+GOTCHA (DLL loading on Windows): running test .exe files from bash (Git for Windows /
+MSYS2) triggers the bash DLL loader which emulates Linux shared-library loading. The
+fix: add the build bin dir to PATH (`export PATH=".../build_gfx1201/bin:$ROCM_LIBS/bin:$PATH`")
+so the POSIX emulation layer finds the OpenCV + ROCm DLLs before falling back to System32.
+Additionally, copy the TheRock core DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll,
+hiprtc0714.dll, hiprtc-builtins0714.dll) into the bin dir so the Windows loader uses the
+TheRock runtime ahead of the Adrenalin System32 DLL (same dietgpu fix class).
+
+### GPU test results (HIP_VISIBLE_DEVICES=0, ROCBLAS_TENSILE_LIBPATH=_rocm_sdk_libraries/bin/rocblas/library)
+
+| Suite | Passed | Total | Notes |
+|---|---|---|---|
+| opencv_test_cudev | 402 | 402 | PASS |
 | opencv_test_cudastereo | 128 | 128 | PASS |
 | opencv_test_cudalegacy | 14 | 14 | PASS (1 disabled) |
 | opencv_test_cudawarping | 4535 | 4535 | PASS |
@@ -1326,6 +1378,13 @@ no effect on any binary.
 | opencv_test_cudacodec | 240 | 240 | PASS (YuvConverter only; decode/encode gated off on gfx90a) |
 
 **cudaoptflow 6 expected failures (unchanged from prior validations):**
+| opencv_test_cudaimgproc | 3788 | 3788 | PASS (+117 histEven/histRange/alphaComp vs gfx90a) |
+| opencv_test_cudafeatures2d | 256 | 256 | PASS |
+| opencv_test_cudaobjdetect | 18 | 18 | PASS |
+| opencv_test_cudaoptflow | 41 | 47 | 6 failures: EXACTLY the documented set (see below) |
+| opencv_test_cudacodec | 240 | 240 | PASS (YuvConverter only; WITH_ROCDECODE=OFF on Windows) |
+
+**cudaoptflow 6 expected failures (identical to gfx90a and gfx1100):**
 - CUDA_OptFlow/OpticalFlowDual_TVL1.Async/0 -- float atomicAdd reduction ordering (not a port defect)
 - CUDA_OptFlow/OpticalFlowDual_TVL1.Async/1 -- same
 - CUDA_OptFlow/NvidiaOpticalFlow_1_0.Regression/0 -- no AMD HW OF engine
@@ -1337,3 +1396,6 @@ No unexpected failures in any suite. All regression suites match prior baselines
 two functional deltas (6dbfed7 parity kernels, a6612f0 rocDecode) introduced no regressions
 on gfx90a. cudaimgproc 3788/3788 confirms the new histEven/histRange/alphaComp kernels are
 correct on wave64 gfx90a. Port fully validated on real gfx90a at tip 8a5b0a2.
+No unexpected failures. All 10 other suites are 100%. Results identical to gfx1100 (same
+failure set, same pass counts). gfx1201 is RDNA4 (wave32, same as RDNA3), so wave32 path
+is confirmed. No delta-port needed.
