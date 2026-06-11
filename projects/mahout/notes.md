@@ -967,3 +967,86 @@ Wave32 verdict: All L2-norm/amplitude tests pass on gfx1100 wave32, identical to
 Transition: revalidate -> completed (validated_sha = ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb).
 ## Precommit fully addressed 2026-06-11
 Two real precommit hook failures fixed in 9856724 (rebased onto a concurrent test-file push ebb71af that landed on the fork from jeff/another session; 088041c is its ancestor): (1) insert-license Rust -- qdp-python/build.rs lost a leading blank `//` comment line in the ASF removal; restored byte-identical to qdp-core/build.rs. (2) clippy unnecessary_cast under -D warnings -- 14 `stream.stream as *mut c_void` sites that are redundant under --all-features (hip wins, stream is already *mut c_void) but REAL under cuda-only (cudarc CUstream); fixed with hip-scoped `#![cfg_attr(feature="hip", allow(clippy::unnecessary_cast))]` at 3 crate roots/test files. Verified clippy clean under hip/cuda/cuda+hip; gfx90a hip build exit 0. Full `pre-commit run --all-files` can't go green on THIS host due to 2 env artifacts (torch 2.13 vs tch 2.9 ABI in the clippy hook's torch-sys; conda _pytest leakage in ty) -- neither from our commit, neither on the CI runner. Precommit reply to rich7420/ryankert01 held until CI confirms green on 9856724.
+## Validation 2026-06-11 (windows-gfx1201, revalidate -> completed) -- PASS with delta-port
+
+Platform: windows-gfx1201, GPU: AMD Radeon RX 9070 XT (gfx1201, RDNA4 wave32),
+HIP_VISIBLE_DEVICES=0, Windows 11 (26200), TheRock ROCm 7.14.
+Fork: jeffdaily/mahout @ moat-port HEAD 90b60069da9ee5bcd0f9be3c5fbd95ca2b6efcab.
+
+Revalidating from f3f7db33 to 088041cb (head before the new fork commits; the review-fix
+commit 206aa0c0d introduced HIP_STREAM_NON_BLOCKING in fork_default_stream).
+
+### Delta analysis: what changed vs prior gfx1201 validation
+
+1. HIP_STREAM_NON_BLOCKING in fork_default_stream (device.rs, 206aa0c0d):
+   Changed hipStreamCreate to hipStreamCreateWithFlags(HIP_STREAM_NON_BLOCKING).
+   On Linux gfx90a/gfx1100, this works correctly: after hipStreamSynchronize on a
+   non-blocking stream, hipMemcpy D2H reads the kernel results. On Windows gfx1201
+   TheRock 7.14, non-blocking stream writes are NOT visible via hipMemcpy after
+   hipStreamSynchronize or hipDeviceSynchronize -- a cache coherency gap in the
+   Windows HIP runtime. Symptom: 3 stream-path tests fail with "got 0":
+   - qdp-kernels amplitude_encode: test_l2_norm_batch_kernel_stream
+   - qdp-core gpu_ptr_encoding: test_encode_from_gpu_ptr_f32_with_stream_non_default_success
+   - qdp-core gpu_ptr_encoding: test_encode_batch_from_gpu_ptr_f32_with_stream_success
+   Fix: use hipStreamCreate (blocking stream) on non-Linux. Blocking streams
+   have correct D2H coherency on all tested Windows TheRock versions.
+
+2. encode_from_gpu_ptr_f32 / encode_from_gpu_ptr_f32_with_stream in amplitude.rs,
+   angle.rs, basis.rs and the QuantumEncoder trait default in mod.rs (206aa0c0d)
+   remained #[cfg(target_os = "linux")] while their callers in lib.rs used
+   #[cfg(qdp_gpu_platform)]. On Windows this compiled the callers but not the
+   callees, producing an unresolved-function error. Fix: rename all 5 occurrences
+   to #[cfg(qdp_gpu_platform)].
+
+Both fixes committed as 90b60069da9ee5bcd0f9be3c5fbd95ca2b6efcab on top of
+9856724c3 (precommit build.rs fix) and ebb71af44 (dlpack test arch-aware fix)
+which landed while this validation was in progress.
+
+### Build commands (gfx1201)
+```
+ROOT=/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+MSVC_DIR="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64"
+MSVC_BASE="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207"
+WIN_SDK_BASE="/c/Program Files (x86)/Windows Kits/10"; SDK_VER="10.0.26100.0"
+export CARGO_HOME=/b/develop/moat/agent_space/cargo RUSTUP_HOME=/b/develop/moat/agent_space/rustup
+export PATH="$CARGO_HOME/bin:$MSVC_DIR:$ROOT/bin:$ROOT/lib/llvm/bin:$PATH"
+export LIB="$(cygpath -w $MSVC_BASE/lib/x64);$(cygpath -w $WIN_SDK_BASE/Lib/$SDK_VER/ucrt/x64);$(cygpath -w $WIN_SDK_BASE/Lib/$SDK_VER/um/x64)"
+export HIP_DEVICE_LIB_PATH="$ROOT/lib/llvm/amdgcn/bitcode"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1201 QDP_HIPCC="$ROOT/bin/hipcc.exe"
+export ROCM_PATH="$ROOT" HIP_VISIBLE_DEVICES=0
+cargo build --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml \
+    -p qdp-core -p qdp-kernels --no-default-features --features hip
+cp $ROOT/bin/amdhip64_7.dll $ROOT/bin/amd_comgr.dll $ROOT/bin/rocm_kpack.dll \
+   /b/develop/moat/projects/mahout/src/qdp/target/debug/deps/
+cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml \
+    -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+
+### Test results (gfx1201, dev profile, --test-threads=1) -- 330 passed, 0 failed
+
+qdp-kernels:
+- amplitude_encode 21/21, angle_encode 10/10.
+
+qdp-core:
+- lib unit tests: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 68/68, gpu_validation 8/8.
+  (gpu_ptr_encoding increased from 64 to 68 vs prior run: ebb71af44 made
+   test_dlpack_device_id_non_zero arch-aware; now enabled on gfx1201.)
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet 8/8,
+  preprocessing 14/14, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- 0 failures total.
+
+Note: 4 ignored tests are pre-existing Windows multi-GPU skips (#[ignore] on
+tests that need 2+ devices; gfx1101 absent from bus on this host).
+
+Non-blocking stream note for Linux revalidation: the fix uses #[cfg(target_os)]
+to isolate the Windows workaround -- Linux still gets HIP_STREAM_NON_BLOCKING
+(non-blocking stream, full pipeline overlap preserved). The Linux gfx90a and
+gfx1100 platforms need to rebuild and revalidate (this delta touches device.rs
+with a Rust source change that is inert on Linux -- the #[cfg(not(target_os = "linux"))]
+branch is dead code on Linux. A binary-equivalence check should confirm identical
+Linux device code objects for a carry-forward.)
+
+Transition: revalidate -> completed (validated_sha = 90b60069da9ee5bcd0f9be3c5fbd95ca2b6efcab).

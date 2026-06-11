@@ -61,3 +61,11 @@
 {"kind":"phase","ts":"2026-06-11T17:27:15Z","phase":"test-python","seconds":1.356,"exit":4,"cmd":"conda run -n py_3.12 python -m pytest testing/qdp testing/qdp_python qdp/qdp-python/tests -q --tb=short"}
 {"kind": "tokens", "ts": "2026-06-11T17:33:38Z", "tokens": 91956, "source": "validator (delta-port: gfx1100 dlpack test fix)"}
 {"kind": "tokens", "ts": "2026-06-11T17:47:28Z", "tokens": 92272, "source": "porter precommit license+clippy fix"}
+{"kind": "tokens", "ts": "2026-06-07T03:15:34Z", "tokens": 88622, "source": "validator"}
+{"kind":"phase","ts":"2026-06-11T17:13:32Z","phase":"compile","seconds":0.055,"exit":101,"cmd":"cargo build --manifest-path qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-11T17:13:52Z","phase":"compile","seconds":4.652,"exit":101,"cmd":"cargo build --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-11T17:15:42Z","phase":"compile","seconds":1.641,"exit":0,"cmd":"cargo build --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
+{"kind":"phase","ts":"2026-06-11T17:17:10Z","phase":"test","seconds":40.986,"exit":101,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-11T17:27:32Z","phase":"test","seconds":36.145,"exit":101,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-11T17:29:58Z","phase":"test","seconds":39.661,"exit":101,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind":"phase","ts":"2026-06-11T17:47:39Z","phase":"test","seconds":41.592,"exit":0,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
