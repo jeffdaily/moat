@@ -690,6 +690,19 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-11T07:12:13Z"
+    },
+    {
+      "id": "k2-torch-decoder-kaldifeat",
+      "kind": "feature-port",
+      "project": "k2",
+      "component": null,
+      "summary": "k2/torch (the standalone libtorch C++ decoder layer, ~28 files) is deferred on the ROCm build: k2/CMakeLists.txt skips the k2/torch subdir on HIP because it pulls in kaldifeat (csukuangfj/kaldifeat), a separate feature-extraction project. The core _k2 Python module + csrc gtest suite (what icefall/sherpa consume) are ported and validated. UN-DEFER once the kaldifeat MOAT project's lead is completed: then build/install jeffdaily/kaldifeat @ moat-port and re-enable the k2/torch subdir on HIP. Tracked as a depends_on(kaldifeat) relationship.",
+      "refs": [
+        "projects/k2/notes.md"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-11T15:50:21Z"
     }
   ]
 }
