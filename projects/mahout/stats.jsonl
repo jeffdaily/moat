@@ -47,3 +47,4 @@
 {"kind":"phase","ts":"2026-06-11T16:13:48Z","phase":"compile","seconds":3.765,"exit":0,"cmd":"cargo build --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
 {"kind":"phase","ts":"2026-06-11T16:13:58Z","phase":"test","seconds":2.494,"exit":0,"cmd":"cargo test --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core --no-default-features --features hip --test gpu_ptr_encoding --test gpu_fidelity"}
 {"kind":"phase","ts":"2026-06-11T16:14:24Z","phase":"compile","seconds":8.818,"exit":101,"cmd":"cargo clippy --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml --all-targets --all-features"}
+{"kind": "tokens", "ts": "2026-06-11T16:18:46Z", "tokens": 51748, "source": "porter precommit build.rs fix"}
