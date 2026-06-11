@@ -7,17 +7,17 @@
   "priority": 6.245,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:02Z",
-  "updated_at": "2026-06-11T07:04:43Z",
+  "updated_at": "2026-06-11T07:21:22Z",
   "head_sha": "d83b6d171eda425ef79092849185830ba5f15623",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "d83b6d171eda425ef79092849185830ba5f15623",
       "started_at": "2026-05-31T01:38:05Z",
       "completed_at": "2026-06-11T07:03:11Z",
-      "updated_at": "2026-06-11T07:04:43Z",
+      "updated_at": "2026-06-11T07:21:22Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -134,5 +134,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/LeelaChessZero/lc0/pull/2420",
+  "pr_number": 2420,
+  "pr_opened_at": "2026-06-11T07:21:22Z"
 }
