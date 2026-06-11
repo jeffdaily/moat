@@ -7,9 +7,61 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-11T17:31:30Z",
-  "head_sha": "ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb",
+  "updated_at": "2026-06-11T17:47:28Z",
+  "head_sha": "9856724c34a80197dc6152bbdbc5b71a948c6b9b",
   "platforms": {
+    "windows-gfx1201": {
+      "state": "revalidate",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
+      "started_at": null,
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T15:30:54Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
+      }
+    },
+    "linux-gfx1100": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb",
+      "started_at": null,
+      "completed_at": "2026-06-11T17:31:30Z",
+      "updated_at": "2026-06-11T17:31:30Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "validator"
+    },
     "linux-gfx90a": {
       "state": "pr-open",
       "blocked": false,
@@ -39,59 +91,7 @@
         "at": "2026-06-11T15:31:48Z"
       }
     },
-    "linux-gfx1100": {
-      "state": "completed",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "ebb71af441f7a29f4f9e0440e4ae36ac4f49d3eb",
-      "started_at": null,
-      "completed_at": "2026-06-11T17:31:30Z",
-      "updated_at": "2026-06-11T17:31:30Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator"
-    },
     "windows-gfx1101": {
-      "state": "revalidate",
-      "blocked": false,
-      "blocked_reason": null,
-      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
-      "started_at": null,
-      "completed_at": "2026-06-11T06:30:24Z",
-      "updated_at": "2026-06-11T15:30:54Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      },
-      "last_agent": "validator",
-      "carry_forward": {
-        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
-        "method": "source-class",
-        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
-        "at": "2026-06-11T06:30:24Z"
-      }
-    },
-    "windows-gfx1201": {
       "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,

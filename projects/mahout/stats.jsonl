@@ -60,3 +60,4 @@
 {"kind":"phase","ts":"2026-06-11T17:27:07Z","phase":"test","seconds":1.359,"exit":4,"cmd":"conda run -n py_3.12 python -m pytest testing/qdp testing/qdp_python qdp/qdp-python/tests -q --tb=short"}
 {"kind":"phase","ts":"2026-06-11T17:27:15Z","phase":"test-python","seconds":1.356,"exit":4,"cmd":"conda run -n py_3.12 python -m pytest testing/qdp testing/qdp_python qdp/qdp-python/tests -q --tb=short"}
 {"kind": "tokens", "ts": "2026-06-11T17:33:38Z", "tokens": 91956, "source": "validator (delta-port: gfx1100 dlpack test fix)"}
+{"kind": "tokens", "ts": "2026-06-11T17:47:28Z", "tokens": 92272, "source": "porter precommit license+clippy fix"}
