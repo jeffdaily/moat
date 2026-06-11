@@ -189,3 +189,72 @@ cuda-not-validated: torch-extension build-time hipify setup.py only invokes
 hipcc on ROCm; building the CUDA path requires an unmodified upstream checkout
 with nvcc. The port does not modify any CUDA-compiled source file that is not
 guarded; CUDA regression is architecturally impossible for this design.
+
+## Validation 2026-06-10 (windows-gfx1201)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for
+Workstations. ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260604 (hip
+7.14.60850-d34cbb64), torch 2.9.1+rocm7.14.0a20260604. Python 3.12.
+Fork tip validated: 5d2d6f4c5fe13631cfe7734c49343a1e0ceeed1d (Windows build
+fix commit on top of 7a4c596).
+
+Two Windows-specific build issues encountered and fixed in setup.py and
+.gitignore (both gated sys.platform == "win32" and IS_ROCM; Linux/CUDA builds
+are byte-identical):
+
+1. Binding .cpp must compile via hipcc: torch routes .cpp -> MSVC (cl.exe).
+   MSVC cannot parse the GCC __attribute__ syntax in HIP runtime headers
+   (amd_hip_vector_types.h) pulled in through torch/extension.h. Fix: copy the
+   binding pybind.cpp to a *_winhip.cu shim at build time; the .cu extension
+   makes torch's _is_cuda_file() return True, routing it to hipcc (amdclang).
+   The shim is transient (gitignored, regenerated each build).
+
+2. ninja required on Windows+ROCm: the non-ninja MSVC compile path does not
+   escape spaces in -I paths before handing them to hipcc; include dirs under
+   "Program Files (x86)" are split on the space. Fix: use_ninja=True on
+   Windows+ROCm only (default is False).
+
+3. -fopenmp/-lgomp stripped from cxx_args on Windows+ROCm: those are Linux GCC
+   flags not needed when every source compiles through hipcc.
+
+Same pattern as nerfacc and gsplat on this host.
+
+### Build command (gfx1201, Windows)
+
+    ROCM_HOME="/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+    MSVC_BIN="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64"
+    cd projects/llm-awq/src/awq/kernels
+    find csrc \( -name '*.hip' -o -name '*_hip.*' \) ! -name 'cuda_to_hip*' -delete
+    rm -rf build csrc/pybind_winhip.cu
+    PATH="$MSVC_BIN:$PATH" HIP_VISIBLE_DEVICES=0 ROCM_HOME="$ROCM_HOME" \
+      PYTORCH_ROCM_ARCH=gfx1201 MAX_JOBS=16 DISTUTILS_USE_SDK=1 \
+      python setup.py build_ext --inplace
+    pip install -e . --no-build-isolation
+    # ~35s, exit 0
+
+### GPU tests
+
+1. agent_space/awq_kernel_test_win.py (GEMM-vs-GEMV self-consistency):
+   - qweight shape: (32, 128), scales: (8, 128), scaled_zeros: (8, 128)
+   - out_gemv shape (1, 1, 128) finite True
+   - out_gemm shape (1, 16, 128) finite True
+   - GEMM-vs-GEMV max_abs_diff=0.0000 mean_abs_diff=0.00000 max_rel=0.0000
+   - RESULT: PASS
+
+2. agent_space/awq_model_test_win.py (OPT-125M, real 4-bit AWQ quant, end-to-end):
+   - prefill logits shape (1, 6, 50272) finite True
+   - FP16 ppl   = 11.852
+   - AWQ4 ppl   = 13.594  (ratio 1.15x, well within FP16*3+5 bound)
+   - WQLinear modules: 72
+   - FP16 gen   : 'The capital of France is the capital of the French Republic.'
+   - AWQ4 gen   : 'The capital of France is the capital of the world.'
+   - RESULT: PASS
+
+Windows host compat notes (test scripts only, not the port):
+- torchvision 0.27.0+rocm7.14 _C.pyd has an unresolved symbol on this host;
+  blocked via sys.modules['torchvision'] = None before transformers import.
+- torch.distributed.fsdp: fake_pg.py imports torch._C._distributed_c10d which
+  is absent in this TheRock build; FSDP check in transformers generate() stubbed.
+  Both are test-script workarounds; the AWQ kernel port itself is unaffected.
+
+Verdict: PASS. State set to completed at 5d2d6f4.

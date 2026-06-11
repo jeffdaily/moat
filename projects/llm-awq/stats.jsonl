@@ -12,3 +12,6 @@
 {"kind":"phase","ts":"2026-06-11T04:22:32Z","phase":"test","seconds":26.992,"exit":0,"cmd":"sh -c python3 /var/lib/jenkins/moat/agent_space/awq_model_test.py 2>&1"}
 {"kind":"session","ts":"2026-06-11T04:23:45Z","epoch":1781151825.564348930,"event":"end","platform":"linux-gfx90a"}
 {"kind": "tokens", "ts": "2026-06-11T04:24:45Z", "tokens": 45375, "source": "validator"}
+{"kind":"phase","ts":"2026-06-11T06:12:47Z","phase":"compile","seconds":0.013,"exit":0,"cmd":"echo build already done, pyd built at Jun 10 23:02"}
+{"kind":"phase","ts":"2026-06-11T06:12:59Z","phase":"test","seconds":6.576,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/awq_model_test_win.py"}
+{"kind":"phase","ts":"2026-06-11T06:14:15Z","phase":"test","seconds":1.627,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/awq_kernel_test_win.py"}
