@@ -57,3 +57,8 @@
 {"kind":"phase","ts":"2026-06-11T02:43:57Z","phase":"compile","seconds":0.031,"exit":0,"cmd":"cmd /c cd /d B:\\develop\\moat\\projects\\CuRast\\build && cmake --build . --config Release --target CuRast -j 8"}
 {"kind":"phase","ts":"2026-06-11T02:48:44Z","phase":"compile","seconds":0.016,"exit":0,"cmd":"echo build_already_done"}
 {"kind":"phase","ts":"2026-06-11T02:48:52Z","phase":"test","seconds":1.989,"exit":0,"cmd":"python3 agent_space/run_curast_v3.py"}
+{"kind": "tokens", "ts": "2026-06-11T02:48:00Z", "tokens": 72535, "source": "validator"}
+{"kind":"session","ts":"2026-06-11T03:13:41Z","epoch":1781147621.588494342,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T03:14:32Z","phase":"compile","seconds":23.956,"exit":0,"cmd":"bash -c \nset -e\nBUILD_DIR=/var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build\nrm -rf $BUILD_DIR\nHIP_VISIBLE_DEVICES=3 cmake /var/lib/jenkins/moat/projects/CuRast/src     -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a     -B $BUILD_DIR 2>&1 | tail -20\nHIP_VISIBLE_DEVICES=3 cmake --build $BUILD_DIR -j$(nproc) 2>&1 | tail -30\necho 'BUILD_EXIT='0\nls -lh $BUILD_DIR/CuRast\n"}
+{"kind":"phase","ts":"2026-06-11T03:14:44Z","phase":"test","seconds":5.310,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/CuRast/src\nrm -f bench_render.png\nHIP_VISIBLE_DEVICES=3 ROCM_PATH=/opt/rocm     /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build/CuRast     --bench ./example_donaukanal_urania.glb 1920 1080 10\necho 'BENCH_EXIT='0\nls -lh bench_render.png\n"}
+{"kind":"session","ts":"2026-06-11T03:16:24Z","epoch":1781147784.973223457,"event":"end","platform":"linux-gfx90a"}

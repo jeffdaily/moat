@@ -621,3 +621,53 @@ Results:
 windows-gfx1201: revalidate -> completed, validated_sha=c4e543e
 head_sha advanced to c4e543e (adds gfx1201 fixes on top of 48cd01b)
 linux-gfx90a and linux-gfx1100 flipped to revalidate (stage1/stage3 kernel change on all platforms)
+
+## Validation 2026-06-11 (linux-gfx90a revalidate -> completed at c4e543e)
+
+GPU: AMD Instinct MI250X / MI250, gfx90a, 104 CUs (wave64), HIP_VISIBLE_DEVICES=3, ROCm 7.2.1
+Starting state: revalidate (validated_sha=91bacbf per status, true last-validated=48cd01b; head_sha=c4e543e)
+
+### Delta analysis
+
+Commit c4e543e adds two categories of changes on top of 48cd01b:
+1. Windows/MSVC-only hiprtc preamble fix (HipModularProgram.h, jpeg/jpeg.cu): cmath suppression
+   and hiprand_kernel.h guard -- no effect on Linux/GCC builds.
+2. Cooperative -> non-cooperative launch for stage1 and stage3 (CuRast_render.h,
+   triangles_visbuffer.cu): counter zeroing moved to CPU cuMemsetD8Async calls, grid.sync()
+   replaced with block.sync(), grid variable removed from stage3. This affects device code
+   on all arches including gfx90a; full GPU revalidation required.
+
+### Build
+
+```bash
+BUILD_DIR=/var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build
+rm -rf $BUILD_DIR
+HIP_VISIBLE_DEVICES=3 cmake /var/lib/jenkins/moat/projects/CuRast/src \
+    -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -B $BUILD_DIR
+cmake --build $BUILD_DIR -j$(nproc)
+```
+
+Build: exit 0, no errors (warnings: fread return, deprecated hipCtxSynchronize, nodiscard hipError_t).
+Binary: build/CuRast (3.4MB).
+
+### GPU Test
+
+```bash
+cd /var/lib/jenkins/moat/projects/CuRast/src
+HIP_VISIBLE_DEVICES=3 ROCM_PATH=/opt/rocm \
+    /var/lib/jenkins/moat/agent_space/CuRast-gfx90a-build/CuRast \
+    --bench ./example_donaukanal_urania.glb 1920 1080 10
+```
+
+Results:
+- 10 frames, 966,461 of 966,461 triangles visible per frame (all frames correct)
+- Best visbuffer-pipeline time: 0.297 ms @ 1920x1080 (reference: 0.279 ms at 48cd01b, consistent)
+- bench_render.png: PASS (259K, all 2,073,600 pixels non-zero, shows Donaukanal scene)
+- No GPU faults during benchmark
+- Post-bench segfault: pre-existing (same as prior runs, HipModularProgram lacks destructor)
+- jpeg/rocrand hiprtc compile errors: pre-existing (same as prior runs, unrelated to this delta)
+
+### State transition
+
+linux-gfx90a: revalidate -> completed, validated_sha=c4e543e
