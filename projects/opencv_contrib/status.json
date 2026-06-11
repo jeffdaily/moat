@@ -2,23 +2,23 @@
   "schema_version": 1,
   "name": "opencv_contrib",
   "upstream_url": "https://github.com/opencv/opencv_contrib",
-  "fork_url": null,
+  "fork_url": "https://github.com/jeffdaily/opencv_contrib",
   "fork_default_branch": "main",
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-09T22:04:50Z",
-  "updated_at": "2026-06-10T23:39:03Z",
-  "head_sha": null,
+  "updated_at": "2026-06-11T00:20:01Z",
+  "head_sha": "0e750c36725790885efe299b969479fca472d8bf",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "planned",
+      "state": "ported",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
-      "started_at": null,
+      "started_at": "2026-06-10T23:48:26Z",
       "completed_at": null,
-      "updated_at": "2026-06-10T23:39:03Z",
+      "updated_at": "2026-06-11T00:20:01Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,7 +32,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "planner"
+      "last_agent": "porter"
     },
     "linux-gfx1100": {
       "state": "blocked-needs-gfx90a",

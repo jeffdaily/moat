@@ -26,3 +26,53 @@ Open decisions resolved per plan.md recommendations:
 Phase order per plan.md: 0=opencv core (warp layer, wave64) -> 1=cudev -> 2=pure-custom modules -> 3=NPP-light -> 4=NPP-heavy -> 5=SDK-gated.
 
 Key sources: opencv/opencv + opencv/opencv_contrib (CMake + cuda* modules + core warp headers); ROCm/rpp, ROCm/rocDecode, ROCm/MIOpen, GPUOpen AMF; HIP kernel-language ref (warpSize/__shfl_sync 64-bit mask/__ballot 64-bit); ROCm gpu-arch-specs (wavefront per arch). Full URLs in the agent reports / [[moat-opencv-cv-cuda-rocm-gap]].
+
+## Phase 0 + Phase 1 PORTED (2026-06-11, gfx90a lead)
+
+opencv core (GpuMat infra + warp-layer headers) + opencv_contrib cudev module ported to ROCm/HIP and VALIDATED on real gfx90a: opencv_test_cudev 402/402 PASS, deterministic across runs (ROCm 7.2.1, wave64). Multi-arch fat binary (gfx90a;gfx1100) emits both device code objects.
+
+### Two-repo layout
+- `src/`      = jeffdaily/opencv_contrib @ moat-port (this project's head_sha tracks THIS)
+- `src-core/` = jeffdaily/opencv        @ moat-port
+- Base upstream SHAs: opencv_contrib `2a5154a4479e841aa1282ef83d139c4870d17b8f`, opencv `aed41fdabe3c5381395e2a7a8272c7519f3c289f`
+- Fork HEADs after Phase 0/1: contrib `0e750c36725790885efe299b969479fca472d8bf`, core `f90ef85504cf3e364720ec9f8863acb87caee937`
+- Two upstream PRs expected (core->opencv, modules->opencv_contrib). Both forks have Actions disabled.
+
+### Build (## Build section)
+Repeatable: `projects/opencv_contrib/build_hip.sh` (configures core with WITH_HIP, EXTRA_MODULES_PATH=../src/modules, BUILD_LIST trimmed to core+cudev+ts deps, builds opencv_test_cudev).
+Key cmake invocation (build dir = `projects/opencv_contrib/build`, configure against `src-core`):
+```
+cmake -G Ninja ../src-core -DWITH_HIP=ON \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/amdclang++ \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DOPENCV_EXTRA_MODULES_PATH=../src/modules \
+  -DBUILD_LIST="core,cudev,imgproc,imgcodecs,videoio,highgui,ts" \
+  -DBUILD_TESTS=ON -DWITH_CUDA=OFF -DWITH_OPENCL=OFF -DWITH_PYTHON=OFF
+cmake --build . --target opencv_test_cudev -j$(nproc)
+./bin/opencv_test_cudev   # 402/402 on gfx90a
+```
+GOTCHAS:
+- CMake 4.0 REJECTS hipcc as CMAKE_HIP_COMPILER ("Use Clang directly"); must pass `/opt/rocm/llvm/bin/amdclang++`.
+- Need CMAKE_HIP_STANDARD 17 (rocPRIM requires C++17); set in OpenCVDetectHIP.cmake.
+- `hip::device` interface target injects `-x hip --offload-arch` into ALL target sources incl. plain .cpp -> link only `hip::host`; device .cu compile via per-source LANGUAGE HIP.
+- OpenCVPackaging.cmake does `string(REPLACE . - ... ${CUDA_VERSION})` under HAVE_CUDA -> set CUDA_VERSION on HIP path or it errors.
+
+### Build-system design (core CMake)
+- WITH_HIP option + enable_language(HIP) block (CMakeLists.txt) + cmake/OpenCVDetectHIP.cmake (sets HAVE_HIP + HAVE_CUDA=1, CMAKE_HIP_ARCHITECTURES autodetect via amdgpu-arch defaulting gfx90a;gfx1100;gfx1101;gfx1201, force-includes the shim).
+- OpenCVFindLibsPerf.cmake includes DetectHIP when WITH_HIP; OpenCVModule.cmake sets LANGUAGE HIP on globbed src/cuda/*.cu and links hip::host; the FindCUDA fallback paths (ocv_add_library, ocv_create_module link, cudev test CMakeLists) excluded when HAVE_HIP.
+- Shim: modules/core/include/opencv2/core/cuda/cuda_to_hip.h (force-included via CMAKE_HIP_FLAGS -include; host cpp pulls it via private.cuda.hpp). Defines __CUDA_ARCH__=350 in device pass so cudev CV_CUDEV_ARCH>=300 shuffle fast paths light up.
+
+### Warp-layer decisions (THE wave64 surface)
+- cudev WARP_SIZE kept at LOGICAL 32 on all arches; width-32 shuffles stay inside a 32-lane subgroup of the 64-lane wavefront (PORTING_GUIDE l.145) -> wave64-correct.
+- Warp::laneId(): HIP computes linearized-tid % 32 (logical lane), replacing NVIDIA `mov %%laneid` PTX. warpId unchanged.
+- block/detail/reduce.hpp GenericOptimized32: loopShfl width changed `warpSize`->WARP_SIZE (literal warpSize=64 on gfx90a broke the per-32 partition).
+- grid/detail/integral.hpp horisontal_pass_8u_shfl_kernel: lane_id/warp_id/leader-test changed `warpSize`->literal 32 (kLogicalWarp). This was the LAST failure fixed (Integral._8u_opt). All shfl widths already explicit 32 -> arch-agnostic.
+- CV_CUDEV_ARCH=350 on HIP DEVICE pass lights up the shfl reduce/scan/integral paths; simd_functions.hpp PTX SIMD forced to software `#else` via per-file push/pop of CV_CUDEV_ARCH=0 (vadd2 PTX doesn't assemble). __CUDACC_VER_MAJOR__ undefined on HIP already routes scan.hpp/block-scan to the maskless smem branches.
+
+### Numeric fixes (0.0-tolerance accuracy tests)
+- saturate_cast.hpp (BOTH cudev util/ and core cuda/): PTX cvt.sat integer specializations replaced with clamp (min/max) on HIP; INCLUDE the from-float/double specs (round-to-nearest via __float2int_rn then clamp) -- missing them let the generic T(v) template wrap (Cvt uchar 255->0 bug).
+- cast_fp16: HIP must REINTERPRET the 16-bit half bit-pattern (`*(__half*)&v` / `*(short*)&h`) like the CUDA>=9 path, NOT `__half2float(short)`/`(short)__float2half_rn` which value-convert (CvFp16 bug).
+- cuda_info.cpp CudaArch: on HIP seed bin/ptx/features with level 90 so deviceSupports()/builtWith() answer true (Histogram SHARED_ATOMICS assert). gfx90a prop.major.minor = 9.0 -> version 90 >= all FeatureSets.
+- vec_math.hpp: add `char abs_(char)` overload on HIP (charN::x is plain char, ambiguous between schar/short overloads).
+
+### RESUME POINT -> Phase 2 (pure-custom modules)
+Next porter dispatch: Phase 2 = cudabgsegm, cudafeatures2d, cudaobjdetect, cudastereo, cudalegacy (NCV/staging/BM, NOT graphcut). These pull the SAME core warp headers + cudev (now ported) so the foundation is done. Build by adding each module to BUILD_LIST and OPENCV_EXTRA_MODULES_PATH; expect: (1) more PTX asm in module .cu (same cvt.sat/laneid/shfl-mask classes -- apply the established patterns), (2) Thrust->rocThrust (cudafeatures2d/cudalegacy fgd), (3) per-module test binaries opencv_test_<module> are the wave64 gates (stereo/features2d exercise reductions/ballot heavily). graphcut path in cudalegacy: scope OUT + register deferred.json. NPP host helpers already HIP-guarded in private.cuda.hpp/cuda_info.cpp; NPP-using modules are Phase 3/4.

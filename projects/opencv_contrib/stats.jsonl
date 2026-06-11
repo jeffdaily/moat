@@ -1,3 +1,22 @@
 {"kind": "tokens", "ts": "2026-06-09T22:12:05Z", "tokens": 67160, "source": "research (module/feature/dep inventory: 12 cuda modules, proprietary deps mapped)"}
 {"kind": "tokens", "ts": "2026-06-09T22:16:15Z", "tokens": 78745, "source": "research (build system + HIP port strategy: 2-repo, warp-layer is the wave64 risk, RPP-not-a-backend, phased order)"}
 {"kind": "tokens", "ts": "2026-06-09T22:20:10Z", "tokens": 87163, "source": "research (proprietary-dep replacement plans: NPP->RPP+kernels, VideoCodecSDK->rocDecode/AMF, OpticalFlow->none, cuDNN->MIOpen)"}
+{"kind":"session","ts":"2026-06-10T23:41:43Z","epoch":1781134903.745417251,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-10T23:56:33Z","phase":"compile","seconds":3.705,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-10T23:57:38Z","phase":"compile","seconds":3.618,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-10T23:59:33Z","phase":"compile","seconds":9.399,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:01:16Z","phase":"compile","seconds":9.928,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:02:10Z","phase":"compile","seconds":17.182,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:02:57Z","phase":"compile","seconds":16.335,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:04:25Z","phase":"compile","seconds":3.457,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:05:33Z","phase":"compile","seconds":5.910,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_core -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:07:05Z","phase":"compile","seconds":6.321,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_core -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:08:04Z","phase":"compile","seconds":14.675,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_core -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:08:54Z","phase":"compile","seconds":36.582,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:09:15Z","phase":"test","seconds":1.221,"exit":1,"cmd":"bash -c cd projects/opencv_contrib/build && ./bin/opencv_test_cudev 2>&1"}
+{"kind":"phase","ts":"2026-06-11T00:12:35Z","phase":"compile","seconds":42.801,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:14:21Z","phase":"compile","seconds":43.949,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:15:58Z","phase":"compile","seconds":43.884,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && cmake --build . --target opencv_test_cudev -j$(nproc)"}
+{"kind":"phase","ts":"2026-06-11T00:16:04Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./bin/opencv_test_cudev"}
+{"kind":"phase","ts":"2026-06-11T00:16:12Z","phase":"test","seconds":1.234,"exit":0,"cmd":"bash -c cd projects/opencv_contrib/build && ./bin/opencv_test_cudev"}
+{"kind":"session","ts":"2026-06-11T00:20:09Z","epoch":1781137209.108129895,"event":"end","platform":"linux-gfx90a"}
