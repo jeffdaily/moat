@@ -7,17 +7,17 @@
   "priority": 6.322,
   "ext_type": "rust-cc-cuda",
   "adopted_at": "2026-05-30T00:04:57Z",
-  "updated_at": "2026-06-07T03:14:24Z",
-  "head_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+  "updated_at": "2026-06-11T06:31:28Z",
+  "head_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": "2026-05-31T01:00:42Z",
-      "completed_at": "2026-06-04T18:00:31Z",
-      "updated_at": "2026-06-04T18:00:31Z",
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T06:31:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -33,20 +33,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "addf01141f64bf09476ce32274ee61481b57e325",
-        "method": "binary-equiv",
-        "detail": "delta renames target_os=linux -> qdp_gpu_platform (inert on Linux: qdp_gpu_platform always set) + M_SQRT1_2 guard in hip_compat only on HIP include path; no .cu changes; libkernels.a device ISA identi",
-        "at": "2026-06-04T18:00:31Z"
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": null,
-      "completed_at": "2026-06-04T09:12:56Z",
-      "updated_at": "2026-06-04T09:12:56Z",
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T06:31:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -62,20 +62,20 @@
       },
       "last_agent": "validator",
       "carry_forward": {
-        "to": "addf01141f64bf09476ce32274ee61481b57e325",
-        "method": "binary-equiv",
-        "detail": "delta renames target_os=linux -> qdp_gpu_platform (inert on Linux: qdp_gpu_platform always set); no .cu changes; libkernels.a device ISA identical on gfx1100 (codeobj_diff verdict=identical)",
-        "at": "2026-06-04T09:12:56Z"
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
       }
     },
     "windows-gfx1101": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": null,
-      "completed_at": "2026-06-05T07:49:37Z",
-      "updated_at": "2026-06-05T07:49:37Z",
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T06:31:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -89,16 +89,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
+      }
     },
     "windows-gfx1201": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": null,
-      "completed_at": "2026-06-07T03:14:24Z",
-      "updated_at": "2026-06-07T03:14:24Z",
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T06:31:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -112,16 +118,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
+      }
     },
     "windows-gfx1151": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "addf01141f64bf09476ce32274ee61481b57e325",
+      "validated_sha": "f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5",
       "started_at": null,
-      "completed_at": "2026-06-04T04:40:41Z",
-      "updated_at": "2026-06-04T04:40:41Z",
+      "completed_at": "2026-06-11T06:30:24Z",
+      "updated_at": "2026-06-11T06:31:28Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -134,6 +146,12 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "to": "a8d63e21764900618a344efb09a3a9ee23a019da",
+        "method": "source-class",
+        "detail": "PR-prep: comment/doc/attribution-only delta (AMD copyright+author headers, DEVELOPMENT.md+README ROCm build docs, one comment reword). Verified every changed .rs/.cu/.h line is a // comment; zero func",
+        "at": "2026-06-11T06:30:24Z"
       }
     }
   }

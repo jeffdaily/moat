@@ -708,3 +708,62 @@ Wave32 verdict: gfx1101 RDNA3 wave32 -- all L2-norm/amplitude tests pass, identi
 gfx1100/gfx1151. warp_id = threadIdx.x / warpSize == >>5 on wave32.
 
 Transition: port-ready -> completed (validated_sha = addf01141f64bf09476ce32274ee61481b57e325).
+
+## PR-prep 2026-06-11 (porter, linux-gfx90a) -- squashed to one commit, all 5 carried forward
+
+All 5 platforms were completed at addf01141. PR-prep done; no rebuild (edits are
+comment/doc/attribution only, behavior-preserving).
+
+Jargon scrub: only ONE leak in upstream-visible code/comments --
+qdp/qdp-kernels/build.rs:39 said "follower platforms (gfx1100, gfx1151)";
+reworded to "other AMD targets (gfx1100, gfx1151)", rationale preserved. The two
+original commit messages were otherwise clean (commit 1 referenced "the MOAT
+CUDA-to-ROCm effort" once, dropped at squash). No other in-house vocabulary
+(lead/follower/Strategy A-B/head_sha/validated_sha/revalidate/curated) anywhere
+in the diff or messages.
+
+Attribution (AMD copyright line below the Apache ASF header + `Author: Jeff Daily
+<jeff.daily@amd.com>`, matching this tree's file-header convention; ASF puts
+ownership in NOTICE and uses no per-file author tags, so a header comment line is
+the house-style fit):
+- NEW files (plain `Copyright`): qdp-core/src/gpu_rt.rs,
+  qdp-kernels/src/device.rs, qdp-kernels/src/kernel_compat.h,
+  qdp-kernels/hip_compat/{cuComplex.h,cuda_runtime.h,vector_types.h},
+  qdp-python/build.rs.
+- Substantially extended (`Portions Copyright`): qdp-kernels/build.rs (the +95
+  HIP compile branch), qdp-core/src/gpu/cuda_ffi.rs (the hip_rt FFI mod),
+  qdp-kernels/src/amplitude.cu (the wave64 warp-id + 64-bit mask fix).
+- SKIPPED as trivial (build-flag/cfg/mechanical only, no AMD-authored logic):
+  qdp-core/build.rs (+13 cfg-emit), all ~40 mechanical target_os->qdp_gpu_platform
+  rename files, the Cargo.toml feature edits.
+
+Docs (REQUIRED step):
+- qdp/DEVELOPMENT.md: added "### AMD GPU build (ROCm / HIP)" after the no-CUDA
+  sanity block (the project's single from-source build guide), covering the `hip`
+  feature, QDP_USE_HIP=1, QDP_HIP_ARCH_LIST, ROCm prereqs (hipcc, AMD HIP
+  runtime), and the dev-profile wheel install, in the file's house style.
+- qdp/qdp-python/README.md: added a note that the native `_qdp` engine
+  (backend="cuda" route) also runs on AMD via the `hip` feature, distinct from
+  the Triton backend, pointing to DEVELOPMENT.md. This README defers from-source
+  build steps to DEVELOPMENT.md, so no build block was imposed here.
+
+Arch auto-detect determination: build.rs is already env-driven and correct for
+upstream -- QDP_HIP_ARCH_LIST is read and comma-split, gfx90a is only a fallback
+when unset, nothing hardcoded overrides the env. This mirrors the existing
+QDP_CUDA_ARCH_LIST convention. No change made; a build-time rocminfo auto-detect
+would diverge from the project's env convention and add fragility (over-
+engineering). Left as-is.
+
+Carry-forward note: `advance-head` on the prep delta flipped all platforms to
+revalidate because its classifier treats `.rs` as unknown-file-type (cannot prove
+comment-only) and raised a kernel_compat.h __LINE__ line-shift false positive.
+Manually verified every changed .rs/.cu/.h line is a `//` comment (copyright/
+author headers + one comment reword), zero functional code -- so carried all 5
+forward with `carry-forward ... source-class` (the behavior-preserving path).
+
+Prep commit (on top of addf01141, before squash):
+a8d63e21764900618a344efb09a3a9ee23a019da.
+Squashed (tree-identical collapse, force-with-lease pushed to moat-port):
+f3f7db33cc9942f5c1a7ffdbe95aea68c85532f5. `squash-carry-forward` carried all 5
+platforms (did not refuse -> tree-identical confirmed). pr-ready=True.
+Ready for the user's upstream-PR decision (apache/mahout, moat-port -> main).
