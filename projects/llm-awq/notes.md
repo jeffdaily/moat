@@ -1,1 +1,99 @@
 # llm-awq notes
+
+## Summary
+HIP port of `awq_inference_engine` (the AWQ PyTorch CUDAExtension under
+`awq/kernels/`). Strategy B (torch build-time hipify) plus targeted manual
+rewrites of every inline-PTX / tensor-core kernel that hipify cannot translate.
+
+Validated on linux-gfx90a (AMD Instinct MI250X, ROCm 7.2.1) at fork HEAD
+`7a4c596` (branch `moat-port`). Multi-arch build (gfx90a + gfx1100) confirmed.
+
+## What is functional vs build-only on ROCm
+- FUNCTIONAL (the W4A16 quantized-linear path, what `awq.entry`/WQLinear use):
+  - `gemv_forward_cuda_new` (quantization_new/gemv) -- decode path, M < 8.
+  - `gemm_forward_cuda_new` (quantization_new/gemm) -- prefill path, M >= 8.
+    On HIP this routes to a portable SIMT GEMM (`gemm_simt.cuh`) that reuses the
+    GEMV's proven packed-int4 decode; the CUDA tensor-core MMA kernels are kept
+    under `#if !defined(__HIP_PLATFORM_AMD__)`.
+  - INT4->FP16x2 dequant (both `quantization/dequantize.cuh` and
+    `quantization_new/dequantize.cuh`): lop3.b32 (immLut 0xea = (a&b)|c) and
+    sub/fma.f16x2 PTX replaced by portable bit/half2 expressions.
+- BUILD-ONLY (compile, but error at runtime; NOT on the validated path):
+  - `gemm_forward_cuda` (legacy MMA GEMM, quantization/gemm_cuda_gen.cu).
+  - `w8a8_gemm_forward_cuda` / `_fuse_bias` (int8 MMA, w8a8/).
+  - `single_query_attention` (FasterTransformer masked-MHA): attention sources
+    are EXCLUDED from the ROCm build in setup.py (NVIDIA half/bf16 PTX +
+    amd_hip_bf16.h fails to parse in the host .cpp); pybind binds a throwing
+    stub. Deferred-work: AMD-native MFMA GEMM + a real attention port.
+
+## Key fault-class fixes (see PORTING_GUIDE)
+- Warp size / lane mask: the shuffle reductions used 32-bit masks (`~0`,
+  `0xffffffff`) which (a) fail to COMPILE on HIP (sync-shuffle mask must be
+  64-bit) and (b) are wave-width-wrong on wave64. Made width-32 LOGICAL-warp
+  reductions (`__shfl_*(..., 32)` on HIP) -- arch-agnostic on wave32 and wave64;
+  the partition keys were already logical-32 (`lane = tid%32`, `warp = tid/32`,
+  `shared[32]`). Files: quantization_new/gemv, quantization/gemv,
+  layernorm/reduction.cuh, w8a8/reduction_utils.cuh, w8a8/quantization.cu.
+- bf16 software fallback: `__CUDA_ARCH__ < 800` guards select Ampere bf16
+  intrinsics vs a software path. On HIP `__CUDA_ARCH__` is undefined, so the
+  raw guard fell through to the Ampere ELSE branch. Re-keyed to
+  `... || defined(__HIP_PLATFORM_AMD__)` so HIP takes the software branch
+  (w8a8/utils.cuh: bf1622int16, the bf16 ldg overloads).
+- int8 conversion PTX: `cvt.rni.sat.s8.{f32,f16}` -> `rintf` + clamp on HIP.
+
+## ROCm build shim
+`csrc/awq_amd_compat.h` (force-included on ROCm via setup.py `-include`):
+- `using nv_bfloat16/nv_bfloat162 = __hip_bfloat16/162;` -- hipify v2 maps only
+  the `__nv_`-prefixed bf16 names; the kernels also use the unsuffixed CUDA
+  aliases, undefined after hipify.
+- `__ldg(ptr)` -> `awq_ldg(ptr)` (plain load) -- HIP's `__ldg` lacks half/bf16
+  vector overloads; the read-only hint is advisory.
+setup.py: on ROCm drops the NVIDIA-only nvcc flags (`--use_fast_math`,
+`--threads`, `--expt-*`), adds `-ffast-math`, mirrors CUDA's
+`-U__CUDA_NO_HALF_*` with `-U__HIP_NO_HALF_*`, and filters the attention
+sources (sets `-DAWQ_DISABLE_ATTENTION`).
+
+## Build (repeatable)
+ROCm PyTorch env required (`torch.version.hip` set). On this host:
+`/var/lib/jenkins/pytorch` torch 2.13 + ROCm 7.2.1.
+```
+cd projects/llm-awq/src/awq/kernels
+# torch hipify writes generated *.hip / *_hip.* copies next to the .cu sources;
+# wipe them before a rebuild after edits, else a stale hipified mirror is used:
+find csrc \( -name '*.hip' -o -name '*_hip.*' \) ! -name 'cuda_to_hip*' -delete
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx90a MAX_JOBS=32 python setup.py build_ext --inplace
+PYTORCH_ROCM_ARCH=gfx90a pip install -e . --no-build-isolation
+```
+Multi-arch fat binary + code-object check:
+```
+PYTORCH_ROCM_ARCH="gfx90a;gfx1100" python setup.py build_ext --inplace
+/opt/rocm/llvm/bin/llvm-objdump --offloading awq_inference_engine*.so \
+  | grep -oE 'gfx[0-9]+' | sort -u      # -> gfx1100, gfx90a
+```
+GOTCHA: do not name a project-local include `*cuda*hip*` or `*_hip*` -- hipify
+rewrites `cuda`->`hip` in include paths and double-processes it. The portable
+GEMM helper is `gemm_simt.cuh` for this reason. The compat header is
+`awq_amd_compat.h` (NOT `*_hip*`, which the rebuild-clean would also delete).
+
+## Tests (GPU validation)
+Test scripts live in `agent_space/` (gitignored):
+- `awq_kernel_test.py`: builds a WQLinear from a random FP16 weight, runs GEMV
+  (M=1) and GEMM (M=16), and cross-checks GEMM rows vs per-row GEMV. PASS:
+  max_abs_diff 0.0000 (the two kernels decode the same packed weights and must
+  agree). This is the decisive GEMM-rewrite correctness gate.
+- `awq_model_test.py`: real OPT-125M, real 4-bit AWQ quant of every linear,
+  prefill forward + greedy generate + perplexity. PASS: prefill logits finite;
+  coherent generation ("The capital of France is the capital of the world");
+  AWQ4 ppl 673 vs FP16 ppl 613 (tracks FP16, no explosion/NaN). OPT-125M's
+  absolute ppl is high on a short text; the FP16-vs-AWQ4 ratio is what matters.
+Deps: `pip install transformers==4.46.0 accelerate` (NOT the CUDA torch pins in
+pyproject.toml -- those would clobber the ROCm torch; install the engine with
+`--no-build-isolation` against the existing ROCm torch).
+
+## Deferred (perf / coverage, register if pursued)
+- AMD-native MFMA/rocWMMA W4A16 GEMM (the current HIP GEMM is correctness-first
+  SIMT, slower than the CUDA tensor-core path).
+- int8 MFMA W8A8 GEMM (`w8a8_gemm_*`), currently build-only.
+- FasterTransformer single-query masked-MHA HIP rewrite (attention excluded
+  from the ROCm build).

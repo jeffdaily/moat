@@ -1,0 +1,5 @@
+{"kind":"session","ts":"2026-06-11T03:27:05Z","epoch":1781148425.163146668,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T03:36:48Z","phase":"compile","seconds":40.855,"exit":0,"cmd":"bash -c \ncd projects/llm-awq/src/awq/kernels\nexport PYTORCH_ROCM_ARCH=gfx90a\nexport MAX_JOBS=32\npython setup.py build_ext --inplace 2>&1 | tail -60\n"}
+{"kind":"phase","ts":"2026-06-11T03:49:56Z","phase":"test","seconds":2.859,"exit":0,"cmd":"python3 agent_space/awq_kernel_test.py"}
+{"kind":"phase","ts":"2026-06-11T03:51:25Z","phase":"test","seconds":34.667,"exit":0,"cmd":"python3 agent_space/awq_model_test.py"}
+{"kind":"session","ts":"2026-06-11T03:54:48Z","epoch":1781150088.325615125,"event":"end","platform":"linux-gfx90a"}
