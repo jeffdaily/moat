@@ -51,9 +51,40 @@ A `save_buffer`/`load_buffer` pair would let the shim implement
 `IHostMemory`-based engine serialization without touching the filesystem.
 Severity: low.
 
-## Notes on items that turned out NOT to be problems
+## 4. Dynamic program crashes under offload_copy=false (codegen/runtime bug)
 
-- int8 GPU calibration works. `migraphx::quantize_int8` on the gpu target
-  quantizes correctly; the shim's IInt8Calibrator bridge validated on a small
-  CNN and ResNet-50 with argmax preserved. (An earlier draft of the shim plan
-  cited issue #3585 as an int8 reliability bug; #3585 is closed as not-a-bug.)
+Evaluating a program compiled with a dynamic dimension
+(`set_default_dyn_dim_value`) AND `offload_copy=false` segfaults inside MIGraphX,
+in `op::select_module::compute` -> `shape::operator==` (the dynamic-shape
+dispatch). The same dynamic program with `offload_copy=true` runs fine, and a
+static program with `offload_copy=false` runs fine -- it is specifically the
+dynamic + offload_copy=false combination. This forced the shim to keep dynamic
+engines on the (non-graph-capturable) `offload_copy=true` host-staging path while
+static engines use the faster, HIP-graph-capturable `offload_copy=false`
+zero-copy path. Severity: medium (blocks zero-copy/graph capture for dynamic
+shapes). Backtrace in the shim's git history; reproducible by compiling any
+dynamic-batch ONNX model with offload_copy=false and calling eval.
+
+## 5. No accessor for computed int8 scales (feature request)
+
+int8 *quantization* works: `migraphx::quantize_int8` on the gpu target quantizes
+correctly, and the shim's IInt8Calibrator bridge is validated on a small CNN and
+ResNet-50 with argmax preserved. What is missing is a way to read back (or set)
+the per-tensor int8 dynamic ranges/scales that calibration computes.
+
+TensorRT exposes these through the calibrator's
+`writeCalibrationCache`/`readCalibrationCache` (persist the scales, reuse them to
+skip recalibration, or build int8 with no calibration dataset) and through
+`ITensor::setDynamicRange` (supply scales explicitly). MIGraphX has no
+equivalent get/set, so the shim cannot implement a TensorRT-compatible
+calibration cache: it must recalibrate on every build and cannot accept a
+provided cache. A `program`/quantization API to export the computed scales (and
+to inject explicit per-tensor ranges) would close this. If the MIGraphX team
+wants to enable the int8 calibration-cache workflow, this is the hook to add.
+Severity: medium for production int8 workflows.
+
+## Notes on earlier mischaracterizations
+
+- MIGraphX issue #3585 ("quantize_int8 not performing quantization on GPU") is
+  closed as not-a-bug -- a user misreading rocm-smi during compile-dominated
+  runtime. int8 on the gpu target is fine; see item 4 for the actual gap.

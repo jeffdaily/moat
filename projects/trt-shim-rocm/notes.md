@@ -296,6 +296,24 @@ Layer-builder API: MIGraphX CAN back it (migraphx::module + operation), so it is
 tractable-but-large, deferred until a code-built-network consumer needs it (the
 ONNX path, which trtexec and all targets use, never touches it).
 
+## PR review + hipGraph (DONE)
+
+Ran /pr-review (scoped to our code, excluding vendored TensorRT). Two findings
+actioned (rest were false positives -- mImpl=this present, output ordering safe):
+- load() now bounds-checks all reads; truncated/corrupt engines fail cleanly.
+- Real HIP graph support: the compat graph functions forward to hipGraph* (5-arg
+  cudaGraphInstantiate maps directly). To make capture succeed, the STATIC run
+  path moved to offload_copy=false -- MIGraphX exposes outputs as bindable
+  "main:#output_N" params, so run() binds caller device buffers for in+out
+  (zero-copy) and run_async on the caller stream (HIP-graph capturable).
+  trtexec --useCudaGraph now "Successfully captured CUDA graph", ~4.6x throughput.
+- DYNAMIC engines stay offload_copy=true host-staging: MIGraphX dynamic
+  select_module dispatch segfaults under offload_copy=false (filed:
+  deferred.py migraphx-dynamic-offloadcopy-false-crash + findings). EngineImpl
+  picks the path by whether the program has output params.
+
+ctest 10/10 (added trtexec_cudagraph, which asserts capture actually succeeds).
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
