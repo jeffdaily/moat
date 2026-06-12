@@ -366,3 +366,48 @@ Wave32 (RDNA4) divergence concern noted in review for cosserat.cu:185 did not
 manifest -- both scenes ran to completion without NaN/Inf or GPU errors.
 
 Verdict: PASS. gfx1201 (RDNA4) validated on real GPU.
+
+## Revalidation 2026-06-12 (linux-gfx90a, head 12b20ec)
+
+Platform: linux-gfx90a (MI250X, gfx90a), HIP_VISIBLE_DEVICES=1 (GCD 1)
+Arch: gfx90a, ROCm 7.2.1, clang 22.0.0git
+Trigger: head advanced from 8fe057c to 12b20ec (Windows gfx1201 commit adding
+FetchContent for assimp/jsoncpp and Eigen3 target fix). Common-path changes in
+CMakeLists.txt: Eigen3::Eigen added to target_link_libraries; if(NOT EIGEN3_INCLUDE_DIR)
+block added; STB find_path moved inside if/else. Linux build recipe genuinely changed.
+
+Build (clean rebuild at 12b20ec):
+```bash
+cd projects/YarnBall/src
+git checkout origin/moat-port   # -> 12b20ec
+rm -rf build_hip
+git lfs pull
+cmake -S . -B build_hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_BUILD_TYPE=Release
+cmake --build build_hip -j$(nproc)
+# Result: [100%] Built target Gui -- warnings only, no errors
+# Verified: strings Gui | grep gfx90a -> hipv4-amdgcn-amd-amdhsa--gfx90a embedded
+```
+
+GPU tests (run from KittenEngine/ working dir, HIP_VISIBLE_DEVICES=1):
+```bash
+# Test 1: cable_work_pattern scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=1 build_hip/Gui configs/cable_work_pattern.json \
+  -s --headless -n 3 -o /tmp/yb_frames_revalidate/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.581, SD: 0.140, N=4"
+# 4 OBJ files (frame_0.obj..frame_3.obj), 65065 vertices each, 0 NaN/Inf
+# frame_3 bbox: x[-0.208,0.207] y[-0.194,0.194] z[-0.029,0.034] -- matches prior exactly
+
+# Test 2: letterS scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=1 build_hip/Gui configs/letterS.json \
+  -s --headless -n 3 -o /tmp/yb_letter_revalidate/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 1.057, SD: 0.365, N=4"
+# 4 OBJ files, 32931 vertices each, 0 NaN/Inf
+```
+
+Both tests: exit 0, finite geometry, physics advancing. Geometry matches prior
+gfx90a validation exactly (65065 and 32931 vertices, same bbox).
+
+Verdict: PASS. Advancing linux-gfx90a to completed at head 12b20ec.
