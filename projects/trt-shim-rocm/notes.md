@@ -157,6 +157,32 @@ ctest is 6/6 (migraphx_smoke, driver_smoke, sampleOnnxMNIST, trt_run_fp16,
 trt_run_save, trt_run_load). ResNet-50 is validated locally but not committed
 (too large); tools/make_resnet_golden.py regenerates its golden via onnxruntime.
 
+## Phase 2b/3: breadth sweep + trtexec deferral
+
+Model breadth sweep (tools/sweep_models.sh): four distinct CNN architectures
+built and run through the shim on gfx90a, each matching the onnxruntime CPU
+argmax -- proving op/architecture coverage:
+- ResNet-50 (residual) argmax 556
+- SqueezeNet 1.1 (fire modules) argmax 111
+- MobileNet v2 (depthwise-separable conv) argmax 78
+- GoogLeNet/Inception (multi-branch concat) argmax 885
+4/4 match. Models are downloaded to /tmp, not committed.
+
+trtexec is DEFERRED (data/deferred.py: trt-shim-rocm-trtexec). It requires
+porting the full TensorRT sample inference framework (sampleDevice/
+sampleInference/sampleEngines), which needs a large CUDA-runtime surface
+(cudaDeviceProp with CUDA struct layout, cudaMemGetInfo, cudaMallocManaged/Host,
+cudaLaunchHostFunc, real cudaGraph capture, cudaProfiler) plus broad nvinfer1
+optimization-profile/inference API the shim currently stubs. That is a
+multi-day harness port, not a shim capability gap -- shim correctness is already
+demonstrated by the stock sampleOnnxMNIST and the four-model sweep. Resume by
+expanding include/compat for the device/graph surface and implementing real
+IOptimizationProfile + enqueueV3 paths.
+
+int8 calibration is not yet wired (BuilderConfig::setInt8Calibrator is stubbed);
+it needs an IInt8Calibrator->migraphx::quantize_int8 bridge and is subject to
+MIGraphX GPU-calibration issue #3585. Deferred follow-up.
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
