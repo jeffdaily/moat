@@ -388,3 +388,23 @@ here, not from zero.
 - NTT bls12_381 test_against_arkworks: PASS (regression-checked, unchanged path)
 - NTT bls12_377/bn254/pallas/vesta: build + run clean
 - 0 test failures across the suite.
+
+## Review 2026-06-12 (reviewer)
+
+Verdict: changes-requested. The port is well-engineered and the CUDA path is preserved byte-for-byte (the device/host field guards reduce to the original expressions when only `__CUDA_ARCH__` is defined and HIP macros are absent; jargon-clean; commit hygiene clean). One genuine defect in the enabled surface blocks PR-readiness.
+
+### Must fix
+
+1. bn254 G1 MSM is enabled on ROCm but hangs the GPU. poc/msm-cuda/tests/msm.rs:19 `msm_correctness` runs unconditionally for bn254, and poc/msm-cuda/src/lib.rs:9-10 / Cargo.toml:17 leave `--features=rocm,bn254` buildable, but the notes record bn254 G1 hanging the GPU at TEST_NPOW>=12 (notes.md:386). A user who builds the bn254 feature gets a binary that wedges the device. Either fix the hang or gate bn254 G1 off on ROCm the way fp2/G2 is gated (a `#[cfg(not(feature="rocm"))]` on the bn254 path, mirroring poc/msm-cuda/cuda/pippenger_inf.cu's `SPPARK_MSM_FP2` include switch), so the shipped ROCm surface is all-passing. Shipping a feature flag that hangs the GPU is not upstream-PR-ready, even though the bls12_381/bls12_377 G1 results are unaffected.
+
+### Verified clean (no action)
+
+- Fault classes: no hardcoded warpSize that breaks wave64. The MSM uses upstream's logical-32-lane-warp model on wave64; every shuffle the porter ADDED uses the explicit width-32 4-arg `__shfl_*_sync(...,WARP_SZ)` variant (msm/pippenger.cuh:195, msm/sort.cuh:63,189), which lowers to the real ROCm `__shfl_*(...,32)` primitive rather than the cheaper 3-arg bpermute polyfill. The pre-existing 3-arg calls (msm/sort.cuh:199, msm/batch_addition.cuh:60 etc.) are upstream code and rely on the `idx += threadIdx.x & ~31` warp-base in the polyfill (util/cuda2hip.hpp:173).
+- 64-bit lane mask: handled by suppressing ROCm 7's native `__shfl_*_sync`/`__ballot_sync` (which static_assert a 64-bit mask) in the MSM TU only via `SPPARK_DISABLE_NATIVE_WARP_SYNC` -> `HIP_DISABLE_WARP_SYNC_BUILTINS` (util/cuda2hip.hpp:7-9 of the new block, build.rs:120), so the 32-bit-mask CUDA-compat polyfills apply. NTT keeps the native `__syncwarp` ordering.
+- PTX -> HIP translations are semantically faithful: `%laneid` -> `threadIdx.x % WARP_SZ`; predicated `shfl.sync.up` clamp -> 4-arg `__shfl_up_sync` + explicit lane-range zeroing (msm/pippenger.cuh:195-197, msm/sort.cuh:187-191); `lop3.b32 0xb8` -> the `(a&~mask)|(mask&b)` bit-select (msm/sort.cuh:46); `prefetch.global.L2` -> `__builtin_prefetch` (ec/xyzz_t.hpp:131). All guarded so the CUDA build is byte-identical.
+- mont_t.hip host fallbacks (operator<<=/>>=, +=/-=, final_sub, cneg, abs, one(int), csel, czero) match the CUDA mont_t.cuh reference: >>= funnel-shifts (lo>>1)|(hi<<31) with the N%32 top-word handling; final_sub subtracts MOD iff incoming carry OR val>=MOD; cross-lane shfl/shfl_bfly are device-only with no-op host bodies (host never reaches them). The `noop()` __noinline__ Montgomery optimization barrier is correctly preserved on the device path (ff/mont_t.hip:70-73), avoiding the NTT-wrong-results regression documented in notes.
+- Minimal footprint / BC: 17 files, all MSM/field/build. fp2 (G2) headers untouched and stay CUDA-only via the include-level `SPPARK_MSM_FP2` switch; no orphaned half-port from the reverted earlier attempts. NTT field selection on HIP is unchanged (NTT does not define `SPPARK_HIP_HOST_FIELD`, so it keeps the device field in both passes as before).
+- Build: reuses the pre-existing multi-arch `sppark::build::ccmd()` (rust/src/build.rs, gfx90a at line 104, native-arch for build-poc); arch handling is unified, no per-arch hack. `class X::mem_t` -> `typename X::mem_t` default-arg fixes are valid on nvcc too.
+- Commit hygiene: `[ROCm]` title 49 chars, no em-dash, no noreply trailer, mentions Claude, Test Plan present, copyright added parallel to upstream in mont_t.hip with Jeff Daily author tag (substantial extension warrants it). No AMD-internal account references.
+
+Note: a real-GPU run is the validator's job; the bls12_381/bls12_377 G1 PASS already recorded is encouraging, but the bn254 defect above is a code/scope issue independent of the GPU run.
