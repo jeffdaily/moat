@@ -27,3 +27,4 @@
 {"kind":"phase","ts":"2026-06-12T13:05:01Z","phase":"test","seconds":10.895,"exit":8,"cmd":"ctest --test-dir /b/develop/moat/projects/kaldifeat/src/build --output-on-failure --timeout 120"}
 {"kind":"phase","ts":"2026-06-12T13:05:57Z","phase":"test","seconds":11.547,"exit":8,"cmd":"ctest --test-dir /b/develop/moat/projects/kaldifeat/src/build --output-on-failure --timeout 120"}
 {"kind":"phase","ts":"2026-06-12T13:14:29Z","phase":"test","seconds":1.487,"exit":0,"cmd":"ctest --test-dir B:/develop/moat/projects/kaldifeat/src/build -R feature-window-test|online-feature-test --output-on-failure"}
+{"kind": "tokens", "ts": "2026-06-12T13:21:57Z", "tokens": 26326, "source": "validator (windows-gfx1201 first-validation)"}
