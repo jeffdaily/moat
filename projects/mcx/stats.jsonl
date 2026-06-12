@@ -45,3 +45,4 @@
 {"kind":"phase","ts":"2026-06-12T13:27:45Z","phase":"compile","seconds":33.641,"exit":1,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
 {"kind":"phase","ts":"2026-06-12T13:33:45Z","phase":"compile","seconds":33.770,"exit":0,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
 {"kind":"phase","ts":"2026-06-12T13:35:06Z","phase":"test","seconds":13.889,"exit":4,"cmd":"bash -c cd 'projects/mcx/src/test' && HIP_VISIBLE_DEVICES=1 bash testmcx.sh"}
+{"kind": "tokens", "ts": "2026-06-12T13:44:09Z", "tokens": 111667, "source": "validator (windows-gfx1201 first-validation)"}
