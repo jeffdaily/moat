@@ -361,3 +361,74 @@ Findings (non-blocking):
    built/validated (plan open question 1). Out of scope for review; validator
    need not gate on them, but the build-ability of those targets under USE_HIP
    is unverified.
+
+## Validation 2026-06-12 (linux-gfx90a)
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/mcx/src
+rm -rf build && mkdir build && cd build
+cmake ../src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+
+Build: success, no errors. ROCm clang 22.0.0, gfx90a.
+
+### GPU Test Results
+
+GPU: AMD Instinct MI250X (gfx90a, HIP device 3)
+Command: `HIP_VISIBLE_DEVICES=3 bash test/testmcx.sh`
+Result: **36/40 tests PASS** (4 non-blocking failures)
+
+Physics benchmarks (all match expected):
+- cube60 (no reflect): 17.72% (~17%) -- PASS
+- cube60b (reflect ON): 27.26% (~27%) -- PASS (was broken 18.46%, now fixed)
+- spherebox: 10.98% (~11%) -- PASS
+- skinvessel: 39.78% (~39%) -- PASS
+
+Failing tests (4/40) -- all host-side / test staleness, NOT port issues:
+1. "dump json input with volume": greps exact zlib base64 "eAHs3YuCo7iSBNC"; our
+   zlib emits valid but different header "eJzs". Host zlib compression, arch-independent.
+2. "saving photon seeds": greps "after encoding: 13x.x%"; we get 129.1%.
+   Same host-zlib compression ratio brittleness.
+3. "photon replay -E": invokes replaytest_detp.JDAT but upstream renamed to .jdt;
+   manual replay with correct extension shows simulated==detected (3002==3002), correct.
+4. "photon replay": same stale .jdt extension issue.
+
+### CUDA No-Regression Gate
+
+CUDA build via legacy FindCUDA (needs cicc on PATH):
+```bash
+export PATH=/opt/conda/envs/cuda-12.8/bin:/opt/conda/envs/cuda-12.8/nvvm/bin:$PATH
+mkdir build_cuda && cd build_cuda
+cmake ../src -DUSE_HIP=OFF -DCMAKE_CUDA_ARCHITECTURES=80 \
+    -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+
+Result: CUDA build PASSES (sm_50 target, warnings only, no errors). Port does not
+break CUDA compilation. Arch pin `-DCMAKE_CUDA_ARCHITECTURES=80` not used by
+legacy FindCUDA (it uses `-arch=sm_50` in CUDA_NVCC_FLAGS); the cmake flag is
+unused but harmless.
+
+### Reviewer Notes Addressed
+
+- `-ffast-math` gap (finding #1): benchmarks pass without it; flag not present in
+  HEAD and not added here. Minor parity gap, not a correctness issue, left as-is.
+- Miscompile framing (#2): informational, no code change required.
+- USE_HIP scope (#3): harmless leak into zmat; no fix needed.
+- pmcx/mcxlab (#4): out of scope for this validation.
+
+### Fork State
+
+Fork HEAD 0803c7c, no uncommitted changes. Working tree clean (only untracked
+build artifacts).
+
+### Verdict: PASS
+
+GPU validation complete. 36/40 tests pass. All physics benchmarks within expected
+ranges. 4 failures are upstream test staleness / host-zlib differences, not port
+bugs. CUDA path compiles cleanly. State -> completed.
