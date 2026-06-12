@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-08T13:34:13Z",
-  "updated_at": "2026-06-12T05:42:01Z",
+  "updated_at": "2026-06-12T08:39:46Z",
   "head_sha": "f843012a4f708ed362741252b703dc1a704233cb",
   "depends_on": [],
   "platforms": {
@@ -80,13 +80,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "5d2d6f4c5fe13631cfe7734c49343a1e0ceeed1d",
+      "validated_sha": "f843012a4f708ed362741252b703dc1a704233cb",
       "started_at": null,
-      "completed_at": "2026-06-11T06:15:46Z",
-      "updated_at": "2026-06-12T05:22:42Z",
+      "completed_at": "2026-06-12T08:39:46Z",
+      "updated_at": "2026-06-12T08:39:46Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -99,7 +99,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "port-ready",

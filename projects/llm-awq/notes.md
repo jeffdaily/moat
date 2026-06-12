@@ -338,3 +338,57 @@ Windows host compat notes (test scripts only, not the port):
   Both are test-script workarounds; the AWQ kernel port itself is unaffected.
 
 Verdict: PASS. State set to completed at 5d2d6f4.
+
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for
+Workstations. ROCm via TheRock pip wheels: rocm-sdk 7.14.0a20260604 (hip
+7.14.60850-d34cbb64), torch 2.9.1+rocm7.14.0a20260604. Python 3.12.
+Fork HEAD f843012a4f708ed362741252b703dc1a704233cb.
+HIP device: HIP_VISIBLE_DEVICES=1 confirmed AMD Radeon RX 9070 XT (gfx1201).
+
+Delta from validated_sha 5d2d6f4 to f843012: one commit "[ROCm] Fix C++20
+standard for ROCm/HIP kernel build" -- changes -std=c++17 -> -std=c++20 in both
+nvcc_args (ROCm section) and cxx_args in awq/kernels/setup.py.
+classify verdict: mixed/arch_independent=False -- real build-config change,
+binary-equiv carry-forward not applicable; full GPU revalidation required.
+
+### Build command (gfx1201, Windows)
+
+    ROCM_HOME="/b/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel"
+    MSVC_BIN="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64"
+    VENV_PYTHON="/b/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe"
+    cd projects/llm-awq/src/awq/kernels
+    find csrc \( -name '*.hip' -o -name '*_hip.*' \) ! -name 'cuda_to_hip*' -delete
+    rm -rf build csrc/pybind_winhip.cu
+    PATH="$MSVC_BIN:$PATH" HIP_VISIBLE_DEVICES=1 ROCM_HOME="$ROCM_HOME" \
+      PYTORCH_ROCM_ARCH=gfx1201 MAX_JOBS=64 DISTUTILS_USE_SDK=1 \
+      python setup.py build_ext --inplace
+    # Exit 0, warnings only. Produced awq_inference_engine.cp312-win_amd64.pyd.
+
+Note: HIP_VISIBLE_DEVICES=1 (gfx1201 is device 1; device 0 is currently wedged
+gfx1101 -- do not use mask 0).
+
+### GPU tests (run from kernels dir with HIP_VISIBLE_DEVICES=1)
+
+1. agent_space/awq_kernel_test_win.py (GEMM-vs-GEMV self-consistency):
+   - device: AMD Radeon RX 9070 XT, torch.version.hip: 7.14.60850-d34cbb64
+   - qweight shape: (32, 128), scales: (8, 128), scaled_zeros: (8, 128)
+   - out_gemv shape (1, 1, 128) finite True
+   - out_gemm shape (1, 16, 128) finite True
+   - GEMM-vs-GEMV max_abs_diff=0.0000 mean_abs_diff=0.00000 max_rel=0.0000
+   - RESULT: PASS
+
+2. agent_space/awq_model_test_win.py (OPT-125M, real 4-bit AWQ quant, end-to-end):
+   - FP16 ppl   = 11.852
+   - AWQ4 ppl   = 13.594  (ratio 1.15x, well within FP16*3+5 bound)
+   - WQLinear modules: 72
+   - FP16 gen   : 'The capital of France is the capital of the French Republic.'
+   - AWQ4 gen   : 'The capital of France is the capital of the world.'
+   - AWQ4 prefill logits finite True
+   - RESULT: PASS
+
+Results are numerically identical to the prior 5d2d6f4 validation, confirming
+the C++20 build-standard fix does not change kernel behavior on gfx1201.
+
+Verdict: PASS. State set to completed at f843012.
