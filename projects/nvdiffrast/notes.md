@@ -552,3 +552,40 @@ pass for the Windows tier.
 All 7 core operators pass on gfx1201 (RDNA4, wave32). Coverage and determinism
 match the Linux results. The _WIN32-guarded compat block correctly handles the
 torch 2.9.1+rocm7.14 Windows API gap without affecting Linux builds.
+
+---
+
+## Revalidation 2026-06-12 (linux-gfx90a, binary-equiv carry-forward)
+
+### Method: binary-equivalence carry-forward (no GPU re-run needed)
+### Head SHA: c4cb5ef, Prior validated_sha: fe88d6c
+
+### Delta analysis (fe88d6c -> c4cb5ef)
+Two commits from the windows-gfx1201 host:
+- b388cd0: framework.h compat block + setup.py .cpp shim generation
+- c4cb5ef: Narrows framework.h compat block to _WIN32 guard
+
+All new code in framework.h is under `#if defined(_WIN32)` -- invisible on Linux.
+All new code in setup.py is under `if sys.platform == "win32" and IS_HIP:` or
+`os.name == "nt"` -- also invisible on Linux. .gitignore change is inert.
+
+### Build (gfx90a, HIP_VISIBLE_DEVICES=0, PYTORCH_ROCM_ARCH=gfx90a)
+```bash
+export HIP_VISIBLE_DEVICES=0
+export PYTORCH_ROCM_ARCH=gfx90a
+pip install --no-build-isolation -e /var/lib/jenkins/moat/projects/nvdiffrast/src
+```
+Build: PASS. Same 5 gfx90a offload code objects produced.
+
+### codeobj_diff result
+```
+python3 utils/codeobj_diff.py agent_space/nvdiffrast_codeobj_diff/old \
+                              agent_space/nvdiffrast_codeobj_diff/new
+verdict=identical
+  _nvdiffrast_c.cpython-312-x86_64-linux-gnu.so: identical
+  (exported symbols + device ISA identical (443 exports))
+```
+
+### Verdict: CARRY-FORWARD
+Device ISA and all 443 exported symbols identical between fe88d6c and c4cb5ef
+on gfx90a. Windows-only guards confirmed zero Linux impact. No GPU re-run needed.

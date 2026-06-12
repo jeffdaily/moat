@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "torch-extension",
   "adopted_at": "2026-06-04T23:59:20Z",
-  "updated_at": "2026-06-12T14:32:08Z",
+  "updated_at": "2026-06-12T14:53:15Z",
   "head_sha": "c4cb5ef",
   "depends_on": [],
   "platforms": {
@@ -80,13 +80,13 @@
       "last_agent": "validator"
     },
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "fe88d6c",
+      "validated_sha": "c4cb5ef",
       "started_at": "2026-06-05T00:30:24Z",
-      "completed_at": "2026-06-12T06:42:53Z",
-      "updated_at": "2026-06-12T14:31:40Z",
+      "completed_at": "2026-06-12T14:53:15Z",
+      "updated_at": "2026-06-12T14:53:15Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,7 +100,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "c4cb5ef",
+        "method": "binary-equiv",
+        "detail": "Windows-only changes (_WIN32 guard in framework.h, sys.platform==win32 in setup.py): device ISA and 443 exported symbols identical to fe88d6c on gfx90a",
+        "at": "2026-06-12T14:53:15Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
