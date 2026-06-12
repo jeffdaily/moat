@@ -315,3 +315,49 @@ NOT port or GPU bugs:
    .jdt extension, replay is CORRECT: simulated==detected (3002==3002),
    absorbed 35.63% (in the expected 30-38% band). A stale upstream test, not a
    port issue. Left testmcx.sh unmodified (it is upstream's).
+
+## Review 2026-06-12 (linux-gfx90a, reviewer)
+
+Reviewed fork moat-port @ 0803c7c vs base 6d7a81a (2 commits: 0a54e6d port,
+0803c7c reflection fix). Strategy A correctly applied (one cuda_to_hip.h compat
+header, .cu marked LANGUAGE HIP, CUDA path preserved in the else branch). Fault
+classes clean: no warpSize/32 hardcodes, no warp intrinsics, no texture/RAII
+handles, no library swaps, no OOB neighbor reads in the diff. Vector-type ABI
+handled (float4/uint4/int4 __align__(16); float3 stays 12B to match HIP).
+Commit hygiene compliant ([ROCm] titles <=72 chars, Claude named, no noreply
+trailer, no AMD-internal accounts, ASCII). Verdict: review-passed; the items
+below are non-blocking and can be addressed at validation.
+
+Findings (non-blocking):
+
+1. Missing fast-math parity. CMakeLists.txt:49 sets CMAKE_HIP_FLAGS without
+   -ffast-math, while the CUDA path (CMakeLists.txt:139) uses -use_fast_math.
+   The 2026-06-05 validation note claims -ffast-math was added "to line 49 for
+   parity" but it is NOT in HEAD -- it was reverted or never landed. This is a
+   numerical-parity gap (transcendentals/division contraction differ between the
+   two GPU builds). It did not block the physics benchmarks (all match
+   expected), so it is not a correctness blocker, but the notes and the code
+   disagree; either add the flag for parity or remove the stale note.
+
+2. Root-cause framing slightly over-broad vs the fix. The 0803c7c message states
+   the AMDGPU miscompile hits "any form where the negated component is chosen
+   inside a runtime branch" (ternary/if-else/temp/*=-1). Yet the position-update
+   ternaries immediately below the fix (mcx_core.cu:2819-2823 p.x/p.y/p.z =
+   mcx_nextafterf(...) and :2824 flipdir[N] = floorf(...)) are the SAME
+   runtime-branch-selected in-place-store pattern, left unchanged, and all 36
+   passing tests exercise that path correctly. So the actual miscompile is
+   narrower than the message implies -- specific to the in-place NEGATION, not
+   branch-selected stores in general (branch-selected stores are pervasive in
+   this kernel, e.g. :2384-2392, and work). The fix is correct and sufficient;
+   the message's generalization is just imprecise. No code change required.
+
+3. add_compile_definitions(USE_HIP) (CMakeLists.txt:52) is directory-scoped and
+   sits before add_subdirectory(zmat) (:59), so USE_HIP leaks into the
+   third-party zmat compile. Harmless today (zmat does not include the mcx
+   vector/compat headers) but broader than necessary; prefer
+   target_compile_definitions on the mcx targets.
+
+4. pmcx (Python) and mcxlab (MEX) HIP targets are wired in CMake but were not
+   built/validated (plan open question 1). Out of scope for review; validator
+   need not gate on them, but the build-ability of those targets under USE_HIP
+   is unverified.
