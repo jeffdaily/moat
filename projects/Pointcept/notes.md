@@ -98,3 +98,18 @@ gate.
 Add a ROCm/AMD build note in the README Installation section (CUDA `setup.py install` block,
 ~line 157-219) in house style. Scope the PR claim to the `libs/` ops; end-to-end sparse-conv
 model validation waits on spconv.
+
+## Review 2026-06-12 (reviewer, linux-gfx90a, read-only)
+Reviewed fork moat-port @ 68551e3 vs base d727225 with /pr-review. Verdict: review-passed,
+no problems found. Diff is a single file (libs/pointrope/setup.py, +18/-11). Verified
+independently: CUDA path byte-for-byte preserved (original nvcc flags + gencode now flow
+through the else branch into nvcc_args; only torch.version.hip-is-not-None changes behavior);
+no hipify artifacts tracked (git ls-files clean of *_hip.cpp/*_hip_kernel*/*.hip/kernels.hip)
+and working tree clean; no warp intrinsics / warpSize / hardcoded-32 / textures / CUDA math
+libs / __CUDA_ARCH__ in any of the four libs; both FPS reductions (pointops, pointops2
+sampling_cuda_kernel.cu) have an explicit __syncthreads() after every step including the
+tid<32 tail (wave-agnostic, no volatile, no implicit warp-sync tail); the other three setups
+pass only -O2/-g (hipcc-safe), unchanged. Commit hygiene clean: [ROCm] title <=72 chars,
+Claude attribution, Test Plan, no noreply trailer, jeffdaily author, no MOAT jargon, no
+AMD-internal account refs. The real-GPU validation run is the validator stage's job (not a
+review blocker).
