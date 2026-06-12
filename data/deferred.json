@@ -792,6 +792,17 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-12T14:15:26Z"
+    },
+    {
+      "id": "trt-shim-rocm-int8-cache",
+      "kind": "feature-port",
+      "project": null,
+      "component": "trt-shim-rocm",
+      "summary": "trt-shim-rocm int8 calibration cache not implemented. TensorRT's IInt8Calibrator has readCalibrationCache/writeCalibrationCache so the computed per-tensor int8 dynamic ranges can be persisted and reused, skipping recalibration on later builds (and enabling calibration-data-free builds). The shim runs calibration every build and ignores the cache: it neither consumes a provided cache (readCalibrationCache) nor emits one (writeCalibrationCache). Gap: MIGraphX does not expose the int8 scales it computes (no setDynamicRange/get-scales equivalent), so producing or consuming a TensorRT-compatible calibration cache needs either a MIGraphX scale accessor or a Q/DQ-in-ONNX explicit-quantization path. Resume by mapping readCalibrationCache to a Q/DQ pre-quantized model path, or request a MIGraphX scale get/set API.",
+      "refs": [],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-12T15:00:08Z"
     }
   ]
 }

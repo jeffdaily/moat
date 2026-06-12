@@ -141,7 +141,7 @@ trtexec needs, so Phase 2 reuses it.
 
 ## Phase 2a: fp16 + serialize + real model (DONE)
 
-Validated on gfx90a via tools/trt_run.cpp (flexible driver: --fp16, --save,
+Validated on gfx90a via tools/trtshim_run.cpp (flexible driver: --fp16, --save,
 --load):
 - fp16: kFP16 flag -> migraphx::quantize_fp16; correct argmax on mnist_cnn and
   on ResNet-50 (resnet50-v2-7, 102MB; argmax 556 matches onnxruntime CPU in both
@@ -153,8 +153,8 @@ Validated on gfx90a via tools/trt_run.cpp (flexible driver: --fp16, --save,
 - ResNet-50 needs default_dim_value=1 (dynamic batch); set via migraphx::
   onnx_options in backend introspect/build.
 
-ctest is 6/6 (migraphx_smoke, driver_smoke, sampleOnnxMNIST, trt_run_fp16,
-trt_run_save, trt_run_load). ResNet-50 is validated locally but not committed
+ctest is 6/6 (migraphx_smoke, driver_smoke, sampleOnnxMNIST, trtshim_run_fp16,
+trtshim_run_save, trtshim_run_load). ResNet-50 is validated locally but not committed
 (too large); tools/make_resnet_golden.py regenerates its golden via onnxruntime.
 
 ## Phase 2b/3: breadth sweep + trtexec deferral
@@ -193,7 +193,7 @@ calibrator bridge.)
   drives IInt8Calibrator::getBatch (app fills device pointers) -> host staging ->
   migraphx::quantize_int8_options::add_calibration_data -> quantize_int8 on the
   uncompiled program. backend.h's abstract CalibrationSource keeps backend.* free
-  of TRT types; shim's ShimCalibSource implements it. Validated (trt_run --int8)
+  of TRT types; shim's ShimCalibSource implements it. Validated (trtshim_run --int8)
   on mnist_cnn and ResNet-50, argmax preserved.
 - **Single-axis dynamic shapes:** createOptimizationProfile/setDimensions/
   addOptimizationProfile -> ShimOptimizationProfile derives the one dynamic axis

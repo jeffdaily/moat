@@ -20,3 +20,4 @@
 {"kind":"phase","ts":"2026-06-12T07:10:56Z","phase":"test","seconds":8.979,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/trt-shim-rocm/src/build --output-on-failure"}
 {"kind":"phase","ts":"2026-06-12T13:59:30Z","phase":"test","seconds":13.544,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/trt-shim-rocm/src/build"}
 {"kind":"phase","ts":"2026-06-12T14:15:55Z","phase":"test","seconds":15.084,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/trt-shim-rocm/src/build"}
+{"kind":"phase","ts":"2026-06-12T15:00:38Z","phase":"test","seconds":15.414,"exit":0,"cmd":"ctest --test-dir /var/lib/jenkins/moat/projects/trt-shim-rocm/src/build"}
