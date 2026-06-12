@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-12T07:20:26Z",
-  "head_sha": "8688269",
+  "updated_at": "2026-06-12T09:04:43Z",
+  "head_sha": "00cb1a7",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8688269",
+      "validated_sha": "00cb1a7",
       "started_at": "2026-06-04T22:16:44Z",
-      "completed_at": "2026-06-12T06:50:14Z",
-      "updated_at": "2026-06-12T06:50:14Z",
+      "completed_at": "2026-06-12T09:04:31Z",
+      "updated_at": "2026-06-12T09:04:31Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "00cb1a7",
+        "method": "binary-equiv",
+        "detail": "all_gpus.cpp is CPU-side host code (GPU enumeration); no device kernels modified; device bitcode on gfx90a/gfx1100 is unchanged (cooperativeLaunch=1 on those platforms, condition was already satisfied",
+        "at": "2026-06-12T09:04:31Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "8688269",
+      "validated_sha": "00cb1a7",
       "started_at": null,
-      "completed_at": "2026-06-12T07:20:26Z",
-      "updated_at": "2026-06-12T07:20:26Z",
+      "completed_at": "2026-06-12T09:04:38Z",
+      "updated_at": "2026-06-12T09:04:38Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +60,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "00cb1a7",
+        "method": "binary-equiv",
+        "detail": "all_gpus.cpp is CPU-side host code (GPU enumeration); no device kernels modified; device bitcode on gfx90a/gfx1100 is unchanged (cooperativeLaunch=1 on those platforms, condition was already satisfied",
+        "at": "2026-06-12T09:04:38Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
@@ -79,13 +91,13 @@
       }
     },
     "windows-gfx1201": {
-      "state": "port-ready",
+      "state": "validation-failed",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-12T06:50:14Z",
+      "updated_at": "2026-06-12T09:04:43Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -98,7 +110,8 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
-      }
+      },
+      "last_agent": "validator"
     },
     "windows-gfx1151": {
       "state": "blocked-needs-gfx90a",

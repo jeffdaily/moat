@@ -578,3 +578,117 @@ All 7 field types pass:
 | NTT bb31 bb31_self_consistency | PASS |
 
 0 test failures. Source tree clean (git status --porcelain: empty).
+
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+GPU: gfx1201 (AMD Radeon RX 9070 XT), TheRock ROCm 7.14.0a20260604 (Windows 11).
+HIP_VISIBLE_DEVICES=1 (gfx1201 at device index 0 when masked to 1). Fork HEAD 00cb1a7 (includes all_gpus.cpp fix below).
+
+### Windows ROCm toolchain recipe
+
+```
+ROCM_SDK = B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+HIPCC     = $ROCM_SDK/bin/hipcc.exe   # HIP 7.14, clang 23
+MSVC_VER  = 14.44.35207
+MSVC_BIN  = C:/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/$MSVC_VER/bin/Hostx64/x64
+WINSDK    = C:/Program Files (x86)/Windows Kits/10/  (10.0.26100.0)
+Rust      = stable-x86_64-pc-windows-msvc (1.96.0)
+
+# Environment:
+export LIB="$MSVC_WIN\lib\x64;$WINSDK\Lib\10.0.26100.0\ucrt\x64;$WINSDK\Lib\10.0.26100.0\um\x64"
+export INCLUDE="$MSVC_WIN\include;$WINSDK\Include\10.0.26100.0\ucrt;..."
+export PATH="$MSVC_BIN:$ROCM_SDK/bin:$ROCM_SDK/lib/llvm/bin:$PATH"  # MSVC link.exe before Git's
+
+# GPU discovery via offload-arch.exe: needs TheRock runtime DLLs in the same directory.
+# Copy from _rocm_sdk_core/bin/ to _rocm_sdk_devel/lib/llvm/bin/:
+#   amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc-builtins0714.dll, hiprtc0714.dll
+# Without these DLLs in llvm/bin, offload-arch.exe fails with "cannot determine hip architecture"
+# and the build silently falls back to --offload-arch=native (which then fails).
+
+# Test binary DLL placement: the test .exe links amdhip64_7.dll.
+# System32 has an Adrenalin amdhip64_7.dll that loads first (app dir > System32 > PATH).
+# Fix: copy the same 5 TheRock DLLs into target/release/deps/ before each test run.
+```
+
+### Required source fix: util/all_gpus.cpp cooperativeLaunch filter
+
+gfx1201 under TheRock ROCm 7.14 reports `cooperativeLaunch=0` in device properties.
+The original `all_gpus.cpp` filtered out GPUs without cooperativeLaunch, silently
+excluding gfx1201 from the GPU list -> every test failed with cudaErrorNoDevice.
+
+Fix (commit 00cb1a7): remove `&& prop.cooperativeLaunch` from the GPU selection filter.
+On Linux gfx90a/gfx1100 (ROCm 7.2.1), cooperativeLaunch=1 so those platforms are
+unaffected. The fix lets NTT tests run on gfx1201; MSM operations that call
+hipLaunchCooperativeKernel fail gracefully at the call site with "unspecified launch
+failure" (hipErrorLaunchFailure 719) rather than silently at GPU detection.
+
+### NTT tests (poc/ntt-cuda)
+
+Build + test command pattern:
+```
+source sppark_build_env.sh   # sets LIB, INCLUDE, PATH, HIPCC
+cd poc/ntt-cuda
+cargo clean
+NVCC=off HIPCC=<hipcc.exe> HIP_VISIBLE_DEVICES=1 cargo build --release --features=<field>
+# Copy 5 TheRock DLLs to target/release/deps/ (System32 amdhip64 loader workaround)
+NVCC=off HIPCC=<hipcc.exe> HIP_VISIBLE_DEVICES=1 GPU=1 \
+  cargo test --release --features=<field> -- --nocapture
+```
+
+| Field | Test | Result |
+|-------|------|--------|
+| bls12_381 | test_against_arkworks | PASS |
+| bls12_377 | test_against_arkworks | PASS |
+| bn254 | test_against_arkworks | PASS |
+| pallas | test_against_arkworks | PASS |
+| vesta | test_against_arkworks | PASS |
+| gl64 (Goldilocks) | gl64_self_consistency | PASS |
+| bb31 (Baby Bear) | bb31_self_consistency | PASS |
+
+7/7 NTT fields PASS on gfx1201 RDNA4.
+
+### MSM tests (poc/msm-cuda) - BLOCKED by cooperative launch
+
+gfx1201 under TheRock ROCm 7.14 on Windows does NOT support hipLaunchCooperativeKernel.
+`hipLaunchCooperativeKernel` returns hipErrorLaunchFailure (719) even for a 1x1 grid.
+The MSM Pippenger algorithm uses cooperative launch extensively (sort kernel, accumulate
+kernel). Both bls12_381 and bls12_377 MSM tests fail:
+
+```
+thread 'msm_correctness' panicked at src\lib.rs:77:9:
+cudaLaunchCooperativeKernel(...) failed: "unspecified launch failure"
+test msm_correctness ... FAILED
+```
+
+This is a platform limitation of TheRock ROCm 7.14 on Windows gfx1201, not a port
+defect. On Linux (ROCm 7.2.1), both gfx90a and gfx1100 pass MSM correctness.
+
+### bn254 build-time gate
+
+```
+NVCC=off HIPCC=<hipcc.exe> HIP_VISIBLE_DEVICES=1 cargo build --release --features=bn254
+# exit 101, panics: "the bn254 curve is not yet supported on the ROCm/HIP MSM backend..."
+```
+
+Gate confirmed working on Windows: exit 101, correct panic message. PASS.
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| NTT bls12_381 test_against_arkworks | PASS |
+| NTT bls12_377 test_against_arkworks | PASS |
+| NTT bn254 test_against_arkworks | PASS |
+| NTT pallas test_against_arkworks | PASS |
+| NTT vesta test_against_arkworks | PASS |
+| NTT gl64 gl64_self_consistency | PASS |
+| NTT bb31 bb31_self_consistency | PASS |
+| MSM bls12_381 msm_correctness (TEST_NPOW=15) | FAIL (hipLaunchCooperativeKernel 719) |
+| MSM bls12_377 msm_correctness (TEST_NPOW=14) | FAIL (hipLaunchCooperativeKernel 719) |
+| bn254 build-time gate | PASS (exit 101, correct panic) |
+
+Outcome: validation-failed. NTT (7/7 fields) and bn254 build-gate pass. MSM is blocked
+by hipLaunchCooperativeKernel returning error 719 on gfx1201 (TheRock ROCm 7.14 Windows,
+cooperativeLaunch=0 in device properties). This is a platform limitation, not a port
+defect. The all_gpus.cpp fix (commit 00cb1a7) is required for any GPU tests to run on
+gfx1201 and has been pushed to the fork.
