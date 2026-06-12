@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-12T15:25:21Z",
-  "head_sha": "00cb1a7",
+  "updated_at": "2026-06-12T17:54:36Z",
+  "head_sha": "868aa18",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "00cb1a7",
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": "2026-06-12T09:04:31Z",
-      "updated_at": "2026-06-12T09:04:31Z",
+      "updated_at": "2026-06-12T17:54:35Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -40,13 +40,13 @@
       }
     },
     "linux-gfx1100": {
-      "state": "completed",
+      "state": "revalidate",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "00cb1a7",
       "started_at": null,
       "completed_at": "2026-06-12T09:04:38Z",
-      "updated_at": "2026-06-12T09:04:38Z",
+      "updated_at": "2026-06-12T17:54:35Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -69,35 +69,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "port-ready",
-      "blocked": true,
-      "blocked_reason": "Same Windows cooperative-launch gap as gfx1201: hipLaunchCooperativeKernel returns 719 (cooperativeLaunch=0) on gfx1101 too under ROCm 7.14, proven directly on this host (1x1 plain+grid.sync probe, _rocm_sdk_core 7.14 runtime). MSM cannot validate; NTT 7/7 and bn254 gate would pass (RDNA3, as on Linux gfx1100) but the platform cannot reach completed. Optional arch; recorded blocked so it is not re-selected to reproduce the known MSM failure.",
-      "validated_sha": null,
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "868aa18",
       "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-12T15:25:21Z",
-      "stats": {
-        "tokens_total": 0,
-        "tokens_approx": true,
-        "wall_seconds": {
-          "thinking": 0,
-          "compile": 0,
-          "test": 0,
-          "misc": 0
-        },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
-      }
-    },
-    "windows-gfx1201": {
-      "state": "validation-failed",
-      "blocked": true,
-      "blocked_reason": "MSM (Pippenger) requires hipLaunchCooperativeKernel, which is unsupported on Windows ROCm 7.14: cooperativeLaunch=0 and the launch API returns hipErrorLaunchFailure(719) for ANY kernel (even a 1x1 plain kernel), confirmed on this host across all 3 available runtimes (System32 Adrenalin amdhip64, TheRock _rocm_sdk_core 7.14, TheRock build/bin 7.0.2) and on BOTH GPUs (gfx1201 RDNA4 and gfx1101 RDNA3). Not a wrong-runtime artifact and not RDNA4-specific; the same RDNA3 silicon supports cooperative launch on Linux (gfx1100 ROCm 7.2.1 passes MSM). NTT 7/7 fields and the bn254 build-gate pass on Windows. Port code is correct; this is a Windows HIP runtime capability gap. The Windows tier cannot be satisfied for MSM on this host (gfx1101 has the same gap).",
-      "validated_sha": null,
-      "started_at": null,
-      "completed_at": null,
-      "updated_at": "2026-06-12T15:25:09Z",
+      "completed_at": "2026-06-12T17:54:36Z",
+      "updated_at": "2026-06-12T17:54:36Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -111,7 +89,30 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "claude"
+    },
+    "windows-gfx1201": {
+      "state": "completed",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": "868aa18",
+      "started_at": "2026-06-12T17:54:36Z",
+      "completed_at": "2026-06-12T17:54:36Z",
+      "updated_at": "2026-06-12T17:54:36Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "claude"
     },
     "windows-gfx1151": {
       "state": "blocked-needs-gfx90a",

@@ -770,3 +770,54 @@ RDNA4 it is a hardware capability gap; for RDNA3-on-Windows it is an unresolved 
 reporting gap. sppark MSM validates correctly on Linux gfx90a + gfx1100 (both have GWS); the
 Windows tier cannot be satisfied for MSM on this host. The non-cooperative MSM fallback
 (deferred: sppark-msm-noncoop-fallback) remains the only path to MSM on RDNA4/Windows.
+
+## Non-cooperative-launch fallback IMPLEMENTED + MSM validated on Windows (2026-06-12)
+
+Implemented the deferred `sppark-msm-noncoop-fallback`: a runtime fallback that runs
+the Pippenger MSM without cooperative launch, so MSM now works on the no-GWS Windows
+GPUs. Fork commit 868aa18 (on top of the validated 00cb1a7), pushed to
+jeffdaily/sppark moat-port. Design: projects/sppark/noncoop-fallback-design.md.
+
+What changed (additive; cooperative path byte-for-byte unchanged):
+- msm/sort.cuh: upper_sort factored into upper_count_emit + upper_scan_scatter phase
+  helpers (the cooperative upper_sort still calls them with grid.sync between, so its
+  behavior is unchanged). New fallback kernels sort_upper_count -> sort_upper_scatter
+  -> sort_lower run the two-level cross-block radix pass as three ordinary kernels
+  (kernel boundaries replace the grid barriers); the single-block sort_row path reuses
+  sort with gridDim.x == 1. This is tractable because sppark already routes all
+  cross-block state through the global histogram[]; shared counters[] is per-block
+  scratch recomputed after each barrier.
+- msm/pippenger.cuh: accumulate gains a COOP template flag; COOP=false drops the
+  trailing grid.sync + in-kernel work-queue reset (its counter hoisted to namespace
+  scope and zeroed by reset_accumulate_counter before each launch). msm_t::launch_sort
+  / launch_accumulate dispatch on gpu.props().cooperativeLaunch (overridable with
+  SPPARK_FORCE_NONCOOP). Requires C++17 (if constexpr) -- satisfied by the ROCm clang
+  and modern CUDA toolchains.
+- poc/msm-cuda/tests/msm.rs: added msm_correctness_sizes, a multi-size sweep vs
+  arkworks that exercises the fallback (or, with SPPARK_FORCE_NONCOOP=1, forces it on a
+  cooperative-launch-capable GPU).
+
+Not touched: the bitmap-based batch_addition/batch_diff (add<>) cooperative overload is
+NOT on the MSM correctness path (the digit-list batch_addition overload is, and it has
+no grid barrier), so it was left as-is. If a non-MSM-correctness entry point that uses
+add<> is ever run on no-GWS hardware it would need the same easy treatment as accumulate.
+
+### Validation (real GPU, msm_correctness + msm_correctness_sizes vs arkworks)
+
+Build/test recipe: agent_space/sppark_build_env.sh (MSVC 14.44.35207, WinSDK
+10.0.26100.0, hipcc 7.14/clang 23), build per arch under the matching
+HIP_VISIBLE_DEVICES mask (offload-arch bakes in the masked device's arch), copy the 5
+TheRock runtime DLLs into target/release/deps/.
+
+- windows-gfx1201 (RX 9070 XT, RDNA4, device 1): bls12_381 PASS at TEST_NPOW 8,10,12,
+  15,17; bls12_377 PASS at TEST_NPOW 14; msm_correctness_sizes PASS; SPPARK_FORCE_NONCOOP
+  PASS. MSM previously failed here with hipLaunchCooperativeKernel 719.
+- windows-gfx1101 (Radeon PRO V710, RDNA3, device 0): bls12_381 PASS at TEST_NPOW 10,
+  15,17 (built for gfx1101 under mask 0).
+
+windows-gfx1201 and windows-gfx1101 are now `completed` at 868aa18 (MSM + NTT both pass).
+The functional change advanced head 00cb1a7 -> 868aa18, so linux-gfx90a / linux-gfx1100
+flipped to `revalidate`: the cooperative path they exercise is behavior-identical, but
+the device binary gained the fallback kernels, so a binary-equivalence carry-forward does
+not apply and a Linux GPU should re-run msm_correctness at 868aa18 to reconfirm (expected
+PASS). This is required before the upstream PR (REQUIRED Linux tier).
