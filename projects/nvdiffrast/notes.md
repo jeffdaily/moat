@@ -347,6 +347,72 @@ Reviewed moat-port fe88d6c vs upstream 253ac4f (read-only, no GPU/build). Verdic
 
 ### Cross-platform note
 fe88d6c is a functional edit to shared USE_ROCM code, so gfx1100 correctly sits at `revalidate` (validated_sha cbf2e7f remains a reachable ancestor). gfx1100 must re-confirm on its own GPU or via codeobj binary-equivalence; not this reviewer's job.
+## Validation 2026-06-12 (linux-gfx90a)
+
+### GPU: AMD Instinct MI250X / MI250 (gfx90a, CDNA2, wave64), ROCm 7.2.1, PyTorch 2.13 (HIP 7.2)
+### Commit: fe88d6c32913dbd0aaf5547fd3ed04487b5ecdfb
+### HIP_VISIBLE_DEVICES: 2,3 (card 1 of MI250X)
+
+### Build
+```bash
+export HIP_VISIBLE_DEVICES=2,3
+cd /var/lib/jenkins/moat/projects/nvdiffrast/src
+PYTORCH_ROCM_ARCH=gfx90a pip install --no-build-isolation -e .
+```
+Build: PASS. Extension `_nvdiffrast_c.cpython-312-x86_64-linux-gnu.so` (1.1MB host + 5 gfx90a offload code objects confirmed via llvm-objdump --offloading).
+
+### Test Results: 5/5 PASS
+
+**Test 1 -- Core operators:**
+- `dr.RasterizeCudaContext()`: PASS
+- `dr.rasterize()`: PASS (output shape [1,256,256,4])
+- `dr.interpolate()`: PASS (output shape [1,256,256,3])
+- `dr.antialias()`: PASS (output shape [1,256,256,3])
+- `dr.texture()`: PASS (linear filtering, output shape [1,256,256,3])
+- Backward gradients: PASS (pos.grad [1,3,4], attr.grad [1,3,3])
+- Coverage: 20808/65536 px = 31.8% (matches gfx1100 result exactly)
+- Determinism: PASS
+
+**Test 2 -- Depth ordering (executeROP / z-ordering):**
+- Near triangle (z/w=-0.5) wins over far triangle (z/w=+0.5) in overlap: PASS
+- Center region: 2048 px near_tri, 576 px far_tri (correct z-ordering)
+
+**Test 3 -- Stress test (5000 tris @ 512x512, binning/coarse scans, multi-segment):**
+- Coverage: 257670/262144 = 98.3%
+- Determinism: PASS
+
+**Test 4 -- samples/torch/triangle.py:** PASS (renders RGB triangle)
+
+**Test 5 -- samples/torch/earth.py --max-iter 10:**
+- iter=0: loss=0.272971, psnr=11.28
+- iter=10: loss=0.272176, psnr=11.30
+- PASS (matches prior gfx90a porter validation)
+
+### CUDA no-regression gate
+The key modified source files in the CUDA path:
+- `cuda_compat.h` -- new file, entirely within `#if defined(__HIP_PLATFORM_AMD__) || defined(USE_ROCM)`, CUDA path never sees it
+- `Util.inl` getLo/getHi/combineLoHi -- unconditionally replaced with portable C++ (semantically equivalent; reviewer noted as minor footprint issue but not blocking)
+- `Util.inl` getLaneMaskLt/Le/Gt/Ge -- properly guarded; CUDA path keeps original PTX asm
+
+Compile test (nvcc 12.8, sm_80):
+```bash
+/opt/conda/envs/cuda-12.8/bin/nvcc -c \
+  -I/opt/conda/envs/cuda-12.8/targets/x86_64-linux/include \
+  -Icsrc/common -Icsrc/common/cudaraster \
+  -arch=sm_80 --std=c++17 \
+  csrc/common/cudaraster/impl/RasterImpl_kernel.cu \
+  -o /tmp/nvdiffrast_rasterimpl_cuda.o
+```
+Result: PASS (clean compile, no errors or warnings)
+
+### Fork state
+`git status --porcelain`: all `??` (untracked build artifacts only -- .so, hipify-generated .hip, __pycache__, tri.png). No modified tracked files.
+
+### Verdict: PASS
+All gfx90a GPU tests pass. Wave64-safe warp-collective rewrite works correctly on CDNA2 (MI250X). CUDA no-regression gate confirms the CUDA path compiles cleanly with nvcc 12.8.
+
+---
+
 ## Revalidation 2026-06-12 (linux-gfx1100)
 
 ### Method: Full GPU re-run (not binary-equiv carry-forward)
