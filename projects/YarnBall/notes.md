@@ -411,3 +411,27 @@ Both tests: exit 0, finite geometry, physics advancing. Geometry matches prior
 gfx90a validation exactly (65065 and 32931 vertices, same bbox).
 
 Verdict: PASS. Advancing linux-gfx90a to completed at head 12b20ec.
+
+## Revalidation 2026-06-12 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100 RDNA3), HIP_VISIBLE_DEVICES=1
+Arch: gfx1100, ROCm 7.2.1
+Trigger: head advanced 8fe057c -> 12b20ec (Windows gfx1201 commit: FetchContent for assimp/jsoncpp, Eigen3 target fix). Classifier: mixed/arch_independent=False.
+
+Binary-equivalence check:
+
+- Old build: Gui compiled at 8fe057c for gfx1100 (retained from prior validation)
+- New build: Gui compiled at 12b20ec for gfx1100 (clean rebuild, build_hip_new/)
+  ```
+  cmake -S . -B build_hip_new -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_BUILD_TYPE=Release
+  cmake --build build_hip_new -j$(nproc)
+  # Result: [100%] Built target Gui -- warnings only, no errors
+  ```
+- codeobj_diff result: verdict=identical (33 exports + gfx1100 device ISA identical)
+
+The CMakeLists.txt delta adds WIN32-guarded blocks for assimp/jsoncpp FetchContent plus Eigen3::Eigen link and EIGEN3_INCLUDE_DIR fallback. None of these alter the device code compiled for Linux/gfx1100: the Linux code paths (find_package assimp, pkg jsoncpp, stb find_path) are unchanged. The Eigen3::Eigen link change is host-only includes and does not affect HIP kernel ISA.
+
+Verdict: CARRY FORWARD (binary-equiv). No GPU re-run needed. Advancing linux-gfx1100 to completed at head 12b20ec.

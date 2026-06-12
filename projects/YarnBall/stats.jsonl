@@ -31,3 +31,6 @@
 {"kind":"phase","ts":"2026-06-12T14:29:01Z","phase":"test","seconds":0.025,"exit":255,"cmd":"/var/lib/jenkins/moat/projects/YarnBall/src/build_hip/Gui configs/cable_work_pattern.json -s --headless -n 3 -o /tmp/yb_frames_revalidate/frame_ --exit"}
 {"kind":"phase","ts":"2026-06-12T14:29:50Z","phase":"test","seconds":0.633,"exit":0,"cmd":"Gui configs/cable_work_pattern.json -s --headless -n 3 -o /tmp/yb_frames_revalidate/frame_ --exit"}
 {"kind":"phase","ts":"2026-06-12T14:29:55Z","phase":"test","seconds":0.708,"exit":0,"cmd":"Gui configs/letterS.json -s --headless -n 3 -o /tmp/yb_letter_revalidate/frame_ --exit"}
+{"kind":"phase","ts":"2026-06-12T17:42:42Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build build_hip_new -j64"}
+{"kind":"phase","ts":"2026-06-12T17:42:47Z","phase":"compile","seconds":0.131,"exit":1,"cmd":"cmake --build build_hip_new -j64"}
+{"kind":"phase","ts":"2026-06-12T17:43:15Z","phase":"compile","seconds":20.376,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/YarnBall/src/build_hip_new -j64"}
