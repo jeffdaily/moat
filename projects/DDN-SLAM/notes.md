@@ -713,3 +713,75 @@ HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/DDN-SLAM/build_hip/rgbd_rep
 - Total wall time: ~8 minutes for 2000 frames + 6358 NeRF iterations
 
 Verdict: GPU-validated PASS on linux-gfx90a at head 20b0bbe. State -> completed. validated_sha = 20b0bbe.
+
+## Revalidation 2026-06-12 (linux-gfx1100, revalidate from 9a91f87 -> 20b0bbe)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100 RDNA3), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+GPU arch: gfx1100. Fork branch: jeffdaily/DDN-SLAM @ moat-port. Validated sha: 20b0bbe.
+
+### Delta classification
+
+`python3 utils/moatlib.py classify DDN-SLAM 9a91f87 20b0bbe` -> `class=mixed arch_independent=False`.
+The delta (commits 7eecb52 + 20b0bbe) is primarily Windows-specific but includes minor Linux-affecting
+CMake changes (Boost/OpenSSL target-based linking, Eigen3 version constraint relaxed). Full GPU
+re-run performed (binary equivalence not assumed for a mixed/not-arch-independent delta).
+
+### What changed (7eecb52 + 20b0bbe)
+
+- CMakeLists.txt: Windows-specific `elseif(WIN32)` blocks (clang-cl flags, vcpkg g2o, /FORCE:UNRESOLVED).
+  Linux changes: `find_package(Boost REQUIRED COMPONENTS serialization system)` with target-based
+  linking (`Boost::serialization`, `Boost::system`, `OpenSSL::Crypto`, `${CMAKE_DL_LIBS}`), and
+  `find_package(Eigen3 REQUIRED)` (removed the version 3.1.0 floor; `find_package(OpenSSL REQUIRED)` added).
+- include/cuda_to_hip.h: adds a `usleep` stub guarded `#if defined(_WIN32)`. No-op on Linux.
+- cmake/g2o_config.h.in, src/g2o_win_stubs.cpp: Windows-only new files.
+- Thirdparty/instant-ngp-kf: bumped from d44dcaf to 70b5dde (Windows MSVC-ABI fixes + tiny-rocm-nn c5fe93e
+  which adds fmt submodule + Windows MSVC-ABI build support on top of the validated 28350e6 fc_multiply fix).
+
+### Build commands
+```
+# Update submodules to head sha
+git -C projects/DDN-SLAM/src submodule update --init --depth 1 \
+  Thirdparty/instant-ngp-kf Thirdparty/g2o Thirdparty/Sophus
+git -C projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf submodule update --init --depth 1 \
+  dependencies/tiny-cuda-nn
+git -C projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf/dependencies/tiny-cuda-nn submodule update \
+  --init --depth 1 dependencies/fmt
+git -C projects/DDN-SLAM/src/Thirdparty/instant-ngp-kf submodule update --init --depth 1 \
+  dependencies/args dependencies/eigen dependencies/tinylogger
+
+# Configure (reconfigure: clear CMakeCache.txt first)
+cmake -S projects/DDN-SLAM/src -B agent_space/ddnslam-gfx1100/build \
+  -DUSE_HIP=ON -DUSE_TENSORRT=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc \
+  -DORBEEZ_BUILD_WITH_GUI=OFF \
+  -DPangolin_DIR=/var/lib/jenkins/moat/projects/ElasticFusion/src/third-party/Pangolin/build/src \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+cmake --build agent_space/ddnslam-gfx1100/build --target rgbd_replica -j 16
+```
+
+### GPU test command
+```
+cd projects/DDN-SLAM/src
+HIP_VISIBLE_DEVICES=0 /var/lib/jenkins/moat/agent_space/ddnslam-gfx1100/build/rgbd_replica \
+  Vocabulary/ORBvoc.txt \
+  Examples/RGB-D/office0.yaml \
+  /var/lib/jenkins/moat/agent_space/replica_dl/Replica/office0
+```
+
+### Results (PASS)
+- Images in sequence: 2000
+- ORB-SLAM map initialized: "New Map created with 1486 points"
+- NeRF training: 5454 iterations, finite loss throughout
+  - iteration=1: 0.0403946, iteration=100: 0.0041559, iteration=1000: 0.000389899, final (~5454): ~0.000730
+- Camera trajectory: evaluation/RGBD_Replica_office0_CameraTrajectory.txt saved
+- Keyframe trajectory: evaluation/RGBD_Replica_office0_KeyFrameTrajectory.txt saved
+- NeRF snapshot: evaluation/RGBD_Replica_office0.msgpack saved
+- No GPU fault, no crash, exit code 0
+- Tracking time: median 0.280s/frame, mean 0.229s/frame
+- Total wall time: ~8 minutes for 2000 frames + 5454 NeRF iterations
+
+Verdict: GPU-validated PASS on linux-gfx1100 at head 20b0bbe. State -> completed. validated_sha = 20b0bbe.
