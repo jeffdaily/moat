@@ -335,3 +335,64 @@ cmake -S projects/DDN-SLAM/src -B build_hip -DUSE_HIP=ON -DUSE_TENSORRT=OFF \
   -DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/pangolin/pangolin-install
 cmake --build build_hip --target rgbd_replica -j 16
 ```
+
+## Review 2026-06-12 (reviewer, linux-gfx90a): PASSED -> review-passed
+Reviewed the committed port across all three forks (the local src/ working tree is
+stale -- see Finding W below; the authoritative review target is the pushed commits):
+- DDN-SLAM jeffdaily@moat-port 4cbbb0a (top-level ORB-SLAM3 host port)
+- instant-ngp-kf jeffdaily@moat-port d44dcaf (NeRF core HIP port; base 1adb67d)
+- tiny-rocm-nn jeffdaily@moat-port 28350e6 (rocWMMA/hipBLAS tcnn backend; base 6f32935)
+Submodule chain verified reachable and SHA-consistent: 4cbbb0a -> ingp d44dcaf ->
+tiny-cuda-nn=tiny-rocm-nn 28350e6.
+
+Fault classes checked and clean:
+- No hardcoded warp-32: tiny-rocm-nn fully_fused_mlp.cpp uses WAVE_SIZE=64 throughout
+  (ROWS_PER_STEP = WAVE_SIZE/2 etc.); the only literal 32 is the MLP WIDTH template arg
+  (FullyFusedMLP<...,32>), not a lane count. instant-ngp-kf testbed_nerf.cu has zero warp
+  intrinsics. Correct for the gfx90a (wave64) lead.
+- rocWMMA __half->float16_t fragment-element disambiguation (the wmma_elem<T> trait +
+  wmma_ptr() reinterpret) is applied at EVERY load/store_matrix_sync and fill_fragment
+  site; reinterpret_cast __half*<->float16_t* is bit-identical on gfx9; host/shared
+  buffers correctly left as __half. No missed site.
+- FP16 atomicAdd(__half*) CAS-loop emulation (cuda_to_hip.h) is per-lane, wave-agnostic,
+  guarded __HIP_DEVICE_COMPILE__; the __half2 fast path is correctly excluded on HIP
+  (common_device.cuh !defined(__HIP__) guard). No managed memory anywhere, so the
+  atomicMax-on-managed (R2) and FP16-atomic fault classes are both handled.
+- hipBLAS v2 datatype port (cublas_matmul.h hipDataType/hipblasComputeType_t) consistent
+  across all three gemm wrappers; FP16-data/FP32-compute path preserved.
+- fc_multiply infinite-recursion fix adds the missing terminating overload (concrete A,B
+  then resolve C/D layout). Dispatch order B-then-C/D terminates. Correct.
+- Texture/surface path is point-sampled tonemap only and GUI-gated off headless; 256B
+  pitch class benign (plan R-list confirmed). No rule-of-five handle wrappers in scope.
+
+Strategy / footprint / BC: Strategy A applied correctly -- single cuda_to_hip.h compat
+header per repo, .cu marked LANGUAGE HIP (not renamed), USE_HIP default OFF, CUDA path
+fully guarded (every nvcc-only block wrapped in `if(NOT USE_HIP)` / `#if !defined(__HIP__)`).
+Arch is NOT hardcoded: both CMakeLists use `if(NOT DEFINED CMAKE_HIP_ARCHITECTURES OR ...
+STREQUAL "") set(... gfx90a)`, so a follower's -DCMAKE_HIP_ARCHITECTURES is respected.
+tcnn param-interface adaptation (set_params_impl drops backward_params; 3-arg
+initialize_params) is semantically correct and buffer-consistent (verts/verts/verts_gradient
+preserved in marching_cubes). takikawa set_padded_output_width/required_output_alignment
+correctly replaces set_alignment/min_alignment (SDF path, not on the NeRF critical path).
+
+Commit hygiene clean: all 5 commit titles [ROCm]-prefixed and <=72 chars; no noreply
+trailer; each body mentions Claude and carries a Test Plan; no non-ASCII/em-dash; no AMD-
+internal account refs; no GHA workflows added; author Jeff Daily <jeff.daily@amd.com>.
+
+Non-blocking notes (do NOT gate the PR; carry forward):
+- Finding W (hygiene): the shared projects/DDN-SLAM/src/ working tree has STALE uncommitted
+  edits that diverge BACKWARD from the validated commit 4cbbb0a (they delete .gitmodules,
+  rgbd_replica.cu, cuda_to_hip.h, the submodule gitlinks, and reintroduce an unconditional
+  -march=native plus a buggy USE_TENSORRT_OVERRIDE CMake pattern). This is leftover from the
+  earlier dead-porter reconstruction; it is NOT the validated state. Before any further work
+  in this tree, `git checkout fork/moat-port -- .` (or reset to 4cbbb0a) to discard it so the
+  validator does not accidentally build the stale tree. The committed/pushed branch is correct.
+- Submodule pinning: .gitmodules points g2o and Sophus at their UPSTREAM repos
+  (RainerKuemmerle/g2o @ 26f775d, strasdat/Sophus @ de0f8d3) by gitlink SHA with no branch=.
+  Standard submodule model and matches the Orbeez convention, but a future upstream GC/force-
+  push could orphan an old by-SHA fetch; forking them under jeffdaily would be more robust.
+  Not required for PR readiness.
+
+Verdict: review-passed. The committed port is correct and self-consistent on all three
+forks; no changes requested. Validator confirms the real-GPU rgbd_replica run next (the
+notes record a prior PASS on Replica office0; a fresh validator run is the gate).
