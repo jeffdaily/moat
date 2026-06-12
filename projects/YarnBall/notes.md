@@ -161,3 +161,45 @@ run-to-run-stable yarn geometry. Validated.
 - GUI (non-headless) mode and the GL<->GPU interop are unported (scoped out);
   validation is headless-only, which fully exercises the GPU simulation.
 - LBVH submodule lives at jeffdaily/KittenGpuLBVH @ moat-port.
+
+## Review 2026-06-12
+
+Verdict: review-passed. Strategy A (compat header + LANGUAGE HIP) correctly
+matches the build type; the CUDA path is preserved and ROCm is additive and
+USE_HIP-guarded. No blocking defects. Notes for the validator and any future
+follower delta:
+
+- cuda_to_hip.h aliases cudaStream_t/cudaGraphExec_t only under USE_HIP, and
+  YarnBall.h:153-154 uses those as host member types; resolution depends on the
+  compat header being force-included ahead of YarnBall.h on every .cpp/.cu that
+  includes it. CMakeLists.txt:177 force-includes it on main.cpp + ENGINE_CPP +
+  YARN_CPP + GPU_SRC. Any NEW .cpp added to the build that includes YarnBall.h
+  must be added to that force-include list or it will not see the hip aliases.
+- ComputeBuffer.h:10 gates the CUDA-GL interop on `__has_include("cuda_runtime.h")`
+  and the methods on `#ifdef __CUDA_RUNTIME_H__`. The HIP build relies on
+  cuda_runtime.h being ABSENT on the host. On a ROCm host that also has the CUDA
+  toolkit headers installed, __has_include would be true and the cuda*GL methods
+  would be declared under hipcc (cuda_gl_interop.h). Not hit on the validated
+  host; a latent host-config fragility, not a port defect. render.cpp call sites
+  are correctly guarded behind !USE_HIP so the scope-out is consistent.
+- opt/svd.cuh:4 still has an unguarded `#include <cuda.h>` (plan item 7 flagged
+  it). It is dead in this build: no compiled translation unit includes svd.cuh
+  (the built SVD is opt/svd/svd.cpp). Harmless; no action needed unless svd.cuh
+  is ever wired into the HIP build.
+- Common.h:201 `using glm::mix;` is added unconditionally (runs on CUDA too).
+  Reviewed as a strict generalization: Kitten's mix(mat,mat,T) hid all glm mix
+  overloads via the line-57 using-directive; re-introducing glm's scalar/vector
+  mix as disjoint-signature candidates does not change any existing CUDA overload
+  resolution and fixes a clang two-phase-lookup failure. BC-safe; correct to
+  leave unguarded.
+- cosserat.cu:185 calls __syncthreads() inside a divergent `if (!sid)` branch
+  (only sector-0 threads reach it). This is barrier divergence (UB on both CUDA
+  and HIP) but is PRE-EXISTING in base b178c2b, unchanged by the port, and the
+  gfx90a GPU run passed. Out of scope for this diff; noted so the validator is
+  not surprised if a follower wave32 arch behaves differently here.
+
+Commit hygiene clean: title `[ROCm] Add AMD ROCm/HIP support via a CMake build`
+(44 chars), Claude disclosed by name, no noreply trailer, Test Plan present, no
+non-ASCII / no em-dash, no MOAT jargon in the diff, all under jeffdaily. The
+two @amd lines are the required AMD copyright author headers. .gitmodules
+correctly repoints the LBVH submodule to jeffdaily/KittenGpuLBVH @ moat-port.
