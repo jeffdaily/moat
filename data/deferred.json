@@ -743,6 +743,19 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-12T00:19:57Z"
+    },
+    {
+      "id": "sppark-bn254-g1-msm-rocm",
+      "kind": "feature-port",
+      "project": "sppark",
+      "component": "msm/pippenger (bn254/alt_bn128 G1)",
+      "summary": "bn254 (alt_bn128) G1 MSM hangs the GPU on ROCm/HIP at TEST_NPOW>=12 (gfx90a wave64, 100% busy, no completion); bls12_381/bls12_377 G1 finish in <1s. Gated off on ROCm (poc/msm-cuda/build.rs panics for rocm+bn254; cuda/pippenger_inf.cu #error). Likely a bn254-specific wave64 / sort-partitioning / cooperative-grid-sync edge case for the 254-bit field. Resume by root-causing the hang, then drop both gates.",
+      "refs": [
+        "projects/sppark/notes.md (bn254 G1 MSM hangs section)"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-12T05:23:55Z"
     }
   ]
 }
