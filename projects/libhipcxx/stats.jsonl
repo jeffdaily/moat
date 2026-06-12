@@ -5,3 +5,5 @@
 {"kind": "tokens", "ts": "2026-06-07T21:09:27Z", "tokens": 84404, "source": "validator"}
 {"kind":"phase","ts":"2026-06-08T00:40:38Z","phase":"compile","seconds":59.984,"exit":0,"cmd":"bash projects/libhipcxx/validation/run_windows.sh gfx1201 0"}
 {"kind": "tokens", "ts": "2026-06-08T16:24:33Z", "tokens": 110386, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-12T07:52:13Z","phase":"test","seconds":403.303,"exit":143,"cmd":"bash projects/libhipcxx/validation/run_windows.sh gfx1101 0"}
+{"kind":"phase","ts":"2026-06-12T08:03:37Z","phase":"test","seconds":348.203,"exit":143,"cmd":"bash projects/libhipcxx/validation/run_windows.sh gfx1101 0"}

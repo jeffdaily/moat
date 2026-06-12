@@ -315,3 +315,45 @@ Result: 10/10 PASS (fork HEAD e2e8f70).
   here. The per-arch TSC clockrate the port assumes for gfx1201 is thus confirmed
   on real hardware -- closes the "ASSUMED, unconfirmed on hardware" open item for
   gfx1201 in the TSC section above.
+
+## Validation 2026-06-12 (windows-gfx1101, Radeon PRO V710, RDNA3 wave32, TheRock ROCm 7.14)
+
+GPU: AMD Radeon PRO V710, gcnArchName=gfx1101, warpSize=32, HIP_VISIBLE_DEVICES=0.
+Only GPU present (device 0). Fork HEAD: fee8c1dc8052e693b70e4fbf46186a5644c47b30.
+
+Runner: `bash projects/libhipcxx/validation/run_windows.sh gfx1101 0`
+(same Windows flags: -DNOMINMAX and --rocm-device-lib-path to _rocm_sdk_devel bitcode)
+
+RESULT: VALIDATION FAILED -- hard GPU hang on all multi-thread semaphore GPU kernels.
+
+Per-test results:
+- sem_umbrella_smoke: PASS (both ungated headers compile + run, no GPU kernel hang)
+- sem_test: PASS (cross-block device binary_semaphore<thread_scope_device>)
+- sem_block_probe: PASS (no hang within 30s watchdog -- intra-wavefront probe completes)
+- conf_version: PASS (host-only, no GPU compute kernel)
+- conf_max: PASS (host-only, no GPU compute kernel)
+- conf_try_acquire: HANG (>60s, hard GPU hang; watchdog kill triggered)
+- conf_acquire: HANG (>60s, hard GPU hang; watchdog kill triggered)
+- conf_release: HANG (>60s, hard GPU hang; watchdog kill triggered)
+- conf_timed: HANG (>30s, hard GPU hang; watchdog kill triggered)
+- conf_heterogeneous: HANG (>60s; partially ran -- printed "Launching 4 permutations"
+  before hanging inside a device launch)
+
+5 PASS / 5 HANG (validation-failed).
+
+ROOT CAUSE: Any GPU kernel launched with `<<<1, 2>>>` (2-thread block, semaphore
+operations) causes a hard GPU hang on gfx1101 with TheRock ROCm 7.14 on Windows.
+conf_version and conf_max PASS because they launch zero GPU kernels (host-only
+static_assert). sem_umbrella_smoke/sem_test/sem_block_probe use single-arch tests
+not triggering the hang. The hang is specific to gfx1101 -- gfx1201 (same host,
+same TheRock 7.14 venv) passes 10/10, and gfx1100 Linux (ROCm 7.2.1) passes 9/10.
+
+DISPOSITION: The hangs are NOT in sem_block_probe (the primary wave32 hazard
+signal) -- sem_block_probe passes. The hangs affect all concurrent-agents GPU
+semaphore tests (try_acquire, acquire, release, timed, heterogeneous) on gfx1101
+specifically. This is either a gfx1101-specific ROCm 7.14 runtime bug, a hardware
+difference in the V710's compute scheduler vs gfx1100/gfx1201, or a real wave32
+forward-progress hazard that manifests differently on gfx1101. After a hung kernel
+is killed, subsequent HIP processes also hang (GPU requires driver reset/reboot to
+recover). Windows-gfx1101 set to validation-failed; investigate after GPU reboot
+or confirm on a second gfx1101 machine.
