@@ -221,6 +221,30 @@ MIGraphX feedback collected (findings/migraphx-trt-shim-gaps/report.md): (1)
 dynamic-concat codegen bug, (2) no ONNX output-name accessor, (3) no buffer-based
 program serialize/load. int8 confirmed working (not a gap).
 
+## trtexec (DONE)
+
+The stock unmodified NVIDIA trtexec (v10.7.0) runs on gfx90a through the shim:
+--onnx, --fp16, --int8, --saveEngine, --loadEngine all PASS with normal
+throughput/latency output. ctest is 9/9. (deferred.py trt-shim-rocm-trtexec ->
+done.)
+
+Three things beyond the sampleOnnxMNIST path:
+- Larger include/compat surface (cudaDeviceProp->hipDeviceProp_t,
+  getDeviceProperties/MemGetInfo, managed/host alloc, launchHostFunc, pointer
+  attributes, stream-capture status, cuda_profiler_api.h stub).
+- Runtime dlopen drop-in: trtexec dlopens libnvinfer.so.10 / libnvonnxparser.so.10
+  and dlsyms the factories, so the build makes those VERSIONED aliases plus a
+  no-op libnvinfer_plugin.so.10 (src/plugin_stub.cpp).
+- More nvinfer1 methods: getNbOptimizationProfiles=1, *V2 format queries,
+  setOptimizationProfileAsync, IExecutionContext getEngine/getTensorShape/
+  getTensorStrides, and IStreamReader/IStreamReaderV2 deserialize (drain stream
+  -> blob deserialize) for --loadEngine. TRTSHIM_DEBUG=1 surfaced each one.
+
+Docs scrubbed of internal jargon (no "Strategy A"/MOAT) so the repo stands alone.
+Layer-builder API: MIGraphX CAN back it (migraphx::module + operation), so it is
+tractable-but-large, deferred until a code-built-network consumer needs it (the
+ONNX path, which trtexec and all targets use, never touches it).
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
