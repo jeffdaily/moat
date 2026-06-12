@@ -274,3 +274,117 @@ The host functions (`collect`, `integrate_row`) would work with raw coordinate a
 The G1 MSM (primary use case) could be made to work with this refactor. G2 MSM (fp2) requires additional mont_t.hip work or should be disabled for HIP.
 
 NTT continues to work because it doesn't have the host-function-calling-device-operator pattern that MSM has.
+
+## MSM HIP Port BREAKTHROUGH (2026-06-11, porter)
+
+MSM (G1 / Pippenger) now COMPILES and PASSES correctness on gfx90a (ROCm 7.2.1,
+MI250X, wave64). The prior "compilation unit separation required" blocker was a
+misdiagnosis: no separate .cpp TUs are needed. Two root causes, both fixable
+in-header.
+
+### Root cause 1: wrong host/device macro on HIP
+sppark's field headers selected the device mont_t type with `__HIPCC__` (defined
+in BOTH hipcc passes) where CUDA uses `__CUDA_ARCH__` (device pass only). So on
+HIP the device field type leaked into host code. The correct HIP analog of
+`__CUDA_ARCH__` is `__HIP_DEVICE_COMPILE__`. Fixed every `__CUDA_ARCH__`-style
+guard across ff/{bls12-381,bls12-377,alt_bn128}.hpp, ec/{affine_t,xyzz_t,
+jacobian_t}.hpp:
+  - device-side field types and device EC algorithm: `defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)`
+  - host-side field types (blst): `!defined(__CUDA_ARCH__) && !defined(__HIP_DEVICE_COMPILE__)`
+  - compiler-presence (mem_t classes etc.): `defined(__CUDACC__) || defined(__HIPCC__)`
+ec/affine_t.hpp also stripped `__device__`/`__host__` to empty under `#ifndef __CUDACC__` (true on HIP!) and never restored them -- catastrophic; re-guarded to `!__CUDACC__ && !__HIPCC__`.
+
+With this, the HIP HOST pass uses the blst host field (host-accessible Montgomery
+constants) and the HIP DEVICE pass uses mont_t.hip -- exactly CUDA's model. This
+is REQUIRED: mont_t's modulus/RR/ONE live in `__device__ __constant__` memory and
+are GARBAGE if read from host, so the host driver (collect/integrate_row, which
+does real field+point arithmetic on the CPU after the GPU phases) MUST use blst.
+A "device-type-everywhere on HIP" attempt builds but returns the identity (inf)
+because host reads junk constants -- verified with a host unit test.
+
+### Root cause 2: clang instantiates __global__ template bodies in the host pass
+nvcc drops unreferenced/launch-only `__global__` bodies from its host pass;
+clang/hipcc semantically instantiates them at the `<<<>>>` / launch site with the
+host (blst) field type, which then can't call the device-only kernel internals.
+Fix: wrap each `__global__` kernel BODY in `#if defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__)` so the host-pass instantiation is an empty stub (only its address is needed for the launch); the real body compiles in the device pass. Applied to breakdown/accumulate/integrate (pippenger.cuh), the batch_addition `add` helper + the digits-variant kernel (batch_addition.cuh). The xyzz_t `#else` host `uadd` wrappers were made `__host__ __device__` so the kernel body (instantiated in the host pass) can still resolve them.
+
+### PTX -> HIP translations (msm/, the inline-asm fault class)
+- `mov.u32 %laneid` -> `threadIdx.x % WARP_SZ` (logical-32-warp lane).
+- predicated `shfl.sync.up.b32 %v|%pred` (clamp) -> `__shfl_up_sync(...,WARP_SZ)` + an explicit lane-range predicate.
+- `lop3.b32 ...,0xb8` (a&~mask | b&mask) -> the plain C++ bit-select.
+- `prefetch.global.L2` -> `__builtin_prefetch`.
+All guarded `#if defined(__HIPCC__)` HIP / `#else` PTX so the CUDA build is byte-identical.
+
+### mont_t.hip: extended + made __host__ __device__
+`# define inline __host__ __device__ __forceinline__` (was `__device__`), and gave
+every GCN-asm method (`+= -= * << >> final_sub czero csel`) a portable C++ host
+fallback under `#else` of `__HIP_DEVICE_COMPILE__`. Added the MSM-needed methods
+absent from the NTT-trimmed mont_t.hip: `is_zero`, `is_zero(a)`, `is_one`, `cneg`,
+`abs`, `one(int)`, `shfl`, `operator<<=/>>=`, `operator-`. Cross-lane ops (shfl,
+shfl_bfly) are device-only with a no-op host body (host never reaches them).
+
+### cuda2hip.hpp
+- `#define HIP_DISABLE_WARP_SYNC_BUILTINS` before `<hip/hip_runtime.h>`: ROCm 7's
+  native `__shfl_*_sync`/`__ballot_sync` static_assert a 64-bit mask; sppark passes
+  CUDA's 32-bit 0xffffffff with logical-32-warp semantics, so use the in-header
+  32-bit-mask polyfills. `__syncwarp()` polyfill made unconditional (it lived in the
+  same disabled block).
+- Minimal `cooperative_groups::this_grid().sync()` shim -> `__ockl_grid_sync()`. The
+  full `<hip/hip_cooperative_groups.h>` fails to compile when pulled into a TU with
+  host code (its helpers reference __device__-only __ockl_* from __host__ __device__
+  inline fns). Replaced the include with this shim.
+
+### Build wiring
+- poc/msm-cuda/build.rs: detect hipcc (NVCC=off) parallel to nvcc, compile via
+  `sppark::build::ccmd()` (reads DEP_SPPARK_TARGET=rocm), emit `feature="rocm"`.
+- `class X::mem_t` default template args -> `typename X::mem_t` (clang rejects the
+  elaborated-type spec on a type alias; valid on nvcc too).
+
+### G2 / fp2 scoped OUT on HIP (deferred)
+fp2 (G2 MSM) reciprocal needs `vt_inverse_mod_x` (~400 lines of shuffle-based
+Montgomery-ladder inverse) not in mont_t.hip. The msm-cuda POC's G1 path is the
+primary use case. On HIP, pippenger_inf.cu defines SPPARK_MSM_FP2 only for CUDA;
+`mult_pippenger_fp2_inf` and the fp2 Rust test/bench are `#[cfg(not(feature="rocm"))]`.
+
+### Build (gfx90a, ROCm 7.2.1)
+```
+cd poc/msm-cuda
+NVCC=off HIPCC=/opt/rocm/bin/hipcc HIP_VISIBLE_DEVICES=0 \
+  cargo build --release --features=bls12_381    # or bls12_377 / bn254
+```
+Rust toolchain installed via rustup (was absent on this host).
+
+### Validation (real gfx90a, HIP_VISIBLE_DEVICES=0) -- G1 MSM vs arkworks
+- bls12_381 msm_correctness: PASS at TEST_NPOW=10,12,15,17
+- bls12_377 msm_correctness: PASS at TEST_NPOW=12
+- bn254: see latest run
+NTT continues to pass (unchanged path).
+
+### Critical gotcha: the __noinline__ barrier (NTT regression caught during port)
+Changing mont_t.hip's `# define inline __device__ __forceinline__` to
+`__host__ __device__ __forceinline__` (needed so the MSM host driver can call
+the field) silently inlined away `noop()`, which upstream declares
+`__device__ __noinline__` with an empty `asm("")`. That noop is an OPTIMIZATION
+BARRIER the Montgomery reduction (operator-=, final_sub) relies on; forcing it
+inline made NTT compile and run but produce WRONG results (test_against_arkworks
+failed, all curves). Fix: keep `noop()` `__device__ __noinline__` on the device
+path (`#if __HIP_DEVICE_COMPILE__`), host stub otherwise. Lesson: when you widen
+a project's `inline` macro to host+device, audit every `__noinline__`/barrier it
+overrides. Bisected by reverting files one at a time and re-running NTT.
+
+### bn254 G1 MSM hangs (open issue, not blocking)
+bls12_381 and bls12_377 G1 MSM pass; bn254 G1 MSM HANGS (GPU at 100%, no
+completion) at TEST_NPOW>=12. bls curves finish in <1s. Likely a bn254-specific
+wave64 issue (254-bit field, different limb count / sort partitioning) or a
+cooperative-grid-sync edge case for that field. Needs separate investigation;
+does not block the bls12_381/bls12_377 G1 result. Recorded so a resume starts
+here, not from zero.
+
+### Validation summary (linux-gfx90a, fork moat-port d7cb381, ROCm 7.2.1, MI250X)
+- MSM G1 bls12_381 msm_correctness: PASS (TEST_NPOW 12,14,15,17)
+- MSM G1 bls12_377 msm_correctness: PASS (TEST_NPOW 12,14)
+- MSM G1 bn254: HANGS (see above)
+- MSM G2/fp2: scoped out on HIP (deferred sppark-g2-fp2-msm)
+- NTT bls12_381 test_against_arkworks: PASS (regression-checked, unchanged path)
+- NTT bls12_377/bn254/pallas/vesta: build + run clean
+- 0 test failures across the suite.

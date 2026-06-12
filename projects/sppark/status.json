@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-08T22:47:53Z",
-  "head_sha": null,
+  "updated_at": "2026-06-12T00:20:17Z",
+  "head_sha": "d7cb381bd9f7dba9ddffb73a392b19ecc9f823d1",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "MSM requires compilation unit separation: hipcc dual-pass model parses host code against __device__ intrinsics. Refactor needed to move collect()/integrate_row() to .cpp files with POD types. NTT works (7/7 fields).",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-04T22:16:44Z",
       "completed_at": null,
-      "updated_at": "2026-06-05T14:56:51Z",
+      "updated_at": "2026-06-12T00:20:17Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

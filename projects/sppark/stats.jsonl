@@ -5,3 +5,9 @@
 {"kind": "tokens", "ts": "2026-06-05T14:39:31Z", "tokens": 186859, "source": "porter (host/device guards attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T14:57:17Z", "tokens": 168786, "source": "porter (host/device stubs attempt)"}
 {"kind": "tokens", "ts": "2026-06-05T15:25:49Z", "tokens": 154528, "source": "porter (host/device analysis)"}
+{"kind":"session","ts":"2026-06-11T23:06:31Z","epoch":1781219191.412227317,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T23:27:26Z","phase":"compile","seconds":9.892,"exit":101,"cmd":"bash agent_space/sppark_build_msm.sh"}
+{"kind":"phase","ts":"2026-06-11T23:35:53Z","phase":"compile","seconds":9.350,"exit":0,"cmd":"bash agent_space/sppark_build_msm.sh"}
+{"kind":"phase","ts":"2026-06-11T23:36:14Z","phase":"test","seconds":8.846,"exit":101,"cmd":"bash agent_space/sppark_test_msm.sh"}
+{"kind":"phase","ts":"2026-06-12T00:19:10Z","phase":"test","seconds":103.552,"exit":0,"cmd":"bash agent_space/sppark_validate.sh"}
+{"kind":"session","ts":"2026-06-12T00:20:33Z","epoch":1781223633.029249471,"event":"end","platform":"linux-gfx90a"}
