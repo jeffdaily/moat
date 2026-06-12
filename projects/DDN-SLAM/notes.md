@@ -644,3 +644,72 @@ build_win\rgbd_replica.exe Vocabulary\ORBvoc.txt Examples\RGB-D\office0.yaml ^
 - Wall time: ~210 seconds for 2000 frames + NeRF iterations
 
 Verdict: GPU-validated PASS on windows-gfx1201. State -> completed. validated_sha = 20b0bbe.
+
+## Revalidation 2026-06-12 (linux-gfx90a, revalidate from 9a91f87 -> 20b0bbe)
+
+Platform: linux-gfx90a (MI250X gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=3.
+GPU arch: gfx90a. Fork branch: jeffdaily/DDN-SLAM @ moat-port. Validated sha: 20b0bbe.
+
+### Delta classification
+
+`python3 utils/moatlib.py classify DDN-SLAM 9a91f87 20b0bbe` -> `class=mixed arch_independent=False`.
+The delta includes a submodule bump (instant-ngp-kf 70b5dde -> new tiny-rocm-nn c5fe93e which adds
+Windows MSVC-ABI support) and changes to include/cuda_to_hip.h (+11 lines). Binary equivalence was
+NOT assumed; a full GPU re-run was performed.
+
+### What changed (7eecb52 + 20b0bbe)
+
+- CMakeLists.txt: Windows-specific `elseif(WIN32)` blocks (clang-cl flags, vcpkg g2o, Boost target
+  linking via `Boost::serialization/system`, `OpenSSL::Crypto`, `${CMAKE_DL_LIBS}`). The Linux path
+  changes to CMake target linking for Boost/OpenSSL/dl (functionally equivalent on Linux).
+- include/cuda_to_hip.h: adds a `usleep` stub guarded `#if defined(_WIN32)`. No-op on Linux.
+- cmake/g2o_config.h.in, src/g2o_win_stubs.cpp: Windows-only.
+- Thirdparty/instant-ngp-kf: bumped to 70b5dde (adds Windows MSVC-ABI fixes in instant-ngp-kf and
+  bumps tiny-rocm-nn to c5fe93e which adds fmt submodule + Windows MSVC-ABI build support on top of
+  the previously validated 28350e6 fc_multiply fix).
+
+### Build notes
+
+The tiny-rocm-nn at c5fe93e adds a `fmt` submodule dependency. Initialized via:
+```
+cd Thirdparty/instant-ngp-kf/dependencies/tiny-cuda-nn
+git submodule update --init --depth 1 dependencies/fmt
+```
+All other submodules (g2o, Sophus, args, eigen, tinylogger) were already present from earlier sessions
+or re-initialized with `git submodule update --init --depth 1`.
+
+### Build commands
+```
+cmake -S projects/DDN-SLAM/src -B projects/DDN-SLAM/build_hip \
+  -DUSE_HIP=ON -DUSE_TENSORRT=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc \
+  -DORBEEZ_BUILD_WITH_GUI=OFF \
+  -DPangolin_DIR=/var/lib/jenkins/moat/projects/ElasticFusion/src/third-party/Pangolin/build/src \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build projects/DDN-SLAM/build_hip --target rgbd_replica -j 16
+```
+
+### GPU test command
+```
+cd projects/DDN-SLAM/src
+HIP_VISIBLE_DEVICES=3 /var/lib/jenkins/moat/projects/DDN-SLAM/build_hip/rgbd_replica \
+  Vocabulary/ORBvoc.txt \
+  Examples/RGB-D/office0.yaml \
+  /var/lib/jenkins/moat/agent_space/replica_dl/office0
+```
+
+### Results (PASS)
+- Images in sequence: 2000
+- ORB-SLAM map initialized: "New Map created with 1486 points"
+- NeRF training: 6358 iterations, finite loss throughout
+  - iteration=1: 0.0405, iteration=1000: 0.0441, iteration=6000: 0.0447, final (6358): 0.0462
+- Camera trajectory: CameraTrajectory.txt saved (2488 lines)
+- Keyframe trajectory: KeyFrameTrajectory.txt saved (291 keyframes)
+- No GPU fault, no crash, exit code 0
+- Tracking time: median 0.250s/frame, mean 0.221s/frame
+- Total wall time: ~8 minutes for 2000 frames + 6358 NeRF iterations
+
+Verdict: GPU-validated PASS on linux-gfx90a at head 20b0bbe. State -> completed. validated_sha = 20b0bbe.
