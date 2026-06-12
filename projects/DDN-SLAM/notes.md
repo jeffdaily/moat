@@ -470,3 +470,80 @@ tracked there at all (only DBoW2 is under Thirdparty/ in the upstream tree). Thi
 project-structural environmental wall, not a port regression.
 
 Verdict: GPU-validated PASS on linux-gfx90a. State -> completed. validated_sha = 9a91f87.
+
+## Validation 2026-06-12 (linux-gfx1100, validator)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100 RDNA3), ROCm 7.2.1, HIP_VISIBLE_DEVICES=1.
+GPU arch: gfx1100. Fork branch: jeffdaily/DDN-SLAM @ moat-port. Validated sha: 9a91f87.
+
+### WAVE_SIZE assessment
+
+The notes document a WAVE_SIZE=64 concern for RDNA followers. Investigation confirms this is NOT a
+blocker: tiny-rocm-nn uses rocWMMA's abstract API (fragment<matrix_a,16,16,16,...>, load_matrix_sync,
+mma_sync) -- not raw MFMA intrinsics. On gfx1100 rocWMMA automatically dispatches to WMMA (not MFMA).
+The 64-thread launch geometry (WAVE_SIZE=64) results in 2 wave32 waves per thread-block row on gfx1100
+(vs 1 wave64 on gfx90a), which rocWMMA's fragment indexing handles correctly. Confirmed by running the
+mlp_learning_an_image micro-gate: loss 9.40 -> 0.174 -> 0.0140 -> 0.00366 (200->1000 steps), no NaN,
+no GPU fault. Better final loss than gfx90a due to higher W7800 compute throughput.
+
+### Build commands
+```
+# Initialize submodules
+git -C projects/DDN-SLAM/src submodule update --init --depth 1 \
+  Thirdparty/instant-ngp-kf Thirdparty/g2o Thirdparty/Sophus
+
+# Build g2o (march=native OFF is critical to avoid AVX512 alignment crash in static init)
+cmake -S projects/DDN-SLAM/src/Thirdparty/g2o \
+  -B agent_space/ddnslam-gfx1100/g2o-build \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DBUILD_WITH_MARCH_NATIVE=OFF \
+  -DCMAKE_CXX_STANDARD=17
+cmake --build agent_space/ddnslam-gfx1100/g2o-build -j 16
+
+# Build DDN-SLAM for gfx1100
+cmake -S projects/DDN-SLAM/src -B agent_space/ddnslam-gfx1100/build \
+  -DUSE_HIP=ON -DUSE_TENSORRT=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc \
+  -DORBEEZ_BUILD_WITH_GUI=OFF \
+  -DPangolin_DIR=/var/lib/jenkins/moat/projects/ElasticFusion/src/third-party/Pangolin/build/src \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build agent_space/ddnslam-gfx1100/build --target rgbd_replica -j 16
+```
+
+### Dataset setup
+Replica office0 obtained via selective HTTP range download of the ZIP central directory
+(3.6 MB) to find office0 entry offsets, then HTTP range download of the 1.38 GB office0 byte range
+(10971461678-12415929673) from https://cvg-data.inf.ethz.ch/nice-slam/data/Replica.zip at ~20 MB/s.
+Custom Python ZIP extractor used to decompress 4001 files (DEFLATE) with 0 errors.
+Results layout: agent_space/replica_dl/Replica/office0/{results/,frame/,depth/,traj.txt}
+where frame/ and depth/ contain per-type symlinks into results/.
+
+ORBvoc from MarvinChung/Orbeez-SLAM:
+curl -L -o /tmp/ORBvoc.tar.gz "https://raw.githubusercontent.com/MarvinChung/Orbeez-SLAM/main/Vocabulary/ORBvoc.txt.tar.gz"
+tar -xzf /tmp/ORBvoc.tar.gz -C projects/DDN-SLAM/src/Vocabulary/
+
+### GPU test command
+```
+cd projects/DDN-SLAM/src
+HIP_VISIBLE_DEVICES=1 agent_space/ddnslam-gfx1100/build/rgbd_replica \
+  Vocabulary/ORBvoc.txt \
+  Examples/RGB-D/office0.yaml \
+  /var/lib/jenkins/moat/agent_space/replica_dl/Replica/office0
+```
+
+### Results (PASS)
+- Images in sequence: 2000 (correct)
+- ORB-SLAM map initialized: "New Map created with 1486 points"
+- NeRF training: 4919 iterations, finite loss throughout
+  - iteration=1: 0.0413, iteration=100: 0.00333, iteration=1000: 0.000478, final (~4919): ~0.00154
+- Camera trajectory: evaluation/RGBD_Replica_office0_CameraTrajectory.txt saved
+- Keyframe trajectory: evaluation/RGBD_Replica_office0_KeyFrameTrajectory.txt saved
+- NeRF snapshot: evaluation/RGBD_Replica_office0.msgpack saved
+- No GPU fault, no crash, exit code 0
+- Tracking time: median 0.234s/frame, mean 0.208s/frame
+- Total wall time: ~9 minutes for 2000 frames + 4919 NeRF iterations
+
+Verdict: GPU-validated PASS on linux-gfx1100. State -> completed. validated_sha = 9a91f87.
