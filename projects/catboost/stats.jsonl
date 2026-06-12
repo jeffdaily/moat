@@ -67,3 +67,9 @@
 {"kind":"phase","ts":"2026-06-10T02:56:19Z","phase":"test","seconds":337.849,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut.exe --show-fails"}
 {"kind":"phase","ts":"2026-06-10T03:02:20Z","phase":"test","seconds":48.644,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/gpu_data/ut/catboost-cuda-gpu_data-ut.exe --show-fails"}
 {"kind":"phase","ts":"2026-06-10T03:41:40Z","phase":"test","seconds":2352.885,"exit":1,"cmd":"bash -c cd 'B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/methods/ut' && ./catboost-cuda-methods-ut.exe --show-fails"}
+{"kind": "tokens", "ts": "2026-06-10T04:23:01Z", "tokens": 96676, "source": "validator"}
+{"kind":"phase","ts":"2026-06-12T05:06:59Z","phase":"compile","seconds":54.962,"exit":1,"cmd":"ninja -C /b/develop/moat/projects/catboost/src/build_hip/cm -j64 catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut"}
+{"kind":"phase","ts":"2026-06-12T05:13:51Z","phase":"test","seconds":340.870,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut.exe --show-fails"}
+{"kind":"phase","ts":"2026-06-12T05:27:00Z","phase":"test","seconds":343.597,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/cuda_util/ut/catboost-cuda-cuda_util-ut.exe --show-fails"}
+{"kind":"phase","ts":"2026-06-12T05:28:10Z","phase":"test","seconds":61.827,"exit":0,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/gpu_data/ut/catboost-cuda-gpu_data-ut.exe --show-fails"}
+{"kind":"phase","ts":"2026-06-12T06:21:47Z","phase":"test","seconds":2603.698,"exit":1,"cmd":"B:/develop/moat/projects/catboost/src/build_hip/cm/catboost/cuda/methods/ut/catboost-cuda-methods-ut.exe --show-fails"}

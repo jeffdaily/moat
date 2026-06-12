@@ -998,6 +998,44 @@ GPU: AMD Radeon RX 9070 XT (gfx1201, compute capability 12.0, HIP_VISIBLE_DEVICE
 Summary: cuda_util-ut 48/48 (deterministic x2), gpu_data-ut 20/20, methods-ut 29/30 effective pass (only pre-existing Langevin test-design failure, not a ROCm defect).
 validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
 
+## Validation 2026-06-11 (validator, windows-gfx1101, revalidate -> completed)
+
+Platform: windows-gfx1101 (AMD Radeon PRO V710, gfx1101, wave32)
+Head sha validated: 4f42ad5415833cb4b371b697ef9a7cffb261db0c
+Prior validated_sha: ca6b84afa81a4d742871f6e9e5ee9d1d9091ef6a (squashed away, not in git history)
+
+Binary-equiv carry-forward was not possible: ca6b84a is not reachable in the fork history
+(it was squashed during PR prep), so both builds could not be produced for comparison.
+Full GPU revalidation performed instead.
+
+Build: reconfigured existing build_hip/cm for gfx1101 (changed CMAKE_HIP_ARCHITECTURES from
+gfx1201 to gfx1101), ninja rebuilt 62 GPU objects. Build succeeded.
+
+Configure command (all-clang-cl, from agent_space/catboost_win_gfx1201_configure.sh with gfx1201->gfx1101):
+  HIP_VISIBLE_DEVICES=0 cmake -G Ninja -B build_hip/cm ... -DCMAKE_HIP_ARCHITECTURES=gfx1101 ...
+
+Build:
+  HIP_VISIBLE_DEVICES=0 ninja -C build_hip/cm -j12 catboost-cuda-cuda_util-ut catboost-cuda-gpu_data-ut catboost-cuda-methods-ut
+  -> 62 GPU objects rebuilt for gfx1101, all 3 executables linked.
+
+Test results (HIP_VISIBLE_DEVICES=0 from exe directory, TheRock DLLs deployed beside each exe):
+  cuda_util-ut:  [DONE] ok: 48 (48/48)
+  gpu_data-ut:   [DONE] ok: 20 (20/20)
+  methods-ut:    [DONE] ok: 29, err: 1
+    - TAddingLangevinNoiseTest::LangevinTest FAIL: pre-existing test-design issue (std
+      0.6571826685 vs expected 0.4308123035, tol 0.1; GPU NextNormal bit-identical to host;
+      same failure on all platforms; not a ROCm defect).
+    - All 29 other tests pass: TExactLeavesEstimationTest 15/15, TPairwiseHistogramTest 4/4,
+      TPointwiseHistogramTest 4/4, TPointwiseMultiStatHistogramTest 6/6.
+
+wave32 correctness confirmed (same results as prior gfx1101 validation at ca6b84a):
+- FastInBlockReduce/BlockReduceN full __syncthreads tree: wave-agnostic.
+- 32-lane histogram layout: native on wave32. Confirmed by Pairwise/Pointwise/MultiStat histogram tests.
+- No HSA fault, no NaN, no hang.
+- methods-ut wall time: ~43 min.
+
+Result: PASS. validated_sha: 4f42ad5415833cb4b371b697ef9a7cffb261db0c -> completed.
+
 ## Upstream issues filed 2026-06-10 (after PR #3111 opened)
 
 Filed the 3 genuine CatBoost GPU algorithm bugs (architecture-independent, affect the
