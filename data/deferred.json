@@ -756,6 +756,20 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-12T05:23:55Z"
+    },
+    {
+      "id": "sppark-msm-noncoop-fallback",
+      "kind": "feature-port",
+      "project": "sppark",
+      "component": null,
+      "summary": "sppark MSM (Pippenger sort/accumulate) uses hipLaunchCooperativeKernel; gfx1201 on TheRock ROCm 7.14 Windows reports cooperativeLaunch=0 and the cooperative launch returns hipErrorLaunchFailure(719) even for a 1x1 grid, so MSM bls12_381/bls12_377 fail there (NTT 7/7 pass). To complete the Windows tier on gfx1201 either validate on gfx1101 (currently driver-wedged) or implement a non-cooperative kernel fallback for MSM when cooperativeLaunch==0.",
+      "refs": [
+        "projects/sppark/notes.md",
+        "fork jeffdaily/sppark @ 00cb1a7"
+      ],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-12T09:06:38Z"
     }
   ]
 }
