@@ -171,6 +171,122 @@ GPU proof: torch.cuda.get_device_name(0) = "AMD Radeon Pro W7800 48GB", torch.ve
 
 No CUDA no-regression gate required (follower platform, zero .cu/.cuh device code).
 
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201 / RDNA4, wave32)
+Fork: jeffdaily/kaldifeat @ moat-port, HEAD aa90013 (includes Windows build fixes)
+GPU: HIP_VISIBLE_DEVICES=1 (RX 9070 XT, gfx1201 -- gfx1101 is present but wedged; 1=gfx1201 confirmed via hipInfo)
+Result: PASSED
+
+### Windows build fixes applied (committed as aa90013 on top of 8d3c066)
+
+kaldifeat requires three Windows-specific cmake fixes to build with clang (non-MSVC)
+against the TheRock ROCm PyTorch wheel (torch 2.9.1+rocm7.14):
+
+1. CMakeLists.txt: `CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS` was gated on `MSVC` but clang on
+   Windows has `MSVC=false`, so kaldifeat symbols were not exported from the DLL. Changed
+   guard to `WIN32`. Also changed the `/wd4624` warning block from `if(WIN32)` to
+   `if(MSVC)` -- MSVC-only slash flags are rejected by clang.
+
+2. cmake/torch.cmake: The ROCm PyTorch wheel's `Caffe2Targets.cmake` bakes MSVC-only
+   options (`/permissive-`, `/EHsc`, `/bigobj`) into the imported-target
+   `INTERFACE_COMPILE_OPTIONS` via generator expressions. Clang (GCC-compat mode) rejects
+   slash flags as unknown file arguments. Fixed by detecting `WIN32 AND NOT MSVC`, stripping
+   slash flags from `TORCH_CXX_FLAGS`, and clearing `INTERFACE_COMPILE_OPTIONS` on all
+   imported torch/caffe2 targets (non-slash flags come from TORCH_CXX_FLAGS and survive
+   via CMAKE_CXX_FLAGS).
+
+3. kaldifeat/python/tests/CMakeLists.txt: ctest's `ENVIRONMENT` property uses semicolons to
+   separate `VAR=value` pairs. On Windows, Python uses `;` as the `PYTHONPATH` separator
+   (not `:` as on Unix). Fixed the separator to be conditional on `WIN32`. Also added
+   `PATH` to the test environment on Windows so that `kaldifeat_core.dll` and torch's
+   `c10.dll`/`torch_cpu.dll` are findable when Python loads `_kaldifeat.pyd`.
+
+These changes are all guarded on `WIN32`/`WIN32 AND NOT MSVC`/`MSVC` and are inert on
+Linux and CUDA builds. Linux platforms (gfx90a, gfx1100) carried forward to aa90013 via
+source-class.
+
+### Build commands
+
+```
+VENV=B:/develop/TheRock/external-builds/pytorch/.venv
+PYI=$VENV/Scripts/python.exe
+ROCM=$VENV/Lib/site-packages/_rocm_sdk_devel
+SRC=B:/develop/moat/projects/kaldifeat/src
+
+ROCM_PATH=$ROCM HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1201 \
+  cmake -S $SRC -B $SRC/build \
+  -G Ninja \
+  -DPYTHON_EXECUTABLE=$PYI \
+  -Dkaldifeat_BUILD_TESTS=ON \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_PREFIX_PATH="$VENV/Lib/site-packages/torch/share/cmake;$ROCM/lib/cmake" \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1201 cmake --build $SRC/build -j64
+```
+
+Configure confirms:
+- "Building PyTorch for GPU arch: gfx1201"
+- "PyTorch is a ROCm build (HIP 7.14.60850-d34cbb64)"
+- "HIP runtime library: .../amdhip64.lib"
+
+### Test results
+
+Run environment (set once, used for all tests):
+```
+export PATH="$SRC/build/bin:$VENV/Lib/site-packages/torch/lib:$VENV/Lib/site-packages/_rocm_sdk_core/bin:$PATH"
+export PYTHONPATH="$SRC/kaldifeat/python;$SRC/build/lib"
+export HIP_VISIBLE_DEVICES=1
+```
+
+C++ gtests (working directory torch/lib per cmake config):
+```
+ctest --test-dir $SRC/build -R "feature-window-test|online-feature-test" --output-on-failure
+# 1/2 Test.feature-window-test -- Passed
+# 2/2 Test.online-feature-test -- Passed
+```
+
+Python tests (run directly due to ctest ENVIRONMENT semicolon escaping limitation on Windows):
+```
+python $SRC/kaldifeat/python/tests/test_fbank.py                    # PASS
+python $SRC/kaldifeat/python/tests/test_fbank_options.py            # PASS
+python $SRC/kaldifeat/python/tests/test_frame_extraction_options.py # PASS
+python $SRC/kaldifeat/python/tests/test_mel_bank_options.py         # PASS
+python $SRC/kaldifeat/python/tests/test_mfcc.py                     # PASS
+python $SRC/kaldifeat/python/tests/test_mfcc_options.py             # PASS
+python $SRC/kaldifeat/python/tests/test_plp.py                      # PASS
+python $SRC/kaldifeat/python/tests/test_plp_options.py              # PASS
+python $SRC/kaldifeat/python/tests/test_spectrogram.py              # PASS
+python $SRC/kaldifeat/python/tests/test_spectrogram_options.py      # PASS
+python $SRC/kaldifeat/python/tests/test_whisper_fbank.py            # PASS
+python $SRC/kaldifeat/python/tests/test_whisper_v3_fbank.py         # PASS
+```
+
+Total: 14/14 pass (2 C++ gtests + 10 Python feature tests + 2 whisper tests).
+
+GPU proof:
+- torch.__version__ = 2.9.1+rocm7.14.0a20260604
+- torch.version.hip = 7.14.60850-d34cbb64
+- torch.cuda.is_available() = True
+- torch.cuda.device_count() = 1 (with HIP_VISIBLE_DEVICES=1)
+- torch.cuda.get_device_name(0) = "AMD Radeon RX 9070 XT"
+- kaldifeat.Fbank on cuda:0 returned tensor on cuda:0, ~76 MB GPU memory allocated
+- Not a CPU fallback
+
+Note: ctest ENVIRONMENT property semicolon-in-value issue -- Windows Python uses ';'
+as PYTHONPATH separator, but ctest's ENVIRONMENT list also uses ';' as item separator,
+making it impossible to embed ';' in a PATH/PYTHONPATH value via cmake generator
+expressions alone. The cmake fix (aa90013) provides the correct separator for builds
+but the PATH embedding via $ENV{PATH} expansion still hits this limitation for the
+PATH variable. The workaround for running tests is to set PATH/PYTHONPATH explicitly
+in the shell before calling ctest (or run test scripts directly). The C++ tests
+(working directory=torch/lib, no PYTHONPATH needed) run cleanly via ctest.
+
+Venv torch verified intact after validation: 2.9.1+rocm7.14.0a20260604.
+
 ## Review 2026-06-12
 Verdict: review-passed (build-only Strategy A port; no GPU device code; all ROCm changes guarded on kaldifeat_TORCH_IS_ROCM). Fault classes (warp size, rule-of-five, OOB reads, texture pitch, library swaps) verified N/A: 0 .cu/.cuh, 0 c10::cuda/CUDAStream/warp/cublas/cufft sites. Commit hygiene clean ([ROCm] title 57 chars, Claude named, no noreply trailer, ASCII, no MOAT jargon in diff). Docs added in both README.md and doc/source/installation/from_source.rst.
 
