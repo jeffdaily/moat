@@ -63,3 +63,4 @@
 {"kind":"phase","ts":"2026-06-12T06:38:53Z","phase":"compile","seconds":284.026,"exit":0,"cmd":"cmake --build /b/develop/moat/projects/k2/src/build --config Release -- -j64"}
 {"kind":"phase","ts":"2026-06-12T06:39:29Z","phase":"test","seconds":19.729,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_gtest_gfx1101.py"}
 {"kind":"phase","ts":"2026-06-12T06:40:10Z","phase":"test","seconds":34.092,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe B:/develop/moat/agent_space/run_k2_pytest_gfx1101_v2.py"}
+{"kind": "tokens", "ts": "2026-06-12T06:42:58Z", "tokens": 68568, "source": "validator (windows-gfx1101 revalidate)"}

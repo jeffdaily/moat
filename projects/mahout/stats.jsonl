@@ -79,3 +79,4 @@
 {"kind": "tokens", "ts": "2026-06-11T18:42:19Z", "tokens": 152536, "source": "porter"}
 {"kind":"phase","ts":"2026-06-12T06:27:02Z","phase":"compile","seconds":4.034,"exit":0,"cmd":"cargo build --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip"}
 {"kind":"phase","ts":"2026-06-12T06:28:47Z","phase":"test","seconds":43.640,"exit":0,"cmd":"cargo test --manifest-path /b/develop/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
+{"kind": "tokens", "ts": "2026-06-12T06:30:56Z", "tokens": 84147, "source": "validator (windows-gfx1101 revalidate)"}
