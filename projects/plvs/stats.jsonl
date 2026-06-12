@@ -4,3 +4,28 @@
 {"kind":"phase","ts":"2026-06-11T23:11:44Z","phase":"opencv-dep-compile","seconds":168.235,"exit":0,"cmd":"bash _deps/opencv-hip/build_install.sh"}
 {"kind":"phase","ts":"2026-06-11T23:21:20Z","phase":"compile","seconds":13.136,"exit":0,"cmd":"bash /tmp/plvs_gpu_compile.sh"}
 {"kind":"session","ts":"2026-06-11T23:24:46Z","epoch":1781220286.956835773,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-12T00:03:16Z", "tokens": 138390, "source": "porter"}
+{"kind":"session","ts":"2026-06-12T06:14:50Z","epoch":1781244890.180003622,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-12T06:16:57Z","phase":"compile","seconds":0.693,"exit":1,"cmd":"bash /tmp/plvs_build_thirdparty_cpu.sh"}
+{"kind":"phase","ts":"2026-06-12T06:18:06Z","phase":"compile","seconds":13.058,"exit":0,"cmd":"bash /tmp/plvs_build_thirdparty_cpu.sh"}
+{"kind":"phase","ts":"2026-06-12T06:19:52Z","phase":"compile","seconds":77.291,"exit":0,"cmd":"bash /tmp/plvs_build_thirdparty_cpu2.sh"}
+{"kind":"phase","ts":"2026-06-12T06:20:17Z","phase":"compile","seconds":5.574,"exit":2,"cmd":"bash /tmp/build_elas.sh"}
+{"kind":"phase","ts":"2026-06-12T06:22:37Z","phase":"compile","seconds":8.252,"exit":0,"cmd":"bash /tmp/plvs_main_configure.sh"}
+{"kind":"phase","ts":"2026-06-12T06:24:51Z","phase":"compile","seconds":119.734,"exit":0,"cmd":"bash /tmp/plvs_main_build.sh"}
+{"kind":"phase","ts":"2026-06-12T06:28:37Z","phase":"compile","seconds":147.376,"exit":0,"cmd":"bash /tmp/build_pangolin.sh"}
+{"kind":"phase","ts":"2026-06-12T06:29:07Z","phase":"compile","seconds":6.269,"exit":1,"cmd":"bash /tmp/rebuild_ocv_ximgproc.sh"}
+{"kind":"phase","ts":"2026-06-12T06:30:22Z","phase":"compile","seconds":0.741,"exit":1,"cmd":"bash /tmp/build_fastfusion.sh"}
+{"kind":"phase","ts":"2026-06-12T06:32:46Z","phase":"compile","seconds":170.236,"exit":0,"cmd":"bash /tmp/rebuild_ocv_ximgproc.sh"}
+{"kind":"phase","ts":"2026-06-12T06:33:18Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./sgm_test"}
+{"kind":"phase","ts":"2026-06-12T06:33:32Z","phase":"test","seconds":0.263,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/sgm_test"}
+{"kind":"phase","ts":"2026-06-12T06:34:06Z","phase":"compile","seconds":0.144,"exit":1,"cmd":"bash /tmp/rebuild_sgm.sh"}
+{"kind":"phase","ts":"2026-06-12T06:34:34Z","phase":"compile","seconds":5.827,"exit":0,"cmd":"bash /tmp/rebuild_sgm.sh"}
+{"kind":"phase","ts":"2026-06-12T06:34:47Z","phase":"test","seconds":0.274,"exit":1,"cmd":"/var/lib/jenkins/moat/agent_space/sgm_test"}
+{"kind":"phase","ts":"2026-06-12T06:39:21Z","phase":"test","seconds":1.368,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/sgm_aloe"}
+{"kind":"phase","ts":"2026-06-12T06:42:12Z","phase":"compile","seconds":145.248,"exit":0,"cmd":"bash /tmp/plvs_full.sh"}
+{"kind":"phase","ts":"2026-06-12T06:43:55Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -j48 plvs"}
+{"kind":"phase","ts":"2026-06-12T06:44:55Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -j48 plvs"}
+{"kind":"phase","ts":"2026-06-12T06:45:18Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make -j48 plvs"}
+{"kind":"phase","ts":"2026-06-12T06:45:38Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make plvs -j48"}
+{"kind":"phase","ts":"2026-06-12T06:48:38Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make plvs -j48"}
+{"kind":"phase","ts":"2026-06-12T06:54:40Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make rgbd_tum stereo_euroc -j48"}
