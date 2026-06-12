@@ -162,6 +162,57 @@ run-to-run-stable yarn geometry. Validated.
   validation is headless-only, which fully exercises the GPU simulation.
 - LBVH submodule lives at jeffdaily/KittenGpuLBVH @ moat-port.
 
+## Validation 2026-06-12
+
+Platform: linux-gfx90a (MI250X, gfx90a), HIP_VISIBLE_DEVICES=2,3 (card 1)
+Arch: gfx90a, ROCm 7.2.1, clang 22.0.0git
+Head sha: 8fe057c28d2888f489f5b1fbe2c92c2aeb51a767
+
+Build:
+```bash
+cmake -S . -B build_hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_BUILD_TYPE=Release
+bash utils/timeit.sh YarnBall compile -- cmake --build build_hip -j$(nproc)
+# Result: [100%] Built target Gui -- warnings only, no errors
+```
+
+Pre-build dependency notes:
+- sudo apt-get install -y libcli11-dev libjsoncpp-dev libstb-dev libglfw3-dev libassimp-dev libfreetype-dev libeigen3-dev libegl1-mesa-dev libgl1-mesa-dev
+- sudo apt-get install -y git-lfs && git lfs pull  (REQUIRED: .bcc model files are LFS)
+
+GPU tests (run from KittenEngine/ working dir):
+```bash
+# Test 1: cable_work_pattern scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=2,3 ./build_hip/Gui configs/cable_work_pattern.json \
+  -s --headless -n 3 -o /tmp/yb_frames_validator/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.538, SD: 0.132, N=4"
+# 4 OBJ files written (frame_0.obj .. frame_3.obj), 65065 vertices each
+# All vertices finite (0 NaN/Inf); Z range shifts frame0->frame3 showing
+# gravity-driven Cosserat dynamics.
+
+# Test 2: letterS scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=2,3 ./build_hip/Gui configs/letterS.json \
+  -s --headless -n 3 -o /tmp/yb_letter_test/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.911, SD: 0.304, N=4"
+```
+
+Both tests: exit 0, finite geometry, physics advancing. PASS.
+
+CUDA no-regression gate: cuda-not-validated.
+The upstream code (SymMat.h anonymous union containing glm::vec3/vec4 with
+non-trivial constructors) is incompatible with strict Linux nvcc enforcement
+("member with constructor not allowed in anonymous aggregate"). This is a
+pre-existing upstream Windows/MSVC-ism -- the upstream ships only a VS solution
+and the code relies on MSVC's union permissiveness. The CUDA CMakeLists.txt path
+is a new addition (no upstream CUDA CMake existed at base b178c2b), so there is
+no upstream baseline to compare; the failure is structural in the upstream source,
+not introduced by the port. cuda-not-validated: pre-existing upstream anonymous-
+union/non-trivial-constructor MSVC-ism incompatible with Linux nvcc.
+
+Verdict: PASS. Advancing to completed.
+
 ## Review 2026-06-12
 
 Verdict: review-passed. Strategy A (compat header + LANGUAGE HIP) correctly

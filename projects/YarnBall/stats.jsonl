@@ -5,3 +5,10 @@
 {"kind":"phase","ts":"2026-06-11T23:22:57Z","phase":"compile","seconds":25.914,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
 {"kind":"phase","ts":"2026-06-11T23:23:38Z","phase":"compile","seconds":2.773,"exit":2,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
 {"kind":"phase","ts":"2026-06-11T23:24:36Z","phase":"compile","seconds":26.012,"exit":0,"cmd":"bash -c cmake --build projects/YarnBall/src/build_hip -j128 2>&1"}
+{"kind": "tokens", "ts": "2026-06-12T06:20:47Z", "tokens": 80130, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-12T06:23:16Z","phase":"compile","seconds":0.203,"exit":1,"cmd":"cmake --build build_hip -j128"}
+{"kind":"phase","ts":"2026-06-12T06:23:56Z","phase":"compile","seconds":31.320,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/YarnBall/src/build_hip -j128"}
+{"kind":"phase","ts":"2026-06-12T06:24:06Z","phase":"test","seconds":0.004,"exit":127,"cmd":"../build_hip/Gui configs/cable_work_pattern.json -s --headless -n 3 -o /tmp/yb_frames_validator/frame_ --exit"}
+{"kind":"phase","ts":"2026-06-12T06:24:19Z","phase":"test","seconds":0.028,"exit":255,"cmd":"/bin/bash -c cd /var/lib/jenkins/moat/projects/YarnBall/src/KittenEngine && /var/lib/jenkins/moat/projects/YarnBall/src/build_hip/Gui configs/cable_work_pattern.json -s --headless -n 3 -o /tmp/yb_frames_validator/frame_ --exit"}
+{"kind":"phase","ts":"2026-06-12T06:24:55Z","phase":"test","seconds":0.945,"exit":0,"cmd":"/bin/bash -c cd /var/lib/jenkins/moat/projects/YarnBall/src/KittenEngine && HIP_VISIBLE_DEVICES=2,3 /var/lib/jenkins/moat/projects/YarnBall/src/build_hip/Gui configs/cable_work_pattern.json -s --headless -n 3 -o /tmp/yb_frames_validator/frame_ --exit"}
+{"kind":"phase","ts":"2026-06-12T06:26:32Z","phase":"cuda-compile","seconds":7.729,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/YarnBall/src/build_cuda -j128"}
