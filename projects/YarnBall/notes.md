@@ -254,3 +254,45 @@ Commit hygiene clean: title `[ROCm] Add AMD ROCm/HIP support via a CMake build`
 non-ASCII / no em-dash, no MOAT jargon in the diff, all under jeffdaily. The
 two @amd lines are the required AMD copyright author headers. .gitmodules
 correctly repoints the LBVH submodule to jeffdaily/KittenGpuLBVH @ moat-port.
+
+## Validation 2026-06-12 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100 RDNA3), HIP_VISIBLE_DEVICES=2
+Arch: gfx1100, ROCm 7.2.1, clang 22.0.0git
+Head sha: 8fe057c28d2888f489f5b1fbe2c92c2aeb51a767
+
+Build (gfx1100, no source changes vs lead):
+```bash
+cd projects/YarnBall/src
+git lfs pull
+cmake -S . -B build_hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_C_COMPILER=/opt/rocm/llvm/bin/clang -DCMAKE_BUILD_TYPE=Release
+cmake --build build_hip -j$(nproc)
+# Result: [100%] Built target Gui -- warnings only, no errors
+# Verified: strings Gui | grep gfx1100 -> hipv4-amdgcn-amd-amdhsa--gfx1100 embedded
+```
+
+GPU tests (run from KittenEngine/ working dir):
+```bash
+# Test 1: cable_work_pattern scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=2 ../build_hip/Gui configs/cable_work_pattern.json \
+  -s --headless -n 3 -o /tmp/yb_frames_gfx1100/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.877, SD: 0.241, N=4"
+# 4 OBJ files written (frame_0.obj .. frame_3.obj), 65065 vertices each
+# All vertices finite (0 NaN/Inf)
+# Bbox frame3: x[-0.208,0.207] y[-0.194,0.194] z[-0.029,0.034] -- matches gfx90a exactly
+
+# Test 2: letterS scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=2 ../build_hip/Gui configs/letterS.json \
+  -s --headless -n 3 -o /tmp/yb_letter_gfx1100/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 1.566, SD: 0.581, N=4"
+# 4 OBJ files written, 32931 vertices each, all finite
+```
+
+Both tests: exit 0, finite geometry, physics advancing. No source delta needed.
+Wave32 (RDNA3) divergence concern noted in review for cosserat.cu:185 did not
+manifest -- both scenes ran to completion without GPU errors.
+
+Verdict: PASS. No delta-port needed.
