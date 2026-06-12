@@ -7,17 +7,17 @@
   "priority": 6.626,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-12T14:21:16Z",
+  "updated_at": "2026-06-12T18:33:50Z",
   "head_sha": "014a2179c29f2c0437898a8ded09f57501eb9fb7",
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "014a2179c29f2c0437898a8ded09f57501eb9fb7",
       "started_at": "2026-05-31T00:16:51Z",
       "completed_at": "2026-06-12T14:19:28Z",
-      "updated_at": "2026-06-12T14:21:16Z",
+      "updated_at": "2026-06-12T18:33:50Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -135,5 +135,8 @@
       }
     }
   },
-  "depends_on": []
+  "depends_on": [],
+  "pr_url": "https://github.com/kaldi-asr/kaldi/pull/4986",
+  "pr_number": 4986,
+  "pr_opened_at": "2026-06-12T18:33:50Z"
 }
