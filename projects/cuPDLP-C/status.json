@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T07:45:23Z",
-  "updated_at": "2026-06-08T17:06:30Z",
-  "head_sha": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+  "updated_at": "2026-06-12T06:06:41Z",
+  "head_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+      "validated_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
       "started_at": "2026-06-05T07:50:17Z",
       "completed_at": "2026-06-08T15:23:53Z",
-      "updated_at": "2026-06-08T15:23:53Z",
+      "updated_at": "2026-06-12T06:06:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -34,20 +34,22 @@
       },
       "last_agent": "planner",
       "carry_forward": {
-        "to": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
-        "method": "binary-equiv",
-        "detail": "Windows-only CMakeLists.txt changes (WINDOWS_EXPORT_ALL_SYMBOLS, PLATFORM_ID:Windows -lm guard); libcudalin.so device ISA + 74 exports identical on gfx90a",
-        "at": "2026-06-08T15:23:53Z"
+        "from": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+        "to": "3591958eae9b3602175037bae9e130422edf227c",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "FindHIPConf.cmake: comment-only (comments/format only); cupdlp/cuda/cuda_to_hip.h: comment-only (comments/format only); cupdlp/cuda/cupdlp_cuda_kernels.cu: comment-only (comments/format only)",
+        "at": "2026-06-12T06:05:57Z"
       }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+      "validated_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
       "started_at": null,
       "completed_at": "2026-06-08T17:06:30Z",
-      "updated_at": "2026-06-08T17:06:30Z",
+      "updated_at": "2026-06-12T06:06:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -60,6 +62,14 @@
         "session_count": 0,
         "first_session_at": null,
         "last_session_at": null
+      },
+      "carry_forward": {
+        "from": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+        "to": "3591958eae9b3602175037bae9e130422edf227c",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "FindHIPConf.cmake: comment-only (comments/format only); cupdlp/cuda/cuda_to_hip.h: comment-only (comments/format only); cupdlp/cuda/cupdlp_cuda_kernels.cu: comment-only (comments/format only)",
+        "at": "2026-06-12T06:05:57Z"
       }
     },
     "windows-gfx1101": {
@@ -88,10 +98,10 @@
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+      "validated_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
       "started_at": null,
       "completed_at": "2026-06-08T14:31:13Z",
-      "updated_at": "2026-06-08T14:31:13Z",
+      "updated_at": "2026-06-12T06:06:41Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -105,7 +115,15 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "from": "503569a57a7a8b5ab2d9f0a0c4e6375696cc6750",
+        "to": "3591958eae9b3602175037bae9e130422edf227c",
+        "method": "source-class",
+        "class": "comment-only",
+        "detail": "FindHIPConf.cmake: comment-only (comments/format only); cupdlp/cuda/cuda_to_hip.h: comment-only (comments/format only); cupdlp/cuda/cupdlp_cuda_kernels.cu: comment-only (comments/format only)",
+        "at": "2026-06-12T06:05:57Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
