@@ -749,3 +749,24 @@ so this is a Windows HIP runtime capability gap, not a port defect, not RDNA4-sp
 wrong-runtime artifact. Both windows-gfx1201 and windows-gfx1101 are recorded blocked for MSM;
 NTT 7/7 and the bn254 gate pass on Windows. The Windows tier cannot be satisfied for sppark's MSM
 on this host. Non-cooperative MSM fallback remains deferred (sppark-msm-noncoop-fallback).
+
+### Root cause of the cooperative-launch failure (AMD maintainers, 2026-06-12)
+
+Traced to a known, AMD-acknowledged issue: ROCm/hip#3803 -> ROCm/rocm-systems#401 (OPEN,
+labels "Under Investigation" / "project: hip" / "status: assessed"). AMD's @cjatin gave the
+mechanism: hipLaunchCooperativeKernel allocates a cooperative queue whose grid-wide barrier
+relies on Global Wave Sync (GWS) hardware. Two distinct causes apply to our two Windows GPUs:
+
+- gfx1201 (RDNA4/Navi4): "Navi4 does not have GWS" -- a genuine HARDWARE gap. Reported
+  cooperativeLaunch=0 on Linux too (issue #401 is an Ubuntu RX 9070 XT report), so it is NOT
+  Windows-specific and NOT fixable by a runtime version bump. AMD recommends avoiding
+  cooperative launch on Navi4 (use hipLaunchKernel + a non-GWS grid sync).
+- gfx1101 (RDNA3): the silicon HAS GWS (Linux gfx1100 reports cooperativeLaunch=1 and runs
+  MSM), but the Windows driver/runtime under-reports coop queues as 0. cjatin expected this
+  "sorted in rocm 7.0", yet it is still 0 on our TheRock ROCm 7.14 + Adrenalin stack.
+
+Conclusion: this is NOT a HIP runtime defect we can patch and NOT a sppark port defect. For
+RDNA4 it is a hardware capability gap; for RDNA3-on-Windows it is an unresolved driver/runtime
+reporting gap. sppark MSM validates correctly on Linux gfx90a + gfx1100 (both have GWS); the
+Windows tier cannot be satisfied for MSM on this host. The non-cooperative MSM fallback
+(deferred: sppark-msm-noncoop-fallback) remains the only path to MSM on RDNA4/Windows.
