@@ -347,3 +347,51 @@ Reviewed moat-port fe88d6c vs upstream 253ac4f (read-only, no GPU/build). Verdic
 
 ### Cross-platform note
 fe88d6c is a functional edit to shared USE_ROCM code, so gfx1100 correctly sits at `revalidate` (validated_sha cbf2e7f remains a reachable ancestor). gfx1100 must re-confirm on its own GPU or via codeobj binary-equivalence; not this reviewer's job.
+## Revalidation 2026-06-12 (linux-gfx1100)
+
+### Method: Full GPU re-run (not binary-equiv carry-forward)
+
+### GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3)
+### Commit: fe88d6c32913dbd0aaf5547fd3ed04487b5ecdfb
+### Prior validated_sha: cbf2e7f1c15ddb64cc257e697140c42c8272fc1c
+
+### What changed
+The delta (fe88d6c on top of cbf2e7f) is the wave64-safe warp-collectives rewrite
+in the USE_ROCM path: `cuda_compat.h` (crRowBallot, crScanInclusiveAdd/Max/Min,
+getLaneMaskLt/Le/Gt/Ge, nvdr_syncwarp, nvdr_ballot/any/all_sync changed from
+wave-spanning to 32-lane row-local), plus .inl file sites that replaced LDS+__syncwarp
+scans with crScanInclusive* calls in BinRaster, CoarseRaster, and FineRaster.
+classify verdict: mixed, arch_independent=False -- full GPU re-run required.
+
+### Build (gfx1100, HIP_VISIBLE_DEVICES=1)
+```bash
+cd /var/lib/jenkins/moat/projects/nvdiffrast/src
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 python3 setup.py build_ext --inplace
+# or equivalently:
+HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 pip install --no-build-isolation -e .
+```
+Build: PASS (--offload-arch=gfx1100, ninja incremental)
+
+### Test Results: 11/11 PASS
+
+**Core operator test (agent_space/test_nvdiffrast_gfx1100.py):**
+- `dr.RasterizeCudaContext()`: PASS
+- `dr.rasterize()`: PASS (output shape [1,256,256,4])
+- `dr.interpolate()`: PASS (output shape [1,256,256,3])
+- `dr.antialias()`: PASS (output shape [1,256,256,3])
+- `dr.texture()`: PASS (linear filtering, output shape [1,256,256,3])
+- `pos.grad` computed: PASS (shape [1,3,4])
+- `attr.grad` computed: PASS (shape [1,3,3], sum=62423.43)
+- Coverage: PASS (20808/65536 px = 31.8%, matches cbf2e7f exactly)
+- Determinism: PASS (identical outputs on two sequential runs)
+
+**Sample scripts:**
+- `samples/torch/triangle.py`: PASS (renders RGB triangle to tri.png)
+- `samples/torch/earth.py --max-iter 10`: PASS (psnr=11.28, matches cbf2e7f psnr=11.30)
+
+### Verdict: PASS
+All operators pass on gfx1100 (wave32/RDNA3) with the wave64-safe collectives.
+Coverage (20808 px) and PSNR (11.28) match the prior cbf2e7f validation within
+normal floating-point variation. The row-local collective rewrite is behavior-
+equivalent on wave32 as expected (crRowBallot shift=0 on wave32, width-32 shuffles
+unchanged).

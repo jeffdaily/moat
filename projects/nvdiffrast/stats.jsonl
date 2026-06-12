@@ -26,3 +26,10 @@
 {"kind":"phase","ts":"2026-06-11T23:15:34Z","phase":"test","seconds":12.074,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src/samples/torch && timeout 280 python earth.py --max-iter 100 2>&1 | tail -25"}
 {"kind":"phase","ts":"2026-06-11T23:25:03Z","phase":"compile","seconds":81.687,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && PYTORCH_ROCM_ARCH='gfx90a;gfx1100' pip install --no-build-isolation -e . 2>&1 | tail -15"}
 {"kind":"session","ts":"2026-06-11T23:27:40Z","epoch":1781220460.657647432,"event":"end","platform":"linux-gfx90a"}
+{"kind":"session","ts":"2026-06-12T05:25:22Z","epoch":1781241922.223666647,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-12T05:26:15Z","phase":"compile","seconds":42.920,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && HIP_VISIBLE_DEVICES=1 PYTORCH_ROCM_ARCH=gfx1100 pip install --no-build-isolation -e . 2>&1"}
+{"kind":"phase","ts":"2026-06-12T05:30:51Z","phase":"test","seconds":2.409,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && HIP_VISIBLE_DEVICES=1 /opt/conda/envs/py_3.12/bin/python3 /var/lib/jenkins/moat/agent_space/test_nvdiffrast_gfx1100.py 2>&1"}
+{"kind":"phase","ts":"2026-06-12T05:31:28Z","phase":"test","seconds":2.308,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && HIP_VISIBLE_DEVICES=1 /opt/conda/envs/py_3.12/bin/python3 /var/lib/jenkins/moat/agent_space/test_nvdiffrast_gfx1100.py 2>&1"}
+{"kind":"phase","ts":"2026-06-12T05:31:38Z","phase":"test-samples","seconds":2.037,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && HIP_VISIBLE_DEVICES=1 /opt/conda/envs/py_3.12/bin/python3 samples/torch/triangle.py 2>&1 && echo 'triangle.py: PASS'"}
+{"kind":"phase","ts":"2026-06-12T05:31:50Z","phase":"test-earth","seconds":3.482,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && HIP_VISIBLE_DEVICES=1 /opt/conda/envs/py_3.12/bin/python3 samples/torch/earth.py --max-iter 10 2>&1"}
+{"kind":"session","ts":"2026-06-12T05:32:03Z","epoch":1781242323.169989920,"event":"end","platform":"linux-gfx1100"}
