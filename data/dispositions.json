@@ -1379,10 +1379,10 @@
     "reason": "already-supported"
   },
   "rusty1s/pytorch_sparse": {
-    "decided": "2026-06-12T05:24:37Z",
+    "decided": "2026-06-12T07:02:57Z",
     "disposition": "skip",
     "full_name": "rusty1s/pytorch_sparse",
-    "note": "",
+    "note": "Authoritative merged upstream ROCm support (PRs #282 dkbhaskaran/AMD, #296 miaoneng, #360 ashwinma/AMD) + maintained torch-sparse-rocm wheels (pyg-rocm-build, ROCm 7.2.2, 2026-04). Same rusty1s/PyG family as pytorch_scatter/mmcv/pytorch_cluster, all skipped. setup.py torch.version.hip path + USE_ROCM SHFL shim already in tree. See plan.md.",
     "reason": "already-supported"
   },
   "sahibzada-allahyar/obsidian-memory-transformer": {
