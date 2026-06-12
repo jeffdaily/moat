@@ -442,3 +442,13 @@ cooperative-grid-sync edge case for the 254-bit field, then drop both gates.
 - bls12_377 msm_correctness TEST_NPOW=14: PASS
 - `--features=bn254` on rocm: build correctly REFUSED (build.rs panic), no
   binary produced, device never touched.
+
+## Review 2026-06-12 (reviewer, re-review of commit 8688269)
+
+Verdict: review-passed. The bn254 ROCm-gating fix resolves the prior must-fix and introduces no new problems; no findings.
+
+Scope reviewed: git diff d7cb381..HEAD (commit 8688269 only, +19 lines across 2 files). Confirmed d7cb381 (validated SHA) is a reachable ancestor of HEAD (committed on top, not amended), so the prior validation lineage is intact; the delta is a functional build-gate change that correctly triggers revalidation of the enabled surface (porter re-ran: bls12_381 NPOW=15 PASS, bls12_377 NPOW=14 PASS, bn254 build refused).
+
+Verified (no action): (a) the gate prevents a hanging binary -- poc/msm-cuda/build.rs:123 panics when `backend == "rocm"` (set at build.rs:111-112 on hipcc detection) and `cfg!(feature = "bn254")`, BEFORE the GPU object is compiled at build.rs:142, so no wedging binary is produced; `cfg!(feature = "bn254")` is the project's established idiom (already used at build.rs:30 to set FEATURE_BN254). The pippenger_inf.cu:30-32 `#error` under `defined(__HIPCC__) && defined(FEATURE_BN254)` is a correct backstop for direct-compile paths. (b) CUDA byte-identical -- both guards are HIP/rocm-only: the .cu block is inert under nvcc (`__HIPCC__` undefined) and the build.rs panic is inert when backend is cuda. (c) bls12_381/bls12_377 ROCm surface untouched -- the diff adds only the two gates, no edits to the validated G1 path. (d) Commit hygiene clean -- `[ROCm]` title 47 chars, no noreply/co-author trailer, mentions Claude, no em-dash, Test Plan present, no MOAT jargon, no AMD-internal account references.
+
+Test (msm_correctness, poc/msm-cuda/tests/msm.rs) left unchanged is correct: it runs bn254 only when the bn254 feature is set, and that build now fails first on ROCm, so the test is unreachable there -- no `#[cfg]` change needed. Deferred entry sppark-bn254-g1-msm-rocm is registered and accurate (resume by root-causing the hang, then drop both gates).
