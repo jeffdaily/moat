@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T07:45:23Z",
-  "updated_at": "2026-06-12T06:06:41Z",
+  "updated_at": "2026-06-12T06:41:52Z",
   "head_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "completed",
+      "state": "pr-open",
       "blocked": false,
       "blocked_reason": null,
       "validated_sha": "1a1ddff3840c0dd7c8d22302052ed84348d440e4",
       "started_at": "2026-06-05T07:50:17Z",
       "completed_at": "2026-06-08T15:23:53Z",
-      "updated_at": "2026-06-12T06:06:41Z",
+      "updated_at": "2026-06-12T06:41:52Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -147,5 +147,8 @@
         "last_session_at": null
       }
     }
-  }
+  },
+  "pr_url": "https://github.com/COPT-Public/cuPDLP-C/pull/41",
+  "pr_number": 41,
+  "pr_opened_at": "2026-06-12T06:41:52Z"
 }
