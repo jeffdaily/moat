@@ -52,3 +52,4 @@
 {"kind":"phase","ts":"2026-06-12T14:27:03Z","phase":"compile","seconds":4.680,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/pip.exe install --no-build-isolation -e /B/develop/moat/projects/nvdiffrast/src"}
 {"kind":"phase","ts":"2026-06-12T14:27:50Z","phase":"compile","seconds":39.066,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/pip.exe install --no-build-isolation -e /B/develop/moat/projects/nvdiffrast/src"}
 {"kind":"phase","ts":"2026-06-12T14:30:40Z","phase":"test","seconds":2.223,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /B/develop/moat/agent_space/test_nvdiffrast_gfx1201.py"}
+{"kind": "tokens", "ts": "2026-06-12T14:34:01Z", "tokens": 104547, "source": "validator (windows-gfx1201 first-validation)"}
