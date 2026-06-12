@@ -329,3 +329,90 @@ Second run: 632/633 frames, different init point count (279 vs 337) -- normal mu
 ### Summary
 
 All GPU tests pass on real gfx90a (MI250X). Fork HEAD 05eed6c. State -> completed.
+
+## Validation 2026-06-12 (linux-gfx1100, validator): PASS
+
+GPU arch: gfx1100 (AMD Radeon Pro W7800 48GB, RDNA3, wave32), HIP_VISIBLE_DEVICES=0, ROCm 7.2.1. Fork HEAD 05eed6c.
+
+### Fork integrity check
+- git rev-parse HEAD: 05eed6c (matches status.json head_sha)
+- git status --porcelain in projects/plvs/src: clean, no uncommitted source changes
+
+### Dependency build (opencv_contrib for gfx1100)
+Reused existing `projects/opencv_contrib/build` (CMAKE_HIP_ARCHITECTURES=gfx1100, all cuda* modules
+present). Built missing `libopencv_cudabgsegm.so` (it was in BUILD_LIST but not linked in the prior
+validation pass). Created `agent_space/opencv-hip-config-gfx1100/OpenCVConfig.cmake` wrapper to
+neutralize the `find_host_package(CUDA ...)` + `find_cuda_helper_libs(...)` blocks in the generated
+build-tree config (same pattern as gfx90a validator). Wrapper overrides OpenCV_USE_CUBLAS/CUFFT
+and provides a no-op `find_cuda_helper_libs` macro so CMake resolves OpenCV on a HIP-only host.
+
+### Thirdparty CPU libs built (for gfx1100)
+All libs built fresh (this host had no prior plvs build):
+- Pangolin v0.6 at commit fe57db532 + Thirdparty/pangolin.patch -> Thirdparty/Pangolin/build
+- DBoW2, g2o, line_descriptor, volumetric_mapping, open_chisel, chisel_server, voxblox, voxblox_server
+  (built with -DOpenCV_DIR=agent_space/opencv-hip-config-gfx1100 -DCMAKE_POLICY_VERSION_MINIMUM=3.5)
+  Note: voxblox_server required -DCMAKE_CXX_FLAGS="-I.../voxblox/build" to find Block.pb.h (generated
+  protobuf header not in include/, same fix needed for the main plvs build)
+- libsgm HIP: cmake -B build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 (WARP_SIZE=32 fix
+  is the committed code; builds correctly)
+- libelas-gpu HIP: cmake -B build-hip -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100
+
+### plvs build (gfx1100)
+```
+cmake -B build-hip \
+  -DWITH_CUDA=OFF -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/amdclang++ \
+  -DWITH_LIBSGM=ON -DWITH_LIBELAS=ON \
+  -DWITH_G2O_NEW=OFF -DWITH_FASTFUSION=OFF \
+  -DBUILD_WITH_MARCH_NATIVE=OFF \
+  -DCPP_STANDARD_VERSION=17 \
+  -DOPENCV_VERSION=4 \
+  -DOpenCV_DIR=agent_space/opencv-hip-config-gfx1100 \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+  "-DCMAKE_CXX_FLAGS=-I.../Thirdparty/voxblox/build"
+cmake --build build-hip -j$(nproc)
+```
+Result: lib/libplvs.so + all executables built. HIP device code compiled for gfx1100.
+
+### Test 1: libsgm stereo validation (wave32 correctness on gfx1100)
+libsgm compiled with WARP_SIZE=32 (the committed fix for wave64; trivially correct on native wave32).
+
+Command:
+```
+HIP_VISIBLE_DEVICES=0 ./agent_space/sgm_aloe_gfx1100 \
+  projects/opencv_contrib/src-core/samples/data/aloeL.jpg \
+  projects/opencv_contrib/src-core/samples/data/aloeR.jpg
+```
+Result (disp_size=128, 1282x1110 aloe stereo pair):
+- Coverage:  0.841  (1197228/1423020 pixels GPU-valid) -- PASS (>= 0.80)
+- Agreement @2px: 0.974 (GPU vs CPU StereoSGBM, both-valid pixels) -- PASS (>= 0.95)
+- Mean abs diff: 0.767 px
+- Bit-identical across two runs. RESULT: PASS
+
+Note: the agreement metric counts only pixels where BOTH GPU and CPU report a valid disparity (CPU
+SGBM has its own invalid pixels). Coverage and agreement are consistent with the gfx90a result
+(0.841 / 0.982) -- minor difference reflects wave32 vs wave64 output ordering, not a correctness issue.
+
+### Test 2: Mono TUM RGB-D SLAM (GPU ORB/FAST feature path)
+Dataset: TUM freiburg1_xyz (complete download 428MB, 798 RGB frames, 640x480).
+Vocabulary: Vocabulary/ORBvoc.txt (extracted from ORBvoc.txt.tar.gz).
+
+Command:
+```
+export HIP_VISIBLE_DEVICES=0
+export LD_LIBRARY_PATH=lib:projects/opencv_contrib/build/lib:/opt/rocm/lib:$LD_LIBRARY_PATH
+./mono_tum_headless_gfx1100 \
+  Vocabulary/ORBvoc.txt \
+  Examples/Monocular/TUM1.yaml \
+  /tmp/rgbd_dataset_freiburg1_xyz
+```
+Result (run 1): 798/798 frames processed, clean shutdown, NO GPU fault/NaN/crash, exit 0. PASS.
+Result (run 2): 798/798 frames processed, clean shutdown, exit 0. PASS.
+(Normal SLAM multi-thread nondeterminism in map init point count -- consistent with gfx90a behavior.)
+
+### Summary
+All GPU tests pass on real gfx1100 (W7800, RDNA3, wave32). Fork HEAD 05eed6c. State -> completed.
+Test scope matches gfx90a lead: libsgm wave32 stereo (PASS) + headless mono TUM SLAM (PASS).
+No delta-port needed; the fork compiled and ran correctly on gfx1100 without code changes.
