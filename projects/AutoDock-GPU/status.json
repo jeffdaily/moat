@@ -7,7 +7,7 @@
   "priority": 4.951,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T00:46:51Z",
-  "updated_at": "2026-06-10T04:03:06Z",
+  "updated_at": "2026-06-11T23:55:00Z",
   "head_sha": "bb2f0624b28563b119ce5424893bc1abb85420f0",
   "platforms": {
     "linux-gfx90a": {
@@ -69,13 +69,13 @@
       }
     },
     "windows-gfx1101": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "221e2d4f2ecc90d6602e3ce68770e4f2193044eb",
+      "validated_sha": "bb2f0624b28563b119ce5424893bc1abb85420f0",
       "started_at": null,
-      "completed_at": "2026-06-08T22:16:17Z",
-      "updated_at": "2026-06-09T14:23:53Z",
+      "completed_at": "2026-06-11T23:55:00Z",
+      "updated_at": "2026-06-11T23:55:00Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -85,10 +85,11 @@
           "test": 0,
           "misc": 0
         },
-        "session_count": 0,
-        "first_session_at": null,
-        "last_session_at": null
+        "session_count": 1,
+        "first_session_at": "2026-06-11T23:30:00Z",
+        "last_session_at": "2026-06-11T23:55:00Z"
       },
+      "last_agent": "validator",
       "carry_forward": {
         "to": "a12c57ff074fd83b34b043b188d3abe84adb1969",
         "method": "source-class",

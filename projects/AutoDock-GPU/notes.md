@@ -941,3 +941,95 @@ unknown file type; verified inert by full diff). gfx1101 revalidate (not require
 satisfies the Windows tier), gfx1151 port-ready (host retired). pr-ready=True, 0 jargon.
 Commit message (autodock_pr_msg.txt): scope-out paragraph replaced with rocWMMA tensor
 support; Test Plan includes TENSOR=ON. AWAITING jeff's go to open the upstream PR.
+
+## Revalidation 2026-06-11 (windows-gfx1101) -- full GPU re-run at bb2f062
+
+Platform: AMD Radeon PRO V710 (gfx1101, RDNA3, wave32), ROCm 7.14 (TheRock PyTorch
+venv), Windows 11 Pro for Workstations 10.0.26200. HIP_VISIBLE_DEVICES=0.
+
+### Delta classification: 221e2d4 -> bb2f062
+
+`classify` returned `class=mixed arch_independent=False`. The delta (a squash of all
+work from 221e2d4 to bb2f062, including the rocWMMA TENSOR=ON CDNA+RDNA branches,
+the Windows min/max guard, and the re-prep doc/comment/copyright edits) contains real
+device code in cuda/kernels.cu and host/src/performdocking.cpp, so carry-forward is not
+appropriate -- full GPU revalidation was performed.
+
+### Binary-equivalence check: TENSOR=OFF default build
+
+Built at both 221e2d4 and bb2f062 for gfx1101 (--offload-arch=gfx1101, same flags) and
+compared ELF .text sections embedded in the PE .hip_fat section:
+
+- 64wi TENSOR=OFF: .text sha256 ee3eb094d3c7e89f... (IDENTICAL old vs new)
+- 128wi TENSOR=OFF: .text sha256 ee3eb094d3c7e89f... (IDENTICAL old vs new)
+- .symtab: IDENTICAL for both variants
+- Only delta: __hip_cuid_ compilation-unit ID string (non-functional metadata);
+  .gnu.hash/.hash entries derived from it also differ (expected, non-functional)
+
+The TENSOR=OFF default build is binary-equivalent on gfx1101: no ISA change.
+
+### Build commands (Windows, direct compiler invocation, gfx1101)
+
+Same toolchain as the original 2026-06-05 gfx1101 validation:
+
+```
+SITE=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages
+HIPCC=$SITE/_rocm_sdk_devel/bin/hipcc.exe
+CXX=$SITE/_rocm_sdk_devel/lib/llvm/bin/clang++.exe
+ROCM_INC=$SITE/_rocm_sdk_devel/include
+ROCM_LIB=$SITE/_rocm_sdk_devel/lib
+SRC=B:/develop/moat/projects/AutoDock-GPU/src
+IFLAGS="-I$SRC/common -I$SRC/host/inc -I$SRC/cuda -I$ROCM_INC"
+HOST_DEFS="-DUSE_HIP -D__HIP_PLATFORM_AMD__ -D_AMD64_ -DNOMINMAX -D_CRT_SECURE_NO_WARNINGS"
+
+# Kernel TU (64wi, TENSOR=OFF)
+HIP_VISIBLE_DEVICES=0 $HIPCC -DN64WI --offload-arch=gfx1101 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP $IFLAGS -c $SRC/cuda/kernels.cu -o kernels_64wi_off.obj
+
+# Kernel TU (64wi, TENSOR=ON)
+HIP_VISIBLE_DEVICES=0 $HIPCC -DN64WI --offload-arch=gfx1101 -x hip -std=c++17 -O3 -ffast-math \
+  -D_AMD64_ -DUSE_HIP -DUSE_NVTENSOR $IFLAGS -c $SRC/cuda/kernels.cu -o kernels_64wi_on.obj
+
+# (repeat with -DN128WI for 128wi variants)
+# Link each variant with host .objs + -lamdhip64
+```
+
+All 4 variants (64wi/128wi x TENSOR=OFF/ON) built cleanly at bb2f062 (pre-existing
+warnings only: nodiscard on hipDeviceReset, strncpy/stricmp deprecation,
+INFINITY undefined-behavior under -ffast-math).
+
+### Docking results (1stp streptavidin-biotin, --nrun 10, HIP_VISIBLE_DEVICES=0)
+
+TENSOR=OFF (default build, ISA-identical to prior validated sha 221e2d4):
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.59 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.39 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.30 kcal/mol      | 0.35 A                   | 1, 10/10 runs |
+
+TENSOR=ON (new RDNA bf16 error-correction path, rocWMMA v_wmma_f32_16x16x16_bf16):
+
+| build / seed     | best binding energy | best-pose reference RMSD | cluster       |
+|------------------|---------------------|--------------------------|---------------|
+| 64wi  / seed 42  | -8.35 kcal/mol      | 0.43 A                   | 1, 10/10 runs |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.38 A                   | 1, 10/10 runs |
+| 128wi / seed 42  | -8.30 kcal/mol      | 0.45 A                   | 1, 10/10 runs |
+
+Reference (wave64, gfx90a lead):
+
+| build / seed     | best binding energy | best-pose reference RMSD |
+|------------------|---------------------|--------------------------|
+| 64wi  / seed 42  | -8.28 kcal/mol      | 0.48 A                   |
+| 64wi  / seed 7   | -8.37 kcal/mol      | 0.37 A                   |
+| 128wi / seed 42  | -8.33 kcal/mol      | 0.39 A                   |
+
+All 6 cases: all 10 runs converge to a single cluster; best energies match the
+gfx90a lead within 0.07 kcal/mol; best-pose reference RMSD sub-0.6 A in all cases.
+No NaN, no HIP fault, clean exit. TENSOR=ON and TENSOR=OFF results agree within
+0.07 kcal/mol -- the new RDNA bf16 path is numerically correct; it does not produce
+the ~+1e8 garbage that the broken CDNA-only path would produce on RDNA. No DLL
+issues -- amdhip64 loaded correctly from System32 (driver ABI path).
+
+PASS: gfx1101 (RDNA3, wave32) TENSOR=OFF and TENSOR=ON both correct at bb2f062.
+head_sha = bb2f062.
