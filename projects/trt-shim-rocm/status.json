@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "name": "trt-shim-rocm",
+  "upstream_url": "https://github.com/jeffdaily/trt-shim-rocm",
+  "fork_url": "https://github.com/jeffdaily/trt-shim-rocm",
+  "fork_default_branch": "main",
+  "priority": 0.0,
+  "ext_type": "cmake",
+  "adopted_at": "2026-06-12T05:55:33Z",
+  "updated_at": "2026-06-12T06:04:47Z",
+  "head_sha": "76252431df6b9acb63294cac680d6ad049fcfb7b",
+  "depends_on": [],
+  "platforms": {
+    "linux-gfx90a": {
+      "state": "porting",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": "2026-06-12T06:04:47Z",
+      "completed_at": null,
+      "updated_at": "2026-06-12T06:04:47Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      },
+      "last_agent": "porter"
+    },
+    "linux-gfx1100": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": false,
+      "blocked_reason": null,
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-12T05:55:33Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1101": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": true,
+      "blocked_reason": "MIGraphX has no Windows build (TheRock issue #1912, in triage). Shim backend requires MIGraphX; cannot build or validate on Windows until upstream ships it.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-12T05:56:15Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1201": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": true,
+      "blocked_reason": "MIGraphX has no Windows build (TheRock issue #1912, in triage). Shim backend requires MIGraphX; cannot build or validate on Windows until upstream ships it.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-12T05:56:15Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    },
+    "windows-gfx1151": {
+      "state": "blocked-needs-gfx90a",
+      "blocked": true,
+      "blocked_reason": "MIGraphX has no Windows build (TheRock issue #1912, in triage). Shim backend requires MIGraphX; cannot build or validate on Windows until upstream ships it.",
+      "validated_sha": null,
+      "started_at": null,
+      "completed_at": null,
+      "updated_at": "2026-06-12T05:56:16Z",
+      "stats": {
+        "tokens_total": 0,
+        "tokens_approx": true,
+        "wall_seconds": {
+          "thinking": 0,
+          "compile": 0,
+          "test": 0,
+          "misc": 0
+        },
+        "session_count": 0,
+        "first_session_at": null,
+        "last_session_at": null
+      }
+    }
+  }
+}
