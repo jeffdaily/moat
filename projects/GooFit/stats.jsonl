@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-11T23:30:59Z","phase":"compile","seconds":53.141,"exit":1,"cmd":"cmake --build /var/lib/jenkins/moat/projects/GooFit/src/build-hip -j128"}
 {"kind":"phase","ts":"2026-06-11T23:32:43Z","phase":"compile","seconds":61.769,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/GooFit/src/build-hip -j128"}
 {"kind":"phase","ts":"2026-06-11T23:32:58Z","phase":"test","seconds":0.140,"exit":0,"cmd":"ctest --output-on-failure -j8"}
+{"kind": "tokens", "ts": "2026-06-12T00:03:47Z", "tokens": 294039, "source": "porter"}
