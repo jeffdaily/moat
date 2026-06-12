@@ -408,3 +408,37 @@ Verdict: changes-requested. The port is well-engineered and the CUDA path is pre
 - Commit hygiene: `[ROCm]` title 49 chars, no em-dash, no noreply trailer, mentions Claude, Test Plan present, copyright added parallel to upstream in mont_t.hip with Jeff Daily author tag (substantial extension warrants it). No AMD-internal account references.
 
 Note: a real-GPU run is the validator's job; the bls12_381/bls12_377 G1 PASS already recorded is encouraging, but the bn254 defect above is a code/scope issue independent of the GPU run.
+
+## Changes-requested fix: gate bn254 G1 off on ROCm (2026-06-12, porter)
+
+Resolved the reviewer must-fix. Rather than ship a `--features=rocm,bn254`
+binary that hangs the GPU, bn254 G1 MSM is now refused at build time on the
+ROCm/HIP backend, mirroring how G2/fp2 is scoped out via the include-level
+`SPPARK_MSM_FP2` switch. The bls12_381/bls12_377 G1 surface is unchanged and
+still passes; the CUDA path is byte-identical (both guards are HIP/rocm-only).
+
+Two guards (defense in depth), both committed on TOP of the validated commit
+d7cb381 (not amended):
+- poc/msm-cuda/build.rs: when the detected backend is rocm and the bn254
+  feature is set, panic with a clear message before any GPU object is compiled.
+  This is the user-visible gate (`rocm` is build.rs's own emitted cfg, so it
+  is not available during build.rs; the backend is resolved from hipcc/nvcc
+  detection, which is what build.rs keys on).
+- poc/msm-cuda/cuda/pippenger_inf.cu: `#error` under
+  `defined(__HIPCC__) && defined(FEATURE_BN254)` as a backstop for any other
+  build path.
+
+The Rust test (poc/msm-cuda/tests/msm.rs) `msm_correctness` is left as-is; it
+can no longer be reached with bn254 on rocm because the build fails first, so
+no `#[cfg]` change is needed there.
+
+Deferred the underlying hang fix: `sppark-bn254-g1-msm-rocm`
+(utils/deferred.py). Resume by root-causing the wave64 / sort-partitioning /
+cooperative-grid-sync edge case for the 254-bit field, then drop both gates.
+
+### Re-validation of the enabled ROCm surface (gfx90a, ROCm 7.2.1, MI250X, GCDs 2-3)
+- `cargo build --release --features=bls12_381` (NVCC=off, hipcc): OK
+- bls12_381 msm_correctness TEST_NPOW=15: PASS
+- bls12_377 msm_correctness TEST_NPOW=14: PASS
+- `--features=bn254` on rocm: build correctly REFUSED (build.rs panic), no
+  binary produced, device never touched.

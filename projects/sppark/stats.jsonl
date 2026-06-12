@@ -11,3 +11,8 @@
 {"kind":"phase","ts":"2026-06-11T23:36:14Z","phase":"test","seconds":8.846,"exit":101,"cmd":"bash agent_space/sppark_test_msm.sh"}
 {"kind":"phase","ts":"2026-06-12T00:19:10Z","phase":"test","seconds":103.552,"exit":0,"cmd":"bash agent_space/sppark_validate.sh"}
 {"kind":"session","ts":"2026-06-12T00:20:33Z","epoch":1781223633.029249471,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-12T05:07:40Z", "tokens": 110424, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-12T05:22:57Z","phase":"compile","seconds":0.034,"exit":101,"cmd":"cargo build --release --features=bls12_381"}
+{"kind":"phase","ts":"2026-06-12T05:23:11Z","phase":"compile","seconds":5.966,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/sppark/src/poc/msm-cuda && cargo build --release --features=bls12_381"}
+{"kind":"phase","ts":"2026-06-12T05:23:26Z","phase":"test","seconds":8.925,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/sppark/src/poc/msm-cuda && TEST_NPOW=15 cargo test --release --features=bls12_381 -- --nocapture"}
+{"kind":"phase","ts":"2026-06-12T05:23:41Z","phase":"test","seconds":7.648,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/sppark/src/poc/msm-cuda && TEST_NPOW=14 cargo test --release --features=bls12_377 -- --nocapture"}
