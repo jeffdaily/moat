@@ -29,3 +29,7 @@
 {"kind":"phase","ts":"2026-06-12T06:45:38Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make plvs -j48"}
 {"kind":"phase","ts":"2026-06-12T06:48:38Z","phase":"compile","seconds":0.006,"exit":2,"cmd":"make plvs -j48"}
 {"kind":"phase","ts":"2026-06-12T06:54:40Z","phase":"compile","seconds":0.007,"exit":2,"cmd":"make rgbd_tum stereo_euroc -j48"}
+{"kind":"phase","ts":"2026-06-12T07:03:10Z","phase":"test","seconds":11.637,"exit":134,"cmd":"bash /tmp/run_mono_tum.sh"}
+{"kind":"phase","ts":"2026-06-12T07:05:21Z","phase":"test","seconds":9.060,"exit":1,"cmd":"bash /tmp/run_headless.sh"}
+{"kind":"phase","ts":"2026-06-12T07:06:03Z","phase":"test","seconds":15.411,"exit":0,"cmd":"bash /tmp/run_headless.sh"}
+{"kind":"session","ts":"2026-06-12T07:11:16Z","epoch":1781248276.998524060,"event":"end","platform":"linux-gfx90a"}

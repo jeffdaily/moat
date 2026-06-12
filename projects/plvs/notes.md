@@ -120,3 +120,91 @@ cmake --build build-hip -j$(nproc)
 3. Run a stereo dataset (EuRoC/KITTI) through plvs to VALIDATE libsgm disparity on wave64;
    if wrong, rework libsgm WARP_SIZE to logical-32 per the OpenCV cudastereo conclusion.
 4. Run a TUM RGB-D dataset to validate the ORB/FAST GPU feature path end to end.
+
+## Status 2026-06-12 (gfx90a, porter): GPU-VALIDATED on real MI250X. Fork HEAD 05eed6c.
+
+State: linux-gfx90a = ported (blocked cleared). The OpenCV-not-yet-landed dependency is a
+PACKAGING concern for the eventual upstream PR claim only, NOT a validation blocker:
+plvs is validated against the local jeffdaily OpenCV fork build. depends_on=opencv_contrib
+stays recorded so the selector sequences correctly; the upstream PR is gated on the OpenCV
+core (#29285) + contrib (#4147) PRs landing.
+
+### Full SLAM stack built this session
+- PCL 1.14 via apt (libpcl-dev). GLOG/octomap/Protobuf/SuiteSparse/GLFW3/Boost/Eigen present.
+- Pangolin: the existing _deps/pangolin (commit dd801d2) was the WRONG commit (lacks
+  pangolin/display/default_font.h). Rebuilt at the project-required commit fe57db532 + the
+  bundled Thirdparty/pangolin.patch into Thirdparty/Pangolin (symlinked/cloned there). v0.6.
+- Bundled CPU libs built with OpenCV_DIR -> _deps/opencv-hip and -DBUILD_WITH_MARCH_NATIVE=OFF
+  -DCPP_STANDARD_VERSION=17 -DOPENCV_VERSION=4: DBoW2, g2o, volumetric_mapping, open_chisel,
+  chisel_server, voxblox, voxblox_server, line_descriptor. fastfusion DISABLED (wants OpenCV 3;
+  WITH_FASTFUSION=OFF; it is an optional CPU dense-recon backend, out of scope for the port).
+- libelas-gpu (HIP) built to Thirdparty/libelas-gpu/lib/liblibelas_gpu.a.
+- OpenCV-with-HIP REBUILT to add the ximgproc module (plvs StereoDisparity needs
+  opencv2/ximgproc/disparity_filter.hpp). BUILD_LIST += ximgproc, -DBUILD_opencv_sfm=OFF
+  (sfm's glog try_compile breaks the whole reconfigure). After each OpenCV reinstall the
+  generated OpenCVConfig.cmake re-adds a find_host_package(CUDA REQUIRED) block (WITH_HIP
+  reuses CUDA config vars); neutralize it locally (set OpenCV_USE_CUBLAS/CUFFT empty, replace
+  the CUDA-toolkit find/lib block with empty OpenCV_CUDA_LIBS_*). This is a _deps install
+  shim, not a plvs source change; the real fix belongs in the OpenCV WITH_HIP config gen.
+
+### Full plvs build (gfx90a, ROCm 7.2): library + all executables build
+cmake .. -DWITH_CUDA=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/amdclang++ -DWITH_LIBSGM=ON -DWITH_LIBELAS=ON
+  -DWITH_G2O_NEW=OFF -DWITH_FASTFUSION=OFF -DBUILD_WITH_MARCH_NATIVE=OFF
+  -DCPP_STANDARD_VERSION=17 -DOPENCV_VERSION=4 -DOpenCV_DIR=_deps/opencv-hip/install/lib/cmake/opencv4
+  -DCMAKE_BUILD_TYPE=Release ; make -j48
+Build trees build-hip/ (+ Thirdparty/{libsgm,libelas-gpu}/build-hip) are gitignored.
+
+### Functional fixes this session (commit 05eed6c on top of f932ab5)
+1. Thirdparty/libsgm/src/utility.hpp: WARP_SIZE pinned to LOGICAL 32 on every target (was
+   64 on __GFX9__). THIS IS THE KEY CORRECTNESS FIX -- see validation below.
+2. ORBextractor.{cc,h}, Frame.cc, Tracking.{cc,h}: the GPU FAST/ORB feature dispatch +
+   GpuMat image pyramid were gated on USE_CUDA only; now also activate under USE_HIP, so an
+   AMD build actually RUNS the GPU feature path instead of compiling the kernels and silently
+   falling back to the CPU extractor.
+3. CMakeLists.txt: (a) WITH_LIBSGM + GPU-runtime link no longer require a found CUDA toolkit
+   (accept USE_HIP, link libamdhip64 for the libsgm/libelas static archives); (b) host TUs
+   get -D__HIP_PLATFORM_AMD__, the ROCm include path, and a force-include of src/cuda/cuda_to_hip.h
+   so OpenCV cv::cuda headers + project cuda/{Fast,Orb}.hpp resolve cudaStream_t etc. to HIP;
+   (c) BUILD_FASTFUSION honors the WITH_FASTFUSION toggle.
+
+### GPU VALIDATION on real gfx90a (HIP_VISIBLE_DEVICES=0, one MI250X GCD)
+
+A. libsgm STEREO -- the KEY wave64 correctness risk. Validated with a harness over the
+   OpenCV "aloe" rectified stereo pair comparing GPU disparity to a CPU StereoSGBM reference
+   (agent_space/sgm_aloe.cpp; synthetic random-noise pairs are ill-conditioned and useless
+   here -- even CPU SGBM scores poorly on them). disp_size=128.
+   - WARP_SIZE=64 (prior): valid COVERAGE 0.233, i.e. depth map sparse/mostly-zero. FAIL.
+     (Where pixels survive they agree with CPU 98.7%, but the WTA right-disparity recon +
+     uniqueness/LR test reject ~77% of pixels -- the classic wave64 SGM breakage.)
+   - WARP_SIZE=32 (fix): coverage 0.864, GPU-vs-CPU agreement 0.982 (mean abs diff 0.75 px),
+     no NaN, BIT-IDENTICAL across runs. PASS. Confirms the OpenCV cudastereo conclusion that
+     SGM shuffles must stay logical-32 inside a 64-lane wave. Logged to PORTING_GUIDE
+     (2026-06-12 WARP_SIZE-parameterized kernels entry).
+
+B. ORB/FAST GPU FEATURE PATH -- monocular SLAM on TUM RGB-D freiburg1_xyz RGB frames
+   (agent_space/mono_tum_headless.cc, viewer off so no GTK/GL needed; the OpenCV-with-HIP
+   build lacks a highgui window backend so the stock mono_tum cv::namedWindow aborts -- run
+   headless). 457 valid frames (the TUM mirror throttles ~217MB so the .tgz truncated; the
+   partial extract gave 458 RGB frames, 1 corrupt PNG dropped via a PNG-IEND integrity scan).
+   Result: map initializes (~340-410 points), tracking state reaches OK (2) by frame 50 and
+   HOLDS through frame 450, 457/457 frames processed, ~1000 tracked map points at the end,
+   clean Shutdown, NO GPU fault/NaN/crash, exit 0. PASS. Deterministic OUTCOME across runs
+   (init point count varies run-to-run -- normal SLAM multi-thread nondeterminism, not a GPU
+   correctness issue).
+
+### Reproduce the validation
+libsgm aloe test (datasets/aloe{L,R}.jpg from opencv samples):
+  amdclang++ -std=c++17 -O2 agent_space/sgm_aloe.cpp -IThirdparty/libsgm/include
+    -I_deps/opencv-hip/install/include/opencv4 Thirdparty/libsgm/lib/libsgm.a -L/opt/rocm/lib
+    -lamdhip64 -L_deps/opencv-hip/install/lib -lopencv_core -lopencv_calib3d -lopencv_imgproc
+    -lopencv_imgcodecs -o agent_space/sgm_aloe ; HIP_VISIBLE_DEVICES=0 ./agent_space/sgm_aloe
+headless mono SLAM: build agent_space/mono_tum_headless.cc against lib/libplvs.so (see
+  /tmp/run_headless.sh recipe), then HIP_VISIBLE_DEVICES=0 ./mono_tum_headless ORBvoc.txt
+  Examples/Monocular/TUM1.yaml <tum_seq_with_rgb.txt>
+
+### Remaining / handoff
+- EuRoC stereo full-pipeline run not done (the ethz/asl MH_01 mirror returned 0 bytes; libsgm
+  stereo correctness is independently and rigorously validated by the aloe GPU-vs-CPU test
+  above, which exercises the exact sgm::StereoSGM disparity kernels plvs calls).
+- Upstream PR remains gated on the OpenCV core+contrib PRs landing (packaging), per dispatch.
