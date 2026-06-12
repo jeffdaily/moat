@@ -37,3 +37,4 @@
 {"kind":"phase","ts":"2026-06-12T08:31:13Z","phase":"compile","seconds":0.127,"exit":2,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-12T08:32:10Z","phase":"compile","seconds":46.654,"exit":0,"cmd":"bash -c cd '/b/develop/moat/projects/llm-awq/src/awq/kernels' && '/b/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe' setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-12T08:38:22Z","phase":"test","seconds":2.311,"exit":0,"cmd":"bash -c cd /b/develop/moat/projects/llm-awq/src/awq/kernels && HIP_VISIBLE_DEVICES=1 '/b/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe' /b/develop/moat/agent_space/awq_kernel_test_win.py"}
+{"kind": "tokens", "ts": "2026-06-12T08:41:02Z", "tokens": 64547, "source": "validator (windows-gfx1201 revalidate)"}
