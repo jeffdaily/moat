@@ -40,3 +40,8 @@
 {"kind":"phase","ts":"2026-06-12T07:17:10Z","phase":"test","seconds":0.008,"exit":100,"cmd":"bash /var/lib/jenkins/moat/projects/mcx/src/test/testmcx.sh"}
 {"kind":"phase","ts":"2026-06-12T07:18:51Z","phase":"test","seconds":94.492,"exit":3,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mcx/src/test && bash testmcx.sh"}
 {"kind": "tokens", "ts": "2026-06-12T07:21:19Z", "tokens": 34744, "source": "validator"}
+{"kind":"phase","ts":"2026-06-12T13:25:00Z","phase":"compile","seconds":33.455,"exit":1,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
+{"kind":"phase","ts":"2026-06-12T13:26:19Z","phase":"compile","seconds":33.499,"exit":1,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
+{"kind":"phase","ts":"2026-06-12T13:27:45Z","phase":"compile","seconds":33.641,"exit":1,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
+{"kind":"phase","ts":"2026-06-12T13:33:45Z","phase":"compile","seconds":33.770,"exit":0,"cmd":"cmake --build projects/mcx/src/build_win -j64"}
+{"kind":"phase","ts":"2026-06-12T13:35:06Z","phase":"test","seconds":13.889,"exit":4,"cmd":"bash -c cd 'projects/mcx/src/test' && HIP_VISIBLE_DEVICES=1 bash testmcx.sh"}

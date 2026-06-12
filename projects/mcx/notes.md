@@ -486,3 +486,110 @@ compiles and runs correctly on gfx1100. State -> completed.
 Arch: gfx1100 (Radeon Pro W7800)
 ROCm: 7.2
 Test suite: 37/40 PASS
+
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+### Build
+
+TheRock ROCm 7.14.0a20260604, all-clang toolchain, gfx1201.
+
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+CLANG=$ROCM/lib/llvm/bin/clang++.exe
+
+```bat
+cd projects/mcx/src
+mkdir build_win && cd build_win
+cmake ../src -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 ^
+    -DCMAKE_HIP_COMPILER=%ROCM%/lib/llvm/bin/clang++.exe ^
+    -DCMAKE_CXX_COMPILER=%ROCM%/lib/llvm/bin/clang++.exe ^
+    -DCMAKE_C_COMPILER=%ROCM%/lib/llvm/bin/clang.exe ^
+    -DCMAKE_PREFIX_PATH=%ROCM% ^
+    -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release ^
+    -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build . -j64
+```
+
+Build: success, 46 steps, no errors. ROCm clang 23.0.0, gfx1201 target.
+
+### Windows-specific fixes (commit cd4b395 on top of 0803c7c)
+
+Four changes needed for the all-clang Windows build:
+
+1. `src/CMakeLists.txt`, `src/zmat/CMakeLists.txt`: Guard `-fPIC` with
+   `if(NOT WIN32)`; clang-MSVC rejects -fPIC. Add `-DWIN32` flag so
+   `mcx_utils.c`'s existing `#ifndef WIN32` guards work (clang-MSVC
+   defines `_WIN32` but not `WIN32`).
+
+2. `src/CMakeLists.txt`: Redirect mcx-exe import lib (per-exe
+   ARCHIVE_OUTPUT_DIRECTORY) to `lib/implibs/` on Windows. Without
+   this, lld-link writes the exe's `.lib` stub to `lib/mcx.lib`,
+   overwriting the static mcx library, causing undefined-symbol link
+   failure.
+
+3. `src/mcx_utils.c`: Add `#include <direct.h>` and
+   `#define mkdir(path,mode) _mkdir(path)` under `WIN32`.
+
+4. `src/mcx_utils.c`: Change `fopen(..., "rt")` to `fopen(..., "rb")`
+   in `mcx_loadseedjdat`. In text mode, Windows `ftell()` counts
+   `\r\n` as 2 bytes but `fread` converts to `\n`, so the block-read
+   returns fewer bytes than requested and fails.
+
+Runtime DLLs copied into bin/ (dir-search beats System32):
+amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+hiprtc-builtins0714.dll (from _rocm_sdk_core/bin).
+
+### GPU verification
+
+```bat
+HIP_VISIBLE_DEVICES=1 bin\mcx.exe -L
+```
+Device 1 of 1: AMD Radeon RX 9070 XT, Compute Capability 12.0
+
+### Physics benchmarks (all match Linux gfx1100 values)
+
+| Benchmark       | gfx1201 result | Linux gfx1100 | Expected |
+|-----------------|---------------|---------------|----------|
+| cube60 (no reflect)  | 17.72% | 17.71% | ~17% |
+| cube60b (reflect ON) | 27.23% | 27.26% | ~27% |
+| cube60 -b 1          | 27.23% | 27.26% | ~27% |
+| cube60planar         | 25.50% | 25.51% | ~25% |
+| spherebox            | 10.98% | 10.96% | ~11% |
+| skinvessel           | 39.76% | 39.74% | ~39% |
+
+The reflect-ON result (cube60b: 27.23%) confirms the AMDGPU backend
+branchless velocity-flip fix (0803c7c) is effective on gfx1201 (RDNA4).
+No miscompile recurrence on RDNA4.
+
+### Test suite
+
+GPU: AMD Radeon RX 9070 XT (gfx1201, HIP device 1 under HIP_VISIBLE_DEVICES=1)
+Command: `HIP_VISIBLE_DEVICES=1 bash test/testmcx.sh` (run from src/ root)
+Result: **36/40 tests PASS** (4 non-blocking failures)
+
+Failing tests (4/40) -- all upstream/host issues, NOT port defects:
+1. "dump json input with volume from builtin example": colin27 benchmark
+   excluded on MSVC (`#ifndef _MSC_VER` in mcx_bench.c:584), so
+   `--bench colin27` returns "Unsupported benchmark" on Windows.
+   Upstream design choice, not a port issue.
+2. "set gzip compression for volume exporting": same colin27 reason.
+3. "photon replay -E": test script calls `-E replaytest_detp.jdat` but
+   code produces `.jdt` (upstream renamed the extension in 6d7a81a);
+   replay itself works correctly when called with `.jdt`.
+4. "photon replay": same stale `.jdat` extension issue.
+
+### Fork state
+
+Fork HEAD: cd4b395, moat-port branch.
+Source changes: 3 files (CMakeLists.txt x2, mcx_utils.c), all
+Windows-only guards; Linux compilation unchanged.
+
+### Verdict: PASS
+
+All physics benchmarks match expected values on gfx1201 (RDNA4). The
+reflection fix from 0803c7c is effective. 4 test failures are upstream
+test staleness (stale extension, MSVC `#ifndef _MSC_VER` exclusion),
+not port defects. State -> completed at cd4b395.
+
+Arch: gfx1201 (RX 9070 XT, RDNA4)
+ROCm: TheRock 7.14.0a20260604
+Test suite: 36/40 PASS
