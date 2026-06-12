@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-07T18:27:32Z","phase":"test","seconds":3.897,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T18:27:57Z","phase":"test","seconds":3.150,"exit":1,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T18:28:33Z","phase":"test","seconds":2.426,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe agent_space/gpurir_validate_gfx1201.py"}
+{"kind": "tokens", "ts": "2026-06-07T18:44:57Z", "tokens": 63133, "source": "validator"}

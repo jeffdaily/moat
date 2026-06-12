@@ -28,3 +28,4 @@
 {"kind":"phase","ts":"2026-06-07T16:45:49Z","phase":"test","seconds":0.047,"exit":0,"cmd":"ctest -j1 --timeout 60 --output-on-failure -E DISABLED"}
 {"kind":"phase","ts":"2026-06-07T16:46:02Z","phase":"test","seconds":0.064,"exit":0,"cmd":"ctest -j1 --timeout 60 --output-on-failure"}
 {"kind":"phase","ts":"2026-06-07T17:05:00Z","phase":"test","seconds":454.0,"exit":8,"cmd":"ctest -j1 --timeout 60 --output-on-failure [from build-hip-gfx1201]"}
+{"kind": "tokens", "ts": "2026-06-07T16:57:30Z", "tokens": 92909, "source": "validator"}

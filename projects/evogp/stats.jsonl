@@ -18,3 +18,4 @@
 {"kind":"phase","ts":"2026-06-07T04:31:56Z","phase":"compile","seconds":28.802,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m pip install -e B:/develop/moat/projects/evogp/src --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-07T04:32:14Z","phase":"test","seconds":3.479,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m evogp.sr_test"}
 {"kind":"phase","ts":"2026-06-07T04:32:25Z","phase":"test","seconds":3.363,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe -m evogp.sr_test"}
+{"kind": "tokens", "ts": "2026-06-07T04:34:36Z", "tokens": 43462, "source": "validator"}

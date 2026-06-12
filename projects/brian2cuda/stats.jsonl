@@ -34,3 +34,4 @@
 {"kind": "tokens", "ts": "2026-06-09T15:24:09Z", "tokens": 72051, "source": "porter (hip_prefs wiring fix + gfx90a re-validation: 3/3 sims, gpu_arch pref now honored)"}
 {"kind":"phase","ts":"2026-06-09T16:27:04Z","phase":"test","seconds":31.445,"exit":0,"cmd":"python3 agent_space/brian2cuda_cleanup_reval.py"}
 {"kind": "tokens", "ts": "2026-06-09T16:30:52Z", "tokens": 97425, "source": "porter (remove dead hipgputools.py + consolidate is_hip_backend + symmetric prefs wiring; gfx90a 3/3 re-validated, prefs confirmed live)"}
+{"kind": "tokens", "ts": "2026-06-08T13:54:24Z", "tokens": 77131, "source": "validator"}

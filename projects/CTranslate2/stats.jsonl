@@ -16,3 +16,4 @@
 {"kind":"phase","ts":"2026-06-07T03:04:39Z","phase":"test","seconds":3.260,"exit":0,"cmd":"B:/develop/moat/projects/CTranslate2/build/tests/ctranslate2_test.exe B:/develop/moat/projects/CTranslate2/src/tests/data --gtest_filter=CUDA/*"}
 {"kind":"phase","ts":"2026-06-07T03:04:53Z","phase":"test","seconds":3.934,"exit":0,"cmd":"B:/develop/moat/projects/CTranslate2/build/tests/ctranslate2_test.exe B:/develop/moat/projects/CTranslate2/src/tests/data --gtest_filter=-*Conv1DGroupNoBiasQuantized*"}
 {"kind": "tokens", "ts": "2026-06-11T06:07:26Z", "tokens": 66644, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-07T03:07:11Z", "tokens": 73181, "source": "validator"}

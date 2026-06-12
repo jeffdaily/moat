@@ -46,3 +46,4 @@
 {"kind":"phase","ts":"2026-06-08T22:22:04Z","phase":"compile-new-gfx1100","seconds":14.072,"exit":2,"cmd":"cmake --build /var/lib/jenkins/moat/projects/prismatic/build-new-gfx1100 -j16"}
 {"kind": "tokens", "ts": "2026-06-08T22:25:40Z", "tokens": 81262, "source": "validator (binary-equiv revalidation gfx90a+gfx1100)"}
 {"kind": "tokens", "ts": "2026-06-08T23:15:26Z", "tokens": 70887, "source": "validator (revalidation polling-loop overhead, follow-up)"}
+{"kind": "tokens", "ts": "2026-06-08T19:16:12Z", "tokens": 132617, "source": "validator"}

@@ -41,3 +41,4 @@
 {"kind":"phase","ts":"2026-06-08T00:52:59Z","phase":"compile","seconds":0.003,"exit":0,"cmd":"echo build complete for codeobj_diff (two builds at e337891 and 96ece3d for gfx1100)"}
 {"kind":"phase","ts":"2026-06-08T00:54:20Z","phase":"test","seconds":0.002,"exit":0,"cmd":"echo full GPU revalidation on gfx1100 PASSED: camera 27/27, rast 24/24, lidar 12/14 (2 documented batch flappers pass in isolation), lidar rast 3/3, lidar validate ALL, strategy 1/1"}
 {"kind": "tokens", "ts": "2026-06-08T00:56:26Z", "tokens": 68757, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-07T22:44:14Z", "tokens": 147788, "source": "validator"}

@@ -17,3 +17,4 @@
 {"kind":"phase","ts":"2026-06-07T02:19:25Z","phase":"test","seconds":43.049,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_core_gfx1201.py"}
 {"kind":"phase","ts":"2026-06-07T02:27:40Z","phase":"test","seconds":425.559,"exit":1,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_full_gfx1201.py tests/test_basic.py -v --tb=short"}
 {"kind":"phase","ts":"2026-06-07T02:44:49Z","phase":"test","seconds":5.760,"exit":0,"cmd":"B:\\develop\\TheRock\\external-builds\\pytorch\\.venv\\Scripts\\python.exe B:\\develop\\moat\\agent_space\\run_gsplat_full_gfx1201.py tests/test_external_distortion.py tests/test_ftheta.py -v --tb=short"}
+{"kind": "tokens", "ts": "2026-06-07T02:57:42Z", "tokens": 109680, "source": "validator"}

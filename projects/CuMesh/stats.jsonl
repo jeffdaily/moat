@@ -29,3 +29,4 @@
 {"kind":"phase","ts":"2026-06-07T22:56:12Z","phase":"compile","seconds":76.581,"exit":1,"cmd":"bash -c cd 'B:/develop/moat/projects/CuMesh/src' && 'B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe' setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-07T22:59:13Z","phase":"compile","seconds":89.724,"exit":1,"cmd":"bash -c cd 'B:/develop/moat/projects/CuMesh/src' && 'B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe' setup.py build_ext --inplace"}
 {"kind":"phase","ts":"2026-06-08T00:25:33Z","phase":"compile","seconds":0.020,"exit":0,"cmd":""}
+{"kind": "tokens", "ts": "2026-06-08T00:36:16Z", "tokens": 59519, "source": "validator"}

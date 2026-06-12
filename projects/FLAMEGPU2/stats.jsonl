@@ -22,3 +22,4 @@
 {"kind":"phase","ts":"2026-06-08T00:07:05Z","phase":"compile","seconds":25.305,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/FLAMEGPU2/src/build --target flamegpu boids_bruteforce tests -j32"}
 {"kind":"phase","ts":"2026-06-08T00:12:07Z","phase":"compile","seconds":73.355,"exit":1,"cmd":"cmake --build B:/develop/moat/projects/FLAMEGPU2/src/build --target boids_bruteforce tests -j32"}
 {"kind":"phase","ts":"2026-06-08T00:25:12Z","phase":"test","seconds":36.276,"exit":127,"cmd":"B:/develop/moat/projects/FLAMEGPU2/src/build/bin/Release/tests.exe"}
+{"kind": "tokens", "ts": "2026-06-08T00:59:08Z", "tokens": 34472, "source": "validator"}

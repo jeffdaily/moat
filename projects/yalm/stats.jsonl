@@ -24,3 +24,4 @@
 {"kind":"phase","ts":"2026-06-07T20:10:46Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make USE_HIP=1 HIPARCH=gfx1100 test"}
 {"kind":"phase","ts":"2026-06-07T20:11:09Z","phase":"compile","seconds":0.005,"exit":2,"cmd":"make test USE_HIP=1 HIPARCH=gfx1100"}
 {"kind":"phase","ts":"2026-06-07T20:11:22Z","phase":"compile","seconds":4.251,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/yalm/src && make test USE_HIP=1 HIPARCH=gfx1100"}
+{"kind": "tokens", "ts": "2026-06-07T18:44:58Z", "tokens": 139735, "source": "validator"}

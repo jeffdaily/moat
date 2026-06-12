@@ -36,3 +36,4 @@
 {"kind":"phase","ts":"2026-06-08T21:13:16Z","phase":"compile","seconds":972.302,"exit":0,"cmd":"cmake --build projects/metaeuk/build-marv-gfx1201 -j16 --target marv"}
 {"kind":"phase","ts":"2026-06-08T21:13:51Z","phase":"test","seconds":0.030,"exit":127,"cmd":"./metaeuk_val_gfx1201.exe"}
 {"kind":"phase","ts":"2026-06-08T21:13:56Z","phase":"test","seconds":0.535,"exit":0,"cmd":"agent_space/metaeuk_val_gfx1201.exe"}
+{"kind": "tokens", "ts": "2026-06-08T21:15:51Z", "tokens": 69291, "source": "validator"}

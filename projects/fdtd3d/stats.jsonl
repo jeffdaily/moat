@@ -44,3 +44,4 @@
 {"kind":"phase","ts":"2026-06-08T18:19:56Z","phase":"test","seconds":0.851,"exit":0,"cmd":"bash -c \necho '=== GPU unit test: unit-test-cuda-grid ===' && /var/lib/jenkins/moat/agent_space/fdtd3d-gfx1100-gpu1/build-head/Source/UnitTests/unit-test-cuda-grid 0 && echo 'GPU unit test PASSED' && echo '' && echo '=== 3D electromagnetic simulation ===' && /var/lib/jenkins/moat/agent_space/fdtd3d-gfx1100-gpu1/build-head/Source/fdtd3d --3d --size x:20,y:20,z:20 --use-cuda --cuda-gpus 0 --time-steps 100 && echo 'Simulation PASSED'\n"}
 {"kind": "tokens", "ts": "2026-06-08T18:30:30Z", "tokens": 40519, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T17:51:37Z", "tokens": 50729, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T15:54:39Z", "tokens": 111899, "source": "validator"}

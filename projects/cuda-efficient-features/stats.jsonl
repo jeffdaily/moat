@@ -48,3 +48,4 @@
 {"kind":"phase","ts":"2026-06-09T22:56:32Z","phase":"compile","seconds":22.452,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/cuda-efficient-features/src\ncmake --build build-refactor -j8 2>&1 | tail -40\n"}
 {"kind":"phase","ts":"2026-06-09T22:57:34Z","phase":"test","seconds":15.616,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/cuda-efficient-features/src\nHIP_VISIBLE_DEVICES=0 ./build-refactor/tests/tests 2>&1 | tail -40\n"}
 {"kind": "tokens", "ts": "2026-06-09T23:07:34Z", "tokens": 149112, "source": "porter (include-path shadowing: bare includes; codeobj_diff IDENTICAL vs eacf58d0; +14/-56; CUDA byte-identity strictly better)"}
+{"kind": "tokens", "ts": "2026-06-08T14:55:46Z", "tokens": 76071, "source": "validator"}

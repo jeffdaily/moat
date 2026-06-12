@@ -36,3 +36,5 @@
 {"kind":"phase","ts":"2026-06-08T13:31:18Z","phase":"compile","seconds":48.567,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation"}
 {"kind":"phase","ts":"2026-06-08T13:33:06Z","phase":"compile","seconds":45.931,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/TIGRE/src && pip install -e . --no-build-isolation"}
 {"kind": "tokens", "ts": "2026-06-08T13:45:29Z", "tokens": 44436, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T02:37:56Z", "tokens": 46739, "source": "validator"}
+{"kind":"phase","ts":"2026-06-08T04:04:59Z","phase":"test","seconds":6166.537,"exit":0,"cmd":"B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe /b/develop/moat/agent_space/tigre_solvers_win_gfx1201.py"}

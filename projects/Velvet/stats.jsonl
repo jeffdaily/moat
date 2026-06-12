@@ -26,3 +26,4 @@
 {"kind":"phase","ts":"2026-06-08T13:49:11Z","phase":"compile","seconds":15.187,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-old -j64"}
 {"kind":"phase","ts":"2026-06-08T13:49:44Z","phase":"compile","seconds":15.181,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/agent_space/Velvet-gfx1100-gpu1/build-new -j64"}
 {"kind": "tokens", "ts": "2026-06-08T13:55:10Z", "tokens": 37219, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T02:55:11Z", "tokens": 76165, "source": "validator"}

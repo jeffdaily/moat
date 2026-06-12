@@ -23,3 +23,4 @@
 {"kind":"phase","ts":"2026-06-08T16:52:53Z","phase":"test","seconds":10.204,"exit":1,"cmd":"bash -c cd projects/accelerated-scan/src && python3 -m pytest tests/test_eq.py -q -k \"reverse or bindings\" 2>/dev/null"}
 {"kind":"phase","ts":"2026-06-08T16:53:44Z","phase":"test","seconds":28.709,"exit":1,"cmd":"bash -c cd projects/accelerated-scan/src && python3 -m pytest tests/test_eq.py tests/tests_eq_complex.py -q 2>/dev/null"}
 {"kind": "tokens", "ts": "2026-06-08T16:59:38Z", "tokens": 56703, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-08T02:57:06Z", "tokens": 46853, "source": "validator"}

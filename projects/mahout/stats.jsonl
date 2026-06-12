@@ -76,3 +76,4 @@
 {"kind":"phase","ts":"2026-06-11T19:59:17Z","phase":"compile","seconds":1.045,"exit":0,"cmd":"cargo build --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -j 16"}
 {"kind":"phase","ts":"2026-06-11T19:59:35Z","phase":"test","seconds":11.237,"exit":0,"cmd":"cargo test --manifest-path /var/lib/jenkins/moat/projects/mahout/src/qdp/Cargo.toml -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1"}
 {"kind": "tokens", "ts": "2026-06-11T20:02:31Z", "tokens": 83379, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-11T18:42:19Z", "tokens": 152536, "source": "porter"}

@@ -8,3 +8,4 @@
 {"kind": "tokens", "ts": "2026-06-05T17:41:18Z", "tokens": 114429, "source": "validator"}
 {"kind":"phase","ts":"2026-06-07T03:43:30Z","phase":"compile","seconds":62.296,"exit":0,"cmd":"C:\\Program Files\\CMake\\bin\\cmake.exe --build B;C:\\Program Files\\Git\\develop\\moat\\agent_space\\cupoch-win\\build-gfx1201 --target cupoch_geometry cupoch_knn cupoch_camera cupoch_utility -j64"}
 {"kind":"phase","ts":"2026-06-07T03:44:39Z","phase":"test","seconds":0.595,"exit":0,"cmd":"B:/develop/moat/agent_space/cupoch-win/validate-gfx1201/build/validate.exe"}
+{"kind": "tokens", "ts": "2026-06-07T03:46:47Z", "tokens": 50232, "source": "validator"}

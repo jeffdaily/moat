@@ -30,3 +30,4 @@
 {"kind":"phase","ts":"2026-06-08T17:05:40Z","phase":"test","seconds":0.202,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/cuPDLP-C-gfx1100-gpu1/build-new/bin/testcudalin"}
 {"kind": "tokens", "ts": "2026-06-08T17:07:57Z", "tokens": 54857, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T15:24:55Z", "tokens": 35927, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T14:33:13Z", "tokens": 75837, "source": "validator"}

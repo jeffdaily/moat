@@ -15,3 +15,4 @@
 {"kind":"phase","ts":"2026-06-07T03:54:06Z","phase":"compile","seconds":7.039,"exit":0,"cmd":"bash /b/develop/moat/agent_space/ef-harness-win-gfx1201/build.sh"}
 {"kind":"phase","ts":"2026-06-07T03:54:23Z","phase":"test","seconds":0.041,"exit":127,"cmd":"./kernel_harness.exe"}
 {"kind":"phase","ts":"2026-06-07T03:54:28Z","phase":"test","seconds":0.302,"exit":0,"cmd":"B:/develop/moat/agent_space/ef-harness-win-gfx1201/kernel_harness.exe"}
+{"kind": "tokens", "ts": "2026-06-07T03:57:01Z", "tokens": 55830, "source": "validator"}

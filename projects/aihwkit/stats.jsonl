@@ -52,3 +52,4 @@
 {"kind": "tokens", "ts": "2026-06-08T17:01:17Z", "tokens": 50822, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T16:13:38Z", "tokens": 71037, "source": "validator"}
 {"kind": "tokens", "ts": "2026-06-08T03:59:32Z", "tokens": 40723, "source": "validator"}
+{"kind": "tokens", "ts": "2026-06-08T20:54:53Z", "tokens": 26777, "source": "revalidate-batch"}

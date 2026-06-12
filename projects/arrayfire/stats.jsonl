@@ -54,3 +54,4 @@
 {"kind":"phase","ts":"2026-06-09T13:10:03Z","phase":"compile","seconds":67.833,"exit":1,"cmd":"cmake --build projects/arrayfire/src/build-gfx1201 -j24"}
 {"kind":"phase","ts":"2026-06-09T13:15:01Z","phase":"compile","seconds":101.328,"exit":0,"cmd":"cmake --build projects/arrayfire/src/build-gfx1201 -j24"}
 {"kind":"phase","ts":"2026-06-09T13:25:19Z","phase":"test","seconds":573.439,"exit":8,"cmd":"ctest --test-dir projects/arrayfire/src/build-gfx1201 -R cuda -j1"}
+{"kind": "tokens", "ts": "2026-06-09T13:27:27Z", "tokens": 74411, "source": "porter"}
