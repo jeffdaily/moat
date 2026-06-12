@@ -291,3 +291,36 @@ export LD_LIBRARY_PATH=$HIGHS_HOME/lib:/var/lib/jenkins/moat/agent_space/cuPDLP-
 
 Result: 3/3 PASS on AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave32).
 validated_sha = 503569a57a7a8b5ab2d9f0a0c4e6375696cc6750
+
+## CUDA no-regression gate 2026-06-12 (compile-verified with nvcc)
+
+The port keeps the NVIDIA CUDA path alive (`-DBUILD_CUDA=ON`); the AMD additions
+are guarded behind `USE_HIP` / `__HIP_PLATFORM_AMD__`. Previously the CUDA path
+was only argued unchanged by construction (no MOAT host has an NVIDIA GPU). This
+gate compiles it for real with the actual CUDA toolkit.
+
+Toolkit: CUDA 12.4 (nvcc V12.4.131) installed via `mamba create -n cudaverify
+-c nvidia cuda-toolkit=12.4`. The project hardcodes `/usr/local/cuda/include`
+for the CUDA C targets (upstream behavior, unchanged by the port), and conda
+stages headers under `targets/x86_64-linux/include` with libs in `lib/`, so the
+env was normalized for a standard layout: `ln -s $PREFIX/lib $PREFIX/lib64`,
+symlink `targets/x86_64-linux/include/*` into `$PREFIX/include`, and build with
+`CPATH=$PREFIX/include`. On a normal `/usr/local/cuda` install none of this is
+needed. See [[cuda-toolkit-noregression-gate]].
+
+Build (no NVIDIA GPU required; nvcc emits device code without one):
+```
+export CUDA_HOME=/opt/conda/envs/cudaverify CPATH=$CUDA_HOME/include
+cmake .. -DBUILD_CUDA=ON -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_CUDA_HOST_COMPILER=$CUDA_HOME/bin/g++ -DHIGHS_HOME=$HIGHS_HOME
+cmake --build . --target cupdlp cudalin testcudalin testcublas -j 16
+```
+
+Result: clean build, exit 0, no errors. nvcc compiled `cupdlp_cuda_kernels.cu`
+(201 KB object) and `cupdlp_cudalinalg.cu` with `-arch=all`; cuobjdump confirms
+fatbin device code for sm_50..sm_90. The `cudalin`/`cupdlp` libraries and the
+`testcudalin`/`testcublas` executables all link. The warp-reduce macros resolve
+to the original `__shfl_down_sync(0xFFFFFFFF, ...)` on the NVIDIA `#else` branch.
+
+Scope: this proves the CUDA build is unbroken across all NVIDIA arches. It does
+NOT prove runtime correctness on NVIDIA hardware (no GPU on the fleet).
