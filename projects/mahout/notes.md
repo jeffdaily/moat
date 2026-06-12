@@ -1170,3 +1170,61 @@ Rebuilt wheel at d97db73 (maturin build --features hip --profile dev --compatibi
 No changes pushed to the fork (validation as-is). Open PR apache/mahout#1399 unaffected.
 
 Transition: revalidate -> completed (validated_sha = d97db73adeac70b377c22e17fde6af7ff4ff3057).
+
+## Validation 2026-06-12 (windows-gfx1101, revalidate -> completed at d97db73) -- FULL GPU PASS
+
+Platform: windows-gfx1101, GPU: AMD Radeon PRO V710 (gfx1101, RDNA3 wave32, warpSize=32),
+HIP_VISIBLE_DEVICES=0 (only GPU on bus), Windows 11 (26200), TheRock ROCm 7.14,
+Rust 1.96.0 (msvc target). Fork: jeffdaily/mahout @ moat-port HEAD d97db73adeac70b377c22e17fde6af7ff4ff3057.
+
+Delta from validated_sha (f3f7db33) includes functional HIP changes; binary-equivalence
+carry-forward was NOT used; full GPU revalidation performed.
+
+Build commands:
+```
+ROOT=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+MSVC_DIR="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207/bin/HostX64/x64"
+MSVC_BASE="/c/Program Files (x86)/Microsoft Visual Studio/2022/BuildTools/VC/Tools/MSVC/14.44.35207"
+WIN_SDK_BASE="/c/Program Files (x86)/Windows Kits/10"; SDK_VER="10.0.26100.0"
+export CARGO_HOME=/b/develop/moat/agent_space/cargo RUSTUP_HOME=/b/develop/moat/agent_space/rustup
+export PATH="$CARGO_HOME/bin:$MSVC_DIR:$ROOT/bin:$ROOT/lib/llvm/bin:$PATH"
+export LIB="$(cygpath -w $MSVC_BASE/lib/x64);$(cygpath -w $WIN_SDK_BASE/Lib/$SDK_VER/ucrt/x64);$(cygpath -w $WIN_SDK_BASE/Lib/$SDK_VER/um/x64)"
+export HIP_DEVICE_LIB_PATH="$ROOT/lib/llvm/amdgcn/bitcode"
+export QDP_USE_HIP=1 QDP_HIP_ARCH_LIST=gfx1101 QDP_HIPCC="$ROOT/bin/hipcc.exe"
+export ROCM_PATH="$ROOT" HIP_VISIBLE_DEVICES=0
+
+bash utils/timeit.sh mahout compile -- \
+  cargo build --manifest-path projects/mahout/src/qdp/Cargo.toml \
+    -p qdp-core -p qdp-kernels --no-default-features --features hip
+# exit 0, 3.91s (incremental). Pre-existing warnings: iqp.cu unused param, phase.cu unused var.
+
+cp $ROOT/bin/{amdhip64_7.dll,amd_comgr.dll,rocm_kpack.dll,hiprtc0714.dll,hiprtc-builtins0714.dll} \
+   projects/mahout/src/qdp/target/debug/deps/
+
+bash utils/timeit.sh mahout test -- \
+  cargo test --manifest-path projects/mahout/src/qdp/Cargo.toml \
+    -p qdp-core -p qdp-kernels --no-default-features --features hip -- --test-threads=1
+```
+
+Rust tests (HIP_VISIBLE_DEVICES=0, --test-threads=1) -- 0 failures total:
+- qdp-core lib: 77/77.
+- GPU suites: gpu_angle 12/12, gpu_api_workflow 8/8, gpu_basis 7/7, gpu_dlpack 9/9,
+  gpu_fidelity 17/17, gpu_iqp 22/22, gpu_memory_safety 4/4, gpu_norm_f32 2/2,
+  gpu_ptr_encoding 68/68, gpu_validation 8/8.
+- Non-GPU: arrow_ipc 5/5, null_handling 6/6, numpy 4/4, parquet_f32 7/7, parquet_io 8/8,
+  preprocessing 14/14, reader 3/3, tensorflow_io 9/9, torch_io 3/3, types 6/6.
+- qdp-kernels: amplitude_encode 21/21, angle_encode 10/10.
+- Async-pipeline tests pass: test_amplitude_encoding_async_pipeline,
+  test_angle_encoding_async_pipeline (gpu_api_workflow),
+  test_angle_batch_f32_async_pipeline_path (gpu_angle_encoding).
+- Stream ordering fix verified: test_l2_norm_batch_kernel_stream (amplitude_encode),
+  test_encode_from_gpu_ptr_f32_with_stream_non_default_success and
+  test_encode_batch_from_gpu_ptr_f32_with_stream_success (gpu_ptr_encoding) -- all 3
+  previously-failing stream tests PASS with non-blocking stream + sync_default_stream fix.
+- gpu_ptr_encoding count is 68 (vs 64 in the original gfx1101 pass): 4 new tests added
+  in ebb71af44 (dlpack arch-awareness) now run on gfx1101 too.
+
+Wave32 verdict: gfx1101 RDNA3 wave32 -- all L2-norm/amplitude tests pass.
+warp_id = threadIdx.x / warpSize == >>5 on wave32. QDP_FULL_WARP_MASK upper 32 bits zero on wave32.
+
+Transition: revalidate -> completed (validated_sha = d97db73adeac70b377c22e17fde6af7ff4ff3057).
