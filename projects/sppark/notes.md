@@ -503,3 +503,78 @@ Gate confirmed: --features=rocm,bn254 is refused at build time. No hang.
 | bn254 build-time gate | PASS (build refused, exit 101) |
 
 0 test failures. Source tree clean (git status --porcelain: empty). Advancing to completed.
+
+## Validation 2026-06-12 (linux-gfx1100)
+
+GPU: gfx1100 (AMD Radeon Pro W7800 48GB), ROCm 7.2.1. HIP_VISIBLE_DEVICES=1. Fork HEAD 8688269.
+
+### Build
+
+```
+cd poc/msm-cuda
+NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_381   # exit 0
+NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_377   # exit 0
+```
+
+Both succeed with only pre-existing unused-parameter and precedence warnings (upstream code, not port regressions). gfx1100 code confirmed in libblst_cuda_msm.a (strings shows `amdgcn-amd-amdhsa--gfx1100`).
+
+### GPU tests (MSM correctness)
+
+```
+# bls12_381 G1 Pippenger MSM vs arkworks reference
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=15 \
+  cargo test --release --features=bls12_381 -- --nocapture
+# Result: test msm_correctness ... ok  (1 passed, 0 failed)
+
+# bls12_377 G1 Pippenger MSM vs arkworks reference
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=14 \
+  cargo test --release --features=bls12_377 -- --nocapture
+# Result: test msm_correctness ... ok  (1 passed, 0 failed)
+```
+
+### bn254 build-time gate
+
+```
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc \
+  cargo build --release --features=bn254
+# Result: exit 101 -- build.rs panics with
+#   "the bn254 curve is not yet supported on the ROCm/HIP MSM backend;
+#    use bls12_381 or bls12_377, or the CUDA backend for bn254"
+# No GPU object compiled, no binary produced.
+```
+
+### NTT regression check (poc/ntt-cuda)
+
+```
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc GPU=1 \
+  cargo test --release --features=<field> -- --nocapture
+```
+
+All 7 field types pass:
+
+| Field | Test | Status |
+|-------|------|--------|
+| bls12_381 | test_against_arkworks | PASS |
+| bls12_377 | test_against_arkworks | PASS |
+| bn254 | test_against_arkworks | PASS |
+| pallas | test_against_arkworks | PASS |
+| vesta | test_against_arkworks | PASS |
+| gl64 (Goldilocks) | gl64_self_consistency | PASS |
+| bb31 (Baby Bear) | bb31_self_consistency | PASS |
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| bls12_381 msm_correctness (TEST_NPOW=15) | PASS |
+| bls12_377 msm_correctness (TEST_NPOW=14) | PASS |
+| bn254 build-time gate | PASS (build refused, exit 101) |
+| NTT bls12_381 test_against_arkworks | PASS |
+| NTT bls12_377 test_against_arkworks | PASS |
+| NTT bn254 test_against_arkworks | PASS |
+| NTT pallas test_against_arkworks | PASS |
+| NTT vesta test_against_arkworks | PASS |
+| NTT gl64 gl64_self_consistency | PASS |
+| NTT bb31 bb31_self_consistency | PASS |
+
+0 test failures. Source tree clean (git status --porcelain: empty).

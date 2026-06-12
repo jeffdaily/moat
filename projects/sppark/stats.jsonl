@@ -26,3 +26,13 @@
 {"kind":"phase","ts":"2026-06-12T06:48:25Z","phase":"compile","seconds":0.036,"exit":101,"cmd":"env NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_381"}
 {"kind": "phase", "ts": "2026-06-12T00:00:00Z", "phase": "compile", "seconds": 0.092, "exit": 0, "cmd": "NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_381"}
 {"kind": "tokens", "ts": "2026-06-12T00:21:34Z", "tokens": 432339, "source": "porter"}
+{"kind":"session","ts":"2026-06-12T07:16:04Z","epoch":1781248564.916253501,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-12T07:16:12Z","phase":"compile","seconds":0.027,"exit":101,"cmd":"cargo build --release --features=bls12_381"}
+{"kind":"phase","ts":"2026-06-12T07:16:42Z","phase":"compile","seconds":0.026,"exit":101,"cmd":"cargo build --release --features=bls12_377"}
+{"kind":"phase","ts":"2026-06-12T07:16:55Z","phase":"compile","seconds":4.239,"exit":0,"cmd":"cargo build --release --features=bls12_377"}
+{"kind":"phase","ts":"2026-06-12T07:17:02Z","phase":"compile","seconds":0.080,"exit":0,"cmd":"cargo build --release --features=bls12_381"}
+{"kind":"phase","ts":"2026-06-12T07:17:24Z","phase":"test","seconds":6.830,"exit":0,"cmd":"cargo test --release --features=bls12_381 TEST_NPOW=15"}
+{"kind":"phase","ts":"2026-06-12T07:17:35Z","phase":"test","seconds":1.326,"exit":0,"cmd":"cargo test --release --features=bls12_377 TEST_NPOW=14"}
+{"kind":"phase","ts":"2026-06-12T07:17:48Z","phase":"test","seconds":5.675,"exit":0,"cmd":"cargo build --release --features=bn254 (gate check)"}
+{"kind":"phase","ts":"2026-06-12T07:18:53Z","phase":"test","seconds":13.276,"exit":0,"cmd":"ntt-cuda cargo test --release --features=bls12_381"}
+{"kind":"session","ts":"2026-06-12T07:20:20Z","epoch":1781248820.308574714,"event":"end","platform":"linux-gfx1100"}
