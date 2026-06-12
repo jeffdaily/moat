@@ -52,3 +52,4 @@
 {"kind":"phase","ts":"2026-06-12T09:07:54Z","phase":"test","seconds":13.824,"exit":0,"cmd":"/var/lib/jenkins/moat/agent_space/mono_tum_headless_gfx1100 /var/lib/jenkins/moat/projects/plvs/src/Vocabulary/ORBvoc.txt /var/lib/jenkins/moat/projects/plvs/src/Examples/Monocular/TUM1.yaml /tmp/rgbd_dataset_freiburg1_xyz"}
 {"kind":"session","ts":"2026-06-12T09:09:27Z","epoch":1781255367.091155848,"event":"end","platform":"linux-gfx1100"}
 {"kind": "tokens", "ts": "2026-06-12T09:10:32Z", "tokens": 164509, "source": "validator"}
+{"kind":"phase","ts":"2026-06-12T14:46:19Z","phase":"compile","seconds":0.101,"exit":1,"cmd":"cmake --build build-win-gfx1201 -j64"}

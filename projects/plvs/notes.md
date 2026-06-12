@@ -416,3 +416,86 @@ Result (run 2): 798/798 frames processed, clean shutdown, exit 0. PASS.
 All GPU tests pass on real gfx1100 (W7800, RDNA3, wave32). Fork HEAD 05eed6c. State -> completed.
 Test scope matches gfx90a lead: libsgm wave32 stereo (PASS) + headless mono TUM SLAM (PASS).
 No delta-port needed; the fork compiled and ran correctly on gfx1100 without code changes.
+
+## Validation attempt 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4): PARTIAL -- validation-failed
+
+GPU arch: gfx1201 (AMD Radeon RX 9070 XT, RDNA4, wave32), HIP_VISIBLE_DEVICES=1. ROCm TheRock 7.14. Fork HEAD b9210a8 (includes Windows -fPIC fix commit on top of 05eed6c).
+
+### GPU health check
+`HIP_VISIBLE_DEVICES=1 hipInfo.exe` -> AMD Radeon RX 9070 XT, gfx1201, warpSize=32, multiProcessorCount=32. HEALTHY.
+
+### Windows build fix committed (b9210a8)
+`Thirdparty/libsgm/CMakeLists.txt` and `src/CMakeLists.txt`: Guard `-fPIC` with `if(WIN32)` blocks. clang++ for x86_64-pc-windows-msvc rejects `-fPIC`; on Linux/macOS the else() branch retains the flag identically. No HIP device code is affected (build-system change only). Committed to moat-port branch as [ROCm] commit b9210a8, pushed to jeffdaily/plvs.
+
+Note: advancing head_sha from 05eed6c to b9210a8 flipped the Linux platforms to `revalidate`. The delta is a CMakeLists.txt WIN32-guard (not device code); the binary-equivalence carry-forward check (codeobj_diff.py) on Linux will confirm the device code is unchanged.
+
+### OpenCV-HIP status (Windows gfx1201)
+`projects/opencv_contrib/build_gfx1201` is a gfx1201 HIP-enabled Windows build of OpenCV 4.14.0 (WITH_HIP=ON, CMAKE_HIP_ARCHITECTURES=gfx1201, all-clang toolchain). All needed modules present: core, cudaarithm, cudafilters, cudaimgproc, cudawarping, cudafeatures2d, cudastereo, ximgproc. No install dir; used build-tree config via wrapper at `agent_space/opencv-hip-config-gfx1201/OpenCVConfig.cmake` (neutralizes the CUDA toolkit find_package block by pre-setting CUDA_FOUND=TRUE and no-op-ing find_cuda_helper_libs).
+
+### libsgm HIP build (Windows gfx1201)
+Built `Thirdparty/libsgm/build-win-gfx1201` -> `lib/sgm.lib` (static, gfx1201). Toolchain: all-clang from `_rocm_sdk_devel/lib/llvm/bin/clang++.exe`. Generator: Ninja. The WIN32 -fPIC guard (b9210a8 fix) was required for successful HIP compilation.
+
+### HIP kernel compilation check (all 4 plvs GPU files)
+All 4 plvs HIP kernel files compile cleanly for gfx1201 on Windows:
+- `src/cuda/Allocator_gpu.cu` -> 10KB obj (RC=0)
+- `src/cuda/Cuda.cu` -> obj (RC=0)
+- `src/cuda/Orb_gpu.cu` -> 98KB obj (RC=0)
+- `src/cuda/Fast_gpu.cu` -> 276KB obj (RC=0)
+Command: `clang++.exe -x hip --offload-arch=gfx1201 -std=c++17 -DUSE_HIP -D__HIP_PLATFORM_AMD__ -D_DLL -D_MT -Xclang --dependent-lib=msvcrt -I<opencv4 include dirs from build_gfx1201> -I include -I src/cuda -c <file>.cu`
+
+### Test 1: libsgm stereo validation (GPU, gfx1201 wave32) -- PASS
+
+sgm_aloe_win test harness compiled against libsgm/lib/sgm.lib + OpenCV DLLs from build_gfx1201.
+Runtime: TheRock amdhip64_7.dll, amd_comgr.dll, hiprtc*.dll, rocm_kpack.dll copied to exe dir.
+
+Command:
+```
+cd agent_space
+HIP_VISIBLE_DEVICES=1 ./sgm_aloe_win.exe \
+  projects/opencv_contrib/src-core/samples/data/aloeL.jpg \
+  projects/opencv_contrib/src-core/samples/data/aloeR.jpg
+```
+
+Run 1 result (disp_size=128, 1282x1110 aloe stereo pair):
+- GPU valid: 1197228 / 1423020
+- Coverage:     0.841  (>= 0.80 PASS)
+- Agreement@2px: 0.972 (>= 0.95 PASS)
+- RESULT: PASS
+
+Run 2 result: identical pixel counts (1197228 GPU valid, 1060481 both valid, 0.841/0.972). Bit-identical across runs.
+
+Confirms: libsgm WARP_SIZE=32 fix (05eed6c) is correct on gfx1201 (native wave32 -- trivially correct, same as gfx1100). The HIP stereo kernels run correctly on gfx1201 RDNA4 hardware.
+
+### Test 2: Mono TUM RGB-D SLAM (GPU ORB/FAST) -- NON-VIABLE: Windows dependency wall
+
+The full plvs library cannot be built on Windows due to multiple hard dependency walls:
+
+1. **Bundled CPU libs use Unix-specific library output formats**: The plvs CMakeLists.txt hardcodes Unix paths:
+   - `Thirdparty/DBoW2/lib/libDBoW2.so` -- SHARED library, produces DBoW2.dll on Windows (not .so)
+   - `Thirdparty/g2o/lib/libg2o.so` -- same issue
+   - `Thirdparty/line_descriptor/lib/liblinedesc.a` -- static .a, produces .lib on Windows
+   - `Thirdparty/voxblox/lib/libvoxblox.a`, `libvoxblox_proto.a` -- same
+   - `Thirdparty/open_chisel/lib/libopen_chisel.a`, `Thirdparty/chisel_server/lib/libchisel_server.a` -- same
+   - `Thirdparty/voxblox_server/lib/libvoxblox_server.a` -- same
+   All these bundled libs also hardcode `-fPIC`, `-pthread`, and use Unix CMake patterns.
+   Fixing this requires patching every bundled CMakeLists.txt AND the main CMakeLists.txt to use platform-correct library extensions. This is a multi-day porting effort.
+
+2. **PCL not available**: Point Cloud Library is required but not in vcpkg's installed packages. Building from source via vcpkg fails due to TLS certificate revocation (network downloads from github.com fail with CRYPT_E_REVOCATION_OFFLINE). Direct curl download with --ssl-revoke-best-effort works but PCL takes 1-2 hours to build.
+
+3. **Main CMakeLists.txt pervasive Linux flags**: `-fPIC`, `-pthread`, `pkg_check_modules(GLFW REQUIRED glfw3)`, etc. in the top-level build. Patching these would require a significant CMakeLists.txt change.
+
+4. **Pangolin version mismatch**: vcpkg has Pangolin 0.9.5 (INTERFACE-only, no shared libs). plvs expects the Pangolin v0.6 at commit fe57db532 with the `pangolin.patch` applied, providing `Thirdparty/Pangolin/build/PangolinConfig.cmake`. The Pangolin_DIR hardcode in CMakeLists.txt can be overridden via -D, but the 0.9.5 API may differ.
+
+**This is a Windows-portability issue with the upstream plvs project itself, not a problem with the AMD/HIP port.** The AMD GPU port (HIP kernel compilation, libsgm stereo) is correct and verified on gfx1201.
+
+### Partial results summary
+- libsgm HIP build: PASS (sgm.lib built for gfx1201)
+- Plvs HIP kernel compilation: PASS (all 4 .cu files compile for gfx1201)
+- Test 1 (stereo, GPU): PASS (coverage 0.841, agreement 0.972, bit-identical x2)
+- Test 2 (SLAM, GPU): NON-VIABLE (Windows dependency wall in bundled CPU libs)
+
+State: validation-failed (Test 2 non-viable -- Windows dependency wall, not a GPU/HIP fault).
+
+The gfx1201 redundant Windows tier is satisfied by the stereo test showing real GPU kernel execution. However per dispatch requirements, both tests are needed for PASS.
+
+Future Windows SLAM validators: the key unlocking step is to make the bundled CPU libs Windows-aware (either via CMakeLists.txt patches to use CMAKE_SHARED_LIBRARY_SUFFIX and proper platform detection, or by using system/vcpkg packages for g2o, DBoW2 instead of the bundled ones). Then PCL needs to be built from source (curl --ssl-revoke-best-effort to download, ~2h build). Once those are in place, the plvs Windows build should complete with the fixes already committed (b9210a8 -fPIC guard).
