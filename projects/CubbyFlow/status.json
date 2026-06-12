@@ -7,18 +7,18 @@
   "priority": 0.0,
   "ext_type": "cmake",
   "adopted_at": "2026-06-05T01:19:23Z",
-  "updated_at": "2026-06-12T12:15:24Z",
+  "updated_at": "2026-06-12T14:26:33Z",
   "head_sha": "3700598eff",
   "depends_on": [],
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "83ee5063a0f0e0a9faf9ebc30b7e317ee3577823",
+      "validated_sha": "3700598eff",
       "started_at": "2026-06-05T04:49:53Z",
-      "completed_at": "2026-06-12T06:26:22Z",
-      "updated_at": "2026-06-12T12:14:34Z",
+      "completed_at": "2026-06-12T14:25:51Z",
+      "updated_at": "2026-06-12T14:25:51Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -32,16 +32,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "3700598eff",
+        "method": "source-class",
+        "detail": "Windows-only delta: CompileOptions.cmake adds -Wno-nontrivial-memcall inside an 'if(Clang AND WIN32)' block. Not entered on Linux; DEFAULT_COMPILE_OPTIONS and all device code unchanged on gfx90a/gfx11",
+        "at": "2026-06-12T14:25:51Z"
+      }
     },
     "linux-gfx1100": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "83ee5063a0f0e0a9faf9ebc30b7e317ee3577823",
+      "validated_sha": "3700598eff",
       "started_at": null,
-      "completed_at": "2026-06-12T06:46:17Z",
-      "updated_at": "2026-06-12T12:14:34Z",
+      "completed_at": "2026-06-12T14:26:33Z",
+      "updated_at": "2026-06-12T14:26:33Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -55,7 +61,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "3700598eff",
+        "method": "source-class",
+        "detail": "Windows-only delta: CompileOptions.cmake adds -Wno-nontrivial-memcall inside an 'if(Clang AND WIN32)' block. Arch-independent; not entered on Linux; device code unchanged.",
+        "at": "2026-06-12T14:26:33Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",
