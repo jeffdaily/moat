@@ -32,3 +32,4 @@
 {"kind":"phase","ts":"2026-06-12T06:46:00Z","phase":"test","seconds":4.198,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/CubbyFlow/src && HIP_VISIBLE_DEVICES=0 ./build/bin/UnitTests 2>&1 | tail -10\n"}
 {"kind":"phase","ts":"2026-06-12T06:46:09Z","phase":"test","seconds":1.654,"exit":0,"cmd":"bash -c \ncd /var/lib/jenkins/moat/projects/CubbyFlow/src && HIP_VISIBLE_DEVICES=0 ./build/bin/CUDASPHSim -f 5 2>&1\n"}
 {"kind":"session","ts":"2026-06-12T06:46:13Z","epoch":1781246773.446613275,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-12T00:03:16Z", "tokens": 281235, "source": "porter"}
