@@ -461,6 +461,12 @@ HIP_VISIBLE_DEVICES=0 build_hip/rgbd_replica Vocabulary/ORBvoc.txt \
 - NeRF snapshot: RGBD_Replica_office0.msgpack saved
 - Total wall time: ~8 minutes for 2000 frames + 5812 NeRF iterations
 
-CUDA no-regression gate: skipped (lead platform only; this IS the lead gfx90a). N/A.
+CUDA no-regression gate: cuda-not-validated: upstream DDN-SLAM does not ship instant-ngp-kf
+as git submodules (Thirdparty/ is a flat tarball extract without the glfw/CUDA submodule
+tree); cmake configure fails with "Some instant-ngp dependencies are missing" because the
+USE_HIP guard in instant-ngp-kf/CMakeLists.txt bypasses this check for HIP builds only.
+Attempting to build the upstream base sha (76478ea) shows the same: instant-ngp-kf is not
+tracked there at all (only DBoW2 is under Thirdparty/ in the upstream tree). This is a
+project-structural environmental wall, not a port regression.
 
 Verdict: GPU-validated PASS on linux-gfx90a. State -> completed. validated_sha = 9a91f87.
