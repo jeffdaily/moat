@@ -724,3 +724,28 @@ satisfied by one Windows arch completing; gfx1101 (RDNA3, supports cooperative
 launch) is the intended path and is validated in a separate stage. The
 windows-gfx1201 NTT 7/7 + bn254-gate PASS results above stand as a partial
 Windows-ROCm proof.
+
+### Cooperative-launch wall: wrong-runtime hypothesis ruled out, gap is Windows-wide (2026-06-12)
+
+jeff asked whether the 719 / cooperativeLaunch=0 reading came from loading the System32
+Adrenalin amdhip64 instead of TheRock's runtime. Verified directly with a standalone 1x1
+cooperative-launch probe (agent_space/coop_probe/coop2.cpp, hipcc all-clang, built for
+gfx1101+gfx1201):
+
+- Ran under all THREE amdhip64_7.dll present on the host:
+  - System32 Adrenalin (Mar 2025) -- printed "HIP Library Path: C:\WINDOWS\SYSTEM32\amdhip64_7.dll"
+  - TheRock _rocm_sdk_core 7.14 (Jun 2026, the torch-matching runtime; DLLs copied into exe dir)
+  - TheRock build/bin 7.0.2 (Apr 2026)
+- Result is identical for all three and for BOTH GPUs (gfx1201 RDNA4 device 1, gfx1101 RDNA3 device 0):
+  prop.cooperativeLaunch=0, hipDeviceGetAttribute(CooperativeLaunch)=0, and
+  hipLaunchCooperativeKernel returns 719 even for a PLAIN 1x1 kernel with no grid.sync at all.
+  So the launch API gates on the device property; it is not the grid barrier executing.
+- On Windows there is no separate libhsa-runtime DLL (HSA is rolled into amdhip64), so "use
+  TheRock's HSA runtime" reduces to "which amdhip64 loaded" -- all three tested.
+
+Conclusion: cooperative launch is unsupported on Windows ROCm 7.14 for both gfx1101 and gfx1201.
+The same RDNA3 silicon (gfx1100) reports cooperativeLaunch=1 and passes MSM on Linux ROCm 7.2.1,
+so this is a Windows HIP runtime capability gap, not a port defect, not RDNA4-specific, and not a
+wrong-runtime artifact. Both windows-gfx1201 and windows-gfx1101 are recorded blocked for MSM;
+NTT 7/7 and the bn254 gate pass on Windows. The Windows tier cannot be satisfied for sppark's MSM
+on this host. Non-cooperative MSM fallback remains deferred (sppark-msm-noncoop-fallback).
