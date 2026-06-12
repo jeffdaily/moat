@@ -206,3 +206,47 @@ Commit hygiene clean: `[ROCm]` title 56 chars, names Claude, Test Plan present,
 no noreply trailer, jeffdaily/amd.com author, no MOAT jargon in the diff, no
 AMD-internal account references. GPU validation already recorded (CUDATests
 35/35, UnitTests 722/722, WCSPH end-to-end) -- the validator stage re-runs it.
+
+## Validation 2026-06-12 (linux-gfx1100, validator)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800, gfx1100, RDNA3). HIP_VISIBLE_DEVICES=0.
+Fork HEAD: 83ee5063a0 ([ROCm] Add AMD ROCm/HIP support for the CUDA SPH solvers).
+Source tree clean (no uncommitted tracked files).
+
+### Build
+
+```
+cd projects/CubbyFlow/src
+git submodule update --init --recursive
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+cmake --build build -j$(nproc)
+```
+
+Build: PASS (all targets built cleanly).
+
+### GPU tests
+
+```
+HIP_VISIBLE_DEVICES=0 ./build/bin/CUDATests
+```
+
+Result: 35/35 test cases, 3168/3168 assertions PASS.
+
+```
+HIP_VISIBLE_DEVICES=0 ./build/bin/CUDASPHSim -f 5
+```
+
+Result: 5 frames written, 13824 particles, no crash (GPU end-to-end PASS).
+
+### CPU regression tests
+
+```
+HIP_VISIBLE_DEVICES=0 ./build/bin/UnitTests
+```
+
+Result: 722/722 PASS (no non-GPU regression).
+
+### Verdict: PASS -> completed
