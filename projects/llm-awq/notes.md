@@ -236,6 +236,40 @@ already recorded in Validation 2026-06-11 above).
 
 Verdict: PASS. State set to completed at f843012.
 
+## Validation 2026-06-12 (linux-gfx1100)
+
+Platform: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3, wave64), ROCm 7.2.1 / torch 2.13.0a0+gitb5e90ff. Fork HEAD f843012.
+
+Build: cleaned stale hipified files, built from source for gfx1100 only:
+```
+cd projects/llm-awq/src/awq/kernels
+find csrc \( -name '*.hip' -o -name '*_hip.*' \) ! -name 'cuda_to_hip*' -delete
+rm -rf build
+PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=32 python setup.py build_ext --inplace
+```
+Exit 0; produced awq_inference_engine.cpython-312-x86_64-linux-gnu.so with gfx1100 code objects
+(confirmed via llvm-objdump --offloading). Warnings only from torch headers; no errors.
+
+GPU tests (HIP_VISIBLE_DEVICES=0):
+
+1. agent_space/awq_kernel_test.py (GEMM-vs-GEMV self-consistency, 256->128):
+   - qweight shape (32, 256), scales (8, 128), scaled_zeros (8, 128)
+   - out_gemv shape (1, 128) finite True
+   - out_gemm shape (16, 128) finite True
+   - GEMM-vs-GEMV max_abs_diff=0.0000 mean_abs_diff=0.00000 max_rel=0.0000
+   - RESULT: PASS
+
+2. agent_space/awq_model_test.py (WQLinear at realistic transformer dims):
+   - small (256->128): max_abs_diff=0.0000 [PASS]
+   - opt-125m-attn-qkv (768->768): max_abs_diff=0.0000 [PASS]
+   - opt-125m-ffn-up (768->3072): max_abs_diff=0.0000 [PASS]
+   - opt-125m-ffn-down (3072->768): max_abs_diff=0.0000 [PASS]
+   - 4/4 tests passed -- RESULT: PASS
+
+CUDA no-regression gate: follower platform; not applicable. Lead CUDA gate recorded in Validation 2026-06-11.
+
+Verdict: PASS. State set to completed at f843012.
+
 ## Validation 2026-06-10 (windows-gfx1201)
 
 Platform: AMD Radeon RX 9070 XT (gfx1201, RDNA4, wave32), Windows 11 Pro for
