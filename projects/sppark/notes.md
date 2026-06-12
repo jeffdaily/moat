@@ -821,3 +821,60 @@ flipped to `revalidate`: the cooperative path they exercise is behavior-identica
 the device binary gained the fallback kernels, so a binary-equivalence carry-forward does
 not apply and a Linux GPU should re-run msm_correctness at 868aa18 to reconfirm (expected
 PASS). This is required before the upstream PR (REQUIRED Linux tier).
+
+## Validation 2026-06-12 (linux-gfx90a, revalidate at 868aa18)
+
+GPU: gfx90a (AMD Instinct MI250X, GCD 0), ROCm 7.2.1. HIP_VISIBLE_DEVICES=0. Fork HEAD 868aa18.
+
+This is a FULL GPU re-run: commit 868aa18 adds the non-cooperative-launch fallback (device kernels changed in msm/sort.cuh +188, msm/pippenger.cuh +127) and the new msm_correctness_sizes test. Binary-equivalence carry-forward does not apply.
+
+### Build
+
+```
+cd poc/msm-cuda
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_381  # exit 0
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_377  # exit 0
+```
+
+Both succeed. Warnings are pre-existing upstream code (unused-parameter, precedence) -- not port regressions.
+
+### GPU tests (MSM correctness + new msm_correctness_sizes)
+
+```
+# bls12_381 G1 Pippenger MSM -- cooperative path (gfx90a has cooperativeLaunch=1)
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=15 \
+  cargo test --release --features=bls12_381 -- --nocapture
+# Result: msm_correctness ... ok, msm_correctness_sizes ... ok  (2 passed, 0 failed)
+
+# bls12_377 G1 Pippenger MSM -- cooperative path
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=14 \
+  cargo test --release --features=bls12_377 -- --nocapture
+# Result: msm_correctness ... ok, msm_correctness_sizes ... ok  (2 passed, 0 failed)
+
+# Non-cooperative fallback path forced on gfx90a (which has cooperative launch)
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=12 SPPARK_FORCE_NONCOOP=1 \
+  cargo test --release --features=bls12_381 msm_correctness_sizes -- --nocapture
+# Result: msm_correctness_sizes ... ok  (1 passed, 0 failed)
+```
+
+### bn254 build-time gate
+
+```
+HIP_VISIBLE_DEVICES=0 NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bn254
+# exit 101, panics: "the bn254 curve is not yet supported on the ROCm/HIP MSM backend..."
+```
+
+Gate confirmed: --features=bn254 on ROCm is refused at build time (exit 101). No GPU object compiled.
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| bls12_381 msm_correctness (TEST_NPOW=15) | PASS |
+| bls12_381 msm_correctness_sizes (npow 4,8,10,12,14,16) | PASS |
+| bls12_377 msm_correctness (TEST_NPOW=14) | PASS |
+| bls12_377 msm_correctness_sizes (npow 4,8,10,12,14,16) | PASS |
+| bls12_381 msm_correctness_sizes SPPARK_FORCE_NONCOOP=1 (fallback path) | PASS |
+| bn254 build-time gate | PASS (exit 101, correct panic) |
+
+0 test failures. Source tree clean (git status --porcelain: empty). Advancing to completed.

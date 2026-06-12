@@ -7,17 +7,17 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-12T17:54:36Z",
+  "updated_at": "2026-06-12T18:41:07Z",
   "head_sha": "868aa18",
   "platforms": {
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "00cb1a7",
+      "validated_sha": "868aa18",
       "started_at": "2026-06-04T22:16:44Z",
-      "completed_at": "2026-06-12T09:04:31Z",
-      "updated_at": "2026-06-12T17:54:35Z",
+      "completed_at": "2026-06-12T18:41:07Z",
+      "updated_at": "2026-06-12T18:41:07Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,13 +31,7 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer",
-      "carry_forward": {
-        "to": "00cb1a7",
-        "method": "binary-equiv",
-        "detail": "all_gpus.cpp is CPU-side host code (GPU enumeration); no device kernels modified; device bitcode on gfx90a/gfx1100 is unchanged (cooperativeLaunch=1 on those platforms, condition was already satisfied",
-        "at": "2026-06-12T09:04:31Z"
-      }
+      "last_agent": "validator"
     },
     "linux-gfx1100": {
       "state": "revalidate",
