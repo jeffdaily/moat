@@ -452,3 +452,54 @@ Scope reviewed: git diff d7cb381..HEAD (commit 8688269 only, +19 lines across 2 
 Verified (no action): (a) the gate prevents a hanging binary -- poc/msm-cuda/build.rs:123 panics when `backend == "rocm"` (set at build.rs:111-112 on hipcc detection) and `cfg!(feature = "bn254")`, BEFORE the GPU object is compiled at build.rs:142, so no wedging binary is produced; `cfg!(feature = "bn254")` is the project's established idiom (already used at build.rs:30 to set FEATURE_BN254). The pippenger_inf.cu:30-32 `#error` under `defined(__HIPCC__) && defined(FEATURE_BN254)` is a correct backstop for direct-compile paths. (b) CUDA byte-identical -- both guards are HIP/rocm-only: the .cu block is inert under nvcc (`__HIPCC__` undefined) and the build.rs panic is inert when backend is cuda. (c) bls12_381/bls12_377 ROCm surface untouched -- the diff adds only the two gates, no edits to the validated G1 path. (d) Commit hygiene clean -- `[ROCm]` title 47 chars, no noreply/co-author trailer, mentions Claude, no em-dash, Test Plan present, no MOAT jargon, no AMD-internal account references.
 
 Test (msm_correctness, poc/msm-cuda/tests/msm.rs) left unchanged is correct: it runs bn254 only when the bn254 feature is set, and that build now fails first on ROCm, so the test is unreachable there -- no `#[cfg]` change needed. Deferred entry sppark-bn254-g1-msm-rocm is registered and accurate (resume by root-causing the hang, then drop both gates).
+
+## Validation 2026-06-12 (linux-gfx90a)
+
+GPU: gfx90a (AMD Instinct MI250X, GCD 1), ROCm 7.2.1. HIP_VISIBLE_DEVICES=1. Fork HEAD 8688269.
+
+### Build
+
+```
+cd poc/msm-cuda
+NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_381   # exit 0
+NVCC=off HIPCC=/opt/rocm/bin/hipcc cargo build --release --features=bls12_377   # exit 0
+```
+
+Both succeed with only pre-existing unused-parameter and precedence warnings (upstream code, not port regressions).
+
+### GPU tests (MSM correctness)
+
+```
+# bls12_381 G1 Pippenger MSM vs arkworks reference
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=15 \
+  cargo test --release --features=bls12_381 -- --nocapture
+# Result: test msm_correctness ... ok  (1 passed, 0 failed)
+
+# bls12_377 G1 Pippenger MSM vs arkworks reference
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc TEST_NPOW=14 \
+  cargo test --release --features=bls12_377 -- --nocapture
+# Result: test msm_correctness ... ok  (1 passed, 0 failed)
+```
+
+### bn254 build-time gate
+
+```
+HIP_VISIBLE_DEVICES=1 NVCC=off HIPCC=/opt/rocm/bin/hipcc \
+  cargo build --release --features=bn254
+# Result: exit 101 -- build.rs panics with
+#   "the bn254 curve is not yet supported on the ROCm/HIP MSM backend;
+#    use bls12_381 or bls12_377, or the CUDA backend for bn254"
+# No GPU object compiled, no binary produced, device never touched.
+```
+
+Gate confirmed: --features=rocm,bn254 is refused at build time. No hang.
+
+### Summary
+
+| Test | Result |
+|------|--------|
+| bls12_381 msm_correctness (TEST_NPOW=15) | PASS |
+| bls12_377 msm_correctness (TEST_NPOW=14) | PASS |
+| bn254 build-time gate | PASS (build refused, exit 101) |
+
+0 test failures. Source tree clean (git status --porcelain: empty). Advancing to completed.
