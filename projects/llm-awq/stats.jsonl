@@ -23,3 +23,6 @@
 {"kind":"phase","ts":"2026-06-11T21:27:09Z","phase":"test","seconds":18.437,"exit":1,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/llm-awq/src && PYTHONPATH=/var/lib/jenkins/moat/projects/llm-awq/src python3 /var/lib/jenkins/moat/agent_space/awq_model_test.py 2>&1"}
 {"kind":"phase","ts":"2026-06-11T21:27:38Z","phase":"test","seconds":2.854,"exit":0,"cmd":"bash -c PYTHONPATH=/var/lib/jenkins/moat/projects/llm-awq/src python3 /var/lib/jenkins/moat/agent_space/awq_model_test.py 2>&1"}
 {"kind": "tokens", "ts": "2026-06-10T20:00:39Z", "tokens": 108128, "source": "planner"}
+{"kind":"session","ts":"2026-06-12T05:10:01Z","epoch":1781241001.700925246,"event":"start","platform":"linux-gfx1100"}
+{"kind":"phase","ts":"2026-06-12T05:10:19Z","phase":"compile","seconds":0.039,"exit":2,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=32 python setup.py build_ext --inplace 2>&1"}
+{"kind":"phase","ts":"2026-06-12T05:16:41Z","phase":"compile","seconds":375.892,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/llm-awq/src/awq/kernels && HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx1100 MAX_JOBS=32 python setup.py build_ext --inplace 2>&1"}
