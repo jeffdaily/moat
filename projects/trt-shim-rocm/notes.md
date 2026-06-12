@@ -180,8 +180,12 @@ expanding include/compat for the device/graph surface and implementing real
 IOptimizationProfile + enqueueV3 paths.
 
 int8 calibration is not yet wired (BuilderConfig::setInt8Calibrator is stubbed);
-it needs an IInt8Calibrator->migraphx::quantize_int8 bridge and is subject to
-MIGraphX GPU-calibration issue #3585. Deferred follow-up.
+it needs an IInt8Calibrator->migraphx::quantize_int8 bridge. Deferred follow-up.
+(Note: an earlier draft cited MIGraphX issue #3585 as an int8 GPU-calibration
+blocker. That was a mischaracterization from planning research -- #3585 is closed
+as not-a-bug, a user misreading rocm-smi during compile-dominated runtime, not a
+defect. quantize_int8 on the gpu target works; the real shim work is the
+calibrator bridge.)
 
 ## Install as a dependency
 
