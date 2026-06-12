@@ -76,3 +76,11 @@ dir on `PYTHONPATH` or `pip install .` into the env. The build env MUST be the R
 (`/opt/conda/envs/py_3.12`); kaldifeat inherits its GPU backend from the linked torch.
 </content>
 </invoke>
+
+## Review 2026-06-12
+Verdict: review-passed (build-only Strategy A port; no GPU device code; all ROCm changes guarded on kaldifeat_TORCH_IS_ROCM). Fault classes (warp size, rule-of-five, OOB reads, texture pitch, library swaps) verified N/A: 0 .cu/.cuh, 0 c10::cuda/CUDAStream/warp/cublas/cufft sites. Commit hygiene clean ([ROCm] title 57 chars, Claude named, no noreply trailer, ASCII, no MOAT jargon in diff). Docs added in both README.md and doc/source/installation/from_source.rst.
+
+Non-blocking observations (not bounced; record for the prep phase):
+- kaldifeat/csrc/CMakeLists.txt:39-40 -- `test_kaldifeat` (a build-only scratch exe with main(), never registered via add_test, never run by ctest) still links the SHARED kaldifeat_core. By the porter's own root-cause it would hit the recursive-dlopen __gnu_cxx::recursive_init_error abort if ever RUN on ROCm, but it is never run, so it does not affect validation or the build. Left for consistency consideration only; do not block on it.
+- kaldifeat/csrc/CMakeLists.txt:70-84 -- under kaldifeat_BUILD_TESTS the core sources now compile twice (shared kaldifeat_core + OBJECT kaldifeat_core_obj). Minor build-time cost on every backend incl. CUDA/CPU; correctness unaffected. The unconditional kaldifeat_add_test rewrite (shared core -> obj + ${TORCH_LIBRARIES}) is behavior-equivalent on CUDA/CPU (same KALDIFEAT_TORCH_VERSION_* defs, csrc include via root include_directories, TORCH_INCLUDE_DIRS explicit).
+- notes.md tail carries stray `</content></invoke>` artifact lines from an earlier write; harmless, clean up opportunistically.
