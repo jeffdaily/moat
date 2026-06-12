@@ -770,6 +770,28 @@
       "status": "open",
       "upstream_issue": null,
       "created_at": "2026-06-12T09:06:38Z"
+    },
+    {
+      "id": "trt-shim-rocm-trtexec",
+      "kind": "feature-port",
+      "project": null,
+      "component": "trt-shim-rocm",
+      "summary": "trtexec build against trt-shim-rocm: needs full TensorRT sample inference framework (sampleDevice/sampleInference/sampleEngines) -> large CUDA-runtime surface (cudaDeviceProp CUDA layout, cudaMemGetInfo, managed/host alloc, cudaLaunchHostFunc, real cudaGraph capture, cudaProfiler) + broad nvinfer1 optimization-profile/inference API the shim stubs. Multi-day harness port, not a shim gap. Shim correctness proven via stock sampleOnnxMNIST + ResNet-50 fp16/serialize. Resume by expanding include/compat for device/graph surface and implementing real IOptimizationProfile + enqueueV3.",
+      "refs": [],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-12T07:13:26Z"
+    },
+    {
+      "id": "migraphx-dynamic-concat-codegen",
+      "kind": "rocm-bug-report",
+      "project": null,
+      "component": "migraphx",
+      "summary": "MIGraphX dynamic-shape compile fails on ResNet-50: fused concat+pointwise JIT kernel generated with wrong arity (needs >=7 args, 4 provided) on gfx90a/ROCm 7.2.1/MIGraphX 2.15. Fixed-batch compiles fine; trivial dynamic CNN works. Reproducer+writeup: findings/migraphx-trt-shim-gaps/. Blocks dynamic batch on concat-heavy real models in trt-shim-rocm.",
+      "refs": [],
+      "status": "open",
+      "upstream_issue": null,
+      "created_at": "2026-06-12T14:15:26Z"
     }
   ]
 }
