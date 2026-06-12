@@ -13,3 +13,4 @@
 {"kind":"phase","ts":"2026-06-11T23:13:53Z","phase":"compile","seconds":4.108,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/HEonGPU/src/build && cmake --build . -j128 2>&1 | grep -iE \"error:|error [0-9]|fatal|Built target|Linking\" | grep -ivE \"warning|generate-line\" | tail -50"}
 {"kind":"phase","ts":"2026-06-11T23:15:29Z","phase":"compile","seconds":47.386,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/HEonGPU/src/build && cmake --build . -j128 2>&1 | grep -iE \"error:|error [0-9]|fatal|Built target|Linking HIP|Linking CXX.*heongpu\" | grep -ivE \"warning|generate-line\" | tail -40"}
 {"kind":"session","ts":"2026-06-11T23:28:43Z","epoch":1781220523.644553187,"event":"end","platform":"linux-gfx90a"}
+{"kind": "tokens", "ts": "2026-06-12T00:03:16Z", "tokens": 199055, "source": "porter"}
