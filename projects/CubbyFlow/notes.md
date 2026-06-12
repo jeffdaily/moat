@@ -117,3 +117,39 @@ CUDAArray-Impl.hpp, CUDAUtils.hpp, and the 9 cuda_runtime.h include sites.
 CMake: CMakeLists.txt, Sources/Core/CMakeLists.txt, Tests/CUDATests/CMakeLists.txt,
 Examples/CUDASPHSim/CMakeLists.txt, Builds/CMake/CompileOptions.cmake.
 Test cast: Tests/CUDATests/CUDAArray2Tests.cu.
+
+## Review 2026-06-12 (linux-gfx90a, reviewer)
+
+review-passed. Read-only review of the moat-port branch (HEAD 83ee5063 vs base
+5b786fee61) with the /pr-review skill, ROCm-fault-class aware. No blocking
+problems found; no changes requested.
+
+Non-blocking observation (not a defect, recorded for completeness): under
+`#if defined(__HIP__) || defined(__CUDA_ARCH__)` the CUDAStdVector device
+`operator[]` declaration (CUDAStdVector.hpp) and definition
+(CUDAStdVector-Impl.hpp) gain an explicit `__device__` that the base lacked
+(base was unannotated, body calls `__device__ At`). This is a strict
+generalization: the block is only visible in nvcc's device pass, so it makes
+the existing device-context-only function explicit rather than changing CUDA
+numerics or runtime behavior. Acceptable under the additive-and-guarded
+"strict generalization" clause; flagged only so a future CUDA-path diff review
+knows it is intentional.
+
+Verified: Strategy A correct for a pure-CMake project; single compat header
+(cuda_to_hip.h) is a no-op on NVIDIA (guarded by CUBBYFLOW_USE_CUDA && __HIP__,
+and CUBBYFLOW_USE_CUDA is defined on both backends). CUDA path preserved
+byte-identical via `#elif defined(__CUDA_ARCH__)` / `#else` in CUDAArrayBase.hpp
+and the StdVector headers. No fault-class hazards: no warp intrinsics, no
+hardcoded 32/warpSize, no atomics, no __shared__, no textures/surfaces, no
+streams/events -- kernels are warp-size-agnostic 1D decomposition, so wave64 is
+safe and a future wave32 follower needs no per-arch delta. No kernel body logic
+changed (only attribute/include edits plus one test `static_cast<void>`).
+`.cu` marked LANGUAGE HIP (not renamed); CUDATests main.cpp stays host C++
+(touches no device types). Build gates HIP behind USE_HIP (default OFF),
+enable_language(HIP), arch default gfx90a not hardcoded over
+-DCMAKE_HIP_ARCHITECTURES. THRUST_DEVICE_SYSTEM=5 pins rocThrust HIP backend;
+__CUDACC__ correctly NOT defined. __align__ is provided by HIP runtime header.
+Commit hygiene clean: `[ROCm]` title 56 chars, names Claude, Test Plan present,
+no noreply trailer, jeffdaily/amd.com author, no MOAT jargon in the diff, no
+AMD-internal account references. GPU validation already recorded (CUDATests
+35/35, UnitTests 722/722, WCSPH end-to-end) -- the validator stage re-runs it.
