@@ -7,17 +7,17 @@
   "priority": 6.626,
   "ext_type": "cmake",
   "adopted_at": "2026-05-29T23:30:03Z",
-  "updated_at": "2026-06-04T23:57:20Z",
-  "head_sha": "ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52",
+  "updated_at": "2026-06-12T14:21:16Z",
+  "head_sha": "014a2179c29f2c0437898a8ded09f57501eb9fb7",
   "platforms": {
     "linux-gfx90a": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52",
+      "validated_sha": "014a2179c29f2c0437898a8ded09f57501eb9fb7",
       "started_at": "2026-05-31T00:16:51Z",
-      "completed_at": "2026-06-04T21:41:45Z",
-      "updated_at": "2026-06-04T21:41:45Z",
+      "completed_at": "2026-06-12T14:19:28Z",
+      "updated_at": "2026-06-12T14:21:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -31,16 +31,22 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "366869b8f32955852553f1a0a1142d1b43bfe18c",
+        "method": "source-class",
+        "detail": "doc/comment-only: configure header gains a #-comment --use-rocm worked example; cu-common.h/cu-device.h/cu-kernels.cu gain a copyright comment line. No compiled code changes; device objects identical.",
+        "at": "2026-06-12T14:19:28Z"
+      }
     },
     "linux-gfx1100": {
       "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52",
+      "validated_sha": "014a2179c29f2c0437898a8ded09f57501eb9fb7",
       "started_at": null,
-      "completed_at": "2026-06-04T23:57:20Z",
-      "updated_at": "2026-06-04T23:57:20Z",
+      "completed_at": "2026-06-12T14:19:28Z",
+      "updated_at": "2026-06-12T14:21:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -54,7 +60,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "validator"
+      "last_agent": "validator",
+      "carry_forward": {
+        "to": "366869b8f32955852553f1a0a1142d1b43bfe18c",
+        "method": "source-class",
+        "detail": "doc/comment-only: configure header gains a #-comment --use-rocm worked example; cu-common.h/cu-device.h/cu-kernels.cu gain a copyright comment line. No compiled code changes; device objects identical.",
+        "at": "2026-06-12T14:19:28Z"
+      }
     },
     "windows-gfx1101": {
       "state": "port-ready",

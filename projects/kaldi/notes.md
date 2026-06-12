@@ -570,3 +570,6 @@ Decisive gate -- cu-math-test BackpropLstmNonlinearity: PASSED (exit 0, both run
 The runtime warp size fix (ee7a71cb) is verified correct on gfx1100 wave32. No regression introduced by the functional change.
 
 Verdict: COMPLETED. validated_sha = ee7a71cb1a495c01dd7c0bc12ee7d559ad8e3a52.
+
+## PR-prep 2026-06-12
+Prepped for the upstream PR. Added a parallel `--use-rocm` worked example to the configure header (house-style, next to the `--use-cuda` example) and an AMD copyright/author line to the three cudamatrix files we extended (cu-common.h, cu-device.h, cu-kernels.cu). The doc/comment-only delta was carry-forward'd on both Linux arches (classifier flagged only `src/configure` as "unknown file type" since it is extension-less; the configure hunk is 100% `#`-comment lines). Squashed the three port commits into one tree-identical commit `014a2179` ([ROCm] Fix the HIP GPU build for ROCm 7 and a wave64 LSTM bug) and force-pushed jeffdaily/kaldi @ moat-port. squash-carry-forward carried linux-gfx90a + linux-gfx1100; Windows arches stay non-viable (POSIX-only ROCm configure path). PR-ready=True. Awaiting Jeff's approval to open the upstream PR (modernization framing: kaldi's existing ROCm/HIP backend, by AMD's sfantao 2022, had bitrotted vs ROCm 7).
