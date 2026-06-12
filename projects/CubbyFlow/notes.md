@@ -118,6 +118,59 @@ CMake: CMakeLists.txt, Sources/Core/CMakeLists.txt, Tests/CUDATests/CMakeLists.t
 Examples/CUDASPHSim/CMakeLists.txt, Builds/CMake/CompileOptions.cmake.
 Test cast: Tests/CUDATests/CUDAArray2Tests.cu.
 
+## Validation 2026-06-12 (linux-gfx90a, validator)
+
+Platform: linux-gfx90a (AMD Instinct MI250X, gfx90a). HIP_VISIBLE_DEVICES=0,1.
+Fork HEAD: 83ee5063a0 ([ROCm] Add AMD ROCm/HIP support for the CUDA SPH solvers).
+Source tree clean (no uncommitted tracked files).
+
+### Build
+
+```
+cd projects/CubbyFlow/src
+git submodule update --init --recursive
+cmake -B build -S . -DCMAKE_BUILD_TYPE=Release -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+cmake --build build -j$(nproc)
+```
+
+Build: PASS (all targets built cleanly, 100%).
+
+### GPU tests
+
+```
+./build/bin/CUDATests
+```
+
+Result: 35/35 test cases, 3168/3168 assertions PASS.
+
+```
+./build/bin/CUDASPHSim -f 5
+```
+
+Result: 5 frames written, 13824 particles, no crash (GPU end-to-end PASS).
+
+### CPU regression tests
+
+```
+./build/bin/UnitTests
+```
+
+Result: 722/722 PASS (no non-GPU regression).
+
+### CUDA no-regression gate
+
+Compiled the CUDA path (`USE_CUDA=ON`) with nvcc 12.8 from
+/opt/conda/envs/cuda-12.8 and host gcc 13, `-DCMAKE_CUDA_ARCHITECTURES=80`.
+Required adding `/opt/conda/envs/cuda-12.8/nvvm/bin` to PATH for `cicc`.
+Build: PASS (warnings only, no errors). No type aliases or deleted code caused
+CUDA regressions; the port's `#if defined(__HIP__)` guards are cleanly
+CUDA-inert.
+
+### Verdict: PASS -> completed
+
 ## Review 2026-06-12 (linux-gfx90a, reviewer)
 
 review-passed. Read-only review of the moat-port branch (HEAD 83ee5063 vs base
