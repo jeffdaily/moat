@@ -317,3 +317,33 @@ setup.py copies them into the hipify-generated hipraster/ dir.
   gfx1100 validation's psnr=11.30 @ iter10).
 
 ### State set: linux-gfx90a -> ported (unblocked). gfx1100 -> revalidate.
+
+---
+
+## Review 2026-06-12 (linux-gfx90a, reviewer)
+
+Reviewed moat-port fe88d6c vs upstream 253ac4f (read-only, no GPU/build). Verdict: review-passed. The wave64 collective rewrite is correct and contained; findings below are minor cleanup, none block validation. The validator runs the real gfx90a GPU tests next.
+
+### Verdict: review-passed (advance to validator)
+
+### Problems (cleanup before any upstream PR; none block gfx90a validation)
+
+1. Copyright header format and year wrong in six files. CLAUDE.md mandates `Copyright (c) <year> Advanced Micro Devices, Inc.` with year = port year (2026). setup.py:2, csrc/common/framework.h:2, csrc/common/common.h (added line), csrc/common/common.cpp:2, csrc/common/antialias.cu:2, csrc/common/interpolate.cu:2, csrc/common/rasterize.cu:2, csrc/common/texture_kernel.cu:2, csrc/torch/torch_texture.cpp:2, csrc/common/cudaraster/{CudaRaster.hpp,impl/Buffer.cpp,impl/RasterImpl.cpp,impl/RasterImpl_kernel.cu,impl/Defs.hpp}:2 all carry `Copyright (c) 2024, AMD ROCm port.` -- wrong format ("AMD ROCm port" is not the legal entity) and wrong year. cuda_compat.h:2 is the correct form (`2026, Advanced Micro Devices, Inc.`); make the rest match it. Fix in PR-prep.
+
+2. Unconditional edit to the CUDA path in csrc/common/cudaraster/impl/Util.inl:17-22. getLo/getHi/combineLoHi were rewritten from NVIDIA intrinsics (__double2loint/__double2hiint/__hiloint2double/__longlong_as_double) to portable shifts for BOTH backends, not guarded by USE_ROCM. Semantically identical and nvcc-equivalent, but it violates minimal-footprint / additive-and-guarded (bc-guidelines). This was flagged in the 2026-06-05 review and is still unfixed. Guard the portable bodies under `#if defined(__HIP_PLATFORM_AMD__) || defined(USE_ROCM)` and keep the original intrinsics in the `#else`. Carried over from commit cbf2e7f, not introduced by fe88d6c.
+
+3. Dead code: csrc/common/cuda_compat.h:429 __match_any_sync and its `#define __ballot_sync/__any_sync/__all_sync` shadow macros. The only HIP-path call site, BinRaster.inl:229, sits inside `#if __CUDA_ARCH__ >= 700`, which is never defined on hipcc, so the HIP __match_any_sync is never compiled-in there. The shadow ballot/any/all macros ARE load-bearing (used widely outside that guard), but __match_any_sync itself is unreachable on HIP. Either remove it or note why it is kept. Low priority.
+
+4. setup.py sets no PYTORCH_ROCM_ARCH / HIP_ARCHITECTURES and hardcodes no gfx arch (good -- relies on the env var / torch default, so followers need not edit it). No action; recorded so the validator knows the fat-binary arch comes from the build env, not the tree.
+
+### Verified correct (load-bearing, checked against the code)
+
+- Partial-active row scans (CoarseRaster stream-min lanes 0..15; BinRaster per-warp sum lanes 0..15; scan-8 lanes 0..7) are safe: crScanInclusiveAdd/Min use __shfl_up(.,d,32) which only references LOWER lanes, i.e. the active prefix; no inactive-lane shuffle read.
+- AABB OR-scan and tile-emit scan run on a fully convergent 32-lane warp (gated by __any_sync/__all_sync, inactive triangles neutralized via triIdx==-1 -> aabbMask=0), so the full-width shuffle is valid.
+- scan-8 exclusive-prefix readback s_scanTemp[0][(tileInBin>>5)+15] reads the zero-pad slot (s_scanTemp[.][0..31] zeroed at line 76), preserving the original exclusive-prefix semantics.
+- crRowBallot row extraction (__lane_id()>>5) and threadIdx.x-keyed lane masks are wave-size-agnostic: shift 0 and identical result on wave32, per-row 32-bit half on wave64.
+- __syncwarp -> no-op: executeROP winner-election and updateTileZMax rely on intra-row lockstep + volatile/atomic ordering (the pre-Volta warp-synchronous assumption), valid within a single 32-lane row on AMD; the depth test (test_depth.py) exercises this and passed on gfx90a.
+- Commit hygiene clean: both titles `[ROCm] ...` <= 72 chars, bodies mention Claude, Test Plan present, no noreply trailer, author Jeff Daily <jeff.daily@amd.com> (public), no MOAT jargon in the diff.
+
+### Cross-platform note
+fe88d6c is a functional edit to shared USE_ROCM code, so gfx1100 correctly sits at `revalidate` (validated_sha cbf2e7f remains a reachable ancestor). gfx1100 must re-confirm on its own GPU or via codeobj binary-equivalence; not this reviewer's job.
