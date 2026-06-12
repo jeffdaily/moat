@@ -1378,6 +1378,13 @@
     "note": "Mature AUTHORITATIVE merged upstream ROCm support. setup.py L19/L78-82 has the torch.version.hip build-time hipify path + USE_ROCM define + __HIP_NO_HALF_CONVERSIONS__ undef. csrc/cuda/utils.cuh is a USE_ROCM-guarded warp-shuffle shim (maskless __shfl_up/__shfl_down + at::Half overloads + warp_mask_t 64-bit). atomics.cuh + version.cpp ROCm-guarded. Merged PRs: #325 (ROCm org, enable_rocm, 2022-09) foundational; #411 (ashwinma/AMD, 2024-01) at::Half shfl; #498 (Looong01, 2025-08) ROCm 6.4.3+. Our own jeffdaily PR #493 was CLOSED (superseded). Maintained ROCm wheels: Looong01/pyg-rocm-build, latest 2026-04-21, ROCm up to 7.2.2, torch 2.11, py3.10-3.14. segment_coo/segment_csr warp reductions are wave-relative (TB<=32, contiguity-guarded, atomic flush) and wave64-correct as shipped. No unported fault class. Same posture as sibling mmcv + pytorch_cluster skips.",
     "reason": "already-supported"
   },
+  "rusty1s/pytorch_sparse": {
+    "decided": "2026-06-12T05:24:37Z",
+    "disposition": "skip",
+    "full_name": "rusty1s/pytorch_sparse",
+    "note": "",
+    "reason": "already-supported"
+  },
   "sahibzada-allahyar/obsidian-memory-transformer": {
     "decided": "2026-06-05T04:43:54Z",
     "disposition": "skip",
