@@ -64,3 +64,4 @@
 {"kind":"phase","ts":"2026-06-12T11:28:13Z","phase":"test","seconds":11.965,"exit":0,"cmd":"python3 B:/develop/moat/agent_space/run_ddn_final.py"}
 {"kind":"phase","ts":"2026-06-12T11:43:12Z","phase":"test","seconds":208.964,"exit":0,"cmd":"python3 B:/develop/moat/agent_space/run_ddn_final.py"}
 {"kind":"phase","ts":"2026-06-12T12:03:13Z","phase":"compile","seconds":0.045,"exit":0,"cmd":"echo windows-gfx1201 build completed in prior timeit run"}
+{"kind": "tokens", "ts": "2026-06-12T12:04:42Z", "tokens": 144326, "source": "validator (windows-gfx1201 first-validation)"}
