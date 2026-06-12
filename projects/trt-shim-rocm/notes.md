@@ -109,6 +109,36 @@ s.lengths().end())` calls lengths() twice, so begin()/end() index DIFFERENT
 temporary vectors -> garbage range -> std::length_error. Always bind the
 container to a local first.
 
+## Phase 1b: stock sampleOnnxMNIST runs (DONE)
+
+The UNMODIFIED NVIDIA sampleOnnxMNIST (TensorRT v10.7.0), built against the shim
+(linked as libnvinfer.so / libnvonnxparser.so), runs on gfx90a and prints
+`&&&& PASSED TensorRT.sample_onnx_mnist`, classifying the digit correctly. This
+exercises the real common/ helpers (buffers.h, safeCommon.h, timingCache, ...),
+whose CUDA-runtime calls resolve to HIP via include/compat. ctest: 3/3.
+
+What it took beyond 1a:
+- ONNX output-name extractor (src/backend.cpp PbReader): MIGraphX has no output
+  names, so a minimal protobuf walk recovers GraphProto.output[].name (field
+  7 -> 12 -> 1). The engine now reports the real names (Input3,
+  Plus214_Output_0) that the sample hardcodes and looks up buffers by.
+- CUDA-runtime->HIP compat headers (include/compat/cuda_runtime_api.h, cuda.h,
+  cuda_runtime.h, cuda_fp16.h): the executed runtime calls (malloc/free/memcpy,
+  streams, events, device queries) forward to HIP; CUDA graph-capture symbols
+  (used only by helper code the sample never calls) are stubbed with
+  CUDA-shaped signatures to avoid HIP graph-API signature coupling. The QNX/safe
+  path (cuda_runtime_api_safe_ex.h, cudaSafeEx*) is behind `#if IS_QNX_SAFE`,
+  undefined, so it is skipped.
+- Vendored the sample + common + utils unmodified; compiled logger.cpp,
+  timingCache.cpp, fileLock.cpp alongside the sample. `createInferRefitter_INTERNAL`
+  added as a null-returning stub (the sample's DEFINE_TRT_ENTRYPOINTS references
+  it even though refit is unused).
+- Real MNIST data: tools/gen_mnist_pgms.py picks the best-classified test image
+  per digit and writes the inverted PGM the sample expects (input = 1 - pgm/255).
+
+The common/ closure solved here (compat headers + utils sources) is the same one
+trtexec needs, so Phase 2 reuses it.
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
