@@ -36,3 +36,4 @@
 {"kind":"phase","ts":"2026-06-12T07:17:48Z","phase":"test","seconds":5.675,"exit":0,"cmd":"cargo build --release --features=bn254 (gate check)"}
 {"kind":"phase","ts":"2026-06-12T07:18:53Z","phase":"test","seconds":13.276,"exit":0,"cmd":"ntt-cuda cargo test --release --features=bls12_381"}
 {"kind":"session","ts":"2026-06-12T07:20:20Z","epoch":1781248820.308574714,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-12T07:21:19Z", "tokens": 56168, "source": "validator"}
