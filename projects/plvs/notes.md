@@ -272,3 +272,60 @@ RGB-D, 457/457 frames, clean shutdown). State is `ported` (pre-validator), so th
 re-run is the validator's job; nothing here blocks that. The EuRoC full-pipeline stereo run
 was not done (dataset mirror returned 0 bytes); libsgm correctness rests on the aloe test,
 which exercises the same sgm::StereoSGM kernels.
+
+## Validation 2026-06-12 (linux-gfx90a, validator): PASS
+
+GPU arch: gfx90a (MI250X GCD 3, HIP_VISIBLE_DEVICES=3). ROCm 7.2.1. Fork HEAD 05eed6c.
+
+### Full dependency rebuild (all from scratch, container restarted since porter session)
+
+- Pangolin: cloned stevenlovegrove/Pangolin@fe57db532, applied Thirdparty/pangolin.patch, built to Thirdparty/Pangolin/build.
+- Bundled CPU libs rebuilt: DBoW2, g2o, line_descriptor, volumetric_mapping, open_chisel, chisel_server, voxblox, voxblox_server.
+- libsgm HIP: built to Thirdparty/libsgm/lib/libsgm.a (gfx90a, WARP_SIZE=32 path).
+- libelas-gpu HIP: built to Thirdparty/libelas-gpu/lib/liblibelas_gpu.a.
+- OpenCV HIP dependency: used existing opencv_contrib build tree at projects/opencv_contrib/build (all cuda modules present including cudabgsegm). Wrapper config at agent_space/opencv-hip-config/ neutralizes the CUDA-toolkit find block in OpenCVConfig.cmake.
+- plvs library: cmake -DWITH_CUDA=OFF -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/amdclang++ -DWITH_LIBSGM=ON -DWITH_LIBELAS=ON -DWITH_G2O_NEW=OFF -DWITH_FASTFUSION=OFF -DBUILD_WITH_MARCH_NATIVE=OFF -DCPP_STANDARD_VERSION=17 -DOPENCV_VERSION=4 -DOpenCV_DIR=.../opencv-hip-config -DProtobuf_PROTOC_EXECUTABLE=/tmp/protoc-3.21/bin/protoc -> lib/libplvs.so (linked against libamdhip64.so.7). Build: ~44s.
+
+### Test 1: libsgm stereo validation (wave64 correctness gate)
+
+Command:
+```
+HIP_VISIBLE_DEVICES=3 ./sgm_aloe \
+  projects/opencv_contrib/src-core/samples/data/aloeL.jpg \
+  projects/opencv_contrib/src-core/samples/data/aloeR.jpg
+```
+Result (disp_size=128, 1282x1110 aloe stereo pair):
+- Coverage:  0.841  (1197217/1423020 pixels GPU-valid) -- PASS (>= 0.80)
+- Agreement: 0.960  (GPU vs CPU StereoSGBM diff < 2px) -- PASS (>= 0.95)
+- Mean abs diff: 0.96 px
+- Bit-identical across two runs. RESULT: PASS
+
+Confirms WARP_SIZE=32 fix (commit 05eed6c) is correct on gfx90a wave64.
+
+### Test 2: Mono TUM RGB-D SLAM (GPU ORB/FAST feature path)
+
+Dataset: TUM freiburg1_xyz (partial download 287MB/448MB, 633 RGB frames extracted, 640x480).
+rgb.txt generated from extracted frames. 1 corrupt PNG (truncated download) dropped at runtime.
+
+Command:
+```
+export HIP_VISIBLE_DEVICES=3
+./mono_tum_headless \
+  Vocabulary/ORBvoc.txt \
+  Examples/Monocular/TUM1.yaml \
+  /tmp/tum_xyz/rgbd_dataset_freiburg1_xyz
+```
+Result: 632/633 frames processed, map initialized (~280-340 points run-to-run, normal SLAM nondeterminism), tracking reaches OK by frame ~50 and holds through frame 630, clean Shutdown, NO GPU fault/NaN/crash, exit 0. PASS.
+
+Second run: 632/633 frames, different init point count (279 vs 337) -- normal multi-thread SLAM non-determinism, not a GPU correctness issue. Clean exit 0. PASS.
+
+### CUDA no-regression gate (lead platform)
+
+- libsgm: all 10 CUDA sources compile with nvcc 12.8 + -arch=sm_80. RC=0 for all.
+- plvs Allocator_gpu.cu, Cuda.cu: RC=0.
+- plvs Orb_gpu.cu, Fast_gpu.cu: pre-existing failures (textureReference deprecated in CUDA 12.x; reduce<32> tuple deduction with CUDA 12.8 Thrust against system OpenCV 4.6). Verified IDENTICAL errors on upstream base 2ecb8b1 -- port introduces no new CUDA failures.
+- CUDA gate: PASS (pre-existing failures are not port regressions).
+
+### Summary
+
+All GPU tests pass on real gfx90a (MI250X). Fork HEAD 05eed6c. State -> completed.
