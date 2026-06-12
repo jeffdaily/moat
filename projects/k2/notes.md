@@ -939,6 +939,86 @@ known flake). Transition: revalidate -> completed. validated_sha = e44acdd.
 Delta-port: Windows torch-link fix committed to fork as e44acdd (CMake 4.x
 imported-target expansion change in HIP Ninja linker rules).
 
+## Validation 2026-06-11 (windows-gfx1101 revalidation)
+
+Platform: windows-gfx1101 (AMD Radeon PRO V710, gfx1101 / RDNA3, wave32). Revalidation at head efb407d.
+Fork: jeffdaily/k2 @ moat-port, HEAD efb407d8338c626f54386c730fc5cba817a3b3de (squashed single commit).
+GPU: HIP_VISIBLE_DEVICES=0 (AMD Radeon PRO V710, gfx1101 -- confirmed via hipInfo.exe).
+
+### Classification result
+
+validated_sha b2c0962 is no longer reachable in the repo (branch was squashed). classify returned
+`class=mixed arch_independent=False` due to missing old sha, so binary-equiv carry-forward was not
+possible. Proceeded to full GPU revalidation at efb407d.
+
+The relevant Windows-side change in this range: the c10 device-namespace key was changed from `_WIN32`
+to `!TORCH_HIPIFY_V2`. On Windows TheRock torch 2.9 the hipify probe returns 0, so `!TORCH_HIPIFY_V2`
+is true (c10::hip, unchanged behavior). Behavior-preserving on Windows; full revalidation confirms this.
+
+### Build command
+
+```
+cmake -B build -G Ninja \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1101 \
+  -DK2_WITH_HIP=ON \
+  -DCMAKE_C_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang.exe \
+  -DCMAKE_CXX_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DHIP_COMPILER=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_STANDARD=20 \
+  -DK2_COMPILER_SUPPORTS_CXX20=1 \
+  "-DCMAKE_PREFIX_PATH=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/torch/share/cmake;B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel/lib/cmake" \
+  -DK2_LIBHIPCXX_INCLUDE_DIR=B:/develop/moat/_deps/libhipcxx/include \
+  -DBUILD_SHARED_LIBS=ON -DCMAKE_BUILD_TYPE=Release -DK2_USE_PYTORCH=ON \
+  -DK2_ENABLE_TESTS=ON -DK2_ENABLE_BENCHMARK=OFF \
+  -DPYTHON_EXECUTABLE=B:/develop/TheRock/external-builds/pytorch/.venv/Scripts/python.exe
+cmake --build build --config Release -- -j64
+```
+
+Configure output: "torch hipify generation v2 (masquerading c10::cuda): 0" -- hipify v1 confirmed,
+c10::hip selected (unchanged behavior vs prior gfx1101 validation).
+
+### Test commands
+
+```
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_gtest_gfx1101.py
+HIP_VISIBLE_DEVICES=0 python B:/develop/moat/agent_space/run_k2_pytest_gfx1101_v2.py
+```
+
+### C++ gtest results
+
+30/30 PASS (0 fail). All executables ran to completion with exit 0.
+Individual test counts:
+cu_algorithms_test (2), cu_array_of_ragged_test (1), cu_array_ops_test (24),
+cu_array_test (4), cu_connect_test (5), cu_dtype_test (1), cu_fsa_algo_test (35),
+cu_fsa_test (4), cu_fsa_utils_test (33), cu_hash_test (2), cu_host_shim_test (3),
+cu_intersect_test (9), cu_log_test (3), cu_macros_test (2), cu_math_test (1),
+cu_nbest_test (8), cu_nvtx_test (1), cu_pinned_context_test (2),
+cu_ragged_shape_test (7), cu_ragged_test (62), cu_ragged_utils_test (8),
+cu_rand_test (5), cu_reverse_test (5), cu_rm_epsilon_test (8),
+cu_rnnt_decode_test (2), cu_tensor_ops_test (5), cu_tensor_test (2),
+cu_thread_pool_test (2), cu_top_sort_test (5), cu_utils_test (4).
+
+Note: C++ test exes run the CPU path (TheRock Windows torch CUDA hooks limitation). GPU correctness
+exercised by the Python test suite.
+
+### Python GPU test results
+
+227 passed, 7 failed (234 total). All 7 failures are pre-existing artifacts (identical to prior gfx1101 validation):
+
+- ragged_test.py: test_pickle_ragged -- torch 2.6+ weights_only=True refuses _k2.ragged.RaggedTensor. Device-independent.
+- ragged_tensor_test.py: test_setstate_2axes, test_setstate_3axes -- same torch 2.6 pickle artifact.
+- ragged_ops_test.py: test_normalize_scores_use_log_non_zero_stride (float32 only) -- ~1e-6 catastrophic-cancellation divergence from hipCUB summation order; float64 passes exactly.
+- rnnt_loss_test.py: test_rnnt_loss_basic, test_rnnt_loss_gradient, test_rnnt_loss_random -- torchaudio::rnnt_loss has no CUDA backend on this Windows ROCm torchaudio build (NotImplementedError). k2's own rnnt functions all pass on GPU.
+
+GPU confirmed: AMD Radeon PRO V710 (gfx1101, RDNA3). torch.cuda.is_available()=True.
+
+### Verdict
+
+PASS. 30/30 C++ gtests. Python slice 227/234 passed; 7 failures are all pre-existing artifacts
+(same categories as prior gfx1101 validation at 7531e5b). Transition: revalidate -> completed.
+validated_sha = efb407d8338c626f54386c730fc5cba817a3b3de. Full GPU revalidation (old sha squashed,
+binary-equiv not possible).
+
 ## Gemini bot review on PR #1353 -- declined, none blocking 2026-06-11
 gemini-code-assist[bot] (AI reviewer, being sunset Jul 2026; no human review yet) left 3 comments. All declined for this enablement PR, replies posted (r3399477355/481/563 + issuecomment-4685532998):
 - segmented_sort (HIGH): host SegmentsToHost sync + per-segment thrust::stable_sort_by_key loop is correct+validated; global stable_sort_by_key w/ composite (row_id,key) comparator is the right optimization but a non-trivial rewrite -> deferred (deferred.py: k2-segmented-sort-global), benchmark separately.
