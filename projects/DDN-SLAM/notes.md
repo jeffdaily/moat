@@ -547,3 +547,100 @@ HIP_VISIBLE_DEVICES=1 agent_space/ddnslam-gfx1100/build/rgbd_replica \
 - Total wall time: ~9 minutes for 2000 frames + 4919 NeRF iterations
 
 Verdict: GPU-validated PASS on linux-gfx1100. State -> completed. validated_sha = 9a91f87.
+
+## Validation 2026-06-12 -- windows-gfx1201 (RX 9070 XT)
+
+Platform: Windows 10.0.26200, TheRock HIP 7.14, gfx1201 RX 9070 XT (HIP_VISIBLE_DEVICES=1).
+HEAD at time of validation: 20b0bbe (on top of 9a91f87 which linux platforms validated).
+Additional commits: 7eecb52 (Windows MSVC-ABI build support) + 20b0bbe (submodule bumps).
+
+### Windows-specific build issues resolved
+
+This platform required the all-clang toolchain (clang-cl targeting MSVC ABI) since
+the Visual Studio generator does not support HIP. Key fixes:
+
+1. vcpkg g2o DLL ABI: the vcpkg DLL exports most g2o symbols but not trivially-copyable
+   methods that MSVC inlines (e.g. SE3Quat copy ctor). Defined G2O_SHARED_LIBS=0 via a
+   cmake-generated g2o/config.h so clang-cl generates inline copies instead of dllimport
+   thunks. A stub TU (src/g2o_win_stubs.cpp) provides G2OBatchStatistics::_globalStats
+   (the inline accessor needs this as a direct data symbol, not the DLL's __imp_ version).
+
+2. DBoW2 dllimport mismatch: DBoW2 built as STATIC on Windows to avoid direct-call vs
+   dllimport conflicts when ORB_SLAM3 calls DBoW2 methods without dllimport decoration.
+
+3. /FORCE:UNRESOLVED: boost::archive_exception vbase destructor is referenced in EH
+   cleanup tables but is never actually called (no archive load/save in the headless path).
+
+4. Windows POSIX headers: guarded <unistd.h> with #ifndef _WIN32 in four headers;
+   replaced POSIX opendir/readdir with std::filesystem::directory_iterator in rgbd_replica.cu.
+
+5. ShlObj.h conflict: replaced with forward declaration of SHCreateDirectoryW to avoid
+   the ole2.h / combaseapi.h FAR macro conflict during HIP device compilation.
+
+6. fma(__half) ambiguity: added host-side overload in common.h to resolve MSVC's three-way
+   fma(float/double/long double) ambiguity when called with __half arguments.
+
+7. std::min initializer_list: replaced with nested fminf() calls in triangle.cuh because
+   MSVC's std::min with initializer_list is host-only and errors in device compilation.
+
+### Build commands (windows-gfx1201)
+
+```bat
+@rem Set up TheRock toolchain and vcpkg
+set ROCM_SDK=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_devel
+set ROCM_LIB=B:\develop\TheRock\external-builds\pytorch\.venv\Lib\site-packages\_rocm_sdk_libraries
+
+@rem Initialize submodules
+git submodule update --init --depth 1 Thirdparty/instant-ngp-kf Thirdparty/g2o Thirdparty/Sophus
+git -C Thirdparty/instant-ngp-kf submodule update --init --depth 1 dependencies/tiny-cuda-nn
+
+@rem Configure
+cmake -S projects/DDN-SLAM/src -B projects/DDN-SLAM/build_win ^
+  -G Ninja ^
+  -DCMAKE_C_COMPILER=%ROCM_SDK%\lib\llvm\bin\clang.exe ^
+  -DCMAKE_CXX_COMPILER=%ROCM_SDK%\lib\llvm\bin\clang++.exe ^
+  -DCMAKE_HIP_COMPILER=%ROCM_SDK%\lib\llvm\bin\clang++.exe ^
+  -DCMAKE_PREFIX_PATH="%ROCM_SDK%;%ROCM_LIB%" ^
+  -DCMAKE_TOOLCHAIN_FILE=B:\vcpkg\scripts\buildsystems\vcpkg.cmake ^
+  -DVCPKG_TARGET_TRIPLET=x64-windows ^
+  -DUSE_HIP=ON -DUSE_TENSORRT=OFF -DORBEEZ_BUILD_WITH_GUI=OFF ^
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 ^
+  -DCMAKE_BUILD_TYPE=Release
+
+@rem Build
+ninja -C projects/DDN-SLAM/build_win -j8 rgbd_replica
+```
+
+### Runtime setup (Windows DLL path)
+
+Copy these DLLs alongside rgbd_replica.exe in build_win/:
+- amdhip64_7.dll (from TheRock _rocm_sdk_devel/bin/)
+- amd_comgr.dll, hipblas.dll, rocblas.dll, libhipblaslt.dll
+- rocblas/library/ (260 files from _rocm_sdk_libraries/bin/rocblas/library/)
+
+Run via cmd.exe with PATH including TheRock/bin and build_win/, and
+ROCBLAS_TENSILE_LIBPATH pointing to _rocm_sdk_libraries/bin/rocblas/library/.
+
+### Test command
+
+```bat
+set HIP_VISIBLE_DEVICES=1
+set ROCBLAS_TENSILE_LIBPATH=%ROCM_LIB%\bin\rocblas\library
+cd projects/DDN-SLAM/src
+build_win\rgbd_replica.exe Vocabulary\ORBvoc.txt Examples\RGB-D\office0.yaml ^
+  agent_space\replica_dl\Replica\Replica\office0
+```
+
+### Results (PASS)
+
+- Images in sequence: 2000
+- ORB-SLAM map initialized: "New Map created with 1486 points"
+- NeRF training: ~2382 iterations, loss decreasing throughout
+  - iteration=1: 0.0407, iteration=100: ~0.001, final: ~0.001
+- Camera trajectory saved: evaluation/RGBD_Replica_..._CameraTrajectory.txt
+- Keyframe trajectory saved: evaluation/RGBD_Replica_..._KeyFrameTrajectory.txt
+- NeRF snapshot: evaluation/RGBD_Replica_....msgpack saved
+- No GPU fault, no crash, exit code 0
+- Wall time: ~210 seconds for 2000 frames + NeRF iterations
+
+Verdict: GPU-validated PASS on windows-gfx1201. State -> completed. validated_sha = 20b0bbe.
