@@ -7,7 +7,7 @@
   "priority": 0.0,
   "ext_type": "unknown",
   "adopted_at": "2026-06-04T23:23:31Z",
-  "updated_at": "2026-06-12T13:42:16Z",
+  "updated_at": "2026-06-12T14:30:16Z",
   "head_sha": "cd4b395",
   "depends_on": [],
   "platforms": {
@@ -80,13 +80,13 @@
       }
     },
     "linux-gfx90a": {
-      "state": "revalidate",
+      "state": "completed",
       "blocked": false,
       "blocked_reason": null,
-      "validated_sha": "0803c7c",
+      "validated_sha": "cd4b395",
       "started_at": "2026-06-04T23:45:54Z",
-      "completed_at": "2026-06-12T06:34:01Z",
-      "updated_at": "2026-06-12T13:42:04Z",
+      "completed_at": "2026-06-12T14:30:16Z",
+      "updated_at": "2026-06-12T14:30:16Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,
@@ -100,7 +100,13 @@
         "first_session_at": null,
         "last_session_at": null
       },
-      "last_agent": "reviewer"
+      "last_agent": "reviewer",
+      "carry_forward": {
+        "to": "cd4b395",
+        "method": "binary-equiv",
+        "detail": "GPU object mcx_core.cu.o byte-identical between 0803c7c and cd4b395; delta is WIN32-only CMake guards and fopen mode change (behavior-identical on POSIX)",
+        "at": "2026-06-12T14:30:16Z"
+      }
     },
     "windows-gfx1151": {
       "state": "port-ready",
