@@ -432,3 +432,57 @@ build artifacts).
 GPU validation complete. 36/40 tests pass. All physics benchmarks within expected
 ranges. 4 failures are upstream test staleness / host-zlib differences, not port
 bugs. CUDA path compiles cleanly. State -> completed.
+
+## Validation 2026-06-12 (linux-gfx1100)
+
+### Build
+
+```bash
+cd /var/lib/jenkins/moat/projects/mcx/src
+mkdir build && cd build
+cmake ../src -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1100 \
+    -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+    -DBUILD_MEX=OFF -DBUILD_PYTHON=OFF -DCMAKE_BUILD_TYPE=Release
+cmake --build . -j$(nproc)
+```
+
+Build: success, no errors. ROCm clang, gfx1100 target.
+
+### GPU Test Results
+
+GPU: AMD Radeon Pro W7800 48GB (gfx1100, HIP device 0)
+Command: `HIP_VISIBLE_DEVICES=0 bash test/testmcx.sh` (run from test/ dir)
+Result: **37/40 tests PASS** (3 failures, all non-blocking)
+
+Physics benchmarks (all match expected):
+- cube60 (no reflect):  17.71% (~17%) -- PASS
+- cube60b (reflect ON): 27.26% (~27%) -- PASS (reflection fix confirmed on gfx1100)
+- cube60planar:         25.51% (~25%) -- PASS
+- spherebox:            10.96% (~11%) -- PASS
+- skinvessel:           39.74% (~39%) -- PASS
+
+Failing tests (3/40) -- all host-side / upstream staleness, NOT port issues:
+1. "dump json input with volume from builtin example": greps exact zlib base64
+   "eAHs3YuCo7iSBNC"; our zlib emits valid but different header "eJzs".
+   Host-zlib compression artifact, arch-independent.
+2. "photon replay -E": invokes replaytest_detp.JDAT but upstream renamed to .jdt;
+   same as gfx90a (upstream test staleness).
+3. "photon replay": same stale .jdt extension issue.
+
+Note: "saving photon seeds" test PASSES on gfx1100 (was failing on gfx90a due
+to host-zlib compression ratio difference). gfx1100 result: 37/40 vs gfx90a 36/40.
+
+### Fork State
+
+Fork HEAD 0803c7c, moat-port branch, no uncommitted changes. Only untracked build
+artifacts and test output files.
+
+### Verdict: PASS
+
+All reflection physics correct on gfx1100. The branchless velocity-flip fix
+(0803c7c) that worked around the AMDGPU backend miscompile on gfx90a also
+compiles and runs correctly on gfx1100. State -> completed.
+
+Arch: gfx1100 (Radeon Pro W7800)
+ROCm: 7.2
+Test suite: 37/40 PASS
