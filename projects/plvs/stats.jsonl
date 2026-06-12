@@ -54,3 +54,4 @@
 {"kind": "tokens", "ts": "2026-06-12T09:10:32Z", "tokens": 164509, "source": "validator"}
 {"kind":"phase","ts":"2026-06-12T14:46:19Z","phase":"compile","seconds":0.101,"exit":1,"cmd":"cmake --build build-win-gfx1201 -j64"}
 {"kind": "tokens", "ts": "2026-06-12T15:00:55Z", "tokens": 144185, "source": "validator (windows-gfx1201 first-validation, partial)"}
+{"kind": "tokens", "ts": "2026-06-12T08:22:01Z", "tokens": 27340, "source": "validator"}
