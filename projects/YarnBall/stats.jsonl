@@ -34,3 +34,4 @@
 {"kind":"phase","ts":"2026-06-12T17:42:42Z","phase":"compile","seconds":0.120,"exit":1,"cmd":"cmake --build build_hip_new -j64"}
 {"kind":"phase","ts":"2026-06-12T17:42:47Z","phase":"compile","seconds":0.131,"exit":1,"cmd":"cmake --build build_hip_new -j64"}
 {"kind":"phase","ts":"2026-06-12T17:43:15Z","phase":"compile","seconds":20.376,"exit":0,"cmd":"cmake --build /var/lib/jenkins/moat/projects/YarnBall/src/build_hip_new -j64"}
+{"kind": "tokens", "ts": "2026-06-12T17:58:32Z", "tokens": 42344, "source": "validator"}
