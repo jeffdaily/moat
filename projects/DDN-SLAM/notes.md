@@ -396,3 +396,71 @@ Non-blocking notes (do NOT gate the PR; carry forward):
 Verdict: review-passed. The committed port is correct and self-consistent on all three
 forks; no changes requested. Validator confirms the real-GPU rgbd_replica run next (the
 notes record a prior PASS on Replica office0; a fresh validator run is the gate).
+
+## Validation 2026-06-12 (linux-gfx90a, validator)
+
+Platform: linux-gfx90a (MI250X gfx90a), ROCm 7.2.1, HIP_VISIBLE_DEVICES=0.
+GPU arch: gfx90a. Fork branch: jeffdaily/DDN-SLAM @ moat-port. Validated sha: 9a91f87.
+
+### Two build bugs found and fixed
+
+**Bug 1 (DDN-SLAM, source-file change, committed to fork):**
+The DDN-SLAM compat header `include/cuda_to_hip.h` (force-included on ORB-SLAM3 HIP TUs)
+was a standalone header with host-only aliases. The ORB-SLAM3 `.cu` files include
+`common_device.cuh` transitively (Map.h->testbed.h->nerf_loader.h->bounding_box.cuh->
+common_device.cuh), which uses `atomicAddHalfEmulated` (a device function defined in the
+instant-ngp-kf compat header). Due to CMake subdirectory scoping, the instant-ngp-kf
+`CMAKE_HIP_FLAGS -include` only applies within that subdir; the parent's ORB-SLAM3 TUs
+only saw the DDN-SLAM compat header and got "use of undeclared identifier
+'atomicAddHalfEmulated'" build errors. Fix: replace the standalone defines in the DDN-SLAM
+compat header with a single #include of "neural-graphics-primitives/cuda_to_hip.h".
+Committed as fork commit 9a91f87 and pushed to jeffdaily/DDN-SLAM@moat-port.
+
+**Bug 2 (tiny-rocm-nn/cublas_matmul.h, local untracked apply):**
+The instant-ngp-kf tree in this container was a flat tarball extract from an earlier
+session predating the fc_multiply fix (tiny-rocm-nn commit 28350e6). The COMMITTED fork
+chain (DDN-SLAM 9a91f87 -> instant-ngp-kf d44dcaf -> tiny-rocm-nn 28350e6) is correct
+and already has the fix. The local untracked `Thirdparty/instant-ngp-kf/dependencies/
+tiny-cuda-nn/include/tiny-cuda-nn/cublas_matmul.h` needed the missing overload applied
+manually. The SIGSEGV was 88,000+ frames deep in `fc_multiply` -- confirmed infinite
+recursion (as documented in the notes from the reconstruction session). Applied the fix
+locally (not a fork change -- the fork already has it via the submodule chain).
+
+### Build commands
+```
+cmake -S projects/DDN-SLAM/src -B projects/DDN-SLAM/build_hip \
+  -DUSE_HIP=ON -DUSE_TENSORRT=OFF -DCMAKE_HIP_ARCHITECTURES=gfx90a \
+  -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc \
+  -DORBEEZ_BUILD_WITH_GUI=OFF \
+  -DPangolin_DIR=/var/lib/jenkins/moat/projects/ElasticFusion/src/third-party/Pangolin/build/src \
+  -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+cmake --build projects/DDN-SLAM/build_hip --target rgbd_replica -j 16
+```
+
+### Dataset setup
+Replica office0 fetched from https://cvg-data.inf.ethz.ch/nice-slam/data/Replica.zip
+via selective HTTP range download (central-directory-based extraction of only the
+office0 scene, 1.44 GB). Extracted to agent_space/replica_dl/office0/{frame,depth,
+results,traj.txt} with separate frame/ and depth/ directories (2000 files each).
+
+### GPU test command
+```
+cd projects/DDN-SLAM/src
+HIP_VISIBLE_DEVICES=0 build_hip/rgbd_replica Vocabulary/ORBvoc.txt \
+  Examples/RGB-D/office0.yaml agent_space/replica_dl/office0
+```
+
+### Results (PASS)
+- ORB-SLAM map initialized: "New Map created with 1486 points"
+- NeRF training: 5812 iterations, loss range 0.030--0.044 (finite, no NaN)
+  - iteration=1: 0.0398, iteration=100: 0.0303, iteration=1000: 0.0444, iteration=5812: 0.0440
+- Camera trajectory: KeyFrameTrajectory.txt saved, 291 keyframes
+- No GPU fault, no crash, exit code 0
+- Tracking time: median 0.236s/frame, mean 0.205s/frame
+- NeRF snapshot: RGBD_Replica_office0.msgpack saved
+- Total wall time: ~8 minutes for 2000 frames + 5812 NeRF iterations
+
+CUDA no-regression gate: skipped (lead platform only; this IS the lead gfx90a). N/A.
+
+Verdict: GPU-validated PASS on linux-gfx90a. State -> completed. validated_sha = 9a91f87.
