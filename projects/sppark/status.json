@@ -7,7 +7,7 @@
   "priority": 4.666,
   "ext_type": "unknown",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-12T09:04:43Z",
+  "updated_at": "2026-06-12T15:19:45Z",
   "head_sha": "00cb1a7",
   "platforms": {
     "linux-gfx90a": {
@@ -92,12 +92,12 @@
     },
     "windows-gfx1201": {
       "state": "validation-failed",
-      "blocked": false,
-      "blocked_reason": null,
+      "blocked": true,
+      "blocked_reason": "MSM (Pippenger) requires cooperative kernel launch, which gfx1201 on TheRock ROCm 7.14 (Windows) does not support: hipDeviceProp_t.cooperativeLaunch=0 and hipLaunchCooperativeKernel returns hipErrorLaunchFailure (719) even for a 1x1 grid. NTT (7/7 fields) and the bn254 build-time gate PASS on gfx1201; only MSM is affected. This is a runtime/hardware capability gap (TheRock-7.14-Windows-gfx1201), not a port defect: gfx90a and gfx1100 report cooperativeLaunch=1 and pass MSM on Linux ROCm 7.2.1. The redundant Windows tier will be satisfied by validating on gfx1101 (RDNA3, supports cooperative launch). A non-cooperative MSM fallback is registered as deferred work sppark-msm-noncoop-fallback.",
       "validated_sha": null,
       "started_at": null,
       "completed_at": null,
-      "updated_at": "2026-06-12T09:04:43Z",
+      "updated_at": "2026-06-12T15:19:45Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

@@ -692,3 +692,35 @@ by hipLaunchCooperativeKernel returning error 719 on gfx1201 (TheRock ROCm 7.14 
 cooperativeLaunch=0 in device properties). This is a platform limitation, not a port
 defect. The all_gpus.cpp fix (commit 00cb1a7) is required for any GPU tests to run on
 gfx1201 and has been pushed to the fork.
+
+## Porter assessment of the gfx1201 MSM failure (2026-06-12, porter)
+
+Assessed whether any in-scope, behavior-preserving port-side fix can run MSM on
+gfx1201 without cooperative launch. Conclusion: none. Marked windows-gfx1201
+blocked.
+
+Re-confirmed the hardware reality on this host:
+`HIP_VISIBLE_DEVICES=1 hipInfo` -> device 0 gcnArchName=gfx1201,
+cooperativeLaunch=0. So the masked device is the RX 9070 XT and it reports no
+cooperative-launch support, matching the documented limitation.
+
+Why there is no port-side fix:
+- The failure is in the runtime LAUNCH primitive (hipLaunchCooperativeKernel
+  returns 719 even for a 1x1 grid), not in any kernel body. No edit to the
+  kernels changes that.
+- MSM (Pippenger) fundamentally relies on grid-wide cooperative synchronization:
+  its multi-phase sort/accumulate kernels use cooperative_groups
+  this_grid().sync() (__ockl_grid_sync) for grid-wide barriers between phases.
+  Removing that dependency means reimplementing MSM as separate non-cooperative
+  launches with host-side / global-memory inter-phase barriers -- a substantial
+  divergence from upstream and out of scope here. Already registered as deferred
+  work sppark-msm-noncoop-fallback.
+- The port code is correct: gfx90a (CDNA) and gfx1100 (RDNA3) on Linux ROCm
+  7.2.1 report cooperativeLaunch=1 and pass MSM bls12_381/bls12_377. The gap is
+  specific to TheRock ROCm 7.14 on Windows gfx1201 (RDNA4).
+
+No source change made. The redundant Windows tier (gfx1101/gfx1201/gfx1151) is
+satisfied by one Windows arch completing; gfx1101 (RDNA3, supports cooperative
+launch) is the intended path and is validated in a separate stage. The
+windows-gfx1201 NTT 7/7 + bn254-gate PASS results above stand as a partial
+Windows-ROCm proof.
