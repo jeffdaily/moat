@@ -593,3 +593,31 @@ not port defects. State -> completed at cd4b395.
 Arch: gfx1201 (RX 9070 XT, RDNA4)
 ROCm: TheRock 7.14.0a20260604
 Test suite: 36/40 PASS
+
+## Revalidation 2026-06-12 (linux-gfx1100)
+
+Revalidate triggered by HEAD advancing 0803c7c -> cd4b395 (Windows-only build
+fixes committed on the fork).
+
+Delta (3 files changed):
+- src/CMakeLists.txt: WIN32-guarded -fPIC removal and -DWIN32 addition; else
+  branch on Linux is identical to 0803c7c.
+- src/zmat/CMakeLists.txt: WIN32-guarded -fPIC; else branch on Linux identical.
+- src/mcx_utils.c: fopen("rt" -> "rb") in mcx_loadseedjdat; text/binary mode
+  distinction is POSIX-irrelevant (no effect on Linux).
+
+Binary-equivalence check (gfx1100):
+
+Built both shas for gfx1100 into separate dirs, compared GPU object:
+
+  python3 utils/codeobj_diff.py \
+    agent_space/mcx-gfx1100-old/CMakeFiles/mcx_gpu.dir/mcx_core.cu.o \
+    agent_space/mcx-gfx1100-new/CMakeFiles/mcx_gpu.dir/mcx_core.cu.o
+
+Result: verdict=identical (exported symbols + device ISA identical)
+
+GPU code is byte-identical on gfx1100. Carry-forward applied without GPU re-run.
+
+Arch: gfx1100 (Radeon Pro W7800)
+Validated sha: cd4b395
+Method: binary-equiv carry-forward
