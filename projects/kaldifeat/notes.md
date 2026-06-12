@@ -126,6 +126,51 @@ GPU proof: torch.cuda.get_device_name(0) = "AMD Instinct MI250X / MI250", torch.
 
 CUDA no-regression gate: not applicable for linux-gfx90a lead on this port; kaldifeat has zero .cu/.cuh device code.
 
+## Validation 2026-06-12 (linux-gfx1100)
+
+Platform: linux-gfx1100 (AMD Radeon Pro W7800 48GB, gfx1100 / RDNA3, ROCm 7.2.1, HIP 7.2.53211)
+Validated SHA: 8d3c066348129b1f6957bc6c1383295f51b05d97
+Result: PASSED (follower validation, no delta-port required)
+
+### Build commands
+```
+PYI=/opt/conda/envs/py_3.12/bin/python
+cmake -S projects/kaldifeat/src -B projects/kaldifeat/src/build \
+  -DPYTHON_EXECUTABLE=$PYI -Dkaldifeat_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/kaldifeat/src/build -j
+```
+Configure output: "Raising CMAKE_CXX_STANDARD from 17 to 20 (torch requirement)" (same as gfx90a lead). Build succeeded, no errors or warnings beyond CMake version deprecations.
+
+### Test results
+```
+HIP_VISIBLE_DEVICES=3 \
+PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+ctest --test-dir build --output-on-failure
+# 100% tests passed, 12 tests passed out of 12
+#  1: Test.feature-window-test -- Passed
+#  2: Test.online-feature-test -- Passed
+#  3: test_fbank_py -- Passed
+#  4: test_fbank_options_py -- Passed
+#  5: test_frame_extraction_options_py -- Passed
+#  6: test_mel_bank_options_py -- Passed
+#  7: test_mfcc_py -- Passed
+#  8: test_mfcc_options_py -- Passed
+#  9: test_plp_py -- Passed
+# 10: test_plp_options_py -- Passed
+# 11: test_spectrogram_py -- Passed
+# 12: test_spectrogram_options_py -- Passed
+
+HIP_VISIBLE_DEVICES=3 PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+  $PYI kaldifeat/python/tests/test_whisper_fbank.py    # PASS
+HIP_VISIBLE_DEVICES=3 PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+  $PYI kaldifeat/python/tests/test_whisper_v3_fbank.py  # PASS
+```
+Total: 14/14 pass (12 ctest + 2 whisper).
+
+GPU proof: torch.cuda.get_device_name(0) = "AMD Radeon Pro W7800 48GB", torch.version.hip = 7.2.53211, kaldifeat.Fbank on cuda:0 allocated ~34 MB GPU memory and returned a tensor on cuda:0. Not a CPU fallback.
+
+No CUDA no-regression gate required (follower platform, zero .cu/.cuh device code).
+
 ## Review 2026-06-12
 Verdict: review-passed (build-only Strategy A port; no GPU device code; all ROCm changes guarded on kaldifeat_TORCH_IS_ROCM). Fault classes (warp size, rule-of-five, OOB reads, texture pitch, library swaps) verified N/A: 0 .cu/.cuh, 0 c10::cuda/CUDAStream/warp/cublas/cufft sites. Commit hygiene clean ([ROCm] title 57 chars, Claude named, no noreply trailer, ASCII, no MOAT jargon in diff). Docs added in both README.md and doc/source/installation/from_source.rst.
 
