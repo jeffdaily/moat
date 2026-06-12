@@ -58,3 +58,4 @@
 {"kind":"phase","ts":"2026-06-12T14:52:47Z","phase":"compile","seconds":57.495,"exit":0,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/nvdiffrast/src && pip install --no-build-isolation -e ."}
 {"kind":"phase","ts":"2026-06-12T17:42:47Z","phase":"compile","seconds":0.313,"exit":1,"cmd":"pip install --no-build-isolation -e ."}
 {"kind":"phase","ts":"2026-06-12T17:43:37Z","phase":"compile","seconds":44.243,"exit":0,"cmd":"pip install --no-build-isolation -e /var/lib/jenkins/moat/projects/nvdiffrast/src"}
+{"kind": "tokens", "ts": "2026-06-12T17:58:32Z", "tokens": 51326, "source": "validator"}
