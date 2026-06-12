@@ -1,5 +1,56 @@
 # trt-shim-rocm notes
 
+## gfx1100 validation hand-off
+
+The lead (linux-gfx90a) is validated: ctest 9/9 plus stock sampleOnnxMNIST and
+stock trtexec passing. gfx1100 is the follower; it reuses the SAME source
+(jeffdaily/trt-shim-rocm @ main -- greenfield, no per-arch branch) and just
+re-runs the gates on its own GPU.
+
+Key fact that makes this easy: the shim is host-only C++ over migraphx::c +
+hip::host. It has NO device kernels and NO wavefront-size assumptions -- every
+GPU codegen decision lives inside MIGraphX. So shim correctness is
+arch-independent; what gfx1100 actually exercises is MIGraphX on RDNA3/wave32 +
+the shim. A test that passes on gfx90a but fails on gfx1100 is almost certainly a
+MIGraphX RDNA3 codegen/accuracy issue, NOT a shim bug (precedent: the ffpa-attn
+Triton-AMD wave32 bug, and the MIGraphX dynamic-concat codegen bug we already
+filed). Capture any such failure under findings/ and treat it as a MIGraphX
+finding.
+
+Prereqs on the gfx1100 host:
+- ROCm + `migraphx` + `migraphx-dev` for the host's ROCm, and confirm the
+  installed MIGraphX has gfx1100 in its target list (ROCm packages normally do).
+- python3 is REQUIRED for the build (CMake runs tools/gen_stubs.py).
+- onnx / onnxruntime / numpy are OPTIONAL -- only for regenerating test assets,
+  the model sweep, and the ONNX scoreboard. The committed ctest needs none of
+  them (models/goldens are committed).
+
+Build + validate (the gate):
+```
+cd projects/trt-shim-rocm/src           # or clone jeffdaily/trt-shim-rocm
+cmake -S . -B build -DCMAKE_PREFIX_PATH=/opt/rocm   # use the host's ROCm path
+cmake --build build -j
+ctest --test-dir build --output-on-failure          # expect 9/9
+```
+The trtexec ctest sets LD_LIBRARY_PATH=build itself (for the runtime dlopen of
+libnvinfer.so.10). trtexec will print DIFFERENT device info on gfx1100 (name,
+compute capability ~11.0, fewer CUs, less VRAM) -- that is expected; the compat
+aliasing is identical.
+
+Optional broader validation (network-dependent, downloads models, ~30-60 min):
+`bash test/run_gpu_tests.sh`, `bash tools/sweep_models.sh`, and
+`python3 tools/onnx_backend_scoreboard.py build/trtshim_infer`. Re-running the
+scoreboard on gfx1100 is the best way to catch RDNA3-specific op differences vs
+the gfx90a result (test/onnx_scoreboard.md).
+
+Record the result:
+- All green -> set projects/trt-shim-rocm/status.json linux-gfx1100 to
+  `completed` (validated on a real gfx1100 GPU) and commit-project.
+- A gate fails -> capture it; if it is a MIGraphX RDNA3 issue, write a
+  findings/<slug>/ note + add a deferred.py rocm-bug-report, and set gfx1100
+  `validation-failed` (or `blocked` with the reason). NOTE: linux-gfx1100 is a
+  PR-REQUIRED platform, so an unresolved gfx1100 failure blocks the upstream PR.
+
 ## Host / toolchain (verified 2026-06-12)
 
 - gfx90a, ROCm 7.2.1, MIGraphX 2.15.0 (`apt install migraphx migraphx-dev`).
