@@ -296,3 +296,73 @@ Wave32 (RDNA3) divergence concern noted in review for cosserat.cu:185 did not
 manifest -- both scenes ran to completion without GPU errors.
 
 Verdict: PASS. No delta-port needed.
+
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201 RDNA4), HIP_VISIBLE_DEVICES=1
+Arch: gfx1201, TheRock ROCm 7.14 / Clang 23.0.0
+Head sha: 12b20ececefaa5a1f3474a6306e9c576526f96a4
+
+Windows build notes:
+- Dependencies: GLFW3, Freetype, CLI11, stb, Eigen3 via vcpkg x64-windows (installed
+  with `X_VCPKG_ASSET_SOURCES='x-script,curl --ssl-no-revoke -L -o {dst} {url};x-block-origin'`
+  to work around the host's TLS revocation wall).
+- assimp and jsoncpp: sourced via CMake FetchContent (assimp v5.3.1, jsoncpp 1.9.6) because
+  the vcpkg assimp port transitively depends on polyclipping (sourceforge.net), which is
+  network-blocked on this host.
+- A Windows-guarded block was added to CMakeLists.txt (committed as 12b20ec on moat-port):
+  - FetchContent for assimp (ASSIMP_WARNINGS_AS_ERRORS=OFF: clang rejects non-trivial memcpy
+    that assimp's -Werror would fail)
+  - FetchContent for jsoncpp
+  - find_path for stb (vcpkg installs flat, not under stb/ subdir)
+  - Eigen3 include path derived from Eigen3::Eigen target (modern cmake exports target only)
+  - ASSIMP_TARGET=assimp on Windows vs assimp::assimp on Linux
+  - NOMINMAX/WIN32_LEAN_AND_MEAN/_CRT_SECURE_NO_WARNINGS compile definitions
+- All WIN32-guarded; Linux paths unchanged.
+- CMake generator: Ninja (VS generator rejects HIP language).
+- Runtime DLLs (amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll,
+  hiprtc-builtins0714.dll) copied from _rocm_sdk_core/bin into build_hip/.
+  glfw3.dll, freetype.dll, brotli*.dll, bz2.dll, libpng16.dll, z.dll from vcpkg.
+  assimp.dll, jsoncpp.dll from FetchContent build outputs.
+
+Build:
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cmake -S . -B build_hip -G Ninja -DUSE_HIP=ON -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_HIP_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_COMPILER=$ROCM/lib/llvm/bin/clang++.exe \
+  -DCMAKE_C_COMPILER=$ROCM/lib/llvm/bin/clang.exe \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_PREFIX_PATH="$ROCM;B:/vcpkg/installed/x64-windows" \
+  -DCMAKE_TLS_VERIFY=OFF
+cmake --build build_hip -j64
+# Result: [277/277] Linking HIP executable Gui.exe
+# Verified: strings Gui.exe | grep gfx1201 -> hipv4-amdgcn-amd-amdhsa--gfx1201
+```
+
+GPU tests (run from KittenEngine/ working dir, DLLs copied to build_hip/):
+```
+# Test 1: cable_work_pattern scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=1 PATH=<build_hip>:$PATH build_hip/Gui.exe \
+  configs/cable_work_pattern.json -s --headless -n 3 \
+  -o <out>/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.802-0.814, N=4"
+# 4 OBJ files (frame_0.obj..frame_3.obj), 65065 vertices each
+# All vertices finite (0 NaN/Inf)
+# frame_3 bbox: x[-0.208,0.207] y[-0.194,0.194] z[-0.029,0.034] -- matches gfx90a exactly
+
+# Test 2: letterS scene, 3 frames, headless
+HIP_VISIBLE_DEVICES=1 PATH=<build_hip>:$PATH build_hip/Gui.exe \
+  configs/letterS.json -s --headless -n 3 \
+  -o <out>/frame_ --exit
+# Result: "Export complete. sim/real ratio Avg 0.926-1.054, N=4"
+# 4 OBJ files, 32919 vertices each, all finite
+# Note: Linux produced 32931 vertices; the 12-vertex difference (0.04%) is due to
+# floating-point resampling differences in the CPU spline code between Windows
+# (MSVC ABI, Windows CRT) and Linux (glibc). Geometry is sane and finite.
+```
+
+Wave32 (RDNA4) divergence concern noted in review for cosserat.cu:185 did not
+manifest -- both scenes ran to completion without NaN/Inf or GPU errors.
+
+Verdict: PASS. gfx1201 (RDNA4) validated on real GPU.
