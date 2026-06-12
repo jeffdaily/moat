@@ -250,3 +250,75 @@ HIP_VISIBLE_DEVICES=0 ./build/bin/UnitTests
 Result: 722/722 PASS (no non-GPU regression).
 
 ### Verdict: PASS -> completed
+
+## Validation 2026-06-12 (windows-gfx1201, RX 9070 XT, RDNA4)
+
+Platform: windows-gfx1201 (AMD Radeon RX 9070 XT, gfx1201, RDNA4).
+HIP_VISIBLE_DEVICES=1 (gfx1101 HARD-WEDGED at device 0; always pin =1 for gfx1201).
+Fork HEAD: 3700598eff ([ROCm] Suppress -Wnontrivial-memcall on Windows+Clang).
+Source tree clean (no uncommitted tracked files).
+Toolchain: TheRock clang 23.0.0 (all-clang, MSVC-ABI target), Ninja.
+
+### Windows build fix
+
+Clang on Windows fires -Werror,-Wnontrivial-memcall on memset/memcpy calls in
+the bundled Flatbuffers-generated header (pre-existing upstream code, not the HIP
+port). Added a Clang+WIN32-guarded -Wno-nontrivial-memcall in CompileOptions.cmake.
+This change is unreachable on Linux (WIN32 is false there), so Linux device code
+is byte-identical to the gfx90a/gfx1100 validated state.
+Committed as a new commit on top of the HIP port commit (3700598eff).
+
+### Build
+
+```
+ROCM=B:/develop/TheRock/external-builds/pytorch/.venv/Lib/site-packages/_rocm_sdk_devel
+cd projects/CubbyFlow/src
+git submodule update --init --recursive
+cmake -B build -S . -G Ninja \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DUSE_HIP=ON \
+  -DCMAKE_HIP_ARCHITECTURES=gfx1201 \
+  -DCMAKE_HIP_COMPILER=${ROCM}/lib/llvm/bin/clang++.exe \
+  -DCMAKE_CXX_COMPILER=${ROCM}/lib/llvm/bin/clang++.exe \
+  -DCMAKE_C_COMPILER=${ROCM}/lib/llvm/bin/clang.exe \
+  -DCMAKE_PREFIX_PATH=${ROCM} \
+  -DBUILD_TESTS=ON -DBUILD_EXAMPLES=ON
+cmake --build build --target CubbyFlow CUDATests UnitTests CUDASPHSim -j64
+```
+
+Copy TheRock runtime DLLs into build/bin/ to override System32's Adrenalin amdhip64:
+  amdhip64_7.dll, amd_comgr.dll, rocm_kpack.dll, hiprtc0714.dll, hiprtc-builtins0714.dll
+from _rocm_sdk_core/bin.
+
+Build: PASS (334 targets, all built cleanly).
+
+### GPU tests
+
+```
+HIP_VISIBLE_DEVICES=1 ./build/bin/CUDATests.exe
+```
+
+Result: 35/35 test cases, 3168/3168 assertions PASS.
+
+```
+HIP_VISIBLE_DEVICES=1 ./build/bin/CUDASPHSim.exe -f 5
+```
+
+Result: 5 frames written, 13824 particles, no crash (GPU end-to-end PASS).
+
+### CPU regression tests
+
+```
+./build/bin/UnitTests.exe
+```
+
+Result: 722/722 PASS (no non-GPU regression).
+
+### Verdict: PASS -> completed
+
+### Linux revalidation note
+
+The Windows-only CompileOptions.cmake fix advances fork HEAD from 83ee5063 to
+3700598eff, flipping linux-gfx90a and linux-gfx1100 to revalidate. The new code
+is guarded by WIN32, making the Linux device code byte-identical. Linux validators
+should binary-equiv carry-forward (codeobj_diff IDENTICAL -> carry-forward).
