@@ -31,3 +31,4 @@
 {"kind":"phase","ts":"2026-06-12T05:40:05Z","phase":"test","seconds":2.104,"exit":1,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/awq_kernel_test.py"}
 {"kind":"phase","ts":"2026-06-12T05:41:55Z","phase":"test","seconds":4.170,"exit":0,"cmd":"bash -c HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/awq_kernel_test.py && HIP_VISIBLE_DEVICES=0 python3 /var/lib/jenkins/moat/agent_space/awq_model_test.py"}
 {"kind":"session","ts":"2026-06-12T05:42:35Z","epoch":1781242955.618243998,"event":"end","platform":"linux-gfx1100"}
+{"kind": "tokens", "ts": "2026-06-12T05:43:40Z", "tokens": 52475, "source": "validator"}
