@@ -99,6 +99,49 @@ Add a ROCm/AMD build note in the README Installation section (CUDA `setup.py ins
 ~line 157-219) in house style. Scope the PR claim to the `libs/` ops; end-to-end sparse-conv
 model validation waits on spconv.
 
+## Validation 2026-06-12 (validator, linux-gfx90a)
+
+Platform: linux-gfx90a, AMD Instinct MI250X (gfx90a), HIP_VISIBLE_DEVICES=0.
+Fork: jeffdaily/Pointcept @ moat-port, sha 68551e3.
+Torch 2.13.0a0, torch.version.hip 7.2.53211, ROCm 7.2.1.
+torch_scatter 2.1.2 (ROCm-patched, gfx90a device code verified).
+
+### Build (timeit: 143.7s)
+```
+export HIP_VISIBLE_DEVICES=0 PYTORCH_ROCM_ARCH=gfx90a
+cd libs/pointops && python setup.py install    # 9 gfx90a bundles
+cd libs/pointops2 && python setup.py install   # 10 gfx90a bundles
+cd libs/pointgroup_ops && python setup.py install  # 1 gfx90a bundle
+cd libs/pointrope && python setup.py install   # 1 gfx90a bundle
+```
+All four built successfully. gfx90a device code confirmed via roc-obj-ls.
+
+### Tests (timeit: 37.3s)
+pointops2 in-tree op tests (libs/pointops2/functions/, `yes "" | python test_<...>.py`):
+- test_attention_op_step1.py: ((attn_flat-attn_flat_v2)**2 < 1e-8).all() = True (max 9.09e-13). EXIT 0.
+- test_attention_op_step1_v2.py: same. EXIT 0.
+- test_attention_op_step2.py: GPU forward+backward ran OK (gradients printed). EXIT 1 due to
+  pre-existing upstream test bug: NameError: name 'x' is not defined (line 60 references `x`
+  commented out at lines 32-34). Fails identically on CUDA. NOT a port issue.
+- test_relative_pos_encoding_op_step1.py: EXIT 0.
+- test_relative_pos_encoding_op_step1_v2.py: max sq err 2.33e-10. EXIT 0.
+- test_relative_pos_encoding_op_step1_v3.py: max sq err 2.33e-10. EXIT 0.
+- test_relative_pos_encoding_op_step2.py: EXIT 0.
+- test_relative_pos_encoding_op_step2_v2.py: forward max sq err 7.13e-10; attn_grad 2.59e-21;
+  v_grad 2.59e-21; table_grad 9.56e-17. EXIT 0.
+
+Custom op driver (agent_space/pointcept_op_driver.py):
+- pointops knn_query: GPU vs brute-force CPU, set-match fraction 1.000000. PASS.
+- pointrope GPU-vs-CPU max abs err (fast-math): 9.060e-06; round-trip: 7.153e-07. PASS.
+
+pointgroup_ops inline driver:
+- ballquery_batch_p (GPU): 0 violations for 16760 pairs (all within r=0.1). PASS.
+- bfs_cluster (CPU -- real API uses CPU tensors): 5 clusters from 2000 pts (r=0.1 uniform);
+  largest cluster 1995 pts (matches porter's expected ~1981/2000). PASS.
+
+Summary: 7/8 in-tree tests exit 0; 1 exit 1 (pre-existing upstream bug, not port-caused).
+All custom driver tests PASS. Validated sha: 68551e3.
+
 ## Review 2026-06-12 (reviewer, linux-gfx90a, read-only)
 Reviewed fork moat-port @ 68551e3 vs base d727225 with /pr-review. Verdict: review-passed,
 no problems found. Diff is a single file (libs/pointrope/setup.py, +18/-11). Verified
