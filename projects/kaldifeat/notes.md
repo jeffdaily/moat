@@ -77,6 +77,55 @@ dir on `PYTHONPATH` or `pip install .` into the env. The build env MUST be the R
 </content>
 </invoke>
 
+## Validation 2026-06-12
+
+Platform: linux-gfx90a (MI250X GCD 2, ROCm 7.2.1, HIP 7.2.53211)
+Validated SHA: 8d3c066348129b1f6957bc6c1383295f51b05d97
+Result: PASSED
+
+### Additional build fix applied during validation
+
+torch 2.13.0a0+gitb5e90ff (a newer build than the porter used, +gitb5e90ff vs +git8f9a6c8) updated its headers to use C++20 `requires` constraints in TensorImpl.h. Building kaldifeat with the project's default C++17 produced:
+```
+error: 'requires' does not name a type
+error: 'SetDimsTemplate' was not declared in this scope
+```
+
+Root cause: TorchConfig.cmake sets `CXX_STANDARD 20` on the torch interface target, but the project's CMakeLists.txt defaults to C++17. The cmake/torch.cmake was updated to read the CXX_STANDARD property from the torch target after find_package(Torch) and raise CMAKE_CXX_STANDARD to match if the current standard is lower. This is a no-op on older torch (C++17 or unset) and on CUDA builds. Committed as a follow-up to the porter's commit.
+
+### Environment note
+
+The host env (py_3.12) had NumPy 2.2.6 installed but torch was compiled against NumPy 1.x ABI, making torch.from_numpy() fail with "Numpy is not available". Fixed by installing numpy 1.26.4 in the user location (pip install --user "numpy<2"), which overrides the env's 2.x. This is a shared-env issue not specific to kaldifeat.
+
+### Build commands
+```
+PYI=/opt/conda/envs/py_3.12/bin/python
+cmake -S projects/kaldifeat/src -B projects/kaldifeat/src/build \
+  -DPYTHON_EXECUTABLE=$PYI -Dkaldifeat_BUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Release
+cmake --build projects/kaldifeat/src/build -j
+```
+Configure output confirms: "Raising CMAKE_CXX_STANDARD from 17 to 20 (torch requirement)"
+
+### Test results
+```
+HIP_VISIBLE_DEVICES=2 \
+PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+ctest --test-dir build --output-on-failure
+# 100% tests passed, 12 tests passed out of 12
+# 1: Test.feature-window-test -- Passed
+# 2: Test.online-feature-test -- Passed
+# 3-12: test_fbank, test_mfcc, test_plp, test_spectrogram and their _options variants -- all Passed
+
+HIP_VISIBLE_DEVICES=2 PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+  $PYI kaldifeat/python/tests/test_whisper_fbank.py    # PASS
+HIP_VISIBLE_DEVICES=2 PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib \
+  $PYI kaldifeat/python/tests/test_whisper_v3_fbank.py  # PASS
+```
+
+GPU proof: torch.cuda.get_device_name(0) = "AMD Instinct MI250X / MI250", torch.version.hip = 7.2.53211, ~80 MB GPU memory allocated during fbank compute (kaldifeat.Fbank on cuda:0). Not a CPU fallback.
+
+CUDA no-regression gate: not applicable for linux-gfx90a lead on this port; kaldifeat has zero .cu/.cuh device code.
+
 ## Review 2026-06-12
 Verdict: review-passed (build-only Strategy A port; no GPU device code; all ROCm changes guarded on kaldifeat_TORCH_IS_ROCM). Fault classes (warp size, rule-of-five, OOB reads, texture pitch, library swaps) verified N/A: 0 .cu/.cuh, 0 c10::cuda/CUDAStream/warp/cublas/cufft sites. Commit hygiene clean ([ROCm] title 57 chars, Claude named, no noreply trailer, ASCII, no MOAT jargon in diff). Docs added in both README.md and doc/source/installation/from_source.rst.
 

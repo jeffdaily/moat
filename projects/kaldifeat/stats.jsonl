@@ -11,3 +11,10 @@
 {"kind":"phase","ts":"2026-06-11T16:18:16Z","phase":"test","seconds":44.310,"exit":0,"cmd":"ctest --test-dir projects/kaldifeat/src/build"}
 {"kind":"session","ts":"2026-06-11T16:19:57Z","epoch":1781194797.812248540,"event":"end","platform":"linux-gfx90a"}
 {"kind": "tokens", "ts": "2026-06-11T16:21:25Z", "tokens": 101087, "source": "porter"}
+{"kind": "tokens", "ts": "2026-06-12T06:20:47Z", "tokens": 58541, "source": "reviewer"}
+{"kind":"phase","ts":"2026-06-12T06:22:13Z","phase":"compile","seconds":19.518,"exit":0,"cmd":"bash -c \n  cmake -S projects/kaldifeat/src -B projects/kaldifeat/src/build     -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python     -Dkaldifeat_BUILD_TESTS=ON     -DCMAKE_BUILD_TYPE=Release 2>&1 | tail -30\n"}
+{"kind":"phase","ts":"2026-06-12T06:22:36Z","phase":"compile","seconds":16.374,"exit":2,"cmd":"cmake --build projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-12T06:24:45Z","phase":"compile","seconds":18.771,"exit":0,"cmd":"bash -c \n  cmake -S projects/kaldifeat/src -B projects/kaldifeat/src/build     -DPYTHON_EXECUTABLE=/opt/conda/envs/py_3.12/bin/python     -Dkaldifeat_BUILD_TESTS=ON     -DCMAKE_BUILD_TYPE=Release 2>&1 | grep -E 'Standard|CXX_STANDARD|ROCm|HIP|error:|-- ' | tail -30\n"}
+{"kind":"phase","ts":"2026-06-12T06:25:40Z","phase":"compile","seconds":48.972,"exit":0,"cmd":"cmake --build projects/kaldifeat/src/build -j"}
+{"kind":"phase","ts":"2026-06-12T06:26:24Z","phase":"test","seconds":37.804,"exit":8,"cmd":"bash -c \n  cd projects/kaldifeat/src\n  HIP_VISIBLE_DEVICES=4,5   PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib   ctest --test-dir build --output-on-failure 2>&1\n"}
+{"kind":"phase","ts":"2026-06-12T06:30:21Z","phase":"test","seconds":46.627,"exit":0,"cmd":"bash -c \n  cd projects/kaldifeat/src\n  HIP_VISIBLE_DEVICES=2   PYTHONPATH=$PWD/kaldifeat/python:$PWD/build/lib   ctest --test-dir build --output-on-failure 2>&1\n"}
