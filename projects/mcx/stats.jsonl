@@ -39,3 +39,4 @@
 {"kind":"phase","ts":"2026-06-12T07:16:48Z","phase":"test","seconds":0.007,"exit":100,"cmd":"bash /var/lib/jenkins/moat/projects/mcx/src/test/testmcx.sh"}
 {"kind":"phase","ts":"2026-06-12T07:17:10Z","phase":"test","seconds":0.008,"exit":100,"cmd":"bash /var/lib/jenkins/moat/projects/mcx/src/test/testmcx.sh"}
 {"kind":"phase","ts":"2026-06-12T07:18:51Z","phase":"test","seconds":94.492,"exit":3,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/mcx/src/test && bash testmcx.sh"}
+{"kind": "tokens", "ts": "2026-06-12T07:21:19Z", "tokens": 34744, "source": "validator"}
