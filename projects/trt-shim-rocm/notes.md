@@ -139,6 +139,24 @@ What it took beyond 1a:
 The common/ closure solved here (compat headers + utils sources) is the same one
 trtexec needs, so Phase 2 reuses it.
 
+## Phase 2a: fp16 + serialize + real model (DONE)
+
+Validated on gfx90a via tools/trt_run.cpp (flexible driver: --fp16, --save,
+--load):
+- fp16: kFP16 flag -> migraphx::quantize_fp16; correct argmax on mnist_cnn and
+  on ResNet-50 (resnet50-v2-7, 102MB; argmax 556 matches onnxruntime CPU in both
+  fp32 and fp16).
+- Cross-process serialize round-trip: --save writes the engine blob to disk,
+  --load in a fresh process deserializes and runs correctly (ResNet-50 and
+  mnist_cnn). The magic header cleanly rejects a non-shim blob ("not a
+  trt-shim-rocm engine").
+- ResNet-50 needs default_dim_value=1 (dynamic batch); set via migraphx::
+  onnx_options in backend introspect/build.
+
+ctest is 6/6 (migraphx_smoke, driver_smoke, sampleOnnxMNIST, trt_run_fp16,
+trt_run_save, trt_run_load). ResNet-50 is validated locally but not committed
+(too large); tools/make_resnet_golden.py regenerates its golden via onnxruntime.
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
