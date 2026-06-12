@@ -589,3 +589,41 @@ verdict=identical
 ### Verdict: CARRY-FORWARD
 Device ISA and all 443 exported symbols identical between fe88d6c and c4cb5ef
 on gfx90a. Windows-only guards confirmed zero Linux impact. No GPU re-run needed.
+
+---
+
+## Revalidation 2026-06-12 (linux-gfx1100, binary-equiv carry-forward)
+
+### Method: binary-equivalence carry-forward (no GPU re-run needed)
+### Head SHA: c4cb5ef, Prior validated_sha: fe88d6c
+### GPU: AMD Radeon Pro W7800 48GB (gfx1100, RDNA3), HIP_VISIBLE_DEVICES=3
+
+### Delta analysis (fe88d6c -> c4cb5ef)
+Two commits from the windows-gfx1201 host (same delta as the gfx90a carry-forward above):
+- b388cd0: framework.h compat block + setup.py .cpp shim generation
+- c4cb5ef: Narrows framework.h compat block to _WIN32 guard
+
+All new code in framework.h is under `#if defined(_WIN32)` -- invisible on Linux.
+All new code in setup.py is under `if sys.platform == "win32" and IS_HIP:` or
+`os.name == "nt"` -- also invisible on Linux. .gitignore change is inert.
+
+### Build (gfx1100, HIP_VISIBLE_DEVICES=3, PYTORCH_ROCM_ARCH=gfx1100)
+```bash
+HIP_VISIBLE_DEVICES=3 PYTORCH_ROCM_ARCH=gfx1100 pip install --no-build-isolation -e /var/lib/jenkins/moat/projects/nvdiffrast/src
+```
+Build: PASS (gfx1100 offload code objects confirmed)
+
+### codeobj_diff result
+```
+python3 utils/codeobj_diff.py agent_space/nvdiffrast_codeobj_gfx1100/old \
+                              agent_space/nvdiffrast_codeobj_gfx1100/new
+verdict=identical
+  _nvdiffrast_c.cpython-312-x86_64-linux-gnu.so: identical (exported symbols + device ISA identical (443 exports))
+```
+
+Old .so: Jun 12 05:29 (fe88d6c gfx1100 revalidation build)
+New .so: Jun 12 17:43 (c4cb5ef build, this session)
+
+### Verdict: CARRY-FORWARD
+Device ISA and all 443 exported symbols identical between fe88d6c and c4cb5ef
+on gfx1100. Windows-only guards confirmed zero Linux impact. No GPU re-run needed.
