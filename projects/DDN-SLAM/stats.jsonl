@@ -15,3 +15,17 @@
 {"kind":"phase","ts":"2026-06-01T20:54:02Z","phase":"compile","seconds":72.351,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
 {"kind":"phase","ts":"2026-06-01T20:59:07Z","phase":"compile","seconds":190.434,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
 {"kind":"phase","ts":"2026-06-01T21:02:35Z","phase":"compile","seconds":148.528,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"session","ts":"2026-06-11T23:05:06Z","epoch":1781219106.796538878,"event":"start","platform":"linux-gfx90a"}
+{"kind":"phase","ts":"2026-06-11T23:18:53Z","phase":"compile","seconds":146.954,"exit":2,"cmd":"cmake --build _deps/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:22:23Z","phase":"compile","seconds":43.530,"exit":0,"cmd":"cmake --build _deps/instant-ngp-kf/build_hip --target ngp -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:31:52Z","phase":"compile","seconds":7.140,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:35:44Z","phase":"compile","seconds":167.481,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:37:43Z","phase":"compile","seconds":74.033,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:43:16Z","phase":"compile","seconds":213.134,"exit":2,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:47:44Z","phase":"compile","seconds":172.101,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-11T23:49:13Z","phase":"test","seconds":0.003,"exit":127,"cmd":"./build_hip/rgbd_replica Vocabulary/ORBvoc.txt Examples/RGB-D/office0.yaml /var/lib/jenkins/moat/agent_space/replica_dl/extracted/Replica/office0"}
+{"kind":"phase","ts":"2026-06-11T23:50:29Z","phase":"test","seconds":1.278,"exit":139,"cmd":"bash -c cd /var/lib/jenkins/moat/projects/DDN-SLAM/src && exec ./build_hip/rgbd_replica Vocabulary/ORBvoc.txt Examples/RGB-D/office0.yaml /var/lib/jenkins/moat/agent_space/replica_dl/extracted/Replica/office0"}
+{"kind":"phase","ts":"2026-06-12T00:01:39Z","phase":"compile","seconds":278.583,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-12T00:05:59Z","phase":"compile","seconds":34.577,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"phase","ts":"2026-06-12T00:17:53Z","phase":"compile","seconds":50.195,"exit":0,"cmd":"cmake --build projects/DDN-SLAM/src/build_hip --target rgbd_replica -j 16"}
+{"kind":"session","ts":"2026-06-12T00:30:13Z","epoch":1781224213.686501649,"event":"end","platform":"linux-gfx90a"}

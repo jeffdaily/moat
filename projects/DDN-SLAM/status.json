@@ -7,17 +7,17 @@
   "priority": 3.478,
   "ext_type": "cmake",
   "adopted_at": "2026-05-30T01:04:51Z",
-  "updated_at": "2026-06-04T19:41:52Z",
-  "head_sha": null,
+  "updated_at": "2026-06-12T00:28:47Z",
+  "head_sha": "4cbbb0a",
   "platforms": {
     "linux-gfx90a": {
-      "state": "porting",
-      "blocked": true,
-      "blocked_reason": "GPU validation blocked: host external egress ~40-160 KB/s (measured 51 KB/s sustained) cannot fetch the 12.4 GB NICE-SLAM Replica.zip (ETA ~67h; zip is not scene-ordered so a single scene cannot be stream-extracted) nor TUM fr1 (42 KB/s); no sufficiently large RGB-D sequence is staged (cupoch testdata = 5 frames). Same egress wall stalls cloning/fetching the jeffdaily/instant-ngp-kf fork (even depth-1 single-commit fetch times out). Port BUILDS on gfx90a (build_hip/rgbd_replica links clean) and Stage-0 rocWMMA FP16 MLP was GPU-validated; only the integrated rgbd_replica path is unvalidated, gated entirely on the dataset fetch. tiny-rocm-nn fork pushed (jeffdaily/tiny-rocm-nn@moat-port b299322). Resume: finish Replica.zip on a normal-bandwidth host (partial preserved at agent_space/replica_dl), push instant-ngp-kf fork from agent_space pristine tree, validate office0, then ported.",
+      "state": "ported",
+      "blocked": false,
+      "blocked_reason": null,
       "validated_sha": null,
       "started_at": "2026-06-01T19:36:11Z",
       "completed_at": null,
-      "updated_at": "2026-06-02T00:29:31Z",
+      "updated_at": "2026-06-12T00:28:47Z",
       "stats": {
         "tokens_total": 0,
         "tokens_approx": true,

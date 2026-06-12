@@ -262,3 +262,76 @@ preserved partial), extract office0 to <root>/office0/{frame,depth,traj.txt}, th
 `HIP_VISIBLE_DEVICES=2 build_hip/rgbd_replica Vocabulary/ORBvoc.txt Examples/RGB-D/office0.yaml
 office0/` and assert loss decreases + no NaN/GPU fault + sane trajectory; also push the
 instant-ngp-kf fork branch and add DDN-SLAM .gitmodules, then curated commit + ported.
+
+## Resolution session (2026-06-11/12): egress recovered; full reconstruction + GPU validation PASSED -> ported
+The host egress wall (~50 KB/s) that blocked the prior session is GONE on this container
+(~10-17 MB/s sustained). Replica.zip (12.44 GB) finished in ~27 min; all dep clones fetched at
+normal speed. CRITICAL CONTEXT: this is a FRESH container -- the prior session's uncommitted src
+tree AND all agent_space artifacts (partial zip, instant-ngp-kf tree, build) were GONE. Only the
+pushed jeffdaily/tiny-rocm-nn@moat-port (b299322) survived. The entire Stage-1 port was
+reconstructed from the (excellent) notes above, then GPU-validated.
+
+### What was reconstructed and pushed
+- jeffdaily/tiny-rocm-nn@moat-port advanced b299322 -> 28350e6 (NEW fc_multiply fix, see below).
+- jeffdaily/instant-ngp-kf@moat-port: pushed for the FIRST time (prior session was blocked).
+  2ef4a5d (the HIP port: CMake USE_HIP, cuda_to_hip.h, the 16 src edits, tcnn-API param-interface
+  adaptation) + d44dcaf (::filesystem:: global-qualify for the C++17 consumer; tcnn submodule bump).
+- jeffdaily/DDN-SLAM@moat-port: pushed for the FIRST time. 4cbbb0a. Submodules:
+  Thirdparty/instant-ngp-kf -> jeffdaily@d44dcaf, g2o @ 26f775d, Sophus @ de0f8d3.
+
+### NEW fault found and fixed (the validation blocker): fc_multiply infinite recursion
+tiny-rocm-nn's cublas_matmul.h fc_multiply dispatch was incomplete. The overload
+(GPUMatrix A, GPUMatrixDynamic B, GPUMatrixDynamic C, GPUMatrixDynamic D) resolves B's layout via
+B.cm()/B.rm() -> a concrete GPUMatrix B that IMPLICITLY CONVERTS BACK to GPUMatrixDynamic and
+re-enters the SAME overload -> unbounded recursion -> stack-overflow SIGSEGV on the FIRST NeRF
+matmul. The standalone mlp_learning_an_image micro-gate never hit this (different A=GPUMatrix,
+dynamic-C/D shape), so Stage-0 passing did NOT cover it. FIX: add the missing dispatch step --
+once A and B are concrete GPUMatrix, resolve C/D layout (C.cm()/C.rm()) then call the concrete
+4-GPUMatrix fc_multiply so the chain terminates (dispatch order: B-layout then C/D-layout).
+
+### Other NEW fixes beyond the prior notes
+- g2o built with -march=native crashed in its type-registry STATIC INIT (before main): AVX512
+  over-alignment (64 B) of Eigen fixed-size members in g2o prototype edges corrupts their
+  std::vector members -> bogus aligned_free. FIX: top CMake sets BUILD_WITH_MARCH_NATIVE OFF (and
+  drops -march=native from the app's own CXX flags on the HIP build; portable + correct). Verified:
+  no-march g2o slam3d_addons .so static-init runs clean (exit 0) vs SIGSEGV with march=native.
+- DBoW2/FORB.cpp and src/ORBmatcher.cu: #include<stdint-gcc.h> (gcc-internal, absent on clang) -> <cstdint>.
+- OptimizableTypes.{h,cu}: g2o::Vector7d -> g2o::Vector7 (g2o 26f775d renamed it).
+- LoopClosing.h: mnFullBAIdx bool -> int (it is post-incremented; C++17 rejects bool++).
+- Tracking.h: the UNUSED `YoloDetector mYoloDetector;` VALUE member default-constructs the
+  TensorRT ctor -> guard it under USE_TENSORRT (the pointer mpYoloDetector is what's actually used).
+- System.h: mpYoloDetector default-init = nullptr (SetYoloDetector is called unconditionally).
+- instant-ngp-kf testbed.h/nerf_loader.h: bundled `filesystem::path` is ambiguous with C++17
+  std::filesystem under the consumer's `using namespace std` -> qualify ::filesystem:: (global ns).
+- rgbd_replica.cu: bUseViewer is the 4th System ctor arg (NOT 5th); Orbeez passed true (GUI on) ->
+  set false for headless (else Pangolin throws "X11: Failed to open X display"). cv::IMREAD_UNCHANGED
+  (CV_LOAD_IMAGE_UNCHANGED removed in OpenCV 4). Namespace ORBEEZ -> ORB_SLAM3.
+- instant-ngp-kf compat-header fixes surfaced at build: #define cudaResourceDesc (not using-alias,
+  for `struct cudaResourceDesc`), std::isnan (host), takikawa vec `{0}` ambiguous -> explicit scalar
+  ctor, qualified tcnn::parallel_for_gpu, named tinyexr HeaderInfo_tag struct.
+
+### Host deps installed this session (resume notes)
+- apt: libopencv-dev (4.6), libglew-dev, libegl1-mesa-dev, libgl1-mesa-dev.
+- Pangolin v0.6 built into _deps/pangolin/pangolin-install (needed -DCMAKE_CXX_FLAGS="-include cstdint"
+  globally; v0.6 misses <cstdint> on GCC 13). Point the app at it with
+  -DCMAKE_PREFIX_PATH=.../pangolin-install.
+- ORBvoc.txt: from _deps/Orbeez-SLAM-ref/Vocabulary/ORBvoc.txt.tar.gz -> src/Vocabulary/.
+
+### GPU VALIDATION (gfx90a, HIP_VISIBLE_DEVICES=2): PASSED
+Dataset: NICE-SLAM Replica office0 (2000 RGB-D frames + traj.txt). The NICE-SLAM zip layout is
+office0/results/{frameNNNNNN.jpg,depthNNNNNN.png} + office0/traj.txt; rgbd_replica.cu expects
+office0/{frame,depth}/ -- arranged via symlinks (frame/, depth/ -> results/).
+Run: build_hip/rgbd_replica Vocabulary/ORBvoc.txt Examples/RGB-D/office0.yaml <office0>
+Result: ORB-SLAM map initialized ("New Map created with 1486 points"); the instant-ngp NeRF trained
+6000+ iterations with finite loss (~0.04), NO NaN, NO GPU fault, no crash. The rocWMMA FP16 fused
+MLP + hash-grid encoding drive the neural mapper correctly on gfx90a. => Stage-1 path GPU-validated.
+linux-gfx90a: blocked cleared, state -> ported. Validator should confirm -> completed.
+
+### Build recipe (Stage 1, reproducible)
+```
+cmake -S projects/DDN-SLAM/src -B build_hip -DUSE_HIP=ON -DUSE_TENSORRT=OFF \
+  -DCMAKE_HIP_ARCHITECTURES=gfx90a -DCMAKE_HIP_COMPILER=/opt/rocm/llvm/bin/clang++ \
+  -DCMAKE_CXX_COMPILER=/opt/rocm/bin/hipcc -DORBEEZ_BUILD_WITH_GUI=OFF \
+  -DCMAKE_PREFIX_PATH=/var/lib/jenkins/moat/_deps/pangolin/pangolin-install
+cmake --build build_hip --target rgbd_replica -j 16
+```
