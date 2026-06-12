@@ -208,3 +208,67 @@ headless mono SLAM: build agent_space/mono_tum_headless.cc against lib/libplvs.s
   stereo correctness is independently and rigorously validated by the aloe GPU-vs-CPU test
   above, which exercises the exact sgm::StereoSGM disparity kernels plvs calls).
 - Upstream PR remains gated on the OpenCV core+contrib PRs landing (packaging), per dispatch.
+
+## Review 2026-06-12 (reviewer, linux-gfx90a): review-passed
+
+Reviewed the moat-port branch (3 [ROCm] commits e59fd77, f932ab5, 05eed6c) against base
+2ecb8b1, READ-ONLY (no GPU/build). Verdict: Approve -> review-passed. Strategy A is correct
+for this pure-CMake project, the libsgm wave64 fault class is handled correctly and
+arch-unified, host C++ dispatch flips are additive and guarded, and commit hygiene is clean.
+Only minor (non-blocking) findings below.
+
+### Minor findings (not blocking; fold into PR-prep)
+1. Dead CMake variable. Thirdparty/libelas-gpu/CMakeLists.txt:26 and :31 set
+   `USE_GPU true` but `USE_GPU` is never read anywhere in that tree (the build keys off
+   USE_HIP / USE_CUDA). Orphan introduced by the port; remove per the orphan-cleanup rule.
+2. Out-of-scope build fix bundled in. CMakeLists.txt:255-259 makes `BUILD_FASTFUSION`
+   honor the `WITH_FASTFUSION` toggle. It is a defensible upstream-bug fix (line 342
+   `if(BUILD_FASTFUSION)` would otherwise pull fastfusion includes/libs even with the
+   feature defined off), but it is unrelated to the ROCm port and touches the CPU/CUDA
+   build path. Either scope it out before the upstream PR or call it out explicitly in the
+   PR body as an incidental build-correctness fix.
+3. Cosmetic: Thirdparty/libsgm/src/{median_filter,census_transform,check_consistency,
+   cuda_utils,sgm,winner_takes_all,...}.cu place `#include "cuda_to_hip.h"` above the file's
+   license header block. Harmless (pragma once), but conventionally the include belongs
+   below the header. Low priority.
+
+### Fault-class verification (all clear)
+- warpSize/hardcoded-32: libsgm WARP_SIZE pinned to LOGICAL 32 on EVERY target
+  (utility.hpp), not 64-on-GFX9. Verified the shuffles are width-confined to the logical
+  subgroup on wave64: subgroup_min<GROUP_SIZE> and subgroup_merge_top2<WARP_SIZE> pass an
+  explicit width to __shfl_xor; DynamicProgramming's maskless __shfl_up/__shfl_down by 1
+  use default (full-wave) width but are made correct by the lane_id boundary guards
+  (`lane_id != 0` / `lane_id + 1 != SUBGROUP_SIZE`) since delta is exactly 1. This is
+  arch-unified (32 is trivially correct on wave32, width-confined-correct on wave64) and was
+  empirically validated by the porter (aloe coverage 0.864, GPU-vs-CPU agreement 0.982).
+- median_filter.cu __vcmpgtu2/__vminu2/__vmaxu2 + *4 software emulation: per-lane unsigned
+  compare/min/max with no cross-lane carry; bit-identical to the NVIDIA SIMD-in-a-word
+  intrinsics. Guarded under USE_HIP only.
+- __shfl_*_sync masked variants kept dormant via CUDA_VERSION=0 so the maskless branch is
+  taken on HIP (the _sync forms assert a 64-bit mask on wave64 vs the sources' 32-bit
+  literals). Correct.
+- elas_gpu.cu int32->float brace-init narrowing fixed with explicit (float) casts; values
+  identical, compiles identically on the CUDA path. Strict generalization.
+- No rule-of-five / texture-handle / texture-pitch / OOB-neighbor concerns: the port adds no
+  new texture/RAII handles and binds no pitched 2D textures.
+- Library swaps: none required (no cuBLAS/cuFFT/cuRAND/cuSPARSE); cv::cuda resolved via the
+  consumed ROCm OpenCV fork.
+
+### Strategy / footprint / BC (all clear)
+- Strategy A correct: single cuda_to_hip.h per third-party unit + the project, no-op on
+  NVIDIA; `.cu` marked LANGUAGE HIP (not renamed); HIP gated behind USE_HIP (default OFF);
+  arch default gfx90a only when CMAKE_HIP_ARCHITECTURES unset (followers build without
+  editing CMake).
+- Host dispatch flips: every `#ifdef USE_CUDA` -> `#if defined(USE_CUDA)||defined(USE_HIP)`
+  and every `#ifndef USE_CUDA` -> `#if !defined(USE_CUDA)&&!defined(USE_HIP)`. The pure-CUDA
+  and pure-CPU builds are byte-identical (additive + guarded). The global force-include of
+  src/cuda/cuda_to_hip.h and __HIP_PLATFORM_AMD__ are inside if(USE_HIP) only.
+- Commit hygiene: all titles [ROCm], <=72 chars; bodies credit Claude, carry Test Plans, no
+  Co-Authored-By noreply trailer; no MOAT jargon / em-dash / AMD-internal account refs.
+
+### Note for the validator
+The porter recorded a real-MI250X validation (libsgm aloe GPU-vs-CPU + headless mono TUM
+RGB-D, 457/457 frames, clean shutdown). State is `ported` (pre-validator), so the GPU
+re-run is the validator's job; nothing here blocks that. The EuRoC full-pipeline stereo run
+was not done (dataset mirror returned 0 bytes); libsgm correctness rests on the aloe test,
+which exercises the same sgm::StereoSGM kernels.
