@@ -187,6 +187,40 @@ as not-a-bug, a user misreading rocm-smi during compile-dominated runtime, not a
 defect. quantize_int8 on the gpu target works; the real shim work is the
 calibrator bridge.)
 
+## Phase 3+: int8, dynamic shapes, conformance scoreboard (DONE)
+
+- **int8 calibrator bridge:** BuilderConfig::setInt8Calibrator stored; build
+  drives IInt8Calibrator::getBatch (app fills device pointers) -> host staging ->
+  migraphx::quantize_int8_options::add_calibration_data -> quantize_int8 on the
+  uncompiled program. backend.h's abstract CalibrationSource keeps backend.* free
+  of TRT types; shim's ShimCalibSource implements it. Validated (trt_run --int8)
+  on mnist_cnn and ResNet-50, argmax preserved.
+- **Single-axis dynamic shapes:** createOptimizationProfile/setDimensions/
+  addOptimizationProfile -> ShimOptimizationProfile derives the one dynamic axis
+  (kMIN != kMAX) -> backend parses with set_default_dyn_dim_value and compiles a
+  dynamic program. setInputShape threads the concrete shape into Engine::run
+  (which builds the migraphx argument at that shape); engine reports -1 for
+  dynamic dims. Validated (dyn_run) one engine at batch 1 and 2.
+  - MIGraphX dynamic-shape codegen BUG on ResNet-50 (fused concat kernel arity)
+    filed: findings/migraphx-trt-shim-gaps/ + deferred.py
+    migraphx-dynamic-concat-codegen. Shim path itself is correct (concat-free
+    dynamic model passes).
+- **ONNX backend-test scoreboard** (tools/trt_infer.cpp + onnx_backend_scoreboard.py):
+  drives all 1678 standardized onnx.backend.test node cases through the shim vs
+  ONNX expected. Result: 895 pass, 757 fail, 26 skip; 96 operators fully green
+  (Conv, MatMul, Gemm, Gather/Scatter, Layer/Group/Instance norm, activations,
+  RNN/LSTM/GRU, QLinearConv, MatMulInteger). Failures are mostly
+  MIGraphX-unsupported ops (Loop/Scan/sequence/training/bitwise) and shape ops
+  whose node tests use runtime shape inputs (constant-shape works). Full table:
+  src/test/onnx_scoreboard.md.
+
+ctest is 8/8 (the small committed gates); the scoreboard + ResNet/sweep are
+larger local validations (models downloaded, not committed).
+
+MIGraphX feedback collected (findings/migraphx-trt-shim-gaps/report.md): (1)
+dynamic-concat codegen bug, (2) no ONNX output-name accessor, (3) no buffer-based
+program serialize/load. int8 confirmed working (not a gap).
+
 ## Install as a dependency
 
 Not applicable yet (no MOAT project depends on this). When the shim ships, this
